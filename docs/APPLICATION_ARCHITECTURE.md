@@ -92,7 +92,7 @@ Wolfpack Product Bundles is a Shopify app that enables merchants to create and s
 - **App Bridge:** @shopify/app-bridge-react (embedded app)
 
 ### Backend
-- **Runtime:** Node.js 18+
+- **Runtime:** Node.js 20+
 - **Framework:** Remix (full-stack)
 - **ORM:** Prisma (PostgreSQL adapter)
 - **API Client:** @shopify/shopify-app-remix
@@ -148,12 +148,19 @@ model Bundle {
 enum BundleStatus {
   draft
   active
-  archived
+  inactive
+  unlisted    // Hidden from merchant list (archive/template use)
 }
 
 enum BundleType {
   product_page  // Widget embedded in product page
-  full_page     // Dedicated bundle page (future)
+  full_page     // Dedicated bundle page
+}
+
+enum FullPageLayout {
+  CLASSIC    // Standard step-by-step layout
+  EDITORIAL  // Rich media / editorial style
+  GRID       // Compact grid layout
 }
 ```
 
@@ -352,6 +359,17 @@ model WebhookEvent {
 ```
 
 **Purpose:** Prevents duplicate webhook processing using unique constraint.
+
+### Additional Models
+
+#### DesignSettings
+Per-bundle design/theme settings. Stores all visual customisation (colors, fonts, layout overrides) as direct Prisma columns rather than JSON blob. Linked to `Bundle`.
+
+#### OrderAttribution
+Tracks order → bundle attribution for analytics. Records which orders originated from bundle purchases.
+
+#### BundleAnalytics
+Aggregated analytics data per bundle (views, conversions, revenue).
 
 ### Supporting Models
 
@@ -1040,5 +1058,5 @@ For more specific information, refer to:
 
 ---
 
-**Last Updated:** November 27, 2025
-**Version:** 2.0.0 (Subscription Billing + Pub/Sub)
+**Last Updated:** 2026-04-16
+**Version:** 2.1.0 (corrected Node version, added DesignSettings/OrderAttribution/BundleAnalytics models, FullPageLayout enum, unlisted BundleStatus)

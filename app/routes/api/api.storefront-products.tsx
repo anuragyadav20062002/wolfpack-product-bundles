@@ -1,7 +1,7 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
-import { createStorefrontAccessToken } from "../../services/storefront-token.server";
+import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
@@ -18,17 +18,28 @@ const CORS_HEADERS = {
  */
 
 /**
+ * Inventory fields that require the `unauthenticated_read_product_inventory` scope.
+ * Included only when the session scope has been granted — otherwise Shopify
+ * Storefront API rejects the whole query with "Access denied".
+ */
+const INVENTORY_FIELDS = "quantityAvailable currentlyNotInStock";
+
+/**
  * Fetches all variants for a product using cursor-based pagination
  * Handles products with more than 100 variants.
  * When country is provided, uses @inContext to get market-correct prices from Shopify Markets.
+ * When hasInventoryScope is true, requests quantityAvailable + currentlyNotInStock.
  */
 async function fetchAllVariants(
   storefrontUrl: string,
   storefrontAccessToken: string,
   productId: string,
   country: string | null,
+  hasInventoryScope: boolean,
   cursor?: string
 ): Promise<any[]> {
+  const inventoryFields = hasInventoryScope ? ` ${INVENTORY_FIELDS}` : "";
+
   const VARIANT_QUERY = country
     ? `query getProductVariants($id: ID!, $cursor: String, $country: CountryCode!) @inContext(country: $country) {
         product(id: $id) {
@@ -36,7 +47,7 @@ async function fetchAllVariants(
             pageInfo { hasNextPage endCursor }
             edges {
               node {
-                id title availableForSale
+                id title availableForSale${inventoryFields}
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
@@ -51,7 +62,7 @@ async function fetchAllVariants(
             pageInfo { hasNextPage endCursor }
             edges {
               node {
-                id title availableForSale
+                id title availableForSale${inventoryFields}
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
@@ -98,6 +109,7 @@ async function fetchAllVariants(
       storefrontAccessToken,
       productId,
       country,
+      hasInventoryScope,
       endCursor
     );
     return [...variants, ...nextPageVariants];
@@ -142,20 +154,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
           }
         }`;
 
-    // Get storefront access token from database
-    let session = await db.session.findFirst({
+    // Storefront token is created at install time (lifecycle webhook / auth callback).
+    // If it is missing here, the install flow is broken — fail clearly and fast.
+    const session = await db.session.findFirst({
       where: { shop },
-      select: { storefrontAccessToken: true, accessToken: true }
+      select: { storefrontAccessToken: true, scope: true }
     });
 
     if (!session) {
-      console.error("[STOREFRONT_API] No session found for shop:", shop);
+      AppLogger.error("[STOREFRONT_API] No session found for shop", { component: "api.storefront-products", shop });
       return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404, headers: CORS_HEADERS });
     }
 
     // If no storefront token exists, try to create one on-demand (handles race condition)
     if (!session.storefrontAccessToken && session.accessToken) {
-      console.log("[STOREFRONT_API] No storefront token found. Creating on-demand for shop:", shop);
+      AppLogger.warn("[STOREFRONT_API] No storefront token found. Creating on-demand for shop", { component: "api.storefront-products", shop });
 
       try {
         // Create admin-like object that matches AdminApiContext type
@@ -177,7 +190,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         } as any; // Type assertion since we're creating a minimal admin context
 
         const token = await createStorefrontAccessToken(admin, shop);
-        console.log("[STOREFRONT_API] ✅ Created storefront token on-demand");
+        AppLogger.info("[STOREFRONT_API] Created storefront token on-demand", { component: "api.storefront-products", shop });
 
         // Refresh session to get the new token
         session = await db.session.findFirst({
@@ -185,17 +198,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
           select: { storefrontAccessToken: true, accessToken: true }
         });
       } catch (error) {
-        console.error("[STOREFRONT_API] Failed to create token on-demand:", error);
+        AppLogger.error("[STOREFRONT_API] Failed to create token on-demand", { component: "api.storefront-products", shop }, error);
         return json({ error: "Could not create storefront access token" }, { status: 500, headers: CORS_HEADERS });
       }
     }
 
     if (!session?.storefrontAccessToken) {
-      console.error("[STOREFRONT_API] Still no storefront access token after creation attempt");
+      AppLogger.warn("[STOREFRONT_API] No storefront token for shop — install may be incomplete", { component: "api.storefront-products", shop });
       return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404, headers: CORS_HEADERS });
     }
 
     const storefrontAccessToken = session.storefrontAccessToken;
+    // quantityAvailable + currentlyNotInStock require unauthenticated_read_product_inventory.
+    // Scope is synced from Shopify on install and on every app/scopes_update webhook
+    // (see handleScopesUpdate in lifecycle.server.ts), so session.scope is authoritative.
+    const hasInventoryScope = (session.scope ?? "").includes("unauthenticated_read_product_inventory");
     const storefrontUrl = `https://${shop}/api/${SHOPIFY_REST_API_VERSION}/graphql.json`;
 
     const mainVariables: Record<string, unknown> = { ids };
@@ -211,14 +228,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!response.ok) {
-      console.error("[STOREFRONT_API] Request failed:", response.status);
+      AppLogger.error("[STOREFRONT_API] Storefront API request failed", { component: "api.storefront-products", status: response.status });
       return json({ error: "Failed to fetch from Storefront API" }, { status: 500, headers: CORS_HEADERS });
     }
 
     const data = await response.json();
 
     if (data.errors) {
-      console.error("[STOREFRONT_API] GraphQL errors:", data.errors);
+      AppLogger.error("[STOREFRONT_API] GraphQL errors", { component: "api.storefront-products" }, data.errors);
       return json({ error: "GraphQL errors", details: data.errors }, { status: 500, headers: CORS_HEADERS });
     }
 
@@ -236,7 +253,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
             storefrontUrl,
             storefrontAccessToken,
             product.id,
-            country
+            country,
+            hasInventoryScope
           );
 
           return {
@@ -250,11 +268,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
               price: edge.node.price?.amount || '0',
               compareAtPrice: edge.node.compareAtPrice?.amount || null,
               available: edge.node.availableForSale,
+              // Numeric stock level; null when scope ungranted or variant is untracked.
+              // Widget treats null as "unlimited / do not clamp".
+              quantityAvailable: typeof edge.node.quantityAvailable === 'number'
+                ? edge.node.quantityAvailable
+                : null,
+              // True when the variant is sold out but accepting backorders.
+              currentlyNotInStock: edge.node.currentlyNotInStock === true,
               image: edge.node.image ? { src: edge.node.image.url } : null
             }))
           };
-        } catch (error: any) {
-          console.error(`[STOREFRONT_API] Failed to fetch variants for product ${product.id}:`, error.message);
+        } catch (error) {
+          AppLogger.warn("[STOREFRONT_API] Failed to fetch variants for product", { component: "api.storefront-products", productId: product.id });
           // Return product with empty variants on error
           return {
             id: product.id,
@@ -270,7 +295,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const validProducts = products.filter(Boolean);
     const totalVariants = validProducts.reduce((sum, p) => sum + (p?.variants?.length || 0), 0);
 
-    console.log(`[STOREFRONT_API] Successfully fetched ${validProducts.length} products with ${totalVariants} total variants`);
+    AppLogger.debug("[STOREFRONT_API] Fetched products", { component: "api.storefront-products", productCount: validProducts.length, variantCount: totalVariants });
 
     return json({
       products: validProducts,
@@ -283,8 +308,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
       }
     });
 
-  } catch (error: any) {
-    console.error("[STOREFRONT_API] Error:", error);
+  } catch (error) {
+    AppLogger.error("[STOREFRONT_API] Internal error", { component: "api.storefront-products" }, error);
     return json({
       error: "Internal server error",
       message: error instanceof Error ? error.message : "Unknown error"

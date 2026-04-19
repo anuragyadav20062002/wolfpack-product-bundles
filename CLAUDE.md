@@ -592,3 +592,76 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 
 **Last Updated:** 2026-04-19
 **Author:** Aditya Awasthi
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/ and an audited internal docs vault at `internal docs/`.
+
+### Mandatory Search Order
+
+**ALWAYS follow this order when looking up architecture, APIs, or codebase behaviour:**
+
+1. **`internal docs/`** — audited, human-curated vault. Start here for any topic that may be covered (Cart Transform, Pricing, DB schema, Shopify API limits, widget architecture, deployment).
+2. **`graphify-out/GRAPH_REPORT.md`** — god nodes and community structure for codebase topology questions.
+3. **`graphify-out/wiki/`** — if `index.md` exists, navigate it for node-level detail.
+4. **Raw source files** — ONLY when the user explicitly asks you to read raw files, OR when the vault and graph do not cover the specific detail you need.
+
+❌ Do NOT open raw `.ts` / `.js` / `.liquid` / `.prisma` files speculatively — consult the vault and graph first.
+✅ The vault is the fastest and most reliable source for cross-cutting questions (API behaviour, gotchas, build rules, pricing units, etc.).
+
+### Keeping the Vault Current
+
+**When you encounter something useful that is NOT in `internal docs/`:**
+- If it's a fact about Shopify API behaviour, a gotcha, a data model detail, a build rule, or a cross-cutting concern → **write or update the relevant note in `internal docs/`** before the conversation ends.
+- If it's a specific bug fix or implementation detail that belongs in the code or git history, do NOT add it to the vault.
+- After writing to the vault, add/update the link in `internal docs/index.md`.
+
+### Graph-Assisted Debugging & RCA
+
+**When debugging a bug or doing Root Cause Analysis (RCA), ALWAYS:**
+
+1. Use `graphify-out/GRAPH_REPORT.md` to identify which community the affected node belongs to.
+2. Run `graphify path "NodeA" "NodeB"` (or query the graph) to trace the relationship chain between the broken component and its dependencies/consumers.
+3. Check the **Surprising Connections** and **Hyperedges** sections in `GRAPH_REPORT.md` — cross-cutting relationships that aren't obvious from reading the code directly are often the root cause.
+
+```bash
+/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify path "ComponentA" "ComponentB"
+/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify query "what depends on X?"
+```
+
+### Impact Analysis — Mandatory Before Every Change
+
+**Before building a new feature OR fixing a defect**, perform an impact analysis using the graph:
+
+1. Identify the god nodes (`GRAPH_REPORT.md` → God Nodes section) — any change touching these requires extra care.
+2. Use the graph to find all nodes that depend on the file/function you're changing.
+3. Document the blast radius: which communities are affected, which tests cover them.
+
+**Impact analysis must appear in:**
+- **Commit message body** (after the first line): list affected communities / god nodes touched
+- **PR description** (in a dedicated "Impact Analysis" section): list affected components, downstream risks, and which tests validate the change
+
+**Commit format with impact analysis:**
+```
+[issue-id] type: short description
+
+Impact: touches <CommunityName> community, depends on <GodNode>
+Affected: <file1>, <file2>
+Tested by: <test-file(s)>
+```
+
+**PR template addition:**
+```markdown
+## Impact Analysis
+- **Communities touched**: [list from GRAPH_REPORT.md]
+- **God nodes affected**: [BundleWidgetFullPage / AppStateService / etc.]
+- **Downstream risk**: [what could break]
+- **Test coverage**: [which test files validate this]
+```
+
+### Keeping the Graph Current
+
+After modifying code files in this session, run:
+```bash
+python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
+```

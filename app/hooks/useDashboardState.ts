@@ -9,6 +9,7 @@
 
 import { useState, useCallback } from "react";
 import { appState as appStateService } from "../services/app.state.service";
+import { FullPageLayout } from "../constants/bundle";
 
 // ============================================
 // TYPES
@@ -37,6 +38,7 @@ export function useDashboardState() {
   const [bundleName, setBundleName] = useState("");
   const [description, setDescription] = useState("");
   const [bundleType, setBundleType] = useState<string[]>(["product_page"]);
+  const [fullPageLayout, setFullPageLayout] = useState<string>(FullPageLayout.FOOTER_BOTTOM);
 
   // Delete confirmation modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -54,6 +56,7 @@ export function useDashboardState() {
     setBundleName("");
     setDescription("");
     setBundleType(["product_page"]);
+    setFullPageLayout(FullPageLayout.FOOTER_BOTTOM);
     appStateService.closeModal('dashboard_createBundle');
   }, []);
 
@@ -84,6 +87,8 @@ export function useDashboardState() {
     setDescription,
     bundleType,
     setBundleType,
+    fullPageLayout,
+    setFullPageLayout,
 
     // Delete modal state
     deleteModalOpen,

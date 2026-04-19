@@ -67,7 +67,7 @@ import { FilePicker } from "../../../components/design-control-panel/settings/Fi
 import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import fullPageBundleStyles from "../../../styles/routes/full-page-bundle-configure.module.css";
@@ -97,7 +97,7 @@ import type { BundleStatus } from "../../../constants/bundle";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
 
   if (!bundleId) {
@@ -205,7 +205,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   try {
-    const { session, admin } = await authenticate.admin(request);
+    const { session, admin } = await requireAdminSession(request);
     const { bundleId } = params;
 
 
@@ -406,18 +406,18 @@ export default function ConfigureBundleFlow() {
 
   // Pricing tier config state (full-page bundles)
   const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
   );
   const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray((bundle as any).tierConfig) ? (bundle as any).tierConfig : []
+    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
   );
 
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
-    (bundle as any).showStepTimeline !== false  // default true; only false when explicitly saved as false
+    bundle.showStepTimeline !== false  // default true; only false when explicitly saved as false
   );
   const originalShowStepTimelineRef = useRef<boolean>(
-    (bundle as any).showStepTimeline !== false
+    bundle.showStepTimeline !== false
   );
 
   // Widget install loading state
@@ -652,7 +652,7 @@ export default function ConfigureBundleFlow() {
 
           if (installRequired && installLink) {
             shopify.toast.show(
-              "Page created! Click Save in the theme editor to activate the widget.",
+              "Page created! Activate the Wolfpack Bundle embed in Theme Settings to go live.",
               { isError: false, duration: 8000 }
             );
             window.open(installLink, '_blank');
@@ -672,6 +672,11 @@ export default function ConfigureBundleFlow() {
           // Sync bundle response
           shopify.toast.show(('message' in result ? result.message : null) || "Bundle synced successfully", { isError: false });
           revalidator.revalidate();
+          // Open embed activation link so merchant can activate (or confirm) the embed
+          const syncInstallLink = (result as any).widgetInstallationLink;
+          if (syncInstallLink) {
+            setTimeout(() => window.open(syncInstallLink, '_blank'), 800);
+          }
         } else {
           // Generic success response
           shopify.toast.show(('message' in result ? result.message : null) || "Operation completed successfully", { isError: false });
@@ -1212,7 +1217,7 @@ export default function ConfigureBundleFlow() {
     // Build theme editor deep link (used as fallback for non-page templates and on error)
     const buildThemeEditorUrl = () => {
       const appBlockId = `${apiKey}/${blockHandle}`;
-      const templateParam = template.isPage ? 'page.full-page-bundle' : template.handle;
+      const templateParam = template.isPage ? 'page' : template.handle;
       const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
       return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
     };
@@ -1354,7 +1359,6 @@ export default function ConfigureBundleFlow() {
         <SaveBar
           id="bundle-save-bar"
           open={isDirty}
-          discardConfirmation={true}
         >
           <button
             type="submit"
@@ -1512,114 +1516,6 @@ export default function ConfigureBundleFlow() {
                 </Card>
               )}
 
-              {/* Layout Selection - For full-page bundles */}
-              {bundle.bundleType === 'full_page' && (
-                <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">Page Layout</Text>
-                    <Text variant="bodySm" as="p" tone="subdued">
-                      Choose where the bundle summary and navigation appears
-                    </Text>
-                    <BlockStack gap="400">
-                      {/* Footer Bottom Option */}
-                      <div
-                        onClick={() => formState.setFullPageLayout("footer_bottom")}
-                        style={{
-                          border: formState.fullPageLayout === "footer_bottom"
-                            ? "2px solid var(--p-color-border-interactive)"
-                            : "1px solid var(--p-color-border-secondary)",
-                          borderRadius: "12px",
-                          padding: "20px 16px",
-                          cursor: "pointer",
-                          background: formState.fullPageLayout === "footer_bottom"
-                            ? "var(--p-color-bg-surface-selected)"
-                            : "var(--p-color-bg-surface)",
-                          transition: "border 0.15s, background 0.15s",
-                        }}
-                      >
-                        <BlockStack gap="300" inlineAlign="center">
-                          {/* SVG Illustration — Floating Footer Card */}
-                          <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
-                            {/* Product grid area */}
-                            <rect x="12" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="42" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="72" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="102" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="12" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="42" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="72" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            <rect x="102" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
-                            {/* Floating card footer — centred, with shadow/rounded corners */}
-                            <rect x="16" y="64" width="108" height="26" rx="6" fill="white" stroke="#D1D5DB" strokeWidth="1" />
-                            <rect x="16" y="63" width="108" height="2" rx="1" fill="rgba(0,0,0,0.04)" />
-                            {/* Footer content: product thumb + total + next button */}
-                            <rect x="24" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
-                            <rect x="40" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
-                            <rect x="56" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
-                            <rect x="75" y="72" width="22" height="4" rx="2" fill="#D1D5DB" />
-                            <rect x="75" y="79" width="14" height="3" rx="1.5" fill="#E5E7EB" />
-                            <rect x="104" y="69" width="14" height="14" rx="4" fill="#111111" />
-                          </svg>
-                          <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
-                            Floating cart card
-                          </Text>
-                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
-                            Floating card at the bottom centre with summary and navigation
-                          </Text>
-                        </BlockStack>
-                      </div>
-
-                      {/* Footer Side Option */}
-                      <div
-                        onClick={() => formState.setFullPageLayout("footer_side")}
-                        style={{
-                          border: formState.fullPageLayout === "footer_side"
-                            ? "2px solid var(--p-color-border-interactive)"
-                            : "1px solid var(--p-color-border-secondary)",
-                          borderRadius: "12px",
-                          padding: "20px 16px",
-                          cursor: "pointer",
-                          background: formState.fullPageLayout === "footer_side"
-                            ? "var(--p-color-bg-surface-selected)"
-                            : "var(--p-color-bg-surface)",
-                          transition: "border 0.15s, background 0.15s",
-                        }}
-                      >
-                        <BlockStack gap="300" inlineAlign="center">
-                          {/* SVG Illustration — Sidebar */}
-                          <svg width="140" height="96" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
-                            {/* Product grid area (left) */}
-                            <rect x="10" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="36" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="62" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="10" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="36" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="62" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="10" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="36" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            <rect x="62" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
-                            {/* Side panel (right) */}
-                            <rect x="90" y="1" width="49" height="94" rx="0" fill="#7C3AED" opacity="0.85" />
-                            <rect x="97" y="12" width="34" height="4" rx="2" fill="white" opacity="0.8" />
-                            <rect x="97" y="24" width="34" height="10" rx="2" fill="white" opacity="0.15" />
-                            <rect x="97" y="40" width="34" height="10" rx="2" fill="white" opacity="0.15" />
-                            <rect x="97" y="56" width="34" height="10" rx="2" fill="white" opacity="0.15" />
-                            <rect x="97" y="74" width="34" height="14" rx="3" fill="white" opacity="0.7" />
-                          </svg>
-                          <Text variant="bodyMd" as="p" fontWeight="semibold" alignment="center">
-                            Sidebar panel
-                          </Text>
-                          <Text variant="bodySm" as="p" tone="subdued" alignment="center">
-                            Side panel on the right with summary and navigation
-                          </Text>
-                        </BlockStack>
-                      </div>
-                    </BlockStack>
-                  </BlockStack>
-                </Card>
-              )}
 
             </BlockStack>
           </Layout.Section>

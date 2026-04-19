@@ -7,6 +7,7 @@
 import { isUUID } from "../../../../utils/shopify-validators";
 import { getFirstVariantId, batchGetFirstVariants } from "../../../../utils/variant-lookup.server";
 import { AppLogger } from "../../../../lib/logger";
+import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
 import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metafields";
 import type { PriceAdjustment, ComponentParentsData } from "../types";
@@ -18,14 +19,20 @@ import type { PriceAdjustment, ComponentParentsData } from "../types";
  * to track which bundles they belong to.
  */
 export async function updateComponentProductMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   bundleProductId: string,
   bundleConfig: any
 ): Promise<void> {
-  console.log("🔧 [COMPONENT_METAFIELD] Setting component_parents on component variants (Shopify Standard)");
+  AppLogger.debug("[COMPONENT_METAFIELD] Setting component_parents on component variants", {
+    component: "component-product.server",
+    bundleProductId,
+  });
 
   if (!bundleConfig.steps || bundleConfig.steps.length === 0) {
-    console.log("🔧 [COMPONENT_METAFIELD] No steps found in bundle config");
+    AppLogger.debug("[COMPONENT_METAFIELD] No steps found in bundle config — skipping", {
+      component: "component-product.server",
+      bundleProductId,
+    });
     return;
   }
 
@@ -33,12 +40,16 @@ export async function updateComponentProductMetafields(
   const bundleVariantResult = await getFirstVariantId(admin, bundleProductId);
 
   if (!bundleVariantResult.success || !bundleVariantResult.variantId) {
-    console.error(`❌ [COMPONENT_METAFIELD] Cannot update components: ${bundleVariantResult.error || 'bundle variant not found'}`);
-    return;
+    // CRITICAL: throw instead of returning undefined — callers use Promise.allSettled
+    // and rely on rejection to detect this failure. A silent return causes the
+    // "fulfilled" path to be taken even though the metafield was never written.
+    throw new Error(
+      `Cannot update component metafields: bundle variant not found for ${bundleProductId}. ` +
+      `Error: ${bundleVariantResult.error ?? "unknown"}`
+    );
   }
 
   const bundleVariantId = bundleVariantResult.variantId;
-  console.log("🔧 [COMPONENT_METAFIELD] Bundle variant ID:", bundleVariantId);
 
   // Extract component references and quantities
   const componentReferences: string[] = [];
@@ -48,6 +59,10 @@ export async function updateComponentProductMetafields(
   // Products that need a Shopify API call to discover their variants (no cached variant data)
   const productIdMap: Array<{ productId: string; stepMinQuantity: number; source: string }> = [];
 
+  // Track every product ID we've already routed (either to direct cached-variant writes
+  // or queued in productIdMap) so the collection-resolution step can skip duplicates.
+  const handledProductIds = new Set<string>();
+
   for (const step of bundleConfig.steps) {
     // Priority: StepProduct (database relation) > products array (UI config)
 
@@ -55,7 +70,10 @@ export async function updateComponentProductMetafields(
       for (const stepProduct of step.StepProduct) {
         if (!stepProduct.productId || isUUID(stepProduct.productId)) {
           if (stepProduct.productId) {
-            console.warn(`⚠️ [COMPONENT_METAFIELD] Skipping UUID product ID: ${stepProduct.productId}`);
+            AppLogger.warn("[COMPONENT_METAFIELD] Skipping UUID product ID", {
+              component: "component-product.server",
+              productId: stepProduct.productId,
+            });
           }
           continue;
         }
@@ -80,6 +98,7 @@ export async function updateComponentProductMetafields(
             source: 'StepProduct-fallback'
           });
         }
+        handledProductIds.add(stepProduct.productId);
       }
     } else if (step.products && Array.isArray(step.products) && step.products.length > 0) {
       // Fallback: Use products array from UI config (only if StepProduct is empty)
@@ -90,6 +109,61 @@ export async function updateComponentProductMetafields(
             stepMinQuantity: step.minQuantity || 1,
             source: 'products'
           });
+          handledProductIds.add(product.id);
+        }
+      }
+    }
+
+    // COLLECTION FIX: Also resolve products from any collections attached to the step.
+    // Without this, collection-only bundles (no StepProduct, no products[]) end up
+    // writing component_parents to zero variants, and cart transform's MERGE step
+    // silently skips the bundle group at checkout (no parent line, no discount).
+    // Mirrors the pattern in bundle-product.server.ts:91-146.
+    const stepCollections = Array.isArray(step.collections) ? step.collections : [];
+    if (stepCollections.length > 0) {
+      for (const collection of stepCollections) {
+        const handle = collection.handle;
+        if (!handle) continue;
+
+        try {
+          const collResponse = await admin.graphql(`
+            query getCollectionProductIds($handle: String!) {
+              collection(handle: $handle) {
+                products(first: 250) {
+                  edges {
+                    node { id }
+                  }
+                }
+              }
+            }
+          `, { variables: { handle } });
+
+          const collData = await collResponse.json();
+          const collProductEdges = collData.data?.collection?.products?.edges || [];
+
+          for (const edge of collProductEdges) {
+            const productId = edge.node?.id;
+            if (productId && !isUUID(productId) && !handledProductIds.has(productId)) {
+              productIdMap.push({
+                productId,
+                stepMinQuantity: step.minQuantity || 1,
+                source: `collection:${handle}`,
+              });
+              handledProductIds.add(productId);
+            }
+          }
+
+          AppLogger.debug("[COMPONENT_METAFIELD] Fetched products from collection", {
+            component: "component-product.server",
+            handle,
+            count: collProductEdges.length,
+          });
+        } catch (collError) {
+          AppLogger.warn("Could not fetch products from collection", {
+            component: "metafield-sync",
+            operation: "updateComponentProductMetafields",
+            handle,
+          });
         }
       }
     }
@@ -98,7 +172,10 @@ export async function updateComponentProductMetafields(
   // Batch fetch first variants only for products where no variant data was cached in the DB
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
-    console.log(`[COMPONENT_METAFIELD] Batch fetching variants for ${productIds.length} products (no DB cache)`);
+    AppLogger.debug("[COMPONENT_METAFIELD] Batch fetching variants (no DB cache)", {
+      component: "component-product.server",
+      count: productIds.length,
+    });
 
     const variantResults = await batchGetFirstVariants(admin, productIds);
 
@@ -120,8 +197,6 @@ export async function updateComponentProductMetafields(
       }
     });
   }
-
-  console.log(`🔧 [COMPONENT_METAFIELD] Found ${componentVariantIds.size} component variants to update`);
 
   // Build price_adjustment config for MERGE discount calculation
   // IMPORTANT: Always provide a fallback for method to ensure cart transform works correctly
@@ -150,11 +225,6 @@ export async function updateComponentProductMetafields(
     }
   }
 
-  console.log("🔧 [COMPONENT_METAFIELD] Price adjustment for components:", JSON.stringify(priceAdjustment));
-  console.log("🔧 [COMPONENT_METAFIELD] Pricing method:", priceAdjustment.method);
-  console.log("🔧 [COMPONENT_METAFIELD] Pricing value:", priceAdjustment.value);
-  console.log("🔧 [COMPONENT_METAFIELD] Has conditions:", !!priceAdjustment.conditions);
-
   // Create component_parents data in Shopify standard format with pricing info
   const componentParentsData: ComponentParentsData[] = [{
     id: bundleVariantId,
@@ -167,13 +237,6 @@ export async function updateComponentProductMetafields(
     price_adjustment: priceAdjustment // Include pricing for cart transform MERGE discount calculation
   }];
 
-  console.log("🔧 [COMPONENT_METAFIELD] Component parents data structure:");
-  console.log("   - Bundle variant ID:", bundleVariantId);
-  console.log("   - Component references:", componentReferences.length);
-  console.log("   - Component quantities:", componentQuantities);
-  console.log("   - Price adjustment:", JSON.stringify(priceAdjustment));
-  console.log("🔧 [COMPONENT_METAFIELD] Full component_parents JSON:", JSON.stringify(componentParentsData, null, 2));
-
   // Check metafield size before updating components
   const componentParentsSizeCheck = checkMetafieldSize(componentParentsData, 'component_parents', 'updateComponentProductMetafields');
 
@@ -185,8 +248,6 @@ export async function updateComponentProductMetafields(
   // Update each component variant
   for (const variantId of componentVariantIds) {
     try {
-      console.log(`🔧 [COMPONENT_METAFIELD] Updating variant: ${variantId}`);
-
       const SET_METAFIELDS = `
         mutation SetComponentMetafields($metafields: [MetafieldsSetInput!]!) {
           metafieldsSet(metafields: $metafields) {
@@ -219,14 +280,22 @@ export async function updateComponentProductMetafields(
 
       const data = await response.json();
       if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-        console.error(`🔧 [COMPONENT_METAFIELD] Error updating variant ${variantId}:`, data.data.metafieldsSet.userErrors);
-      } else {
-        console.log(`🔧 [COMPONENT_METAFIELD] Successfully updated variant ${variantId}`);
+        AppLogger.error("[COMPONENT_METAFIELD] Error updating variant", {
+          component: "component-product.server",
+          variantId,
+        }, data.data.metafieldsSet.userErrors);
       }
     } catch (error) {
-      console.error(`🔧 [COMPONENT_METAFIELD] Failed to update variant ${variantId}:`, error);
+      AppLogger.error("[COMPONENT_METAFIELD] Failed to update variant", {
+        component: "component-product.server",
+        variantId,
+      }, error);
     }
   }
 
-  console.log("🎉 [COMPONENT_METAFIELD] Finished updating component variants");
+  AppLogger.info("[COMPONENT_METAFIELD] Finished updating component variants", {
+    component: "component-product.server",
+    bundleProductId,
+    variantCount: componentVariantIds.size,
+  });
 }

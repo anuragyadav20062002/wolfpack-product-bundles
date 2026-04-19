@@ -530,11 +530,11 @@
 }
 
 .modal-step-title {
-  font-size: 0.95em;
-  font-weight: 500;
-  color: var(--modal-step-title-color, #4b5563);
+  font-size: 1.1em;
+  font-weight: 700;
+  color: var(--modal-step-title-color, var(--bundle-global-primary-text, #111827));
   text-align: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   margin-top: 8px;
   padding: 0 20px;
   line-height: 1.3;
@@ -1320,10 +1320,11 @@
 }
 
 .modal-header-discount-messaging .footer-discount-text {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
-  color: #374151;
+  color: var(--bundle-global-secondary-text, #374151);
   line-height: 1.4;
+  text-align: center;
 }
 
 .modal-header-discount-messaging .footer-discount-text .bundle-conditions-text {
@@ -1813,9 +1814,33 @@
    (Hardcoded defaults for clean design)
    ========================================== */
 
-/* Inline quantity controls default styling */
+/* Inline quantity controls — consumes DCP CSS variables */
 .inline-quantity-controls {
-  background: #5f5d5d;
+  display: flex;
+  align-items: center;
+  background: var(--bundle-quantity-selector-bg, #5f5d5d);
+  color: var(--bundle-quantity-selector-text-color, #ffffff);
+  border-radius: var(--bundle-quantity-selector-border-radius, 8px);
+  overflow: hidden;
+}
+
+.inline-qty-btn {
+  background: transparent;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+  padding: 0 10px;
+  font-size: var(--bundle-quantity-selector-font-size, 16px);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.inline-qty-display {
+  color: inherit;
+  font-size: var(--bundle-quantity-selector-font-size, 16px);
+  font-weight: 500;
+  min-width: 24px;
+  text-align: center;
 }
 
 /* Footer total section label */
@@ -2401,7 +2426,10 @@
    ============================================================ */
 
 /* ---- Overlay ---- */
+/* #bw-bs-overlay ID selector overrides Shopify Dawn's "div:empty { display:none }" rule */
+#bw-bs-overlay,
 .bw-bs-overlay {
+  display: block;
   position: fixed;
   inset: 0;
   background: rgba(30, 30, 30, var(--bundle-bottom-sheet-overlay-opacity, 0.5));
@@ -2411,7 +2439,9 @@
   z-index: 9999998;
 }
 
-.bw-bs-overlay--open {
+/* Combined ID+class selector (specificity 1-1-0) beats #bw-bs-overlay alone (1-0-0) */
+#bw-bs-overlay.bw-bs-overlay--open,
+.bw-bs-overlay.bw-bs-overlay--open {
   opacity: 1;
   pointer-events: auto;
 }
@@ -2442,11 +2472,36 @@
   }
 }
 
+/* Fix: .bundle-builder-modal classic-modal rule sets:
+     display:none; top:0; height:100vh; width:100vw;
+     align-items:center; justify-content:center; background:rgba(0,0,0,0.5)
+   All conflict with bottom-sheet layout. Double-class selectors (0-2-0)
+   beat the single-class classic rule (0-1-0) and restore correct BS panel behaviour. */
+.bw-bs-panel.bundle-builder-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  top: auto;
+  height: 0;
+  background: var(--bundle-bs-panel-bg, rgb(244, 249, 249));
+}
+
+.bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
+  height: min(var(--bundle-bottom-sheet-max-height, 880px), 96vh);
+}
+
+@media (max-width: 767px) {
+  .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
+    height: 96vh;
+  }
+}
+
 /* ---- Panel header ---- */
 .bw-bs-header {
   flex-shrink: 0;
   position: relative;
-  padding: 12px 20px 6px;
+  padding: 12px 52px 6px 20px;
 }
 
 /* ---- Close button — desktop × (absolute top-right) ---- */
@@ -2490,6 +2545,17 @@
   .bw-bs-close-mobile {
     display: block;
   }
+  /* Drag handle pill — standard mobile bottom-sheet affordance */
+  .bw-bs-panel::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
 }
 
 /* ---- Tabs container — equal-width grid ---- */
@@ -2522,30 +2588,46 @@
   display: block;
 }
 
+.bw-bs-panel .modal-step-title {
+  display: none;
+}
+
 .bw-bs-panel .bundle-header-tab.active {
+  background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  color: var(--bundle-header-tab-active-text, #ffffff);
+  border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  transform: none;
+}
+
+.bw-bs-panel .bundle-header-tab:not(.locked):not(.active):hover {
+  transform: none;
+}
+
+/* Free gift tab — uses DCP active tab colors when unlocked */
+.bw-bs-panel .bundle-header-tab.bw-free-gift-tab {
   background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
   color: var(--bundle-header-tab-active-text, #ffffff);
   border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
 }
 
-/* Free gift tab — dark navy, square-ish (not pill) */
-.bw-bs-panel .bundle-header-tab.bw-free-gift-tab {
-  background: #1e3a8a;
-  color: #ffffff;
-  border-color: #1e3a8a;
-  border-radius: 8px;
+/* Free gift tab locked — show inactive colors to indicate unavailability */
+.bw-bs-panel .bundle-header-tab.bw-free-gift-tab.locked {
+  background: var(--bundle-header-tab-inactive-bg, rgba(0, 0, 0, 0.06));
+  color: var(--bundle-header-tab-inactive-text, rgba(0, 0, 0, 0.35));
+  border-color: transparent;
+  opacity: 1;
 }
 
 .bw-bs-panel .bundle-header-tab.bw-free-gift-tab.active {
-  background: #1e3a8a;
-  color: #ffffff;
-  border-color: #1e3a8a;
+  background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  color: var(--bundle-header-tab-active-text, #ffffff);
+  border-color: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
 }
 
 .bw-bs-panel .bundle-header-tab.bw-free-gift-tab:not(.locked):hover {
   opacity: 0.85;
-  background: #1e3a8a;
-  color: #ffffff;
+  background: var(--bundle-header-tab-active-bg, var(--bundle-global-primary-button, #1e3a8a));
+  color: var(--bundle-header-tab-active-text, #ffffff);
 }
 
 /* ---- "Choose X" step title (below tabs) ---- */
@@ -2575,6 +2657,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 0 20px;
+  background: transparent;
 }
 
 .bw-bs-product-grid {
@@ -2598,14 +2681,20 @@
   }
 }
 
-/* ---- Product cards inside bottom-sheet panel — gold border for regular steps ---- */
+/* ---- Body background — transparent so footer and body share panel background ---- */
+.bw-bs-panel .modal-body {
+  background: transparent;
+}
+
+/* ---- Product cards inside bottom-sheet panel ---- */
 .bw-bs-panel .modal-body .product-card {
   border-radius: var(--bundle-product-card-border-radius, 16px);
-  border: 2px solid var(--bundle-product-card-border, rgb(255, 202, 67));
+  border: var(--bundle-product-card-border-width, 1.5px) solid var(--bundle-product-card-border-color, #e5e7eb);
   padding: 12px;
-  background: #ffffff;
-  box-shadow: rgba(0, 0, 0, 0.06) 0px 1px 3px 0px;
-  display: grid;
+  background: var(--bundle-product-card-bg, #ffffff);
+  box-shadow: var(--bundle-product-card-shadow, rgba(0, 0, 0, 0.06) 0px 1px 3px 0px);
+  display: flex;
+  flex-direction: column;
   overflow: visible;
 }
 
@@ -2635,22 +2724,22 @@
 }
 
 .bw-bs-panel .modal-body .product-card .product-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--bundle-product-title-color, var(--bundle-global-primary-button, rgb(69, 150, 227)));
+  font-size: var(--bundle-product-card-font-size, 16px);
+  font-weight: var(--bundle-product-card-font-weight, 700);
+  color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, #111827));
   margin: 8px 0 4px;
   line-height: 1.3;
 }
 
 .bw-bs-panel .modal-body .product-card .product-price {
-  font-size: 16px;
-  font-weight: 700;
-  color: #000000;
+  font-size: var(--bundle-product-final-price-font-size, 16px);
+  font-weight: var(--bundle-product-final-price-font-weight, 700);
+  color: var(--bundle-product-final-price-color, #000000);
 }
 
 .bw-bs-panel .modal-body .product-card .product-add-btn {
-  background: var(--bundle-global-primary-button, #1e3a8a);
-  color: #ffffff;
+  background: var(--bundle-button-bg, var(--bundle-global-primary-button, #1e3a8a));
+  color: var(--bundle-button-text-color, #ffffff);
   border: none;
   border-radius: 40px;
   padding: 6px 10px;
@@ -2685,10 +2774,17 @@
   justify-content: center;
 }
 
+/* Override DCP rule: .bundle-builder-modal .modal-footer { background-color: var(--bundle-footer-bg) }
+   which resolves to white. ID selector (1-1-0) beats DCP class selector (0-2-0). */
+#bundle-builder-modal .bw-bs-footer,
+#bundle-builder-modal .modal-footer {
+  background: transparent;
+}
+
 /* ---- Cart count pill (white, floats above nav pill) ---- */
 .bw-bs-cart-pill {
   position: absolute;
-  bottom: 56px;
+  bottom: 44px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -2710,9 +2806,16 @@
   align-items: center;
   background: var(--bundle-global-primary-button, rgb(30, 58, 138));
   border-radius: 50px;
-  padding: 14px 25px;
-  gap: 40px;
+  padding: 10px 22px;
+  gap: 80px;
   box-shadow: rgba(30, 58, 138, 0.35) 0px 8px 20px 0px;
+}
+
+@media (max-width: 767px) {
+  .bw-bs-nav-pill {
+    gap: 72px;
+    padding: 8px 18px;
+  }
 }
 
 .bw-bs-nav-btn {
@@ -2723,7 +2826,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2733,6 +2836,24 @@
 .bw-bs-nav-btn:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* Override DCP: .bundle-builder-modal .modal-footer .modal-nav-button.prev/next-button
+   sets padding: 12px 56px (specificity 0-3-0) — designed for full-page modal standalone
+   buttons. In the BS footer pill, buttons live inside a padded pill so need compact
+   padding. ID selector (1-2-0) beats DCP (0-3-0). */
+#bundle-builder-modal .bw-bs-nav-btn.prev-button,
+#bundle-builder-modal .bw-bs-nav-btn.next-button {
+  padding: 6px 14px;
+  border-radius: 30px;
+}
+
+@media (max-width: 767px) {
+  #bundle-builder-modal .bw-bs-nav-btn.prev-button,
+  #bundle-builder-modal .bw-bs-nav-btn.next-button {
+    padding: 5px 12px;
+    font-size: 13px;
+  }
 }
 
 /* ---- Inline slot cards (empty state in product page) ---- */
@@ -2889,10 +3010,10 @@
 
 /* Free gift modal promo heading */
 .bw-bs-free-gift-promo {
-  padding: 12px 16px 4px;
+  padding: 6px 16px 4px;
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .bw-bs-free-gift-heading {
@@ -2904,9 +3025,9 @@
 }
 
 .bw-bs-free-gift-subheading {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
-  color: #555555;
+  color: var(--bundle-global-secondary-text, #555555);
   margin: 0;
 }
 

@@ -1,5 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
+import { AppLogger } from "../../lib/logger";
 import { activateUtmPixel } from "../../services/pixel-activation.server";
 
 /**
@@ -24,7 +25,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const result = await activateUtmPixel(admin, appUrl);
     return json({ ...result, shopDomain: session.shop });
   } catch (error: unknown) {
-    console.error("[PIXEL] Activation route failed:", error);
+    AppLogger.error("[PIXEL] Activation route failed", {
+      component: "api.activate-pixel",
+      operation: "loader",
+    }, error instanceof Error ? error : new Error(String(error)));
     return json({
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

@@ -17,9 +17,10 @@ import {
   Icon,
   ChoiceList,
   Tooltip,
+  InlineGrid,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
@@ -44,7 +45,7 @@ import type { BundleActionsButtonsProps } from "./types";
 import dashboardStyles from "./dashboard.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
 
   // Get active and draft bundles for the shop (exclude archived/deleted)
   // Only select fields needed for dashboard display to avoid over-fetching
@@ -252,7 +253,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 // Action handlers have been extracted to ./app.dashboard/handlers/
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -355,6 +356,8 @@ export default function Dashboard() {
     setDescription,
     bundleType,
     setBundleType,
+    fullPageLayout,
+    setFullPageLayout,
     deleteModalOpen,
     bundleToDelete,
     openDeleteModal,
@@ -625,8 +628,102 @@ export default function Dashboard() {
                 </div>
               </BlockStack>
 
+              {/* Layout selection — shown only for Full Page bundles */}
+              {bundleType[0] === BundleType.FULL_PAGE && (
+                <BlockStack gap="200">
+                  <Text variant="headingSm" as="h4">Page Layout</Text>
+                  <InlineGrid columns={2} gap="200">
+                    {/* Floating Cart Card */}
+                    <div
+                      onClick={() => setFullPageLayout("footer_bottom")}
+                      style={{
+                        border: fullPageLayout === "footer_bottom"
+                          ? "2px solid var(--p-color-border-interactive)"
+                          : "1px solid var(--p-color-border-secondary)",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        cursor: "pointer",
+                        background: fullPageLayout === "footer_bottom"
+                          ? "var(--p-color-bg-surface-selected)"
+                          : "var(--p-color-bg-surface)",
+                        transition: "border 0.15s, background 0.15s",
+                      }}
+                    >
+                      <BlockStack gap="100" inlineAlign="center">
+                        <svg width="100" height="68" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                          <rect x="12" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="42" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="72" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="102" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="12" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="42" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="72" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="102" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
+                          <rect x="16" y="64" width="108" height="26" rx="6" fill="white" stroke="#D1D5DB" strokeWidth="1" />
+                          <rect x="16" y="63" width="108" height="2" rx="1" fill="rgba(0,0,0,0.04)" />
+                          <rect x="24" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                          <rect x="40" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                          <rect x="56" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
+                          <rect x="75" y="72" width="22" height="4" rx="2" fill="#D1D5DB" />
+                          <rect x="75" y="79" width="14" height="3" rx="1.5" fill="#E5E7EB" />
+                          <rect x="104" y="69" width="14" height="14" rx="4" fill="#111111" />
+                        </svg>
+                        <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                          Floating cart card
+                        </Text>
+                      </BlockStack>
+                    </div>
+
+                    {/* Sidebar Panel */}
+                    <div
+                      onClick={() => setFullPageLayout("footer_side")}
+                      style={{
+                        border: fullPageLayout === "footer_side"
+                          ? "2px solid var(--p-color-border-interactive)"
+                          : "1px solid var(--p-color-border-secondary)",
+                        borderRadius: "8px",
+                        padding: "8px",
+                        cursor: "pointer",
+                        background: fullPageLayout === "footer_side"
+                          ? "var(--p-color-bg-surface-selected)"
+                          : "var(--p-color-bg-surface)",
+                        transition: "border 0.15s, background 0.15s",
+                      }}
+                    >
+                      <BlockStack gap="100" inlineAlign="center">
+                        <svg width="100" height="68" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
+                          <rect x="10" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="36" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="62" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="10" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="36" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="62" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="10" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="36" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="62" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
+                          <rect x="90" y="1" width="49" height="94" rx="0" fill="#7C3AED" opacity="0.85" />
+                          <rect x="97" y="12" width="34" height="4" rx="2" fill="white" opacity="0.8" />
+                          <rect x="97" y="24" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                          <rect x="97" y="40" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                          <rect x="97" y="56" width="34" height="10" rx="2" fill="white" opacity="0.15" />
+                          <rect x="97" y="74" width="34" height="14" rx="3" fill="white" opacity="0.7" />
+                        </svg>
+                        <Text variant="bodySm" as="p" fontWeight="semibold" alignment="center">
+                          Sidebar panel
+                        </Text>
+                      </BlockStack>
+                    </div>
+                  </InlineGrid>
+                </BlockStack>
+              )}
+
               {/* Hidden input to pass bundleType to form */}
               <input type="hidden" name="bundleType" value={bundleType[0]} />
+              {bundleType[0] === BundleType.FULL_PAGE && (
+                <input type="hidden" name="fullPageLayout" value={fullPageLayout} />
+              )}
 
               <button
                 ref={submitButtonRef}
@@ -819,17 +916,53 @@ export default function Dashboard() {
                     ]}
                   />
                 ) : (
-                  <Card>
-                    <BlockStack gap="200">
-                      <Text variant="headingSm" as="h3">Cart Property Display Fix</Text>
-                      <Text variant="bodySm" tone="subdued" as="p">
-                        Some themes show internal bundle properties on the cart page. Here&apos;s a one-line Liquid fix.
-                      </Text>
-                    </BlockStack>
-                    <div style={{ marginTop: 16 }}>
-                      <CartPropertyFixContent />
-                    </div>
-                  </Card>
+                  <BundleSetupInstructions
+                    title="Bundle Setup Steps"
+                    subtitle="Follow these steps to get your bundle live on your store"
+                    bundlesExist={true}
+                    steps={[
+                      {
+                        id: "create_bundle",
+                        title: 'Click "Create Bundle"',
+                        description: "Click the \"Create\" button to start making your bundle.",
+                        isClickable: true,
+                        onClick: handleCreateBundle,
+                      },
+                      {
+                        id: "name_description",
+                        title: "Enter bundle name and description",
+                        description: "Type a clear name and an optional description for your bundle.",
+                        onClick: () => {},
+                      },
+                      {
+                        id: "create_bundle_modal",
+                        title: 'Click "Bundle Settings"',
+                        description: "This will take you to your bundle set up page.",
+                        onClick: () => {},
+                      },
+                      {
+                        id: "add_steps",
+                        title: "Add bundle steps and choose products",
+                        description: "Add steps to your bundle, select products/collections you want.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                      {
+                        id: "setup_pricing",
+                        title: "Set discount rules and pricing",
+                        description: "Choose how discounts and pricing should work for your bundle.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                      {
+                        id: "publish",
+                        title: "Save and publish your bundle",
+                        description: "Save your settings to make your bundle live on your store.",
+                        isClickable: false,
+                        onClick: () => {},
+                      },
+                    ]}
+                  />
                 )}
               </div>
 

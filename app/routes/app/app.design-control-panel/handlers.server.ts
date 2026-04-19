@@ -8,155 +8,86 @@ import { json } from "@remix-run/node";
 import { prisma } from "../../../db.server";
 import { processCss } from "../../../lib/css-sanitizer";
 
-/**
- * Extract footer settings from form data
- */
-function extractFooterSettings(settings: any) {
-  return {
-    footerBgColor: settings.footerBgColor,
-    footerTotalBgColor: settings.footerTotalBgColor,
-    footerBorderRadius: settings.footerBorderRadius,
-    footerPadding: settings.footerPadding,
-    footerFinalPriceColor: settings.footerFinalPriceColor,
-    footerFinalPriceFontSize: settings.footerFinalPriceFontSize,
-    footerFinalPriceFontWeight: settings.footerFinalPriceFontWeight,
-    footerStrikePriceColor: settings.footerStrikePriceColor,
-    footerStrikeFontSize: settings.footerStrikeFontSize,
-    footerStrikeFontWeight: settings.footerStrikeFontWeight,
-    footerPriceVisibility: settings.footerPriceVisibility,
-    footerBackButtonBgColor: settings.footerBackButtonBgColor,
-    footerBackButtonTextColor: settings.footerBackButtonTextColor,
-    footerBackButtonBorderColor: settings.footerBackButtonBorderColor,
-    footerBackButtonBorderRadius: settings.footerBackButtonBorderRadius,
-    footerNextButtonBgColor: settings.footerNextButtonBgColor,
-    footerNextButtonTextColor: settings.footerNextButtonTextColor,
-    footerNextButtonBorderColor: settings.footerNextButtonBorderColor,
-    footerNextButtonBorderRadius: settings.footerNextButtonBorderRadius,
-    footerDiscountTextVisibility: settings.footerDiscountTextVisibility,
-  };
+// ─── Utility ─────────────────────────────────────────────────────────────────
+
+function pick(source: Record<string, unknown>, keys: readonly string[]): Record<string, unknown> {
+  return Object.fromEntries(keys.map(k => [k, source[k]]));
 }
 
-/**
- * Extract step bar settings from form data
- */
-function extractStepBarSettings(settings: any) {
-  return {
-    stepNameFontColor: settings.stepNameFontColor,
-    stepNameFontSize: settings.stepNameFontSize,
-    completedStepCheckMarkColor: settings.completedStepCheckMarkColor,
-    completedStepBgColor: settings.completedStepBgColor,
-    completedStepCircleBorderColor: settings.completedStepCircleBorderColor,
-    completedStepCircleBorderRadius: settings.completedStepCircleBorderRadius,
-    incompleteStepBgColor: settings.incompleteStepBgColor,
-    incompleteStepCircleStrokeColor: settings.incompleteStepCircleStrokeColor,
-    incompleteStepCircleStrokeRadius: settings.incompleteStepCircleStrokeRadius,
-    stepBarProgressFilledColor: settings.stepBarProgressFilledColor,
-    stepBarProgressEmptyColor: settings.stepBarProgressEmptyColor,
-    tabsActiveBgColor: settings.tabsActiveBgColor,
-    tabsActiveTextColor: settings.tabsActiveTextColor,
-    tabsInactiveBgColor: settings.tabsInactiveBgColor,
-    tabsInactiveTextColor: settings.tabsInactiveTextColor,
-    tabsBorderColor: settings.tabsBorderColor,
-    tabsBorderRadius: settings.tabsBorderRadius,
-  };
-}
+// ─── Grouped JSON-column key lists ───────────────────────────────────────────
+// Each list defines exactly which keys belong to the corresponding JSON column
+// in DesignSettings. Adding a new field = add it here and nowhere else.
 
-/**
- * Extract global colors settings from form data
- */
-function extractGlobalColorsSettings(settings: any) {
-  return {
-    globalPrimaryButtonColor: settings.globalPrimaryButtonColor,
-    globalButtonTextColor: settings.globalButtonTextColor,
-    globalPrimaryTextColor: settings.globalPrimaryTextColor,
-    globalSecondaryTextColor: settings.globalSecondaryTextColor,
-    globalFooterBgColor: settings.globalFooterBgColor,
-    globalFooterTextColor: settings.globalFooterTextColor,
-  };
-}
+const FOOTER_KEYS = [
+  "footerBgColor", "footerTotalBgColor", "footerBorderRadius", "footerPadding",
+  "footerFinalPriceColor", "footerFinalPriceFontSize", "footerFinalPriceFontWeight",
+  "footerStrikePriceColor", "footerStrikeFontSize", "footerStrikeFontWeight",
+  "footerPriceVisibility", "footerBackButtonBgColor", "footerBackButtonTextColor",
+  "footerBackButtonBorderColor", "footerBackButtonBorderRadius",
+  "footerNextButtonBgColor", "footerNextButtonTextColor",
+  "footerNextButtonBorderColor", "footerNextButtonBorderRadius",
+  "footerDiscountTextVisibility",
+] as const;
 
-/**
- * Extract general settings from form data
- */
-function extractGeneralSettings(settings: any) {
-  return {
-    // Empty State
-    emptyStateCardBgColor: settings.emptyStateCardBgColor,
-    emptyStateCardBorderColor: settings.emptyStateCardBorderColor,
-    emptyStateTextColor: settings.emptyStateTextColor,
-    emptyStateBorderStyle: settings.emptyStateBorderStyle,
-    // Drawer
-    drawerBgColor: settings.drawerBgColor,
-    // Add to Cart Button
-    addToCartButtonBgColor: settings.addToCartButtonBgColor,
-    addToCartButtonTextColor: settings.addToCartButtonTextColor,
-    addToCartButtonBorderRadius: settings.addToCartButtonBorderRadius,
-    // Toasts
-    toastBgColor: settings.toastBgColor,
-    toastTextColor: settings.toastTextColor,
-    toastBorderRadius: settings.toastBorderRadius,
-    toastBorderColor: settings.toastBorderColor,
-    toastBorderWidth: settings.toastBorderWidth,
-    toastFontSize: settings.toastFontSize,
-    toastFontWeight: settings.toastFontWeight,
-    toastAnimationDuration: settings.toastAnimationDuration,
-    toastBoxShadow: settings.toastBoxShadow,
-    toastEnterFromBottom: settings.toastEnterFromBottom,
-    // Bundle Design
-    bundleBgColor: settings.bundleBgColor,
-    footerScrollBarColor: settings.footerScrollBarColor,
-    // Product Page Title
-    productPageTitleFontColor: settings.productPageTitleFontColor,
-    productPageTitleFontSize: settings.productPageTitleFontSize,
-    // Bundle Upsell
-    bundleUpsellButtonBgColor: settings.bundleUpsellButtonBgColor,
-    bundleUpsellBorderColor: settings.bundleUpsellBorderColor,
-    bundleUpsellTextColor: settings.bundleUpsellTextColor,
-    // Filters
-    filterIconColor: settings.filterIconColor,
-    filterBgColor: settings.filterBgColor,
-    filterTextColor: settings.filterTextColor,
-    // Header Text
-    conditionsTextColor: settings.conditionsTextColor,
-    conditionsTextFontSize: settings.conditionsTextFontSize,
-    discountTextColor: settings.discountTextColor,
-    discountTextFontSize: settings.discountTextFontSize,
-    // Free Gift Badge (Product Page)
-    freeGiftBadgeUrl: settings.freeGiftBadgeUrl,
-  };
-}
+const STEP_BAR_KEYS = [
+  "stepNameFontColor", "stepNameFontSize",
+  "completedStepCheckMarkColor", "completedStepBgColor",
+  "completedStepCircleBorderColor", "completedStepCircleBorderRadius",
+  "incompleteStepBgColor", "incompleteStepCircleStrokeColor",
+  "incompleteStepCircleStrokeRadius",
+  "stepBarProgressFilledColor", "stepBarProgressEmptyColor",
+  "tabsActiveBgColor", "tabsActiveTextColor",
+  "tabsInactiveBgColor", "tabsInactiveTextColor",
+  "tabsBorderColor", "tabsBorderRadius",
+] as const;
 
-/**
- * Extract promo banner settings from form data
- */
-function extractPromoBannerSettings(settings: any) {
-  return {
-    promoBannerEnabled: settings.promoBannerEnabled,
-    promoBannerBgColor: settings.promoBannerBgColor,
-    promoBannerTitleColor: settings.promoBannerTitleColor,
-    promoBannerTitleFontSize: settings.promoBannerTitleFontSize,
-    promoBannerTitleFontWeight: settings.promoBannerTitleFontWeight,
-    promoBannerSubtitleColor: settings.promoBannerSubtitleColor,
-    promoBannerSubtitleFontSize: settings.promoBannerSubtitleFontSize,
-    promoBannerNoteColor: settings.promoBannerNoteColor,
-    promoBannerNoteFontSize: settings.promoBannerNoteFontSize,
-    promoBannerBorderRadius: settings.promoBannerBorderRadius,
-    promoBannerPadding: settings.promoBannerPadding,
-  };
-}
+const GLOBAL_COLORS_KEYS = [
+  "globalPrimaryButtonColor", "globalButtonTextColor",
+  "globalPrimaryTextColor", "globalSecondaryTextColor",
+  "globalFooterBgColor", "globalFooterTextColor",
+] as const;
 
-/**
- * Build the settings data object for database upsert
- */
-function buildSettingsData(settings: any, groupedSettings: {
-  footerSettings: ReturnType<typeof extractFooterSettings>;
-  stepBarSettings: ReturnType<typeof extractStepBarSettings>;
-  globalColorsSettings: ReturnType<typeof extractGlobalColorsSettings>;
-  generalSettings: ReturnType<typeof extractGeneralSettings>;
-  promoBannerSettings: ReturnType<typeof extractPromoBannerSettings>;
-}) {
+const GENERAL_KEYS = [
+  // Empty State
+  "emptyStateCardBgColor", "emptyStateCardBorderColor",
+  "emptyStateTextColor", "emptyStateBorderStyle",
+  // Drawer
+  "drawerBgColor",
+  // Add to Cart Button
+  "addToCartButtonBgColor", "addToCartButtonTextColor", "addToCartButtonBorderRadius",
+  // Toasts
+  "toastBgColor", "toastTextColor", "toastBorderRadius", "toastBorderColor",
+  "toastBorderWidth", "toastFontSize", "toastFontWeight",
+  "toastAnimationDuration", "toastBoxShadow", "toastEnterFromBottom",
+  // Bundle Design
+  "bundleBgColor", "footerScrollBarColor",
+  // Product Page Title
+  "productPageTitleFontColor", "productPageTitleFontSize",
+  // Bundle Upsell
+  "bundleUpsellButtonBgColor", "bundleUpsellBorderColor", "bundleUpsellTextColor",
+  // Filters
+  "filterIconColor", "filterBgColor", "filterTextColor",
+  // Header Text
+  "conditionsTextColor", "conditionsTextFontSize",
+  "discountTextColor", "discountTextFontSize",
+  // Badges
+  "freeGiftBadgeUrl", "freeGiftBadgePosition",
+  "includedBadgeUrl", "includedBadgePosition",
+] as const;
+
+const PROMO_BANNER_KEYS = [
+  "promoBannerEnabled", "promoBannerBgColor",
+  "promoBannerTitleColor", "promoBannerTitleFontSize", "promoBannerTitleFontWeight",
+  "promoBannerSubtitleColor", "promoBannerSubtitleFontSize",
+  "promoBannerNoteColor", "promoBannerNoteFontSize",
+  "promoBannerBorderRadius", "promoBannerPadding",
+] as const;
+
+// ─── Settings builder ─────────────────────────────────────────────────────────
+
+function buildSettingsData(settings: Record<string, unknown>) {
   return {
-    customCss: settings.customCss || null,
+    customCss: (settings.customCss as string) || null,
     productCardBgColor: settings.productCardBgColor,
     productCardFontColor: settings.productCardFontColor,
     productCardFontSize: settings.productCardFontSize,
@@ -267,23 +198,30 @@ function buildSettingsData(settings: any, groupedSettings: {
     bottomSheetAnimationDuration: settings.bottomSheetAnimationDuration,
     emptySlotBorderStyle: settings.emptySlotBorderStyle,
     emptySlotBorderColor: settings.emptySlotBorderColor,
-    ...groupedSettings,
+    // JSON blob columns — built from key lists above
+    footerSettings: pick(settings, FOOTER_KEYS),
+    stepBarSettings: pick(settings, STEP_BAR_KEYS),
+    globalColorsSettings: pick(settings, GLOBAL_COLORS_KEYS),
+    generalSettings: pick(settings, GENERAL_KEYS),
+    promoBannerSettings: pick(settings, PROMO_BANNER_KEYS),
   };
 }
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
 
 /**
  * Handle saving design settings
  */
 export async function handleSaveSettings(
   shopId: string,
-  formData: { bundleType: "product_page" | "full_page"; settings: any }
+  formData: { bundleType: "product_page" | "full_page"; settings: Record<string, unknown> }
 ) {
   const { bundleType, settings } = formData;
 
   // Validate custom CSS at save time
   const cssWarnings: string[] = [];
   if (settings.customCss) {
-    const cssResult = processCss(settings.customCss);
+    const cssResult = processCss(settings.customCss as string);
     if (cssResult.warnings.length > 0) {
       cssWarnings.push(...cssResult.warnings);
     }
@@ -292,21 +230,7 @@ export async function handleSaveSettings(
     }
   }
 
-  // Extract grouped settings
-  const footerSettings = extractFooterSettings(settings);
-  const stepBarSettings = extractStepBarSettings(settings);
-  const globalColorsSettings = extractGlobalColorsSettings(settings);
-  const generalSettings = extractGeneralSettings(settings);
-  const promoBannerSettings = extractPromoBannerSettings(settings);
-
-  // Build settings data
-  const settingsData = buildSettingsData(settings, {
-    footerSettings,
-    stepBarSettings,
-    globalColorsSettings,
-    generalSettings,
-    promoBannerSettings,
-  });
+  const settingsData = buildSettingsData(settings);
 
   await prisma.designSettings.upsert({
     where: {

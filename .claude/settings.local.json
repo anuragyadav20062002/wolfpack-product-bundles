@@ -147,7 +147,9 @@
       "mcp__chrome-devtools__click",
       "mcp__chrome-devtools__navigate_page",
       "mcp__chrome-devtools__wait_for",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "mcp__chrome-devtools__list_console_messages",
+      "mcp__chrome-devtools__fill"
     ],
     "deny": []
   }

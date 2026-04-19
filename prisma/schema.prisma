@@ -361,6 +361,9 @@ model DesignSettings {
   emptySlotBorderStyle        String? @default("dashed")
   emptySlotBorderColor        String? @default("#007AFF")
   freeGiftBadgeUrl            String? @default("")
+  freeGiftBadgePosition       String? @default("top-left")
+  includedBadgeUrl            String? @default("")
+  includedBadgePosition       String? @default("top-left")
 
   // Advanced Settings - Custom CSS
   customCss                   String?

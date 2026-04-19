@@ -66,7 +66,7 @@ import {
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
-import { authenticate } from "../../../shopify.server";
+import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
@@ -101,7 +101,7 @@ declare global {
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
 
   if (!bundleId) {
@@ -197,7 +197,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   try {
-    const { session, admin } = await authenticate.admin(request);
+    const { session, admin } = await requireAdminSession(request);
     const { bundleId } = params;
 
 
@@ -446,8 +446,6 @@ export default function ConfigureBundleFlow() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
   // Add to Storefront install state
-  const installFetcher = useFetcher<{ success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string }>();
-  const isInstallingWidget = installFetcher.state !== 'idle';
   // Treat as already installed if bundle already has a Shopify product (saved at least once)
   const [widgetInstalled, setWidgetInstalled] = useState(!!bundle.shopifyProductId);
 
@@ -632,47 +630,14 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
-  // Handle install widget response — on success, open the Theme Editor on the correct product
-  useEffect(() => {
-    if (installFetcher.data && installFetcher.state === 'idle') {
-      const result = installFetcher.data;
-      if (result.success) {
-        setWidgetInstalled(true);
-        shopify.toast.show(
-          result.templateAlreadyExists
-            ? "Widget already on your theme. Opening Theme Editor…"
-            : "Widget installed! Opening Theme Editor on your product…",
-          { isError: false }
-        );
-        // Open Theme Editor with the bundle product as the preview and the
-        // product-page-bundle template active so the merchant immediately sees
-        // where the widget is placed.
-        // shopifyProductHandle is the actual PDP product; bundleProduct.handle is the synthetic
-        // bundle product for ads/checkout — prefer the PDP handle for the theme editor URL.
-        const productHandle = bundle.shopifyProductHandle;
-        if (productHandle) {
-          const previewPath = encodeURIComponent(`/products/${productHandle}`);
-          const themeEditorUrl = `https://${shop}/admin/themes/current/editor?previewPath=${previewPath}&template=product.product-page-bundle`;
-          open(themeEditorUrl, '_blank');
-        }
-      } else {
-        shopify.toast.show(result.error || "Install failed — opening Theme Editor instead.", { isError: true, duration: 5000 });
-        // Fallback: open Theme Editor without a specific template so the merchant
-        // can place the block manually
-        const productHandle = bundle.shopifyProductHandle;
-        const previewPath = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
-        open(`https://${shop}/admin/themes/current/editor?template=product${previewPath}`, '_blank');
-      }
-    }
-  }, [installFetcher.data, installFetcher.state, bundleProduct, bundle.shopifyProductHandle, shop]);
-
   const handleAddToStorefront = useCallback(() => {
-    const productHandle = bundle.shopifyProductHandle;
-    installFetcher.submit(
-      JSON.stringify({ productHandle, bundleId: bundle.id }),
-      { method: 'POST', action: '/api/install-pdp-widget', encType: 'application/json' }
+    const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-product-page-embed`;
+    open(embedLink, '_blank');
+    shopify.toast.show(
+      "Activate the Wolfpack Bundle embed in Theme Settings to go live.",
+      { isError: false, duration: 8000 }
     );
-  }, [bundle.id, bundle.shopifyProductHandle, bundleProduct?.handle, installFetcher]);
+  }, [shop, apiKey, shopify]);
 
   // Discard handler - resets hook state and local gif state
   const handleDiscard = useCallback(() => {
@@ -1245,11 +1210,10 @@ export default function ConfigureBundleFlow() {
         onAction: handleBackClick,
       }}
       primaryAction={{
-        content: isInstallingWidget ? "Installing…" : widgetInstalled ? "Preview Bundle" : "Add to Storefront",
+        content: widgetInstalled ? "Preview Bundle" : "Add to Storefront",
         onAction: widgetInstalled ? handlePreviewBundle : handleAddToStorefront,
         icon: widgetInstalled ? ViewIcon : ExternalIcon,
-        loading: isInstallingWidget,
-        disabled: !bundleProduct || stepsState.steps.length === 0 || isInstallingWidget || (!widgetInstalled && isDirty),
+        disabled: !bundleProduct || stepsState.steps.length === 0 || (!widgetInstalled && isDirty),
       }}
       secondaryActions={[
         {
@@ -1262,7 +1226,7 @@ export default function ConfigureBundleFlow() {
             // Using addAppBlockId on an already-installed block causes Shopify to change the
             // previewPath to the first product with that templateSuffix (which may not be this bundle's product).
             const themeEditorUrl = widgetInstalled
-              ? `https://${shop}/admin/themes/current/editor?template=product.product-page-bundle${previewParam}`
+              ? `https://${shop}/admin/themes/current/editor?template=product${previewParam}`
               : `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
             window.open(themeEditorUrl, '_blank');
           },
@@ -1298,7 +1262,6 @@ export default function ConfigureBundleFlow() {
         <SaveBar
           id="bundle-save-bar"
           open={isDirty}
-          discardConfirmation={true}
         >
           <button
             type="submit"

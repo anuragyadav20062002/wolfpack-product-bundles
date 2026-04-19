@@ -19,7 +19,7 @@ import {
   Icon,
 } from "@shopify/polaris";
 import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, CheckCircleIcon } from "@shopify/polaris-icons";
-import { authenticate } from "../../shopify.server";
+import { requireAdminSession } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { MetafieldCleanupService } from "../../services/metafield-cleanup.server";
@@ -95,7 +95,7 @@ async function addProductImage(admin: any, productId: string, imageUrl: string, 
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const { session } = await authenticate.admin(request);
+  const { session } = await requireAdminSession(request);
 
   // Get all bundles (exclude archived)
   const cartTransformBundles = await db.bundle.findMany({
@@ -128,7 +128,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const { session, admin } = await authenticate.admin(request);
+  const { session, admin } = await requireAdminSession(request);
   const shop = session.shop;
 
   const formData = await request.formData();
@@ -201,7 +201,7 @@ export async function action({ request }: ActionFunctionArgs) {
             productType: "Bundle",
             vendor: "Bundle Builder",
             status: "DRAFT",
-            tags: ["bundle", "cart-transform"],
+            tags: ["WP-Bundles"],
             variants: [
               {
                 price: bundlePrice,
@@ -413,7 +413,7 @@ export async function action({ request }: ActionFunctionArgs) {
       productType: "Bundle",
       vendor: "Bundle Builder",
       status: "ACTIVE",
-      tags: ["bundle", "cart-transform"],
+      tags: ["WP-Bundles"],
     };
 
     // Prepare media input if app URL is configured

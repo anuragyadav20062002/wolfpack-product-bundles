@@ -1123,7 +1123,7 @@ class BundleWidgetFullPage {
         const isFreeGiftItem = item.isFreeGift === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">$0.00</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+          ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
         row.innerHTML = `
@@ -1199,7 +1199,7 @@ class BundleWidgetFullPage {
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
     const canProceed = this.canProceedToNextStep();
     const conditionless = this.bundleHasNoConditions();
-    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
@@ -1262,11 +1262,13 @@ class BundleWidgetFullPage {
       tab.dataset.stepIndex = index;
 
       // Determine step state
+      const isDefaultStep = step.isDefault === true;
       const isCompleted = this.isStepCompleted(index);
       const isCurrent = index === this.currentStepIndex;
       const isAccessible = this.isStepAccessible(index);
 
-      if (isCompleted) tab.classList.add('completed');
+      if (isDefaultStep) tab.classList.add('step-tab--included');
+      if (isCompleted && !isDefaultStep) tab.classList.add('completed');
       if (isCurrent) tab.classList.add('active');
       if (!isAccessible) tab.classList.add('locked');
 
@@ -1282,7 +1284,25 @@ class BundleWidgetFullPage {
       // Tab content structure
       let tabContent = '';
 
-      if (hasSelections) {
+      // Default (included) step — always shown as locked with "Included" label
+      if (isDefaultStep) {
+        const productImages = hasSelections ? this.getStepProductImages(index) : [];
+        const imagesHtml = productImages.slice(0, 3).map(img =>
+          `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
+        ).join('');
+        tabContent = `
+          ${imagesHtml ? `<div class="tab-images">${imagesHtml}</div>` : `<div class="tab-number">${index + 1}</div>`}
+          <div class="tab-info">
+            <span class="tab-name">${escapedName}</span>
+            <span class="tab-count tab-count--included">Included</span>
+          </div>
+          <div class="tab-lock tab-lock--included">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
+            </svg>
+          </div>
+        `;
+      } else if (hasSelections) {
         // Show product images if available
         const productImages = this.getStepProductImages(index);
         if (productImages.length > 0) {
@@ -1957,8 +1977,35 @@ class BundleWidgetFullPage {
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
-    // Free gift step: add "Free" badge and override price display to $0.00
+    // Default (included) step: add "Included" badge and disable interaction controls
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
+    if (currentStepData?.isDefault) {
+      cardElement.classList.add('fpb-card--default-included');
+      const imgEl = cardElement.querySelector('.product-image, .product-img, img');
+      if (imgEl && imgEl.parentElement) {
+        imgEl.parentElement.classList.add('fpb-card-image-wrapper');
+        const badge = document.createElement('span');
+        badge.className = 'fpb-included-badge';
+        const _includedBadgeUrl = (() => {
+          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-included-badge-url').trim();
+          if (!v || v === 'none') return null;
+          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+          return m ? m[1] : null;
+        })();
+        if (_includedBadgeUrl) {
+          const img = document.createElement('img');
+          img.src = _includedBadgeUrl;
+          img.alt = 'Included';
+          img.className = 'fpb-included-badge-img';
+          badge.appendChild(img);
+        } else {
+          badge.textContent = 'Included';
+        }
+        imgEl.parentElement.appendChild(badge);
+      }
+    }
+
+    // Free gift step: add "Free" badge and override price display to $0.00
     if (currentStepData?.isFreeGift) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
@@ -1985,7 +2032,8 @@ class BundleWidgetFullPage {
       const priceEl = cardElement.querySelector('.product-price, .price');
       if (priceEl) {
         const originalPriceText = priceEl.textContent;
-        priceEl.innerHTML = `$0.00 <span class="side-panel-product-original-price">${originalPriceText}</span>`;
+        const _ci = CurrencyManager.getCurrencyInfo();
+        priceEl.innerHTML = `${CurrencyManager.convertAndFormat(0, _ci)} <span class="side-panel-product-original-price">${originalPriceText}</span>`;
       }
     }
 
@@ -1997,6 +2045,9 @@ class BundleWidgetFullPage {
 
   // Attach event listeners to product card
   attachProductCardListeners(cardElement, product, stepIndex) {
+    // Default steps are read-only — no add/remove/quantity interaction allowed
+    if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
+
     const productId = product.variantId || product.id;
 
     // Quantity controls (both old-style and inline-style buttons)
@@ -2133,8 +2184,9 @@ class BundleWidgetFullPage {
       );
     }
 
-    // Total required quantity across all steps
+    // Total required quantity across paid steps only (free gift and default steps are non-blocking)
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
+      if (step.isFreeGift || step.isDefault) return sum;
       return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
     }, 0);
 
@@ -2254,8 +2306,13 @@ class BundleWidgetFullPage {
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
+    const hasConditions = !this.bundleHasNoConditions();
+    const totalSelected = allSelectedProducts.length;
+    const toggleText = hasConditions
+      ? `${totalQuantity}/${totalRequired} Steps`
+      : `${totalSelected} Product${totalSelected !== 1 ? 's' : ''}`;
     toggleBtn.innerHTML = `
-      <span class="footer-toggle-text">${totalQuantity}/${totalRequired} Products</span>
+      <span class="footer-toggle-text">${toggleText}</span>
       <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M5 8l5 5 5-5"/>
       </svg>
@@ -2292,7 +2349,7 @@ class BundleWidgetFullPage {
     ctaBtn.className = 'footer-cta-btn';
     ctaBtn.setAttribute('type', 'button');
     const conditionless = this.bundleHasNoConditions();
-    const hasSelection = conditionless && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
     ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
     if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
@@ -2684,9 +2741,10 @@ class BundleWidgetFullPage {
       );
       if (product) {
         if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-        // Store quantity as a number (1) so every consumer that reads selectedProducts
-        // with `if (quantity > 0)` correctly includes the default product.
-        this.selectedProducts[stepIndex][step.defaultVariantId] = 1;
+        // Normalize to numeric ID (strips GID prefix) so the key matches the variantId
+        // produced by processProductsForStep() via extractId().
+        const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
+        this.selectedProducts[stepIndex][normalizedId] = 1;
       }
     });
   }
@@ -3118,21 +3176,40 @@ class BundleWidgetFullPage {
 
     let allProducts = [];
 
-    // Process explicit products - fetch using Storefront API via our backend.
-    // Skip if StepProduct has enriched data: the API response derives step.products
-    // from step.StepProduct, so both arrays contain the same products. Fetching
-    // step.products when enriched StepProduct is already present wastes 1 API call per step.
+    // Process explicit products.
+    // When loaded from metafield cache (data-bundle-config), step.products already contains
+    // full enriched data (images, variants, prices) — use directly, no API call needed.
+    // When loaded from the API response, step.StepProduct carries the enriched data and
+    // step.products only has stubs, so skip the fetch to avoid a duplicate call.
     const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
       && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
-    if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
+    const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+      && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+
+    if (stepProductsAlreadyEnriched) {
+      // Metafield cache path: products have full data, use them directly.
+      // Prices in metafield are stored as cents (e.g. 82900 = ₹829.00).
+      // processProductsForStep multiplies by 100 assuming decimal input, so
+      // divide by 100 here to normalise before that multiplication.
+      const normalizedProducts = step.products.map(p => ({
+        ...p,
+        price: (p.price || 0) / 100,
+        compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : null,
+        variants: p.variants?.map(v => ({
+          ...v,
+          price: (v.price || 0) / 100,
+          compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : null,
+        }))
+      }));
+      allProducts = allProducts.concat(normalizedProducts);
+    } else if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
       const productIds = step.products.map(p => p.id); // Keep full GID format
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
       const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
-
 
       // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
       const country = window.Shopify?.country
@@ -3152,7 +3229,6 @@ class BundleWidgetFullPage {
 
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
-        } else {
         }
       } catch (error) {
       }
@@ -3270,21 +3346,29 @@ class BundleWidgetFullPage {
   }
 
   processProductsForStep(products, step) {
+    // Normalize per-variant inventory fields from the Storefront API proxy response.
+    // quantityAvailable is number | null (null when the inventory scope isn't granted
+    // or the variant is untracked — widget treats null as unlimited).
+    // currentlyNotInStock is true for backorder-accepting variants that are sold out.
+    const normalizeVariant = (v) => ({
+      id: this.extractId(v.id),
+      title: v.title,
+      price: parseFloat(v.price || '0') * 100,
+      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      available: v.available === true,
+      quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
+      currentlyNotInStock: v.currentlyNotInStock === true,
+      option1: v.option1 || null,
+      option2: v.option2 || null,
+      option3: v.option3 || null,
+      image: v.image || null
+    });
+
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
         // Preserve parent product reference for variant selection in modal
-        const processedVariants = (product.variants || []).map(v => ({
-          id: this.extractId(v.id),
-          title: v.title,
-          price: parseFloat(v.price || '0') * 100,
-          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-          available: v.available === true,
-          option1: v.option1 || null,
-          option2: v.option2 || null,
-          option3: v.option3 || null,
-          image: v.image || null
-        }));
+        const processedVariants = (product.variants || []).map(normalizeVariant);
 
         const processedOptions = (product.options || []).map(opt => {
           if (typeof opt === 'string') return opt;
@@ -3294,8 +3378,9 @@ class BundleWidgetFullPage {
         return product.variants
           .filter(variant => variant.available === true) // Only show available variants
           .map(variant => {
-            // Storefront API: prioritize variant image, fallback to product featured image
-            const imageUrl = variant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+            // Storefront API: prioritize variant image, fallback to product featured image.
+            // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
+            const imageUrl = variant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
 
             return {
               id: this.extractId(variant.id),
@@ -3305,6 +3390,8 @@ class BundleWidgetFullPage {
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
               available: variant.available === true,
+              quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+              currentlyNotInStock: variant.currentlyNotInStock === true,
               // Preserve parent product data for variant selection in modal
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -3323,21 +3410,12 @@ class BundleWidgetFullPage {
           return [];
         }
 
-        // Storefront API: prioritize variant image, fallback to product featured image
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || 'https://via.placeholder.com/150';
+        // Storefront API: prioritize variant image, fallback to product featured image.
+        // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
+        const imageUrl = defaultVariant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
 
         // Process variants array for variant selection in modal
-        const processedVariants = (product.variants || []).map(v => ({
-          id: this.extractId(v.id),
-          title: v.title,
-          price: parseFloat(v.price || '0') * 100,
-          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-          available: v.available === true,
-          option1: v.option1 || null,
-          option2: v.option2 || null,
-          option3: v.option3 || null,
-          image: v.image || null
-        }));
+        const processedVariants = (product.variants || []).map(normalizeVariant);
 
         // Process options array for variant selector labels
         const processedOptions = (product.options || []).map(opt => {
@@ -3353,6 +3431,8 @@ class BundleWidgetFullPage {
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           available: defaultVariant?.available === true,
+          quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
+          currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
           // Preserve variants and options for variant selection in modal
           variants: processedVariants,
           options: processedOptions,
@@ -3362,6 +3442,32 @@ class BundleWidgetFullPage {
         }];
       }
     });
+  }
+
+  /**
+   * Look up real stock for a variant in a step's product data.
+   * Returns:
+   *   - available: numeric remaining stock, or null (untracked/unlimited)
+   *   - outOfStock: true when the variant is known to be out of stock and does
+   *     not accept backorders (available === 0 and currentlyNotInStock is false)
+   *   - acceptsBackorder: true when out of stock but backorders are allowed
+   *     — in that case the UI should not clamp to zero.
+   */
+  getVariantAvailable(stepIndex, variantId) {
+    const products = this.stepProductData[stepIndex] || [];
+    const product = products.find(p => (p.variantId || p.id) === variantId);
+    if (!product) {
+      return { available: null, outOfStock: false, acceptsBackorder: false };
+    }
+
+    const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
+    const backorder = product.currentlyNotInStock === true;
+
+    // quantityAvailable === 0 AND not backorder-accepting → hard out of stock
+    if (qty === 0 && !backorder) {
+      return { available: 0, outOfStock: true, acceptsBackorder: false };
+    }
+    return { available: qty, outOfStock: false, acceptsBackorder: backorder };
   }
 
   extractId(idString) {
@@ -3455,14 +3561,29 @@ class BundleWidgetFullPage {
       const currentQuantity = selectedProducts[selectionKey] || 0;
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
+      // Per-variant stock state derived from Storefront API quantityAvailable
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
+      const atMaxStock = available !== null && currentQuantity >= available;
+      const lowStock = available !== null && available > 0 && available <= 3;
+      const increaseDisabled = outOfStock || atMaxStock;
+      const addDisabled = outOfStock;
+
+      // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
+      const stockBadge = outOfStock
+        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+        : lowStock
+          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
+          : '';
+
       return `
-        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? `
             <div class="selected-overlay">✓</div>
           ` : ''}
 
           <div class="product-image">
             <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
+            ${stockBadge}
           </div>
 
           <div class="product-content-wrapper">
@@ -3483,15 +3604,16 @@ class BundleWidgetFullPage {
               <div class="product-quantity-selector">
                 <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
                 <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
               </div>
             </div>
 
             <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
                     data-product-id="${selectionKey}"
                     data-product-handle="${product.handle || ''}"
-                    data-step-id="${step.id}">
-              ${currentQuantity > 0 ? '✓ Added to Bundle' : 'Choose Options'}
+                    data-step-id="${step.id}"
+                    ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : 'Choose Options')}
             </button>
           </div>
         </div>
@@ -3510,9 +3632,17 @@ class BundleWidgetFullPage {
     return `
       <div class="variant-selector-wrapper">
         <select class="variant-selector" data-base-product-id="${product.id}">
-          ${product.variants.map(v => `
-            <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
-          `).join('')}
+          ${product.variants.map(v => {
+            // Grey out variants that are hard out of stock. quantityAvailable === 0
+            // only disables when the variant does NOT accept backorders
+            // (currentlyNotInStock === true means "sold out but backorderable").
+            const isHardOOS = v.available !== true
+              || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
+            const label = isHardOOS ? `${v.title} — out of stock` : v.title;
+            const selected = v.id === product.variantId ? 'selected' : '';
+            const disabled = isHardOOS ? 'disabled' : '';
+            return `<option value="${v.id}" ${selected} ${disabled}>${label}</option>`;
+          }).join('')}
         </select>
       </div>
     `;
@@ -3594,11 +3724,33 @@ class BundleWidgetFullPage {
         if (product) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
-            // Move quantity from old variant to new variant
+            // Sync the new variant's stock fields onto the product so
+            // getVariantAvailable() reflects post-swap state.
+            product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
+              ? variantData.quantityAvailable
+              : null;
+            product.currentlyNotInStock = variantData.currentlyNotInStock === true;
+
+            // Move quantity from old variant to new variant, re-clamping against
+            // the new variant's quantityAvailable. If the new variant can't hold
+            // the old quantity, reduce it and surface a toast.
             const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
             if (oldQuantity > 0) {
               delete this.selectedProducts[stepIndex][product.variantId];
-              this.selectedProducts[stepIndex][newVariantId] = oldQuantity;
+
+              const newQtyAvail = product.quantityAvailable;
+              const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+              let migratedQty = oldQuantity;
+              if (newOOS) {
+                ToastManager.show('Selected variant is out of stock — selection cleared.');
+                migratedQty = 0;
+              } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+                migratedQty = newQtyAvail;
+                ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              }
+              if (migratedQty > 0) {
+                this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+              }
             }
 
             // Update product properties
@@ -3619,8 +3771,22 @@ class BundleWidgetFullPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
-    const quantity = Math.max(0, newQuantity);
+    let quantity = Math.max(0, newQuantity);
 
+    // Clamp against real per-variant stock before doing anything else.
+    // Uses quantityAvailable from the Storefront API (see getVariantAvailable).
+    // Adding 0 always allowed (that is a removal).
+    if (quantity > 0) {
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+      if (outOfStock) {
+        ToastManager.show('This item is out of stock.');
+        return;
+      }
+      if (available !== null && quantity > available) {
+        quantity = available;
+        ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      }
+    }
 
     // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
@@ -3865,6 +4031,8 @@ class BundleWidgetFullPage {
   }
 
   isStepAccessible(stepIndex) {
+    // Default steps are always accessible (read-only, pre-selected)
+    if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
     // Free gift step is only accessible when all paid steps are complete
     if (!this.canNavigateToStep(stepIndex)) return false;
     // Check if all previous steps are completed

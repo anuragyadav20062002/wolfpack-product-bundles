@@ -9,6 +9,8 @@
 
 import { isUUID } from "../../utils/shopify-validators";
 import { getFirstVariantId } from "../../utils/variant-lookup.server";
+import type { ShopifyAdmin } from "../../lib/auth-guards.server";
+import { AppLogger } from "../../lib/logger";
 
 type MetafieldError = {
   productId: string;
@@ -27,7 +29,7 @@ type ConversionResult = {
  * Returns { metafields, errors } where errors contains detailed information about failures
  */
 export async function convertBundleToStandardMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   bundle: any
 ): Promise<ConversionResult> {
   const standardMetafields: any = {};
@@ -86,25 +88,27 @@ export async function convertBundleToStandardMetafields(
       }
     }
 
-    console.log(`📊 [STANDARD_METAFIELD] Product Processing Summary:`);
-    console.log(`   Total products: ${totalProductsProcessed}`);
-    console.log(`   ✅ Successful: ${successfulProducts}`);
-    console.log(`   ❌ Failed: ${errors.length}`);
+    AppLogger.debug("[STANDARD_METAFIELD] Product processing summary", {
+      component: "standard-metafields.server",
+    }, { totalProductsProcessed, successfulProducts, failed: errors.length });
 
     if (errors.length > 0) {
-      console.error(`⚠️ [STANDARD_METAFIELD] ${errors.length} product(s) could not be processed:`);
-      errors.forEach((err, idx) => {
-        console.error(`   ${idx + 1}. "${err.title}" (ID: ${err.productId}) in ${err.step}: ${err.error}`);
-      });
+      AppLogger.warn("[STANDARD_METAFIELD] Some products could not be processed", {
+        component: "standard-metafields.server",
+      }, errors);
     }
 
     if (componentReferences.length > 0) {
       standardMetafields.componentVariants = componentReferences; // Array of variant GIDs for list.variant_reference (camelCase to match TOML)
       standardMetafields.componentQuantities = componentQuantities; // Array of integers for list.number_integer (camelCase to match TOML)
-      console.log("✅ [STANDARD_METAFIELD] Component variant references:", componentReferences);
-      console.log("✅ [STANDARD_METAFIELD] Component quantities:", componentQuantities);
+      AppLogger.debug("[STANDARD_METAFIELD] Component references built", {
+        component: "standard-metafields.server",
+      }, { variantCount: componentReferences.length, quantities: componentQuantities });
     } else if (totalProductsProcessed > 0) {
-      console.warn(`⚠️ [STANDARD_METAFIELD] No valid products found to create metafields (${totalProductsProcessed} products processed, all failed)`);
+      AppLogger.warn("[STANDARD_METAFIELD] No valid products found — all failed", {
+        component: "standard-metafields.server",
+        operation: "convertBundleToStandardMetafields",
+      }, { totalProductsProcessed });
     }
   }
 
@@ -128,12 +132,14 @@ export async function convertBundleToStandardMetafields(
  * Update standard Shopify metafields on a product
  */
 export async function updateProductStandardMetafields(
-  admin: any,
+  admin: ShopifyAdmin,
   productId: string,
-  standardMetafields: any
+  standardMetafields: Record<string, unknown>
 ) {
-  console.log("🔧 [STANDARD_METAFIELD] Setting standard Shopify metafields on product:", productId);
-  console.log("📋 [STANDARD_METAFIELD] Metafields:", standardMetafields);
+  AppLogger.debug("[STANDARD_METAFIELD] Setting standard Shopify metafields on product", {
+    component: "standard-metafields.server",
+    operation: "updateProductStandardMetafields",
+  }, { productId, metafieldKeys: Object.keys(standardMetafields) });
 
   // Metafield definitions are now managed via shopify.app.toml
   // No need to programmatically create definitions
@@ -159,12 +165,16 @@ export async function updateProductStandardMetafields(
               typeof gid === 'string' && gid.startsWith('gid://shopify/ProductVariant/')
             );
             if (validGids.length === 0) {
-              console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentVariants - no valid ProductVariant GIDs found`);
+              AppLogger.warn("[STANDARD_METAFIELD] Skipping componentVariants — no valid ProductVariant GIDs", {
+              component: "standard-metafields.server",
+            });
               return; // Skip this metafield entirely
             }
             value = JSON.stringify(validGids);
           } else {
-            console.warn(`⚠️ [STANDARD_METAFIELD] Skipping componentVariants - invalid value type`);
+            AppLogger.warn("[STANDARD_METAFIELD] Skipping componentVariants — invalid value type", {
+              component: "standard-metafields.server",
+            });
             return;
           }
           break;
@@ -199,15 +209,18 @@ export async function updateProductStandardMetafields(
   });
 
   if (metafieldsToSet.length === 0) {
-    console.log("🔧 [STANDARD_METAFIELD] No standard metafields to set");
+    AppLogger.debug("[STANDARD_METAFIELD] No standard metafields to set", {
+      component: "standard-metafields.server",
+    });
     return null;
   }
 
-  // Log what we're about to send for debugging
-  console.log("🔧 [STANDARD_METAFIELD] Setting metafields:", metafieldsToSet.map(m => ({
+  AppLogger.debug("[STANDARD_METAFIELD] Sending metafieldsSet mutation", {
+    component: "standard-metafields.server",
+  }, metafieldsToSet.map(m => ({
     key: m.key,
     type: m.type,
-    valuePreview: m.type.startsWith('list.') ? `Array[${JSON.parse(m.value).length}]` : m.value.substring(0, 50)
+    valuePreview: m.type.startsWith('list.') ? `Array[${JSON.parse(m.value).length}]` : m.value.substring(0, 50),
   })));
 
   const SET_STANDARD_METAFIELDS = `
@@ -234,19 +247,16 @@ export async function updateProductStandardMetafields(
 
   const data = await response.json();
 
-  // Only log errors, not the full response
   if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-    console.error("🔧 [STANDARD_METAFIELD] GraphQL errors:", JSON.stringify(data.data.metafieldsSet.userErrors, null, 2));
-  } else {
-    console.log("🔧 [STANDARD_METAFIELD] ✅ Successfully set", data.data?.metafieldsSet?.metafields?.length || 0, "metafields");
-  }
-
-  if (data.data?.metafieldsSet?.userErrors?.length > 0) {
-    console.error("🔧 [STANDARD_METAFIELD] User errors:", data.data.metafieldsSet.userErrors);
+    AppLogger.error("[STANDARD_METAFIELD] metafieldsSet userErrors", {
+      component: "standard-metafields.server",
+    }, data.data.metafieldsSet.userErrors);
     throw new Error(`Failed to set standard metafields: ${data.data.metafieldsSet.userErrors[0].message}`);
   }
 
-  console.log("🔧 [STANDARD_METAFIELD] Standard metafields set successfully");
+  AppLogger.debug("[STANDARD_METAFIELD] Standard metafields set successfully", {
+    component: "standard-metafields.server",
+  }, { count: data.data?.metafieldsSet?.metafields?.length ?? 0 });
   return data.data?.metafieldsSet?.metafields;
 }
 

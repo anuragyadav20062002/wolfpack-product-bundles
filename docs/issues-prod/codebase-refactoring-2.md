@@ -1,0 +1,80 @@
+# Issue: Codebase Anti-Pattern Refactoring (Batch 2)
+
+**Issue ID:** codebase-refactoring-2
+**Status:** Completed
+**Priority:** 🟡 Medium
+**Created:** 2026-04-01
+**Last Updated:** 2026-04-02 12:30
+
+## Overview
+Full codebase audit (37 files) identified 6 CRITICAL, 22 WARN, 7 INFO findings.
+Fixing in ascending order of difficulty: type fixes → console→AppLogger batch →
+silent swallow CRITICAL → cascading fallback CRITICAL → any-typing → giant functions.
+
+## Findings Summary
+- CRITICAL 1: `api.storefront-products` cascading fallback + `as any` admin object
+- CRITICAL 2–5: `console.log` emoji banners in 3 metafield operation files + storefront path
+- CRITICAL 6: `component-product.server.ts` silent `return` instead of `throw` (cart transform breaks silently)
+- WARN 7: 5 repeat extract functions in DCP handlers
+- WARN 9: `admin: any` at module boundaries across 6 service files
+- WARN 13: `loader({ request }: any)` in api.check-bundles.ts
+- WARN 19–20: `(error as Error).message` without instanceof guard
+- WARN 17: `console.warn` in auth-guards
+
+## Progress Log
+
+### 2026-04-02 12:30 - Verified all remaining checklist items already completed
+- ✅ Fixes 13, 17, 19-20, 3-5, 14, 16, 6 all verified clean in prior session
+- All 37-file audit findings now addressed — codebase-refactoring-2 fully complete
+
+### 2026-04-02 11:00 - Completed WARN 11-12: Extract helpers from giant handleSaveBundle in PPB + FPB
+- ✅ PPB: Extracted `syncBundleProductToShopify` (~66 lines) + `buildBundleBaseConfig` (~76 lines) as private helpers
+- ✅ FPB: Extracted `buildFpbBaseConfig` (~66 lines) as private helper (FPB already had syncFullPageBundleProductTemplate)
+- ✅ PPB handleSaveBundle reduced from ~475 → ~350 lines
+- ✅ FPB handleSaveBundle reduced from ~449 → ~390 lines
+- Files: `handlers/handlers.server.ts` in both PPB and FPB configure routes
+- Verified: HMR clean, 0 console errors in Chrome DevTools
+- All findings complete — refactoring session done
+
+### 2026-04-02 10:45 - Completed WARN 18: CSS endpoint 50+ || fallbacks → null-filter spread
+- ✅ Replaced 50 individual `field: designSettings.field || defaultSettings.field` lines with single `directCols` null-filter spread
+- ✅ Fixed correctness bug: `||` was discarding merchant-set values of 0/false (e.g. productCardBorderWidth: 0)
+- ✅ Removed all `(designSettings as any)` casts (8 total); now uses single `db` cast
+- Files: `app/routes/api/api.design-settings.$shopDomain.tsx`
+- Verified: DCP loads clean, HMR succeeded, 0 console errors
+- Next: WARN 11-12 — decompose giant handleSaveBundle in PPB and FPB handlers
+
+### 2026-04-02 10:30 - Completed WARN 7: DCP extract functions → pick utility
+- ✅ Replaced 5 `extract*Settings(settings: any)` functions (130+ lines) with single `pick(source, keys)` utility
+- ✅ Defined 5 typed key arrays: FOOTER_KEYS, STEP_BAR_KEYS, GLOBAL_COLORS_KEYS, GENERAL_KEYS, PROMO_BANNER_KEYS
+- ✅ `buildSettingsData` now takes `settings: Record<string, unknown>` directly
+- ✅ `handleSaveSettings` formData type updated from `{ settings: any }` to `{ settings: Record<string, unknown> }`
+- Files: `app/routes/app/app.design-control-panel/handlers.server.ts`
+- Verified: DCP page loads clean in Chrome DevTools, 0 errors
+- Next: WARN 18 — 50+ longhand `|| defaultSettings.X` fallbacks in design-settings CSS endpoint
+
+### 2026-04-01 - Starting fix batch
+
+## Files to Change
+- `app/routes/api/api.check-bundles.ts` (Finding 13)
+- `app/routes/api/api.ensure-product-template.tsx` (Finding 19)
+- `app/routes/api/api.bundle.$bundleId[.]json.tsx` (Finding 20)
+- `app/lib/auth-guards.server.ts` (Finding 17)
+- `app/services/bundles/metafield-sync/operations/bundle-product.server.ts` (Finding 3)
+- `app/services/bundles/metafield-sync/operations/component-product.server.ts` (Findings 4, 6)
+- `app/services/bundles/metafield-sync/operations/cart-transform.server.ts` (Finding 5)
+- `app/routes/api/api.storefront-products.tsx` (Findings 1, 2)
+- `app/routes/api/api.storefront-collections.tsx` (Finding 14)
+- `app/services/storefront-token.server.ts` (Finding 16)
+
+## Phases Checklist
+- [x] Fix 13: loader any → LoaderFunctionArgs (already done in prior session)
+- [x] Fix 19–20: generic catch instanceof guards (already done in prior session)
+- [x] Fix 17: console.warn → AppLogger in auth-guards (already done in prior session)
+- [x] Fix 3–5: console → AppLogger in metafield operation files (already done in prior session)
+- [x] Fix 14, 16: console → AppLogger in storefront files (already done in prior session)
+- [x] Fix 6: silent return → throw in component-product (already done in prior session)
+- [x] Fix 1: cascading fallback in storefront-products
+- [x] Fix 2: remaining console.* in storefront-products
+- [x] Fix 7: 5 repeat extract functions → pick utility in DCP handlers
+- [x] Fix 9: admin: any → ShopifyAdmin in dashboard handlers, billing, install-pdp-widget, standard-metafields, metafield-validation, metafield-sync operations

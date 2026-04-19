@@ -2,6 +2,7 @@ import { json } from "@remix-run/node";
 import { timingSafeEqual, createHash } from "node:crypto";
 import { authenticate } from "../shopify.server";
 import type { Session } from "@shopify/shopify-api";
+import { AppLogger } from "./logger";
 
 // Admin context type derived from the configured shopify instance (removeRest: true → no REST client)
 export type ShopifyAdmin = Awaited<ReturnType<typeof authenticate.admin>>["admin"];
@@ -46,9 +47,7 @@ export function requireInternalSecret(request: Request): Response | null {
 
   // Fail-closed: if env var is unset or empty, reject all requests.
   if (!secret) {
-    console.warn(
-      "[auth-guards] INTERNAL_WEBHOOK_SECRET is not set — rejecting all internal requests (fail-closed)"
-    );
+    AppLogger.warn("[auth-guards] INTERNAL_WEBHOOK_SECRET is not set — rejecting all internal requests (fail-closed)", { component: "auth-guards.server" });
     return json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -92,9 +91,7 @@ export function requireOwnerSecret(request: Request): Response | null {
   const secret = process.env.OWNER_API_SECRET;
 
   if (!secret) {
-    console.warn(
-      "[auth-guards] OWNER_API_SECRET is not set — rejecting all owner API requests (fail-closed)"
-    );
+    AppLogger.warn("[auth-guards] OWNER_API_SECRET is not set — rejecting all owner API requests (fail-closed)", { component: "auth-guards.server" });
     return json({ error: "Unauthorized" }, { status: 401 });
   }
 

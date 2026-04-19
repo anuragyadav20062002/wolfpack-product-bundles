@@ -10,7 +10,7 @@ import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
-import { WidgetInstallationService, ensureProductBundleTemplate } from "../../../../services/widget-installation.server";
+import { WidgetInstallationService } from "../../../../services/widget-installation.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -49,6 +49,122 @@ export {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
 };
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
+/** Sync bundle product status to Shopify. Non-fatal — logs errors but does not throw. */
+async function syncBundleProductToShopify(
+  admin: ShopifyAdmin,
+  shopifyProductId: string,
+  finalStatus: string,
+  bundleId: string,
+): Promise<void> {
+  const shopifyStatus = finalStatus.toUpperCase();
+  AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${shopifyProductId}`);
+
+  const UPDATE_PRODUCT_STATUS = `
+    mutation UpdateProductStatus($id: ID!, $status: ProductStatus!) {
+      productUpdate(input: {id: $id, status: $status}) {
+        product { id status }
+        userErrors { field message }
+      }
+    }
+  `;
+
+  try {
+    const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
+      variables: { id: shopifyProductId, status: shopifyStatus }
+    });
+    const responseData = await response.json() as { data: Record<string, any>; errors?: unknown[] };
+
+    if (responseData.errors?.length) {
+      AppLogger.error("[PRODUCT_SYNC] GraphQL transport error updating product status:", {
+        component: "app.bundles.product-page.configure", operation: "sync-product-status", productId: shopifyProductId,
+      }, responseData.errors);
+    } else if (responseData.data?.productUpdate?.userErrors?.length > 0) {
+      AppLogger.error("[PRODUCT_SYNC] Shopify returned errors while updating product status:", {
+        component: "app.bundles.product-page.configure", operation: "sync-product-status",
+        productId: shopifyProductId, targetStatus: shopifyStatus,
+      }, { errors: responseData.data.productUpdate.userErrors });
+    } else {
+      AppLogger.info("[PRODUCT_SYNC] Successfully synced product status to Shopify", {
+        component: "app.bundles.product-page.configure", productId: shopifyProductId,
+        requestedStatus: shopifyStatus, actualStatus: responseData.data?.productUpdate?.product?.status,
+      });
+    }
+  } catch (error) {
+    AppLogger.error("[PRODUCT_SYNC] Failed to sync product status (exception):", {
+      component: "app.bundles.product-page.configure", operation: "sync-product-status",
+      productId: shopifyProductId, targetStatus: shopifyStatus, bundleId,
+    }, error as any);
+  }
+}
+
+/** Build the base bundle configuration object passed to metafield update functions. */
+function buildBundleBaseConfig(
+  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; templateName: string | null; shopifyProductId: string | null },
+  stepsData: any[],
+  stepConditionsData: Record<string, any[]>,
+  discountData: any,
+  bundleParentVariantId: string | null,
+): Record<string, unknown> {
+  const optimizedSteps = (stepsData || []).map((step: any) => ({
+    id: step.id,
+    name: step.name || 'Step',
+    minQuantity: parseInt(step.minQuantity) || 1,
+    maxQuantity: parseInt(step.maxQuantity) || 1,
+    enabled: step.enabled !== false,
+    conditionType: stepConditionsData[step.id]?.[0]?.type || null,
+    conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
+    conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+    conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
+    conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
+    products: (step.StepProduct || []).map((product: any) => ({
+      id: product.id,
+      title: product.title || product.name || 'Product',
+      imageUrl: product.imageUrl || product.image?.url || null,
+    })),
+    collections: (step.collections || []).map((collection: any) => ({
+      id: collection.id,
+      title: collection.title || 'Collection',
+    })),
+  }));
+
+  const firstRuleId = discountData.discountRules?.[0]?.id;
+  const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+
+  return {
+    bundleId: updatedBundle.id,
+    id: updatedBundle.id,
+    name: updatedBundle.name,
+    description: updatedBundle.description,
+    status: updatedBundle.status,
+    bundleType: updatedBundle.bundleType,
+    templateName: updatedBundle.templateName,
+    steps: optimizedSteps,
+    pricing: {
+      enabled: discountData.discountEnabled,
+      method: discountData.discountType,
+      rules: (discountData.discountRules || []).map((rule: any) => ({
+        id: rule.id,
+        condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
+        discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
+      })),
+      display: { showFooter: discountData.showFooter !== false },
+      messages: {
+        progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+        qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+        showDiscountMessaging: discountData.discountMessagingEnabled || false,
+        showInCart: true,
+      },
+    },
+    bundleParentVariantId: bundleParentVariantId,
+    shopifyProductId: updatedBundle.shopifyProductId,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Handle saving bundle configuration
@@ -279,161 +395,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
 
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
-      // TEMPLATE: Ensure product.product-page-bundle.json exists in active theme (non-fatal)
-      const apiKey = process.env.SHOPIFY_API_KEY ?? '';
-      const templateResult = await ensureProductBundleTemplate(admin, session, apiKey);
-      if (!templateResult.success) {
-        AppLogger.warn('[PRODUCT_TEMPLATE] Could not ensure product bundle template (non-fatal)', {
-          component: 'app.bundles.product-page.configure',
-          bundleId,
-          error: templateResult.error,
-        });
-      }
-
-      // SYNC_PRODUCT_STATUS + TEMPLATE_SUFFIX: Sync status and apply templateSuffix in one mutation
-      try {
-        const shopifyStatus = finalStatus.toUpperCase();
-        AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' + templateSuffix to product ${updatedBundle.shopifyProductId}`);
-
-        const UPDATE_PRODUCT_STATUS = `
-          mutation UpdateProductStatus($id: ID!, $status: ProductStatus!, $templateSuffix: String!) {
-            productUpdate(input: {id: $id, status: $status, templateSuffix: $templateSuffix}) {
-              product {
-                id
-                status
-                templateSuffix
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-        const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
-          variables: {
-            id: updatedBundle.shopifyProductId,
-            status: shopifyStatus,
-            templateSuffix: 'product-page-bundle',
-          }
-        });
-
-        const responseData = await response.json() as { data: Record<string, any>; errors?: unknown[] };
-
-        // Layer 1: Transport errors
-        if (responseData.errors?.length) {
-          AppLogger.error("[PRODUCT_SYNC] GraphQL transport error updating product status:", {
-            component: "app.bundles.product-page.configure",
-            operation: "sync-product-status",
-            productId: updatedBundle.shopifyProductId,
-          }, responseData.errors);
-        }
-
-        // Layer 2: Mutation user errors
-        if (responseData.data?.productUpdate?.userErrors?.length > 0) {
-          const errors = responseData.data.productUpdate.userErrors;
-          AppLogger.error("[PRODUCT_SYNC] Shopify returned errors while updating product status:", {
-            component: "app.bundles.product-page.configure",
-            operation: "sync-product-status",
-            productId: updatedBundle.shopifyProductId,
-            targetStatus: shopifyStatus
-          }, { errors });
-        } else {
-          const actualStatus = responseData.data?.productUpdate?.product?.status;
-          AppLogger.info("[PRODUCT_SYNC] Successfully synced product status + templateSuffix to Shopify", {
-            component: "app.bundles.product-page.configure",
-            productId: updatedBundle.shopifyProductId,
-            requestedStatus: shopifyStatus,
-            actualStatus: actualStatus,
-            templateSuffix: 'product-page-bundle',
-          });
-        }
-      } catch (error) {
-        AppLogger.error("[PRODUCT_SYNC] Failed to sync product status (exception):", {
-          component: "app.bundles.product-page.configure",
-          operation: "sync-product-status",
-          productId: updatedBundle.shopifyProductId,
-          targetStatus: finalStatus.toUpperCase()
-        }, error as any);
-      }
-
-      // Create optimized configuration with only essential data for functions
-      const optimizedSteps = (stepsData || []).map((step: any) => ({
-        id: step.id,
-        name: step.name || 'Step',
-        minQuantity: parseInt(step.minQuantity) || 1,
-        maxQuantity: parseInt(step.maxQuantity) || 1,
-        enabled: step.enabled !== false,
-        conditionType: stepConditionsData[step.id]?.[0]?.type || null,
-        conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
-        conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
-        conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
-        conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
-        // Store essential product data (IDs, titles, and images)
-        products: (step.StepProduct || []).map((product: any) => ({
-          id: product.id,
-          title: product.title || product.name || 'Product',
-          imageUrl: product.imageUrl || product.image?.url || null
-        })),
-        // Only store essential collection data
-        collections: (step.collections || []).map((collection: any) => ({
-          id: collection.id,
-          title: collection.title || 'Collection'
-        }))
-      }));
+      // Sync product status to Shopify
+      await syncBundleProductToShopify(admin, updatedBundle.shopifyProductId, finalStatus, bundleId);
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
       AppLogger.debug(`[BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
 
-      const baseConfiguration = {
-        bundleId: updatedBundle.id,
-        id: updatedBundle.id, // Also include as 'id' for easier matching
-        name: updatedBundle.name,
-        description: updatedBundle.description,
-        status: updatedBundle.status,
-        bundleType: updatedBundle.bundleType,
-        templateName: updatedBundle.templateName,
-        steps: optimizedSteps,
-        pricing: {
-          enabled: discountData.discountEnabled,
-          method: discountData.discountType,
-          rules: (discountData.discountRules || []).map((rule: any) => {
-            // Use new nested structure - already standardized from form
-            return {
-              id: rule.id,
-              condition: rule.condition || {
-                type: rule.conditionType || 'quantity',
-                operator: rule.operator || 'gte',
-                value: rule.value || 0
-              },
-              discount: rule.discount || {
-                method: discountData.discountType,
-                value: rule.discountValue || rule.value || 0
-              }
-            };
-          }),
-          display: {
-            showFooter: discountData.showFooter !== false,
-          },
-          messages: (() => {
-            // Build messages from ruleMessages (per-rule messaging from admin form)
-            const firstRuleId = discountData.discountRules?.[0]?.id;
-            const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
-            return {
-              progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-              qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
-              showDiscountMessaging: discountData.discountMessagingEnabled || false,
-              showInCart: true
-            };
-          })()
-        },
-        // CRITICAL: Include bundle parent variant ID for cart transform merge operations
-        bundleParentVariantId: bundleParentVariantId,
-        shopifyProductId: updatedBundle.shopifyProductId, // Bundle product ID for querying metafield
-        updatedAt: new Date().toISOString()
-      };
+      const baseConfiguration = buildBundleBaseConfig(
+        updatedBundle, stepsData, stepConditionsData, discountData, bundleParentVariantId
+      );
 
       const configSize = JSON.stringify(baseConfiguration).length;
       AppLogger.debug("[METAFIELD] Optimized configuration size:", {}, `${configSize} chars`);
@@ -750,6 +721,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
             title
             handle
             status
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
           }
           userErrors {
             field
@@ -768,13 +746,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           vendor: "Bundle Builder",
           status: "ACTIVE",
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
-          tags: ["bundle", "cart-transform"],
-          variants: [
-            {
-              price: bundlePrice,
-              inventoryPolicy: "CONTINUE"
-            }
-          ]
+          tags: ["WP-Bundles"]
         }
       }
     });
@@ -788,10 +760,33 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
 
     productId = data.data?.productCreate?.product?.id;
 
-    // Update bundle with product ID
+    // Set price and inventory policy on the auto-created default variant
+    // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
+    const defaultVariantId = data.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+    if (defaultVariantId && productId) {
+      await admin.graphql(`
+        mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price }
+            userErrors { field message }
+          }
+        }
+      `, {
+        variables: {
+          productId,
+          variants: [{
+            id: defaultVariantId,
+            price: bundlePrice,
+            inventoryPolicy: "CONTINUE"
+          }]
+        }
+      });
+    }
+
+    // Update bundle with product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: productId }
+      data: { shopifyProductId: productId, shopifyProductHandle: `bundle-${bundleId}` }
     });
   } else {
     // Update existing bundle product price if configuration changed
@@ -961,7 +956,10 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const CREATE_PRODUCT = `
       mutation CreateBundleProduct($input: ProductInput!) {
         productCreate(input: $input) {
-          product { id title handle status }
+          product {
+            id title handle status
+            variants(first: 1) { edges { node { id } } }
+          }
           userErrors { field message }
         }
       }
@@ -976,13 +974,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
           vendor: 'Bundle Builder',
           status: 'ACTIVE',
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
-          tags: ['bundle', 'cart-transform'],
-          variants: [
-            {
-              price: bundlePrice,
-              inventoryPolicy: 'CONTINUE',
-            },
-          ],
+          tags: ['WP-Bundles'],
         },
       },
     });
@@ -995,44 +987,39 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     }
 
     const newProductId = createData.data?.productCreate?.product?.id;
+
+    // Set price and inventory policy on the auto-created default variant
+    // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
+    const defaultVariantId = createData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+    if (defaultVariantId && newProductId) {
+      await admin.graphql(`
+        mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price }
+            userErrors { field message }
+          }
+        }
+      `, {
+        variables: {
+          productId: newProductId,
+          variants: [{
+            id: defaultVariantId,
+            price: bundlePrice,
+            inventoryPolicy: 'CONTINUE'
+          }]
+        }
+      });
+    }
     if (!newProductId) {
       throw new Error('Re-created product has no ID');
     }
 
     AppLogger.info('[SYNC_BUNDLE] Shopify product re-created', { bundleId, newProductId });
 
-    // 6. Ensure product.product-page-bundle.json template + apply templateSuffix to new product (non-fatal)
-    try {
-      const apiKey = process.env.SHOPIFY_API_KEY ?? '';
-      const templateResult = await ensureProductBundleTemplate(admin, session, apiKey);
-      if (!templateResult.success) {
-        AppLogger.warn('[SYNC_BUNDLE] Could not ensure product bundle template (non-fatal)', {
-          bundleId, error: templateResult.error,
-        });
-      }
-
-      const APPLY_TEMPLATE_SUFFIX = `
-        mutation ApplyTemplateSuffix($id: ID!, $templateSuffix: String!) {
-          productUpdate(input: { id: $id, templateSuffix: $templateSuffix }) {
-            product { id templateSuffix }
-            userErrors { field message }
-          }
-        }
-      `;
-      await admin.graphql(APPLY_TEMPLATE_SUFFIX, {
-        variables: { id: newProductId, templateSuffix: 'product-page-bundle' },
-      });
-      AppLogger.info('[SYNC_BUNDLE] templateSuffix applied to re-created product', { bundleId, newProductId });
-    } catch (templateError) {
-      AppLogger.warn('[SYNC_BUNDLE] Could not apply templateSuffix to product (non-fatal)', {
-        bundleId, newProductId,
-      }, templateError as Error);
-    }
-
-    // 7. Update DB with new product ID
+    // 6. Update DB with new product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: newProductId },
+      data: { shopifyProductId: newProductId, shopifyProductHandle: `bundle-${bundleId}` },
     });
 
     // 7. Re-run metafield operations from DB-authoritative state

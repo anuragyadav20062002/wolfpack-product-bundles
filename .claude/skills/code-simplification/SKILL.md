@@ -1,6 +1,6 @@
 ---
 name: code-simplification
-description: "Spawns a dedicated code-simplification subagent that audits Remix + Shopify Prisma TypeScript code for anti-patterns and over-engineering, then produces a prioritised fix plan. Use when: (1) user asks to simplify, refactor, or clean up a file or directory; (2) a file looks overly complex, defensive, or hard to read; (3) code review surfaces structural problems. Triggers on phrases like 'simplify this', 'this is too complex', 'clean this up', 'refactor', 'too much defensive code', 'too many fallbacks'."
+description: "Spawns a dedicated code-simplification subagent that audits Remix + Shopify Prisma TypeScript code for anti-patterns and over-engineering, then produces a prioritised fix plan. Includes Shopify-specific checks (App Bridge invalid props, hardcoded CSS values, direct authenticate calls) and live verification via Chrome DevTools MCP + shopify app dev log spying. Use when: (1) user asks to simplify, refactor, or clean up a file or directory; (2) a file looks overly complex, defensive, or hard to read; (3) code review surfaces structural problems. Triggers on phrases like 'simplify this', 'this is too complex', 'clean this up', 'refactor', 'too much defensive code', 'too many fallbacks'."
 ---
 
 # Code Simplification Orchestrator
@@ -30,6 +30,8 @@ Use the Task tool with `subagent_type: "feature-dev:code-reviewer"` and the prom
 
 ```
 You are a code-simplification specialist for a Remix + Shopify + Prisma TypeScript app.
+You also have deep Shopify debugging expertise: App Bridge web components, Admin GraphQL
+error layers, dev server log patterns, and Chrome DevTools live verification.
 
 Read these two reference files FIRST before doing anything else:
 1. /Users/adityaawasthi/Developer/wolfpack-product-bundles/.claude/skills/code-simplification/references/anti-patterns.md
@@ -39,9 +41,12 @@ Then audit the following scope: {{SCOPE}}
 
 For each file in scope:
 1. Read the file
-2. Identify every violation of the anti-patterns and standards
+2. Identify every violation of the anti-patterns and standards, INCLUDING Shopify-specific
+   patterns (AP-11 APP_BRIDGE_INVALID_PROP, AP-12 HARDCODED_CSS_VALUE, AP-13 DIRECT_AUTHENTICATE)
 3. Classify each finding: CRITICAL | WARN | INFO (see reference files for criteria)
 4. Produce a before/after code snippet for CRITICAL and WARN findings
+5. For each UI-affecting fix, note what to verify in Chrome DevTools Console after applying it
+   (e.g. "Zero 'Unexpected value for attribute' errors on <ui-save-bar>")
 
 Output a structured report exactly as specified in the OUTPUT FORMAT section of SKILL.md.
 
@@ -62,6 +67,36 @@ npx eslint --max-warnings 9999 <changed-files>
 ```
 
 Then update the issue tracker per CLAUDE.md.
+
+### Step 5 — Live Verification (Shopify-specific)
+
+After applying fixes, verify on the running dev server using the Chrome DevTools MCP and server log spying:
+
+**Check dev server is alive:**
+```bash
+pgrep -la "shopify" | grep -v grep
+tail -20 /tmp/shopify-dev.log
+```
+
+**For admin UI fixes (App Bridge props, route crashes, SSR errors):**
+1. Use `mcp__chrome-devtools__navigate_page` to reload the affected admin route
+2. Use `mcp__chrome-devtools__list_console_messages` — target: 0 error-level messages
+3. Use `mcp__chrome-devtools__list_network_requests` — confirm no unexpected 4xx/5xx
+
+**For widget JS fixes (storefront-side):**
+1. Navigate to the storefront product page via `mcp__chrome-devtools__navigate_page`
+2. Use `mcp__chrome-devtools__evaluate_script` to run:
+   ```javascript
+   // Verify widget version
+   console.log(window.__BUNDLE_WIDGET_VERSION__)
+   // Inspect cart state
+   fetch('/cart.js').then(r=>r.json()).then(console.log)
+   ```
+3. Screenshot with `mcp__chrome-devtools__take_screenshot` to confirm visual fix
+
+**Known dev-environment false positives (do NOT flag as failures):**
+- `Failed to execute 'postMessage'` — App Bridge modals blocked by tunnel origin mismatch (deploy-only fix)
+- `Error in PostgreSQL connection` — only appears if Cloudflare tunnel expired; restart dev server
 
 ---
 
@@ -140,3 +175,6 @@ Full details in `references/anti-patterns.md`:
 | `GENERIC_CATCH` | Overly Broad Catch | `(error as Error).message` without type narrowing |
 | `INCONSISTENT_GQL` | Inconsistent GraphQL Error Check | Sometimes checks `errors`, sometimes `userErrors`, sometimes neither |
 | `MIXED_PROMISES` | Promise.all with Mixed Safety | Some IIFEs catch internally, others don't, masking partial failures |
+| `APP_BRIDGE_INVALID_PROP` | Invalid App Bridge Prop | Undocumented prop on `<ui-save-bar>`, `<ui-modal>` etc. — silently ignored, causes console error |
+| `HARDCODED_CSS_VALUE` | Hardcoded Colour/Size in Widget JS | Hex/RGB literal instead of reading `--bundle-*` CSS variable from DCP |
+| `DIRECT_AUTHENTICATE` | Direct `authenticate.admin()` in Route | Bypasses `requireAdminSession` auth guard — use the project-standard guard |

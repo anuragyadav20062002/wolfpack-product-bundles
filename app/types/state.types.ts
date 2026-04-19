@@ -316,6 +316,9 @@ export interface WidgetStyleSettingsType {
   emptySlotBorderStyle: string;
   emptySlotBorderColor: string;
   freeGiftBadgeUrl: string;
+  freeGiftBadgePosition: string;
+  includedBadgeUrl: string;
+  includedBadgePosition: string;
 }
 
 /**

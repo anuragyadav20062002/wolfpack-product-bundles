@@ -124,6 +124,9 @@ export interface DesignSettings {
   emptySlotBorderStyle?: 'dashed' | 'solid'; // default 'dashed'
   emptySlotBorderColor?: string;         // default = primary button color
   freeGiftBadgeUrl?: string;             // optional merchant badge PNG/SVG; falls back to built-in ribbon SVG
+  freeGiftBadgePosition?: string;        // top-left | top-right | bottom-left | bottom-right
+  includedBadgeUrl?: string;             // optional custom image for "Included" badge on default step cards
+  includedBadgePosition?: string;        // top-left | top-right | bottom-left | bottom-right
 
   // Pricing Tier Pills (Full-Page Bundles — fpb-tier-selection-1)
   tierPillActiveBgColor?: string;        // active pill background

@@ -25,9 +25,6 @@ export type {
   BundleUiPricing,
   BundleUiPricingRule,
   BundleUiMessaging,
-  OptimizedBundleConfig,
-  OptimizedStepConfig,
-  OptimizedPricingConfig,
   ComponentParentsData
 } from "./metafield-sync";
 
@@ -48,6 +45,5 @@ export {
   ensureCustomPageBundleIdDefinition,
   ensureCustomPageBundleConfigDefinition,
   updateBundleProductMetafields,
-  updateCartTransformMetafield,
   updateComponentProductMetafields
 } from "./metafield-sync";

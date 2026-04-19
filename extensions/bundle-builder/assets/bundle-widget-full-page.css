@@ -2,7 +2,7 @@
 
 .bundle-widget-full-page {
   width: 100%;
-  min-height: 100vh;
+  min-height: auto;
   background: var(--bundle-full-page-bg-color, #FFFFFF);
   margin: 0;
   padding: 0;
@@ -2306,34 +2306,6 @@
   100% { transform: rotate(360deg); }
 }
 
-body:has(.bundle-widget-full-page) header,
-body:has(.bundle-widget-full-page) footer,
-body:has(.bundle-widget-full-page) .header,
-body:has(.bundle-widget-full-page) .footer,
-body:has(.bundle-widget-full-page) .site-header,
-body:has(.bundle-widget-full-page) .site-footer,
-body:has(.bundle-widget-full-page) .shopify-section-header,
-body:has(.bundle-widget-full-page) .shopify-section-footer,
-body:has(.bundle-widget-full-page) nav:not(.bundle-widget-full-page *),
-body:has(.bundle-widget-full-page) .breadcrumb,
-body:has(.bundle-widget-full-page) .announcement-bar {
-  display: none !important;
-}
-
-body:has(.bundle-widget-full-page) {
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow-x: hidden;
-}
-
-body:has(.bundle-widget-full-page) main,
-body:has(.bundle-widget-full-page) .main-content,
-body:has(.bundle-widget-full-page) #MainContent {
-  margin: 0 !important;
-  padding: 0 !important;
-  max-width: none !important;
-  width: 100% !important;
-}
 
 @media (max-width: 768px) {
   .timeline-line {
@@ -4239,8 +4211,10 @@ body.modal-open {
 .fpb-card-image-wrapper { position: relative; }
 .fpb-free-badge {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: var(--bundle-free-gift-badge-top, 6px);
+  bottom: var(--bundle-free-gift-badge-bottom, auto);
+  left: var(--bundle-free-gift-badge-left, 6px);
+  right: var(--bundle-free-gift-badge-right, auto);
   background: var(--bundle-free-badge-bg, #FFF3CD);
   color: var(--bundle-free-badge-text, #333);
   font-size: 11px;
@@ -4252,6 +4226,52 @@ body.modal-open {
 }
 
 .fpb-free-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* ---- Default (Included) Step — Tab Styling ---- */
+.step-tab--included {
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.step-tab--included .tab-count--included {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.step-tab--included .tab-lock--included svg {
+  opacity: 1;
+  color: #059669;
+}
+
+/* ---- Default (Included) Step — Card Styling ---- */
+.fpb-card--default-included .product-add-btn,
+.fpb-card--default-included .qty-increase,
+.fpb-card--default-included .qty-decrease {
+  display: none !important;
+}
+
+.fpb-included-badge {
+  position: absolute;
+  top: var(--bundle-included-badge-top, 6px);
+  bottom: var(--bundle-included-badge-bottom, auto);
+  left: var(--bundle-included-badge-left, 6px);
+  right: var(--bundle-included-badge-right, auto);
+  background: #10B981;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.fpb-included-badge-img {
   width: 100%;
   height: 100%;
   object-fit: contain;

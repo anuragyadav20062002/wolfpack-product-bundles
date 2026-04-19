@@ -41,7 +41,6 @@ import { validateTierConfig } from "../../../../lib/tier-config-validator.server
 import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
-import { ensureProductBundleTemplate } from "../../../../services/widget-installation/widget-theme-template.server";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -54,104 +53,56 @@ export {
   handleEnsureBundleTemplates,
 };
 
-const FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX = "product-page-bundle";
 const DEFAULT_PROGRESS_MESSAGE = "Add {conditionText} to get {discountText}";
 const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
 
-async function syncFullPageBundleProductTemplate(
+// FPB products do not need a theme template — the URL redirect (/products/{handle} →
+// /pages/{pageHandle}) handles routing before the template is ever rendered.
+// We only update the Shopify product status so it stays in sync with the bundle status.
+async function syncFpbProductStatus(
   admin: ShopifyAdmin,
-  session: Session,
   productId: string,
   bundleId: string,
-  shopifyStatus?: string,
+  shopifyStatus: string,
 ) {
   try {
-    const apiKey = process.env.SHOPIFY_API_KEY ?? "";
-    const templateResult = await ensureProductBundleTemplate(admin, session, apiKey);
+    const response = await admin.graphql(`
+      mutation SyncFpbProductStatus($id: ID!, $status: ProductStatus!) {
+        productUpdate(input: { id: $id, status: $status }) {
+          product { id status }
+          userErrors { field message }
+        }
+      }
+    `, { variables: { id: productId, status: shopifyStatus } });
 
-    if (!templateResult.success) {
-      AppLogger.warn("[PRODUCT_TEMPLATE] Could not ensure product bundle template (non-fatal)", {
-        component: "app.bundles.full-page.configure",
-        bundleId,
-        productId,
-        error: templateResult.error,
-      });
-      return;
-    }
-
-    const UPDATE_PRODUCT = shopifyStatus
-      ? `
-          mutation ApplyBundleTemplate($id: ID!, $status: ProductStatus!, $templateSuffix: String!) {
-            productUpdate(input: {id: $id, status: $status, templateSuffix: $templateSuffix}) {
-              product {
-                id
-                status
-                templateSuffix
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `
-      : `
-          mutation ApplyBundleTemplate($id: ID!, $templateSuffix: String!) {
-            productUpdate(input: {id: $id, templateSuffix: $templateSuffix}) {
-              product {
-                id
-                status
-                templateSuffix
-              }
-              userErrors {
-                field
-                message
-              }
-            }
-          }
-        `;
-
-    const variables = shopifyStatus
-      ? { id: productId, status: shopifyStatus, templateSuffix: FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX }
-      : { id: productId, templateSuffix: FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX };
-
-    const response = await admin.graphql(UPDATE_PRODUCT, { variables });
     const responseData = await response.json() as { data?: Record<string, any>; errors?: unknown[] };
 
     if (responseData.errors?.length) {
-      AppLogger.error("[PRODUCT_TEMPLATE] GraphQL transport error updating product template", {
+      AppLogger.warn("[PRODUCT_SYNC] GraphQL transport error updating FPB product status", {
         component: "app.bundles.full-page.configure",
-        bundleId,
-        productId,
-        shopifyStatus: shopifyStatus ?? null,
+        bundleId, productId, shopifyStatus,
       }, responseData.errors);
       return;
     }
 
     const userErrors = responseData.data?.productUpdate?.userErrors ?? [];
     if (userErrors.length > 0) {
-      AppLogger.error("[PRODUCT_TEMPLATE] Shopify returned errors while applying product template", {
+      AppLogger.warn("[PRODUCT_SYNC] Shopify errors updating FPB product status", {
         component: "app.bundles.full-page.configure",
-        bundleId,
-        productId,
-        shopifyStatus: shopifyStatus ?? null,
+        bundleId, productId, shopifyStatus,
       }, { userErrors });
       return;
     }
 
-    AppLogger.info("[PRODUCT_TEMPLATE] Applied product template for full-page bundle", {
+    AppLogger.info("[PRODUCT_SYNC] FPB product status synced", {
       component: "app.bundles.full-page.configure",
-      bundleId,
-      productId,
-      shopifyStatus: responseData.data?.productUpdate?.product?.status ?? shopifyStatus ?? null,
-      templateSuffix: responseData.data?.productUpdate?.product?.templateSuffix ?? FULL_PAGE_PRODUCT_TEMPLATE_SUFFIX,
+      bundleId, productId,
+      status: responseData.data?.productUpdate?.product?.status ?? shopifyStatus,
     });
   } catch (error) {
-    AppLogger.warn("[PRODUCT_TEMPLATE] Failed to apply full-page product template (non-fatal)", {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to sync FPB product status (non-fatal)", {
       component: "app.bundles.full-page.configure",
-      bundleId,
-      productId,
-      shopifyStatus: shopifyStatus ?? null,
+      bundleId, productId, shopifyStatus,
     }, error as Error);
   }
 }
@@ -337,6 +288,72 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
     pricing: buildFullPageBundlePricing(bundle.pricing),
     updatedAt: new Date().toISOString(),
     ...overrides,
+  };
+}
+
+/** Build the base bundle configuration object passed to metafield update functions. */
+function buildFpbBaseConfig(
+  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null },
+  stepsData: any[],
+  stepConditionsData: Record<string, any[]>,
+  discountData: any,
+  bundleParentVariantId: string | null,
+): Record<string, unknown> {
+  const optimizedSteps = (stepsData || []).map((step: any) => ({
+    id: step.id,
+    name: step.name || 'Step',
+    minQuantity: parseInt(step.minQuantity) || 1,
+    maxQuantity: parseInt(step.maxQuantity) || 1,
+    enabled: step.enabled !== false,
+    conditionType: stepConditionsData[step.id]?.[0]?.type || null,
+    conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
+    conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+    conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
+    conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
+    products: (step.StepProduct || []).map((product: any) => ({
+      id: product.id,
+      title: product.title || product.name || 'Product',
+      imageUrl: product.imageUrl || product.image?.url || null,
+    })),
+    collections: (step.collections || []).map((collection: any) => ({
+      id: collection.id,
+      title: collection.title || 'Collection',
+    })),
+  }));
+
+  const firstRuleId = discountData.discountRules?.[0]?.id;
+  const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+
+  return {
+    bundleId: updatedBundle.id,
+    id: updatedBundle.id,
+    name: updatedBundle.name,
+    description: updatedBundle.description,
+    status: updatedBundle.status,
+    bundleType: updatedBundle.bundleType,
+    fullPageLayout: updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
+    templateName: updatedBundle.templateName,
+    steps: optimizedSteps,
+    pricing: {
+      enabled: discountData.discountEnabled,
+      method: discountData.discountType,
+      rules: (discountData.discountRules || []).map((rule: any) => ({
+        id: rule.id,
+        condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
+        discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
+      })),
+      display: { showFooter: discountData.showFooter !== false },
+      messages: {
+        progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
+        qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
+        showDiscountMessaging: discountData.discountMessagingEnabled || false,
+        showInCart: true,
+      },
+    },
+    bundleParentVariantId: bundleParentVariantId,
+    shopifyProductId: updatedBundle.shopifyProductId,
+    shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
+    updatedAt: new Date().toISOString(),
   };
 }
 
@@ -596,93 +613,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
       const shopifyStatus = finalStatus.toUpperCase();
-      AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' + templateSuffix to product ${updatedBundle.shopifyProductId}`);
-      await syncFullPageBundleProductTemplate(
-        admin,
-        session,
-        updatedBundle.shopifyProductId,
-        bundleId,
-        shopifyStatus,
-      );
-
-      // Create optimized configuration with only essential data for functions
-      const optimizedSteps = (stepsData || []).map((step: any) => ({
-        id: step.id,
-        name: step.name || 'Step',
-        minQuantity: parseInt(step.minQuantity) || 1,
-        maxQuantity: parseInt(step.maxQuantity) || 1,
-        enabled: step.enabled !== false,
-        conditionType: stepConditionsData[step.id]?.[0]?.type || null,
-        conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
-        conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
-        conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
-        conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
-        // Store essential product data (IDs, titles, and images)
-        products: (step.StepProduct || []).map((product: any) => ({
-          id: product.id,
-          title: product.title || product.name || 'Product',
-          imageUrl: product.imageUrl || product.image?.url || null
-        })),
-        // Only store essential collection data
-        collections: (step.collections || []).map((collection: any) => ({
-          id: collection.id,
-          title: collection.title || 'Collection'
-        }))
-      }));
+      AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
+      await syncFpbProductStatus(admin, updatedBundle.shopifyProductId, bundleId, shopifyStatus);
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
       AppLogger.debug(`[BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
 
-      const baseConfiguration = {
-        bundleId: updatedBundle.id,
-        id: updatedBundle.id, // Also include as 'id' for easier matching
-        name: updatedBundle.name,
-        description: updatedBundle.description,
-        status: updatedBundle.status,
-        bundleType: updatedBundle.bundleType,
-        fullPageLayout: updatedBundle.fullPageLayout || FullPageLayout.FOOTER_BOTTOM,
-        templateName: updatedBundle.templateName,
-        steps: optimizedSteps,
-        pricing: {
-          enabled: discountData.discountEnabled,
-          method: discountData.discountType,
-          rules: (discountData.discountRules || []).map((rule: any) => {
-            // Use new nested structure - already standardized from form
-            return {
-              id: rule.id,
-              condition: rule.condition || {
-                type: rule.conditionType || 'quantity',
-                operator: rule.operator || 'gte',
-                value: rule.value || 0
-              },
-              discount: rule.discount || {
-                method: discountData.discountType,
-                value: rule.discountValue || rule.value || 0
-              }
-            };
-          }),
-          display: {
-            showFooter: discountData.showFooter !== false,
-          },
-          messages: (() => {
-            // Build messages from ruleMessages (per-rule messaging from admin form)
-            const firstRuleId = discountData.discountRules?.[0]?.id;
-            const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
-            return {
-              progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-              qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
-              showDiscountMessaging: discountData.discountMessagingEnabled || false,
-              showInCart: true
-            };
-          })()
-        },
-        // CRITICAL: Include bundle parent variant ID for cart transform merge operations
-        bundleParentVariantId: bundleParentVariantId,
-        shopifyProductId: updatedBundle.shopifyProductId, // Bundle product ID for querying metafield
-        shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
-        updatedAt: new Date().toISOString()
-      };
+      const baseConfiguration = buildFpbBaseConfig(
+        updatedBundle, stepsData, stepConditionsData, discountData, bundleParentVariantId
+      );
 
       const configSize = JSON.stringify(baseConfiguration).length;
       AppLogger.debug("[METAFIELD] Optimized configuration size:", {}, `${configSize} chars (vs 12KB+ before)`);
@@ -912,8 +852,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
         });
       }
 
-      await syncFullPageBundleProductTemplate(admin, session, productId, bundleId);
-
       const bundleConfiguration = buildFullPageBundleMetafieldConfig(
         {
           ...bundle,
@@ -972,6 +910,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
             title
             handle
             status
+            variants(first: 1) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
           }
           userErrors {
             field
@@ -990,13 +935,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           vendor: "Bundle Builder",
           status: "ACTIVE",
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
-          tags: ["bundle", "cart-transform"],
-          variants: [
-            {
-              price: bundlePrice,
-              inventoryPolicy: "CONTINUE"
-            }
-          ]
+          tags: ["WP-Bundles"]
         }
       }
     });
@@ -1010,10 +949,33 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
 
     productId = data.data?.productCreate?.product?.id;
 
-    // Update bundle with product ID
+    // Set price and inventory policy on the auto-created default variant
+    // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
+    const defaultVariantId = data.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+    if (defaultVariantId && productId) {
+      await admin.graphql(`
+        mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id price }
+            userErrors { field message }
+          }
+        }
+      `, {
+        variables: {
+          productId,
+          variants: [{
+            id: defaultVariantId,
+            price: bundlePrice,
+            inventoryPolicy: "CONTINUE"
+          }]
+        }
+      });
+    }
+
+    // Update bundle with product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: productId }
+      data: { shopifyProductId: productId, shopifyProductHandle: `bundle-${bundleId}` }
     });
   } else {
     // Update existing bundle product price if configuration changed
@@ -1028,8 +990,6 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
   }
 
   if (productId) {
-    await syncFullPageBundleProductTemplate(admin, session, productId, bundleId);
-
     const bundleConfiguration = buildFullPageBundleMetafieldConfig({
       ...bundle,
       shopifyProductId: productId,
@@ -1070,40 +1030,38 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       return json({ success: false, error: 'Bundle not found' }, { status: 404 });
     }
 
-    if (!bundle.shopifyPageId) {
-      return json({
-        success: false,
-        error: 'Bundle has no Shopify page — save the bundle first to create a page',
-      }, { status: 400 });
-    }
-
-    // 2. Delete Shopify page
-    const DELETE_PAGE = `
-      mutation DeletePage($id: ID!) {
-        pageDelete(id: $id) {
-          deletedPageId
-          userErrors { field message }
+    // 2. Delete existing Shopify page (only if one exists — bundles without a page skip
+    //    straight to creation, which fixes broken/migrated records in a single sync).
+    if (bundle.shopifyPageId) {
+      const DELETE_PAGE = `
+        mutation DeletePage($id: ID!) {
+          pageDelete(id: $id) {
+            deletedPageId
+            userErrors { field message }
+          }
         }
+      `;
+
+      const deleteResponse = await admin.graphql(DELETE_PAGE, {
+        variables: { id: bundle.shopifyPageId },
+      });
+      const deleteData = await deleteResponse.json();
+
+      if (deleteData.data?.pageDelete?.userErrors?.length > 0) {
+        const err = deleteData.data.pageDelete.userErrors[0];
+        return json({ success: false, error: `Failed to delete Shopify page: ${err.message}` }, { status: 400 });
       }
-    `;
 
-    const deleteResponse = await admin.graphql(DELETE_PAGE, {
-      variables: { id: bundle.shopifyPageId },
-    });
-    const deleteData = await deleteResponse.json();
+      AppLogger.info('[SYNC_BUNDLE] Shopify page deleted', { bundleId, pageId: bundle.shopifyPageId });
 
-    if (deleteData.data?.pageDelete?.userErrors?.length > 0) {
-      const err = deleteData.data.pageDelete.userErrors[0];
-      return json({ success: false, error: `Failed to delete Shopify page: ${err.message}` }, { status: 400 });
+      // 3. Clear page reference from DB so createFullPageBundle will create a fresh page
+      await db.bundle.update({
+        where: { id: bundleId },
+        data: { shopifyPageId: null, shopifyPageHandle: null },
+      });
+    } else {
+      AppLogger.info('[SYNC_BUNDLE] No existing Shopify page — proceeding to create one', { bundleId });
     }
-
-    AppLogger.info('[SYNC_BUNDLE] Shopify page deleted', { bundleId, pageId: bundle.shopifyPageId });
-
-    // 3. Clear page reference from DB so createFullPageBundle will create a fresh page
-    await db.bundle.update({
-      where: { id: bundleId },
-      data: { shopifyPageId: null, shopifyPageHandle: null },
-    });
 
     // 4. Re-create the Shopify page via WidgetInstallationService
     const apiKey = process.env.SHOPIFY_API_KEY || '';
@@ -1130,11 +1088,81 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 5b. Write bundle config metafield on the new page (non-fatal)
     await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
 
-    // 6. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
-    const shopifyProductId = bundle.shopifyProductId;
-    if (shopifyProductId) {
-      await syncFullPageBundleProductTemplate(admin, session, shopifyProductId, bundleId);
+    // 6. Ensure a Shopify product exists — required for Cart Transform MERGE.
+    //    If the bundle was created before product auto-creation was added (or the product was
+    //    deleted), create one now and wire up the URL redirect.
+    let shopifyProductId = bundle.shopifyProductId;
+    if (!shopifyProductId) {
+      AppLogger.info('[SYNC_BUNDLE] No Shopify product — creating one for Cart Transform MERGE', { bundleId });
+      try {
+        const bundlePrice = await calculateBundlePrice(admin, bundle);
+        const createResponse = await admin.graphql(`
+          mutation CreateBundleProduct($input: ProductInput!) {
+            productCreate(input: $input) {
+              product {
+                id handle
+                variants(first: 1) { edges { node { id } } }
+              }
+              userErrors { field message }
+            }
+          }
+        `, {
+          variables: {
+            input: {
+              title: bundle.name,
+              handle: `bundle-${bundle.id}`,
+              productType: 'Bundle',
+              vendor: 'Bundle Builder',
+              status: 'ACTIVE',
+              descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
+              tags: ['WP-Bundles'],
+            },
+          },
+        });
+        const createData = await createResponse.json() as { data?: Record<string, any> };
+        const productErrors = createData.data?.productCreate?.userErrors ?? [];
+        if (productErrors.length > 0) {
+          AppLogger.error('[SYNC_BUNDLE] Failed to create Shopify product', { bundleId }, productErrors);
+        } else {
+          shopifyProductId = createData.data?.productCreate?.product?.id ?? null;
+          if (shopifyProductId) {
+            // Set price and inventory policy on the auto-created default variant
+            // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
+            const defaultVariantId = createData.data?.productCreate?.product?.variants?.edges?.[0]?.node?.id;
+            if (defaultVariantId && shopifyProductId) {
+              await admin.graphql(`
+                mutation UpdateBundleVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+                  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+                    productVariants { id price }
+                    userErrors { field message }
+                  }
+                }
+              `, {
+                variables: {
+                  productId: shopifyProductId,
+                  variants: [{
+                    id: defaultVariantId,
+                    price: bundlePrice,
+                    inventoryPolicy: 'CONTINUE'
+                  }]
+                }
+              });
+            }
+            await db.bundle.update({ where: { id: bundleId }, data: { shopifyProductId, shopifyProductHandle: `bundle-${bundleId}` } });
+            // Create URL redirect /products/{handle} → /pages/{pageHandle} (non-fatal)
+            if (result.pageHandle) {
+              createProductPageRedirect(admin, shopifyProductId, result.pageHandle).catch(() => {});
+            }
+            AppLogger.info('[SYNC_BUNDLE] Created Shopify product for bundle', { bundleId, shopifyProductId });
+          }
+        }
+      } catch (createError) {
+        AppLogger.error('[SYNC_BUNDLE] Exception creating Shopify product (non-fatal)', { bundleId }, createError as Error);
+      }
+    }
 
+    // 7. Re-run metafield operations from DB-authoritative state (if shopifyProductId exists)
+    if (shopifyProductId) {
       const bundleConfig = buildFullPageBundleMetafieldConfig({
         ...bundle,
         shopifyPageHandle: result.pageHandle,
@@ -1169,7 +1197,20 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
     syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
 
-    return json({ success: true, synced: true, message: 'Bundle synced successfully' });
+    // Return embed activation link — merchant needs to activate the bundle-full-page-embed
+    // embed block once in Theme Settings > App Embeds. After that all bundle pages work.
+    const shopDomain = session.shop.replace('.myshopify.com', '');
+    const widgetInstallationLink = apiKey
+      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`
+      : undefined;
+
+    return json({
+      success: true,
+      synced: true,
+      message: 'Bundle synced successfully',
+      widgetInstallationRequired: true,
+      widgetInstallationLink,
+    });
 
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sync failed';
@@ -1379,7 +1420,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
     if (bundle.shopifyProductId) {
       try {
-        await syncFullPageBundleProductTemplate(admin, session, bundle.shopifyProductId, bundleId);
+        await syncFpbProductStatus(admin, bundle.shopifyProductId, bundleId, 'ACTIVE');
         await updateBundleProductMetafields(
           admin,
           bundle.shopifyProductId,
@@ -1458,16 +1499,16 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
     }
 
-    // If an existing draft preview page is tracked, return its shareablePreviewUrl directly
+    // If an existing preview page is tracked, return its URL directly
     if (bundle.shopifyPreviewPageId) {
-      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId);
+      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop);
 
       if (urlResult.success) {
-        AppLogger.info("[PREVIEW_PAGE] Returning existing draft preview URL", {
+        AppLogger.info("[PREVIEW_PAGE] Returning existing preview URL", {
           bundleId,
           previewPageId: bundle.shopifyPreviewPageId,
         });
-        return json({ success: true, shareablePreviewUrl: urlResult.shareablePreviewUrl });
+        return json({ success: true, shareablePreviewUrl: urlResult.previewUrl });
       }
 
       // Page was deleted externally — clear stale refs and create a fresh draft below
@@ -1490,7 +1531,7 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       bundleId,
       `[Preview] ${bundle.name}`,
       undefined,
-      false   // isPublished: false → draft page
+      true   // isPublished: true — shareablePreviewUrl removed in API 2025-10; public URL is the preview URL
     );
 
     if (!result.success) {
@@ -1516,7 +1557,7 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       previewPageHandle: result.pageHandle,
     });
 
-    return json({ success: true, shareablePreviewUrl: result.shareablePreviewUrl });
+    return json({ success: true, shareablePreviewUrl: result.pageUrl });
 
   } catch (error) {
     AppLogger.error("[PREVIEW_PAGE] Unexpected error", {}, error as Error);

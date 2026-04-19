@@ -159,13 +159,22 @@ export async function handleScopesUpdate(
       operation: "handleScopesUpdate",
     }, { shop: shopDomain, scopes: currentScopes });
 
-    // Update all sessions for this shop with new scopes
+    // Update all sessions for this shop with new scopes.
+    //
+    // Also null the stored Storefront Access Token. Shopify delegated SATs
+    // snapshot the app's unauthenticated scopes at creation time — they do
+    // NOT pick up scope changes automatically. Nulling forces the next
+    // getStorefrontAccessToken() call to recreate the SAT with the current
+    // scope set (see app/services/storefront-token.server.ts).
     const updated = await db.session.updateMany({
       where: { shop: shopDomain },
-      data: { scope: currentScopes.toString() },
+      data: {
+        scope: currentScopes.toString(),
+        storefrontAccessToken: null,
+      },
     });
 
-    AppLogger.info("Updated session scopes", {
+    AppLogger.info("Updated session scopes and invalidated SAT", {
       component: "webhook-processor",
       operation: "handleScopesUpdate",
     }, { shop: shopDomain, sessionsUpdated: updated.count });

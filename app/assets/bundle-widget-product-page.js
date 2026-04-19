@@ -153,6 +153,9 @@ class BundleWidgetProductPage {
       // Load and validate bundle data
       await this.loadBundleData();
 
+      // loadBundleData() hides the container and returns early on non-bundle products
+      if (!this.bundleData) return;
+
       // Select appropriate bundle
       this.selectBundle();
 
@@ -269,9 +272,10 @@ class BundleWidgetProductPage {
         return; // Don't throw error, just show preview
       }
 
-      // For production/storefront: show proper error
-      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-      throw new Error(errorMsg);
+      // Not a bundle product page — silently hide the widget so storefront visitors
+      // on non-bundle products don't see an error box.
+      this.container.style.display = 'none';
+      return;
     }
 
     this.bundleData = bundleData;
@@ -280,8 +284,7 @@ class BundleWidgetProductPage {
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
 
-    // Determine widget style: 'bottom-sheet' or 'classic' (default for backward compat)
-    this.widgetStyle = this.selectedBundle?.widgetStyle ?? 'classic';
+    this.widgetStyle = 'bottom-sheet';
 
     // Update message templates from bundle pricing messages
     this.updateMessagesFromBundle();
@@ -452,10 +455,7 @@ class BundleWidgetProductPage {
   // ========================================================================
 
   setupDOMElements() {
-    // Determine which modal to use based on widget style
-    const modalEl = this.widgetStyle === 'bottom-sheet'
-      ? this.ensureBottomSheet()
-      : this.ensureModal();
+    const modalEl = this.ensureBottomSheet();
 
     // Get or create main UI elements
     this.elements = {
@@ -463,9 +463,7 @@ class BundleWidgetProductPage {
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
       modal: modalEl,
-      bsOverlay: this.widgetStyle === 'bottom-sheet'
-        ? (document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay())
-        : null
+      bsOverlay: document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay()
     };
 
     // Append elements if they were created
@@ -495,7 +493,8 @@ class BundleWidgetProductPage {
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'bundle-builder-modal';
-      panel.className = 'bw-bs-panel';
+      // bundle-builder-modal class required so DCP-injected CSS selectors apply to this panel
+      panel.className = 'bw-bs-panel bundle-builder-modal';
       panel.setAttribute('role', 'dialog');
       panel.setAttribute('aria-modal', 'true');
       panel.innerHTML = `
@@ -535,7 +534,6 @@ class BundleWidgetProductPage {
           <!-- PREV/NEXT nav pill (navy blue) -->
           <div class="bw-bs-nav-pill">
             <button class="modal-nav-button prev-button bw-bs-nav-btn" aria-label="Previous step">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               Prev
             </button>
             <button class="modal-nav-button next-button bw-bs-nav-btn" aria-label="Next step">
@@ -573,60 +571,6 @@ class BundleWidgetProductPage {
     button.textContent = 'Add Bundle to Cart';
     button.type = 'button';
     return button;
-  }
-
-  ensureModal() {
-    let modal = document.getElementById('bundle-builder-modal');
-
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'bundle-builder-modal';
-      modal.className = 'bundle-builder-modal';
-      modal.style.display = 'none';
-      modal.innerHTML = `
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-          <div class="modal-header">
-            <div class="modal-step-title"></div>
-            <div class="modal-tabs-wrapper">
-              <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
-              <div class="modal-tabs"></div>
-              <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
-            </div>
-            <div class="modal-header-discount-messaging">
-              <div class="footer-discount-text"></div>
-            </div>
-            <span class="close-button">&times;</span>
-          </div>
-          <div class="modal-body">
-            <div class="product-grid"></div>
-          </div>
-          <div class="modal-footer">
-            <!-- Cart count pill -->
-            <div class="modal-footer-cart-pill">
-              <span class="cart-badge-count">0</span>
-              <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-              </svg>
-            </div>
-            <!-- Nav pill with Back/Next -->
-            <div class="modal-footer-nav-pill">
-              <button class="modal-nav-button prev-button">Back</button>
-              <button class="modal-nav-button next-button">Next</button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-
-      // Setup tab scroll arrows
-      this.setupTabScrollArrows(modal);
-    }
-
-    return modal;
   }
 
   setupTabScrollArrows(modal) {
@@ -752,58 +696,43 @@ class BundleWidgetProductPage {
     const stepBox = document.createElement('div');
     stepBox.dataset.stepIndex = stepIndex;
 
-    if (this.widgetStyle === 'bottom-sheet') {
-      // Bottom-sheet mode: dashed-border slot card
-      stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
+    stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
-      // Category image as CSS background-image (fills background, icon overlaid on top)
-      const imgUrl = step.categoryImageUrl || null;
-      if (imgUrl) {
-        stepBox.style.backgroundImage = `url('${imgUrl}')`;
-        stepBox.style.backgroundSize = 'contain';
-        stepBox.style.backgroundRepeat = 'no-repeat';
-        stepBox.style.backgroundPosition = 'center';
-      }
-
-      // Circular background wrapper for the plus icon (80×80px)
-      const iconWrapper = document.createElement('div');
-      iconWrapper.className = 'bw-slot-card__plus-icon';
-      iconWrapper.style.cssText = `
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: rgba(30, 58, 138, 0.08);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
-      `;
-      iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
-      </svg>`;
-      iconWrapper.style.color = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
-      stepBox.appendChild(iconWrapper);
-
-      // Step name label below icon
-      const label = document.createElement('p');
-      label.className = 'step-name bw-slot-card__label';
-      label.textContent = step.name || `Step ${stepIndex + 1}`;
-      stepBox.appendChild(label);
-    } else {
-      // Classic mode: existing "+" icon behavior
-      stepBox.className = 'step-box';
-
-      const plusIcon = document.createElement('span');
-      plusIcon.className = 'plus-icon';
-      plusIcon.textContent = '+';
-      stepBox.appendChild(plusIcon);
-
-      const stepName = document.createElement('p');
-      stepName.className = 'step-name';
-      stepName.textContent = step.name || `Step ${stepIndex + 1}`;
-      stepBox.appendChild(stepName);
+    // Category image as CSS background-image (fills background, icon overlaid on top)
+    const imgUrl = step.categoryImageUrl || null;
+    if (imgUrl) {
+      stepBox.style.backgroundImage = `url('${imgUrl}')`;
+      stepBox.style.backgroundSize = 'contain';
+      stepBox.style.backgroundRepeat = 'no-repeat';
+      stepBox.style.backgroundPosition = 'center';
     }
+
+    // Circular background wrapper for the plus icon (80×80px)
+    const iconWrapper = document.createElement('div');
+    iconWrapper.className = 'bw-slot-card__plus-icon';
+    const primaryColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+    iconWrapper.style.cssText = `
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: color-mix(in srgb, ${primaryColor} 8%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    `;
+    iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+    </svg>`;
+    iconWrapper.style.color = primaryColor;
+    stepBox.appendChild(iconWrapper);
+
+    // Step name label below icon
+    const label = document.createElement('p');
+    label.className = 'step-name bw-slot-card__label';
+    label.textContent = step.name || `Step ${stepIndex + 1}`;
+    stepBox.appendChild(label);
 
     // Click handler to open modal
     stepBox.addEventListener('click', () => this.openModal(stepIndex));
@@ -855,11 +784,10 @@ class BundleWidgetProductPage {
     const { product, stepIndex, step, variantId, instanceIndex } = item;
 
     const isDefault = bsIsDefaultStep(step);
-    const badgeLabel = this.widgetStyle === 'bottom-sheet' ? bsGetDiscountBadgeLabel(step) : null;
+    const badgeLabel = bsGetDiscountBadgeLabel(step);
 
     const stepBox = document.createElement('div');
-    const extraClass = this.widgetStyle === 'bottom-sheet' ? ' bw-slot-card bw-slot-card--filled' : '';
-    stepBox.className = `step-box step-completed product-card-state${extraClass}`;
+    stepBox.className = 'step-box step-completed product-card-state bw-slot-card bw-slot-card--filled';
     stepBox.dataset.stepIndex = stepIndex;
     stepBox.dataset.variantId = variantId;
     stepBox.dataset.cardIndex = cardIndex;
@@ -884,22 +812,12 @@ class BundleWidgetProductPage {
 
     // Product image container
     const imagesContainer = document.createElement('div');
-    if (this.widgetStyle === 'bottom-sheet') {
-      imagesContainer.className = 'bw-slot-card__image-wrapper';
-      const img = document.createElement('img');
-      img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-      img.alt = product.title || '';
-      img.className = 'bw-slot-card__image';
-      imagesContainer.appendChild(img);
-    } else {
-      imagesContainer.className = 'step-images single-image';
-      const img = document.createElement('img');
-      img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-      img.alt = product.title || '';
-      img.className = 'step-image';
-      imagesContainer.appendChild(img);
-    }
-
+    imagesContainer.className = 'bw-slot-card__image-wrapper';
+    const img = document.createElement('img');
+    img.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    img.alt = product.title || '';
+    img.className = 'bw-slot-card__image';
+    imagesContainer.appendChild(img);
     stepBox.appendChild(imagesContainer);
 
     // Discount badge (bottom-sheet mode only, when step has a discountBadgeLabel)
@@ -1012,7 +930,6 @@ class BundleWidgetProductPage {
   createFreeGiftSlotCard(step, stepIndex) {
     const unlocked = this.isFreeGiftUnlocked;
     const stepBox = document.createElement('div');
-    stepBox.className = `step-box bw-slot-card bw-slot-card--empty${!unlocked ? ' bw-slot-card--locked' : ''}`;
     stepBox.dataset.stepIndex = stepIndex;
 
     // Check if free gift step already has a selection
@@ -1026,7 +943,7 @@ class BundleWidgetProductPage {
       const product = products.find(p => (p.variantId || p.id) === variantId);
       if (product) {
         // Show filled state for free gift
-        stepBox.className = 'step-box bw-slot-card bw-slot-card--filled';
+        stepBox.className = 'step-box step-completed product-card-state bw-slot-card bw-slot-card--filled';
 
         const imageWrapper = document.createElement('div');
         imageWrapper.className = 'bw-slot-card__image-wrapper';
@@ -1048,7 +965,7 @@ class BundleWidgetProductPage {
         stepBox.appendChild(clearBadge);
 
         const productTitle = document.createElement('p');
-        productTitle.className = 'step-name bw-slot-card__label';
+        productTitle.className = 'step-name step-name-completed product-title-state';
         const displayTitle = product.title.length > 25 ? product.title.substring(0, 25) + '...' : product.title;
         productTitle.textContent = displayTitle;
         stepBox.appendChild(productTitle);
@@ -1061,14 +978,17 @@ class BundleWidgetProductPage {
     }
 
     // Empty / locked state
-    // Circular icon background
+    stepBox.className = `step-box bw-slot-card bw-slot-card--empty${!unlocked ? ' bw-slot-card--locked' : ''}`;
+
     const iconWrapper = document.createElement('div');
     iconWrapper.className = 'bw-slot-card__plus-icon';
+    const primaryColorBS = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
     iconWrapper.style.cssText = `
       width: 80px;
       height: 80px;
       border-radius: 50%;
-      background: rgba(30, 58, 138, 0.08);
+      background: color-mix(in srgb, ${primaryColorBS} 8%, transparent);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1077,16 +997,15 @@ class BundleWidgetProductPage {
     iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
     </svg>`;
-    iconWrapper.style.color = '#1e3a8a';
+    iconWrapper.style.color = primaryColorBS;
     stepBox.appendChild(iconWrapper);
 
-    // Label: "Free {stepName}"
     const label = document.createElement('p');
     label.className = 'step-name bw-slot-card__label';
     label.textContent = `Free ${step.name || `Step ${stepIndex + 1}`}`;
     stepBox.appendChild(label);
 
-    // Red ribbon SVG overlay — top-right
+    // Red ribbon SVG overlay — top-right (free gift differentiator in all modes)
     stepBox.appendChild(this._createRibbonSvg());
 
     if (unlocked) {
@@ -1277,16 +1196,11 @@ class BundleWidgetProductPage {
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
 
-    // Show modal / bottom-sheet
-    if (this.widgetStyle === 'bottom-sheet') {
-      if (this.elements.bsOverlay) this.elements.bsOverlay.classList.add('bw-bs-overlay--open');
-      requestAnimationFrame(() => {
-        modal.classList.add('bw-bs-panel--open');
-      });
-    } else {
-      modal.style.display = 'block';
-      modal.classList.add('active');
-    }
+    // Show bottom-sheet
+    if (this.elements.bsOverlay) this.elements.bsOverlay.classList.add('bw-bs-overlay--open');
+    requestAnimationFrame(() => {
+      modal.classList.add('bw-bs-panel--open');
+    });
     document.body.style.overflow = 'hidden';
 
     // Capture stepIndex so async callback doesn't render stale step if user navigates away
@@ -1309,13 +1223,8 @@ class BundleWidgetProductPage {
   }
 
   closeModal() {
-    if (this.widgetStyle === 'bottom-sheet') {
-      this.elements.modal.classList.remove('bw-bs-panel--open');
-      if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
-    } else {
-      this.elements.modal.style.display = 'none';
-      this.elements.modal.classList.remove('active');
-    }
+    this.elements.modal.classList.remove('bw-bs-panel--open');
+    if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
     document.body.style.overflow = '';
 
     // Update main UI
@@ -1395,21 +1304,27 @@ class BundleWidgetProductPage {
   }
 
   processProductsForStep(products, step) {
+    // See full-page widget for the same fields. quantityAvailable is number|null
+    // (null = untracked / scope ungranted → treat as unlimited in the clamp).
+    const normalizeVariant = (v) => ({
+      id: this.extractId(v.id),
+      title: v.title,
+      price: parseFloat(v.price || '0') * 100,
+      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      available: v.available === true,
+      quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
+      currentlyNotInStock: v.currentlyNotInStock === true,
+      option1: v.option1 || null,
+      option2: v.option2 || null,
+      option3: v.option3 || null,
+      image: v.image || null
+    });
+
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
         // Preserve parent product reference for variant selection and tracking
-        const processedVariants = (product.variants || []).map(v => ({
-          id: this.extractId(v.id),
-          title: v.title,
-          price: parseFloat(v.price || '0') * 100,
-          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-          available: v.available === true,
-          option1: v.option1 || null,
-          option2: v.option2 || null,
-          option3: v.option3 || null,
-          image: v.image || null
-        }));
+        const processedVariants = (product.variants || []).map(normalizeVariant);
 
         const processedOptions = (product.options || []).map(opt => {
           if (typeof opt === 'string') return opt;
@@ -1430,6 +1345,8 @@ class BundleWidgetProductPage {
               compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
               variantId: this.extractId(variant.id),
               available: variant.available === true,
+              quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+              currentlyNotInStock: variant.currentlyNotInStock === true,
               // Preserve parent product data for variant selection in modal
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -1452,17 +1369,7 @@ class BundleWidgetProductPage {
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
         // Process variants array for variant selection in modal
-        const processedVariants = (product.variants || []).map(v => ({
-          id: this.extractId(v.id),
-          title: v.title,
-          price: parseFloat(v.price || '0') * 100,
-          compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-          available: v.available === true,
-          option1: v.option1 || null,
-          option2: v.option2 || null,
-          option3: v.option3 || null,
-          image: v.image || null
-        }));
+        const processedVariants = (product.variants || []).map(normalizeVariant);
 
         // Process options array for variant selector labels
         const processedOptions = (product.options || []).map(opt => {
@@ -1478,6 +1385,8 @@ class BundleWidgetProductPage {
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
           available: defaultVariant?.available === true,
+          quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
+          currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
           // Preserve variants and options for variant selection in modal
           variants: processedVariants,
           options: processedOptions,
@@ -1487,6 +1396,24 @@ class BundleWidgetProductPage {
         }];
       }
     });
+  }
+
+  /**
+   * Look up real stock for a variant. See full-page widget's getVariantAvailable
+   * for field semantics.
+   */
+  getVariantAvailable(stepIndex, variantId) {
+    const products = this.stepProductData[stepIndex] || [];
+    const product = products.find(p => (p.variantId || p.id) === variantId);
+    if (!product) {
+      return { available: null, outOfStock: false, acceptsBackorder: false };
+    }
+    const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
+    const backorder = product.currentlyNotInStock === true;
+    if (qty === 0 && !backorder) {
+      return { available: 0, outOfStock: true, acceptsBackorder: false };
+    }
+    return { available: qty, outOfStock: false, acceptsBackorder: backorder };
   }
 
   extractId(idString) {
@@ -1627,7 +1554,7 @@ class BundleWidgetProductPage {
     const bodyEl = this.elements.modal.querySelector('.bw-bs-body') || this.elements.modal.querySelector('.modal-body');
     const existingPromo = bodyEl?.querySelector('.bw-bs-free-gift-promo');
     if (existingPromo) existingPromo.remove();
-    if (isFreeGiftStep && bodyEl && this.widgetStyle === 'bottom-sheet') {
+    if (isFreeGiftStep && bodyEl) {
       const promo = document.createElement('div');
       promo.className = 'bw-bs-free-gift-promo';
       const stepName = currentStep.name || 'gift';
@@ -1636,8 +1563,8 @@ class BundleWidgetProductPage {
         ? CurrencyManager.convertAndFormat(firstProduct.price, CurrencyManager.getCurrencyInfo())
         : '';
       promo.innerHTML = `
-        <p class="bw-bs-free-gift-heading">Get a ${ComponentGenerator.escapeHtml(stepName)} worth ${priceStr} absolutely free!</p>
-        <p class="bw-bs-free-gift-subheading">Add ${this.paidSteps.length} product(s) to get 1 of them at 100% off!</p>
+        <p class="bw-bs-free-gift-heading">Free ${ComponentGenerator.escapeHtml(stepName)}!</p>
+        <p class="bw-bs-free-gift-subheading">Add ${this.paidSteps.length} items to unlock</p>
       `;
       bodyEl.insertBefore(promo, productGrid);
     }
@@ -1679,14 +1606,29 @@ class BundleWidgetProductPage {
       const currentQuantity = selectedProducts[selectionKey] || 0;
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
+      // Per-variant stock state derived from Storefront API quantityAvailable
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
+      const atMaxStock = available !== null && currentQuantity >= available;
+      const lowStock = available !== null && available > 0 && available <= 3;
+      const increaseDisabled = outOfStock || atMaxStock;
+      const addDisabled = outOfStock;
+
+      // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
+      const stockBadge = outOfStock
+        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+        : lowStock
+          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
+          : '';
+
       return `
-        <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card${freeGiftCardClass} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? `
             <div class="selected-overlay">✓</div>
           ` : ''}
 
           <div class="product-image">
             <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
+            ${stockBadge}
           </div>
 
           <div class="product-content-wrapper">
@@ -1708,13 +1650,13 @@ class BundleWidgetProductPage {
                 <div class="product-quantity-selector">
                   <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
                   <span class="qty-display">${currentQuantity}</span>
-                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
                 </div>
               </div>
             ` : ''}
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}">
-              ${currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart'}
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart')}
             </button>
           </div>
         </div>
@@ -1738,9 +1680,17 @@ class BundleWidgetProductPage {
     return `
       <div class="variant-selector-wrapper">
         <select class="variant-selector" data-base-product-id="${product.id}">
-          ${product.variants.map(v => `
-            <option value="${v.id}" ${v.id === product.variantId ? 'selected' : ''}>${v.title}</option>
-          `).join('')}
+          ${product.variants.map(v => {
+            // Grey out variants that are hard out of stock. quantityAvailable === 0
+            // only disables when the variant does NOT accept backorders
+            // (currentlyNotInStock === true means "sold out but backorderable").
+            const isHardOOS = v.available !== true
+              || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
+            const label = isHardOOS ? `${v.title} — out of stock` : v.title;
+            const selected = v.id === product.variantId ? 'selected' : '';
+            const disabled = isHardOOS ? 'disabled' : '';
+            return `<option value="${v.id}" ${selected} ${disabled}>${label}</option>`;
+          }).join('')}
         </select>
       </div>
     `;
@@ -1907,13 +1857,33 @@ class BundleWidgetProductPage {
         if (product && product.variants) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
-            const oldVariantId = product.variantId;
+            // Sync the new variant's stock fields onto the product so
+            // getVariantAvailable() reflects post-swap state.
+            product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
+              ? variantData.quantityAvailable
+              : null;
+            product.currentlyNotInStock = variantData.currentlyNotInStock === true;
 
-            // Move quantity from old variant to new variant
-            const oldQuantity = this.selectedProducts[stepIndex][oldVariantId] || 0;
+            // Move quantity from old variant to new variant, re-clamping against
+            // the new variant's quantityAvailable. If the new variant can't hold
+            // the old quantity, reduce it and surface a toast.
+            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
             if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][oldVariantId];
-              this.selectedProducts[stepIndex][newVariantId] = oldQuantity;
+              delete this.selectedProducts[stepIndex][product.variantId];
+
+              const newQtyAvail = product.quantityAvailable;
+              const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+              let migratedQty = oldQuantity;
+              if (newOOS) {
+                ToastManager.show('Selected variant is out of stock — selection cleared.');
+                migratedQty = 0;
+              } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+                migratedQty = newQtyAvail;
+                ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+              }
+              if (migratedQty > 0) {
+                this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+              }
             }
 
             // Update product properties
@@ -1951,7 +1921,22 @@ class BundleWidgetProductPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
-    const quantity = Math.max(0, newQuantity);
+    let quantity = Math.max(0, newQuantity);
+
+    // Clamp against real per-variant stock before doing anything else.
+    // Uses quantityAvailable from the Storefront API (see getVariantAvailable).
+    // Adding 0 always allowed (that is a removal).
+    if (quantity > 0) {
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+      if (outOfStock) {
+        ToastManager.show('This item is out of stock.');
+        return;
+      }
+      if (available !== null && quantity > available) {
+        quantity = available;
+        ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+      }
+    }
 
     // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
@@ -1977,11 +1962,7 @@ class BundleWidgetProductPage {
     this._syncFreeGiftSlotCard();
 
     // Auto-step progression
-    if (this.widgetStyle === 'bottom-sheet') {
-      this._autoProgressBottomSheet(stepIndex);
-    } else {
-      this._autoProgressClassicModal(stepIndex);
-    }
+    this._autoProgressBottomSheet(stepIndex);
   }
 
   /**
@@ -2041,29 +2022,9 @@ class BundleWidgetProductPage {
     }
   }
 
-  /**
-   * Classic modal auto-close.
-   * When all steps are complete, auto-close the modal after a short delay.
-   */
-  _autoProgressClassicModal(stepIndex) {
-    if (!this.validateStep(stepIndex)) return;
-
-    const steps = this.selectedBundle.steps;
-    // Check if any required step is still incomplete.
-    // Free gift and default steps are non-blocking — skip them.
-    for (let i = 0; i < steps.length; i++) {
-      if (steps[i].isFreeGift || steps[i].isDefault) continue;
-      if (!this.validateStep(i)) return; // at least one paid step incomplete
-    }
-
-    // All steps complete — refresh tabs with checkmarks, then auto-close
-    this.renderModalTabs();
-    setTimeout(() => this.closeModal(), 500);
-  }
-
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
     // Update quantity display without full re-render
-    const scope = this.elements.modal?.style.display === 'block'
+    const scope = this.elements.modal?.classList.contains('bw-bs-panel--open')
       ? this.elements.modal
       : this.container;
     const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
@@ -2486,35 +2447,17 @@ class BundleWidgetProductPage {
       closeButton.addEventListener('click', () => this.closeModal());
     }
 
-    if (this.widgetStyle === 'bottom-sheet') {
-      // Overlay closes modal
-      if (this.elements.bsOverlay) {
-        this.elements.bsOverlay.addEventListener('click', () => this.closeModal());
-      }
-      // PREV/NEXT enabled in bottom-sheet — styled as pill buttons in footer
-      if (prevButton) prevButton.addEventListener('click', () => this.navigateModal(-1));
-      if (nextButton) nextButton.addEventListener('click', () => this.navigateModal(1));
-    } else {
-      // Classic mode: overlay is inside the modal
-      const overlay = modal.querySelector('.modal-overlay');
-      if (overlay) {
-        overlay.addEventListener('click', () => this.closeModal());
-      }
-      if (prevButton) {
-        prevButton.addEventListener('click', () => this.navigateModal(-1));
-      }
-      if (nextButton) {
-        nextButton.addEventListener('click', () => this.navigateModal(1));
-      }
+    // Overlay closes bottom-sheet
+    if (this.elements.bsOverlay) {
+      this.elements.bsOverlay.addEventListener('click', () => this.closeModal());
     }
+    if (prevButton) prevButton.addEventListener('click', () => this.navigateModal(-1));
+    if (nextButton) nextButton.addEventListener('click', () => this.navigateModal(1));
 
     // Keyboard: close on Escape
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        const isOpen = this.widgetStyle === 'bottom-sheet'
-          ? modal.classList.contains('bw-bs-panel--open')
-          : modal.style.display === 'block';
-        if (isOpen) this.closeModal();
+      if (e.key === 'Escape' && modal.classList.contains('bw-bs-panel--open')) {
+        this.closeModal();
       }
     });
   }
@@ -2523,27 +2466,23 @@ class BundleWidgetProductPage {
     const newStepIndex = this.currentStepIndex + direction;
 
     if (direction < 0 && newStepIndex >= 0) {
-      // Previous step
-      if (this.validateStep(this.currentStepIndex)) {
-        this.currentStepIndex = newStepIndex;
+      // Previous step — always allowed, no validation required
+      this.currentStepIndex = newStepIndex;
 
-        // Update modal header
-        const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+      // Update modal header
+      const headerText = this.getFormattedHeaderText();
+      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-        // OPTIMISTIC RENDERING: Update UI immediately with loading state
-        this.renderModalTabs();
-        this.renderModalProductsLoading(newStepIndex);
-        this.updateModalNavigation();
-        this.updateModalFooterMessaging();
+      // OPTIMISTIC RENDERING: Update UI immediately with loading state
+      this.renderModalTabs();
+      this.renderModalProductsLoading(newStepIndex);
+      this.updateModalNavigation();
+      this.updateModalFooterMessaging();
 
-        // Load products asynchronously
-        await this.loadStepProducts(newStepIndex);
-        this.renderModalProducts(this.currentStepIndex);
-        this.updateModalFooterMessaging();
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before going back.');
-      }
+      // Load products asynchronously
+      await this.loadStepProducts(newStepIndex);
+      this.renderModalProducts(this.currentStepIndex);
+      this.updateModalFooterMessaging();
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
         // Next step

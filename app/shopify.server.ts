@@ -13,6 +13,7 @@ import { CartTransformService } from "./services/cart-transform-service.server";
 import { BillingService } from "./services/billing.server";
 import { ensureVariantBundleMetafieldDefinitions } from "./services/bundles/metafield-sync.server";
 import { syncThemeColors } from "./services/theme-colors.server";
+import { activateUtmPixel } from "./services/pixel-activation.server";
 import { AppLogger } from "./lib/logger";
 
 const shopify = shopifyApp({
@@ -97,8 +98,17 @@ const shopify = shopifyApp({
         AppLogger.error("Failed to sync theme colors", { shop: session.shop }, error);
       }
 
-      // UTM pixel is NOT activated automatically on install.
-      // Merchants enable it explicitly via the toggle on the Analytics page.
+      // Auto-activate UTM pixel on install/re-auth so bundle revenue tracking is on
+      // by default. Merchants can opt-out via "Disable tracking" on the Analytics page.
+      try {
+        const appUrl = process.env.SHOPIFY_APP_URL;
+        if (appUrl) {
+          await activateUtmPixel(admin, appUrl);
+          AppLogger.info("UTM pixel auto-activated", { shop: session.shop });
+        }
+      } catch (error: any) {
+        AppLogger.warn("Failed to auto-activate UTM pixel (non-fatal)", { shop: session.shop }, error);
+      }
 
       // Automatically activate cart transform for new installations
       try {

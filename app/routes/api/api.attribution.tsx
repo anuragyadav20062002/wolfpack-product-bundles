@@ -54,30 +54,50 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       landingPage,
     } = payload;
 
-    // Validate required fields
-    if (!shopId || !utmSource) {
-      return json({ error: "Missing required fields: shopId and utmSource" }, { status: 400, headers: CORS_HEADERS });
+    // Only shopId is required — utmSource may be null for direct/organic traffic.
+    // Bundle revenue is tracked for all checkouts regardless of UTM presence.
+    if (!shopId) {
+      return json({ error: "Missing required field: shopId" }, { status: 400, headers: CORS_HEADERS });
     }
 
     // Calculate revenue in cents
     const revenue = totalPrice ? Math.round(parseFloat(totalPrice) * 100) : 0;
 
-    // Find bundle IDs from line items by matching against our database
+    // Find bundle IDs from line items by matching against our database.
+    //
+    // Two-pass strategy:
+    //   Pass 1 (MERGE active)  — line items contain the bundle container product.
+    //                            Match bundle.shopifyProductId directly.
+    //   Pass 2 (MERGE inactive) — line items contain component products.
+    //                             Cart Transform MERGE may not have been set up yet
+    //                             (e.g. first purchase before sync, or PPB bundles).
+    //                             Fall back to matching via StepProduct.productId.
     const bundleIds: string[] = [];
     if (lineItems && lineItems.length > 0) {
-      const productIds = lineItems
-        .map((item: any) => item.productId)
-        .filter(Boolean);
+      const productIds: string[] = lineItems
+        .map((item: any) => item.productId as string | undefined)
+        .filter((id): id is string => Boolean(id));
 
       if (productIds.length > 0) {
-        const bundles = await db.bundle.findMany({
-          where: {
-            shopId,
-            shopifyProductId: { in: productIds },
-          },
+        // Pass 1: direct match on bundle container product
+        const directBundles = await db.bundle.findMany({
+          where: { shopId, shopifyProductId: { in: productIds } },
           select: { id: true },
         });
-        bundleIds.push(...bundles.map((b) => b.id));
+        bundleIds.push(...directBundles.map((b) => b.id));
+
+        // Pass 2: fallback — match component products through bundle steps
+        if (bundleIds.length === 0) {
+          const matchedSteps = await db.bundleStep.findMany({
+            where: {
+              StepProduct: { some: { productId: { in: productIds } } },
+              bundle: { shopId },
+            },
+            select: { bundleId: true },
+            distinct: ["bundleId"],
+          });
+          bundleIds.push(...matchedSteps.map((s) => s.bundleId));
+        }
       }
     }
 

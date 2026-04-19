@@ -7,6 +7,7 @@
 
 import { json } from "@remix-run/node";
 import db from "../../../../db.server";
+import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import { MetafieldCleanupService } from "../../../../services/metafield-cleanup.server";
 import { SubscriptionGuard } from "../../../../services/subscription-guard.server";
@@ -175,7 +176,7 @@ async function publishToSalesChannels(admin: any, shopifyProductId: string, oper
  * Handle cloning a bundle
  */
 export async function handleCloneBundle(
-  admin: any,
+  admin: ShopifyAdmin,
   session: { shop: string },
   formData: FormData
 ) {
@@ -226,7 +227,7 @@ export async function handleCloneBundle(
             productType: "Bundle",
             vendor: "Wolfpack: Product Bundles",
             status: "DRAFT",
-            tags: ["bundle", "Wolfpack: Product Bundles"],
+            tags: ["WP-Bundles"],
             variants: [
               {
                 price: bundlePrice,
@@ -338,7 +339,7 @@ export async function handleCloneBundle(
  * Handle deleting a bundle
  */
 export async function handleDeleteBundle(
-  admin: any,
+  admin: ShopifyAdmin,
   session: { shop: string },
   formData: FormData
 ) {
@@ -394,7 +395,7 @@ export async function handleDeleteBundle(
  * Handle creating a new bundle
  */
 export async function handleCreateBundle(
-  admin: any,
+  admin: ShopifyAdmin,
   session: { shop: string },
   formData: FormData
 ) {
@@ -419,7 +420,7 @@ export async function handleCreateBundle(
       productType: "Bundle",
       vendor: "Wolfpack: Product Bundles",
       status: "DRAFT",
-      tags: ["bundle", "cart-transform"],
+      tags: ["WP-Bundles"],
     };
 
     const appUrl = process.env.SHOPIFY_APP_URL;

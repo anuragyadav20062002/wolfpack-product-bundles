@@ -7,6 +7,19 @@
 import type { CSSGenerationContext } from "./types";
 
 /**
+ * Emits four positional CSS variables for a badge given a position string.
+ * position: "top-left" | "top-right" | "bottom-left" | "bottom-right"
+ */
+function buildBadgePositionVars(name: string, position: string): string {
+  const isTop = !position.startsWith('bottom');
+  const isLeft = !position.endsWith('right');
+  return `--bundle-${name}-badge-top: ${isTop ? '6px' : 'auto'};
+  --bundle-${name}-badge-bottom: ${isTop ? 'auto' : '6px'};
+  --bundle-${name}-badge-left: ${isLeft ? '6px' : 'auto'};
+  --bundle-${name}-badge-right: ${isLeft ? 'auto' : '6px'};`;
+}
+
+/**
  * Generate all CSS custom properties for the :root block
  */
 export function generateCSSVariables(ctx: CSSGenerationContext): string {
@@ -171,8 +184,11 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-toast-animation-duration: ${s.toastAnimationDuration ?? 300}ms;
   --bundle-toast-box-shadow: ${s.toastBoxShadow ?? '0 4px 12px rgba(0, 0, 0, 0.15)'};
   --bundle-toast-enter-from-bottom: ${s.toastEnterFromBottom ? '1' : '0'};
+  /* Bottom-Sheet */
+  --bundle-bottom-sheet-overlay-opacity: ${s.bottomSheetOverlayOpacity ?? 0.5};
+  --bundle-bottom-sheet-animation-duration: ${s.bottomSheetAnimationDuration ?? 400}ms;
   /* Bundle Design */
-  --bundle-bg-color: ${s.bundleBgColor || '#FFFFFF'};
+  --bundle-bg-color: ${s.bundleBgColor || 'transparent'};
   --bundle-footer-scrollbar-color: ${s.footerScrollBarColor || globalPrimaryButton};
   /* Product Page Title */
   --bundle-product-page-title-font-color: ${s.productPageTitleFontColor || globalPrimaryText};
@@ -190,8 +206,12 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
-  /* Free Gift Badge (Product Page) — merchant-uploadable badge image */
+  /* Free Gift Badge — merchant-uploadable badge image + DCP-controlled position */
   --bundle-free-gift-badge-url: ${s.freeGiftBadgeUrl ? `url("${s.freeGiftBadgeUrl}")` : 'none'};
+  ${buildBadgePositionVars('free-gift', s.freeGiftBadgePosition ?? 'top-left')}
+  /* Included (Default) Badge — merchant-uploadable badge image + DCP-controlled position */
+  --bundle-included-badge-url: ${s.includedBadgeUrl ? `url("${s.includedBadgeUrl}")` : 'none'};
+  ${buildBadgePositionVars('included', s.includedBadgePosition ?? 'top-left')}
 
   /* SEARCH INPUT — names match what bundle-widget-full-page.css references */
   --bundle-search-bg: ${s.searchInputBgColor || '#F8F8F8'};

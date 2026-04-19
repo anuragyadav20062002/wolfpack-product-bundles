@@ -1,10 +1,11 @@
 import { json } from "@remix-run/node";
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { BundleStatus } from "../../constants/bundle";
 
-export async function loader({ request }: any) {
+export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
   
   try {

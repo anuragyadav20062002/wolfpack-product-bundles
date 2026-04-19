@@ -8,7 +8,6 @@
 import { AppLogger } from "../../lib/logger";
 import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition, ensureCustomPageBundleConfigDefinition } from "../bundles/metafield-sync.server";
 import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
-import { ensureBundlePageTemplate } from "./widget-theme-template.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
 import type { FullPageBundleResult } from "./types";
@@ -52,22 +51,10 @@ export async function createFullPageBundle(
       bundleName
     });
 
-    // Step 0: Ensure the bundle page template exists in the active theme
-    const templateResult = await ensureBundlePageTemplate(admin, session, apiKey);
-
-    if (!templateResult.success) {
-      AppLogger.warn('Could not ensure bundle page template (non-fatal)', {
-        component: 'WidgetFullPageBundle',
-        error: templateResult.error
-      });
-    }
-
-    // Always attach the templateSuffix regardless of whether the template file was
-    // just created or already existed. The suffix tells Shopify to serve this page
-    // using templates/page.full-page-bundle.json. Even if that template write failed
-    // above (unlikely now that UUID comes from EXTENSION_UID), the suffix ensures
-    // the page uses the right template as soon as the file exists in the theme.
-    const templateSuffix = 'full-page-bundle';
+    // Pages use the default page.json template — no custom templateSuffix.
+    // The app embed block (bundle-full-page-embed.liquid) renders on all page templates
+    // and detects bundles via the bundle_id metafield. Custom template suffixes caused
+    // stale block references when the app migrated from section blocks to app embeds.
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
     const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -95,15 +82,13 @@ export async function createFullPageBundle(
 
     const checkData = await checkResponse.json();
     let createdPage = checkData.data?.pages?.edges?.[0]?.node || null;
-    let shareablePreviewUrl: string | undefined;
 
     // If page doesn't exist, create it
     if (!createdPage) {
       AppLogger.info('Page does not exist, creating new page', {
         component: 'WidgetFullPageBundle',
         pageHandle,
-        bundleId,
-        templateSuffix: templateSuffix ?? 'default'
+        bundleId
       });
 
       const CREATE_PAGE = `
@@ -114,7 +99,6 @@ export async function createFullPageBundle(
               title
               handle
               templateSuffix
-              shareablePreviewUrl
             }
             userErrors {
               field
@@ -130,8 +114,7 @@ export async function createFullPageBundle(
             title: pageTitle,
             handle: pageHandle,
             body: '',
-            isPublished,
-            templateSuffix: 'full-page-bundle'
+            isPublished
           }
         }
       });
@@ -161,8 +144,6 @@ export async function createFullPageBundle(
         };
       }
 
-      shareablePreviewUrl = pageData.data?.pageCreate?.page?.shareablePreviewUrl ?? undefined;
-
       AppLogger.info('Page created successfully', {
         component: 'WidgetFullPageBundle',
         pageId: createdPage.id,
@@ -173,36 +154,8 @@ export async function createFullPageBundle(
         component: 'WidgetFullPageBundle',
         pageId: createdPage.id,
         pageHandle: createdPage.handle,
-        templateSuffix: createdPage.templateSuffix,
         bundleId
       });
-
-      // Ensure existing page uses the shared full-page-bundle template
-      if (createdPage.templateSuffix !== 'full-page-bundle') {
-        const UPDATE_PAGE_TEMPLATE = `
-          mutation updatePageTemplate($id: ID!, $page: PageUpdateInput!) {
-            pageUpdate(id: $id, page: $page) {
-              page { id templateSuffix }
-              userErrors { field message }
-            }
-          }
-        `;
-        const updateResponse = await admin.graphql(UPDATE_PAGE_TEMPLATE, {
-          variables: { id: createdPage.id, page: { templateSuffix: 'full-page-bundle' } }
-        });
-        const updateData = await updateResponse.json();
-        if (updateData.data?.pageUpdate?.userErrors?.length > 0) {
-          AppLogger.warn('Could not update templateSuffix on existing page (non-critical)', {
-            component: 'WidgetFullPageBundle',
-            errors: updateData.data.pageUpdate.userErrors
-          });
-        } else {
-          AppLogger.info('Updated existing page templateSuffix to full-page-bundle', {
-            component: 'WidgetFullPageBundle',
-            pageId: createdPage.id
-          });
-        }
-      }
     }
 
     // Step 2a: Ensure PAGE metafield definitions exist with PUBLIC_READ storefront access
@@ -268,6 +221,10 @@ export async function createFullPageBundle(
     const shopDomain = shop.replace('.myshopify.com', '');
     const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
 
+    // Return embed activation deep link — directs merchant to Theme Settings > App Embeds
+    // to activate the bundle-full-page-embed block (one-time per store, not per page).
+    const widgetInstallationLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`;
+
     AppLogger.info('Full-page bundle created successfully', {
       component: 'WidgetFullPageBundle',
       shop,
@@ -275,40 +232,16 @@ export async function createFullPageBundle(
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
       pageUrl,
-      templateApplied: templateResult.success
     });
-
-    // If template file write failed (e.g. theme API error), surface a deep link
-    // so the merchant can manually add the block via Theme Editor as a fallback.
-    if (!templateResult.success) {
-      const deepLink = generateThemeEditorDeepLink(
-        shop,
-        apiKey,
-        'bundle-full-page',
-        bundleId,
-        'page',
-        'newAppsSection'
-      );
-
-      return {
-        success: true,
-        pageId: createdPage.id,
-        pageHandle: createdPage.handle,
-        pageUrl: isPublished ? pageUrl : undefined,
-        shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
-        slugAdjusted,
-        widgetInstallationRequired: true,
-        widgetInstallationLink: deepLink.url
-      };
-    }
 
     return {
       success: true,
       pageId: createdPage.id,
       pageHandle: createdPage.handle,
-      pageUrl: isPublished ? pageUrl : undefined,
-      shareablePreviewUrl: !isPublished ? shareablePreviewUrl : undefined,
-      slugAdjusted
+      pageUrl,
+      slugAdjusted,
+      widgetInstallationRequired: true,
+      widgetInstallationLink,
     };
 
   } catch (error) {
@@ -537,13 +470,14 @@ export async function publishPreviewPage(
  */
 export async function getPreviewPageUrl(
   admin: any,
-  pageId: string
-): Promise<{ success: boolean; shareablePreviewUrl?: string; pageNotFound?: boolean; error?: string }> {
+  pageId: string,
+  shopDomain: string
+): Promise<{ success: boolean; previewUrl?: string; pageNotFound?: boolean; error?: string }> {
   const GET_PREVIEW_URL = `
     query getPagePreviewUrl($id: ID!) {
       page(id: $id) {
         id
-        shareablePreviewUrl
+        handle
       }
     }
   `;
@@ -563,7 +497,8 @@ export async function getPreviewPageUrl(
       return { success: false, pageNotFound: true };
     }
 
-    return { success: true, shareablePreviewUrl: page.shareablePreviewUrl };
+    const shop = shopDomain.replace('.myshopify.com', '');
+    return { success: true, previewUrl: `https://${shop}.myshopify.com/pages/${page.handle}` };
   } catch (error) {
     AppLogger.error('getPreviewPageUrl: unexpected error', {
       component: 'WidgetFullPageBundle',

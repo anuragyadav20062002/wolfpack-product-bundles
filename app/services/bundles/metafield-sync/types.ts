@@ -115,42 +115,6 @@ export interface BundleUiMessaging {
 }
 
 /**
- * Optimized bundle configuration for cart transform metafield
- */
-export interface OptimizedBundleConfig {
-  id: string;
-  name: string;
-  templateName: string | null;
-  type: string;
-  allBundleProductIds: string[];
-  steps: OptimizedStepConfig[];
-  pricing: OptimizedPricingConfig | null;
-  bundleParentVariantId: string | null;
-}
-
-export interface OptimizedStepConfig {
-  id: string;
-  name: string;
-  minQuantity: number;
-  maxQuantity: number;
-  productIds: string[];
-  collections: string[];
-  conditionType?: string;
-  conditionOperator?: string;
-  conditionValue?: string | number;
-  conditionOperator2?: string;
-  conditionValue2?: string | number;
-}
-
-export interface OptimizedPricingConfig {
-  enabled: boolean;
-  method: string;
-  rules: any[];
-  bundleVariantId: string | null;
-  fixedPrice: number | null;
-}
-
-/**
  * Component parents data for MERGE operation
  */
 export interface ComponentParentsData {
