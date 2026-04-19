@@ -5,6 +5,12 @@ import { createStorefrontAccessToken } from "../../services/storefront-token.ser
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
 /**
  * Public API endpoint to fetch products using Storefront API
  * This endpoint can be called from the widget without authentication
@@ -108,17 +114,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const country = url.searchParams.get("country") || null;
 
   if (!productIds) {
-    return json({ error: "Missing product IDs" }, { status: 400 });
+    return json({ error: "Missing product IDs" }, { status: 400, headers: CORS_HEADERS });
   }
 
   if (!shop) {
-    return json({ error: "Missing shop parameter" }, { status: 400 });
+    return json({ error: "Missing shop parameter" }, { status: 400, headers: CORS_HEADERS });
   }
 
   const ids = productIds.split(",").map(id => id.trim()).filter(Boolean);
 
   if (ids.length === 0) {
-    return json({ error: "No valid product IDs provided" }, { status: 400 });
+    return json({ error: "No valid product IDs provided" }, { status: 400, headers: CORS_HEADERS });
   }
 
   try {
@@ -144,7 +150,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     if (!session) {
       console.error("[STOREFRONT_API] No session found for shop:", shop);
-      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
+      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404, headers: CORS_HEADERS });
     }
 
     // If no storefront token exists, try to create one on-demand (handles race condition)
@@ -180,13 +186,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
         });
       } catch (error) {
         console.error("[STOREFRONT_API] Failed to create token on-demand:", error);
-        return json({ error: "Could not create storefront access token" }, { status: 500 });
+        return json({ error: "Could not create storefront access token" }, { status: 500, headers: CORS_HEADERS });
       }
     }
 
     if (!session?.storefrontAccessToken) {
       console.error("[STOREFRONT_API] Still no storefront access token after creation attempt");
-      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
+      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404, headers: CORS_HEADERS });
     }
 
     const storefrontAccessToken = session.storefrontAccessToken;
@@ -206,14 +212,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     if (!response.ok) {
       console.error("[STOREFRONT_API] Request failed:", response.status);
-      return json({ error: "Failed to fetch from Storefront API" }, { status: 500 });
+      return json({ error: "Failed to fetch from Storefront API" }, { status: 500, headers: CORS_HEADERS });
     }
 
     const data = await response.json();
 
     if (data.errors) {
       console.error("[STOREFRONT_API] GraphQL errors:", data.errors);
-      return json({ error: "GraphQL errors", details: data.errors }, { status: 500 });
+      return json({ error: "GraphQL errors", details: data.errors }, { status: 500, headers: CORS_HEADERS });
     }
 
     const nodes = data.data?.nodes || [];
@@ -271,7 +277,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       count: validProducts.length
     }, {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        ...CORS_HEADERS,
         "Cache-Control": "public, max-age=300, s-maxage=600",
         "Vary": "Accept-Encoding"
       }
@@ -281,8 +287,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     console.error("[STOREFRONT_API] Error:", error);
     return json({
       error: "Internal server error",
-      message: error.message
-    }, { status: 500 });
+      message: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500, headers: CORS_HEADERS });
   }
 }
 
