@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-19
-**Last Updated:** 2026-04-19 18:00
+**Last Updated:** 2026-04-19 18:30
 
 ## Overview
 
@@ -39,6 +39,13 @@ Also: `api.check-cart-transform.tsx` still checks against the hardcoded TS funct
 3. `api.admin.backfill-cart-transform.tsx` — protected POST route (`x-backfill-secret` header) to trigger backfill across all shops
 
 ## Progress Log
+
+### 2026-04-19 18:30 - Auto-purge dead sessions after backfill
+
+- `backfillForShop` now returns `status: 'dead'` for 401/402/missing-token errors (uninstalled or billing-lapsed shops)
+- `backfillAllShops` collects dead shops post-run and calls new `purgeDeadSessions()` which does a single `deleteMany` on the session table
+- Summary now includes `dead` and `sessionsPurged` counts
+- Files modified: `app/services/cart-transform-service.server.ts`
 
 ### 2026-04-19 18:00 - Fix backfill: bypass shopifyFunctions check
 
