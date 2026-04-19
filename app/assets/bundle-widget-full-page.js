@@ -3152,21 +3152,27 @@ class BundleWidgetFullPage {
 
     let allProducts = [];
 
-    // Process explicit products - fetch using Storefront API via our backend.
-    // Skip if StepProduct has enriched data: the API response derives step.products
-    // from step.StepProduct, so both arrays contain the same products. Fetching
-    // step.products when enriched StepProduct is already present wastes 1 API call per step.
+    // Process explicit products.
+    // When loaded from metafield cache (data-bundle-config), step.products already contains
+    // full enriched data (images, variants, prices) — use directly, no API call needed.
+    // When loaded from the API response, step.StepProduct carries the enriched data and
+    // step.products only has stubs, so skip the fetch to avoid a duplicate call.
     const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
       && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
-    if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
+    const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+      && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+
+    if (stepProductsAlreadyEnriched) {
+      // Metafield cache path: products have full data, use them directly.
+      allProducts = allProducts.concat(step.products);
+    } else if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
       const productIds = step.products.map(p => p.id); // Keep full GID format
       const shop = window.Shopify?.shop || window.location.host;
 
       // Get app URL from widget data attribute or window global
       const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
-
 
       // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
       const country = window.Shopify?.country
@@ -3186,7 +3192,6 @@ class BundleWidgetFullPage {
 
         if (data.products && data.products.length > 0) {
           allProducts = allProducts.concat(data.products);
-        } else {
         }
       } catch (error) {
       }
