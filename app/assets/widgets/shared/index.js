@@ -74,5 +74,6 @@ export { ToastManager } from './toast-manager.js';
 export { TemplateManager } from './template-manager.js';
 export { ComponentGenerator } from './component-generator.js';
 export { createDefaultLoadingAnimation } from './default-loading-animation.js';
+export { VariantSelectorComponent } from './variant-selector.js';
 // NOTE: ConditionValidator uses IIFE + module.exports for Jest compat.
 // Import it directly: import './condition-validator.js' (it sets a global in IIFE builds).

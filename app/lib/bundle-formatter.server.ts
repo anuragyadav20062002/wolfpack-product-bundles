@@ -53,6 +53,7 @@ interface FormattedStep {
   isDefault: boolean;
   defaultVariantId: string | null;
   timelineIconUrl: string | null;
+  primaryVariantOption: string | null;
 }
 
 interface FormattedProduct {
@@ -145,6 +146,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       isDefault: step.isDefault ?? false,
       defaultVariantId: step.defaultVariantId ?? null,
       timelineIconUrl: step.timelineIconUrl ?? null,
+      primaryVariantOption: step.primaryVariantOption ?? null,
     };
   });
 

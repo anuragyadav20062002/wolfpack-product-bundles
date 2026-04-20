@@ -206,6 +206,8 @@ export interface CSSDesignSettings {
   stepTimelineActiveColor?: string;
   stepTimelineInactiveColor?: string;
   stepTimelineCompleteColor?: string;
+  addBtnColor?: string;
+  addBtnRadius?: number;
   discountBannerBg?: string;
   discountBannerText?: string;
   fullPageTitleFontSize?: number;

@@ -89,6 +89,8 @@ export interface BundleUiStep {
   categoryImageUrl?: string;
   /** URL for the step's timeline icon (user-uploadable; separate from bannerImageUrl). */
   timelineIconUrl?: string;
+  /** Merchant-chosen option dimension rendered as button group on product cards (e.g. "Size"). */
+  primaryVariantOption?: string | null;
 }
 
 export interface BundleUiPricing {

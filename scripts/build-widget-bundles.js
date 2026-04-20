@@ -49,6 +49,7 @@ const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/template-manager.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/component-generator.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/default-loading-animation.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/variant-selector.js'),
 ];
 
 // Source files

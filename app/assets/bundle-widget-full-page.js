@@ -1937,12 +1937,17 @@ class BundleWidgetFullPage {
     // Get currency info for formatting
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
+    // Build inline variant selector using the step's merchant-configured primary option
+    const step = (this.selectedBundle?.steps || [])[stepIndex];
+    const primaryOptionName = step?.primaryVariantOption || null;
+    const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
+
     // Use ComponentGenerator to render HTML (available in same scope after bundling)
     const htmlString = ComponentGenerator.renderProductCard(
       product,
       currentQuantity,
       currencyInfo,
-      { showQuantitySelector: this.config.showQuantitySelectorOnCard }
+      { variantSelectorHtml }
     );
 
     // Convert HTML string to DOM element
@@ -2021,79 +2026,79 @@ class BundleWidgetFullPage {
     // Default steps are read-only — no add/remove/quantity interaction allowed
     if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
-    const productId = product.variantId || product.id;
+    // qty controls use product.variantId dynamically so variant changes are reflected
+    const getProductId = () => product.variantId || product.id;
 
-    // Quantity controls (both old-style and inline-style buttons)
-    const increaseBtns = cardElement.querySelectorAll('.qty-increase');
-    const decreaseBtns = cardElement.querySelectorAll('.qty-decrease');
-    const addBtn = cardElement.querySelector('.product-add-btn');
-
-    increaseBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        this.updateProductSelection(stepIndex, productId, currentQty + 1);
-      });
-    });
-
-    decreaseBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        if (currentQty > 0) {
-          this.updateProductSelection(stepIndex, productId, currentQty - 1);
-        }
-      });
-    });
-
-    if (addBtn) {
-      addBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        if (currentQty === 0) {
-          // Add product directly to bundle (modal opens only on card image/title click)
-          this.updateProductSelection(stepIndex, productId, 1);
-        } else {
-          // Toggle off if already added
-          this.updateProductSelection(stepIndex, productId, 0);
-        }
-      });
-    }
-
-    // Variant selector
-    const variantSelector = cardElement.querySelector('.variant-selector');
-    if (variantSelector) {
-      variantSelector.addEventListener('change', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const newVariantId = e.target.value;
-        // Update product object with new variant
-        product.variantId = newVariantId;
-        // Re-render this card
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        this.updateProductSelection(stepIndex, newVariantId, currentQty);
-      });
-    }
-
-    // Product card click - open modal (clicking on image or title area)
-    const productImage = cardElement.querySelector('.product-image');
-    const productTitle = cardElement.querySelector('.product-title');
-
-    const openModalHandler = (e) => {
+    // Inline quantity increase/decrease buttons (delegated via card element)
+    cardElement.addEventListener('click', (e) => {
+      const btn = e.target.closest('.inline-qty-btn');
+      if (!btn) return;
       e.stopPropagation();
-      if (this.productModal) {
-        const step = this.selectedBundle.steps[stepIndex];
-        this.productModal.open(product, step);
+      const productId = getProductId();
+      const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+      if (btn.classList.contains('qty-increase')) {
+        const { available } = this.getVariantAvailable(stepIndex, productId);
+        if (available !== null && currentQty >= available) {
+          ToastManager.show('Maximum stock reached for this variant.');
+          return;
+        }
+        this.updateProductSelection(stepIndex, productId, currentQty + 1);
+      } else if (btn.classList.contains('qty-decrease') && currentQty > 0) {
+        this.updateProductSelection(stepIndex, productId, currentQty - 1);
       }
-    };
+    });
 
-    if (productImage) {
-      productImage.style.cursor = 'pointer';
-      productImage.addEventListener('click', openModalHandler);
-    }
+    // Circle add button: qty 0 → 1
+    cardElement.addEventListener('click', (e) => {
+      const addBtn = e.target.closest('.product-add-btn');
+      if (!addBtn) return;
+      e.stopPropagation();
+      const productId = getProductId();
+      const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+      if (currentQty === 0) {
+        this.updateProductSelection(stepIndex, productId, 1);
+      }
+    });
 
-    if (productTitle) {
-      productTitle.style.cursor = 'pointer';
-      productTitle.addEventListener('click', openModalHandler);
+    // Inline variant selector (VariantSelectorComponent button group + panels)
+    if (product.variants && product.variants.length > 1) {
+      VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
+        const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
+
+        if (oldQty > 0 && oldVariantId !== newVariantId) {
+          // Remove old variant qty
+          if (this.selectedProducts[stepIndex]) {
+            delete this.selectedProducts[stepIndex][oldVariantId];
+          }
+          // Clamp against new variant's stock
+          const newQtyAvail = product.quantityAvailable; // already updated by component
+          const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+          let migratedQty = oldQty;
+          if (newOOS) {
+            ToastManager.show('Selected variant is out of stock — selection cleared.');
+            migratedQty = 0;
+          } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
+            migratedQty = newQtyAvail;
+            ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+          }
+          if (migratedQty > 0) {
+            this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+          }
+          // Update inline qty display
+          const qtyDisplay = cardElement.querySelector('.inline-qty-display');
+          if (qtyDisplay) qtyDisplay.textContent = migratedQty;
+        }
+
+        // Update data-product-id on card + action buttons so subsequent clicks use correct ID
+        cardElement.dataset.productId = newVariantId;
+        cardElement.querySelectorAll('[data-product-id]').forEach(el => {
+          if (el !== cardElement) el.dataset.productId = newVariantId;
+        });
+
+        this.updateFooterMessaging?.();
+        this.updateStepTimeline?.();
+        this._refreshSiblingDimState?.(stepIndex);
+      });
     }
   }
 
@@ -3639,7 +3644,7 @@ class BundleWidgetFullPage {
 
             <div class="product-spacer"></div>
 
-            ${this.renderVariantSelector(product)}
+            ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
 
             <div class="product-quantity-wrapper">
               <div class="product-quantity-selector">
@@ -3665,28 +3670,12 @@ class BundleWidgetFullPage {
     this.attachProductEventHandlers(productGrid, stepIndex);
   }
 
-  renderVariantSelector(product) {
+  renderVariantSelector(product, step) {
     if (!product.variants || product.variants.length <= 1) {
       return '';
     }
-
-    return `
-      <div class="variant-selector-wrapper">
-        <select class="variant-selector" data-base-product-id="${product.id}">
-          ${product.variants.map(v => {
-            // Grey out variants that are hard out of stock. quantityAvailable === 0
-            // only disables when the variant does NOT accept backorders
-            // (currentlyNotInStock === true means "sold out but backorderable").
-            const isHardOOS = v.available !== true
-              || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
-            const label = isHardOOS ? `${v.title} — out of stock` : v.title;
-            const selected = v.id === product.variantId ? 'selected' : '';
-            const disabled = isHardOOS ? 'disabled' : '';
-            return `<option value="${v.id}" ${selected} ${disabled}>${label}</option>`;
-          }).join('')}
-        </select>
-      </div>
-    `;
+    const primaryOptionName = step?.primaryVariantOption || null;
+    return VariantSelectorComponent.renderHtml(product, primaryOptionName);
   }
 
   attachProductEventHandlers(productGrid, stepIndex) {
