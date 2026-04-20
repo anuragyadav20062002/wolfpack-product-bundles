@@ -4022,6 +4022,45 @@ body.modal-open {
   display: block;
 }
 
+.discount-progress-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bundle-discount-banner-bg, #1a1a1a);
+  color: var(--bundle-discount-banner-text, #ffffff);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 8px 8px 0 0;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.discount-progress-banner.reached {
+  background: var(--bundle-discount-banner-bg, #16a34a);
+  color: var(--bundle-discount-banner-text, #ffffff);
+}
+
+.discount-progress-banner .dpb-icon {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.discount-progress-banner .dpb-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.bundle-sidebar .discount-progress-banner {
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
 .full-page-footer.floating-card .footer-bar {
   position: relative;
   z-index: 1; /* above the backdrop (z-index: 0) within the footer stacking context */

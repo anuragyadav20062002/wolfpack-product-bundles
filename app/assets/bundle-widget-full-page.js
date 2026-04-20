@@ -1192,6 +1192,13 @@ class BundleWidgetFullPage {
     `;
     panel.appendChild(totalSection);
 
+    // Discount progress banner — above Add to Cart button
+    const sidebarBanner = this._renderDiscountProgressBanner();
+    if (sidebarBanner) {
+      sidebarBanner.classList.add('discount-progress-banner--sidebar');
+      panel.appendChild(sidebarBanner);
+    }
+
     // Navigation buttons
     const navSection = document.createElement('div');
     navSection.className = 'side-panel-nav';
@@ -2180,8 +2187,12 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Stack: callout (top, always visible) → panel (slides open) → backdrop → bar (always visible)
+    // Discount progress banner — sits between panel and bar, always visible
+    const discountBanner = this._renderDiscountProgressBanner();
+
+    // Stack: callout → panel → discount banner → backdrop → bar
     this.elements.footer.appendChild(panel);
+    if (discountBanner) this.elements.footer.appendChild(discountBanner);
     this.elements.footer.appendChild(backdrop);
     this.elements.footer.appendChild(bar);
   }
@@ -3057,6 +3068,70 @@ class BundleWidgetFullPage {
       );
       footerDiscountText.innerHTML = progressMessage;
       this.elements.footer.classList.remove('qualified');
+    }
+
+    this._updateDiscountProgressBanner();
+  }
+
+  // Returns a new .discount-progress-banner DOM element, or null when no discount is configured.
+  // Used by both the footer and the sidebar panel.
+  _renderDiscountProgressBanner() {
+    if (!this.selectedBundle?.pricing?.enabled) return null;
+
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle, totalPrice, totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    );
+
+    let message = '';
+    let isReached = false;
+
+    if (discountInfo.hasDiscount) {
+      isReached = true;
+      message = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+        variables
+      );
+    } else {
+      const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
+      if (!nextRule) return null;
+      message = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+        variables
+      );
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'discount-progress-banner' + (isReached ? ' reached' : '');
+    banner.innerHTML = message;
+    return banner;
+  }
+
+  // Updates the .discount-progress-banner already in the footer in-place (avoids full footer re-render).
+  _updateDiscountProgressBanner() {
+    if (!this.elements.footer) return;
+    const existing = this.elements.footer.querySelector('.discount-progress-banner');
+    const fresh = this._renderDiscountProgressBanner();
+
+    if (fresh && existing) {
+      existing.className = fresh.className;
+      existing.innerHTML = fresh.innerHTML;
+    } else if (fresh && !existing) {
+      // Insert between footer-panel and footer-backdrop
+      const backdrop = this.elements.footer.querySelector('.footer-backdrop');
+      if (backdrop) {
+        this.elements.footer.insertBefore(fresh, backdrop);
+      }
+    } else if (!fresh && existing) {
+      existing.remove();
     }
   }
 

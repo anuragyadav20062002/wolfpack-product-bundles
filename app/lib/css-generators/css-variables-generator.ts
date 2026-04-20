@@ -302,6 +302,10 @@ export function generateFullPageVariables(ctx: CSSGenerationContext): string {
   --bundle-step-timeline-inactive-color: ${s.stepTimelineInactiveColor || '#9CA3AF'};
   --bundle-step-timeline-complete-color: ${s.stepTimelineCompleteColor || globalPrimaryButton};
 
+  /* Discount Progress Banner */
+  --bundle-discount-banner-bg: ${s.discountBannerBg || '#1a1a1a'};
+  --bundle-discount-banner-text: ${s.discountBannerText || '#ffffff'};
+
   /* Bundle Header (Instructions) */
   --bundle-full-page-title-font-size: ${s.fullPageTitleFontSize || 20}px;
   --bundle-full-page-title-color: ${s.fullPageTitleColor || globalPrimaryText};
