@@ -189,6 +189,9 @@ class BundleWidgetFullPage {
       // Attach event listeners
       this.attachEventListeners();
 
+      // Render floating promo badge (if enabled and not session-dismissed)
+      this._initFloatingBadge();
+
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
@@ -4470,6 +4473,31 @@ class BundleWidgetFullPage {
         p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
       });
     }
+  }
+
+  _initFloatingBadge() {
+    const enabled = this.selectedBundle && this.selectedBundle.floatingBadgeEnabled;
+    const text = this.selectedBundle && this.selectedBundle.floatingBadgeText;
+    if (!enabled || !text || !text.trim()) return;
+
+    const DISMISS_KEY = `fpb_badge_dismissed_${this.selectedBundle.id}`;
+    if (sessionStorage.getItem(DISMISS_KEY)) return;
+
+    const badge = document.createElement('div');
+    badge.className = 'floating-promo-badge';
+    badge.setAttribute('role', 'status');
+    badge.innerHTML = `<span class="floating-promo-badge__text">${this._escapeHtml(text.trim())}</span><button class="floating-promo-badge__close" aria-label="Dismiss">&times;</button>`;
+
+    badge.querySelector('.floating-promo-badge__close').addEventListener('click', () => {
+      sessionStorage.setItem(DISMISS_KEY, '1');
+      badge.remove();
+    });
+
+    document.body.appendChild(badge);
+  }
+
+  _escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   attachEventListeners() {

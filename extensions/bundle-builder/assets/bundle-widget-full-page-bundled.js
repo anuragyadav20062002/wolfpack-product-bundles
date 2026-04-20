@@ -262,6 +262,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -2513,6 +2521,8 @@ class BundleWidgetFullPage {
 
       this.attachEventListeners();
 
+      this._initFloatingBadge();
+
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
@@ -4051,7 +4061,7 @@ class BundleWidgetFullPage {
         `).join('')}
       </div>
       <style>
-
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
@@ -4067,6 +4077,7 @@ class BundleWidgetFullPage {
           box-shadow: none;
         }
 
+        /* Full card pulsating effect */
         .skeleton-card-content {
           position: absolute;
           top: 0;
@@ -5554,6 +5565,15 @@ class BundleWidgetFullPage {
     });
   }
 
+  /**
+   * Look up real stock for a variant in a step's product data.
+   * Returns:
+   *   - available: numeric remaining stock, or null (untracked/unlimited)
+   *   - outOfStock: true when the variant is known to be out of stock and does
+   *     not accept backorders (available === 0 and currentlyNotInStock is false)
+   *   - acceptsBackorder: true when out of stock but backorders are allowed
+   *     — in that case the UI should not clamp to zero.
+   */
   getVariantAvailable(stepIndex, variantId) {
     const products = this.stepProductData[stepIndex] || [];
     const product = products.find(p => (p.variantId || p.id) === variantId);
@@ -6252,6 +6272,10 @@ class BundleWidgetFullPage {
     return bundleInstanceId;
   }
 
+  /**
+   * Parses the JSON string from data-tier-config into a TierConfig array.
+   * Returns [] on any error — pill bar is simply not shown.
+   */
   parseTierConfig(rawJson) {
     try {
       const parsed = JSON.parse(rawJson);
@@ -6266,6 +6290,20 @@ class BundleWidgetFullPage {
     }
   }
 
+  /**
+   * Resolves which tier config array to use for pill rendering.
+   *
+   * Preference order:
+   *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
+   *     tiers in the admin UI (>= 2 valid entries after mapping).
+   *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
+   *     source, used as fallback when apiTierConfig is null/undefined.
+   *
+   * apiTierConfig entries use { label, linkedBundleId } (DB schema).
+   * Widget pill entries use { label, bundleId } — this method performs the mapping.
+   *
+   * Returns [] when fewer than 2 valid tiers exist after filtering.
+   */
   resolveTierConfig(apiTierConfig, dataTierConfig) {
     if (apiTierConfig == null) return dataTierConfig;
 
@@ -6283,15 +6321,28 @@ class BundleWidgetFullPage {
     return mapped.length >= 2 ? mapped : [];
   }
 
+  /**
+   * Resolves whether to show the step timeline.
+   * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
+   *
+   * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
+   * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
+   * @returns {boolean}
+   */
   resolveShowStepTimeline(apiValue, dataAttrValue) {
     if (apiValue !== null && apiValue !== undefined) return apiValue;
     return dataAttrValue;
   }
 
+  /** Returns true if the given tier index is the currently active one. */
   isTierActive(tierIndex) {
     return tierIndex === this.activeTierIndex;
   }
 
+  /**
+   * Inserts the tier pill bar as the first child of the container.
+   * No-op when fewer than 2 tiers are configured (backward-compatible).
+   */
   initTierPills(tiers) {
     if (tiers.length < 2) return;
 
@@ -6315,6 +6366,7 @@ class BundleWidgetFullPage {
     this.elements.tierPillBar = bar;
   }
 
+  /** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
   updatePillActiveStates() {
     if (!this.elements.tierPillBar) return;
     this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -6325,6 +6377,7 @@ class BundleWidgetFullPage {
     });
   }
 
+  /** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
   async switchTier(bundleId, tierIndex) {
     if (tierIndex === this.activeTierIndex) return;
 
@@ -6377,6 +6430,31 @@ class BundleWidgetFullPage {
         p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
       });
     }
+  }
+
+  _initFloatingBadge() {
+    const enabled = this.selectedBundle && this.selectedBundle.floatingBadgeEnabled;
+    const text = this.selectedBundle && this.selectedBundle.floatingBadgeText;
+    if (!enabled || !text || !text.trim()) return;
+
+    const DISMISS_KEY = `fpb_badge_dismissed_${this.selectedBundle.id}`;
+    if (sessionStorage.getItem(DISMISS_KEY)) return;
+
+    const badge = document.createElement('div');
+    badge.className = 'floating-promo-badge';
+    badge.setAttribute('role', 'status');
+    badge.innerHTML = `<span class="floating-promo-badge__text">${this._escapeHtml(text.trim())}</span><button class="floating-promo-badge__close" aria-label="Dismiss">&times;</button>`;
+
+    badge.querySelector('.floating-promo-badge__close').addEventListener('click', () => {
+      sessionStorage.setItem(DISMISS_KEY, '1');
+      badge.remove();
+    });
+
+    document.body.appendChild(badge);
+  }
+
+  _escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   attachEventListeners() {
@@ -6498,6 +6576,25 @@ class BundleWidgetFullPage {
     `;
   }
 
+  /**
+   * Fire-and-forget error report to the server so AppLogger can track widget failures.
+   * Does NOT await — never blocks the render path.
+   */
+
+  /**
+   * Background layout refresh — runs after initial render.
+   *
+   * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
+   * after the merchant saves a layout change. This method fetches the latest config
+   * from the proxy API and, if the layout differs from what was cached, re-renders
+   * the steps container so the correct layout is shown within seconds of page load.
+   *
+   * Only runs when:
+   *   1. Cached data was used for first render (data-bundle-config attr was present)
+   *   2. Not in the Shopify theme editor (designMode)
+   *
+   * Fire-and-forget: all errors are silently swallowed.
+   */
   async _scheduleLayoutRefresh() {
     const bundleId = this.container.dataset.bundleId;
     if (!bundleId) return;
@@ -6544,7 +6641,7 @@ class BundleWidgetFullPage {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         keepalive: true,
-      }).catch(() => {  });
+      }).catch(() => { /* best-effort — ignore if proxy is also down */ });
     } catch (_) {
 
     }

@@ -99,6 +99,8 @@ model Bundle {
   loadingGif       String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
   tierConfig       Json?   // Pricing tier pills config: [{ label, linkedBundleId }] (full-page bundles only)
   showStepTimeline Boolean? // Admin UI override for step timeline visibility; null = defer to theme editor setting
+  floatingBadgeEnabled Boolean  @default(false) // Show floating dismissible promo badge on storefront
+  floatingBadgeText    String   @default("")    // Badge text (max 60 chars)
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)

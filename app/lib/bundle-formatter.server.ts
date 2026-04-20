@@ -28,6 +28,8 @@ export interface FormattedBundle {
   loadingGif: string | null;
   tierConfig: unknown;
   showStepTimeline: boolean | null;
+  floatingBadgeEnabled: boolean;
+  floatingBadgeText: string;
   steps: FormattedStep[];
   pricing: FormattedPricing | null;
 }
@@ -163,6 +165,8 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     loadingGif: bundle.loadingGif ?? null,
     tierConfig: bundle.tierConfig ?? null,
     showStepTimeline: bundle.showStepTimeline ?? null,
+    floatingBadgeEnabled: bundle.floatingBadgeEnabled ?? false,
+    floatingBadgeText: bundle.floatingBadgeText ?? '',
     steps,
     pricing: bundle.pricing
       ? {

@@ -395,6 +395,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     // Parse: "true" → true, "false" → false, null/missing → null
     const showStepTimelineParsed: boolean | null =
       showStepTimelineRaw === "true" ? true : showStepTimelineRaw === "false" ? false : null;
+    const floatingBadgeEnabled = formData.get("floatingBadgeEnabled") === "true";
+    const floatingBadgeTextRaw = (formData.get("floatingBadgeText") as string) ?? "";
+    const floatingBadgeText = floatingBadgeTextRaw.slice(0, 60);
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -515,6 +518,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
           ? await validateTierConfig(tierConfigParsed, session.shop, db)
           : null,
         showStepTimeline: showStepTimelineForSave,
+        floatingBadgeEnabled,
+        floatingBadgeText,
         // Update steps if provided
         ...(stepsData && {
           steps: {

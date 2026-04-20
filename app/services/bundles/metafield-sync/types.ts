@@ -61,6 +61,10 @@ export interface BundleUiConfig {
   /** Widget style for product-page bundle (skai-lama-bottom-sheet-redesign).
    *  Absent = 'classic' — backward-compatible default. */
   widgetStyle?: 'classic' | 'bottom-sheet';
+  /** Show fixed-position floating promo badge on storefront (bottom-left). */
+  floatingBadgeEnabled?: boolean;
+  /** Text shown in the floating promo badge (max 60 chars). */
+  floatingBadgeText?: string;
 }
 
 export interface BundleUiStep {
