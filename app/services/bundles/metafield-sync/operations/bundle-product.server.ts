@@ -256,6 +256,7 @@ export async function updateBundleProductMetafields(
       defaultVariantId: step.defaultVariantId || null,
       imageUrl: step.imageUrl ?? null,
       bannerImageUrl: step.bannerImageUrl ?? null,
+      timelineIconUrl: step.timelineIconUrl ?? null,
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,

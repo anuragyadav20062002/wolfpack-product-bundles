@@ -231,6 +231,21 @@ npm run test:coverage # coverage report
 8. **Write tests BEFORE implementation for all new code** ✅
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
+11. **ALWAYS ask about DCP customizability for storefront changes** — if a storefront change is not explicitly specified as DCP-customizable, ask the user whether DCP support should be bundled with it before implementing ✅ — see DCP Customizability Rule below
+
+## 🎨 DCP Customizability Rule
+
+### Always ask about DCP before implementing storefront changes
+
+Any storefront-visible change (new UI element, new style, new behaviour) may need a merchant-facing DCP control. The rule is:
+
+- If the user **explicitly says** a storefront change should be DCP-customizable — implement the DCP control as part of the same issue/commit.
+- If the user **does not mention** DCP for a storefront change — **ask first**: "Should this also have a DCP control so merchants can customize it?"
+- Do NOT assume "no DCP needed" and do NOT add DCP controls speculatively without asking.
+
+**Why:** Storefront changes without DCP controls lock merchants into a single appearance. Adding DCP controls after the fact requires a second pass and a second migration. Asking upfront keeps the feature complete in one pass.
+
+---
 
 ## 🔄 No Backwards Compatibility Rule
 

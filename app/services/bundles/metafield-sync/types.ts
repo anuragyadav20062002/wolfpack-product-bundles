@@ -87,6 +87,8 @@ export interface BundleUiStep {
   discountBadgeLabel?: string;
   /** URL for the category image shown in the empty slot card. */
   categoryImageUrl?: string;
+  /** URL for the step's timeline icon (user-uploadable; separate from bannerImageUrl). */
+  timelineIconUrl?: string;
 }
 
 export interface BundleUiPricing {

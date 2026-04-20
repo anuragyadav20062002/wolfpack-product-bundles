@@ -1247,19 +1247,48 @@ class BundleWidgetFullPage {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Create horizontal step tabs - clickable tabs showing step names
+  // Returns default SVG icon markup for a step based on its type
+  _getDefaultTimelineIcon(step) {
+    if (step.isDefault) {
+      // Included/locked step — lock icon
+      return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
+    if (step.isFreeGift) {
+      // Free gift step — gift box icon
+      return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="20 12 20 22 4 22 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="2" y="7" width="20" height="5" rx="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="12" y1="22" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
+    // Regular step — shopping bag icon
+    return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  // Create circular icon-based step timeline with connecting lines and three icon states
   createStepTimeline() {
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'step-tabs-container';
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline';
 
     if (!this.selectedBundle || !this.selectedBundle.steps) {
-      return tabsContainer;
+      return timeline;
     }
 
-    this.selectedBundle.steps.forEach((step, index) => {
-      const tab = document.createElement('div');
-      tab.className = 'step-tab';
-      tab.dataset.stepIndex = index;
+    const steps = this.selectedBundle.steps;
+
+    steps.forEach((step, index) => {
+      const stepEl = document.createElement('div');
+      stepEl.className = 'timeline-step';
+      stepEl.dataset.stepIndex = index;
 
       // Determine step state
       const isDefaultStep = step.isDefault === true;
@@ -1267,124 +1296,61 @@ class BundleWidgetFullPage {
       const isCurrent = index === this.currentStepIndex;
       const isAccessible = this.isStepAccessible(index);
 
-      if (isDefaultStep) tab.classList.add('step-tab--included');
-      if (isCompleted && !isDefaultStep) tab.classList.add('completed');
-      if (isCurrent) tab.classList.add('active');
-      if (!isAccessible) tab.classList.add('locked');
+      if (isDefaultStep) stepEl.classList.add('timeline-step--included');
+      if (isCurrent) stepEl.classList.add('timeline-step--active');
+      if (isCompleted) stepEl.classList.add('timeline-step--completed');
+      if (!isCurrent && !isCompleted) stepEl.classList.add('timeline-step--inactive');
+      if (!isAccessible) stepEl.classList.add('timeline-step--locked');
 
-      // Get selection info for this step
-      const selectedProducts = this.selectedProducts[index] || {};
-      const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
-      const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
-
-      // Escape step name to prevent HTML injection (e.g., step name "1<QTY<4")
       const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
-      // Condition hints removed — step conditions are enforced via the Next button and tab click guards
 
-      // Tab content structure
-      let tabContent = '';
+      // Icon: user-uploaded → img element, else default SVG by step type
+      const iconContent = step.timelineIconUrl
+        ? `<img class="timeline-step-icon" src="${step.timelineIconUrl}" alt="${escapedName}">`
+        : this._getDefaultTimelineIcon(step);
 
-      // Default (included) step — always shown as locked with "Included" label
-      if (isDefaultStep) {
-        const productImages = hasSelections ? this.getStepProductImages(index) : [];
-        const imagesHtml = productImages.slice(0, 3).map(img =>
-          `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
-        ).join('');
-        tabContent = `
-          ${imagesHtml ? `<div class="tab-images">${imagesHtml}</div>` : `<div class="tab-number">${index + 1}</div>`}
-          <div class="tab-info">
-            <span class="tab-name">${escapedName}</span>
-            <span class="tab-count tab-count--included">Included</span>
-          </div>
-          <div class="tab-lock tab-lock--included">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
-            </svg>
-          </div>
-        `;
-      } else if (hasSelections) {
-        // Show product images if available
-        const productImages = this.getStepProductImages(index);
-        if (productImages.length > 0) {
-          const imagesHtml = productImages.slice(0, 3).map(img =>
-            `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
-          ).join('');
-          tabContent = `
-            <div class="tab-images">${imagesHtml}</div>
-            <div class="tab-info">
-              <span class="tab-name">${escapedName}</span>
-              <span class="tab-count">${totalQuantity} selected</span>
-            </div>
-            <div class="tab-check">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          `;
-        } else {
-          // No images, just show checkmark
-          tabContent = `
-            <div class="tab-info">
-              <span class="tab-name">${escapedName}</span>
-              <span class="tab-count">${totalQuantity} selected</span>
-            </div>
-            <div class="tab-check">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          `;
-        }
-      } else {
-        // Empty step - show step icon (if configured) or step number, name, count, optional lock
-        const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
-        const stepIconHtml = step.imageUrl
-          ? `<img src="${step.imageUrl}" alt="${escapedName}" class="tab-step-icon">`
-          : `<div class="tab-number">${index + 1}</div>`;
-        tabContent = `
-          ${stepIconHtml}
-          <div class="tab-info">
-            <span class="tab-name">${escapedName}</span>
-            <span class="tab-count">0 selected</span>
-          </div>
-          ${!isAccessible ? `
-            <div class="tab-lock">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
-              </svg>
-            </div>
-            <div class="tab-locked-tooltip">Complete "${prevStepName}" first</div>
-          ` : ''}
-        `;
-      }
+      // Checkmark badge — always rendered, shown via CSS only when completed
+      const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
 
-      tab.innerHTML = tabContent;
+      // Connector — only on non-last steps
+      const connectorHtml = index < steps.length - 1
+        ? `<div class="timeline-connector"><div class="timeline-connector-fill"></div></div>`
+        : '';
 
-      // Make clickable if accessible
-      if (isAccessible) {
-        tab.style.cursor = 'pointer';
-        tab.addEventListener('click', () => {
-          // Re-check accessibility at click time (not stale closure)
+      stepEl.innerHTML = `
+        <div class="timeline-icon-wrapper">
+          ${iconContent}
+          <div class="timeline-checkmark">${checkmarkSvg}</div>
+        </div>
+        <span class="timeline-step-name">${escapedName}</span>
+        ${connectorHtml}
+      `;
+
+      // Click handler — accessible steps only
+      if (isAccessible && !isDefaultStep) {
+        stepEl.style.cursor = 'pointer';
+        stepEl.addEventListener('click', () => {
           if (!this.isStepAccessible(index)) {
             ToastManager.show('Please complete the previous steps first.');
             return;
           }
-          // Block forward navigation if current step condition is not met
           if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
             ToastManager.show('Please meet the step conditions before proceeding.');
             return;
           }
           this.currentStepIndex = index;
-          this.searchQuery = ''; // Clear search when changing steps
-          this.activeCollectionId = null; // Clear collection filter when changing steps
+          this.searchQuery = '';
+          this.activeCollectionId = null;
           this.reRenderFullPage();
         });
       }
 
-      tabsContainer.appendChild(tab);
+      timeline.appendChild(stepEl);
     });
 
-    return tabsContainer;
+    return timeline;
   }
 
   // Returns a full-width banner image element for the active step, or null if not configured
@@ -2129,7 +2095,7 @@ class BundleWidgetFullPage {
   // state (completed/active/locked classes, click listeners, product images, counts).
   updateStepTimeline() {
     if (!this.config.showStepTimeline) return;
-    const existing = this.elements.stepsContainer.querySelector('.step-tabs-container');
+    const existing = this.elements.stepsContainer.querySelector('.step-timeline');
     if (!existing) return;
     const fresh = this.createStepTimeline();
     existing.parentNode.replaceChild(fresh, existing);

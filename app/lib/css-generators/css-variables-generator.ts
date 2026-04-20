@@ -293,13 +293,14 @@ export function generateFullPageVariables(ctx: CSSGenerationContext): string {
   --bundle-step-timeline-completed-text: ${s.stepTimelineCompletedText || globalButtonText};
   --bundle-step-timeline-locked-border: ${s.stepTimelineLockedBorder || '#808080'};
   --bundle-step-timeline-locked-text: ${s.stepTimelineLockedText || '#808080'};
-  --bundle-step-timeline-line-color: ${s.stepTimelineLineColor || '#808080'};
+  --bundle-step-timeline-line-color: ${s.stepTimelineLineColor || '#E5E7EB'};
   --bundle-step-timeline-line-completed: ${s.stepTimelineLineCompleted || globalPrimaryButton};
-  --bundle-step-timeline-line-width: ${s.stepTimelineLineWidth || 308}px;
-  --bundle-step-timeline-line-height: ${s.stepTimelineLineHeight || 3}px;
-  --bundle-step-timeline-gap: ${s.stepTimelineGap || 308}px;
-  --bundle-step-timeline-name-font-size: ${s.stepTimelineNameFontSize || 19.788}px;
+  --bundle-step-timeline-line-height: ${s.stepTimelineLineHeight || 2}px;
+  --bundle-step-timeline-name-font-size: ${s.stepTimelineNameFontSize || 13}px;
   --bundle-step-timeline-name-color: ${s.stepTimelineNameColor || globalPrimaryText};
+  --bundle-step-timeline-active-color: ${s.stepTimelineActiveColor || globalPrimaryButton};
+  --bundle-step-timeline-inactive-color: ${s.stepTimelineInactiveColor || '#9CA3AF'};
+  --bundle-step-timeline-complete-color: ${s.stepTimelineCompleteColor || globalPrimaryButton};
 
   /* Bundle Header (Instructions) */
   --bundle-full-page-title-font-size: ${s.fullPageTitleFontSize || 20}px;

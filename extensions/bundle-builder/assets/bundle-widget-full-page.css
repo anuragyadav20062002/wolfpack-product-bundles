@@ -187,109 +187,215 @@
 
 .step-timeline {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bundle-step-timeline-gap, 308px); /* Space for connecting line between circles */
-  margin: 0 auto 20px;
+  align-items: flex-start;
+  margin: 0 auto 24px;
+  padding: 0 8px;
   max-width: 100%;
 }
 
 .timeline-step {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  cursor: default;
+  min-width: 0;
 }
 
-.timeline-circle {
-  width: 48px; /* Mobile: Compact circle */
+.timeline-icon-wrapper {
+  position: relative;
+  width: 48px;
   height: 48px;
   border-radius: 50%;
   background: var(--bundle-step-timeline-circle-bg, #FFFFFF);
-  border: 2px solid var(--bundle-step-timeline-circle-border, #1E1E1E);
+  border: 2px solid var(--bundle-step-timeline-circle-border, #D1D5DB);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  transition: border-color 300ms ease, box-shadow 300ms ease;
   z-index: 2;
-  font-weight: bold;
-  font-size: 16px; /* Mobile: Readable */
-  color: var(--bundle-step-timeline-circle-text-color, #1E1E1E);
+  flex-shrink: 0;
 }
 
 @media (min-width: 640px) {
-  .timeline-circle {
+  .timeline-icon-wrapper {
     width: 56px;
     height: 56px;
-    font-size: 18px;
-    border-width: var(--bundle-step-timeline-circle-border-width, 3px);
+    border-width: var(--bundle-step-timeline-circle-border-width, 2px);
   }
 }
 
 @media (min-width: 1024px) {
-  .timeline-circle {
-    width: var(--bundle-step-timeline-circle-size, 69px);
-    height: var(--bundle-step-timeline-circle-size, 69px);
-    font-size: var(--bundle-step-timeline-circle-font-size, 20px);
+  .timeline-icon-wrapper {
+    width: var(--bundle-step-timeline-circle-size, 64px);
+    height: var(--bundle-step-timeline-circle-size, 64px);
   }
 }
 
-.timeline-step.completed .timeline-circle {
-  background: var(--bundle-step-timeline-completed-bg, #1E1E1E);
-  color: var(--bundle-step-timeline-completed-text, #FFFFFF);
+.timeline-step-icon {
+  width: 58%;
+  height: 58%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
-.timeline-step.current .timeline-circle {
-  background: var(--bundle-step-timeline-circle-bg, #FFFFFF);
-  border-color: var(--bundle-step-timeline-circle-border, #1E1E1E);
+.timeline-step-icon--svg {
+  width: 48%;
+  height: 48%;
+  display: block;
+  color: var(--bundle-step-timeline-inactive-color, #9CA3AF);
+  transition: color 300ms ease;
 }
 
-.timeline-step.locked .timeline-circle {
-  background: var(--bundle-step-timeline-circle-bg, #FFFFFF);
-  border-color: var(--bundle-step-timeline-locked-border, #808080);
-  color: var(--bundle-step-timeline-locked-text, #808080);
-}
-
-.timeline-line {
+.timeline-checkmark {
   position: absolute;
-  height: var(--bundle-step-timeline-line-height, 3px);
-  background: var(--bundle-step-timeline-line-color, #808080);
-  top: calc(var(--bundle-step-timeline-circle-size, 69px) / 2);
-  left: var(--bundle-step-timeline-circle-size, 69px);
-  width: var(--bundle-step-timeline-line-width, 308px);
-  z-index: 1;
-  border-radius: 4px;
+  bottom: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bundle-step-timeline-complete-color, var(--bundle-primary-color, #1E1E1E));
+  border: 2px solid var(--bundle-step-timeline-circle-bg, #FFFFFF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 200ms ease 200ms, transform 200ms ease 200ms;
+  z-index: 3;
 }
 
-.timeline-step.completed .timeline-line {
-  background: var(--bundle-step-timeline-line-completed, #1E1E1E);
+.timeline-checkmark svg {
+  width: 9px;
+  height: 9px;
 }
 
 .timeline-step-name {
-  margin-top: 10px;
+  margin-top: 8px;
   font-family: inherit;
-  font-weight: bold;
-  font-size: 13px; /* Mobile: Compact but readable */
-  color: var(--bundle-step-timeline-name-color, #1E1E1E);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--bundle-step-timeline-inactive-color, #9CA3AF);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 4px;
+  transition: color 300ms ease;
 }
 
 @media (min-width: 640px) {
   .timeline-step-name {
-    margin-top: 12px;
-    font-size: 15px;
+    font-size: 12px;
+    margin-top: 10px;
   }
 }
 
 @media (min-width: 1024px) {
   .timeline-step-name {
-    margin-top: 16px;
-    font-size: var(--bundle-step-timeline-name-font-size, 19.788px);
+    font-size: var(--bundle-step-timeline-name-font-size, 13px);
+    margin-top: 12px;
   }
 }
 
-.timeline-step.locked .timeline-step-name {
-  color: var(--bundle-step-timeline-locked-text, #808080);
+.timeline-connector {
+  position: absolute;
+  top: calc(24px - 1px); /* half of 48px icon minus half line height */
+  left: calc(50% + 28px); /* right edge of icon + 4px */
+  right: calc(-50% + 28px); /* mirror: left edge of next icon - 4px */
+  height: var(--bundle-step-timeline-line-height, 2px);
+  background: var(--bundle-step-timeline-line-color, #E5E7EB);
+  border-radius: 2px;
+  overflow: hidden;
+  z-index: 1;
+}
+
+@media (min-width: 640px) {
+  .timeline-connector {
+    top: calc(28px - 1px);
+    left: calc(50% + 32px);
+    right: calc(-50% + 32px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .timeline-connector {
+    top: calc(var(--bundle-step-timeline-circle-size, 64px) / 2 - 1px);
+    left: calc(50% + var(--bundle-step-timeline-circle-size, 64px) / 2 + 4px);
+    right: calc(-50% + var(--bundle-step-timeline-circle-size, 64px) / 2 + 4px);
+  }
+}
+
+.timeline-connector-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--bundle-step-timeline-line-completed, var(--bundle-primary-color, #1E1E1E));
+  border-radius: 2px;
+  transition: width 400ms ease;
+}
+
+.timeline-step--inactive .timeline-icon-wrapper {
+  border-color: var(--bundle-step-timeline-circle-border, #D1D5DB);
+  filter: grayscale(1) opacity(0.55);
+}
+
+.timeline-step--active .timeline-icon-wrapper {
+  border-color: var(--bundle-step-timeline-active-color, var(--bundle-primary-color, #1E1E1E));
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  filter: none;
+}
+
+.timeline-step--active .timeline-step-icon--svg {
+  color: var(--bundle-step-timeline-active-color, var(--bundle-primary-color, #1E1E1E));
+}
+
+.timeline-step--active .timeline-step-name {
+  color: var(--bundle-step-timeline-active-color, var(--bundle-primary-color, #1E1E1E));
+  font-weight: 700;
+}
+
+.timeline-step--completed .timeline-icon-wrapper {
+  border-color: var(--bundle-step-timeline-complete-color, var(--bundle-primary-color, #1E1E1E));
+  filter: none;
+}
+
+.timeline-step--completed .timeline-step-icon--svg {
+  color: var(--bundle-step-timeline-complete-color, var(--bundle-primary-color, #1E1E1E));
+}
+
+.timeline-step--completed .timeline-step-name {
+  color: var(--bundle-step-timeline-complete-color, var(--bundle-primary-color, #1E1E1E));
+}
+
+.timeline-step--completed .timeline-checkmark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.timeline-step--completed .timeline-connector-fill {
+  width: 100%;
+}
+
+.timeline-step--included .timeline-icon-wrapper {
+  border-color: var(--bundle-step-timeline-circle-border, #D1D5DB);
+  filter: none;
+  opacity: 0.7;
+}
+
+.timeline-step--included .timeline-step-name {
+  color: var(--bundle-step-timeline-inactive-color, #9CA3AF);
+}
+
+.timeline-step--locked .timeline-icon-wrapper {
+  filter: grayscale(1) opacity(0.4);
+  cursor: not-allowed;
+}
+
+.timeline-step--locked.timeline-step--active .timeline-icon-wrapper {
+  filter: none;
+  cursor: not-allowed;
 }
 
 .step-tabs-container {
@@ -539,7 +645,6 @@
     scrollbar-width: none;
     justify-content: flex-start;
     padding: 0 12px 4px;
-    /* Fade gradient on right edge — hints that more tabs are scrollable */
     -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
     mask-image: linear-gradient(to right, black 80%, transparent 100%);
   }
@@ -554,14 +659,10 @@
   }
 }
 
-/* ── Connecting progress line between step tabs ──────────────────────────── */
-
-/* The container must be relative for the line to sit behind the tabs */
 .step-tabs-container {
   position: relative;
 }
 
-/* Line extends from every tab except the last one */
 .step-tab:not(:last-child)::after {
   content: '';
   position: absolute;
@@ -575,7 +676,6 @@
   pointer-events: none;
 }
 
-/* Completed tabs get the filled-color line */
 .step-tab.completed:not(:last-child)::after {
   background: var(--bundle-step-bar-progress-filled-color, #1E1E1E);
 }
@@ -594,8 +694,6 @@
   }
 }
 
-/* ── Step icon image (merchant-uploaded, replaces tab-number circle) ──────── */
-
 .tab-step-icon {
   width: 28px;
   height: 28px;
@@ -608,8 +706,6 @@
 .step-tab.active .tab-step-icon {
   border-color: var(--bundle-tabs-active-text-color, #FFFFFF);
 }
-
-/* ── Per-step banner image ────────────────────────────────────────────────── */
 
 .step-banner-image {
   width: 100%;
@@ -1673,7 +1769,6 @@
   display: block;
 }
 
-
 .full-page-footer.redesigned {
   display: block !important;
   padding: 0;
@@ -2305,7 +2400,6 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
 
 @media (max-width: 768px) {
   .timeline-line {
@@ -3347,7 +3441,6 @@ body.modal-open {
   }
 }
 
-/* Enter from bottom — toggled by JS when --bundle-toast-enter-from-bottom is 1 */
 .bundle-toast.bundle-toast-from-bottom {
   top: auto;
   bottom: 16px;
@@ -3449,7 +3542,6 @@ body.modal-open {
   width: 100%;
   min-height: 100vh;
 }
-
 
 .sidebar-layout-wrapper .sidebar-content {
   flex: 1 1 0%;
@@ -3801,8 +3893,6 @@ body.modal-open {
   outline-offset: 2px;
 }
 
-/* === Floating-Card Floating Footer Card === */
-/* Floating card anchored above the bottom edge — matches the floating card layout. */
 .full-page-footer.floating-card {
   position: fixed !important;
   bottom: 48px;
@@ -3818,7 +3908,6 @@ body.modal-open {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
-/* Callout banner — always visible at top of card when a deal is active */
 .full-page-footer.floating-card .footer-callout-banner {
   background: var(--bundle-footer-callout-bg, #22C55E);
   color: #FFFFFF;
@@ -3829,7 +3918,6 @@ body.modal-open {
   line-height: 1.4;
 }
 
-/* Panel — expandable product list, slides down between callout and bar */
 .full-page-footer.floating-card .footer-panel {
   position: relative;
   z-index: 1; /* above the backdrop (z-index: 0) within the footer stacking context */
@@ -3924,7 +4012,6 @@ body.modal-open {
   display: none;
   position: fixed;
   inset: 0;
-  /* z-index: 0 within the footer's stacking context — panel and bar sit above it at z-index: 1 */
   z-index: 0;
   background: transparent;
   border: none;
@@ -3964,7 +4051,6 @@ body.modal-open {
   background: rgba(0, 0, 0, 0.06);
 }
 
-/* .footer-centre-left retained for non-floating layouts */
 .full-page-footer.floating-card .footer-centre-left {
   display: flex;
   align-items: center;
@@ -3973,7 +4059,6 @@ body.modal-open {
   min-width: 0;
 }
 
-/* Floating-card: centre column stacks toggle (row 1) + total/badge (row 2) */
 .full-page-footer.floating-card .footer-centre {
   display: flex;
   flex-direction: column;
@@ -4158,13 +4243,6 @@ body.modal-open {
   }
 }
 
-
-/* ========================================================
-   FREE GIFT + DEFAULT PRODUCT + MOBILE BOTTOM BAR
-   Phase 3 — fpb-sidebar-free-gift-1
-   ======================================================== */
-
-/* ---- Free Gift Section in Sidebar ---- */
 .side-panel-free-gift {
   display: flex;
   align-items: flex-start;
@@ -4183,7 +4261,6 @@ body.modal-open {
 .side-panel-free-gift-text { font-size: 13px; line-height: 1.4; color: var(--bundle-text-secondary, #555); }
 .side-panel-free-gift.unlocked .side-panel-free-gift-text { color: var(--bundle-free-gift-unlocked-text, #2e7d32); }
 
-/* ---- Skeleton Slots ---- */
 .side-panel-skeleton-slot {
   display: flex;
   align-items: center;
@@ -4207,7 +4284,6 @@ body.modal-open {
   50% { opacity: 1; }
 }
 
-/* ---- Free Badge on Product Cards ---- */
 .fpb-card-image-wrapper { position: relative; }
 .fpb-free-badge {
   position: absolute;
@@ -4232,7 +4308,6 @@ body.modal-open {
   display: block;
 }
 
-/* ---- Default (Included) Step — Tab Styling ---- */
 .step-tab--included {
   border-style: dashed;
   opacity: 0.9;
@@ -4248,7 +4323,6 @@ body.modal-open {
   color: #059669;
 }
 
-/* ---- Default (Included) Step — Card Styling ---- */
 .fpb-card--default-included .product-add-btn,
 .fpb-card--default-included .qty-increase,
 .fpb-card--default-included .qty-decrease {
@@ -4278,7 +4352,6 @@ body.modal-open {
   display: block;
 }
 
-/* ---- Free Gift Step Heading ---- */
 .fpb-step-free-heading {
   font-size: 18px;
   font-weight: 600;
@@ -4286,7 +4359,6 @@ body.modal-open {
   color: var(--bundle-text-primary, #111);
 }
 
-/* ---- Free Gift Price in Sidebar ($0.00 + original price strikethrough) ---- */
 .side-panel-product-price.free-gift-price { color: var(--bundle-success-color, #2e7d32); }
 .side-panel-product-original-price {
   font-size: 11px;
@@ -4295,7 +4367,6 @@ body.modal-open {
   margin-left: 4px;
 }
 
-/* ---- Mobile Bottom Bar ---- */
 .fpb-mobile-bottom-bar {
   display: none;
   position: fixed;
@@ -4353,7 +4424,6 @@ body.modal-open {
 }
 .fpb-mobile-cta-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ---- Mobile Bottom Sheet ---- */
 .fpb-mobile-bottom-sheet {
   display: none;
   position: fixed;
