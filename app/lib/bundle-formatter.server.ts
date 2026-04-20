@@ -23,13 +23,6 @@ export interface FormattedBundle {
   bundleType: string;
   fullPageLayout: string | null;
   shopifyProductId: string | null;
-  promoBannerBgImage: string | null;
-  promoBannerBgImageCrop: string | null;
-  loadingGif: string | null;
-  tierConfig: unknown;
-  showStepTimeline: boolean | null;
-  floatingBadgeEnabled: boolean;
-  floatingBadgeText: string;
   steps: FormattedStep[];
   pricing: FormattedPricing | null;
 }
@@ -44,7 +37,6 @@ interface FormattedStep {
   displayVariantsAsIndividual: boolean;
   products: FormattedProduct[];
   collections: unknown[];
-  StepProduct: unknown[];
   conditionType: string | null;
   conditionOperator: string | null;
   conditionValue: string | null;
@@ -61,8 +53,6 @@ interface FormattedStep {
 interface FormattedProduct {
   id: string;
   title: string;
-  handle: string;
-  images: { url: string }[];
   featuredImage: { url: string } | null;
   price: number;
   compareAtPrice: number | null;
@@ -104,8 +94,6 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       return {
         id: sp.productId,
         title: sp.title,
-        handle: '',
-        images: sp.imageUrl ? [{ url: sp.imageUrl }] : [],
         featuredImage: sp.imageUrl ? { url: sp.imageUrl } : null,
         price: firstVariant?.price ? Math.round(parseFloat(firstVariant.price) * 100) : 0,
         compareAtPrice: firstVariant?.compareAtPrice
@@ -136,19 +124,18 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       enabled: step.enabled,
       displayVariantsAsIndividual: step.displayVariantsAsIndividual,
       products: productsArray,
-      collections: step.collections ?? [],
-      StepProduct: stepProducts,
-      conditionType: step.conditionType,
-      conditionOperator: step.conditionOperator,
-      conditionValue: step.conditionValue,
-      conditionOperator2: step.conditionOperator2,
-      conditionValue2: step.conditionValue2,
-      isFreeGift: step.isFreeGift ?? false,
-      freeGiftName: step.freeGiftName ?? null,
-      isDefault: step.isDefault ?? false,
-      defaultVariantId: step.defaultVariantId ?? null,
-      timelineIconUrl: step.timelineIconUrl ?? null,
-      primaryVariantOption: step.primaryVariantOption ?? null,
+      ...(step.collections?.length > 0 ? { collections: step.collections } : {}),
+      ...(step.conditionType != null ? { conditionType: step.conditionType } : {}),
+      ...(step.conditionOperator != null ? { conditionOperator: step.conditionOperator } : {}),
+      ...(step.conditionValue != null ? { conditionValue: step.conditionValue } : {}),
+      ...(step.conditionOperator2 != null ? { conditionOperator2: step.conditionOperator2 } : {}),
+      ...(step.conditionValue2 != null ? { conditionValue2: step.conditionValue2 } : {}),
+      ...(step.isFreeGift ? { isFreeGift: true } : {}),
+      ...(step.freeGiftName != null ? { freeGiftName: step.freeGiftName } : {}),
+      ...(step.isDefault ? { isDefault: true } : {}),
+      ...(step.defaultVariantId != null ? { defaultVariantId: step.defaultVariantId } : {}),
+      ...(step.timelineIconUrl != null ? { timelineIconUrl: step.timelineIconUrl } : {}),
+      ...(step.primaryVariantOption != null ? { primaryVariantOption: step.primaryVariantOption } : {}),
     };
   });
 
@@ -160,13 +147,6 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     bundleType: bundle.bundleType,
     fullPageLayout: bundle.fullPageLayout ?? null,
     shopifyProductId: bundle.shopifyProductId,
-    promoBannerBgImage: bundle.promoBannerBgImage ?? null,
-    promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
-    loadingGif: bundle.loadingGif ?? null,
-    tierConfig: bundle.tierConfig ?? null,
-    showStepTimeline: bundle.showStepTimeline ?? null,
-    floatingBadgeEnabled: bundle.floatingBadgeEnabled ?? false,
-    floatingBadgeText: bundle.floatingBadgeText ?? '',
     steps,
     pricing: bundle.pricing
       ? {

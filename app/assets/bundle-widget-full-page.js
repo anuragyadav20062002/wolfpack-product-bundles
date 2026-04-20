@@ -154,6 +154,9 @@ class BundleWidgetFullPage {
         return;
       }
 
+      // Merge bundle_settings metafield into selectedBundle (DCP display settings)
+      this._mergeBundleSettings(this.bundleSettings);
+
       // Resolve tier config — prefer admin-saved (API) over legacy Theme Editor (data attribute)
       this.tierConfig = this.resolveTierConfig(
         this.selectedBundle.tierConfig ?? null,
@@ -306,6 +309,13 @@ class BundleWidgetFullPage {
     };
 
     this.tierConfig = this.config.tierConfig;
+
+    // Parse bundle_settings metafield (DCP display settings — promoBanner, badge, etc.)
+    try {
+      this.bundleSettings = JSON.parse(dataset.bundleSettings || 'null') || {};
+    } catch {
+      this.bundleSettings = {};
+    }
 
     // Apply card layout settings as CSS variables
     this.applyCardLayoutSettings();
@@ -4472,6 +4482,17 @@ class BundleWidgetFullPage {
       pills.forEach(p => {
         p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
       });
+    }
+  }
+
+  _mergeBundleSettings(settings) {
+    if (!settings || !this.selectedBundle) return;
+    const keys = [
+      'promoBannerBgImage', 'promoBannerBgImageCrop', 'loadingGif',
+      'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
+    ];
+    for (const key of keys) {
+      if (settings[key] !== undefined) this.selectedBundle[key] = settings[key];
     }
   }
 
