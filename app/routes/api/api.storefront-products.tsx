@@ -156,7 +156,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Storefront token is created at install time (lifecycle webhook / auth callback).
     // If it is missing here, the install flow is broken — fail clearly and fast.
-    const session = await db.session.findFirst({
+    let session = await db.session.findFirst({
       where: { shop },
       select: { storefrontAccessToken: true, scope: true }
     });
