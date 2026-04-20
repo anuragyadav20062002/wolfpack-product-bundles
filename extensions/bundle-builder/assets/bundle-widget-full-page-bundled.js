@@ -11,29 +11,8 @@ window.__BUNDLE_WIDGET_VERSION__ = '2.6.0';
 (function() {
   'use strict';
 
-  // ============================================================================
-  // BUNDLE WIDGET COMPONENTS
-  // ============================================================================
-
-/**
- * Step Condition Validator
- *
- * Pure functions for evaluating step conditions in bundle widgets.
- * Used by both the product-page and full-page bundle widgets.
- *
- * Exported as a single `ConditionValidator` object so that:
- *  - The bundle build (IIFE) can access it as a local variable in scope
- *  - Node.js test environments can require() it via module.exports
- *
- * @version 1.0.0
- */
-
-
-// NOTE: This file intentionally uses an IIFE + module.exports pattern (not ES module export)
-// so that Jest/Node.js tests can require() it without a transform step. All other files in
-// this directory use ES module syntax. Do not convert without updating the test config.
 const ConditionValidator = (function () {
-  // ─── Operator constants ───────────────────────────────────────────────────
+
   const OPERATORS = {
     EQUAL_TO:                'equal_to',
     GREATER_THAN:            'greater_than',
@@ -42,25 +21,11 @@ const ConditionValidator = (function () {
     LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
   };
 
-  /**
-   * Calculate the total quantity in a step AFTER a proposed update.
-   *
-   * Correctly handles both:
-   *  - Existing products: replaces their current quantity with newQuantity
-   *  - New products (not yet in currentSelections): adds newQuantity to existing total
-   *
-   * @param {Record<string, number>} currentSelections  Current { productId → qty } map
-   * @param {string}  targetProductId  The product whose quantity is being changed
-   * @param {number}  newQuantity      The proposed new quantity (0 = remove)
-   * @returns {number}  Total quantity across all products in the step after the update
-   */
   function calculateStepTotalAfterUpdate(currentSelections, targetProductId, newQuantity) {
     const selections = currentSelections || {};
 
-    // Start with the target product's new quantity (handles new products correctly).
     let total = newQuantity;
 
-    // Add every OTHER product's existing quantity unchanged.
     for (const pid of Object.keys(selections)) {
       if (pid !== targetProductId) {
         total += selections[pid] || 0;
@@ -70,21 +35,8 @@ const ConditionValidator = (function () {
     return total;
   }
 
-  /**
-   * Determine whether a proposed quantity update is permitted by the step's condition.
-   *
-   * Only blocks INCREASES that would violate an upper-bound operator.
-   * Decreases are always permitted regardless of the condition state (so the
-   * customer can switch products without getting permanently stuck).
-   *
-   * @param {object}  step              Step config object (conditionType, conditionOperator, conditionValue)
-   * @param {Record<string, number>} currentSelections  Current selections for this step
-   * @param {string}  targetProductId   Product being updated
-   * @param {number}  newQuantity       Proposed quantity (0 = remove)
-   * @returns {{ allowed: boolean, limitText: string|null }}
-   */
   function canUpdateQuantity(step, currentSelections, targetProductId, newQuantity) {
-    // No explicit condition configured → no upper bound; always allow increases
+
     if (!step || !step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       return { allowed: true, limitText: null };
     }
@@ -95,11 +47,9 @@ const ConditionValidator = (function () {
       newQuantity,
     );
 
-    // Primary condition
     const primary = _evaluateCanUpdate(step.conditionOperator, step.conditionValue, totalAfter);
     if (!primary.allowed) return primary;
 
-    // Secondary condition — AND logic (only when both fields are non-null)
     if (step.conditionOperator2 != null && step.conditionValue2 != null) {
       const secondary = _evaluateCanUpdate(step.conditionOperator2, step.conditionValue2, totalAfter);
       if (!secondary.allowed) return secondary;
@@ -108,16 +58,6 @@ const ConditionValidator = (function () {
     return { allowed: true, limitText: null };
   }
 
-  /**
-   * Check whether a step's current selection fully satisfies its condition(s).
-   * Called at navigation time (Next / Add to Cart) to gate step completion.
-   *
-   * When a second condition is present, both must be satisfied (AND logic).
-   *
-   * @param {object}  step              Step config object
-   * @param {Record<string, number>} currentSelections  Current selections for this step
-   * @returns {boolean}
-   */
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
 
@@ -127,16 +67,13 @@ const ConditionValidator = (function () {
       total += qty || 0;
     }
 
-    // No explicit condition configured → only enforce minQuantity; no upper bound
     if (!step.conditionType || !step.conditionOperator || step.conditionValue == null) {
       const min = step.minQuantity != null ? Number(step.minQuantity) : 1;
       return total >= min;
     }
 
-    // Primary condition
     if (!_evaluateSatisfied(step.conditionOperator, step.conditionValue, total)) return false;
 
-    // Secondary condition — AND logic
     if (step.conditionOperator2 != null && step.conditionValue2 != null) {
       return _evaluateSatisfied(step.conditionOperator2, step.conditionValue2, total);
     }
@@ -144,17 +81,11 @@ const ConditionValidator = (function () {
     return true;
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
-
-  /**
-   * Evaluate a single condition's "can update" rule for the proposed total.
-   * Lower-bound operators never block increases (no upper cap from them alone).
-   */
   function _evaluateCanUpdate(operator, required, totalAfter) {
     let allowed;
     switch (operator) {
       case OPERATORS.EQUAL_TO:
-        // Allow building up to exactly N; prevent exceeding N.
+
         allowed = totalAfter <= required;
         break;
       case OPERATORS.LESS_THAN:
@@ -165,7 +96,7 @@ const ConditionValidator = (function () {
         break;
       case OPERATORS.GREATER_THAN:
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-        // Lower-bound: no upper cap — always allow increases.
+
         allowed = true;
         break;
       default:
@@ -174,9 +105,6 @@ const ConditionValidator = (function () {
     return { allowed, limitText: allowed ? null : _buildLimitText(operator, required) };
   }
 
-  /**
-   * Evaluate whether a total satisfies a single condition at step-completion time.
-   */
   function _evaluateSatisfied(operator, required, total) {
     switch (operator) {
       case OPERATORS.EQUAL_TO:                 return total === required;
@@ -199,7 +127,6 @@ const ConditionValidator = (function () {
     return map[operator] || String(required);
   }
 
-  // ─── Public API ───────────────────────────────────────────────────────────
   return {
     OPERATORS,
     calculateStepTotalAfterUpdate,
@@ -208,27 +135,14 @@ const ConditionValidator = (function () {
   };
 }());
 
-// CommonJS export for Node.js / Jest test environment.
-// Harmless in browsers (no `module` global in IIFE context).
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ConditionValidator;
 }
-
-
-/**
- * Bundle Widget - Global Constants and Configuration
- *
- * Central configuration used across all bundle widget modules.
- *
- * @version 4.0.0
- */
-
 
 const BUNDLE_WIDGET = {
   VERSION: '4.0.0',
   LOG_PREFIX: '[BUNDLE_WIDGET]',
 
-  // DOM Selectors
   SELECTORS: {
     WIDGET_CONTAINER: '#bundle-builder-app',
     STEPS_CONTAINER: '.bundle-steps',
@@ -237,19 +151,16 @@ const BUNDLE_WIDGET = {
     FOOTER_MESSAGING: '.bundle-footer-messaging'
   },
 
-  // Cart Properties for Bundle Items
   CART_PROPERTIES: {
     BUNDLE_ID: '_bundle_id',
     BUNDLE_CONFIG: '_bundle_config'
   },
 
-  // Bundle Types (Display Modes)
   BUNDLE_TYPES: {
-    PRODUCT_PAGE: 'product_page',  // Widget embedded in product page
-    FULL_PAGE: 'full_page'         // Dedicated bundle page
+    PRODUCT_PAGE: 'product_page',
+    FULL_PAGE: 'full_page'
   },
 
-  // Step Condition Operators
   CONDITION_OPERATORS: {
     EQUAL_TO: 'equal_to',
     GREATER_THAN: 'greater_than',
@@ -258,31 +169,18 @@ const BUNDLE_WIDGET = {
     LESS_THAN_OR_EQUAL_TO: 'less_than_or_equal_to'
   },
 
-  // Discount Methods
   DISCOUNT_METHODS: {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
     FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
   },
 
-  // Shared asset URLs
   PLACEHOLDER_IMAGE: 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png'
 };
 
-
-/**
- * Bundle Widget - Currency Management System
- *
- * Handles multi-currency detection, conversion, and formatting.
- * Integrates with Shopify Markets for automatic currency handling.
- *
- * @version 4.0.0
- */
-
-
 class CurrencyManager {
   static getShopBaseCurrency() {
-    // Shop's base currency from Shopify object (official source)
+
     return {
       code: window.Shopify?.shop?.currency || 'USD',
       format: window.shopMoneyFormat || '{{amount}}'
@@ -290,8 +188,7 @@ class CurrencyManager {
   }
 
   static detectCustomerCurrency() {
-    // Primary: Shopify Markets active currency (official method)
-    // Shopify Markets handles geolocation and user preferences automatically
+
     if (window.Shopify?.currency?.active) {
       return {
         code: window.Shopify.currency.active,
@@ -300,14 +197,12 @@ class CurrencyManager {
       };
     }
 
-    // Fallback: Shop base currency (include rate: 1 so downstream math doesn't produce NaN)
     return { ...this.getShopBaseCurrency(), rate: 1 };
   }
 
   static convertCurrency(amount, fromCurrency, toCurrency, rate = 1) {
     if (fromCurrency === toCurrency) return amount;
 
-    // Use Shopify's conversion if available
     if (window.Shopify?.currency?.convert) {
       try {
         return window.Shopify.currency.convert(amount, fromCurrency, toCurrency);
@@ -324,7 +219,6 @@ class CurrencyManager {
       return window.Shopify.formatMoney(amount, format);
     }
 
-    // Fallback formatting
     const formatted = (amount / 100).toFixed(2);
     return format ? format.replace('{{amount}}', formatted) : `$${formatted}`;
   }
@@ -345,40 +239,29 @@ class CurrencyManager {
     const customerCurrency = this.detectCustomerCurrency();
     const shopBaseCurrency = this.getShopBaseCurrency();
     const displaySymbol = this.getCurrencySymbol(customerCurrency.code);
-    // Use Shopify's currency format if available (set by currency switcher apps).
-    // Otherwise build a symbol-prefixed format from the display currency so we never
-    // inherit the shop's base-currency format string (e.g. ₹{{amount}}) for a customer
-    // viewing in a different currency (e.g. GBP).
+
     const displayFormat = window.Shopify?.currency?.format
       || `${displaySymbol}{{amount}}`;
 
     return {
-      // For calculations (always use shop's base currency)
+
       calculation: {
         code: shopBaseCurrency.code,
         symbol: this.getCurrencySymbol(shopBaseCurrency.code),
         format: shopBaseCurrency.format
       },
-      // For display (use customer's viewing currency)
+
       display: {
         code: customerCurrency.code,
         symbol: displaySymbol,
         format: displayFormat,
         rate: customerCurrency.rate
       },
-      // Multi-currency status
+
       isMultiCurrency: customerCurrency.code !== shopBaseCurrency.code
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -387,17 +270,6 @@ class CurrencyManager {
     return this.formatMoney(converted, currencyInfo.display.format);
   }
 }
-
-
-/**
- * Bundle Widget - Bundle Data Manager
- *
- * Handles validation, filtering, and selection of bundle data.
- * Provides utilities for extracting step and product data.
- *
- * @version 4.0.0
- */
-
 
 class BundleDataManager {
   static validateBundleData(bundles) {
@@ -413,7 +285,6 @@ class BundleDataManager {
         }
       });
 
-      // Validate bundle type
       if (
         bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
         bundle.bundleType !== BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE
@@ -424,7 +295,6 @@ class BundleDataManager {
         );
       }
 
-      // Validate steps
       if (!Array.isArray(bundle.steps) || bundle.steps.length === 0) {
         throw new Error(`Bundle ${bundle.id} has no steps`);
       }
@@ -453,7 +323,7 @@ class BundleDataManager {
   }
 
   static filterActiveBundles(bundles) {
-    // BundleStatus enum: draft | active | archived — 'published' is not a valid status
+
     return bundles.filter(bundle => bundle.status === 'active');
   }
 
@@ -519,21 +389,18 @@ class BundleDataManager {
       return null;
     }
 
-    // Selection priority for bundles (both product-page and full-page types)
     for (const bundle of bundles) {
       if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
           bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-        // Priority 1: Manual bundle ID
+
         if (config.bundleId && bundle.id === config.bundleId) {
           return bundle;
         }
 
-        // Priority 2: Container product bundle ID
         if (config.isContainerProduct && config.containerBundleId && bundle.id === config.containerBundleId) {
           return bundle;
         }
 
-        // Priority 3: Product ID matching
         if (config.currentProductId) {
           const productIdStr = config.currentProductId.toString();
           const productGid = `gid://shopify/Product/${config.currentProductId}`;
@@ -542,14 +409,12 @@ class BundleDataManager {
             return bundle;
           }
 
-          // Extract numeric ID from GID for comparison
           const bundleProductId = bundle.shopifyProductId ? bundle.shopifyProductId.split('/').pop() : null;
           if (bundleProductId === productIdStr) {
             return bundle;
           }
         }
 
-        // Priority 4: Theme editor context (show any bundle)
         const isThemeEditor = this.isThemeEditorContext();
         if (isThemeEditor) {
           return bundle;
@@ -557,7 +422,6 @@ class BundleDataManager {
       }
     }
 
-    // No bundle matched the config criteria — return null so the widget hides itself
     console.warn('[BUNDLE_WIDGET] selectBundle: no bundle matched config:', config);
     return null;
   }
@@ -573,36 +437,22 @@ class BundleDataManager {
   }
 }
 
-
-/**
- * Bundle Widget - Pricing Calculator
- *
- * Handles bundle pricing calculations, discount rules, and condition checking.
- *
- * @version 4.0.0
- */
-
-
 class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
     let totalQuantity = 0;
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
-      // Skip free gift steps — their retail cost is not charged to the customer.
-      // The cart transform handles making them $0 at checkout via adjusted discount math.
+
       if (steps?.[stepIndex]?.isFreeGift) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        // First try direct match on variantId or id
+
         let product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId));
         let matchedVariant = null;
 
-        // If not found, search within nested variants array of each product
-        // This handles the case where displayVariantsAsIndividual is false
-        // and user selects a non-default variant from dropdown
         if (!product) {
           for (const p of productsInStep) {
             if (p.variants && Array.isArray(p.variants)) {
@@ -617,8 +467,7 @@ class PricingCalculator {
         }
 
         if (product && quantity > 0) {
-          // All prices in our pipeline are in cents (see MEMORY.md pricing pipeline).
-          // Use variant price if matched via nested lookup, otherwise use product-level price.
+
           const price = matchedVariant
             ? (Number(matchedVariant.price) || 0)
             : (product.price || 0);
@@ -646,23 +495,21 @@ class PricingCalculator {
     const rules = bundle.pricing.rules;
     let bestRule = null;
 
-    // Find the best applicable rule using nested structure
     for (const rule of rules) {
-      // Skip rules with no condition (can happen if saved without one)
+
       if (!rule.condition) continue;
 
-      // Access nested condition structure
-      const conditionType = rule.condition.type; // 'quantity' or 'amount'
-      const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
-      const conditionValue = rule.condition.value; // threshold
+      const conditionType = rule.condition.type;
+      const conditionOperator = rule.condition.operator;
+      const conditionValue = rule.condition.value;
 
       let conditionMet = false;
 
       if (conditionType === 'amount') {
-        // Amount-based condition (value is in cents)
+
         conditionMet = this.checkCondition(totalPrice, conditionOperator, conditionValue);
       } else {
-        // Quantity-based condition
+
         conditionMet = this.checkCondition(totalQuantity, conditionOperator, conditionValue);
       }
 
@@ -684,29 +531,27 @@ class PricingCalculator {
       };
     }
 
-    // Calculate discount amount using nested discount structure
     let discountAmount = 0;
     const discountMethod = bestRule.discount.method;
-    const discountValue = bestRule.discount.value; // Already in cents for amount methods
+    const discountValue = bestRule.discount.value;
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
-        // discountValue is percentage (e.g., 50 for 50%)
+
         discountAmount = Math.round(totalPrice * (discountValue / 100));
         break;
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
-        // discountValue is already in cents
+
         discountAmount = discountValue;
         break;
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
-        // discountValue is fixed bundle price in cents
+
         discountAmount = Math.max(0, totalPrice - discountValue);
         break;
       default:
         discountAmount = 0;
     }
 
-    // Clamp discount so it never exceeds total (prevents >100% display)
     discountAmount = Math.min(discountAmount, totalPrice);
     const finalPrice = Math.max(0, totalPrice - discountAmount);
     const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
@@ -721,18 +566,16 @@ class PricingCalculator {
       discountMethod
     };
 
-
     return result;
   }
 
   static checkCondition(value, condition, targetValue) {
-    // Handle different condition formats
+
     const normalizedCondition = this.normalizeCondition(condition);
 
     switch (normalizedCondition) {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
-        // For discount pricing rules, "equal to N" means "at N or more" (threshold).
-        // For step conditions, the ConditionValidator handles exact matching separately.
+
         return value >= targetValue;
       case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN:
         return value > targetValue;
@@ -743,13 +586,13 @@ class PricingCalculator {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN_OR_EQUAL_TO:
         return value <= targetValue;
       default:
-        // Default to >= for backward compatibility
+
         return value >= targetValue;
     }
   }
 
   static normalizeCondition(condition) {
-    // Handle different condition formats from admin
+
     const conditionMap = {
       'gte': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO,
       'gt': BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN,
@@ -771,7 +614,6 @@ class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending) — copy to avoid mutating the original
     const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
 
     for (const rule of rules) {
@@ -781,7 +623,6 @@ class PricingCalculator {
       const conditionOperator = rule.condition.operator;
       const conditionValue = rule.condition.value;
 
-      // Check if this rule is not yet satisfied
       let isRuleSatisfied = false;
 
       if (conditionType === 'amount') {
@@ -790,28 +631,16 @@ class PricingCalculator {
         isRuleSatisfied = this.checkCondition(currentQuantity, conditionOperator, conditionValue);
       }
 
-      // Return the first rule that is not satisfied (next target)
       if (!isRuleSatisfied) {
         return rule;
       }
     }
-    return null; // All rules satisfied
+    return null;
   }
 }
 
-
-/**
- * Bundle Widget - Toast Notification System
- *
- * Provides user notifications and feedback with support for
- * simple messages and undo actions.
- *
- * @version 4.0.0
- */
-
-
 class ToastManager {
-  /** Escape HTML to prevent XSS in toast messages */
+
   static _escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -829,13 +658,12 @@ class ToastManager {
   }
 
   static show(message, duration = 4000) {
-    // Remove any existing toast
+
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
       existingToast.remove();
     }
 
-    // Create toast element - uses DCP CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
@@ -849,15 +677,12 @@ class ToastManager {
       </svg>
     `;
 
-    // Attach close listener (consistent with showWithUndo pattern)
     toast.querySelector('.toast-close').addEventListener('click', () => {
       toast.remove();
     });
 
-    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
     document.body.appendChild(toast);
 
-    // Auto-remove after duration
     if (duration > 0) {
       setTimeout(() => {
         if (toast.parentNode) {
@@ -867,15 +692,13 @@ class ToastManager {
     }
   }
 
-  // Show toast with undo action button
   static showWithUndo(message, undoCallback, duration = 5000) {
-    // Remove any existing toast
+
     const existingToast = document.getElementById('bundle-toast');
     if (existingToast) {
       existingToast.remove();
     }
 
-    // Create toast element with undo button
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast bundle-toast-with-undo';
@@ -890,7 +713,6 @@ class ToastManager {
       </svg>
     `;
 
-    // Attach event listeners
     const undoBtn = toast.querySelector('.toast-undo-btn');
     const closeBtn = toast.querySelector('.toast-close');
     let undoTriggered = false;
@@ -907,10 +729,8 @@ class ToastManager {
       toast.remove();
     });
 
-    // Add to page
     document.body.appendChild(toast);
 
-    // Auto-remove after duration
     if (duration > 0) {
       setTimeout(() => {
         if (toast.parentNode) {
@@ -923,7 +743,6 @@ class ToastManager {
   }
 }
 
-
 /**
  * Bundle Widget - Template Manager
  *
@@ -932,7 +751,6 @@ class ToastManager {
  *
  * @version 4.0.0
  */
-
 
 class TemplateManager {
   static getQualificationGap(currentValue, targetValue, operator, unitStep = 1) {
@@ -948,7 +766,7 @@ class TemplateManager {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
       case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
       default:
-        // For pricing rules, equal_to is treated as a threshold (>= target).
+
         return Math.max(0, targetValue - currentValue);
     }
   }
@@ -958,9 +776,8 @@ class TemplateManager {
 
     let result = template;
 
-    // Replace variables — double braces first to prevent single-brace partial matches
     Object.entries(variables).forEach(([key, value]) => {
-      // Wrap conditionText and discountText with styled spans
+
       let replacementValue = value;
       if (key === 'conditionText') {
         replacementValue = `<span class="bundle-conditions-text" style="color: var(--bundle-conditions-text-color, inherit);">${value}</span>`;
@@ -968,7 +785,6 @@ class TemplateManager {
         replacementValue = `<span class="bundle-discount-text" style="color: var(--bundle-discount-text-color, inherit);">${value}</span>`;
       }
 
-      // Single pass: match {{key}} or {key} (double-brace variant matched first)
       const combined = new RegExp(`\\{\\{${key}\\}\\}|\\{${key}\\}`, 'g');
       result = result.replace(combined, replacementValue);
     });
@@ -983,56 +799,45 @@ class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    // Extract rule data using nested structure
     const conditionType = ruleToUse.condition.type;
     const targetValue = ruleToUse.condition.value;
     const conditionOperator = ruleToUse.condition.operator;
     const discountMethod = ruleToUse.discount.method;
     const rawDiscountValue = ruleToUse.discount.value;
 
-    // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
-    // Calculate discount-specific values
     const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
 
-    // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
     const progressPercentage = targetValue > 0 ? Math.min(100, (currentProgress / targetValue) * 100) : 0;
 
     const variables = {
-      // Condition-specific variables
+
       amountNeeded: conditionData.amountNeeded,
       itemsNeeded: conditionData.itemsNeeded,
       conditionText: conditionData.conditionText,
 
-      // Discount-specific variables
       discountText: discountData.discountText,
 
-      // Qualification status
       alreadyQualified: conditionData.alreadyQualified || false,
 
-      // Progress variables
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       currentQuantity: totalQuantity.toString(),
       targetAmount: conditionType === 'amount' ? CurrencyManager.formatMoney(targetValue, currencyInfo.display.format) : '0',
       targetQuantity: conditionType === 'quantity' ? targetValue.toString() : '0',
       progressPercentage: Math.round(progressPercentage).toString(),
 
-      // Bundle information
       bundleName: bundle.name || 'Bundle',
 
-      // Pricing information
       originalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       finalPrice: CurrencyManager.formatMoney(discountInfo.finalPrice, currencyInfo.display.format),
       savingsAmount: CurrencyManager.formatMoney(discountInfo.discountAmount, currencyInfo.display.format),
       savingsPercentage: Math.round(discountInfo.discountPercentage).toString(),
 
-      // Currency information
       currencySymbol: currencyInfo.display.symbol,
       currencyCode: currencyInfo.display.code,
 
-      // Status
       isQualified: discountInfo.qualifiesForDiscount ? 'true' : 'false'
     };
 
@@ -1053,21 +858,18 @@ class TemplateManager {
       case BUNDLE_WIDGET.CONDITION_OPERATORS.EQUAL_TO:
       case BUNDLE_WIDGET.CONDITION_OPERATORS.GREATER_THAN_OR_EQUAL_TO:
       default:
-        // "equal_to" acts as a threshold (>= N) in discount rules,
-        // and "greater_than_or_equal_to" is the most common default.
-        // Both render as plain "N items" for natural-sounding text.
+
         return `${targetValue} ${label}`;
     }
   }
 
   static calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo) {
     if (conditionType === 'amount') {
-      // Amount-based condition - targetValue is already in cents
+
       const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
       const alreadyQualified = PricingCalculator.checkCondition(totalPrice, conditionOperator, targetValue);
       const amountNeeded = this.getQualificationGap(totalPrice, targetValue, conditionOperator, 1);
 
-      // Convert for display if needed
       const convertedAmountNeeded = CurrencyManager.convertCurrency(
         amountNeeded,
         currencyInfo.calculation.code,
@@ -1075,7 +877,6 @@ class TemplateManager {
         currencyInfo.display.rate
       );
 
-      // Format for display (convert from cents to decimal)
       const amountNeededFormatted = (convertedAmountNeeded / 100).toFixed(2);
       const targetValueFormatted = CurrencyManager.convertCurrency(
         targetValue,
@@ -1085,7 +886,6 @@ class TemplateManager {
       );
       const targetValueFormattedDecimal = (targetValueFormatted / 100).toFixed(2);
 
-      // Build operator-aware condition text for amount
       let conditionText;
       if (alreadyQualified) {
         if (normalizedOp === BUNDLE_WIDGET.CONDITION_OPERATORS.LESS_THAN) {
@@ -1112,12 +912,11 @@ class TemplateManager {
         alreadyQualified
       };
     } else {
-      // Quantity-based condition
+
       const normalizedOp = PricingCalculator.normalizeCondition(conditionOperator);
       const alreadyQualified = PricingCalculator.checkCondition(totalQuantity, conditionOperator, targetValue);
       const itemsNeeded = this.getQualificationGap(totalQuantity, targetValue, conditionOperator, 1);
 
-      // Build operator-aware condition text for quantity
       let conditionText;
       if (alreadyQualified) {
         if (
@@ -1161,7 +960,7 @@ class TemplateManager {
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
-        // safeValue is already in cents
+
         const convertedAmount = CurrencyManager.convertCurrency(
           safeValue,
           currencyInfo.calculation.code,
@@ -1174,7 +973,7 @@ class TemplateManager {
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
-        // safeValue is already in cents
+
         const convertedPrice = CurrencyManager.convertCurrency(
           safeValue,
           currencyInfo.calculation.code,
@@ -1195,38 +994,32 @@ class TemplateManager {
 
   static createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
     return {
-      // Condition-specific variables
+
       amountNeeded: '0',
       itemsNeeded: '0',
       conditionText: '0 items',
       discountText: 'No discount',
 
-      // Progress variables
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       currentQuantity: totalQuantity.toString(),
       targetAmount: '0',
       targetQuantity: '0',
       progressPercentage: '0',
 
-      // Bundle information
       bundleName: bundle.name || 'Bundle',
 
-      // Pricing information
       originalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       finalPrice: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       savingsAmount: '0',
       savingsPercentage: '0',
 
-      // Currency information
       currencySymbol: currencyInfo.display.symbol,
       currencyCode: currencyInfo.display.code,
 
-      // Status
       isQualified: 'false'
     };
   }
 }
-
 
 /**
  * Bundle Widget - Component Generator
@@ -1236,7 +1029,6 @@ class TemplateManager {
  *
  * @version 4.0.0
  */
-
 
 class ComponentGenerator {
   /** Escape HTML special characters to prevent XSS in innerHTML contexts */
@@ -1262,17 +1054,12 @@ class ComponentGenerator {
     const selectionKey = product.variantId || product.id;
     const isSelected = currentQuantity > 0;
 
-    // Check if this is an expanded variant card (has parentProductId and no variants array)
-    // In this case, don't show variant selector - each card IS a variant
     const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0);
 
-    // Caller can supply a pre-rendered variant selector HTML (e.g. VariantSelectorComponent).
-    // If not supplied, fall back to the built-in <select> dropdown.
     const variantSelectorHtml = options.variantSelectorHtml !== undefined
       ? options.variantSelectorHtml
       : (isExpandedVariantCard ? '' : this.renderVariantSelector(product));
 
-    // Render inline quantity controls when item is selected
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
       return `
@@ -1284,7 +1071,6 @@ class ComponentGenerator {
       `;
     };
 
-    // Render add button or quantity controls based on selection state
     const renderBottomAction = () => {
       if (isSelected) {
         return renderInlineQuantityControls();
@@ -1292,7 +1078,6 @@ class ComponentGenerator {
       return `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`;
     };
 
-    // Render variant badge if this is an expanded variant card
     const renderVariantBadge = () => {
       if (isExpandedVariantCard && product.variantTitle) {
         return `<div class="product-variant-badge">${this.escapeHtml(product.variantTitle)}</div>`;
@@ -1331,9 +1116,6 @@ class ComponentGenerator {
     `;
   }
 
-  /**
-   * Generates HTML for empty state cards
-   */
   static renderEmptyStateCards(labelText, count = 3) {
     const cards = Array(count).fill(0).map(() => `
       <div class="empty-state-card">
@@ -1348,9 +1130,6 @@ class ComponentGenerator {
     return cards;
   }
 
-  /**
-   * Generates variant selector HTML if product has variants
-   */
   static renderVariantSelector(product) {
     if (!product.variants || product.variants.length <= 1) {
       return '';
@@ -1369,9 +1148,6 @@ class ComponentGenerator {
     `;
   }
 
-  /**
-   * Generates modal structure HTML
-   */
   static createModalHTML() {
     return `
       <div class="modal-overlay"></div>
@@ -1427,9 +1203,6 @@ class ComponentGenerator {
     `;
   }
 
-  /**
-   * Generates tab HTML for modal navigation
-   */
   static renderTab(step, index, isActive, isCompleted, isLocked) {
     const statusClass = isCompleted ? 'completed' : (isLocked ? 'locked' : '');
     const activeClass = isActive ? 'active' : '';
@@ -1446,9 +1219,6 @@ class ComponentGenerator {
     `;
   }
 
-  /**
-   * Generates progress bar HTML
-   */
   static renderProgressBar(currentValue, targetValue) {
     const percentage = targetValue > 0 ? Math.min(100, (currentValue / targetValue) * 100) : 0;
 
@@ -1465,25 +1235,8 @@ class ComponentGenerator {
   }
 }
 
-
-
-/**
- * Default Loading Animation
- *
- * A polished three-dot pulsing loader rendered as inline SVG with CSS animations.
- * Designed from a Lottie JSON source (see default-loading-animation.json).
- * Used as the fallback when merchants have not uploaded a custom loading GIF.
- */
-
-/**
- * Creates and returns the default loading animation DOM element.
- * The animation is a three-dot pulse rendered as inline SVG.
- * CSS keyframes are injected once on first call (idempotent).
- *
- * @returns {HTMLDivElement} A wrapper div containing the animated SVG
- */
 function createDefaultLoadingAnimation() {
-  // Inject CSS keyframes once (idempotent check)
+
   if (!document.getElementById('bundle-default-loading-keyframes')) {
     const style = document.createElement('style');
     style.id = 'bundle-default-loading-keyframes';
@@ -1508,32 +1261,8 @@ function createDefaultLoadingAnimation() {
   return wrapper;
 }
 
-
-
-/**
- * VariantSelectorComponent
- *
- * Renders an inline variant selector on FPB product cards.
- * Replaces the <select> dropdown with:
- *   - A button group for the merchant-configured primary option dimension (max 4 + overflow)
- *   - Pill button(s) for remaining dimensions (tap to open dropdown panel)
- *
- * Usage:
- *   const html = VariantSelectorComponent.renderHtml(product, primaryOptionName);
- *   VariantSelectorComponent.attachListeners(cardEl, product, onVariantChange);
- *
- *   onVariantChange(newVariantId, oldVariantId) is called after product is mutated.
- */
-
 class VariantSelectorComponent {
 
-  /**
-   * Render the variant selector HTML for a product card.
-   *
-   * @param {Object} product - Product with .variants[], .options[], .variantId
-   * @param {string|null} primaryOptionName - Merchant-configured primary dimension (e.g. "Size")
-   * @returns {string} HTML string, or '' if no selector needed
-   */
   static renderHtml(product, primaryOptionName) {
     const variants = product.variants || [];
     const options = product.options || [];
@@ -1564,7 +1293,6 @@ class VariantSelectorComponent {
       ? `<button type="button" class="vs-btn vs-btn--overflow" data-overflow="1" data-primary-opt-idx="${primaryIdx}" data-all-values="${VariantSelectorComponent._esc(JSON.stringify(primaryValues))}">+${overflowCount}</button>`
       : '';
 
-    // Secondary dimension pills (options beyond primary)
     const secondaryHtml = (() => {
       if (options.length <= 1 || !selectedVariant) return '';
       const pills = options.map((optName, i) => {
@@ -1581,14 +1309,6 @@ class VariantSelectorComponent {
     return `<div class="vs-wrapper" data-vs-product-id="${productId}"><div class="vs-btn-group">${btnGroupHtml}${overflowHtml}</div>${secondaryHtml}</div>`;
   }
 
-  /**
-   * Attach event listeners for the variant selector on a card element.
-   * Must be called after the card HTML is in the DOM.
-   *
-   * @param {HTMLElement} cardEl - The .product-card element
-   * @param {Object} product - Product object (mutated on variant change)
-   * @param {Function} onVariantChange - Called with (newVariantId, oldVariantId) after mutation
-   */
   static attachListeners(cardEl, product, onVariantChange) {
     cardEl.addEventListener('click', (e) => {
       const btn = e.target.closest('.vs-btn, .vs-secondary-pill');
@@ -1612,8 +1332,6 @@ class VariantSelectorComponent {
       }
     });
   }
-
-  // ── Private helpers ────────────────────────────────────────────────────────
 
   static _primaryIdx(options, primaryOptionName) {
     if (!primaryOptionName) return 1;
@@ -1649,7 +1367,7 @@ class VariantSelectorComponent {
       return variants.find(v => v[`option${primaryOptIdx}`] === primaryValue) || null;
     }
     if (candidates.length === 1 || !current) return candidates[0];
-    // Prefer candidate that preserves other option values
+
     for (let i = 1; i <= 3; i++) {
       if (i === primaryOptIdx) continue;
       const curVal = current[`option${i}`];
@@ -1667,13 +1385,12 @@ class VariantSelectorComponent {
     );
     if (!newVariant) return;
 
-    // Update button group visual state
     const wrapper = cardEl.querySelector('.vs-wrapper');
     if (wrapper) {
       wrapper.querySelectorAll('.vs-btn:not(.vs-btn--overflow)').forEach(b => {
         b.classList.toggle('vs-btn--selected', b.dataset.primaryValue === val);
       });
-      // Update secondary pills
+
       wrapper.querySelectorAll('.vs-secondary-pill').forEach(pill => {
         const optIdx = parseInt(pill.dataset.optIdx, 10);
         const label = pill.querySelector('.vs-secondary-label');
@@ -1683,7 +1400,6 @@ class VariantSelectorComponent {
       });
     }
 
-    // Mutate product
     product.variantId = newVariant.id;
     product.price = newVariant.price;
     product.quantityAvailable = typeof newVariant.quantityAvailable === 'number' ? newVariant.quantityAvailable : null;
@@ -1730,7 +1446,6 @@ class VariantSelectorComponent {
     const currentVariant = (product.variants || []).find(v => v.id === product.variantId);
     const currentVal = currentVariant ? currentVariant[`option${optIdx}`] : null;
 
-    // Determine primary selection to preserve it when picking a secondary value
     const wrapper = cardEl.querySelector('.vs-wrapper');
     const primaryBtn = wrapper?.querySelector('.vs-btn--selected');
     const primaryOptIdx = primaryBtn ? parseInt(primaryBtn.dataset.primaryOptIdx, 10) : 1;
@@ -1754,7 +1469,7 @@ class VariantSelectorComponent {
         product.price = candidate.price;
         product.quantityAvailable = typeof candidate.quantityAvailable === 'number' ? candidate.quantityAvailable : null;
         product.currentlyNotInStock = candidate.currentlyNotInStock === true;
-        // Update the pill text
+
         const optName = pill.querySelector('.vs-secondary-label')?.textContent?.replace(':', '').trim() || `Option ${optIdx}`;
         pill.innerHTML = `<span class="vs-secondary-label">${VariantSelectorComponent._esc(optName)}:</span> <strong>${VariantSelectorComponent._esc(val)}</strong> <span class="vs-chevron">&#9662;</span>`;
         onVariantChange(candidate.id, oldVariantId);
@@ -1801,12 +1516,6 @@ class VariantSelectorComponent {
   }
 }
 
-
-
-  // ============================================================================
-  // BUNDLE PRODUCT MODAL COMPONENT
-  // ============================================================================
-
 /**
  * Bundle Product Modal Component
  *
@@ -1822,7 +1531,6 @@ class VariantSelectorComponent {
  *
  * @version 1.0.0
  */
-
 
 class BundleProductModal {
   constructor(widget) {
@@ -1923,7 +1631,6 @@ class BundleProductModal {
       </div>
     `;
 
-    // Insert modal into document body
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     this.modalElement = document.getElementById('bundle-product-modal');
   }
@@ -1932,25 +1639,22 @@ class BundleProductModal {
    * Attach event listeners
    */
   attachEventListeners() {
-    // Close button
+
     const closeBtn = this.modalElement.querySelector('.bundle-modal-close');
     closeBtn.addEventListener('click', () => this.close());
 
-    // Close on overlay click
     this.modalElement.addEventListener('click', (e) => {
       if (e.target === this.modalElement) {
         this.close();
       }
     });
 
-    // Close on ESC key
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.modalElement.classList.contains('active')) {
         this.close();
       }
     });
 
-    // Carousel navigation buttons
     document.getElementById('modal-carousel-prev').addEventListener('click', () => {
       this.navigateCarousel(-1);
     });
@@ -1959,7 +1663,6 @@ class BundleProductModal {
       this.navigateCarousel(1);
     });
 
-    // Quantity controls
     document.getElementById('modal-qty-decrease').addEventListener('click', () => {
       this.updateQuantity(Math.max(1, this.selectedQuantity - 1));
     });
@@ -1968,12 +1671,10 @@ class BundleProductModal {
       this.updateQuantity(this.selectedQuantity + 1);
     });
 
-    // Add To Box button
     document.getElementById('modal-add-to-box').addEventListener('click', () => {
       this.addToBundle();
     });
 
-    // Swipe gesture detection for mobile
     this.setupSwipeGestures();
   }
 
@@ -1986,13 +1687,11 @@ class BundleProductModal {
     const modalContainer = this.modalElement.querySelector('.bundle-modal-container');
     const imageContainer = this.modalElement.querySelector('.bundle-modal-main-image-container');
 
-    // Swipe state
     let touchStartX = 0;
     let touchStartY = 0;
     let touchStartTime = 0;
     let isSwiping = false;
 
-    // Swipe-to-dismiss on modal container (drag handle area)
     const dragHandle = this.modalElement.querySelector('.bundle-modal-drag-handle');
     if (dragHandle) {
       dragHandle.addEventListener('touchstart', (e) => {
@@ -2007,7 +1706,6 @@ class BundleProductModal {
         const currentY = e.touches[0].clientY;
         const deltaY = currentY - touchStartY;
 
-        // Only allow downward swipe
         if (deltaY > 0) {
           modalContainer.style.transform = `translateY(${deltaY}px)`;
           modalContainer.style.opacity = Math.max(0.5, 1 - deltaY / 300);
@@ -2023,7 +1721,6 @@ class BundleProductModal {
 
         modalContainer.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
 
-        // Close if swiped down > 100px within 300ms (quick swipe) or > 150px (slow swipe)
         if ((deltaY > 100 && deltaTime < 300) || deltaY > 150) {
           modalContainer.style.transform = 'translateY(100%)';
           modalContainer.style.opacity = '0';
@@ -2033,14 +1730,13 @@ class BundleProductModal {
             modalContainer.style.opacity = '';
           }, 300);
         } else {
-          // Reset position
+
           modalContainer.style.transform = '';
           modalContainer.style.opacity = '';
         }
       }, { passive: true });
     }
 
-    // Swipe left/right on image for carousel navigation
     if (imageContainer) {
       imageContainer.addEventListener('touchstart', (e) => {
         touchStartX = e.touches[0].clientX;
@@ -2051,13 +1747,12 @@ class BundleProductModal {
         const deltaX = e.changedTouches[0].clientX - touchStartX;
         const deltaTime = Date.now() - touchStartTime;
 
-        // Minimum 50px swipe within 300ms
         if (Math.abs(deltaX) > 50 && deltaTime < 300) {
           if (deltaX > 0) {
-            // Swipe right = previous image
+
             this.navigateCarousel(-1);
           } else {
-            // Swipe left = next image
+
             this.navigateCarousel(1);
           }
         }
@@ -2075,7 +1770,6 @@ class BundleProductModal {
 
     let newIndex = this.selectedImageIndex + direction;
 
-    // Wrap around
     if (newIndex < 0) {
       newIndex = images.length - 1;
     } else if (newIndex >= images.length) {
@@ -2097,10 +1791,8 @@ class BundleProductModal {
     this.selectedQuantity = 1;
     this.selectedImageIndex = 0;
 
-    // Populate modal content
     this.populateModal();
 
-    // Show modal
     this.modalElement.classList.add('active');
     document.body.classList.add('modal-open');
   }
@@ -2112,7 +1804,6 @@ class BundleProductModal {
     this.modalElement.classList.remove('active');
     document.body.classList.remove('modal-open');
 
-    // Reset state
     this.currentProduct = null;
     this.currentStep = null;
     this.selectedVariant = null;
@@ -2124,11 +1815,10 @@ class BundleProductModal {
    * Populate modal with product data
    */
   populateModal() {
-    // Set title - use parent title if this is a flattened variant
+
     const displayTitle = this.currentProduct.parentTitle || this.currentProduct.title;
     document.getElementById('modal-product-title').textContent = displayTitle;
 
-    // Set description (if available)
     const descriptionEl = document.getElementById('modal-product-description');
     if (this.currentProduct.description) {
       descriptionEl.textContent = this.currentProduct.description;
@@ -2137,23 +1827,18 @@ class BundleProductModal {
       descriptionEl.style.display = 'none';
     }
 
-    // Load images
     this.loadImages();
 
-    // Create variant selectors
     this.createVariantSelectors();
 
-    // Set initial price
     this.updatePrice();
 
-    // Show/hide quantity selector based on config
     const quantitySection = this.modalElement.querySelector('.bundle-modal-quantity');
     if (quantitySection) {
       const showQuantitySelector = this.widget?.config?.showQuantitySelectorInModal !== false;
       quantitySection.style.display = showQuantitySelector ? 'flex' : 'none';
     }
 
-    // Reset quantity display
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
   }
 
@@ -2166,9 +1851,8 @@ class BundleProductModal {
     const product = this.currentProduct;
     const images = [];
 
-    // Try various image formats
     if (product.images && Array.isArray(product.images)) {
-      // Handle images array (can be strings or objects with url/src)
+
       product.images.forEach(img => {
         if (typeof img === 'string') {
           images.push(img);
@@ -2180,7 +1864,6 @@ class BundleProductModal {
       });
     }
 
-    // If no images from array, try single image properties
     if (images.length === 0) {
       if (product.imageUrl) {
         images.push(product.imageUrl);
@@ -2205,9 +1888,8 @@ class BundleProductModal {
     const prevBtn = document.getElementById('modal-carousel-prev');
     const nextBtn = document.getElementById('modal-carousel-next');
 
-
     if (images.length === 0) {
-      // Use fallback placeholder
+
       mainImageEl.src = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       mainImageEl.alt = this.currentProduct.title;
       thumbnailsContainer.innerHTML = '';
@@ -2217,25 +1899,21 @@ class BundleProductModal {
       return;
     }
 
-    // Set main image
     mainImageEl.src = images[0];
     mainImageEl.alt = this.currentProduct.title;
 
-    // Show/hide carousel controls based on number of images
     if (images.length > 1) {
       prevBtn.style.display = 'flex';
       nextBtn.style.display = 'flex';
       imageCounter.style.display = 'block';
       this.updateImageCounter();
 
-      // Create thumbnails
       thumbnailsContainer.innerHTML = images.map((image, index) => `
         <div class="bundle-modal-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
           <img src="${image}" alt="${this.currentProduct.title} - Image ${index + 1}">
         </div>
       `).join('');
 
-      // Add thumbnail click handlers
       thumbnailsContainer.querySelectorAll('.bundle-modal-thumbnail').forEach((thumbnail) => {
         thumbnail.addEventListener('click', () => {
           const index = parseInt(thumbnail.dataset.index);
@@ -2271,19 +1949,15 @@ class BundleProductModal {
 
     this.selectedImageIndex = index;
 
-    // Update main image with smooth transition
     const mainImageEl = document.getElementById('modal-main-image');
     mainImageEl.src = images[index];
 
-    // Update active thumbnail
     document.querySelectorAll('.bundle-modal-thumbnail').forEach((thumb, i) => {
       thumb.classList.toggle('active', i === index);
     });
 
-    // Update image counter
     this.updateImageCounter();
 
-    // Scroll active thumbnail into view
     const activeThumbnail = document.querySelector('.bundle-modal-thumbnail.active');
     if (activeThumbnail) {
       activeThumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -2297,50 +1971,40 @@ class BundleProductModal {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
 
-
-    // If only one variant (no options) or no variants, hide variant selectors
     if (variants.length <= 1) {
       variantsContainer.innerHTML = '';
       this.selectedVariant = variants[0] || this.currentProduct;
       return;
     }
 
-    // Extract option names (e.g., Size, Color)
-    // Handle different data structures: options can be array of strings or array of objects
     let optionNames = this.currentProduct.options || [];
 
-    // If options is array of objects with name property, extract names
     if (optionNames.length > 0 && typeof optionNames[0] === 'object' && optionNames[0].name) {
       optionNames = optionNames.map(opt => opt.name);
     }
 
-    // If still no option names, try to infer from first variant
     if (optionNames.length === 0 && variants.length > 0) {
       const firstVariant = variants[0];
-      // Check for option1, option2, option3 properties
+
       if (firstVariant.option1) optionNames.push('Option 1');
       if (firstVariant.option2) optionNames.push('Option 2');
       if (firstVariant.option3) optionNames.push('Option 3');
     }
 
     if (optionNames.length === 0) {
-      // No variant options, use first variant
+
       this.selectedVariant = variants[0];
       variantsContainer.innerHTML = '';
       return;
     }
 
-
-    // Store selected options for tracking
     this.selectedOptions = {};
 
-    // Find the current variant to pre-select its options
     const currentVariantId = this.currentProduct.variantId;
     const currentVariant = variants.find(v => String(v.id) === String(currentVariantId));
 
-    // Create button-style selector for each option
     variantsContainer.innerHTML = optionNames.map((optionName, optionIndex) => {
-      // Get unique values for this option, filtering out undefined/null
+
       const optionValues = [...new Set(
         variants
           .map(v => v[`option${optionIndex + 1}`])
@@ -2349,11 +2013,9 @@ class BundleProductModal {
 
       if (optionValues.length === 0) return '';
 
-      // Pre-select current variant's option value, or fall back to first value
       const preSelectedValue = currentVariant?.[`option${optionIndex + 1}`] || optionValues[0];
       this.selectedOptions[optionIndex] = preSelectedValue;
 
-      // Detect if this is likely a color option
       const isColorOption = this.isColorOption(optionName, optionValues);
 
       return `
@@ -2379,7 +2041,6 @@ class BundleProductModal {
       `;
     }).filter(html => html !== '').join('');
 
-    // Add click handlers to variant buttons
     variantsContainer.querySelectorAll('.bundle-modal-variant-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -2389,7 +2050,6 @@ class BundleProductModal {
       });
     });
 
-    // Set initial variant
     this.updateSelectedVariant();
   }
 
@@ -2404,7 +2064,7 @@ class BundleProductModal {
     if (colorKeywords.some(keyword => optionName.toLowerCase().includes(keyword))) {
       return true;
     }
-    // Check if values look like color names
+
     const commonColors = ['red', 'blue', 'green', 'black', 'white', 'yellow', 'pink', 'purple', 'orange', 'brown', 'grey', 'gray', 'navy', 'beige', 'cream'];
     const colorMatches = values.filter(v => commonColors.some(c => v.toLowerCase().includes(c)));
     return colorMatches.length > values.length / 2;
@@ -2416,7 +2076,7 @@ class BundleProductModal {
    * @returns {string} CSS style string
    */
   getColorStyle(colorName) {
-    // Map common color names to CSS colors
+
     const colorMap = {
       'red': '#DC2626', 'blue': '#2563EB', 'green': '#16A34A', 'black': '#000000',
       'white': '#FFFFFF', 'yellow': '#EAB308', 'pink': '#EC4899', 'purple': '#9333EA',
@@ -2432,12 +2092,10 @@ class BundleProductModal {
       }
     }
 
-    // If no match, try to use the value directly as a color
     if (lowerName.startsWith('#') || lowerName.startsWith('rgb')) {
       return `background-color: ${colorName}`;
     }
 
-    // Default gradient for unknown colors
     return 'background: linear-gradient(135deg, #f0f0f0, #e0e0e0)';
   }
 
@@ -2447,10 +2105,9 @@ class BundleProductModal {
    * @param {string} value - Selected value
    */
   selectVariantOption(optionIndex, value) {
-    // Update selected options
+
     this.selectedOptions[optionIndex] = value;
 
-    // Update button states
     const optionsContainer = document.querySelector(`.bundle-modal-variant-options[data-option-index="${optionIndex}"]`);
     if (optionsContainer) {
       optionsContainer.querySelectorAll('.bundle-modal-variant-btn').forEach((btn) => {
@@ -2458,13 +2115,11 @@ class BundleProductModal {
       });
     }
 
-    // Update selected value label
     const valueLabel = document.querySelector(`.bundle-modal-variant-selected-value[data-option-index="${optionIndex}"]`);
     if (valueLabel) {
       valueLabel.textContent = value;
     }
 
-    // Update selected variant
     this.updateSelectedVariant();
   }
 
@@ -2474,13 +2129,10 @@ class BundleProductModal {
   updateSelectedVariant() {
     const variants = this.currentProduct.variants || [];
 
-    // Get selected option values from our stored selections
     const selectedOptionValues = Object.keys(this.selectedOptions || {})
       .sort((a, b) => parseInt(a) - parseInt(b))
       .map(key => this.selectedOptions[key]);
 
-
-    // Find matching variant
     this.selectedVariant = variants.find(variant => {
       return selectedOptionValues.every((value, index) => {
         const variantValue = variant[`option${index + 1}`];
@@ -2488,25 +2140,18 @@ class BundleProductModal {
       });
     });
 
-    // If no match found, use first variant
     if (!this.selectedVariant && variants.length > 0) {
       this.selectedVariant = variants[0];
     }
 
-
-    // Update selection summary
     this.updateSelectionSummary();
 
-    // Update price
     this.updatePrice();
 
-    // Check availability
     this.updateAvailability();
 
-    // Update variant image if available
     this.updateVariantImage();
 
-    // Update unavailable option buttons
     this.updateOptionAvailability();
   }
 
@@ -2520,7 +2165,6 @@ class BundleProductModal {
 
     if (!summaryContainer || !summaryText) return;
 
-    // Get selected option values
     const selectedValues = Object.keys(this.selectedOptions || {})
       .sort((a, b) => parseInt(a) - parseInt(b))
       .map(key => this.selectedOptions[key])
@@ -2531,7 +2175,6 @@ class BundleProductModal {
       return;
     }
 
-    // Show the summary
     summaryText.textContent = selectedValues.join(' / ');
     summaryContainer.style.display = 'flex';
   }
@@ -2553,18 +2196,15 @@ class BundleProductModal {
       optionsContainer.querySelectorAll('.bundle-modal-variant-btn').forEach(btn => {
         const testValue = btn.dataset.value;
 
-        // Check if any variant exists with this option value + current other selections
         const hasAvailableVariant = variants.some(variant => {
-          // Check if variant has this option value
+
           if (variant[`option${optionIndex + 1}`] !== testValue) return false;
 
-          // Check if variant matches other selected options
           for (const [idx, value] of Object.entries(this.selectedOptions)) {
             if (parseInt(idx) === optionIndex) continue;
             if (variant[`option${parseInt(idx) + 1}`] !== value) return false;
           }
 
-          // Check if variant is available
           return variant.available !== false && variant.availableForSale !== false;
         });
 
@@ -2580,7 +2220,6 @@ class BundleProductModal {
   updateVariantImage() {
     if (!this.selectedVariant) return;
 
-    // Check if variant has a specific image
     const variantImage = this.selectedVariant.image ||
                          this.selectedVariant.featured_image ||
                          this.selectedVariant.featuredImage;
@@ -2605,7 +2244,6 @@ class BundleProductModal {
     const priceEl = document.getElementById('modal-product-price');
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Format price using widget's currency manager
     const price = variant.price || this.currentProduct.price || 0;
     const compareAtPrice = variant.compareAtPrice || variant.compare_at_price ||
                            this.currentProduct.compareAtPrice || this.currentProduct.compare_at_price;
@@ -2630,12 +2268,11 @@ class BundleProductModal {
    * @returns {string} Formatted price
    */
   formatPrice(price) {
-    // Use widget's currency formatting if available
+
     if (this.widget && this.widget.formatPrice) {
       return this.widget.formatPrice(price);
     }
 
-    // Fallback formatting
     const dollars = (price / 100).toFixed(2);
     return `$${dollars}`;
   }
@@ -2647,7 +2284,6 @@ class BundleProductModal {
     const addBtn = document.getElementById('modal-add-to-box');
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Check if variant is available (handle different property names from Storefront API)
     const isAvailable = variant.available !== false &&
                         variant.availableForSale !== false;
 
@@ -2681,7 +2317,6 @@ class BundleProductModal {
 
     const variant = this.selectedVariant || this.currentProduct;
 
-    // Check availability before adding
     const isAvailable = variant.available !== false &&
                         variant.availableForSale !== false;
 
@@ -2689,7 +2324,6 @@ class BundleProductModal {
       return;
     }
 
-    // Use selectedBundle.steps (not widget.steps which doesn't exist)
     const steps = this.widget.selectedBundle?.steps || [];
     const stepIndex = steps.findIndex(s => s.id === this.currentStep.id);
 
@@ -2697,12 +2331,8 @@ class BundleProductModal {
       return;
     }
 
-    // Use variantId if available, otherwise fall back to id
-    // This matches how the widget stores product selections
     const productId = variant.variantId || variant.id || this.currentProduct.id;
 
-
-    // Call widget's method to add product
     if (this.widget.updateProductSelection) {
       this.widget.updateProductSelection(
         stepIndex,
@@ -2713,10 +2343,8 @@ class BundleProductModal {
       return;
     }
 
-    // Close modal
     this.close();
 
-    // Show success feedback
     this.showSuccessFeedback();
   }
 
@@ -2724,7 +2352,7 @@ class BundleProductModal {
    * Show success feedback after adding product
    */
   showSuccessFeedback() {
-    // Use widget's toast manager if available
+
     if (this.widget && this.widget.showToast) {
       this.widget.showToast('Product added to bundle!', 'success');
     } else {
@@ -2732,15 +2360,7 @@ class BundleProductModal {
   }
 }
 
-// Export for use in main widget
-
-
-  // Export modal to window for widget access
   window.BundleProductModal = BundleProductModal;
-
-  // ============================================================================
-  // BUNDLE WIDGET FULL PAGE
-  // ============================================================================
 
 /**
  * Bundle Widget - Full Page Version
@@ -2808,9 +2428,6 @@ class BundleProductModal {
  * @author Wolfpack Team
  */
 
-
-// Import shared components and utilities
-
 class BundleWidgetFullPage {
 
   constructor(containerElement) {
@@ -2818,67 +2435,51 @@ class BundleWidgetFullPage {
     this.selectedBundle = null;
     this.selectedProducts = [];
     this.stepProductData = [];
-    this.stepCollectionProductIds = {}; // { `${stepIndex}:${collectionHandle}`: [productId, ...] }
+    this.stepCollectionProductIds = {};
     this.currentStepIndex = 0;
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
 
-    // Search state for filtering products within steps
     this.searchQuery = '';
     this.searchDebounceTimer = null;
 
-    // Tier pill state
     this.tierConfig = [];
     this.activeTierIndex = 0;
 
-    // Initialize product modal (if BundleProductModal is available)
     this.productModal = null;
     if (window.BundleProductModal) {
       this.productModal = new window.BundleProductModal(this);
     } else {
     }
 
-    // Call async init but don't block constructor
     this.init().catch(error => {
       this.showError(error.message);
     });
   }
 
-  // ========================================================================
-  // INITIALIZATION
-  // ========================================================================
-
   async init() {
     try {
-      // Check if already initialized
+
       if (this.container.dataset.initialized === 'true') {
         return;
       }
 
-      // Hide page body loading content (if it exists)
       this.hidePageLoadingContent();
 
-      // Parse configuration
       this.parseConfiguration();
 
-      // For full-page bundles, hide the page title immediately to prevent flash
-      // This runs before any async operations to ensure smooth UX
       const bundleType = this.container.dataset.bundleType;
       if (bundleType === 'full_page') {
         this.hidePageTitle();
       }
 
-      // Show spinner overlay immediately (no gif url yet — bundle data not loaded)
       this.showLoadingOverlay(null);
 
-      // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
 
-      // Load and validate bundle data
       await this.loadBundleData();
 
-      // Select appropriate bundle
       this.selectBundle();
 
       if (!this.selectedBundle) {
@@ -2887,50 +2488,39 @@ class BundleWidgetFullPage {
         return;
       }
 
-      // Resolve tier config — prefer admin-saved (API) over legacy Theme Editor (data attribute)
       this.tierConfig = this.resolveTierConfig(
         this.selectedBundle.tierConfig ?? null,
         this.tierConfig
       );
       this.initTierPills(this.tierConfig);
 
-      // Resolve showStepTimeline — prefer admin-saved (API) over Theme Editor data attribute
       this.config.showStepTimeline = this.resolveShowStepTimeline(
         this.selectedBundle.showStepTimeline ?? null,
         this.config.showStepTimeline
       );
 
-      // Initialize data structures
       this.initializeDataStructures();
 
-      // Setup DOM elements
       this.setupDOMElements();
 
-      // Render initial UI (async for full-page bundles to load products)
       await this.renderUI();
 
-      // Hide overlay now that UI is fully rendered
       this.hideLoadingOverlay();
 
-      // For full-page bundles using cached config: schedule a background layout
-      // refresh so any layout change saved by the merchant since the CDN-cached
-      // page HTML was last built is picked up within seconds of page load.
       if (!window.Shopify?.designMode) {
         this._scheduleLayoutRefresh().catch(() => {});
       }
 
-      // Attach event listeners
       this.attachEventListeners();
 
-      // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
     } catch (error) {
       this.hideLoadingOverlay();
-      // Log full error to browser console for developer debugging
+
       console.error('[BundleWidget] Initialization failed:', error);
-      // Fire-and-forget: send error to server for AppLogger tracking
+
       this._reportError(error);
       this.showErrorUI(error);
     }
@@ -2942,14 +2532,14 @@ class BundleWidgetFullPage {
    */
   hidePageLoadingContent() {
     try {
-      // Find the parent page element that contains the loading text
+
       const pageContent = this.container.parentElement;
 
       if (pageContent) {
-        // Hide all sibling divs that contain loading text
+
         const siblings = Array.from(pageContent.children);
         siblings.forEach(sibling => {
-          // Check if this is not the widget container and contains "Loading" text
+
           if (sibling !== this.container &&
               (sibling.textContent.includes('Loading bundle builder') ||
                sibling.textContent.includes('Loading...'))) {
@@ -2959,7 +2549,7 @@ class BundleWidgetFullPage {
       }
 
     } catch (error) {
-      // Don't throw - this is not critical
+
     }
   }
 
@@ -2969,11 +2559,7 @@ class BundleWidgetFullPage {
    */
   loadDesignSettingsCSS() {
     try {
-      // The Liquid template injects a <link> pointing to the design-settings app proxy URL.
-      // On non-production environments the app proxy may not be configured and Shopify
-      // returns an HTML error page instead of CSS, causing a MIME-type console error.
-      // Register an error listener: if the proxy link fails, fall back to the direct
-      // app server URL via window.__BUNDLE_APP_URL__.
+
       const existingLink = document.querySelector('link[href*="design-settings"]');
       if (!existingLink) return;
 
@@ -2994,7 +2580,7 @@ class BundleWidgetFullPage {
       }, { once: true });
 
     } catch (_e) {
-      // Non-critical — widget works without design settings CSS
+
     }
   }
 
@@ -3006,27 +2592,27 @@ class BundleWidgetFullPage {
       isContainerProduct: dataset.isContainerProduct === 'true',
       containerBundleId: dataset.containerBundleId || null,
       hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showTitle: dataset.showTitle === 'true', // Default to false to avoid duplicate with main header
+      showTitle: dataset.showTitle === 'true',
       showDescription: dataset.showDescription !== 'false',
       showStepNumbers: dataset.showStepNumbers !== 'false',
       showFooterMessaging: dataset.showFooterMessaging !== 'false',
       showStepTimeline: dataset.showStepTimeline !== 'false',
       showCategoryTabs: dataset.showCategoryTabs !== 'false',
-      // Custom content from theme editor
+
       customTitle: dataset.customTitle || null,
       customDescription: dataset.customDescription || null,
-      // Card layout settings from theme editor
+
       productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
-      // Quantity selector visibility settings (default: show on both)
+
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
       showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
-      // Promo banner settings from theme editor
+
       showPromoBanner: dataset.showPromoBanner !== 'false',
       promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
       promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
       promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
-      // Messages will be set from bundle.pricing.messages after bundle loads
+
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
@@ -3037,7 +2623,6 @@ class BundleWidgetFullPage {
 
     this.tierConfig = this.config.tierConfig;
 
-    // Apply card layout settings as CSS variables
     this.applyCardLayoutSettings();
   }
 
@@ -3058,15 +2643,11 @@ class BundleWidgetFullPage {
   async loadBundleData() {
     let bundleData = null;
 
-    // Check if this is a full-page bundle (needs to fetch from API)
     const bundleType = this.container.dataset.bundleType;
     const bundleId = this.container.dataset.bundleId;
 
     if (bundleType === 'full_page' && bundleId) {
 
-      // Prefer metafield cache (data-bundle-config) over proxy API call.
-      // The metafield is written by the app when "Place Widget Now" or "Sync Bundle"
-      // is clicked — it eliminates the proxy round-trip for first paint.
       const cachedConfig = this.container.dataset.bundleConfig;
       if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
         try {
@@ -3075,28 +2656,23 @@ class BundleWidgetFullPage {
             bundleData = { [parsed.id]: parsed };
           }
         } catch (_e) {
-          // Malformed JSON in the attribute — fall through to proxy
+
         }
       }
 
-      // Fall back to proxy API if metafield cache was absent or unparseable.
       if (!bundleData) {
-        // Retry once after a short delay for transient server errors (504/503).
-        // This handles Render cold-start: the first request times out while the
-        // server is warming up; the retry ~3 s later succeeds.
+
         const RETRY_DELAY_MS = 3000;
         const RETRYABLE_STATUSES = new Set([503, 504]);
 
         const fetchBundleData = async () => {
-          // Use Shopify app proxy path - Shopify automatically adds signature and auth params
-          // App proxy config: /apps/product-bundles -> https://wolfpack-product-bundle-app.onrender.com
-          // CRITICAL: URL-encode bundle ID to handle special characters in cuid() format
+
           const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
 
           const response = await fetch(apiUrl);
 
           if (!response.ok) {
-            // Try to get error details from response body
+
             let errorDetails = `${response.status} ${response.statusText}`;
             try {
               const errorData = await response.json();
@@ -3121,7 +2697,7 @@ class BundleWidgetFullPage {
           try {
             bundleData = await fetchBundleData();
           } catch (firstErr) {
-            // Retry once for 504/503 (server cold-start)
+
             if (RETRYABLE_STATUSES.has(firstErr.status)) {
               await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
               bundleData = await fetchBundleData();
@@ -3134,12 +2710,12 @@ class BundleWidgetFullPage {
         }
       }
     } else {
-      // Product-page bundle: load from data-bundle-config attribute
+
       const configValue = this.container.dataset.bundleConfig;
       if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
         try {
           const singleBundle = JSON.parse(configValue);
-          // Validate parsed result is a valid object with an id
+
           if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
             bundleData = { [singleBundle.id]: singleBundle };
           } else {
@@ -3149,9 +2725,8 @@ class BundleWidgetFullPage {
       } else {
       }
 
-      // Widget only works on container products with bundleConfig metafield
       if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-        // Check if we're in theme editor mode
+
         const isThemeEditor = window.Shopify?.designMode ||
                              window.isThemeEditorContext ||
                              window.location.pathname.includes('/editor') ||
@@ -3159,13 +2734,11 @@ class BundleWidgetFullPage {
 
         const bundleIdFromDataset = this.container.dataset.bundleId;
 
-        // Show helpful preview in theme editor instead of error
         if (isThemeEditor && bundleIdFromDataset) {
           this.showThemeEditorPreview(bundleIdFromDataset);
-          return; // Don't throw error, just show preview
+          return;
         }
 
-        // For production/storefront: show proper error
         const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
         throw new Error(errorMsg);
       }
@@ -3177,15 +2750,11 @@ class BundleWidgetFullPage {
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
 
-    // Update message templates from bundle pricing messages
     this.updateMessagesFromBundle();
   }
 
   updateMessagesFromBundle() {
-    // Product-page bundles (metafield path) expose a top-level `messaging` object with
-    // camelCase keys (progressTemplate / successTemplate).
-    // Full-page bundles (API path) expose messages inside `pricing.messages` with
-    // snake-style keys (progress / qualified). Try both shapes.
+
     const messaging = this.selectedBundle?.messaging;
     const pricingMessages = this.selectedBundle?.pricing?.messages;
 
@@ -3200,7 +2769,7 @@ class BundleWidgetFullPage {
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
 
     } else if (pricingMessages) {
-      // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
+
       const ruleMessages = pricingMessages.ruleMessages;
       const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
       if (firstRuleMsg?.discountText) {
@@ -3220,13 +2789,10 @@ class BundleWidgetFullPage {
   initializeDataStructures() {
     const stepsCount = this.selectedBundle.steps.length;
 
-    // Initialize selected products array (one object per step)
     this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
 
-    // Pre-populate default products (mandatory items like Gift Box)
     this._initDefaultProducts();
 
-    // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
   }
 
@@ -3286,12 +2852,8 @@ class BundleWidgetFullPage {
     `;
   }
 
-  // ========================================================================
-  // DOM SETUP
-  // ========================================================================
-
   setupDOMElements() {
-    // Get or create main UI elements
+
     this.elements = {
       header: this.container.querySelector('.bundle-header') || this.createHeader(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
@@ -3299,7 +2861,6 @@ class BundleWidgetFullPage {
       modal: this.ensureModal()
     };
 
-    // Append elements if they were created
     if (!this.container.querySelector('.bundle-header')) {
       this.container.appendChild(this.elements.header);
     }
@@ -3315,13 +2876,10 @@ class BundleWidgetFullPage {
     const header = document.createElement('div');
     header.className = 'bundle-header';
 
-    // Use custom title if provided, otherwise use bundle name
     const title = this.config.customTitle || this.selectedBundle.name;
 
-    // Use custom description if provided, otherwise use bundle description
     const description = this.config.customDescription || this.selectedBundle.description;
 
-    // Build header HTML (escape user-provided content)
     const titleHTML = `<h2 class="bundle-title">${ComponentGenerator.escapeHtml(title)}</h2>`;
     const descriptionHTML = (description && this.config.showDescription)
       ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(description)}</p>`
@@ -3408,7 +2966,6 @@ class BundleWidgetFullPage {
 
       document.body.appendChild(modal);
 
-      // Setup tab scroll arrows
       this.setupTabScrollArrows(modal);
     }
 
@@ -3424,17 +2981,14 @@ class BundleWidgetFullPage {
 
     const scrollAmount = 200;
 
-    // Left arrow click
     leftArrow.addEventListener('click', () => {
       tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
     });
 
-    // Right arrow click
     rightArrow.addEventListener('click', () => {
       tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     });
 
-    // Update arrow visibility based on scroll position
     const updateArrowVisibility = () => {
       const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
 
@@ -3442,18 +2996,12 @@ class BundleWidgetFullPage {
       rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
     };
 
-    // Listen to scroll events
     tabsContainer.addEventListener('scroll', updateArrowVisibility);
 
-    // Initial check
     setTimeout(updateArrowVisibility, 100);
 
-    // Store for later updates
     this.updateTabArrows = updateArrowVisibility;
   }
-  //========================================================================
-  // UI RENDERING
-  // ========================================================================
 
   async renderUI() {
     this.renderHeader();
@@ -3462,7 +3010,7 @@ class BundleWidgetFullPage {
   }
 
   renderHeader() {
-    // For full-page bundles, always hide the main header (promo banner handles the display)
+
     const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
       this.elements.header.style.display = 'none';
@@ -3478,18 +3026,17 @@ class BundleWidgetFullPage {
   }
 
   async renderSteps() {
-    // Clear existing steps
+
     this.elements.stepsContainer.innerHTML = '';
 
     if (!this.selectedBundle || !this.selectedBundle.steps) {
       return;
     }
 
-    // Check bundle type and render accordingly
     const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
 
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-      // Full-page bundle: Render with tabs layout (async to load products)
+
       const layout = this.selectedBundle.fullPageLayout || 'footer_bottom';
       if (layout === 'footer_side') {
         await this.renderFullPageLayoutWithSidebar();
@@ -3497,12 +3044,11 @@ class BundleWidgetFullPage {
         await this.renderFullPageLayout();
       }
     } else {
-      // Product-page bundle: Render with step boxes (current implementation)
+
       this.renderProductPageLayout();
     }
   }
 
-  // Product-page bundle layout (original vertical step boxes)
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, index) => {
       const stepElement = this.createStepElement(step, index);
@@ -3510,42 +3056,32 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Full-page bundle layout (horizontal tabs)
   async renderFullPageLayout() {
 
-    // Hide the page-title element from the theme (shows page name like "StrangeObjectsinmirror")
     this.hidePageTitle();
 
-    // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
 
-    // Wrap content in full-page-content-section for proper padding
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section';
 
-    // OPTIMISTIC RENDERING: Render non-product UI immediately
-    // 0. Render promo banner at the very top (before step timeline)
     const promoBanner = this.createPromoBanner();
     if (promoBanner) {
       contentSection.appendChild(promoBanner);
     }
 
-    // 1. Render step timeline at top (if enabled in theme settings)
     if (this.config.showStepTimeline) {
       const stepTimeline = this.createStepTimeline();
       contentSection.appendChild(stepTimeline);
     }
 
-    // 2. Render per-step banner image (if configured for this step)
     const stepBanner = this.createStepBannerImage(this.currentStepIndex);
     if (stepBanner) contentSection.appendChild(stepBanner);
 
-    // 3. Render search input for filtering products
     const searchInput = this.createSearchInput();
     contentSection.appendChild(searchInput);
 
-    // 4. Render category/collection tabs if step has collections (and enabled in theme settings)
     if (this.config.showCategoryTabs) {
       const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
       if (categoryTabs) {
@@ -3553,7 +3089,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // 5. Create product grid container with loading state
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
@@ -3561,29 +3096,22 @@ class BundleWidgetFullPage {
 
     this.elements.stepsContainer.appendChild(contentSection);
 
-    // 6. Render fixed footer (will be updated after products load)
     this.renderFullPageFooter();
 
-    // Load products asynchronously and update grid
-    // Only show loading overlay when a custom GIF is configured — otherwise the
-    // skeleton loading state (already rendered above) is visible and sufficient.
     if (this.selectedBundle?.loadingGif) {
       this.showLoadingOverlay(this.selectedBundle.loadingGif);
     }
     try {
       await this.loadStepProducts(this.currentStepIndex);
 
-      // Replace loading state with actual products
       const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
       productGridContainer.innerHTML = '';
       productGridContainer.appendChild(productGrid);
 
-      // Update footer with correct product data
       this.renderFullPageFooter();
 
       this.hideLoadingOverlay();
 
-      // PRELOAD NEXT STEP: Load next step's products in the background
       this.preloadNextStep();
     } catch (error) {
       this.hideLoadingOverlay();
@@ -3591,29 +3119,23 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Full-page bundle layout with sidebar panel (footer_side)
   async renderFullPageLayoutWithSidebar() {
     this.hidePageTitle();
 
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
 
-    // Hide the bottom footer — sidebar replaces it
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
     }
 
-    // ABOVE: Step timeline sits above the two-column area (same horizontal position as
-    // the floating footer layout) so tabs always appear at the top, not as a left column.
     if (this.config.showStepTimeline) {
       this.elements.stepsContainer.appendChild(this.createStepTimeline());
     }
 
-    // Two-column wrapper: content (center) | sidebar (right)
     const twoColWrapper = document.createElement('div');
     twoColWrapper.className = 'sidebar-layout-wrapper';
 
-    // CENTER: Main content (same as footer_bottom minus the footer)
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section sidebar-content';
 
@@ -3630,7 +3152,6 @@ class BundleWidgetFullPage {
       if (categoryTabs) contentSection.appendChild(categoryTabs);
     }
 
-    // Free gift step custom heading
     const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
     if (currentStep?.isFreeGift) {
       const freeHeading = document.createElement('div');
@@ -3646,7 +3167,6 @@ class BundleWidgetFullPage {
 
     twoColWrapper.appendChild(contentSection);
 
-    // RIGHT: Side panel
     const sidePanel = document.createElement('div');
     sidePanel.className = 'full-page-side-panel';
     this.renderSidePanel(sidePanel);
@@ -3654,8 +3174,6 @@ class BundleWidgetFullPage {
 
     this.elements.stepsContainer.appendChild(twoColWrapper);
 
-    // Load products
-    // Only show loading overlay when a custom GIF is configured.
     if (this.selectedBundle?.loadingGif) {
       this.showLoadingOverlay(this.selectedBundle.loadingGif);
     }
@@ -3675,7 +3193,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Mobile sticky bottom bar + slide-up sheet (replaces sidebar on < 768px)
   _renderMobileBottomBar() {
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
@@ -3760,7 +3277,6 @@ class BundleWidgetFullPage {
     this.renderSidePanel(sheet);
   }
 
-  // Render the sidebar panel content (used by footer_side layout)
   renderSidePanel(panel) {
     if (!panel) return;
     panel.innerHTML = '';
@@ -3780,7 +3296,6 @@ class BundleWidgetFullPage {
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
 
-    // Header: "Your Bundle" + Clear
     const header = document.createElement('div');
     header.className = 'side-panel-header';
     const headerTitle = document.createElement('span');
@@ -3800,13 +3315,11 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(header);
 
-    // Subtitle — "Review your bundle"
     const subtitle = document.createElement('p');
     subtitle.className = 'side-panel-subtitle';
     subtitle.textContent = 'Review your bundle';
     panel.appendChild(subtitle);
 
-    // Discount messaging
     if (this.selectedBundle?.pricing?.enabled) {
       const variables = TemplateManager.createDiscountVariables(
         this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
@@ -3831,7 +3344,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Item count label
     if (allSelectedProducts.length > 0) {
       const countLabel = document.createElement('div');
       countLabel.className = 'side-panel-item-count';
@@ -3839,7 +3351,6 @@ class BundleWidgetFullPage {
       panel.appendChild(countLabel);
     }
 
-    // Selected products list
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
 
@@ -3871,7 +3382,6 @@ class BundleWidgetFullPage {
           ${priceHtml}
         `;
 
-        // Remove button — hidden for default (mandatory) products
         if (!item.isDefault) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
@@ -3896,7 +3406,6 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    // Skeleton slots for unfilled paid step positions
     const skeletonContainer = document.createElement('div');
     skeletonContainer.className = 'side-panel-skeleton-slots';
     const paidStepCount = this.paidSteps.reduce((sum, s) =>
@@ -3905,15 +3414,36 @@ class BundleWidgetFullPage {
     this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
     panel.appendChild(skeletonContainer);
 
-    // Free gift section (locked or unlocked)
     this._renderFreeGiftSection(panel);
 
-    // Divider
+    if (this.selectedBundle?.pricing?.enabled && (nextRule || discountInfo.hasDiscount)) {
+      const upsellVars = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+      );
+      let upsellMsg = '';
+      if (discountInfo.hasDiscount) {
+        upsellMsg = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          upsellVars
+        );
+      } else if (nextRule) {
+        upsellMsg = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+          upsellVars
+        );
+      }
+      if (upsellMsg) {
+        const upsellSlot = document.createElement('div');
+        upsellSlot.className = `sidebar-upsell-slot${discountInfo.hasDiscount ? ' sidebar-upsell-slot--reached' : ''}`;
+        upsellSlot.innerHTML = upsellMsg;
+        panel.appendChild(upsellSlot);
+      }
+    }
+
     const divider = document.createElement('div');
     divider.className = 'side-panel-divider';
     panel.appendChild(divider);
 
-    // Total
     const totalSection = document.createElement('div');
     totalSection.className = 'side-panel-total';
     totalSection.innerHTML = `
@@ -3925,14 +3455,12 @@ class BundleWidgetFullPage {
     `;
     panel.appendChild(totalSection);
 
-    // Discount progress banner — above Add to Cart button
     const sidebarBanner = this._renderDiscountProgressBanner();
     if (sidebarBanner) {
       sidebarBanner.classList.add('discount-progress-banner--sidebar');
       panel.appendChild(sidebarBanner);
     }
 
-    // Navigation buttons
     const navSection = document.createElement('div');
     navSection.className = 'side-panel-nav';
 
@@ -3981,23 +3509,21 @@ class BundleWidgetFullPage {
     panel.appendChild(navSection);
   }
 
-  // Escape HTML special characters to prevent innerHTML injection
   _escapeHTML(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Returns default SVG icon markup for a step based on its type
   _getDefaultTimelineIcon(step) {
     if (step.isDefault) {
-      // Included/locked step — lock icon
+
       return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
     }
     if (step.isFreeGift) {
-      // Free gift step — gift box icon
+
       return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <polyline points="20 12 20 22 4 22 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <rect x="2" y="7" width="20" height="5" rx="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -4006,7 +3532,7 @@ class BundleWidgetFullPage {
         <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
     }
-    // Regular step — shopping bag icon
+
     return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -4014,7 +3540,6 @@ class BundleWidgetFullPage {
     </svg>`;
   }
 
-  // Create circular icon-based step timeline with connecting lines and three icon states
   createStepTimeline() {
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
@@ -4030,7 +3555,6 @@ class BundleWidgetFullPage {
       stepEl.className = 'timeline-step';
       stepEl.dataset.stepIndex = index;
 
-      // Determine step state
       const isDefaultStep = step.isDefault === true;
       const isCompleted = this.isStepCompleted(index);
       const isCurrent = index === this.currentStepIndex;
@@ -4044,17 +3568,14 @@ class BundleWidgetFullPage {
 
       const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
 
-      // Icon: user-uploaded → img element, else default SVG by step type
       const iconContent = step.timelineIconUrl
         ? `<img class="timeline-step-icon" src="${step.timelineIconUrl}" alt="${escapedName}">`
         : this._getDefaultTimelineIcon(step);
 
-      // Checkmark badge — always rendered, shown via CSS only when completed
       const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
 
-      // Connector — only on non-last steps
       const connectorHtml = index < steps.length - 1
         ? `<div class="timeline-connector"><div class="timeline-connector-fill"></div></div>`
         : '';
@@ -4068,7 +3589,6 @@ class BundleWidgetFullPage {
         ${connectorHtml}
       `;
 
-      // Click handler — accessible steps only
       if (isAccessible && !isDefaultStep) {
         stepEl.style.cursor = 'pointer';
         stepEl.addEventListener('click', () => {
@@ -4093,7 +3613,6 @@ class BundleWidgetFullPage {
     return timeline;
   }
 
-  // Returns a full-width banner image element for the active step, or null if not configured
   createStepBannerImage(stepIndex) {
     const step = (this.selectedBundle?.steps || [])[stepIndex];
     if (!step?.bannerImageUrl) return null;
@@ -4107,7 +3626,6 @@ class BundleWidgetFullPage {
     return wrapper;
   }
 
-  // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
   getStepQuantityHint(step) {
     if (!step) return null;
 
@@ -4117,7 +3635,6 @@ class BundleWidgetFullPage {
     if (conditionOperator && conditionValue != null) {
       const val = Number(conditionValue);
 
-      // Range condition: primary AND secondary
       if (conditionOperator2 && conditionValue2 != null) {
         const val2 = Number(conditionValue2);
         const min = Math.min(val, val2);
@@ -4135,7 +3652,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Fallback to minQuantity / maxQuantity
     const min = minQuantity != null ? Number(minQuantity) : null;
     const max = maxQuantity != null ? Number(maxQuantity) : null;
     if (min && max && min !== max) return `Pick ${min}–${max}`;
@@ -4144,7 +3660,6 @@ class BundleWidgetFullPage {
     return null;
   }
 
-  // Get product images for a step (helper for tabs)
   getStepProductImages(stepIndex) {
     const selectedProducts = this.selectedProducts[stepIndex] || {};
     const productImages = [];
@@ -4164,7 +3679,6 @@ class BundleWidgetFullPage {
     return productImages;
   }
 
-  // Create search input for filtering products within the current step
   createSearchInput() {
     const searchContainer = document.createElement('div');
     searchContainer.className = 'step-search-container';
@@ -4193,14 +3707,11 @@ class BundleWidgetFullPage {
     const input = searchContainer.querySelector('.step-search-input');
     const clearBtn = searchContainer.querySelector('.step-search-clear');
 
-    // Handle input with debounce
     input.addEventListener('input', (e) => {
       const value = e.target.value;
 
-      // Show/hide clear button
       clearBtn.style.display = value ? 'flex' : 'none';
 
-      // Debounce the search
       if (this.searchDebounceTimer) {
         clearTimeout(this.searchDebounceTimer);
       }
@@ -4211,7 +3722,6 @@ class BundleWidgetFullPage {
       }, 300);
     });
 
-    // Handle clear button
     clearBtn.addEventListener('click', () => {
       input.value = '';
       clearBtn.style.display = 'none';
@@ -4220,7 +3730,6 @@ class BundleWidgetFullPage {
       input.focus();
     });
 
-    // Handle escape key to clear
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         input.value = '';
@@ -4233,7 +3742,6 @@ class BundleWidgetFullPage {
     return searchContainer;
   }
 
-  // Update product grid when search query changes (without full re-render)
   updateProductGridWithSearch() {
     const gridContainer = this.container.querySelector('.full-page-product-grid-container');
     if (!gridContainer) return;
@@ -4243,10 +3751,8 @@ class BundleWidgetFullPage {
     gridContainer.appendChild(productGrid);
   }
 
-  // Hide the page title element from the theme template
-  // This prevents showing the page name (e.g., "StrangeObjectsinmirror") above the bundle
   hidePageTitle() {
-    // Try multiple selectors to find the page title element
+
     const selectors = [
       '.main-page-title',
       '.page-title',
@@ -4260,21 +3766,19 @@ class BundleWidgetFullPage {
       try {
         const elements = document.querySelectorAll(selector);
         elements.forEach(el => {
-          // Check if this is a page title element (not our promo banner)
+
           if (el.closest('.promo-banner')) return;
 
-          // Hide the element
           el.style.display = 'none';
         });
       } catch (e) {
-        // Selector might be invalid, continue to next
+
       }
     }
 
-    // Also hide any parent containers that only contain the title
     const pageTitleContainers = document.querySelectorAll('.page-width--narrow');
     pageTitleContainers.forEach(container => {
-      // Only hide if the container has a page title and not much else
+
       const hasPageTitle = container.querySelector('.main-page-title, .page-title, h1.h0');
       const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
 
@@ -4284,20 +3788,16 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Create promotional banner (Competitor-Inspired with gradient hero style)
-  // Shows bundle title with optional discount info from DCP
   createPromoBanner() {
-    // Check if promo banner is disabled via theme editor settings
+
     if (this.config.showPromoBanner === false) {
       return null;
     }
 
-    // Check if promo banner is enabled via DCP CSS variable
     const promoBannerEnabled = getComputedStyle(document.documentElement)
       .getPropertyValue('--bundle-promo-banner-enabled')
       .trim();
 
-    // If explicitly disabled (value is '0'), don't create the banner
     if (promoBannerEnabled === '0') {
       return null;
     }
@@ -4307,15 +3807,13 @@ class BundleWidgetFullPage {
     const rules = pricing?.rules || [];
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-    // Start with the bundle name as the main title
     let promoTitle = bundleName;
     let promoSubtitle = '';
     let promoNote = '';
     let discountMessage = '';
 
-    // Check for discount rules and build discount message
     if (pricing?.enabled && rules.length > 0) {
-      // Find the best discount to highlight (use nested structure)
+
       const bestRule = rules.reduce((best, rule) => {
         const discountValue = rule.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
           ? rule.discount?.value || 0
@@ -4326,13 +3824,11 @@ class BundleWidgetFullPage {
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      // Build discount message based on best rule (using nested structure)
       const targetQty = bestRule.condition?.value || 0;
       const conditionOperator = bestRule.condition?.operator;
       const discountMethod = bestRule.discount?.method;
       const discountValue = bestRule.discount?.value || 0;
 
-      // Build operator-aware quantity text
       const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
 
       if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
@@ -4346,19 +3842,16 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Use custom banner message if configured (overrides discount message)
     if (pricing?.messages?.banner) {
       discountMessage = pricing.messages.banner;
     }
 
-    // Determine layout based on whether we have a discount
-    // Use theme editor settings for customizable text
     if (discountMessage) {
-      // With discount: Use subtitle from theme settings, discount as note
+
       promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
       promoNote = discountMessage;
     } else {
-      // No discount: Use tagline and note from theme settings
+
       promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
       promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
     }
@@ -4372,31 +3865,27 @@ class BundleWidgetFullPage {
       ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
     `;
 
-    // Apply per-bundle promo banner background image directly as inline style.
-    // Using banner.style.backgroundImage (not a CSS custom property) so the inline style
-    // always wins regardless of theme stylesheet specificity.
     const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
     if (bgImageUrl) {
       banner.style.backgroundImage = `url('${bgImageUrl}')`;
       banner.style.backgroundSize = 'cover';
       banner.style.backgroundPosition = 'center';
 
-      // Apply crop offsets when crop data is present (overrides cover/center defaults above)
       const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
       if (cropRaw) {
         try {
           const crop = JSON.parse(cropRaw);
-          const cw = crop.width / 100;    // normalized crop width (0–1)
-          const ch = cw * (3 / 16);       // derived height fraction (same aspect as banner)
-          const cx = crop.x / 100;        // normalized left edge
-          const cy = crop.y / 100;        // normalized top edge
+          const cw = crop.width / 100;
+          const ch = cw * (3 / 16);
+          const cx = crop.x / 100;
+          const cy = crop.y / 100;
           const bgSize = `${(1 / cw) * 100}%`;
           const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
           const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
           banner.style.backgroundSize = bgSize;
           banner.style.backgroundPosition = `${posX}% ${posY}%`;
         } catch (_e) {
-          // Invalid crop JSON — fall back to default cover/center set above
+
         }
       }
     }
@@ -4404,7 +3893,6 @@ class BundleWidgetFullPage {
     return banner;
   }
 
-  // Create category/collection tabs (Pill Button Style)
   createCategoryTabs(stepIndex) {
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
       return null;
@@ -4419,7 +3907,6 @@ class BundleWidgetFullPage {
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
-    // Add "All" tab - Pill button style
     const allTab = document.createElement('button');
     allTab.className = 'category-tab';
     if (!this.activeCollectionId) {
@@ -4432,7 +3919,6 @@ class BundleWidgetFullPage {
     });
     tabsContainer.appendChild(allTab);
 
-    // Add collection tabs - Pill button style
     step.collections.forEach(collection => {
       const tab = document.createElement('button');
       tab.className = 'category-tab';
@@ -4450,7 +3936,6 @@ class BundleWidgetFullPage {
     return tabsContainer;
   }
 
-  // Create horizontal scrollable product grid
   createFullPageProductGrid(stepIndex) {
     const grid = document.createElement('div');
     grid.className = 'full-page-product-grid';
@@ -4460,11 +3945,9 @@ class BundleWidgetFullPage {
     }
 
     const step = this.selectedBundle.steps[stepIndex];
-    // Use processed product data with proper variant IDs
+
     let products = this.stepProductData[stepIndex] || [];
 
-
-    // Filter by active collection if selected
     if (this.activeCollectionId && step.collections) {
       const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
       if (activeCollection && activeCollection.handle) {
@@ -4472,8 +3955,7 @@ class BundleWidgetFullPage {
         const collectionProductIds = this.stepCollectionProductIds[membershipKey];
         if (collectionProductIds && collectionProductIds.length > 0) {
           products = products.filter(p => {
-            // parentProductId is numeric product ID (set when displayVariantsAsIndividual is true)
-            // p.id is numeric product ID otherwise
+
             const numericPid = p.parentProductId || p.id || '';
             return collectionProductIds.some(cid => {
               const numericCid = this.extractId(cid) || cid;
@@ -4484,10 +3966,8 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Expand products with variants into separate cards (one card per variant)
     let expandedProducts = this.expandProductsByVariant(products);
 
-    // Filter by search query if active
     if (this.searchQuery && this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase().trim();
       expandedProducts = expandedProducts.filter(product => {
@@ -4499,7 +3979,7 @@ class BundleWidgetFullPage {
     }
 
     if (expandedProducts.length === 0) {
-      // Show appropriate message based on whether there's a search query
+
       const message = this.searchQuery
         ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
         : 'No products available in this step.';
@@ -4507,19 +3987,15 @@ class BundleWidgetFullPage {
       return grid;
     }
 
-
-    // Check if step is at capacity (adding 1 more item would be blocked)
-    // When at capacity, unselected cards are dimmed
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
     const isStepAtCapacity = !capacityCheck.allowed;
 
-    // Create product cards using ComponentGenerator
     expandedProducts.forEach(product => {
       const productCard = this.createProductCard(product, stepIndex);
       const productId = product.variantId || product.id;
       const currentQty = stepSelections[productId] || 0;
-      // Dim unselected cards when step quota is full
+
       if (isStepAtCapacity && currentQty === 0) {
         productCard.classList.add('dimmed');
       }
@@ -4529,21 +4005,18 @@ class BundleWidgetFullPage {
     return grid;
   }
 
-  // Expand products with multiple variants into separate product entries
-  // Each variant becomes its own card showing "Product Title - Variant Name"
   expandProductsByVariant(products) {
     return products.flatMap(product => {
-      // If product already has a variantId and parentProductId, it was already expanded
+
       if (product.parentProductId && product.variantId) {
         return [product];
       }
 
-      // If product has multiple variants, expand into separate cards
       if (product.variants && product.variants.length > 1) {
         return product.variants
-          .filter(variant => variant.available !== false) // Only show available variants
+          .filter(variant => variant.available !== false)
           .map(variant => {
-            // Use variant image if available, fallback to product image
+
             const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
@@ -4558,19 +4031,16 @@ class BundleWidgetFullPage {
               available: variant.available !== false,
               parentProductId: product.id,
               parentTitle: product.title,
-              // Remove variants array from individual cards to prevent showing variant selector
+
               variants: null
             };
           });
       }
 
-      // Single variant or no variants - return as-is
       return [product];
     });
   }
 
-  // Create loading skeleton for product grid - solid pulsating cards
-  // No internal button/quantity skeletons - just clean solid cards
   createProductGridLoadingState() {
     return `
       <div class="full-page-product-grid">
@@ -4581,7 +4051,7 @@ class BundleWidgetFullPage {
         `).join('')}
       </div>
       <style>
-        /* Skeleton loading state - solid pulsating cards */
+
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
@@ -4597,7 +4067,6 @@ class BundleWidgetFullPage {
           box-shadow: none;
         }
 
-        /* Full card pulsating effect */
         .skeleton-card-content {
           position: absolute;
           top: 0;
@@ -4628,38 +4097,30 @@ class BundleWidgetFullPage {
     `;
   }
 
-  // Preload ALL remaining steps' products in the background (parallel).
-  // Called after step 0 renders so subsequent step transitions feel instant.
-  // loadStepProducts() is a no-op when data is already cached, so this is safe to call
-  // at any step without re-fetching.
   preloadAllSteps() {
     const steps = this.selectedBundle?.steps;
     if (!steps) return;
 
     steps.forEach((_, index) => {
-      // Skip the step already on screen — it's been loaded synchronously
+
       if (index === this.currentStepIndex) return;
-      // Skip steps already cached
+
       if (this.stepProductData[index]?.length > 0) return;
 
       this.loadStepProducts(index).catch(() => {
-        // Silent — background prefetch; errors here don't affect the user
+
       });
     });
   }
 
-  // Keep legacy alias so any call sites that still say preloadNextStep() keep working
   preloadNextStep() {
     this.preloadAllSteps();
   }
 
-  // Create a product card DOM element for full-page layout
   createProductCard(product, stepIndex) {
     const productId = product.variantId || product.id;
     const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
 
-
-    // Ensure product has an image URL (use multiple fallbacks)
     if (!product.imageUrl || product.imageUrl === '') {
       product.imageUrl = product.image?.src ||
                         product.featuredImage?.url ||
@@ -4667,15 +4128,12 @@ class BundleWidgetFullPage {
                         BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
     }
 
-    // Get currency info for formatting
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-    // Build inline variant selector using the step's merchant-configured primary option
     const step = (this.selectedBundle?.steps || [])[stepIndex];
     const primaryOptionName = step?.primaryVariantOption || null;
     const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
 
-    // Use ComponentGenerator to render HTML (available in same scope after bundling)
     const htmlString = ComponentGenerator.renderProductCard(
       product,
       currentQuantity,
@@ -4683,12 +4141,10 @@ class BundleWidgetFullPage {
       { variantSelectorHtml }
     );
 
-    // Convert HTML string to DOM element
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
-    // Default (included) step: add "Included" badge and disable interaction controls
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
     if (currentStepData?.isDefault) {
       cardElement.classList.add('fpb-card--default-included');
@@ -4716,7 +4172,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Free gift step: add "Free" badge and override price display to $0.00
     if (currentStepData?.isFreeGift) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
@@ -4748,21 +4203,17 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Attach event listeners for full-page specific interactions
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
     return cardElement;
   }
 
-  // Attach event listeners to product card
   attachProductCardListeners(cardElement, product, stepIndex) {
-    // Default steps are read-only — no add/remove/quantity interaction allowed
+
     if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
-    // qty controls use product.variantId dynamically so variant changes are reflected
     const getProductId = () => product.variantId || product.id;
 
-    // Inline quantity increase/decrease buttons (delegated via card element)
     cardElement.addEventListener('click', (e) => {
       const btn = e.target.closest('.inline-qty-btn');
       if (!btn) return;
@@ -4781,7 +4232,6 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Circle add button: qty 0 → 1
     cardElement.addEventListener('click', (e) => {
       const addBtn = e.target.closest('.product-add-btn');
       if (!addBtn) return;
@@ -4793,18 +4243,17 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Inline variant selector (VariantSelectorComponent button group + panels)
     if (product.variants && product.variants.length > 1) {
       VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
         const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
 
         if (oldQty > 0 && oldVariantId !== newVariantId) {
-          // Remove old variant qty
+
           if (this.selectedProducts[stepIndex]) {
             delete this.selectedProducts[stepIndex][oldVariantId];
           }
-          // Clamp against new variant's stock
-          const newQtyAvail = product.quantityAvailable; // already updated by component
+
+          const newQtyAvail = product.quantityAvailable;
           const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
           let migratedQty = oldQty;
           if (newOOS) {
@@ -4817,12 +4266,11 @@ class BundleWidgetFullPage {
           if (migratedQty > 0) {
             this.selectedProducts[stepIndex][newVariantId] = migratedQty;
           }
-          // Update inline qty display
+
           const qtyDisplay = cardElement.querySelector('.inline-qty-display');
           if (qtyDisplay) qtyDisplay.textContent = migratedQty;
         }
 
-        // Update data-product-id on card + action buttons so subsequent clicks use correct ID
         cardElement.dataset.productId = newVariantId;
         cardElement.querySelectorAll('[data-product-id]').forEach(el => {
           if (el !== cardElement) el.dataset.productId = newVariantId;
@@ -4835,9 +4283,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Refresh the step timeline tabs in-place when product selections change.
-  // Called after every updateProductSelection() so tabs reflect current completion
-  // state (completed/active/locked classes, click listeners, product images, counts).
   updateStepTimeline() {
     if (!this.config.showStepTimeline) return;
     const existing = this.elements.stepsContainer.querySelector('.step-timeline');
@@ -4846,13 +4291,11 @@ class BundleWidgetFullPage {
     existing.parentNode.replaceChild(fresh, existing);
   }
 
-  // Render floating footer card with selected products and navigation
   renderFullPageFooter() {
     if (!this.elements.footer) {
       return;
     }
 
-    // Safety guard: sidebar layout uses the side panel, not the bottom footer
     const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
     if (layout === 'footer_side') {
       this.elements.footer.style.display = 'none';
@@ -4861,7 +4304,6 @@ class BundleWidgetFullPage {
 
     const allSelectedProducts = this.getAllSelectedProductsData();
 
-    // Preserve open state across re-renders
     const wasOpen = this.elements.footer.classList.contains('is-open');
 
     this.elements.footer.innerHTML = '';
@@ -4869,7 +4311,6 @@ class BundleWidgetFullPage {
     if (wasOpen) this.elements.footer.classList.add('is-open');
     this.elements.footer.style.display = 'block';
 
-    // Pricing data
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
@@ -4883,7 +4324,6 @@ class BundleWidgetFullPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
 
-    // Callout banner text (shown in expanded panel when discount unlocked)
     let calloutMessage = '';
     if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
       const variables = TemplateManager.createDiscountVariables(
@@ -4895,7 +4335,6 @@ class BundleWidgetFullPage {
       );
     }
 
-    // Total required quantity across paid steps only (free gift and default steps are non-blocking)
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
       if (step.isFreeGift || step.isDefault) return sum;
       return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
@@ -4903,7 +4342,6 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    // Callout banner — always visible at top of card when deal is active
     if (discountInfo.hasDiscount && calloutMessage) {
       const callout = document.createElement('div');
       callout.className = 'footer-callout-banner';
@@ -4911,7 +4349,6 @@ class BundleWidgetFullPage {
       this.elements.footer.appendChild(callout);
     }
 
-    // Expandable product list panel (no callout inside — it's now above the panel)
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
     backdrop.className = 'footer-backdrop';
@@ -4925,22 +4362,18 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Discount progress banner — sits between panel and bar, always visible
     const discountBanner = this._renderDiscountProgressBanner();
 
-    // Stack: callout → panel → discount banner → backdrop → bar
     this.elements.footer.appendChild(panel);
     if (discountBanner) this.elements.footer.appendChild(discountBanner);
     this.elements.footer.appendChild(backdrop);
     this.elements.footer.appendChild(bar);
   }
 
-  // Creates the expandable product-list panel (callout banner is rendered separately above)
   _createFooterPanel(allSelectedProducts, currencyInfo) {
     const panel = document.createElement('div');
     panel.className = 'footer-panel';
 
-    // Product list
     const list = document.createElement('ul');
     list.className = 'footer-panel-list';
 
@@ -4990,12 +4423,10 @@ class BundleWidgetFullPage {
     return panel;
   }
 
-  // Creates the always-visible footer bar
   _createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
     const bar = document.createElement('div');
     bar.className = 'footer-bar';
 
-    // ── Left: Thumbnail strip (standalone, circular) ──
     const thumbStrip = document.createElement('div');
     thumbStrip.className = 'footer-thumbstrip';
     const maxThumbs = 3;
@@ -5013,11 +4444,9 @@ class BundleWidgetFullPage {
       thumbStrip.appendChild(overflow);
     }
 
-    // ── Centre: Toggle (row 1) + Total + discount badge (row 2) ──
     const centreCol = document.createElement('div');
     centreCol.className = 'footer-centre';
 
-    // Row 1 — toggle
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'footer-toggle';
     toggleBtn.setAttribute('type', 'button');
@@ -5036,7 +4465,6 @@ class BundleWidgetFullPage {
       this.elements.footer.classList.toggle('is-open');
     });
 
-    // Row 2 — Total + discount badge
     const totalArea = document.createElement('div');
     totalArea.className = 'footer-total-area';
 
@@ -5059,7 +4487,6 @@ class BundleWidgetFullPage {
     centreCol.appendChild(toggleBtn);
     centreCol.appendChild(totalArea);
 
-    // ── Right: CTA button ──
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'footer-cta-btn';
     ctaBtn.setAttribute('type', 'button');
@@ -5088,14 +4515,12 @@ class BundleWidgetFullPage {
     return bar;
   }
 
-  // Helper: Truncate title for compact display
   truncateTitle(title, maxLength) {
     if (!title) return '';
     if (title.length <= maxLength) return title;
     return title.substring(0, maxLength) + '...';
   }
 
-  // Helper: Get all selected products data for footer display
   getAllSelectedProductsData() {
     const allProducts = [];
 
@@ -5105,13 +4530,11 @@ class BundleWidgetFullPage {
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          // Find product in processed stepProductData
-          // Check multiple ways: direct variantId match, direct id match, or variant within variants array
+
           let product = productsInStep.find(p =>
             String(p.variantId) === String(variantId) || String(p.id) === String(variantId)
           );
 
-          // If not found directly, search within variants array of each product
           let matchedVariant = null;
           if (!product) {
             for (const p of productsInStep) {
@@ -5127,11 +4550,10 @@ class BundleWidgetFullPage {
           }
 
           if (product) {
-            // Determine the correct data based on whether we found a variant within a product
+
             const variantData = matchedVariant || product;
             const isVariantMatch = !!matchedVariant;
 
-            // Build variant title
             let variantTitle = '';
             if (isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title') {
               variantTitle = matchedVariant.title;
@@ -5139,12 +4561,10 @@ class BundleWidgetFullPage {
               variantTitle = product.variantTitle;
             }
 
-            // Get the appropriate image - prefer variant image, fallback to product image
             const imageUrl = isVariantMatch
               ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
               : (product.imageUrl || product.image?.src || '');
 
-            // Get the appropriate price - use variant price if available
             const price = isVariantMatch
               ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : (parseFloat(matchedVariant.price || '0') * 100))
               : (product.price || 0);
@@ -5182,9 +4602,9 @@ class BundleWidgetFullPage {
     const productMap = new Map();
 
     selectedProducts.forEach(item => {
-      // Find the full product data
+
       const product = this.stepProductData[item.stepIndex]?.find(p => {
-        // Check if this product has this variant
+
         return p.variants?.some(v => String(v.id) === String(item.variantId)) || String(p.id) === String(item.variantId);
       });
 
@@ -5225,7 +4645,6 @@ class BundleWidgetFullPage {
     const popup = document.createElement('div');
     popup.className = 'variant-breakdown-popup';
 
-    // Get variant details
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variantsHtml = productGroup.variants.map(variant => {
       const product = this.stepProductData[variant.stepIndex]?.find(p =>
@@ -5257,7 +4676,6 @@ class BundleWidgetFullPage {
       <button class="add-another-variant-btn">+ Add Another Variant</button>
     `;
 
-    // Event handlers
     popup.querySelector('.close-breakdown-btn').addEventListener('click', () => {
       document.body.removeChild(overlay);
     });
@@ -5274,7 +4692,7 @@ class BundleWidgetFullPage {
 
     popup.querySelector('.add-another-variant-btn').addEventListener('click', () => {
       document.body.removeChild(overlay);
-      // Find the product and open modal for it
+
       const product = this.stepProductData[productGroup.stepIndex]?.find(p => String(p.id) === String(productGroup.productId));
       const step = this.selectedBundle.steps[productGroup.stepIndex];
       if (product && step && this.productModal) {
@@ -5290,22 +4708,18 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Helper: Find product by variant ID in a step
   findProductByVariantId(step, variantId) {
     return step.products?.find(p =>
       p.variants?.some(v => v.id === variantId) || p.id === variantId
     );
   }
 
-  // Helper: Check if step is completed (delegates to ConditionValidator)
   isStepCompleted(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
     const stepSelections = this.selectedProducts[stepIndex] || {};
     return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
   }
 
-  // Helper: Check if can proceed to next step
-  // Layout-aware re-render dispatch for full-page bundles
   reRenderFullPage() {
     const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
     if (layout === 'footer_side') {
@@ -5315,25 +4729,19 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Sidebar-only surgical step advance: updates the product grid and tabs in-place
-  // without tearing down the entire two-column DOM structure. Prevents the layout
-  // shift that occurs when reRenderFullPage() destroys and rebuilds everything.
   async _sidebarAdvanceToNextStep() {
     const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
     if (!contentSection) {
-      // Fallback: full re-render if DOM structure is unexpected
+
       this.renderFullPageLayoutWithSidebar();
       return;
     }
 
-    // 1. Update step timeline tabs in-place (active/completed/locked state + click listeners)
     this.updateStepTimeline();
 
-    // 2. Rebuild search input for the new step (search query was cleared by the caller)
     const existingSearch = contentSection.querySelector('.step-search-container');
     if (existingSearch) existingSearch.replaceWith(this.createSearchInput());
 
-    // 3. Rebuild category tabs for the new step
     const existingTabs = contentSection.querySelector('.category-tabs');
     if (this.config.showCategoryTabs) {
       const newTabs = this.createCategoryTabs(this.currentStepIndex);
@@ -5349,7 +4757,6 @@ class BundleWidgetFullPage {
       existingTabs.remove();
     }
 
-    // 4. Show loading skeleton in product grid
     const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
     if (!productGridContainer) {
       this.renderFullPageLayoutWithSidebar();
@@ -5357,11 +4764,9 @@ class BundleWidgetFullPage {
     }
     productGridContainer.innerHTML = this.createProductGridLoadingState();
 
-    // 5. Immediately update side panel to reflect current selections
     const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
     if (sidePanel) this.renderSidePanel(sidePanel);
 
-    // 6. Async: load products for the new step and swap in the grid
     if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
     try {
       await this.loadStepProducts(this.currentStepIndex);
@@ -5383,17 +4788,13 @@ class BundleWidgetFullPage {
     return this.isStepCompleted(this.currentStepIndex);
   }
 
-  // Helper: Check if all bundle conditions are met
   areBundleConditionsMet() {
     return this.selectedBundle.steps.every((step, index) => {
-      if (step.isFreeGift || step.isDefault) return true; // non-blocking steps
+      if (step.isFreeGift || step.isDefault) return true;
       return this.isStepCompleted(index);
     });
   }
 
-  // Returns true when every non-free-gift, non-default step has no condition
-  // configured at all (conditionType / conditionOperator / conditionValue all absent).
-  // In this mode the customer can add to cart at any step without completing all steps.
   bundleHasNoConditions() {
     if (!this.selectedBundle?.steps?.length) return false;
     return this.selectedBundle.steps.every(step => {
@@ -5401,8 +4802,6 @@ class BundleWidgetFullPage {
       return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
     });
   }
-
-  // Free gift helpers
 
   get freeGiftStep() {
     return (this.selectedBundle?.steps || []).find(s => s.isFreeGift) ?? null;
@@ -5456,15 +4855,13 @@ class BundleWidgetFullPage {
       );
       if (product) {
         if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-        // Normalize to numeric ID (strips GID prefix) so the key matches the variantId
-        // produced by processProductsForStep() via extractId().
+
         const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
         this.selectedProducts[stepIndex][normalizedId] = 1;
       }
     });
   }
 
-  // Re-lock free gift if paid items no longer satisfy the unlock condition
   _syncFreeGiftLock() {
     if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
     if (!this.isFreeGiftUnlocked) {
@@ -5472,7 +4869,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Render the free gift locked/unlocked section in a given container
   _renderFreeGiftSection(container) {
     const step = this.freeGiftStep;
     if (!step) return;
@@ -5497,7 +4893,6 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
-  // Render shimmer skeleton slots for unfilled positions
   _renderSkeletonSlots(container, filledCount, totalRequired) {
     const remaining = Math.max(0, totalRequired - filledCount);
     for (let i = 0; i < remaining; i++) {
@@ -5514,37 +4909,27 @@ class BundleWidgetFullPage {
     }
   }
 
-  // Add bundle to cart
   async addBundleToCart() {
     try {
-      // Final validation: all paid steps must be satisfied.
-      // Free gift and default steps are non-blocking and are intentionally skipped here —
-      // the customer may choose not to select a free gift, and default items are pre-seeded.
+
       const allStepsValid = this.areBundleConditionsMet();
       if (!allStepsValid) {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
       }
 
-      // Build cart items from selected products
       const items = [];
 
-      // Generate unique bundle instance ID for this add-to-cart action
-      // This allows cart transform to group components and prevents Shopify from
-      // consolidating separate bundle instances added at different times
       const bundleInstanceId = crypto.randomUUID();
       const bundleName = this.selectedBundle.name || 'Bundle';
-
 
       this.selectedBundle.steps.forEach((step, stepIndex) => {
         const stepSelections = this.selectedProducts[stepIndex] || {};
 
-
         Object.entries(stepSelections).forEach(([variantId, quantity]) => {
           if (quantity > 0) {
-            // Ensure we're using a numeric variant ID (extract from GID if needed)
-            const numericVariantId = this.extractId(variantId) || variantId;
 
+            const numericVariantId = this.extractId(variantId) || variantId;
 
             const properties = {
               '_bundle_id': bundleInstanceId,
@@ -5569,13 +4954,12 @@ class BundleWidgetFullPage {
         return;
       }
 
-      // Disable the Add to Cart button and show loading overlay
       const nextBtn = this.container.querySelector('.footer-btn-next');
       if (nextBtn) nextBtn.disabled = true;
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
       try {
-        // Add to Shopify cart
+
         const response = await fetch('/cart/add.js', {
           method: 'POST',
           headers: {
@@ -5590,10 +4974,8 @@ class BundleWidgetFullPage {
 
         const result = await response.json();
 
-        // Show success message
         ToastManager.show('Bundle added to cart successfully!');
 
-        // Redirect to cart page after short delay
         setTimeout(() => {
           window.location.href = '/cart';
         }, 1000);
@@ -5621,7 +5003,6 @@ class BundleWidgetFullPage {
     if (hasSelections) {
       stepBox.classList.add('step-completed');
 
-      // Add close icon badge at top right to clear all selections
       const clearBadge = document.createElement('div');
       clearBadge.className = 'step-clear-badge';
       clearBadge.innerHTML = `
@@ -5632,12 +5013,11 @@ class BundleWidgetFullPage {
       `;
       clearBadge.title = 'Remove all products from this step';
       clearBadge.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent opening modal
+        e.stopPropagation();
         this.clearStepSelections(index);
       });
       stepBox.appendChild(clearBadge);
 
-      // Show product images if available
       const productImages = this.getStepProductImages(index);
       if (productImages.length > 0) {
         const imagesContainer = document.createElement('div');
@@ -5653,7 +5033,6 @@ class BundleWidgetFullPage {
 
         stepBox.appendChild(imagesContainer);
 
-        // Add count badge if more than 4 products
         const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
         if (productImages.length > 4 || totalQuantity > 4) {
           const countBadge = document.createElement('div');
@@ -5662,36 +5041,33 @@ class BundleWidgetFullPage {
           stepBox.appendChild(countBadge);
         }
       } else {
-        // Fallback checkmark icon
+
         const checkIcon = document.createElement('span');
         checkIcon.className = 'check-icon';
         checkIcon.textContent = '✓';
         stepBox.appendChild(checkIcon);
       }
     } else {
-      // Plus icon for empty steps
+
       const plusIcon = document.createElement('span');
       plusIcon.className = 'plus-icon';
       plusIcon.textContent = '+';
       stepBox.appendChild(plusIcon);
     }
 
-    // Only show step name and selection count if no selections made
     if (!hasSelections) {
-      // Add step name (without step number)
+
       const stepName = document.createElement('p');
       stepName.className = 'step-name';
       stepName.textContent = step.name || `Step ${index + 1}`;
       stepBox.appendChild(stepName);
 
-      // Add selection count
       const selectionCount = document.createElement('div');
       selectionCount.className = 'step-selection-count';
       selectionCount.textContent = this.getStepSelectionText(selectedProducts);
       stepBox.appendChild(selectionCount);
     }
 
-    // Add click handler
     stepBox.addEventListener('click', () => this.openModal(index));
 
     return stepBox;
@@ -5722,25 +5098,22 @@ class BundleWidgetFullPage {
   }
 
   clearStepSelections(stepIndex) {
-    // Clear all product selections for this step
+
     this.selectedProducts[stepIndex] = {};
 
-    // Update UI
     this.renderSteps();
     this.updateFooterMessaging();
 
-    // Show toast notification
     ToastManager.show(`All selections cleared from this step`);
   }
 
   renderFooter() {
     const bundleType = this.container.dataset.bundleType;
 
-    // Full-page bundles: sidebar layout handles its own panel, skip bottom footer entirely
     if (bundleType === 'full_page') {
       const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
       if (layout === 'footer_side') {
-        // Sidebar layout — footer is hidden; side panel handles navigation
+
         if (this.elements.footer) {
           this.elements.footer.style.display = 'none';
         }
@@ -5750,7 +5123,6 @@ class BundleWidgetFullPage {
       return;
     }
 
-    // Product-page bundles use discount messaging footer
     if (!this.config.showFooterMessaging) {
       this.elements.footer.style.display = 'none';
       return;
@@ -5761,7 +5133,7 @@ class BundleWidgetFullPage {
   }
 
   updateFooterMessaging() {
-    // Check if discount is enabled before showing messaging
+
     if (!this.selectedBundle?.pricing?.enabled) {
       this.elements.footer.style.display = 'none';
       return;
@@ -5791,7 +5163,7 @@ class BundleWidgetFullPage {
     const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
     if (discountInfo.qualifiesForDiscount) {
-      // Success message
+
       const successMessage = TemplateManager.replaceVariables(
         this.config.successMessageTemplate,
         variables
@@ -5799,7 +5171,7 @@ class BundleWidgetFullPage {
       footerDiscountText.innerHTML = successMessage;
       this.elements.footer.classList.add('qualified');
     } else {
-      // Progress message
+
       const progressMessage = TemplateManager.replaceVariables(
         this.config.discountTextTemplate,
         variables
@@ -5811,8 +5183,6 @@ class BundleWidgetFullPage {
     this._updateDiscountProgressBanner();
   }
 
-  // Returns a new .discount-progress-banner DOM element, or null when no discount is configured.
-  // Used by both the footer and the sidebar panel.
   _renderDiscountProgressBanner() {
     if (!this.selectedBundle?.pricing?.enabled) return null;
 
@@ -5853,7 +5223,6 @@ class BundleWidgetFullPage {
     return banner;
   }
 
-  // Updates the .discount-progress-banner already in the footer in-place (avoids full footer re-render).
   _updateDiscountProgressBanner() {
     if (!this.elements.footer) return;
     const existing = this.elements.footer.querySelector('.discount-progress-banner');
@@ -5863,7 +5232,7 @@ class BundleWidgetFullPage {
       existing.className = fresh.className;
       existing.innerHTML = fresh.innerHTML;
     } else if (fresh && !existing) {
-      // Insert between footer-panel and footer-backdrop
+
       const backdrop = this.elements.footer.querySelector('.footer-backdrop');
       if (backdrop) {
         this.elements.footer.insertBefore(fresh, backdrop);
@@ -5873,13 +5242,8 @@ class BundleWidgetFullPage {
     }
   }
 
-  // ========================================================================
-  // MODAL FUNCTIONALITY
-  // ========================================================================
-
-  // Helper method to get formatted header text
   getFormattedHeaderText() {
-    // If discount is not enabled, show step name (escaped)
+
     if (!this.selectedBundle?.pricing?.enabled) {
       const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
       return this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
@@ -5913,20 +5277,17 @@ class BundleWidgetFullPage {
   openModal(stepIndex) {
     this.currentStepIndex = stepIndex;
 
-    // Update modal header
     const modal = this.elements.modal;
     const headerText = this.getFormattedHeaderText();
 
     modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-    // Load and render products for this step
     this.loadStepProducts(stepIndex).then(() => {
       this.renderModalTabs();
       this.renderModalProducts(stepIndex);
       this.updateModalNavigation();
       this.updateModalFooterMessaging();
 
-      // Show modal
       modal.style.display = 'block';
       modal.classList.add('active');
       document.body.style.overflow = 'hidden';
@@ -5940,7 +5301,6 @@ class BundleWidgetFullPage {
     this.elements.modal.classList.remove('active');
     document.body.style.overflow = '';
 
-    // Update main UI
     this.renderSteps();
     this.updateFooterMessaging();
   }
@@ -5952,14 +5312,8 @@ class BundleWidgetFullPage {
       return;
     }
 
-
     let allProducts = [];
 
-    // Process explicit products.
-    // When loaded from metafield cache (data-bundle-config), step.products already contains
-    // full enriched data (images, variants, prices) — use directly, no API call needed.
-    // When loaded from the API response, step.StepProduct carries the enriched data and
-    // step.products only has stubs, so skip the fetch to avoid a duplicate call.
     const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
       && step.StepProduct.some(sp => sp.title && sp.imageUrl);
 
@@ -5967,10 +5321,7 @@ class BundleWidgetFullPage {
       && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
 
     if (stepProductsAlreadyEnriched) {
-      // Metafield cache path: products have full data, use them directly.
-      // Prices in metafield are stored as cents (e.g. 82900 = ₹829.00).
-      // processProductsForStep multiplies by 100 assuming decimal input, so
-      // divide by 100 here to normalise before that multiplication.
+
       const normalizedProducts = step.products.map(p => ({
         ...p,
         price: (p.price || 0) / 100,
@@ -5983,14 +5334,12 @@ class BundleWidgetFullPage {
       }));
       allProducts = allProducts.concat(normalizedProducts);
     } else if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
-      const productIds = step.products.map(p => p.id); // Keep full GID format
+      const productIds = step.products.map(p => p.id);
       const shop = window.Shopify?.shop || window.location.host;
 
-      // Get app URL from widget data attribute or window global
       const appUrl = window.__BUNDLE_APP_URL__ || '';
       const apiBaseUrl = appUrl || window.location.origin;
 
-      // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
       const country = window.Shopify?.country
         || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
         || null;
@@ -6014,12 +5363,11 @@ class BundleWidgetFullPage {
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-      // Check if StepProduct already has enriched data (for full-page bundles)
+
       const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
 
       if (hasEnrichedData) {
 
-        // Transform StepProduct to match expected product format
         const enrichedProducts = step.StepProduct.map(sp => ({
           id: sp.productId,
           title: sp.title,
@@ -6040,7 +5388,7 @@ class BundleWidgetFullPage {
 
         allProducts = allProducts.concat(enrichedProducts);
       } else {
-        // Fetch from storefront API if data is not enriched
+
         const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
         const shop = window.Shopify?.shop || window.location.host;
 
@@ -6049,7 +5397,6 @@ class BundleWidgetFullPage {
           const appUrl = window.__BUNDLE_APP_URL__ || '';
           const apiBaseUrl = appUrl || window.location.origin;
 
-          // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
           const country = window.Shopify?.country
             || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
             || null;
@@ -6071,7 +5418,6 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Process collection products using Storefront API (not legacy REST endpoint)
     if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
       const collectionHandles = step.collections
         .map(c => c.handle)
@@ -6081,7 +5427,6 @@ class BundleWidgetFullPage {
         const shop = window.Shopify?.shop || window.location.host;
         const appUrl = window.__BUNDLE_APP_URL__ || '';
         const apiBaseUrl = appUrl || window.location.origin;
-
 
         try {
           const response = await fetch(
@@ -6093,7 +5438,7 @@ class BundleWidgetFullPage {
             if (data.products && data.products.length > 0) {
               allProducts = allProducts.concat(data.products);
             }
-            // Store per-collection product ID membership for tab filtering
+
             if (data.byCollection) {
               for (const [handle, productIds] of Object.entries(data.byCollection)) {
                 this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
@@ -6106,12 +5451,8 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Process and normalize product data
-
     const processedProducts = this.processProductsForStep(allProducts, step);
 
-
-    // Remove duplicates
     const seen = new Set();
     this.stepProductData[stepIndex] = processedProducts.filter(product => {
       const key = product.variantId || product.id;
@@ -6125,10 +5466,7 @@ class BundleWidgetFullPage {
   }
 
   processProductsForStep(products, step) {
-    // Normalize per-variant inventory fields from the Storefront API proxy response.
-    // quantityAvailable is number | null (null when the inventory scope isn't granted
-    // or the variant is untracked — widget treats null as unlimited).
-    // currentlyNotInStock is true for backorder-accepting variants that are sold out.
+
     const normalizeVariant = (v) => ({
       id: this.extractId(v.id),
       title: v.title,
@@ -6145,8 +5483,7 @@ class BundleWidgetFullPage {
 
     return products.flatMap(product => {
       if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
-        // Display each variant as separate product - filter out unavailable variants
-        // Preserve parent product reference for variant selection in modal
+
         const processedVariants = (product.variants || []).map(normalizeVariant);
 
         const processedOptions = (product.options || []).map(opt => {
@@ -6155,10 +5492,9 @@ class BundleWidgetFullPage {
         });
 
         return product.variants
-          .filter(variant => variant.available === true) // Only show available variants
+          .filter(variant => variant.available === true)
           .map(variant => {
-            // Storefront API: prioritize variant image, fallback to product featured image.
-            // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
+
             const imageUrl = variant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
 
             return {
@@ -6171,7 +5507,7 @@ class BundleWidgetFullPage {
               available: variant.available === true,
               quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
               currentlyNotInStock: variant.currentlyNotInStock === true,
-              // Preserve parent product data for variant selection in modal
+
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
               variants: processedVariants,
@@ -6181,22 +5517,17 @@ class BundleWidgetFullPage {
             };
           });
       } else {
-        // Display product with default variant - check availability
+
         const defaultVariant = product.variants?.[0];
 
-        // Skip product if default variant is not available
         if (defaultVariant && defaultVariant.available !== true) {
           return [];
         }
 
-        // Storefront API: prioritize variant image, fallback to product featured image.
-        // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
 
-        // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(normalizeVariant);
 
-        // Process options array for variant selector labels
         const processedOptions = (product.options || []).map(opt => {
           if (typeof opt === 'string') return opt;
           return opt.name || opt;
@@ -6212,10 +5543,10 @@ class BundleWidgetFullPage {
           available: defaultVariant?.available === true,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
-          // Preserve variants and options for variant selection in modal
+
           variants: processedVariants,
           options: processedOptions,
-          // Preserve images array for modal gallery
+
           images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
           description: product.description || ''
         }];
@@ -6223,15 +5554,6 @@ class BundleWidgetFullPage {
     });
   }
 
-  /**
-   * Look up real stock for a variant in a step's product data.
-   * Returns:
-   *   - available: numeric remaining stock, or null (untracked/unlimited)
-   *   - outOfStock: true when the variant is known to be out of stock and does
-   *     not accept backorders (available === 0 and currentlyNotInStock is false)
-   *   - acceptsBackorder: true when out of stock but backorders are allowed
-   *     — in that case the UI should not clamp to zero.
-   */
   getVariantAvailable(stepIndex, variantId) {
     const products = this.stepProductData[stepIndex] || [];
     const product = products.find(p => (p.variantId || p.id) === variantId);
@@ -6242,7 +5564,6 @@ class BundleWidgetFullPage {
     const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
     const backorder = product.currentlyNotInStock === true;
 
-    // quantityAvailable === 0 AND not backorder-accepting → hard out of stock
     if (qty === 0 && !backorder) {
       return { available: 0, outOfStock: true, acceptsBackorder: false };
     }
@@ -6252,32 +5573,28 @@ class BundleWidgetFullPage {
   extractId(idString) {
     if (!idString) return null;
 
-    // Handle GID format
     const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
     if (gidMatch) {
       return gidMatch[1];
     }
 
-    // Handle numeric string
     return idString.toString().split('/').pop();
   }
 
   renderModalTabs() {
     const tabsContainer = this.elements.modal?.querySelector('.modal-tabs');
-    if (!tabsContainer) return; // Modal not active (full-page mode)
+    if (!tabsContainer) return;
     tabsContainer.innerHTML = '';
 
     this.selectedBundle.steps.forEach((step, index) => {
       const isAccessible = this.isStepAccessible(index);
       const isActive = index === this.currentStepIndex;
 
-      // Create tab button
       const tabButton = document.createElement('button');
       tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
       tabButton.textContent = step.name || `Step ${index + 1}`;
       tabButton.dataset.stepIndex = index.toString();
 
-      // Click handler
       tabButton.addEventListener('click', async () => {
         if (!isAccessible) {
           ToastManager.show('Please complete the previous steps first.');
@@ -6286,14 +5603,11 @@ class BundleWidgetFullPage {
 
         this.currentStepIndex = index;
 
-        // Update modal header
         const headerText = this.getFormattedHeaderText();
         this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-        // Load products for this step if not already loaded
         await this.loadStepProducts(index);
 
-        // Re-render everything
         this.renderModalTabs();
         this.renderModalProducts(index);
         this.updateModalNavigation();
@@ -6303,20 +5617,19 @@ class BundleWidgetFullPage {
       tabsContainer.appendChild(tabButton);
     });
 
-    // Update arrow visibility after rendering tabs
     if (this.updateTabArrows) {
       setTimeout(() => this.updateTabArrows(), 50);
     }
   }
 
   renderModalProducts(stepIndex, productsToRender = null) {
-    // Use all products from step data
+
     const products = productsToRender || this.stepProductData[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
 
     if (products.length === 0) {
-      // Show empty state cards like in DCP preview
+
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
@@ -6340,14 +5653,12 @@ class BundleWidgetFullPage {
       const currentQuantity = selectedProducts[selectionKey] || 0;
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-      // Per-variant stock state derived from Storefront API quantityAvailable
       const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
       const atMaxStock = available !== null && currentQuantity >= available;
       const lowStock = available !== null && available > 0 && available <= 3;
       const increaseDisabled = outOfStock || atMaxStock;
       const addDisabled = outOfStock;
 
-      // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
       const stockBadge = outOfStock
         ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
         : lowStock
@@ -6399,7 +5710,6 @@ class BundleWidgetFullPage {
       `;
     }).join('');
 
-    // Attach event handlers
     this.attachProductEventHandlers(productGrid, stepIndex);
   }
 
@@ -6412,14 +5722,12 @@ class BundleWidgetFullPage {
   }
 
   attachProductEventHandlers(productGrid, stepIndex) {
-    // Remove existing event listeners to prevent duplicates
+
     const newProductGrid = productGrid.cloneNode(true);
     productGrid.parentNode.replaceChild(newProductGrid, productGrid);
 
-    // Get step data for modal
     const step = this.selectedBundle.steps[stepIndex];
 
-    // Helper to find product by ID
     const findProduct = (productId) => {
       return this.stepProductData[stepIndex]?.find(p => {
         const selectionKey = p.variantId || p.id;
@@ -6427,7 +5735,6 @@ class BundleWidgetFullPage {
       });
     };
 
-    // Quantity button handlers
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('qty-btn')) {
         e.stopPropagation();
@@ -6440,24 +5747,21 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Add to Bundle button handler - adds directly without opening modal
     newProductGrid.addEventListener('click', (e) => {
       if (e.target.classList.contains('product-add-btn')) {
         e.stopPropagation();
         const productId = e.target.dataset.productId;
         const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
 
-        // Toggle: If already added, remove; otherwise add with quantity 1
         if (currentQuantity > 0) {
           this.updateProductSelection(stepIndex, productId, 0);
         } else {
-          // Add product directly to bundle (modal opens only on card image/title click)
+
           this.updateProductSelection(stepIndex, productId, 1);
         }
       }
     });
 
-    // Product image/title click - open modal
     newProductGrid.addEventListener('click', (e) => {
       const productImage = e.target.closest('.product-image');
       const productTitle = e.target.closest('.product-title');
@@ -6475,28 +5779,22 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Variant selector handler
     newProductGrid.addEventListener('change', (e) => {
       if (e.target.classList.contains('variant-selector')) {
         e.stopPropagation();
         const newVariantId = e.target.value;
         const baseProductId = e.target.dataset.baseProductId;
 
-        // Find the product and update its variant
         const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
         if (product) {
           const variantData = product.variants.find(v => v.id === newVariantId);
           if (variantData) {
-            // Sync the new variant's stock fields onto the product so
-            // getVariantAvailable() reflects post-swap state.
+
             product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
               ? variantData.quantityAvailable
               : null;
             product.currentlyNotInStock = variantData.currentlyNotInStock === true;
 
-            // Move quantity from old variant to new variant, re-clamping against
-            // the new variant's quantityAvailable. If the new variant can't hold
-            // the old quantity, reduce it and surface a toast.
             const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
             if (oldQuantity > 0) {
               delete this.selectedProducts[stepIndex][product.variantId];
@@ -6516,11 +5814,9 @@ class BundleWidgetFullPage {
               }
             }
 
-            // Update product properties
             product.variantId = newVariantId;
             product.price = variantData.price;
 
-            // Update UI without full re-render
             this.updateModalNavigation();
             this.updateModalFooterMessaging();
           }
@@ -6528,7 +5824,6 @@ class BundleWidgetFullPage {
       }
     });
 
-    // Add cursor pointer styles to product images and titles
     newProductGrid.querySelectorAll('.product-image, .product-title').forEach(el => {
       el.style.cursor = 'pointer';
     });
@@ -6536,9 +5831,6 @@ class BundleWidgetFullPage {
   updateProductSelection(stepIndex, productId, newQuantity) {
     let quantity = Math.max(0, newQuantity);
 
-    // Clamp against real per-variant stock before doing anything else.
-    // Uses quantityAvailable from the Storefront API (see getVariantAvailable).
-    // Adding 0 always allowed (that is a removal).
     if (quantity > 0) {
       const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
       if (outOfStock) {
@@ -6551,28 +5843,23 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
       return;
     }
 
-    // Update selection
     if (quantity > 0) {
       this.selectedProducts[stepIndex][productId] = quantity;
     } else {
       delete this.selectedProducts[stepIndex][productId];
     }
 
-    // Re-lock free gift if a paid item was just removed and conditions no longer met
     this._syncFreeGiftLock();
 
-    // Update UI without re-rendering the entire modal (prevents event listener duplication)
     this.updateProductQuantityDisplay(stepIndex, productId, quantity);
     this.renderModalTabs();
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
 
-    // For full-page bundles, re-render the footer/sidebar to show selected products
     const bundleType = this.container.dataset.bundleType;
     if (bundleType === 'full_page') {
       const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
@@ -6582,17 +5869,9 @@ class BundleWidgetFullPage {
       } else {
         this.renderFullPageFooter();
       }
-      // Update step timeline tabs so completion state, images, counts, and
-      // click listeners all reflect the new selection immediately.
+
       this.updateStepTimeline();
 
-      // Auto-advance: when the current step becomes complete after an addition,
-      // automatically move to the next step after a short delay so the shopper
-      // sees the completion state before the view changes.
-      // Guard: only on additions (quantity > 0), not removals; skip if a pending
-      // advance is already scheduled; skip on the last step; skip when the step
-      // has no explicit conditions (no conditionType/conditionOperator/conditionValue)
-      // so shoppers can add as many products as they want on unconditioned steps.
       const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
       const _hasExplicitCondition = _autoAdvanceStep &&
         _autoAdvanceStep.conditionType &&
@@ -6604,7 +5883,7 @@ class BundleWidgetFullPage {
           this._autoAdvancePending = true;
           setTimeout(() => {
             this._autoAdvancePending = false;
-            // Re-check in case the shopper removed something during the delay
+
             if (this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
               this.activeCollectionId = null;
               this.searchQuery = '';
@@ -6625,33 +5904,31 @@ class BundleWidgetFullPage {
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
-    // Update quantity display without full re-render
+
     const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
     if (!productCard) return;
 
     const contentWrapper = productCard.querySelector('.product-content-wrapper');
     if (!contentWrapper) return;
 
-    // Find existing action elements
     const existingAddBtn = productCard.querySelector('.product-add-btn');
     const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
     let selectedOverlay = productCard.querySelector('.selected-overlay');
 
-    // Toggle between "Add to Bundle" button and quantity controls
     if (quantity > 0) {
-      // Show quantity controls, hide button
+
       if (existingAddBtn) {
         existingAddBtn.remove();
       }
 
       if (existingQuantityControls) {
-        // Just update the quantity display
+
         const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
         if (qtyDisplay) {
           qtyDisplay.textContent = quantity;
         }
       } else {
-        // Create quantity controls
+
         const quantityControls = document.createElement('div');
         quantityControls.className = 'inline-quantity-controls';
         quantityControls.innerHTML = `
@@ -6661,7 +5938,6 @@ class BundleWidgetFullPage {
         `;
         contentWrapper.appendChild(quantityControls);
 
-        // Attach event listeners to the new buttons
         const increaseBtn = quantityControls.querySelector('.qty-increase');
         const decreaseBtn = quantityControls.querySelector('.qty-decrease');
 
@@ -6684,7 +5960,6 @@ class BundleWidgetFullPage {
         }
       }
 
-      // Show selected overlay
       if (!selectedOverlay) {
         selectedOverlay = document.createElement('div');
         selectedOverlay.className = 'selected-overlay';
@@ -6695,13 +5970,13 @@ class BundleWidgetFullPage {
       productCard.classList.add('selected');
 
     } else {
-      // Show "Add to Bundle" button, hide quantity controls
+
       if (existingQuantityControls) {
         existingQuantityControls.remove();
       }
 
       if (!existingAddBtn) {
-        // Find product info to determine button text
+
         const product = this.findProductById(stepIndex, productId);
         const hasVariants = product?.variants && product.variants.length > 1;
         const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
@@ -6712,39 +5987,30 @@ class BundleWidgetFullPage {
         addButton.textContent = buttonText;
         contentWrapper.appendChild(addButton);
 
-        // Attach event listener to the new button
         addButton.addEventListener('click', (e) => {
           e.stopPropagation();
           this.updateProductSelection(stepIndex, productId, 1);
         });
       }
 
-      // Hide selected overlay
       if (selectedOverlay) {
         selectedOverlay.style.display = 'none';
       }
       productCard.classList.remove('selected');
     }
 
-    // Refresh dimmed state on all sibling cards now that the selection has changed
     this._refreshSiblingDimState(stepIndex);
   }
 
-  // Refresh the .dimmed class on every card in the current step's product grid.
-  // Called after every real-time selection change so cards gray out (or un-gray)
-  // immediately when the step quota is filled or freed — not only on full re-renders.
   _refreshSiblingDimState(stepIndex) {
-    // Only update the DOM if this step's grid is currently visible.
-    // When a product is removed via the footer while on a different step,
-    // skip the DOM update — createFullPageProductGrid will apply the correct
-    // dim state when the user navigates to that step.
+
     if (stepIndex !== this.currentStepIndex) return;
     const step = this.selectedBundle?.steps?.[stepIndex];
     if (!step) return;
     const stepSelections = this.selectedProducts[stepIndex] || {};
     const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
     const isAtCapacity = !capacityCheck.allowed;
-    // Only one step's grid is visible at a time; navigate up from any card in it
+
     const anyCard = this.container.querySelector('.product-grid .product-card');
     const grid = anyCard?.closest('.product-grid');
     if (!grid) return;
@@ -6759,7 +6025,6 @@ class BundleWidgetFullPage {
     });
   }
 
-  // Helper to find product by ID across all step data
   findProductById(stepIndex, productId) {
     const products = this.stepProductData[stepIndex] || [];
     return products.find(p => (p.variantId || p.id) === productId);
@@ -6777,7 +6042,6 @@ class BundleWidgetFullPage {
       newQuantity,
     );
 
-    // Only block and toast on increases — decreases are always permitted.
     if (!allowed && newQuantity > currentQty) {
       const required = step.conditionValue;
       ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
@@ -6794,14 +6058,14 @@ class BundleWidgetFullPage {
   }
 
   isStepAccessible(stepIndex) {
-    // Default steps are always accessible (read-only, pre-selected)
+
     if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
-    // Free gift step is only accessible when all paid steps are complete
+
     if (!this.canNavigateToStep(stepIndex)) return false;
-    // Check if all previous steps are completed
+
     for (let i = 0; i < stepIndex; i++) {
       const step = this.selectedBundle?.steps[i];
-      if (step?.isFreeGift || step?.isDefault) continue; // skip non-blocking steps
+      if (step?.isFreeGift || step?.isDefault) continue;
       if (!this.validateStep(i)) return false;
     }
     return true;
@@ -6811,7 +6075,6 @@ class BundleWidgetFullPage {
     const prevButton = this.elements.modal?.querySelector('.prev-button');
     const nextButton = this.elements.modal?.querySelector('.next-button');
 
-    // In full-page mode the modal may be hidden/empty — skip without crashing
     if (!prevButton || !nextButton) return;
 
     prevButton.disabled = this.currentStepIndex === 0;
@@ -6828,7 +6091,7 @@ class BundleWidgetFullPage {
   }
 
   updateModalFooterMessaging() {
-    // Skip if modal is not active (full-page mode uses inline footer instead)
+
     if (!this.elements.modal || this.elements.modal.style.display === 'none') return;
 
     const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
@@ -6845,19 +6108,15 @@ class BundleWidgetFullPage {
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-    // Update modal header text dynamically
     this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
 
-    // Update cart badge with total item count
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
     if (cartBadge) {
       cartBadge.textContent = totalQuantity.toString();
     }
 
-    // Update total prices in the footer pill
     this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
 
-    // Update discount messaging and progress bar
     this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
   }
 
@@ -6865,7 +6124,6 @@ class BundleWidgetFullPage {
     const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
     if (!modalStepTitle) return;
 
-    // If discount is not enabled, show step name (escaped)
     if (!this.selectedBundle?.pricing?.enabled) {
       const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
       modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
@@ -6903,7 +6161,7 @@ class BundleWidgetFullPage {
     );
 
     if (discountInfo.qualifiesForDiscount) {
-      // Success message
+
       const successMessage = TemplateManager.replaceVariables(
         this.config.successMessageTemplate,
         variables
@@ -6911,7 +6169,7 @@ class BundleWidgetFullPage {
       footerDiscountText.innerHTML = successMessage;
       if (discountSection) discountSection.classList.add('qualified');
     } else {
-      // Progress message
+
       const progressMessage = TemplateManager.replaceVariables(
         this.config.discountTextTemplate,
         variables
@@ -6920,7 +6178,6 @@ class BundleWidgetFullPage {
       if (discountSection) discountSection.classList.remove('qualified');
     }
 
-    // Show/hide discount section based on config
     if (discountSection) {
       discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
     }
@@ -6933,29 +6190,25 @@ class BundleWidgetFullPage {
     if (!strikePriceEl || !finalPriceEl) return;
 
     if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
-      // Show strike-through original price and discounted price
+
       strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
       strikePriceEl.style.display = 'inline';
       finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
     } else {
-      // Show only regular price
+
       strikePriceEl.style.display = 'none';
       finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
     }
   }
 
-  // ========================================================================
-  // LOADING OVERLAY
-  // ========================================================================
-
   showLoadingOverlay(gifUrl) {
     if (!this.container) return;
-    // Ensure container is positioned so absolute overlay works
+
     const pos = getComputedStyle(this.container).position;
     if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
       this.container.style.position = 'relative';
     }
-    // Remove any existing overlay (idempotent)
+
     this.container.querySelector('.bundle-loading-overlay')?.remove();
 
     const overlay = document.createElement('div');
@@ -6983,16 +6236,8 @@ class BundleWidgetFullPage {
     overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
   }
 
-  // ========================================================================
-  // CART OPERATIONS
-  // ========================================================================
-
   generateBundleInstanceId() {
-    // Generate unique bundle instance ID using UUID (recommended by Shopify)
-    // This prevents hash collisions and ensures each bundle instance is truly unique
-    // Reference: https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID
 
-    // Use crypto.randomUUID() if available (modern browsers)
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       const uuid = crypto.randomUUID();
       const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
@@ -7000,25 +6245,13 @@ class BundleWidgetFullPage {
       return bundleInstanceId;
     }
 
-    // Fallback for older browsers: use timestamp + random number
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000000);
     const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
     return bundleInstanceId;
   }
-  // ========================================================================
-  // EVENT HANDLERS
-  // ========================================================================
 
-  // ========================================================================
-  // TIER PILL SELECTION
-  // ========================================================================
-
-  /**
-   * Parses the JSON string from data-tier-config into a TierConfig array.
-   * Returns [] on any error — pill bar is simply not shown.
-   */
   parseTierConfig(rawJson) {
     try {
       const parsed = JSON.parse(rawJson);
@@ -7033,20 +6266,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  /**
-   * Resolves which tier config array to use for pill rendering.
-   *
-   * Preference order:
-   *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
-   *     tiers in the admin UI (>= 2 valid entries after mapping).
-   *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
-   *     source, used as fallback when apiTierConfig is null/undefined.
-   *
-   * apiTierConfig entries use { label, linkedBundleId } (DB schema).
-   * Widget pill entries use { label, bundleId } — this method performs the mapping.
-   *
-   * Returns [] when fewer than 2 valid tiers exist after filtering.
-   */
   resolveTierConfig(apiTierConfig, dataTierConfig) {
     if (apiTierConfig == null) return dataTierConfig;
 
@@ -7064,28 +6283,15 @@ class BundleWidgetFullPage {
     return mapped.length >= 2 ? mapped : [];
   }
 
-  /**
-   * Resolves whether to show the step timeline.
-   * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
-   *
-   * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
-   * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
-   * @returns {boolean}
-   */
   resolveShowStepTimeline(apiValue, dataAttrValue) {
     if (apiValue !== null && apiValue !== undefined) return apiValue;
     return dataAttrValue;
   }
 
-  /** Returns true if the given tier index is the currently active one. */
   isTierActive(tierIndex) {
     return tierIndex === this.activeTierIndex;
   }
 
-  /**
-   * Inserts the tier pill bar as the first child of the container.
-   * No-op when fewer than 2 tiers are configured (backward-compatible).
-   */
   initTierPills(tiers) {
     if (tiers.length < 2) return;
 
@@ -7109,7 +6315,6 @@ class BundleWidgetFullPage {
     this.elements.tierPillBar = bar;
   }
 
-  /** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
   updatePillActiveStates() {
     if (!this.elements.tierPillBar) return;
     this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -7120,7 +6325,6 @@ class BundleWidgetFullPage {
     });
   }
 
-  /** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
   async switchTier(bundleId, tierIndex) {
     if (tierIndex === this.activeTierIndex) return;
 
@@ -7128,21 +6332,19 @@ class BundleWidgetFullPage {
       ? [...this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill')]
       : [];
 
-    // Disable all pills while loading
     pills.forEach(p => p.classList.add('bundle-tier-pill--disabled'));
     if (pills[tierIndex]) pills[tierIndex].classList.add('bundle-tier-pill--loading');
 
     this.showLoadingOverlay(null);
 
     try {
-      // Reset mutable widget state
+
       this.selectedProducts = [];
       this.stepProductData = [];
       this.currentStepIndex = 0;
       this.stepCollectionProductIds = {};
       this.searchQuery = '';
 
-      // Swap bundle ID and fetch new data
       this.config.bundleId = bundleId;
       await this.loadBundleData();
       this.selectBundle();
@@ -7151,7 +6353,6 @@ class BundleWidgetFullPage {
         throw new Error('Bundle not found for this tier.');
       }
 
-      // Re-resolve showStepTimeline from the newly loaded tier bundle's API value
       this.config.showStepTimeline = this.resolveShowStepTimeline(
         this.selectedBundle.showStepTimeline ?? null,
         this.config.showStepTimeline
@@ -7159,7 +6360,6 @@ class BundleWidgetFullPage {
 
       this.initializeDataStructures();
 
-      // Clear existing step content and re-render
       if (this.elements.stepsContainer) {
         this.elements.stepsContainer.innerHTML = '';
       }
@@ -7169,7 +6369,7 @@ class BundleWidgetFullPage {
       this.updatePillActiveStates();
     } catch (err) {
       ToastManager.show(`Failed to load tier: ${err.message}`);
-      // Restore previous active state styling
+
       this.updatePillActiveStates();
     } finally {
       this.hideLoadingOverlay();
@@ -7180,7 +6380,7 @@ class BundleWidgetFullPage {
   }
 
   attachEventListeners() {
-    // Tier pill click handler
+
     if (this.elements.tierPillBar) {
       this.elements.tierPillBar.addEventListener('click', e => {
         const pill = e.target.closest('.bundle-tier-pill');
@@ -7197,7 +6397,6 @@ class BundleWidgetFullPage {
       });
     }
 
-    // Modal close handlers
     const modal = this.elements.modal;
     const closeButton = modal.querySelector('.close-button');
     const overlay = modal.querySelector('.modal-overlay');
@@ -7212,7 +6411,6 @@ class BundleWidgetFullPage {
       overlay.addEventListener('click', () => this.closeModal());
     }
 
-    // Modal navigation
     if (prevButton) {
       prevButton.addEventListener('click', () => this.navigateModal(-1));
     }
@@ -7221,7 +6419,6 @@ class BundleWidgetFullPage {
       nextButton.addEventListener('click', () => this.navigateModal(1));
     }
 
-    // Keyboard handlers
     document.addEventListener('keydown', (e) => {
       if (modal.style.display === 'block' && e.key === 'Escape') {
         this.closeModal();
@@ -7233,14 +6430,12 @@ class BundleWidgetFullPage {
     const newStepIndex = this.currentStepIndex + direction;
 
     if (direction < 0 && newStepIndex >= 0) {
-      // Previous step — no validation required, user must be free to correct mistakes
+
       this.currentStepIndex = newStepIndex;
 
-      // Update modal header
       const headerText = this.getFormattedHeaderText();
       this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-      // Load products for this step
       await this.loadStepProducts(newStepIndex);
 
       this.renderModalTabs();
@@ -7249,15 +6444,13 @@ class BundleWidgetFullPage {
       this.updateModalFooterMessaging();
     } else if (direction > 0) {
       if (newStepIndex < this.selectedBundle.steps.length) {
-        // Next step
+
         if (this.validateStep(this.currentStepIndex)) {
           this.currentStepIndex = newStepIndex;
 
-          // Update modal header
           const headerText = this.getFormattedHeaderText();
           this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
 
-          // Load products for this step
           await this.loadStepProducts(newStepIndex);
 
           this.renderModalTabs();
@@ -7268,7 +6461,7 @@ class BundleWidgetFullPage {
           ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
         }
       } else {
-        // Done button clicked on last step
+
         if (this.validateStep(this.currentStepIndex)) {
           this.closeModal();
         } else {
@@ -7277,10 +6470,6 @@ class BundleWidgetFullPage {
       }
     }
   }
-
-  // ========================================================================
-  // UTILITY METHODS
-  // ========================================================================
 
   showFallbackUI() {
     this.container.innerHTML = `
@@ -7309,31 +6498,10 @@ class BundleWidgetFullPage {
     `;
   }
 
-  /**
-   * Fire-and-forget error report to the server so AppLogger can track widget failures.
-   * Does NOT await — never blocks the render path.
-   */
-
-  /**
-   * Background layout refresh — runs after initial render.
-   *
-   * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
-   * after the merchant saves a layout change. This method fetches the latest config
-   * from the proxy API and, if the layout differs from what was cached, re-renders
-   * the steps container so the correct layout is shown within seconds of page load.
-   *
-   * Only runs when:
-   *   1. Cached data was used for first render (data-bundle-config attr was present)
-   *   2. Not in the Shopify theme editor (designMode)
-   *
-   * Fire-and-forget: all errors are silently swallowed.
-   */
   async _scheduleLayoutRefresh() {
     const bundleId = this.container.dataset.bundleId;
     if (!bundleId) return;
 
-    // Only needed when we served the first render from the CDN-cached metafield.
-    // If the proxy API was used for the first render, the data is already fresh.
     const cachedAttr = this.container.dataset.bundleConfig;
     const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
     if (!usedCache) return;
@@ -7357,7 +6525,7 @@ class BundleWidgetFullPage {
         await this.renderSteps();
       }
     } catch (_e) {
-      // Best-effort: silently ignore all errors
+
     }
   }
 
@@ -7370,22 +6538,19 @@ class BundleWidgetFullPage {
         shop: window.Shopify?.shop ?? null,
         url: window.location?.href ?? null,
       };
-      // Use the app proxy path so the request is authenticated by Shopify
+
       fetch('/apps/product-bundles/api/widget-error', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         keepalive: true,
-      }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+      }).catch(() => {  });
     } catch (_) {
-      // Never throw from error reporting
+
     }
   }
 }
 
-// ============================================================================
-// INITIALIZATION
-// ============================================================================
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeFullPageWidget);
 } else {
@@ -7403,7 +6568,5 @@ function initializeFullPageWidget() {
     }
   });
 }
-
-
 
 })();
