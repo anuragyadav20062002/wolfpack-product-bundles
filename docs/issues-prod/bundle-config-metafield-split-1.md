@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-21
-**Last Updated:** 2026-04-21 10:00
+**Last Updated:** 2026-04-20 14:30
 
 ## Overview
 Two-part refactor of the `custom:bundle_config` page metafield:
@@ -28,20 +28,28 @@ for all existing bundles. User runs this on prod immediately after deploy. No
 fallback in widget code; backfill runs first.
 
 ## Phases Checklist
-- [ ] Create issue file (this file)
-- [ ] Short-term: strip StepProduct, handle, images from bundle-formatter.server.ts
-- [ ] Medium-term: add writeBundleSettingsPageMetafield + batch write in writeBundleConfigPageMetafield
-- [ ] Medium-term: remove settings from FormattedBundle + formatBundleForWidget
-- [ ] Medium-term: bundle-full-page.liquid — inject data-bundle-settings attr
-- [ ] Medium-term: widget JS — parseConfiguration + _mergeBundleSettings + init()
-- [ ] Medium-term: backfill script scripts/backfill-bundle-settings.js
-- [ ] Build + minify + lint + commit
+- [x] Create issue file (this file)
+- [x] Short-term: strip StepProduct, handle, images from bundle-formatter.server.ts
+- [x] Medium-term: add writeBundleSettingsPageMetafield + batch write in writeBundleConfigPageMetafield
+- [x] Medium-term: remove settings from FormattedBundle + formatBundleForWidget
+- [x] Medium-term: bundle-full-page.liquid — inject data-bundle-settings attr
+- [x] Medium-term: widget JS — parseConfiguration + _mergeBundleSettings + init()
+- [x] Medium-term: backfill script scripts/backfill-bundle-settings.js
+- [x] Build + minify + lint + commit
+- [ ] Run backfill on prod: node scripts/backfill-bundle-settings.js --env-file .env.prod
+- [ ] Verify widget reads bundle_settings correctly on storefront
 
 ## Progress Log
 
-### 2026-04-21 10:00 - Starting Implementation
+### 2026-04-20 10:00 - Starting Implementation
 - Short-term: StepProduct in page metafield is dead weight (stepProductsAlreadyEnriched
   path uses step.products, which always has featuredImage from formatter)
 - Medium-term: settings are tiny (<1KB) but moving them out enables independent
   DCP-only writes without touching step/product data
 - No fallback: backfill writes bundle_settings for all live bundles before deploy propagates
+
+### 2026-04-20 14:30 - Deployment Fixes
+- Removed chrome-devtools-mcp from dependencies, moved to devDependencies (dev-only MCP tool, node >=20.19 requirement incompatible with prod)
+- Upgraded Dockerfile node:18-alpine → node:20-alpine to satisfy inngest@3.52.6 node>=20 requirement
+- Made prisma migration idempotent: ALTER TABLE ADD COLUMN IF NOT EXISTS (fixes re-run failure on SIT where db push already applied columns)
+- Files: Dockerfile, package.json, package-lock.json, prisma/migrations/20260420000000_add_step_image_banner_urls/migration.sql
