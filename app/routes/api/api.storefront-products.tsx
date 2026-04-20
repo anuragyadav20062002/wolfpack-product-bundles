@@ -5,6 +5,12 @@ import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
 /**
  * Public API endpoint to fetch products using Storefront API
  * This endpoint can be called from the widget without authentication
@@ -120,17 +126,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const country = url.searchParams.get("country") || null;
 
   if (!productIds) {
-    return json({ error: "Missing product IDs" }, { status: 400 });
+    return json({ error: "Missing product IDs" }, { status: 400, headers: CORS_HEADERS });
   }
 
   if (!shop) {
-    return json({ error: "Missing shop parameter" }, { status: 400 });
+    return json({ error: "Missing shop parameter" }, { status: 400, headers: CORS_HEADERS });
   }
 
   const ids = productIds.split(",").map(id => id.trim()).filter(Boolean);
 
   if (ids.length === 0) {
-    return json({ error: "No valid product IDs provided" }, { status: 400 });
+    return json({ error: "No valid product IDs provided" }, { status: 400, headers: CORS_HEADERS });
   }
 
   try {
@@ -155,12 +161,51 @@ export async function loader({ request }: LoaderFunctionArgs) {
       select: { storefrontAccessToken: true, scope: true }
     });
 
+    if (!session) {
+      AppLogger.error("[STOREFRONT_API] No session found for shop", { component: "api.storefront-products", shop });
+      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404, headers: CORS_HEADERS });
+    }
+
+    // If no storefront token exists, try to create one on-demand (handles race condition)
+    if (!session.storefrontAccessToken && session.accessToken) {
+      AppLogger.warn("[STOREFRONT_API] No storefront token found. Creating on-demand for shop", { component: "api.storefront-products", shop });
+
+      try {
+        // Create admin-like object that matches AdminApiContext type
+        const admin = {
+          graphql: async (query: string, options?: any) => {
+            const response = await fetch(`https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/graphql.json`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Access-Token': session!.accessToken
+              },
+              body: JSON.stringify({
+                query,
+                variables: options?.variables
+              })
+            });
+            return response;
+          }
+        } as any; // Type assertion since we're creating a minimal admin context
+
+        const token = await createStorefrontAccessToken(admin, shop);
+        AppLogger.info("[STOREFRONT_API] Created storefront token on-demand", { component: "api.storefront-products", shop });
+
+        // Refresh session to get the new token
+        session = await db.session.findFirst({
+          where: { shop },
+          select: { storefrontAccessToken: true, accessToken: true }
+        });
+      } catch (error) {
+        AppLogger.error("[STOREFRONT_API] Failed to create token on-demand", { component: "api.storefront-products", shop }, error);
+        return json({ error: "Could not create storefront access token" }, { status: 500, headers: CORS_HEADERS });
+      }
+    }
+
     if (!session?.storefrontAccessToken) {
-      AppLogger.warn("[STOREFRONT_API] No storefront token for shop — install may be incomplete", {
-        component: "api.storefront-products",
-        shop,
-      });
-      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404 });
+      AppLogger.warn("[STOREFRONT_API] No storefront token for shop — install may be incomplete", { component: "api.storefront-products", shop });
+      return json({ error: "Shop not configured. Please reinstall the app." }, { status: 404, headers: CORS_HEADERS });
     }
 
     const storefrontAccessToken = session.storefrontAccessToken;
@@ -184,14 +229,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     if (!response.ok) {
       AppLogger.error("[STOREFRONT_API] Storefront API request failed", { component: "api.storefront-products", status: response.status });
-      return json({ error: "Failed to fetch from Storefront API" }, { status: 500 });
+      return json({ error: "Failed to fetch from Storefront API" }, { status: 500, headers: CORS_HEADERS });
     }
 
     const data = await response.json();
 
     if (data.errors) {
       AppLogger.error("[STOREFRONT_API] GraphQL errors", { component: "api.storefront-products" }, data.errors);
-      return json({ error: "GraphQL errors", details: data.errors }, { status: 500 });
+      return json({ error: "GraphQL errors", details: data.errors }, { status: 500, headers: CORS_HEADERS });
     }
 
     const nodes = data.data?.nodes || [];
@@ -257,7 +302,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       count: validProducts.length
     }, {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        ...CORS_HEADERS,
         "Cache-Control": "public, max-age=300, s-maxage=600",
         "Vary": "Accept-Encoding"
       }
@@ -268,7 +313,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json({
       error: "Internal server error",
       message: error instanceof Error ? error.message : "Unknown error"
-    }, { status: 500 });
+    }, { status: 500, headers: CORS_HEADERS });
   }
 }
 

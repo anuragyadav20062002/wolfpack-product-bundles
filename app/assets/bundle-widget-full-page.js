@@ -154,6 +154,9 @@ class BundleWidgetFullPage {
         return;
       }
 
+      // Merge bundle_settings metafield into selectedBundle (DCP display settings)
+      this._mergeBundleSettings(this.bundleSettings);
+
       // Resolve tier config — prefer admin-saved (API) over legacy Theme Editor (data attribute)
       this.tierConfig = this.resolveTierConfig(
         this.selectedBundle.tierConfig ?? null,
@@ -188,6 +191,9 @@ class BundleWidgetFullPage {
 
       // Attach event listeners
       this.attachEventListeners();
+
+      // Render floating promo badge (if enabled and not session-dismissed)
+      this._initFloatingBadge();
 
       // Mark as initialized
       this.container.dataset.initialized = 'true';
@@ -303,6 +309,13 @@ class BundleWidgetFullPage {
     };
 
     this.tierConfig = this.config.tierConfig;
+
+    // Parse bundle_settings metafield (DCP display settings — promoBanner, badge, etc.)
+    try {
+      this.bundleSettings = JSON.parse(dataset.bundleSettings || 'null') || {};
+    } catch {
+      this.bundleSettings = {};
+    }
 
     // Apply card layout settings as CSS variables
     this.applyCardLayoutSettings();
@@ -804,7 +817,11 @@ class BundleWidgetFullPage {
       contentSection.appendChild(stepTimeline);
     }
 
-    // 2. Render search input for filtering products
+    // 2. Render per-step banner image (if configured for this step)
+    const stepBanner = this.createStepBannerImage(this.currentStepIndex);
+    if (stepBanner) contentSection.appendChild(stepBanner);
+
+    // 3. Render search input for filtering products
     const searchInput = this.createSearchInput();
     contentSection.appendChild(searchInput);
 
@@ -882,6 +899,9 @@ class BundleWidgetFullPage {
 
     const promoBanner = this.createPromoBanner();
     if (promoBanner) contentSection.appendChild(promoBanner);
+
+    const stepBanner = this.createStepBannerImage(this.currentStepIndex);
+    if (stepBanner) contentSection.appendChild(stepBanner);
 
     contentSection.appendChild(this.createSearchInput());
 
@@ -1168,6 +1188,32 @@ class BundleWidgetFullPage {
     // Free gift section (locked or unlocked)
     this._renderFreeGiftSection(panel);
 
+    // Sidebar upsell slot — below items list, above total
+    // Shows discount progress incentive when pricing is enabled and a rule applies
+    if (this.selectedBundle?.pricing?.enabled && (nextRule || discountInfo.hasDiscount)) {
+      const upsellVars = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+      );
+      let upsellMsg = '';
+      if (discountInfo.hasDiscount) {
+        upsellMsg = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          upsellVars
+        );
+      } else if (nextRule) {
+        upsellMsg = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+          upsellVars
+        );
+      }
+      if (upsellMsg) {
+        const upsellSlot = document.createElement('div');
+        upsellSlot.className = `sidebar-upsell-slot${discountInfo.hasDiscount ? ' sidebar-upsell-slot--reached' : ''}`;
+        upsellSlot.innerHTML = upsellMsg;
+        panel.appendChild(upsellSlot);
+      }
+    }
+
     // Divider
     const divider = document.createElement('div');
     divider.className = 'side-panel-divider';
@@ -1184,6 +1230,13 @@ class BundleWidgetFullPage {
       </div>
     `;
     panel.appendChild(totalSection);
+
+    // Discount progress banner — above Add to Cart button
+    const sidebarBanner = this._renderDiscountProgressBanner();
+    if (sidebarBanner) {
+      sidebarBanner.classList.add('discount-progress-banner--sidebar');
+      panel.appendChild(sidebarBanner);
+    }
 
     // Navigation buttons
     const navSection = document.createElement('div');
@@ -1240,19 +1293,48 @@ class BundleWidgetFullPage {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Create horizontal step tabs - clickable tabs showing step names
+  // Returns default SVG icon markup for a step based on its type
+  _getDefaultTimelineIcon(step) {
+    if (step.isDefault) {
+      // Included/locked step — lock icon
+      return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
+    if (step.isFreeGift) {
+      // Free gift step — gift box icon
+      return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="20 12 20 22 4 22 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="2" y="7" width="20" height="5" rx="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="12" y1="22" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+    }
+    // Regular step — shopping bag icon
+    return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  // Create circular icon-based step timeline with connecting lines and three icon states
   createStepTimeline() {
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'step-tabs-container';
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline';
 
     if (!this.selectedBundle || !this.selectedBundle.steps) {
-      return tabsContainer;
+      return timeline;
     }
 
-    this.selectedBundle.steps.forEach((step, index) => {
-      const tab = document.createElement('div');
-      tab.className = 'step-tab';
-      tab.dataset.stepIndex = index;
+    const steps = this.selectedBundle.steps;
+
+    steps.forEach((step, index) => {
+      const stepEl = document.createElement('div');
+      stepEl.className = 'timeline-step';
+      stepEl.dataset.stepIndex = index;
 
       // Determine step state
       const isDefaultStep = step.isDefault === true;
@@ -1260,121 +1342,75 @@ class BundleWidgetFullPage {
       const isCurrent = index === this.currentStepIndex;
       const isAccessible = this.isStepAccessible(index);
 
-      if (isDefaultStep) tab.classList.add('step-tab--included');
-      if (isCompleted && !isDefaultStep) tab.classList.add('completed');
-      if (isCurrent) tab.classList.add('active');
-      if (!isAccessible) tab.classList.add('locked');
+      if (isDefaultStep) stepEl.classList.add('timeline-step--included');
+      if (isCurrent) stepEl.classList.add('timeline-step--active');
+      if (isCompleted) stepEl.classList.add('timeline-step--completed');
+      if (!isCurrent && !isCompleted) stepEl.classList.add('timeline-step--inactive');
+      if (!isAccessible) stepEl.classList.add('timeline-step--locked');
 
-      // Get selection info for this step
-      const selectedProducts = this.selectedProducts[index] || {};
-      const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
-      const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
-
-      // Escape step name to prevent HTML injection (e.g., step name "1<QTY<4")
       const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
-      // Condition hints removed — step conditions are enforced via the Next button and tab click guards
 
-      // Tab content structure
-      let tabContent = '';
+      // Icon: user-uploaded → img element, else default SVG by step type
+      const iconContent = step.timelineIconUrl
+        ? `<img class="timeline-step-icon" src="${step.timelineIconUrl}" alt="${escapedName}">`
+        : this._getDefaultTimelineIcon(step);
 
-      // Default (included) step — always shown as locked with "Included" label
-      if (isDefaultStep) {
-        const productImages = hasSelections ? this.getStepProductImages(index) : [];
-        const imagesHtml = productImages.slice(0, 3).map(img =>
-          `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
-        ).join('');
-        tabContent = `
-          ${imagesHtml ? `<div class="tab-images">${imagesHtml}</div>` : `<div class="tab-number">${index + 1}</div>`}
-          <div class="tab-info">
-            <span class="tab-name">${escapedName}</span>
-            <span class="tab-count tab-count--included">Included</span>
-          </div>
-          <div class="tab-lock tab-lock--included">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
-            </svg>
-          </div>
-        `;
-      } else if (hasSelections) {
-        // Show product images if available
-        const productImages = this.getStepProductImages(index);
-        if (productImages.length > 0) {
-          const imagesHtml = productImages.slice(0, 3).map(img =>
-            `<img src="${img.url}" alt="${this._escapeHTML(img.alt)}" class="tab-product-image">`
-          ).join('');
-          tabContent = `
-            <div class="tab-images">${imagesHtml}</div>
-            <div class="tab-info">
-              <span class="tab-name">${escapedName}</span>
-              <span class="tab-count">${totalQuantity} selected</span>
-            </div>
-            <div class="tab-check">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          `;
-        } else {
-          // No images, just show checkmark
-          tabContent = `
-            <div class="tab-info">
-              <span class="tab-name">${escapedName}</span>
-              <span class="tab-count">${totalQuantity} selected</span>
-            </div>
-            <div class="tab-check">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-          `;
-        }
-      } else {
-        // Empty step - show step number, name, "0 selected" count badge, and optional lock
-        const prevStepName = index > 0 ? (this._escapeHTML(this.selectedBundle.steps[index - 1]?.name) || `Step ${index}`) : '';
-        tabContent = `
-          <div class="tab-number">${index + 1}</div>
-          <div class="tab-info">
-            <span class="tab-name">${escapedName}</span>
-            <span class="tab-count">0 selected</span>
-          </div>
-          ${!isAccessible ? `
-            <div class="tab-lock">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M12 7H11V5C11 3.34 9.66 2 8 2C6.34 2 5 3.34 5 5V7H4C3.45 7 3 7.45 3 8V13C3 13.55 3.45 14 4 14H12C12.55 14 13 13.55 13 13V8C13 7.45 12.55 7 12 7ZM8 11C7.45 11 7 10.55 7 10C7 9.45 7.45 9 8 9C8.55 9 9 9.45 9 10C9 10.55 8.55 11 8 11ZM9.1 7H6.9V5C6.9 4.39 7.39 3.9 8 3.9C8.61 3.9 9.1 4.39 9.1 5V7Z" fill="currentColor"/>
-              </svg>
-            </div>
-            <div class="tab-locked-tooltip">Complete "${prevStepName}" first</div>
-          ` : ''}
-        `;
-      }
+      // Checkmark badge — always rendered, shown via CSS only when completed
+      const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
 
-      tab.innerHTML = tabContent;
+      // Connector — only on non-last steps
+      const connectorHtml = index < steps.length - 1
+        ? `<div class="timeline-connector"><div class="timeline-connector-fill"></div></div>`
+        : '';
 
-      // Make clickable if accessible
-      if (isAccessible) {
-        tab.style.cursor = 'pointer';
-        tab.addEventListener('click', () => {
-          // Re-check accessibility at click time (not stale closure)
+      stepEl.innerHTML = `
+        <div class="timeline-icon-wrapper">
+          ${iconContent}
+          <div class="timeline-checkmark">${checkmarkSvg}</div>
+        </div>
+        <span class="timeline-step-name">${escapedName}</span>
+        ${connectorHtml}
+      `;
+
+      // Click handler — accessible steps only
+      if (isAccessible && !isDefaultStep) {
+        stepEl.style.cursor = 'pointer';
+        stepEl.addEventListener('click', () => {
           if (!this.isStepAccessible(index)) {
             ToastManager.show('Please complete the previous steps first.');
             return;
           }
-          // Block forward navigation if current step condition is not met
           if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
             ToastManager.show('Please meet the step conditions before proceeding.');
             return;
           }
           this.currentStepIndex = index;
-          this.searchQuery = ''; // Clear search when changing steps
-          this.activeCollectionId = null; // Clear collection filter when changing steps
+          this.searchQuery = '';
+          this.activeCollectionId = null;
           this.reRenderFullPage();
         });
       }
 
-      tabsContainer.appendChild(tab);
+      timeline.appendChild(stepEl);
     });
 
-    return tabsContainer;
+    return timeline;
+  }
+
+  // Returns a full-width banner image element for the active step, or null if not configured
+  createStepBannerImage(stepIndex) {
+    const step = (this.selectedBundle?.steps || [])[stepIndex];
+    if (!step?.bannerImageUrl) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-banner-image';
+    const img = document.createElement('img');
+    img.src = step.bannerImageUrl;
+    img.alt = this._escapeHTML(step.name || '');
+    wrapper.appendChild(img);
+    return wrapper;
   }
 
   // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
@@ -1940,12 +1976,17 @@ class BundleWidgetFullPage {
     // Get currency info for formatting
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
+    // Build inline variant selector using the step's merchant-configured primary option
+    const step = (this.selectedBundle?.steps || [])[stepIndex];
+    const primaryOptionName = step?.primaryVariantOption || null;
+    const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
+
     // Use ComponentGenerator to render HTML (available in same scope after bundling)
     const htmlString = ComponentGenerator.renderProductCard(
       product,
       currentQuantity,
       currencyInfo,
-      { showQuantitySelector: this.config.showQuantitySelectorOnCard }
+      { variantSelectorHtml }
     );
 
     // Convert HTML string to DOM element
@@ -2024,79 +2065,79 @@ class BundleWidgetFullPage {
     // Default steps are read-only — no add/remove/quantity interaction allowed
     if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
 
-    const productId = product.variantId || product.id;
+    // qty controls use product.variantId dynamically so variant changes are reflected
+    const getProductId = () => product.variantId || product.id;
 
-    // Quantity controls (both old-style and inline-style buttons)
-    const increaseBtns = cardElement.querySelectorAll('.qty-increase');
-    const decreaseBtns = cardElement.querySelectorAll('.qty-decrease');
-    const addBtn = cardElement.querySelector('.product-add-btn');
-
-    increaseBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        this.updateProductSelection(stepIndex, productId, currentQty + 1);
-      });
-    });
-
-    decreaseBtns.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        if (currentQty > 0) {
-          this.updateProductSelection(stepIndex, productId, currentQty - 1);
-        }
-      });
-    });
-
-    if (addBtn) {
-      addBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        if (currentQty === 0) {
-          // Add product directly to bundle (modal opens only on card image/title click)
-          this.updateProductSelection(stepIndex, productId, 1);
-        } else {
-          // Toggle off if already added
-          this.updateProductSelection(stepIndex, productId, 0);
-        }
-      });
-    }
-
-    // Variant selector
-    const variantSelector = cardElement.querySelector('.variant-selector');
-    if (variantSelector) {
-      variantSelector.addEventListener('change', (e) => {
-        e.stopPropagation(); // Prevent card click from triggering
-        const newVariantId = e.target.value;
-        // Update product object with new variant
-        product.variantId = newVariantId;
-        // Re-render this card
-        const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-        this.updateProductSelection(stepIndex, newVariantId, currentQty);
-      });
-    }
-
-    // Product card click - open modal (clicking on image or title area)
-    const productImage = cardElement.querySelector('.product-image');
-    const productTitle = cardElement.querySelector('.product-title');
-
-    const openModalHandler = (e) => {
+    // Inline quantity increase/decrease buttons (delegated via card element)
+    cardElement.addEventListener('click', (e) => {
+      const btn = e.target.closest('.inline-qty-btn');
+      if (!btn) return;
       e.stopPropagation();
-      if (this.productModal) {
-        const step = this.selectedBundle.steps[stepIndex];
-        this.productModal.open(product, step);
+      const productId = getProductId();
+      const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+      if (btn.classList.contains('qty-increase')) {
+        const { available } = this.getVariantAvailable(stepIndex, productId);
+        if (available !== null && currentQty >= available) {
+          ToastManager.show('Maximum stock reached for this variant.');
+          return;
+        }
+        this.updateProductSelection(stepIndex, productId, currentQty + 1);
+      } else if (btn.classList.contains('qty-decrease') && currentQty > 0) {
+        this.updateProductSelection(stepIndex, productId, currentQty - 1);
       }
-    };
+    });
 
-    if (productImage) {
-      productImage.style.cursor = 'pointer';
-      productImage.addEventListener('click', openModalHandler);
-    }
+    // Circle add button: qty 0 → 1
+    cardElement.addEventListener('click', (e) => {
+      const addBtn = e.target.closest('.product-add-btn');
+      if (!addBtn) return;
+      e.stopPropagation();
+      const productId = getProductId();
+      const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+      if (currentQty === 0) {
+        this.updateProductSelection(stepIndex, productId, 1);
+      }
+    });
 
-    if (productTitle) {
-      productTitle.style.cursor = 'pointer';
-      productTitle.addEventListener('click', openModalHandler);
+    // Inline variant selector (VariantSelectorComponent button group + panels)
+    if (product.variants && product.variants.length > 1) {
+      VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
+        const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
+
+        if (oldQty > 0 && oldVariantId !== newVariantId) {
+          // Remove old variant qty
+          if (this.selectedProducts[stepIndex]) {
+            delete this.selectedProducts[stepIndex][oldVariantId];
+          }
+          // Clamp against new variant's stock
+          const newQtyAvail = product.quantityAvailable; // already updated by component
+          const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+          let migratedQty = oldQty;
+          if (newOOS) {
+            ToastManager.show('Selected variant is out of stock — selection cleared.');
+            migratedQty = 0;
+          } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
+            migratedQty = newQtyAvail;
+            ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+          }
+          if (migratedQty > 0) {
+            this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+          }
+          // Update inline qty display
+          const qtyDisplay = cardElement.querySelector('.inline-qty-display');
+          if (qtyDisplay) qtyDisplay.textContent = migratedQty;
+        }
+
+        // Update data-product-id on card + action buttons so subsequent clicks use correct ID
+        cardElement.dataset.productId = newVariantId;
+        cardElement.querySelectorAll('[data-product-id]').forEach(el => {
+          if (el !== cardElement) el.dataset.productId = newVariantId;
+        });
+
+        this.updateFooterMessaging?.();
+        this.updateStepTimeline?.();
+        this._refreshSiblingDimState?.(stepIndex);
+      });
     }
   }
 
@@ -2105,7 +2146,7 @@ class BundleWidgetFullPage {
   // state (completed/active/locked classes, click listeners, product images, counts).
   updateStepTimeline() {
     if (!this.config.showStepTimeline) return;
-    const existing = this.elements.stepsContainer.querySelector('.step-tabs-container');
+    const existing = this.elements.stepsContainer.querySelector('.step-timeline');
     if (!existing) return;
     const fresh = this.createStepTimeline();
     existing.parentNode.replaceChild(fresh, existing);
@@ -2190,8 +2231,12 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Stack: callout (top, always visible) → panel (slides open) → backdrop → bar (always visible)
+    // Discount progress banner — sits between panel and bar, always visible
+    const discountBanner = this._renderDiscountProgressBanner();
+
+    // Stack: callout → panel → discount banner → backdrop → bar
     this.elements.footer.appendChild(panel);
+    if (discountBanner) this.elements.footer.appendChild(discountBanner);
     this.elements.footer.appendChild(backdrop);
     this.elements.footer.appendChild(bar);
   }
@@ -3068,6 +3113,70 @@ class BundleWidgetFullPage {
       footerDiscountText.innerHTML = progressMessage;
       this.elements.footer.classList.remove('qualified');
     }
+
+    this._updateDiscountProgressBanner();
+  }
+
+  // Returns a new .discount-progress-banner DOM element, or null when no discount is configured.
+  // Used by both the footer and the sidebar panel.
+  _renderDiscountProgressBanner() {
+    if (!this.selectedBundle?.pricing?.enabled) return null;
+
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle, totalPrice, totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    );
+
+    let message = '';
+    let isReached = false;
+
+    if (discountInfo.hasDiscount) {
+      isReached = true;
+      message = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+        variables
+      );
+    } else {
+      const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
+      if (!nextRule) return null;
+      message = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+        variables
+      );
+    }
+
+    const banner = document.createElement('div');
+    banner.className = 'discount-progress-banner' + (isReached ? ' reached' : '');
+    banner.innerHTML = message;
+    return banner;
+  }
+
+  // Updates the .discount-progress-banner already in the footer in-place (avoids full footer re-render).
+  _updateDiscountProgressBanner() {
+    if (!this.elements.footer) return;
+    const existing = this.elements.footer.querySelector('.discount-progress-banner');
+    const fresh = this._renderDiscountProgressBanner();
+
+    if (fresh && existing) {
+      existing.className = fresh.className;
+      existing.innerHTML = fresh.innerHTML;
+    } else if (fresh && !existing) {
+      // Insert between footer-panel and footer-backdrop
+      const backdrop = this.elements.footer.querySelector('.footer-backdrop');
+      if (backdrop) {
+        this.elements.footer.insertBefore(fresh, backdrop);
+      }
+    } else if (!fresh && existing) {
+      existing.remove();
+    }
   }
 
   // ========================================================================
@@ -3574,7 +3683,7 @@ class BundleWidgetFullPage {
 
             <div class="product-spacer"></div>
 
-            ${this.renderVariantSelector(product)}
+            ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
 
             <div class="product-quantity-wrapper">
               <div class="product-quantity-selector">
@@ -3600,28 +3709,12 @@ class BundleWidgetFullPage {
     this.attachProductEventHandlers(productGrid, stepIndex);
   }
 
-  renderVariantSelector(product) {
+  renderVariantSelector(product, step) {
     if (!product.variants || product.variants.length <= 1) {
       return '';
     }
-
-    return `
-      <div class="variant-selector-wrapper">
-        <select class="variant-selector" data-base-product-id="${product.id}">
-          ${product.variants.map(v => {
-            // Grey out variants that are hard out of stock. quantityAvailable === 0
-            // only disables when the variant does NOT accept backorders
-            // (currentlyNotInStock === true means "sold out but backorderable").
-            const isHardOOS = v.available !== true
-              || (v.quantityAvailable === 0 && v.currentlyNotInStock !== true);
-            const label = isHardOOS ? `${v.title} — out of stock` : v.title;
-            const selected = v.id === product.variantId ? 'selected' : '';
-            const disabled = isHardOOS ? 'disabled' : '';
-            return `<option value="${v.id}" ${selected} ${disabled}>${label}</option>`;
-          }).join('')}
-        </select>
-      </div>
-    `;
+    const primaryOptionName = step?.primaryVariantOption || null;
+    return VariantSelectorComponent.renderHtml(product, primaryOptionName);
   }
 
   attachProductEventHandlers(productGrid, stepIndex) {
@@ -4390,6 +4483,42 @@ class BundleWidgetFullPage {
         p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
       });
     }
+  }
+
+  _mergeBundleSettings(settings) {
+    if (!settings || !this.selectedBundle) return;
+    const keys = [
+      'promoBannerBgImage', 'promoBannerBgImageCrop', 'loadingGif',
+      'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
+    ];
+    for (const key of keys) {
+      if (settings[key] !== undefined) this.selectedBundle[key] = settings[key];
+    }
+  }
+
+  _initFloatingBadge() {
+    const enabled = this.selectedBundle && this.selectedBundle.floatingBadgeEnabled;
+    const text = this.selectedBundle && this.selectedBundle.floatingBadgeText;
+    if (!enabled || !text || !text.trim()) return;
+
+    const DISMISS_KEY = `fpb_badge_dismissed_${this.selectedBundle.id}`;
+    if (sessionStorage.getItem(DISMISS_KEY)) return;
+
+    const badge = document.createElement('div');
+    badge.className = 'floating-promo-badge';
+    badge.setAttribute('role', 'status');
+    badge.innerHTML = `<span class="floating-promo-badge__text">${this._escapeHtml(text.trim())}</span><button class="floating-promo-badge__close" aria-label="Dismiss">&times;</button>`;
+
+    badge.querySelector('.floating-promo-badge__close').addEventListener('click', () => {
+      sessionStorage.setItem(DISMISS_KEY, '1');
+      badge.remove();
+    });
+
+    document.body.appendChild(badge);
+  }
+
+  _escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   attachEventListeners() {

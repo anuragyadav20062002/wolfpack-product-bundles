@@ -3,9 +3,10 @@
   "private": true,
   "scripts": {
     "build": "remix vite:build",
-    "build:widgets": "node scripts/build-widget-bundles.js all",
-    "build:widgets:full-page": "node scripts/build-widget-bundles.js full-page",
-    "build:widgets:product-page": "node scripts/build-widget-bundles.js product-page",
+    "build:widgets": "node scripts/build-widget-bundles.js all && node scripts/minify-assets.js js",
+    "build:widgets:full-page": "node scripts/build-widget-bundles.js full-page && node scripts/minify-assets.js js",
+    "build:widgets:product-page": "node scripts/build-widget-bundles.js product-page && node scripts/minify-assets.js js",
+    "minify:assets": "node scripts/minify-assets.js",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
