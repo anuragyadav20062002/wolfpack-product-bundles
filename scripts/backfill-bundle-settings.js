@@ -28,31 +28,36 @@ const __dirname = dirname(__filename);
 const ROOT_DIR = join(__dirname, '..');
 
 // ---------------------------------------------------------------------------
-// Load DATABASE_URL from prisma/.env if not already in environment
+// Config + env loading
 // ---------------------------------------------------------------------------
 
-if (!process.env.DATABASE_URL) {
+const DRY_RUN = process.argv.includes('--dry-run');
+const envFileArgIdx = process.argv.indexOf('--env-file');
+const ENV_FILE = envFileArgIdx !== -1 ? process.argv[envFileArgIdx + 1] : null;
+const SHOPIFY_API_VERSION = '2024-10';
+const REQUEST_DELAY_MS = 600; // ~1.67 req/s, well within 40 req/s burst limit
+
+function loadEnvFile(filePath) {
   try {
-    const envContent = readFileSync(join(ROOT_DIR, 'prisma', '.env'), 'utf-8');
-    for (const line of envContent.split('\n')) {
+    const content = readFileSync(filePath, 'utf-8');
+    for (const line of content.split('\n')) {
       const eqIdx = line.indexOf('=');
       if (eqIdx === -1) continue;
       const key = line.slice(0, eqIdx).trim();
       const val = line.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
-      if (key && !process.env[key]) process.env[key] = val;
+      if (key) process.env[key] = val;
     }
   } catch {
-    // prisma/.env not found — DATABASE_URL must be set externally
+    // file not found — ignore
   }
 }
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-const DRY_RUN = process.argv.includes('--dry-run');
-const SHOPIFY_API_VERSION = '2024-10';
-const REQUEST_DELAY_MS = 600; // ~1.67 req/s, well within 40 req/s burst limit
+// Explicit --env-file takes priority; fall back to prisma/.env
+if (ENV_FILE) {
+  loadEnvFile(ENV_FILE);
+} else if (!process.env.DATABASE_URL) {
+  loadEnvFile(join(ROOT_DIR, 'prisma', '.env'));
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
