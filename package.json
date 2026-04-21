@@ -11,8 +11,8 @@
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",
-    "deploy:prod": "cd extensions/bundle-cart-transform-rs && cargo build --target=wasm32-unknown-unknown --release && cd ../.. && shopify app deploy --config shopify.app.toml",
-    "deploy:sit": "cd extensions/bundle-cart-transform-rs && cargo build --target=wasm32-unknown-unknown --release && cd ../.. && shopify app deploy --config shopify.app.wolfpack-product-bundles-sit.toml",
+    "deploy:prod": "cd extensions/bundle-cart-transform-rs && rustup run stable cargo build --target=wasm32-unknown-unknown --release && cd ../.. && shopify app deploy --config shopify.app.toml",
+    "deploy:sit": "cd extensions/bundle-cart-transform-rs && rustup run stable cargo build --target=wasm32-unknown-unknown --release && cd ../.. && shopify app deploy --config shopify.app.wolfpack-product-bundles-sit.toml",
     "config:use": "shopify app config use",
     "env": "shopify app env",
     "start": "remix-serve ./build/server/index.js",
@@ -75,7 +75,7 @@
     "@preact/signals": "^2.3.0",
     "@remix-run/eslint-config": "^2.16.1",
     "@remix-run/route-config": "^2.16.1",
-    "@shopify/api-codegen-preset": "^1.1.1",
+    "@shopify/api-codegen-preset": "^2.0.0",
     "@shopify/ui-extensions": "2025.10.0",
     "@types/eslint": "^9.6.1",
     "@types/jest": "^29.5.12",
@@ -84,6 +84,7 @@
     "@types/react-dom": "^18.2.14",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "chrome-devtools-mcp": "^0.20.3",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-import-resolver-typescript": "^3.10.1",
@@ -97,8 +98,7 @@
     "prisma": "^6.13.0",
     "ts-jest": "^29.1.2",
     "typescript": "^5.2.2",
-    "vite": "^6.2.2",
-    "chrome-devtools-mcp": "^0.20.3"
+    "vite": "^6.2.2"
   },
   "workspaces": [
     "extensions/*"

@@ -1360,18 +1360,12 @@ class BundleWidgetFullPage {
         <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
 
-      // Connector — only on non-last steps
-      const connectorHtml = index < steps.length - 1
-        ? `<div class="timeline-connector"><div class="timeline-connector-fill"></div></div>`
-        : '';
-
       stepEl.innerHTML = `
         <div class="timeline-icon-wrapper">
           ${iconContent}
           <div class="timeline-checkmark">${checkmarkSvg}</div>
         </div>
         <span class="timeline-step-name">${escapedName}</span>
-        ${connectorHtml}
       `;
 
       // Click handler — accessible steps only
@@ -1394,6 +1388,18 @@ class BundleWidgetFullPage {
       }
 
       timeline.appendChild(stepEl);
+
+      // Connector — sibling between steps (not child), so flex layout drives width
+      if (index < steps.length - 1) {
+        const connectorEl = document.createElement('div');
+        connectorEl.className = 'timeline-connector';
+        const isStepCompleted = this.isStepCompleted(index);
+        const connectorFill = document.createElement('div');
+        connectorFill.className = 'timeline-connector-fill';
+        if (isStepCompleted) connectorFill.style.width = '100%';
+        connectorEl.appendChild(connectorFill);
+        timeline.appendChild(connectorEl);
+      }
     });
 
     return timeline;
@@ -2189,17 +2195,7 @@ class BundleWidgetFullPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
 
-    // Callout banner text (shown in expanded panel when discount unlocked)
-    let calloutMessage = '';
-    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      calloutMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
-      );
-    }
+
 
     // Total required quantity across paid steps only (free gift and default steps are non-blocking)
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
@@ -2209,15 +2205,14 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    // Callout banner — always visible at top of card when deal is active
-    if (discountInfo.hasDiscount && calloutMessage) {
-      const callout = document.createElement('div');
-      callout.className = 'footer-callout-banner';
-      callout.innerHTML = calloutMessage;
-      this.elements.footer.appendChild(callout);
-    }
+    // Discount progress banner — full-width slim stripe at very top of card (outside padding)
+    const discountBanner = this._renderDiscountProgressBanner();
+    if (discountBanner) this.elements.footer.appendChild(discountBanner);
 
-    // Expandable product list panel (no callout inside — it's now above the panel)
+    // Inner wrapper carries the padding so the banner above sits edge-to-edge
+    const inner = document.createElement('div');
+    inner.className = 'footer-inner';
+
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
     backdrop.className = 'footer-backdrop';
@@ -2231,14 +2226,11 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Discount progress banner — sits between panel and bar, always visible
-    const discountBanner = this._renderDiscountProgressBanner();
-
-    // Stack: callout → panel → discount banner → backdrop → bar
-    this.elements.footer.appendChild(panel);
-    if (discountBanner) this.elements.footer.appendChild(discountBanner);
-    this.elements.footer.appendChild(backdrop);
-    this.elements.footer.appendChild(bar);
+    // Stack inside inner: panel → backdrop → bar
+    inner.appendChild(panel);
+    inner.appendChild(backdrop);
+    inner.appendChild(bar);
+    this.elements.footer.appendChild(inner);
   }
 
   // Creates the expandable product-list panel (callout banner is rendered separately above)
@@ -3169,11 +3161,8 @@ class BundleWidgetFullPage {
       existing.className = fresh.className;
       existing.innerHTML = fresh.innerHTML;
     } else if (fresh && !existing) {
-      // Insert between footer-panel and footer-backdrop
-      const backdrop = this.elements.footer.querySelector('.footer-backdrop');
-      if (backdrop) {
-        this.elements.footer.insertBefore(fresh, backdrop);
-      }
+      // Insert as first child (full-width slim banner before footer-inner)
+      this.elements.footer.insertBefore(fresh, this.elements.footer.firstChild);
     } else if (!fresh && existing) {
       existing.remove();
     }
@@ -4007,15 +3996,10 @@ class BundleWidgetFullPage {
       }
 
       if (!existingAddBtn) {
-        // Find product info to determine button text
-        const product = this.findProductById(stepIndex, productId);
-        const hasVariants = product?.variants && product.variants.length > 1;
-        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
-
         const addButton = document.createElement('button');
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
-        addButton.textContent = buttonText;
+        addButton.textContent = '+';
         contentWrapper.appendChild(addButton);
 
         // Attach event listener to the new button

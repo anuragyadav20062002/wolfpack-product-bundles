@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.6.0
- * Built   : 2026-04-20
+ * Version : 2.6.1
+ * Built   : 2026-04-21
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.6.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.6.1';
 (function() {
   'use strict';
 
@@ -3594,17 +3594,12 @@ class BundleWidgetFullPage {
         <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
 
-      const connectorHtml = index < steps.length - 1
-        ? `<div class="timeline-connector"><div class="timeline-connector-fill"></div></div>`
-        : '';
-
       stepEl.innerHTML = `
         <div class="timeline-icon-wrapper">
           ${iconContent}
           <div class="timeline-checkmark">${checkmarkSvg}</div>
         </div>
         <span class="timeline-step-name">${escapedName}</span>
-        ${connectorHtml}
       `;
 
       if (isAccessible && !isDefaultStep) {
@@ -3626,6 +3621,17 @@ class BundleWidgetFullPage {
       }
 
       timeline.appendChild(stepEl);
+
+      if (index < steps.length - 1) {
+        const connectorEl = document.createElement('div');
+        connectorEl.className = 'timeline-connector';
+        const isStepCompleted = this.isStepCompleted(index);
+        const connectorFill = document.createElement('div');
+        connectorFill.className = 'timeline-connector-fill';
+        if (isStepCompleted) connectorFill.style.width = '100%';
+        connectorEl.appendChild(connectorFill);
+        timeline.appendChild(connectorEl);
+      }
     });
 
     return timeline;
@@ -4343,17 +4349,6 @@ class BundleWidgetFullPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
 
-    let calloutMessage = '';
-    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      calloutMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
-      );
-    }
-
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
       if (step.isFreeGift || step.isDefault) return sum;
       return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
@@ -4361,12 +4356,11 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    if (discountInfo.hasDiscount && calloutMessage) {
-      const callout = document.createElement('div');
-      callout.className = 'footer-callout-banner';
-      callout.innerHTML = calloutMessage;
-      this.elements.footer.appendChild(callout);
-    }
+    const discountBanner = this._renderDiscountProgressBanner();
+    if (discountBanner) this.elements.footer.appendChild(discountBanner);
+
+    const inner = document.createElement('div');
+    inner.className = 'footer-inner';
 
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
@@ -4381,12 +4375,10 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    const discountBanner = this._renderDiscountProgressBanner();
-
-    this.elements.footer.appendChild(panel);
-    if (discountBanner) this.elements.footer.appendChild(discountBanner);
-    this.elements.footer.appendChild(backdrop);
-    this.elements.footer.appendChild(bar);
+    inner.appendChild(panel);
+    inner.appendChild(backdrop);
+    inner.appendChild(bar);
+    this.elements.footer.appendChild(inner);
   }
 
   _createFooterPanel(allSelectedProducts, currencyInfo) {
@@ -4612,11 +4604,6 @@ class BundleWidgetFullPage {
     return allProducts;
   }
 
-  /**
-   * Group selected variants by product for multi-variant display
-   * @param {Array} selectedProducts - Array of selected product variants
-   * @returns {Array} Array of product groups with their variants
-   */
   groupVariantsByProduct(selectedProducts) {
     const productMap = new Map();
 
@@ -4653,10 +4640,6 @@ class BundleWidgetFullPage {
     return Array.from(productMap.values());
   }
 
-  /**
-   * Show variant breakdown popup for a product with multiple variants
-   * @param {Object} productGroup - Product group with multiple variants
-   */
   showVariantBreakdown(productGroup) {
     const overlay = document.createElement('div');
     overlay.className = 'variant-breakdown-overlay';
@@ -5252,10 +5235,7 @@ class BundleWidgetFullPage {
       existing.innerHTML = fresh.innerHTML;
     } else if (fresh && !existing) {
 
-      const backdrop = this.elements.footer.querySelector('.footer-backdrop');
-      if (backdrop) {
-        this.elements.footer.insertBefore(fresh, backdrop);
-      }
+      this.elements.footer.insertBefore(fresh, this.elements.footer.firstChild);
     } else if (!fresh && existing) {
       existing.remove();
     }
@@ -6004,15 +5984,10 @@ class BundleWidgetFullPage {
       }
 
       if (!existingAddBtn) {
-
-        const product = this.findProductById(stepIndex, productId);
-        const hasVariants = product?.variants && product.variants.length > 1;
-        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
-
         const addButton = document.createElement('button');
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
-        addButton.textContent = buttonText;
+        addButton.textContent = '+';
         contentWrapper.appendChild(addButton);
 
         addButton.addEventListener('click', (e) => {
@@ -6280,10 +6255,6 @@ class BundleWidgetFullPage {
     return bundleInstanceId;
   }
 
-  /**
-   * Parses the JSON string from data-tier-config into a TierConfig array.
-   * Returns [] on any error — pill bar is simply not shown.
-   */
   parseTierConfig(rawJson) {
     try {
       const parsed = JSON.parse(rawJson);
@@ -6298,20 +6269,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  /**
-   * Resolves which tier config array to use for pill rendering.
-   *
-   * Preference order:
-   *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
-   *     tiers in the admin UI (>= 2 valid entries after mapping).
-   *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
-   *     source, used as fallback when apiTierConfig is null/undefined.
-   *
-   * apiTierConfig entries use { label, linkedBundleId } (DB schema).
-   * Widget pill entries use { label, bundleId } — this method performs the mapping.
-   *
-   * Returns [] when fewer than 2 valid tiers exist after filtering.
-   */
   resolveTierConfig(apiTierConfig, dataTierConfig) {
     if (apiTierConfig == null) return dataTierConfig;
 
@@ -6329,28 +6286,15 @@ class BundleWidgetFullPage {
     return mapped.length >= 2 ? mapped : [];
   }
 
-  /**
-   * Resolves whether to show the step timeline.
-   * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
-   *
-   * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
-   * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
-   * @returns {boolean}
-   */
   resolveShowStepTimeline(apiValue, dataAttrValue) {
     if (apiValue !== null && apiValue !== undefined) return apiValue;
     return dataAttrValue;
   }
 
-  /** Returns true if the given tier index is the currently active one. */
   isTierActive(tierIndex) {
     return tierIndex === this.activeTierIndex;
   }
 
-  /**
-   * Inserts the tier pill bar as the first child of the container.
-   * No-op when fewer than 2 tiers are configured (backward-compatible).
-   */
   initTierPills(tiers) {
     if (tiers.length < 2) return;
 
@@ -6374,7 +6318,6 @@ class BundleWidgetFullPage {
     this.elements.tierPillBar = bar;
   }
 
-  /** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
   updatePillActiveStates() {
     if (!this.elements.tierPillBar) return;
     this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -6385,7 +6328,6 @@ class BundleWidgetFullPage {
     });
   }
 
-  /** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
   async switchTier(bundleId, tierIndex) {
     if (tierIndex === this.activeTierIndex) return;
 
@@ -6595,25 +6537,6 @@ class BundleWidgetFullPage {
     `;
   }
 
-  /**
-   * Fire-and-forget error report to the server so AppLogger can track widget failures.
-   * Does NOT await — never blocks the render path.
-   */
-
-  /**
-   * Background layout refresh — runs after initial render.
-   *
-   * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
-   * after the merchant saves a layout change. This method fetches the latest config
-   * from the proxy API and, if the layout differs from what was cached, re-renders
-   * the steps container so the correct layout is shown within seconds of page load.
-   *
-   * Only runs when:
-   *   1. Cached data was used for first render (data-bundle-config attr was present)
-   *   2. Not in the Shopify theme editor (designMode)
-   *
-   * Fire-and-forget: all errors are silently swallowed.
-   */
   async _scheduleLayoutRefresh() {
     const bundleId = this.container.dataset.bundleId;
     if (!bundleId) return;
@@ -6660,7 +6583,7 @@ class BundleWidgetFullPage {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         keepalive: true,
-      }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+      }).catch(() => {  });
     } catch (_) {
 
     }
