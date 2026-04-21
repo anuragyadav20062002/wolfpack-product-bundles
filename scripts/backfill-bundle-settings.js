@@ -18,7 +18,7 @@
  * Rate limiting: 1 request per 600ms — safely within Shopify's 40 req/s leaky bucket.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -74,6 +74,28 @@ function buildBundleSettings(bundle) {
     floatingBadgeText: bundle.floatingBadgeText ?? '',
     tierConfig: bundle.tierConfig ?? null,
   };
+}
+
+function getBundleFieldNames() {
+  const bundleModel = Prisma.dmmf.datamodel.models.find((model) => model.name === 'Bundle');
+  return new Set((bundleModel?.fields ?? []).map((field) => field.name));
+}
+
+function selectIfAvailable(select, fieldNames, field) {
+  if (fieldNames.has(field)) {
+    select[field] = true;
+  }
+}
+
+async function getExistingBundleColumnNames(prisma) {
+  const rows = await prisma.$queryRaw`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'Bundle'
+  `;
+
+  return new Set(rows.map((row) => row.column_name));
 }
 
 const SET_METAFIELD_MUTATION = `
@@ -140,24 +162,44 @@ async function main() {
     console.log('='.repeat(60));
     console.log('');
 
+    const bundleFieldNames = getBundleFieldNames();
+    const bundleColumnNames = await getExistingBundleColumnNames(prisma);
+    const availableBundleFields = new Set(
+      [...bundleFieldNames].filter((field) => bundleColumnNames.has(field))
+    );
+    const bundleSelect = {
+      id: true,
+      shopId: true,
+      shopifyPageId: true,
+    };
+    [
+      'promoBannerBgImage',
+      'promoBannerBgImageCrop',
+      'loadingGif',
+      'showStepTimeline',
+      'floatingBadgeEnabled',
+      'floatingBadgeText',
+      'tierConfig',
+    ].forEach((field) => selectIfAvailable(bundleSelect, availableBundleFields, field));
+
+    if (!bundleFieldNames.has('floatingBadgeEnabled') || !bundleFieldNames.has('floatingBadgeText')) {
+      console.warn('  [WARN] Generated Prisma client does not include floating badge fields.');
+      console.warn('         Run `npm run generate:prisma` before backfilling badge values.');
+      console.log('');
+    }
+    if (!bundleColumnNames.has('floatingBadgeEnabled') || !bundleColumnNames.has('floatingBadgeText')) {
+      console.warn('  [WARN] Connected database does not include floating badge columns.');
+      console.warn('         Run `npm run setup` or `prisma migrate deploy` before backfilling badge values.');
+      console.log('');
+    }
+
     // Fetch all FPB bundles with a live page
     const bundles = await prisma.bundle.findMany({
       where: {
         bundleType: 'full_page',
         shopifyPageId: { not: null },
       },
-      select: {
-        id: true,
-        shopId: true,
-        shopifyPageId: true,
-        promoBannerBgImage: true,
-        promoBannerBgImageCrop: true,
-        loadingGif: true,
-        showStepTimeline: true,
-        floatingBadgeEnabled: true,
-        floatingBadgeText: true,
-        tierConfig: true,
-      },
+      select: bundleSelect,
     });
 
     console.log(`  Found ${bundles.length} full-page bundles with live pages`);
