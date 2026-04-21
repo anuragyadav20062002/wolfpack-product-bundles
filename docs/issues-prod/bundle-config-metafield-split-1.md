@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-21
-**Last Updated:** 2026-04-21 11:00
+**Last Updated:** 2026-04-21 11:30
 
 ## Overview
 Two-part refactor of the `custom:bundle_config` page metafield:
@@ -68,3 +68,7 @@ fallback in widget code; backfill runs first.
 - **Banner text !important**: Changed `color:inherit` → `color:inherit !important` in CSS so the overriding rule beats the inline `style="color:var(--bundle-discount-text-color,...)"` set by template-manager on span elements. Without !important, DCP black color variables made span text invisible on the dark banner.
 - **+ button text overflow bug**: After add+remove cycle, `updateProductCardState` was recreating the add button with text "Add to Bundle" instead of "+". This text overflowed the 35×35 circle button (overflow:visible) and rendered "add" + "ind" visually bleeding over adjacent content. Fixed by matching ComponentGenerator: always restore with text "+".
 - Files: app/assets/bundle-widget-full-page.js, app/types/state.types.ts, app/components/design-control-panel/config/defaultSettings.ts, app/components/design-control-panel/settings/FooterDiscountProgressSettings.tsx, app/components/design-control-panel/settings/SettingsPanel.tsx, extensions/bundle-builder/assets/bundle-widget-full-page.css, extensions/bundle-builder/assets/*-bundled.js
+
+### 2026-04-21 11:30 - Remove green footer-callout-banner
+- Green `footer-callout-banner` (success message with #22C55E background) was duplicating the dark slim `discount-progress-banner` at the top of the floating footer card. Removed completely: JS creation block, calloutMessage variable, and both CSS rules.
+- Files: app/assets/bundle-widget-full-page.js, extensions/bundle-builder/assets/bundle-widget-full-page.css, bundled JS

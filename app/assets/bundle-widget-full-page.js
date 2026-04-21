@@ -2195,17 +2195,7 @@ class BundleWidgetFullPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
 
-    // Callout banner text (shown in expanded panel when discount unlocked)
-    let calloutMessage = '';
-    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      calloutMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
-      );
-    }
+
 
     // Total required quantity across paid steps only (free gift and default steps are non-blocking)
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
@@ -2223,14 +2213,6 @@ class BundleWidgetFullPage {
     const inner = document.createElement('div');
     inner.className = 'footer-inner';
 
-    // Callout banner inside padded area when deal is active
-    if (discountInfo.hasDiscount && calloutMessage) {
-      const callout = document.createElement('div');
-      callout.className = 'footer-callout-banner';
-      callout.innerHTML = calloutMessage;
-      inner.appendChild(callout);
-    }
-
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
     backdrop.className = 'footer-backdrop';
@@ -2244,7 +2226,7 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Stack inside inner: callout → panel → backdrop → bar
+    // Stack inside inner: panel → backdrop → bar
     inner.appendChild(panel);
     inner.appendChild(backdrop);
     inner.appendChild(bar);

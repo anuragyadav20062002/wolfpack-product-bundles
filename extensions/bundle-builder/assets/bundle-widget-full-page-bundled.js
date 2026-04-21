@@ -4349,17 +4349,6 @@ class BundleWidgetFullPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
 
-    let calloutMessage = '';
-    if (this.selectedBundle?.pricing?.enabled && discountInfo.hasDiscount) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      calloutMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-        variables
-      );
-    }
-
     const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
       if (step.isFreeGift || step.isDefault) return sum;
       return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
@@ -4372,13 +4361,6 @@ class BundleWidgetFullPage {
 
     const inner = document.createElement('div');
     inner.className = 'footer-inner';
-
-    if (discountInfo.hasDiscount && calloutMessage) {
-      const callout = document.createElement('div');
-      callout.className = 'footer-callout-banner';
-      callout.innerHTML = calloutMessage;
-      inner.appendChild(callout);
-    }
 
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
