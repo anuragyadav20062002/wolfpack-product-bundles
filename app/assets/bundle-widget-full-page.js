@@ -2215,15 +2215,22 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    // Callout banner — always visible at top of card when deal is active
+    // Discount progress banner — full-width slim stripe at very top of card (outside padding)
+    const discountBanner = this._renderDiscountProgressBanner();
+    if (discountBanner) this.elements.footer.appendChild(discountBanner);
+
+    // Inner wrapper carries the padding so the banner above sits edge-to-edge
+    const inner = document.createElement('div');
+    inner.className = 'footer-inner';
+
+    // Callout banner inside padded area when deal is active
     if (discountInfo.hasDiscount && calloutMessage) {
       const callout = document.createElement('div');
       callout.className = 'footer-callout-banner';
       callout.innerHTML = calloutMessage;
-      this.elements.footer.appendChild(callout);
+      inner.appendChild(callout);
     }
 
-    // Expandable product list panel (no callout inside — it's now above the panel)
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
     const backdrop = document.createElement('button');
     backdrop.className = 'footer-backdrop';
@@ -2237,14 +2244,11 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    // Discount progress banner — sits between panel and bar, always visible
-    const discountBanner = this._renderDiscountProgressBanner();
-
-    // Stack: callout → panel → discount banner → backdrop → bar
-    this.elements.footer.appendChild(panel);
-    if (discountBanner) this.elements.footer.appendChild(discountBanner);
-    this.elements.footer.appendChild(backdrop);
-    this.elements.footer.appendChild(bar);
+    // Stack inside inner: callout → panel → backdrop → bar
+    inner.appendChild(panel);
+    inner.appendChild(backdrop);
+    inner.appendChild(bar);
+    this.elements.footer.appendChild(inner);
   }
 
   // Creates the expandable product-list panel (callout banner is rendered separately above)
@@ -3175,11 +3179,8 @@ class BundleWidgetFullPage {
       existing.className = fresh.className;
       existing.innerHTML = fresh.innerHTML;
     } else if (fresh && !existing) {
-      // Insert between footer-panel and footer-backdrop
-      const backdrop = this.elements.footer.querySelector('.footer-backdrop');
-      if (backdrop) {
-        this.elements.footer.insertBefore(fresh, backdrop);
-      }
+      // Insert as first child (full-width slim banner before footer-inner)
+      this.elements.footer.insertBefore(fresh, this.elements.footer.firstChild);
     } else if (!fresh && existing) {
       existing.remove();
     }

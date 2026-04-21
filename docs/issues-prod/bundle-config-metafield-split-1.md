@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-21
-**Last Updated:** 2026-04-20 14:30
+**Last Updated:** 2026-04-21 10:00
 
 ## Overview
 Two-part refactor of the `custom:bundle_config` page metafield:
@@ -53,3 +53,12 @@ fallback in widget code; backfill runs first.
 - Upgraded Dockerfile node:18-alpine → node:20-alpine to satisfy inngest@3.52.6 node>=20 requirement
 - Made prisma migration idempotent: ALTER TABLE ADD COLUMN IF NOT EXISTS (fixes re-run failure on SIT where db push already applied columns)
 - Files: Dockerfile, package.json, package-lock.json, prisma/migrations/20260420000000_add_step_image_banner_urls/migration.sql
+
+### 2026-04-21 10:00 - FPB Storefront UI Fixes (floating footer + step timeline)
+- **Discount banner full-width**: Moved banner outside `.footer-inner` padding wrapper; `.floating-card` gets `padding:0`, inner content uses new `.footer-inner` class with padding
+- **Discount banner styling**: `border-radius:16px 16px 0 0` (rounded top corners match card), `overflow:hidden` on `.floating-card` clips it naturally
+- **Banner text contrast**: Added `color:inherit` override so DCP `--bundle-conditions-text-color` / `--bundle-discount-text-color` (defaulting to `#000000`) don't override the white text on dark banner background
+- **Step timeline connector (flex sibling)**: Moved connector DOM element to be a flex sibling of `.timeline-step` (not a child), allowing `flex:1` layout. Steps use `flex:0 0 auto`. Connector capped at `max-width:120px`
+- **`_updateDiscountProgressBanner`**: Uses `insertBefore(fresh, footer.firstChild)` to keep banner at top on updates
+- Widget version bumped to 2.6.1, bundles rebuilt and minified
+- Files: app/assets/bundle-widget-full-page.js, extensions/bundle-builder/assets/bundle-widget-full-page.css, extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js, scripts/build-widget-bundles.js

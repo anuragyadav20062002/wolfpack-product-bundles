@@ -4367,11 +4367,17 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
+    const discountBanner = this._renderDiscountProgressBanner();
+    if (discountBanner) this.elements.footer.appendChild(discountBanner);
+
+    const inner = document.createElement('div');
+    inner.className = 'footer-inner';
+
     if (discountInfo.hasDiscount && calloutMessage) {
       const callout = document.createElement('div');
       callout.className = 'footer-callout-banner';
       callout.innerHTML = calloutMessage;
-      this.elements.footer.appendChild(callout);
+      inner.appendChild(callout);
     }
 
     const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
@@ -4387,12 +4393,10 @@ class BundleWidgetFullPage {
       totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
     );
 
-    const discountBanner = this._renderDiscountProgressBanner();
-
-    this.elements.footer.appendChild(panel);
-    if (discountBanner) this.elements.footer.appendChild(discountBanner);
-    this.elements.footer.appendChild(backdrop);
-    this.elements.footer.appendChild(bar);
+    inner.appendChild(panel);
+    inner.appendChild(backdrop);
+    inner.appendChild(bar);
+    this.elements.footer.appendChild(inner);
   }
 
   _createFooterPanel(allSelectedProducts, currencyInfo) {
@@ -4618,11 +4622,6 @@ class BundleWidgetFullPage {
     return allProducts;
   }
 
-  /**
-   * Group selected variants by product for multi-variant display
-   * @param {Array} selectedProducts - Array of selected product variants
-   * @returns {Array} Array of product groups with their variants
-   */
   groupVariantsByProduct(selectedProducts) {
     const productMap = new Map();
 
@@ -4659,10 +4658,6 @@ class BundleWidgetFullPage {
     return Array.from(productMap.values());
   }
 
-  /**
-   * Show variant breakdown popup for a product with multiple variants
-   * @param {Object} productGroup - Product group with multiple variants
-   */
   showVariantBreakdown(productGroup) {
     const overlay = document.createElement('div');
     overlay.className = 'variant-breakdown-overlay';
@@ -5258,10 +5253,7 @@ class BundleWidgetFullPage {
       existing.innerHTML = fresh.innerHTML;
     } else if (fresh && !existing) {
 
-      const backdrop = this.elements.footer.querySelector('.footer-backdrop');
-      if (backdrop) {
-        this.elements.footer.insertBefore(fresh, backdrop);
-      }
+      this.elements.footer.insertBefore(fresh, this.elements.footer.firstChild);
     } else if (!fresh && existing) {
       existing.remove();
     }
@@ -6286,10 +6278,6 @@ class BundleWidgetFullPage {
     return bundleInstanceId;
   }
 
-  /**
-   * Parses the JSON string from data-tier-config into a TierConfig array.
-   * Returns [] on any error — pill bar is simply not shown.
-   */
   parseTierConfig(rawJson) {
     try {
       const parsed = JSON.parse(rawJson);
@@ -6304,20 +6292,6 @@ class BundleWidgetFullPage {
     }
   }
 
-  /**
-   * Resolves which tier config array to use for pill rendering.
-   *
-   * Preference order:
-   *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
-   *     tiers in the admin UI (>= 2 valid entries after mapping).
-   *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
-   *     source, used as fallback when apiTierConfig is null/undefined.
-   *
-   * apiTierConfig entries use { label, linkedBundleId } (DB schema).
-   * Widget pill entries use { label, bundleId } — this method performs the mapping.
-   *
-   * Returns [] when fewer than 2 valid tiers exist after filtering.
-   */
   resolveTierConfig(apiTierConfig, dataTierConfig) {
     if (apiTierConfig == null) return dataTierConfig;
 
@@ -6335,28 +6309,15 @@ class BundleWidgetFullPage {
     return mapped.length >= 2 ? mapped : [];
   }
 
-  /**
-   * Resolves whether to show the step timeline.
-   * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
-   *
-   * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
-   * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
-   * @returns {boolean}
-   */
   resolveShowStepTimeline(apiValue, dataAttrValue) {
     if (apiValue !== null && apiValue !== undefined) return apiValue;
     return dataAttrValue;
   }
 
-  /** Returns true if the given tier index is the currently active one. */
   isTierActive(tierIndex) {
     return tierIndex === this.activeTierIndex;
   }
 
-  /**
-   * Inserts the tier pill bar as the first child of the container.
-   * No-op when fewer than 2 tiers are configured (backward-compatible).
-   */
   initTierPills(tiers) {
     if (tiers.length < 2) return;
 
@@ -6380,7 +6341,6 @@ class BundleWidgetFullPage {
     this.elements.tierPillBar = bar;
   }
 
-  /** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
   updatePillActiveStates() {
     if (!this.elements.tierPillBar) return;
     this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
@@ -6391,7 +6351,6 @@ class BundleWidgetFullPage {
     });
   }
 
-  /** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
   async switchTier(bundleId, tierIndex) {
     if (tierIndex === this.activeTierIndex) return;
 
@@ -6601,25 +6560,6 @@ class BundleWidgetFullPage {
     `;
   }
 
-  /**
-   * Fire-and-forget error report to the server so AppLogger can track widget failures.
-   * Does NOT await — never blocks the render path.
-   */
-
-  /**
-   * Background layout refresh — runs after initial render.
-   *
-   * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
-   * after the merchant saves a layout change. This method fetches the latest config
-   * from the proxy API and, if the layout differs from what was cached, re-renders
-   * the steps container so the correct layout is shown within seconds of page load.
-   *
-   * Only runs when:
-   *   1. Cached data was used for first render (data-bundle-config attr was present)
-   *   2. Not in the Shopify theme editor (designMode)
-   *
-   * Fire-and-forget: all errors are silently swallowed.
-   */
   async _scheduleLayoutRefresh() {
     const bundleId = this.container.dataset.bundleId;
     if (!bundleId) return;
@@ -6666,7 +6606,7 @@ class BundleWidgetFullPage {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
         keepalive: true,
-      }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+      }).catch(() => {  });
     } catch (_) {
 
     }
