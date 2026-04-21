@@ -29,6 +29,7 @@ import { TierPillSettings } from "./TierPillSettings";
 import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
 import { FPBBadgesSettings } from "./FPBBadgesSettings";
 import { PDPBadgeSettings } from "./PDPBadgeSettings";
+import { StepTimelineSettings } from "./StepTimelineSettings";
 
 /**
  * Maps each section key to the DesignSettings keys it controls.
@@ -141,6 +142,13 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "includedBadgeUrl", "includedBadgePosition",
   ],
   pdpBadge: ["freeGiftBadgeUrl", "freeGiftBadgePosition"],
+  stepTimeline: [
+    "stepTimelineCircleSize", "stepTimelineCircleBg", "stepTimelineCircleBorder",
+    "stepTimelineCircleBorderWidth", "stepTimelineCompletedBg", "stepTimelineCompletedText",
+    "stepTimelineLineColor", "stepTimelineLineCompleted", "stepTimelineLineHeight",
+    "stepTimelineNameFontSize", "stepTimelineNameColor",
+    "stepTimelineActiveColor", "stepTimelineInactiveColor", "stepTimelineCompleteColor",
+  ],
 };
 
 /**
@@ -328,6 +336,8 @@ export function SettingsPanel({
         return <FPBBadgesSettings settings={settings} onUpdate={onUpdate} />;
       case "pdpBadge":
         return <PDPBadgeSettings settings={settings} onUpdate={onUpdate} />;
+      case "stepTimeline":
+        return <StepTimelineSettings settings={settings} onUpdate={onUpdate} />;
       case "customCss":
         return (
           <CustomCssSettings

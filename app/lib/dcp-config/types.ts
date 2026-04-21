@@ -7,7 +7,8 @@ export type DCPSectionKey =
   | 'emptyState' | 'addToCartButton' | 'toasts' | 'modalCloseButton'
   | 'accessibility' | 'widgetStyle'
   | 'promoBanner' | 'tierPills'
-  | 'fpbBadges' | 'pdpBadge';
+  | 'fpbBadges' | 'pdpBadge'
+  | 'stepTimeline';
 
 export type DCPGroupKey =
   | 'globalColors' | 'productCard' | 'bundleFooter' | 'bundleHeader'

@@ -295,6 +295,22 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   includedBadgeUrl: "",
   includedBadgePosition: "top-left",
 
+  // Step Timeline
+  stepTimelineCircleSize: 44,
+  stepTimelineCircleBg: "#FFFFFF",
+  stepTimelineCircleBorder: "#D1D5DB",
+  stepTimelineCircleBorderWidth: 2,
+  stepTimelineCompletedBg: "#000000",
+  stepTimelineCompletedText: "#FFFFFF",
+  stepTimelineLineColor: "#E5E7EB",
+  stepTimelineLineCompleted: "#000000",
+  stepTimelineLineHeight: 2,
+  stepTimelineNameFontSize: 11,
+  stepTimelineNameColor: "#374151",
+  stepTimelineActiveColor: "#000000",
+  stepTimelineInactiveColor: "#9CA3AF",
+  stepTimelineCompleteColor: "#000000",
+
   // Custom CSS (empty by default)
   customCss: "",
 };
@@ -585,6 +601,22 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   freeGiftBadgePosition: "top-left",
   includedBadgeUrl: "",
   includedBadgePosition: "top-left",
+
+  // Step Timeline
+  stepTimelineCircleSize: 44,
+  stepTimelineCircleBg: "#1F2937",
+  stepTimelineCircleBorder: "#374151",
+  stepTimelineCircleBorderWidth: 2,
+  stepTimelineCompletedBg: "#F9FAFB",
+  stepTimelineCompletedText: "#111827",
+  stepTimelineLineColor: "#374151",
+  stepTimelineLineCompleted: "#F9FAFB",
+  stepTimelineLineHeight: 2,
+  stepTimelineNameFontSize: 11,
+  stepTimelineNameColor: "#F9FAFB",
+  stepTimelineActiveColor: "#F9FAFB",
+  stepTimelineInactiveColor: "#6B7280",
+  stepTimelineCompleteColor: "#F9FAFB",
 
   // Custom CSS (empty by default)
   customCss: "",

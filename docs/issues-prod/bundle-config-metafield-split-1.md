@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-21
-**Last Updated:** 2026-04-21 11:30
+**Last Updated:** 2026-04-21 12:00
 
 ## Overview
 Two-part refactor of the `custom:bundle_config` page metafield:
@@ -68,6 +68,22 @@ fallback in widget code; backfill runs first.
 - **Banner text !important**: Changed `color:inherit` → `color:inherit !important` in CSS so the overriding rule beats the inline `style="color:var(--bundle-discount-text-color,...)"` set by template-manager on span elements. Without !important, DCP black color variables made span text invisible on the dark banner.
 - **+ button text overflow bug**: After add+remove cycle, `updateProductCardState` was recreating the add button with text "Add to Bundle" instead of "+". This text overflowed the 35×35 circle button (overflow:visible) and rendered "add" + "ind" visually bleeding over adjacent content. Fixed by matching ComponentGenerator: always restore with text "+".
 - Files: app/assets/bundle-widget-full-page.js, app/types/state.types.ts, app/components/design-control-panel/config/defaultSettings.ts, app/components/design-control-panel/settings/FooterDiscountProgressSettings.tsx, app/components/design-control-panel/settings/SettingsPanel.tsx, extensions/bundle-builder/assets/bundle-widget-full-page.css, extensions/bundle-builder/assets/*-bundled.js
+
+### 2026-04-21 12:00 - Step timeline connector fix + full DCP customization panel
+
+- **CSS connector fix**: Removed `max-width:120px` cap (connector now stretches to fill available space), removed `gap:12px` from `.step-timeline` (spacing was additive with flex layout), changed `min-width:16px` → `8px`
+- **CSS circle size reduction**: Default circle sizes reduced from 48/56/64px → 36/40/44px (mobile/tablet/desktop). Matches competitor sizing (~40px target). `margin-top` formula updated to use 44px default in CSS calc
+- **CSS tablet connector**: Added `.timeline-connector{margin-top:19px}` in the `@media(min-width:640px)` block (40/2 - 1 = 19px)
+- **CSS step caps**: Added `max-width:100px` to `.timeline-step`, reduced step-name font-size 11px→10px and margin-top 8px→6px
+- **Types**: Added `StepTimelineSettings` interface (14 fields) to `state.types.ts`; added to `DesignSettings extends` list
+- **DCP types**: Added `'stepTimeline'` to `DCPSectionKey` union in `dcp-config/types.ts`
+- **Defaults**: Added step timeline defaults to both `PRODUCT_PAGE_DEFAULTS` (light palette) and `FULL_PAGE_DEFAULTS` (dark palette) in `defaultSettings.ts`
+- **New panel**: Created `StepTimelineSettings.tsx` with 14 controls (circle size, bg, border, border-width, completed bg, line colors, line thickness, label color, label font size, active/inactive/complete colors)
+- **SettingsPanel**: Added import, SECTION_KEYS entry (14 keys), and `case "stepTimeline"` switch branch
+- **FPB DCP nav**: Registered `stepTimeline` as child of `bundleHeader` group in `fpb.config.ts`
+- **Build**: `npm run build:widgets` + `npm run minify:assets css` — zero errors
+- Files: bundle-widget-full-page.css, bundle-widget-full-page-bundled.js, bundle-widget-product-page-bundled.js, state.types.ts, defaultSettings.ts, StepTimelineSettings.tsx, SettingsPanel.tsx, fpb.config.ts, dcp-config/types.ts
+- Next: deploy to SIT for visual verification
 
 ### 2026-04-21 11:30 - Remove green footer-callout-banner
 - Green `footer-callout-banner` (success message with #22C55E background) was duplicating the dark slim `discount-progress-banner` at the top of the floating footer card. Removed completely: JS creation block, calloutMessage variable, and both CSS rules.
