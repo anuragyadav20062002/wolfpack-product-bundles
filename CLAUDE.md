@@ -231,6 +231,21 @@ npm run test:coverage # coverage report
 8. **Write tests BEFORE implementation for all new code** ✅
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
+11. **ALWAYS ask about DCP customizability for storefront changes** — if a storefront change is not explicitly specified as DCP-customizable, ask the user whether DCP support should be bundled with it before implementing ✅ — see DCP Customizability Rule below
+
+## 🎨 DCP Customizability Rule
+
+### Always ask about DCP before implementing storefront changes
+
+Any storefront-visible change (new UI element, new style, new behaviour) may need a merchant-facing DCP control. The rule is:
+
+- If the user **explicitly says** a storefront change should be DCP-customizable — implement the DCP control as part of the same issue/commit.
+- If the user **does not mention** DCP for a storefront change — **ask first**: "Should this also have a DCP control so merchants can customize it?"
+- Do NOT assume "no DCP needed" and do NOT add DCP controls speculatively without asking.
+
+**Why:** Storefront changes without DCP controls lock merchants into a single appearance. Adding DCP controls after the fact requires a second pass and a second migration. Asking upfront keeps the feature complete in one pass.
+
+---
 
 ## 🔄 No Backwards Compatibility Rule
 
@@ -396,10 +411,58 @@ extensions/bundle-builder/assets/
 # After making widget JS changes:
 1. Edit source files in app/assets/
 2. Increment WIDGET_VERSION in scripts/build-widget-bundles.js  ← SEE VERSION RULE BELOW
-3. Run: npm run build:widgets
+3. Run: npm run build:widgets        # builds bundles AND minifies JS in one step
 4. Test changes in storefront
-5. Commit BOTH source files AND bundled files
+5. Commit BOTH source files AND bundled (minified) files
+
+# After making CSS-only changes:
+1. Edit extensions/bundle-builder/assets/*.css directly
+2. Run: npm run minify:assets css    # minifies CSS in-place
+3. Commit the minified CSS file
 ```
+
+---
+
+## 🗜️ Asset Minification
+
+### MANDATORY: Always commit minified output, never raw unminified files
+
+The minifier (`scripts/minify-assets.js`) runs **in-place** — it reads each file,
+strips comments and collapses whitespace, and writes the result back to the **same path**.
+There is no separate source directory for CSS; the extension asset file IS the source.
+
+**When to run the minifier:**
+
+| Change type                          | Command                        |
+|--------------------------------------|--------------------------------|
+| JS bundle changes (widget source)    | `npm run build:widgets`        |
+| CSS-only changes                     | `npm run minify:assets css`    |
+| Both CSS and JS changed              | `npm run build:widgets && npm run minify:assets css` |
+| All assets (CSS + JS)                | `npm run minify:assets`        |
+
+**What gets minified:**
+
+CSS files (in `extensions/bundle-builder/assets/`):
+- `bundle-widget-full-page.css`
+- `bundle-widget.css`
+- `modal-discount-bar.css`
+
+JS files (in `extensions/bundle-builder/assets/`):
+- `bundle-widget-full-page-bundled.js`
+- `bundle-widget-product-page-bundled.js`
+
+**CSS minification** removes all block comments, collapses whitespace, strips spaces
+around `:`, `{`, `}`, `,`, `;`, removes empty rules, and strips trailing semicolons
+before `}`.
+
+**JS minification** is conservative (no AST, no renaming):
+- Preserves `/*!` licence/banner headers
+- Removes all other block comments and `//` single-line comments
+- Collapses 3+ consecutive blank lines to one
+- Trims trailing whitespace per line
+
+The script exits non-zero and prints an error if any CSS file exceeds Shopify's
+**100,000 B** app-block asset limit after minification.
 
 ---
 
@@ -423,22 +486,10 @@ It is embedded in every bundled JS file as `window.__BUNDLE_WIDGET_VERSION__`.
 ```
 1. Open scripts/build-widget-bundles.js
 2. Increment WIDGET_VERSION (e.g. '1.0.0' → '1.0.1')
-3. Run: npm run build:widgets
-4. ✅ CHECK CSS FILE SIZES — Shopify enforces a 100,000 B limit on app block CSS assets.
-   Run: wc -c extensions/bundle-builder/assets/*.css
-   If any file exceeds 100,000 B, strip standalone block comments and excess blank lines:
-     python3 -c "
-     import re, sys
-     f = sys.argv[1]
-     c = open(f).read()
-     c = re.sub(r'[ \t]*/\*(?![^\n]*\{|\s*[\w\-#.:>~+\[\]@]).*?\*/[ \t]*\n', '', c, flags=re.DOTALL)
-     c = re.sub(r'^[ \t]*/\*[^*\n]*(?:\*(?!/)[^*\n]*)*\*/[ \t]*$\n?', '', c, flags=re.MULTILINE)
-     c = re.sub(r'\n{3,}', '\n\n', c)
-     open(f, 'w').write(c)
-     print('Done:', len(c.encode()), 'bytes')
-     " extensions/bundle-builder/assets/bundle-widget-full-page.css
-   Re-run wc -c to confirm all files are under 100,000 B before proceeding.
-5. Commit source + bundled files
+3. Run: npm run build:widgets        # builds JS bundles AND minifies them automatically
+4. Run: npm run minify:assets css    # minify CSS files (script exits non-zero if any
+                                     # file exceeds Shopify's 100,000 B limit)
+5. Commit source + bundled (minified) files
 6. Run: npm run deploy:prod  OR  npm run deploy:sit  (per the Shopify Deploy Rule above)
 7. Wait 2-10 min for Shopify CDN cache to propagate — this is expected
 ```
@@ -570,7 +621,27 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 
 ---
 
-**Last Updated:** 2026-03-24
+## 🐙 GitHub Tasks — Always Use `gh` CLI
+
+**ALWAYS use the `gh` CLI for ALL GitHub-related tasks.** Never use raw `git` commands for remote operations when `gh` provides a dedicated command.
+
+| Task | Command |
+|---|---|
+| Create PR | `gh pr create` |
+| View PRs | `gh pr list` / `gh pr view` |
+| Merge PR | `gh pr merge` |
+| Create issue | `gh issue create` |
+| View issues | `gh issue list` / `gh issue view` |
+| Check CI status | `gh run list` / `gh run view` |
+| View remote branches | `gh api repos/{owner}/{repo}/branches` |
+| Get commit SHA | `gh api repos/{owner}/{repo}/commits/{ref}` |
+| Comment on PR/issue | `gh pr comment` / `gh issue comment` |
+
+**Why:** `gh` handles auth, pagination, and JSON output correctly. Raw `git fetch`/`git push` to remote may fail without SSH keys configured in the session.
+
+---
+
+**Last Updated:** 2026-04-19
 **Author:** Aditya Awasthi
 
 ## graphify

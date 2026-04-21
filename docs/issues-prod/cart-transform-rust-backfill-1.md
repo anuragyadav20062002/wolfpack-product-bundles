@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-19
-**Last Updated:** 2026-04-19 15:30
+**Last Updated:** 2026-04-19 18:30
 
 ## Overview
 
@@ -39,6 +39,22 @@ Also: `api.check-cart-transform.tsx` still checks against the hardcoded TS funct
 3. `api.admin.backfill-cart-transform.tsx` — protected POST route (`x-backfill-secret` header) to trigger backfill across all shops
 
 ## Progress Log
+
+### 2026-04-19 18:30 - Auto-purge dead sessions after backfill
+
+- `backfillForShop` now returns `status: 'dead'` for 401/402/missing-token errors (uninstalled or billing-lapsed shops)
+- `backfillAllShops` collects dead shops post-run and calls new `purgeDeadSessions()` which does a single `deleteMany` on the session table
+- Summary now includes `dead` and `sessionsPurged` counts
+- Files modified: `app/services/cart-transform-service.server.ts`
+
+### 2026-04-19 18:00 - Fix backfill: bypass shopifyFunctions check
+
+- Root cause identified: `shopifyFunctions` query returning empty via `unauthenticated.admin` offline sessions despite function being deployed. The pre-check was aborting backfill with false "not found" error for all 92 shops.
+- Removed `getRustFunctionId` gating from `backfillForShop`
+- Now calls `cartTransformCreate` directly with `functionHandle` — actual Shopify errors surface instead of our custom message
+- Added `diagnostics` field to response: includes what `shopifyFunctions` and `cartTransforms` actually return per shop, useful for debugging
+- Files modified: `app/services/cart-transform-service.server.ts`
+- Next: push to Render, trigger backfill
 
 ### 2026-04-19 15:30 - Implemented
 

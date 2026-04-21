@@ -203,6 +203,13 @@ export interface CSSDesignSettings {
   stepTimelineGap?: number;
   stepTimelineNameFontSize?: number;
   stepTimelineNameColor?: string;
+  stepTimelineActiveColor?: string;
+  stepTimelineInactiveColor?: string;
+  stepTimelineCompleteColor?: string;
+  addBtnColor?: string;
+  addBtnRadius?: number;
+  discountBannerBg?: string;
+  discountBannerText?: string;
   fullPageTitleFontSize?: number;
   fullPageTitleColor?: string;
   fullPageInstructionFontSize?: number;

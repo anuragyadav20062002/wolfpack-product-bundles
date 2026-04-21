@@ -328,10 +328,27 @@ export async function renamePageHandle(
 }
 
 /**
+ * Extract the display/DCP settings from a raw Prisma bundle for the bundle_settings metafield.
+ * These fields are intentionally kept out of bundle_config to allow lightweight DCP-only writes.
+ */
+function buildBundleSettings(bundle: any) {
+  return {
+    promoBannerBgImage: bundle.promoBannerBgImage ?? null,
+    promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
+    loadingGif: bundle.loadingGif ?? null,
+    showStepTimeline: bundle.showStepTimeline ?? null,
+    floatingBadgeEnabled: bundle.floatingBadgeEnabled ?? false,
+    floatingBadgeText: bundle.floatingBadgeText ?? '',
+    tierConfig: bundle.tierConfig ?? null,
+  };
+}
+
+/**
  * Write the full bundle config as a `custom:bundle_config` JSON metafield on a Shopify page.
  *
  * This caches the bundle config so the FPB Liquid template can inject it as `data-bundle-config`
  * on the widget container, eliminating the app proxy call for first-paint.
+ * Also atomically writes `custom:bundle_settings` for the display/DCP settings.
  *
  * Non-fatal: errors are logged but never thrown — a missing metafield means the widget falls
  * back to the proxy API, which is still functional.
@@ -350,6 +367,7 @@ export async function writeBundleConfigPageMetafield(
   try {
     const formattedBundle = formatBundleForWidget(bundle);
     const configJson = JSON.stringify(formattedBundle);
+    const settingsJson = JSON.stringify(buildBundleSettings(bundle));
 
     const SET_METAFIELD = `
       mutation SetBundleConfigMetafield($metafields: [MetafieldsSetInput!]!) {
@@ -368,6 +386,13 @@ export async function writeBundleConfigPageMetafield(
             namespace: "custom",
             key: "bundle_config",
             value: configJson,
+            type: "json",
+          },
+          {
+            ownerId: pageId,
+            namespace: "custom",
+            key: "bundle_settings",
+            value: settingsJson,
             type: "json",
           },
         ],
