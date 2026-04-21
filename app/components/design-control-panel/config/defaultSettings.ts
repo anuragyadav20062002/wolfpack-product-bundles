@@ -108,6 +108,10 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   successMessageTextColor: "#065F46",
   successMessageBgColor: "#D1FAE5",
 
+  // Discount Progress Banner (slim stripe at top of floating footer)
+  discountBannerBg: "#1a1a1a",
+  discountBannerText: "#ffffff",
+
   // Bundle Step Bar - Step Name
   stepNameFontColor: "#000000",
   stepNameFontSize: 16,
@@ -395,6 +399,10 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   successMessageFontWeight: 600,
   successMessageTextColor: "#065F46",
   successMessageBgColor: "#D1FAE5",
+
+  // Discount Progress Banner (slim stripe at top of floating footer)
+  discountBannerBg: "#1a1a1a",
+  discountBannerText: "#ffffff",
 
   // Bundle Step Bar - Step Name
   stepNameFontColor: "#111827",

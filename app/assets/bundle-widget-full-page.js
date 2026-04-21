@@ -4014,15 +4014,10 @@ class BundleWidgetFullPage {
       }
 
       if (!existingAddBtn) {
-        // Find product info to determine button text
-        const product = this.findProductById(stepIndex, productId);
-        const hasVariants = product?.variants && product.variants.length > 1;
-        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
-
         const addButton = document.createElement('button');
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
-        addButton.textContent = buttonText;
+        addButton.textContent = '+';
         contentWrapper.appendChild(addButton);
 
         // Attach event listener to the new button

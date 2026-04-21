@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-21
-**Last Updated:** 2026-04-21 10:00
+**Last Updated:** 2026-04-21 11:00
 
 ## Overview
 Two-part refactor of the `custom:bundle_config` page metafield:
@@ -62,3 +62,9 @@ fallback in widget code; backfill runs first.
 - **`_updateDiscountProgressBanner`**: Uses `insertBefore(fresh, footer.firstChild)` to keep banner at top on updates
 - Widget version bumped to 2.6.1, bundles rebuilt and minified
 - Files: app/assets/bundle-widget-full-page.js, extensions/bundle-builder/assets/bundle-widget-full-page.css, extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js, scripts/build-widget-bundles.js
+
+### 2026-04-21 11:00 - Discount banner DCP controls + + button text overflow fix
+- **DCP controls for banner**: Added `discountBannerBg` + `discountBannerText` fields to DesignSettings (state.types.ts), defaultSettings.ts (both presets), FooterDiscountProgressSettings.tsx (color pickers), SettingsPanel.tsx SECTION_KEYS. Defaults: bg=#1a1a1a, text=#ffffff.
+- **Banner text !important**: Changed `color:inherit` → `color:inherit !important` in CSS so the overriding rule beats the inline `style="color:var(--bundle-discount-text-color,...)"` set by template-manager on span elements. Without !important, DCP black color variables made span text invisible on the dark banner.
+- **+ button text overflow bug**: After add+remove cycle, `updateProductCardState` was recreating the add button with text "Add to Bundle" instead of "+". This text overflowed the 35×35 circle button (overflow:visible) and rendered "add" + "ind" visually bleeding over adjacent content. Fixed by matching ComponentGenerator: always restore with text "+".
+- Files: app/assets/bundle-widget-full-page.js, app/types/state.types.ts, app/components/design-control-panel/config/defaultSettings.ts, app/components/design-control-panel/settings/FooterDiscountProgressSettings.tsx, app/components/design-control-panel/settings/SettingsPanel.tsx, extensions/bundle-builder/assets/bundle-widget-full-page.css, extensions/bundle-builder/assets/*-bundled.js

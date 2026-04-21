@@ -163,6 +163,9 @@ export interface SuccessMessageSettings {
   successMessageFontWeight: number;
   successMessageTextColor: string;
   successMessageBgColor: string;
+  // Discount progress banner (slim stripe at top of floating footer card)
+  discountBannerBg: string;
+  discountBannerText: string;
 }
 
 /**

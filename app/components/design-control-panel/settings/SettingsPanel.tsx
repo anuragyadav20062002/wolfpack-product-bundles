@@ -76,6 +76,7 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
   footerDiscountProgress: [
     "successMessageFontSize", "successMessageFontWeight",
     "successMessageTextColor", "successMessageBgColor",
+    "discountBannerBg", "discountBannerText",
   ],
   headerTabs: [
     "headerTabActiveBgColor", "headerTabActiveTextColor", "headerTabInactiveBgColor",

@@ -74,6 +74,27 @@ export function FooterDiscountProgressSettings({ settings, onUpdate }: SettingsC
         value={settings.successMessageBgColor}
         onChange={(value) => onUpdate("successMessageBgColor", value)}
       />
+
+      <Divider />
+
+      <Text as="p" variant="headingSm" fontWeight="semibold">
+        Discount Progress Banner
+      </Text>
+      <Text as="p" variant="bodySm" tone="subdued">
+        Slim stripe shown at the top of the footer card when a discount milestone is active.
+      </Text>
+
+      <ColorPicker
+        label="Banner Background"
+        value={settings.discountBannerBg}
+        onChange={(value) => onUpdate("discountBannerBg", value)}
+      />
+
+      <ColorPicker
+        label="Banner Text Color"
+        value={settings.discountBannerText}
+        onChange={(value) => onUpdate("discountBannerText", value)}
+      />
     </BlockStack>
   );
 }
