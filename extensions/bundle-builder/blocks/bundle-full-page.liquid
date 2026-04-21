@@ -42,6 +42,14 @@
     {% assign bundle_config_json = 'null' %}
   {% endif %}
 
+  {% comment %} Bundle settings metafield — DCP display settings (promoBanner, badge, etc.) {% endcomment %}
+  {% assign bundle_settings_metafield = page.metafields.custom.bundle_settings %}
+  {% if bundle_settings_metafield.value != blank %}
+    {% assign bundle_settings_json = bundle_settings_metafield.value | json %}
+  {% else %}
+    {% assign bundle_settings_json = 'null' %}
+  {% endif %}
+
   {% comment %} Build tier config JSON {% endcomment %}
   {% assign tier_config_json = '[' %}
   {% assign tier_json_first = true %}
@@ -69,6 +77,7 @@
     data-bundle-id="{{ bundle_id }}"
     data-bundle-type="full_page"
     data-bundle-config="{{ bundle_config_json | escape }}"
+    data-bundle-settings="{{ bundle_settings_json | escape }}"
     data-show-title="{{ block.settings.show_bundle_title }}"
     data-show-description="{{ block.settings.show_bundle_description }}"
     data-show-category-tabs="{{ block.settings.show_category_tabs }}"

@@ -61,6 +61,10 @@ export interface BundleUiConfig {
   /** Widget style for product-page bundle (skai-lama-bottom-sheet-redesign).
    *  Absent = 'classic' — backward-compatible default. */
   widgetStyle?: 'classic' | 'bottom-sheet';
+  /** Show fixed-position floating promo badge on storefront (bottom-left). */
+  floatingBadgeEnabled?: boolean;
+  /** Text shown in the floating promo badge (max 60 chars). */
+  floatingBadgeText?: string;
 }
 
 export interface BundleUiStep {
@@ -87,6 +91,10 @@ export interface BundleUiStep {
   discountBadgeLabel?: string;
   /** URL for the category image shown in the empty slot card. */
   categoryImageUrl?: string;
+  /** URL for the step's timeline icon (user-uploadable; separate from bannerImageUrl). */
+  timelineIconUrl?: string;
+  /** Merchant-chosen option dimension rendered as button group on product cards (e.g. "Size"). */
+  primaryVariantOption?: string | null;
 }
 
 export interface BundleUiPricing {

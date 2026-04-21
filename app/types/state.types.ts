@@ -163,6 +163,9 @@ export interface SuccessMessageSettings {
   successMessageFontWeight: number;
   successMessageTextColor: string;
   successMessageBgColor: string;
+  // Discount progress banner (slim stripe at top of floating footer card)
+  discountBannerBg: string;
+  discountBannerText: string;
 }
 
 /**
@@ -339,6 +342,26 @@ export interface PromoBannerSettings {
 }
 
 /**
+ * Step Timeline (FPB horizontal progress indicator)
+ */
+export interface StepTimelineSettings {
+  stepTimelineCircleSize: number;
+  stepTimelineCircleBg: string;
+  stepTimelineCircleBorder: string;
+  stepTimelineCircleBorderWidth: number;
+  stepTimelineCompletedBg: string;
+  stepTimelineCompletedText: string;
+  stepTimelineLineColor: string;
+  stepTimelineLineCompleted: string;
+  stepTimelineLineHeight: number;
+  stepTimelineNameFontSize: number;
+  stepTimelineNameColor: string;
+  stepTimelineActiveColor: string;
+  stepTimelineInactiveColor: string;
+  stepTimelineCompleteColor: string;
+}
+
+/**
  * Complete design settings for a bundle type
  */
 export interface DesignSettings extends
@@ -360,7 +383,8 @@ export interface DesignSettings extends
   AccessibilitySettingsType,
   SearchInputSettingsType,
   SkeletonSettingsType,
-  WidgetStyleSettingsType {
+  WidgetStyleSettingsType,
+  StepTimelineSettings {
   customCss: string;
 }
 

@@ -34,14 +34,19 @@ export class ComponentGenerator {
    */
   static renderProductCard(product, currentQuantity, currencyInfo, options = {}) {
     const selectionKey = product.variantId || product.id;
-    const showQuantitySelector = options.showQuantitySelector !== false;
     const isSelected = currentQuantity > 0;
 
     // Check if this is an expanded variant card (has parentProductId and no variants array)
     // In this case, don't show variant selector - each card IS a variant
     const isExpandedVariantCard = product.parentProductId && (!product.variants || product.variants.length === 0);
 
-    // Render inline quantity controls when item is selected (competitor-inspired design)
+    // Caller can supply a pre-rendered variant selector HTML (e.g. VariantSelectorComponent).
+    // If not supplied, fall back to the built-in <select> dropdown.
+    const variantSelectorHtml = options.variantSelectorHtml !== undefined
+      ? options.variantSelectorHtml
+      : (isExpandedVariantCard ? '' : this.renderVariantSelector(product));
+
+    // Render inline quantity controls when item is selected
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
       return `
@@ -53,22 +58,12 @@ export class ComponentGenerator {
       `;
     };
 
-    // Render button or quantity controls based on selection state
+    // Render add button or quantity controls based on selection state
     const renderBottomAction = () => {
       if (isSelected) {
-        // Show inline quantity controls when selected
         return renderInlineQuantityControls();
-      } else {
-        // For expanded variant cards, always show "Add to Bundle"
-        // For regular products with variants, show "Choose Size"
-        const hasVariants = !isExpandedVariantCard && product.variants && product.variants.length > 1;
-        const buttonText = hasVariants ? 'Choose Size' : 'Add to Bundle';
-        return `
-          <button class="product-add-btn" data-product-id="${selectionKey}">
-            ${buttonText}
-          </button>
-        `;
       }
+      return `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`;
     };
 
     // Render variant badge if this is an expanded variant card
@@ -102,7 +97,7 @@ export class ComponentGenerator {
 
           <div class="product-spacer"></div>
 
-          ${isExpandedVariantCard ? '' : this.renderVariantSelector(product)}
+          ${variantSelectorHtml}
 
           ${renderBottomAction()}
         </div>

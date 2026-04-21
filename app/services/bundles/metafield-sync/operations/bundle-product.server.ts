@@ -254,6 +254,10 @@ export async function updateBundleProductMetafields(
       freeGiftName: step.freeGiftName || null,
       isDefault: step.isDefault || false,
       defaultVariantId: step.defaultVariantId || null,
+      imageUrl: step.imageUrl ?? null,
+      bannerImageUrl: step.bannerImageUrl ?? null,
+      timelineIconUrl: step.timelineIconUrl ?? null,
+      primaryVariantOption: step.primaryVariantOption ?? null,
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,
@@ -282,6 +286,8 @@ export async function updateBundleProductMetafields(
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
     promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
     loadingGif: bundleConfiguration.loadingGif ?? null,
+    floatingBadgeEnabled: bundleConfiguration.floatingBadgeEnabled ?? false,
+    floatingBadgeText: bundleConfiguration.floatingBadgeText ?? '',
   };
 
   // Check metafield sizes and log warnings

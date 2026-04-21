@@ -420,8 +420,21 @@ export default function ConfigureBundleFlow() {
     bundle.showStepTimeline !== false
   );
 
+  // Floating promo badge
+  const [floatingBadgeEnabled, setFloatingBadgeEnabled] = useState<boolean>(
+    (bundle as any).floatingBadgeEnabled ?? false
+  );
+  const [floatingBadgeText, setFloatingBadgeText] = useState<string>(
+    (bundle as any).floatingBadgeText ?? ""
+  );
+  const originalFloatingBadgeEnabledRef = useRef<boolean>((bundle as any).floatingBadgeEnabled ?? false);
+  const originalFloatingBadgeTextRef = useRef<string>((bundle as any).floatingBadgeText ?? "");
+
   // Widget install loading state
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
+
+  // Active step tab for Bundle Assets section (independent from Step Setup tab)
+  const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
 
   // Warning modal state: steps + tiers conflict
   const [stepsTiersWarning, setStepsTiersWarning] = useState<{
@@ -470,6 +483,8 @@ export default function ConfigureBundleFlow() {
       if (tierConfig.length >= 2) {
         formData.append("showStepTimeline", String(showStepTimeline));
       }
+      formData.append("floatingBadgeEnabled", String(floatingBadgeEnabled));
+      formData.append("floatingBadgeText", floatingBadgeText);
 
       // Submit to server action using fetcher
 
@@ -594,6 +609,8 @@ export default function ConfigureBundleFlow() {
           originalLoadingGifRef.current = loadingGif;
           originalTierConfigRef.current = tierConfig;
           originalShowStepTimelineRef.current = showStepTimeline;
+          originalFloatingBadgeEnabledRef.current = floatingBadgeEnabled;
+          originalFloatingBadgeTextRef.current = floatingBadgeText;
 
           // Reset dirty flag after successful save
           setIsDirty(false);
@@ -2205,6 +2222,70 @@ export default function ConfigureBundleFlow() {
                   </BlockStack>
                 </Card>
 
+                {stepsState.steps.length > 0 && (
+                  <Card>
+                    <BlockStack gap="400">
+                      <InlineStack align="space-between" blockAlign="center">
+                        <InlineStack gap="300" blockAlign="center">
+                          <Icon source={ImageIcon} tone="base" />
+                          <BlockStack gap="100">
+                            <Text variant="headingSm" fontWeight="semibold" as="p">Step Images</Text>
+                            <Text variant="bodyXs" tone="subdued" as="p">Tab icon and banner image per step — shown in the widget</Text>
+                          </BlockStack>
+                        </InlineStack>
+                        <Badge tone="info">Per step</Badge>
+                      </InlineStack>
+
+                      <Tabs
+                        tabs={stepsState.steps.map((step, index) => ({
+                          id: `asset-step-${step.id}`,
+                          content: step.name || `Step ${index + 1}`,
+                        }))}
+                        selected={activeAssetTabIndex}
+                        onSelect={setActiveAssetTabIndex}
+                      />
+
+                      {stepsState.steps.map((step, index) => activeAssetTabIndex === index && (
+                        <BlockStack key={step.id} gap="400">
+                          <BlockStack gap="200">
+                            <BlockStack gap="100">
+                              <Text variant="bodySm" fontWeight="semibold" as="p">Tab Icon</Text>
+                              <Text variant="bodyXs" tone="subdued" as="p">Circular icon in the step tab. Replaces the step number when set. Recommended: 100 × 100 px square.</Text>
+                            </BlockStack>
+                            <FilePicker
+                              label="Choose tab icon"
+                              hideCropEditor
+                              value={(step as any).imageUrl ?? null}
+                              onChange={(url) => {
+                                stepsState.updateStepField(step.id, 'imageUrl', url ?? null);
+                                markAsDirty();
+                              }}
+                            />
+                          </BlockStack>
+
+                          <Divider />
+
+                          <BlockStack gap="200">
+                            <BlockStack gap="100">
+                              <Text variant="bodySm" fontWeight="semibold" as="p">Step Banner Image</Text>
+                              <Text variant="bodyXs" tone="subdued" as="p">Full-width image above the product grid when this step is active. Recommended: 1600 × 400 px.</Text>
+                            </BlockStack>
+                            <FilePicker
+                              label="Choose banner image"
+                              hideCropEditor
+                              value={(step as any).bannerImageUrl ?? null}
+                              onChange={(url) => {
+                                stepsState.updateStepField(step.id, 'bannerImageUrl', url ?? null);
+                                markAsDirty();
+                              }}
+                            />
+                          </BlockStack>
+                        </BlockStack>
+                      ))}
+                    </BlockStack>
+                  </Card>
+                )}
+
                 <Card>
                   <BlockStack gap="400">
                     <InlineStack align="space-between" blockAlign="center">
@@ -2254,6 +2335,40 @@ export default function ConfigureBundleFlow() {
                           style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
                         />
                       </BlockStack>
+                    )}
+                  </BlockStack>
+                </Card>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <InlineStack align="space-between" blockAlign="center">
+                      <InlineStack gap="300" blockAlign="center">
+                        <Icon source={DiscountIcon} tone="base" />
+                        <BlockStack gap="100">
+                          <Text variant="headingSm" fontWeight="semibold" as="p">Floating Promo Badge</Text>
+                          <Text variant="bodyXs" tone="subdued" as="p">Fixed badge at bottom-left of the page — session-dismissed when shopper clicks X</Text>
+                        </BlockStack>
+                      </InlineStack>
+                      <Badge tone="magic">Storefront</Badge>
+                    </InlineStack>
+
+                    <Checkbox
+                      label="Show floating promo badge"
+                      checked={floatingBadgeEnabled}
+                      onChange={(val) => { setFloatingBadgeEnabled(val); markAsDirty(); }}
+                    />
+
+                    {floatingBadgeEnabled && (
+                      <TextField
+                        label="Badge text"
+                        value={floatingBadgeText}
+                        onChange={(val) => { setFloatingBadgeText(val.slice(0, 60)); markAsDirty(); }}
+                        maxLength={60}
+                        showCharacterCount
+                        placeholder="e.g. Save 20% today only!"
+                        autoComplete="off"
+                        helpText="Shown in the badge. Max 60 characters."
+                      />
                     )}
                   </BlockStack>
                 </Card>
