@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.6.0
- * Built   : 2026-04-20
+ * Built   : 2026-04-21
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3594,17 +3594,12 @@ class BundleWidgetFullPage {
         <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`;
 
-      const connectorHtml = index < steps.length - 1
-        ? `<div class="timeline-connector"><div class="timeline-connector-fill"></div></div>`
-        : '';
-
       stepEl.innerHTML = `
         <div class="timeline-icon-wrapper">
           ${iconContent}
           <div class="timeline-checkmark">${checkmarkSvg}</div>
         </div>
         <span class="timeline-step-name">${escapedName}</span>
-        ${connectorHtml}
       `;
 
       if (isAccessible && !isDefaultStep) {
@@ -3626,6 +3621,17 @@ class BundleWidgetFullPage {
       }
 
       timeline.appendChild(stepEl);
+
+      if (index < steps.length - 1) {
+        const connectorEl = document.createElement('div');
+        connectorEl.className = 'timeline-connector';
+        const isStepCompleted = this.isStepCompleted(index);
+        const connectorFill = document.createElement('div');
+        connectorFill.className = 'timeline-connector-fill';
+        if (isStepCompleted) connectorFill.style.width = '100%';
+        connectorEl.appendChild(connectorFill);
+        timeline.appendChild(connectorEl);
+      }
     });
 
     return timeline;
