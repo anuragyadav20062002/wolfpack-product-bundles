@@ -2042,7 +2042,7 @@ class BundleWidgetFullPage {
       product,
       currentQuantity,
       currencyInfo,
-      { variantSelectorHtml }
+      { variantSelectorHtml, actionMode: 'expandingQuantity' }
     );
 
     // Convert HTML string to DOM element
@@ -3980,28 +3980,35 @@ class BundleWidgetFullPage {
     const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
     if (!productCard) return;
 
-    const contentWrapper = productCard.querySelector('.product-content-wrapper');
-    if (!contentWrapper) return;
-
     // Find existing action elements
+    const contentWrapper = productCard.querySelector('.product-content-wrapper');
+    const actionWrapper = productCard.querySelector('.product-card-action');
+    if (!contentWrapper && !actionWrapper) return;
+
+    const actionContainer = actionWrapper || contentWrapper;
     const existingAddBtn = productCard.querySelector('.product-add-btn');
     const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
     let selectedOverlay = productCard.querySelector('.selected-overlay');
 
     // Toggle between "Add to Bundle" button and quantity controls
     if (quantity > 0) {
-      // Show quantity controls, hide button
-      if (existingAddBtn) {
-        existingAddBtn.remove();
+      if (actionWrapper) {
+        actionWrapper.classList.add('is-expanded');
       }
 
       if (existingQuantityControls) {
+        if (existingAddBtn) {
+          existingAddBtn.remove();
+        }
         // Just update the quantity display
         const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
         if (qtyDisplay) {
           qtyDisplay.textContent = quantity;
         }
       } else {
+        if (existingAddBtn) {
+          existingAddBtn.remove();
+        }
         // Create quantity controls
         const quantityControls = document.createElement('div');
         quantityControls.className = 'inline-quantity-controls';
@@ -4010,7 +4017,7 @@ class BundleWidgetFullPage {
           <span class="inline-qty-display">${quantity}</span>
           <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
         `;
-        contentWrapper.appendChild(quantityControls);
+        actionContainer.appendChild(quantityControls);
 
         // Attach event listeners to the new buttons
         const increaseBtn = quantityControls.querySelector('.qty-increase');
@@ -4046,6 +4053,10 @@ class BundleWidgetFullPage {
       productCard.classList.add('selected');
 
     } else {
+      if (actionWrapper) {
+        actionWrapper.classList.remove('is-expanded');
+      }
+
       // Show "Add to Bundle" button, hide quantity controls
       if (existingQuantityControls) {
         existingQuantityControls.remove();
@@ -4056,7 +4067,7 @@ class BundleWidgetFullPage {
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
         addButton.textContent = '+';
-        contentWrapper.appendChild(addButton);
+        actionContainer.appendChild(addButton);
 
         // Attach event listener to the new button
         addButton.addEventListener('click', (e) => {
