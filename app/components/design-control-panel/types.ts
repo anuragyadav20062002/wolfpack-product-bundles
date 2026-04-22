@@ -68,6 +68,20 @@ export interface DesignSettings {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
   footerDiscountTextVisibility: boolean;
+  sidebarCardBgColor: string;
+  sidebarCardTextColor: string;
+  sidebarCardBorderColor: string;
+  sidebarCardBorderWidth: number;
+  sidebarCardBorderRadius: number;
+  sidebarCardPadding: number;
+  sidebarCardWidth: number;
+  sidebarStickyOffset: number;
+  sidebarProductListMaxHeight: number;
+  sidebarDiscountBgColor: string;
+  sidebarDiscountTextColor: string;
+  sidebarButtonBgColor: string;
+  sidebarButtonTextColor: string;
+  sidebarButtonBorderRadius: number;
 
   // Bundle Header - Tabs
   headerTabActiveBgColor: string;
@@ -117,7 +131,7 @@ export interface DesignSettings {
   focusOutlineColor: string;
   focusOutlineWidth: number;
 
-  // Bottom-Sheet Widget Style (skai-lama-bottom-sheet-redesign)
+  // Bottom-sheet widget style
   widgetStyle?: 'classic' | 'bottom-sheet';
   bottomSheetOverlayOpacity?: number;    // 0–0.8, default 0.5
   bottomSheetAnimationDuration?: number; // 200–600ms, default 400

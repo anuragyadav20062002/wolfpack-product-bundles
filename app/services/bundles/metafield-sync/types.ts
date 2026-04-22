@@ -58,7 +58,7 @@ export interface BundleUiConfig {
   promoBannerBgImage?: string | null;
   promoBannerBgImageCrop?: string | null;
   loadingGif?: string | null;
-  /** Widget style for product-page bundle (skai-lama-bottom-sheet-redesign).
+  /** Widget style for product-page bundle.
    *  Absent = 'classic' — backward-compatible default. */
   widgetStyle?: 'classic' | 'bottom-sheet';
   /** Show fixed-position floating promo badge on storefront (bottom-left). */

@@ -63,7 +63,14 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "quantitySelectorBorderRadius", "variantSelectorBgColor", "variantSelectorTextColor",
     "variantSelectorBorderRadius",
   ],
-  footer: ["footerBgColor", "footerTotalBgColor", "footerBorderRadius", "footerPadding"],
+  footer: [
+    "footerBgColor", "footerTotalBgColor", "footerBorderRadius", "footerPadding",
+    "sidebarCardBgColor", "sidebarCardTextColor", "sidebarCardBorderColor",
+    "sidebarCardBorderWidth", "sidebarCardBorderRadius", "sidebarCardPadding",
+    "sidebarCardWidth", "sidebarStickyOffset", "sidebarProductListMaxHeight",
+    "sidebarDiscountBgColor", "sidebarDiscountTextColor",
+    "sidebarButtonBgColor", "sidebarButtonTextColor", "sidebarButtonBorderRadius",
+  ],
   footerPrice: [
     "footerFinalPriceColor", "footerFinalPriceFontSize", "footerFinalPriceFontWeight",
     "footerStrikePriceColor", "footerStrikeFontSize", "footerStrikeFontWeight",

@@ -117,6 +117,20 @@ export interface CSSDesignSettings {
   footerNextButtonBorderRadius?: number;
   footerDiscountTextVisibility?: boolean;
   footerScrollBarColor?: string;
+  sidebarCardBgColor?: string;
+  sidebarCardTextColor?: string;
+  sidebarCardBorderColor?: string;
+  sidebarCardBorderWidth?: number;
+  sidebarCardBorderRadius?: number;
+  sidebarCardPadding?: number;
+  sidebarCardWidth?: number;
+  sidebarStickyOffset?: number;
+  sidebarProductListMaxHeight?: number;
+  sidebarDiscountBgColor?: string;
+  sidebarDiscountTextColor?: string;
+  sidebarButtonBgColor?: string;
+  sidebarButtonTextColor?: string;
+  sidebarButtonBorderRadius?: number;
 
   // Success Message
   successMessageFontSize?: number;

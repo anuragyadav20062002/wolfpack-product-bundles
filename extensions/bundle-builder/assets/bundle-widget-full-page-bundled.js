@@ -3405,19 +3405,15 @@ class BundleWidgetFullPage {
       }
     }
 
-    if (allSelectedProducts.length > 0) {
-      const countLabel = document.createElement('div');
-      countLabel.className = 'side-panel-item-count';
-      countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-      panel.appendChild(countLabel);
-    }
+    const countLabel = document.createElement('div');
+    countLabel.className = 'side-panel-item-count';
+    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    panel.appendChild(countLabel);
 
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
 
-    if (allSelectedProducts.length === 0) {
-      productsContainer.innerHTML = '<div class="side-panel-empty">No products selected yet</div>';
-    } else {
+    if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
@@ -3477,10 +3473,6 @@ class BundleWidgetFullPage {
 
     this._renderFreeGiftSection(panel);
 
-    const divider = document.createElement('div');
-    divider.className = 'side-panel-divider';
-    panel.appendChild(divider);
-
     const totalSection = document.createElement('div');
     totalSection.className = 'side-panel-total';
     totalSection.innerHTML = `
@@ -3490,10 +3482,15 @@ class BundleWidgetFullPage {
         <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
-    panel.appendChild(totalSection);
-
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
-    if (isMobileSheet) return;
+    if (isMobileSheet) {
+      panel.appendChild(totalSection);
+      return;
+    }
+
+    const actionSection = document.createElement('div');
+    actionSection.className = 'side-panel-action-container';
+    actionSection.appendChild(totalSection);
 
     const navSection = document.createElement('div');
     navSection.className = 'side-panel-nav';
@@ -3525,22 +3522,9 @@ class BundleWidgetFullPage {
       }
     });
 
-    const backBtn = document.createElement('button');
-    backBtn.className = 'side-panel-btn side-panel-btn-back';
-    backBtn.textContent = 'Back';
-    if (this.currentStepIndex === 0) backBtn.disabled = true;
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex--;
-        this.renderFullPageLayoutWithSidebar();
-      }
-    });
-
     navSection.appendChild(nextBtn);
-    navSection.appendChild(backBtn);
-    panel.appendChild(navSection);
+    actionSection.appendChild(navSection);
+    panel.appendChild(actionSection);
   }
 
   _escapeHTML(str) {
