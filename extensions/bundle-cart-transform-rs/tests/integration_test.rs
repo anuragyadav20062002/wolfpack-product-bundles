@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use shopify_function::run_function_with_input;
     use bundle_cart_transform_rs::{cart_transform_run, schema};
+    use shopify_function::run_function_with_input;
 
     // =========================================================================
     // MERGE OPERATION TESTS
@@ -50,9 +50,11 @@ mod tests {
             "component_reference": { "value": [] },
             "component_quantities": { "value": [] },
             "price_adjustment": { "method": "percentage_off", "value": 20.0 }
-        }]).to_string();
+        }])
+        .to_string();
 
-        let input = format!(r#"{{
+        let input = format!(
+            r#"{{
             "presentmentCurrencyRate": "1.0",
             "cart": {{
                 "lines": [
@@ -94,7 +96,8 @@ mod tests {
                     }}
                 ]
             }}
-        }}"#);
+        }}"#
+        );
 
         let output: schema::FunctionRunResult =
             run_function_with_input(cart_transform_run, &input).expect("should not error");
@@ -109,7 +112,9 @@ mod tests {
         assert_eq!(merge.title.as_deref(), Some("Test Bundle"));
         assert_eq!(merge.cart_lines.len(), 2);
 
-        let pct = merge.price.as_ref()
+        let pct = merge
+            .price
+            .as_ref()
             .and_then(|p| p.percentage_decrease.as_ref())
             .map(|v| v.value.to_string());
         // Decimal::from(f64) uses Rust's f64 Display — "20.0" not "20.00"
@@ -123,9 +128,11 @@ mod tests {
             "component_reference": { "value": [] },
             "component_quantities": { "value": [] },
             "price_adjustment": null
-        }]).to_string();
+        }])
+        .to_string();
 
-        let input = format!(r#"{{
+        let input = format!(
+            r#"{{
             "presentmentCurrencyRate": "1.0",
             "cart": {{
                 "lines": [
@@ -159,12 +166,15 @@ mod tests {
                     }}
                 ]
             }}
-        }}"#);
+        }}"#
+        );
 
         let output: schema::FunctionRunResult =
             run_function_with_input(cart_transform_run, &input).expect("should not error");
         assert_eq!(output.operations.len(), 2);
-        let titles: Vec<_> = output.operations.iter()
+        let titles: Vec<_> = output
+            .operations
+            .iter()
             .filter_map(|op| match op {
                 schema::CartOperation::LinesMerge(m) => m.title.as_deref(),
                 _ => None,
@@ -172,6 +182,96 @@ mod tests {
             .collect();
         assert!(titles.contains(&"Summer Bundle"));
         assert!(titles.contains(&"Summer Bundle (2)"));
+    }
+
+    #[test]
+    fn test_merge_selects_matching_parent_when_component_has_multiple_parents() {
+        let cp = serde_json::json!([
+            {
+                "id": "gid://shopify/ProductVariant/OLD_PARENT",
+                "component_reference": { "value": ["gid://shopify/ProductVariant/777"] },
+                "component_quantities": { "value": [1] },
+                "price_adjustment": { "method": "percentage_off", "value": 5.0 }
+            },
+            {
+                "id": "gid://shopify/ProductVariant/SIDEBAR_PARENT",
+                "component_reference": {
+                    "value": [
+                        "gid://shopify/ProductVariant/101",
+                        "gid://shopify/ProductVariant/102"
+                    ]
+                },
+                "component_quantities": { "value": [1, 1] },
+                "price_adjustment": { "method": "percentage_off", "value": 20.0 }
+            }
+        ])
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "bundleId": {{ "value": "sidebar-instance-1" }},
+                        "bundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "30.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "bundleId": {{ "value": "sidebar-instance-1" }},
+                        "bundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "stepType": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Widget B" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "20.00" }},
+                            "totalAmount": {{ "amount": "20.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+        assert_eq!(
+            merge.parent_variant_id,
+            "gid://shopify/ProductVariant/SIDEBAR_PARENT"
+        );
+
+        let pct = merge
+            .price
+            .as_ref()
+            .and_then(|p| p.percentage_decrease.as_ref())
+            .map(|v| v.value.to_string());
+        assert_eq!(pct.as_deref(), Some("20.0"));
     }
 
     // =========================================================================
@@ -187,10 +287,12 @@ mod tests {
             "title": "Comp A",
             "retailPrice": 5000, "bundlePrice": 4500,
             "discountPercent": 10.0, "savingsAmount": 500
-        }]).to_string();
+        }])
+        .to_string();
         let pa = serde_json::json!({ "method": "percentage_off", "value": 10.0 }).to_string();
 
-        let input = format!(r#"{{
+        let input = format!(
+            r#"{{
             "presentmentCurrencyRate": "1.0",
             "cart": {{
                 "lines": [{{
@@ -214,7 +316,8 @@ mod tests {
                     }}
                 }}]
             }}
-        }}"#);
+        }}"#
+        );
 
         let output: schema::FunctionRunResult =
             run_function_with_input(cart_transform_run, &input).expect("should not error");
@@ -228,7 +331,10 @@ mod tests {
         assert_eq!(expand.cart_line_id, "flex-line");
         assert_eq!(expand.expanded_cart_items.len(), 1);
         // Flex Bundle: same merchandise ID as input
-        assert_eq!(expand.expanded_cart_items[0].merchandise_id, "gid://shopify/ProductVariant/PARENT");
+        assert_eq!(
+            expand.expanded_cart_items[0].merchandise_id,
+            "gid://shopify/ProductVariant/PARENT"
+        );
         // 10% discount → price field included
         assert!(expand.price.is_some());
     }
@@ -238,7 +344,8 @@ mod tests {
         let cr = serde_json::json!(["gid://shopify/ProductVariant/A"]).to_string();
         let cq = serde_json::json!([1]).to_string();
 
-        let input = format!(r#"{{
+        let input = format!(
+            r#"{{
             "presentmentCurrencyRate": "1.0",
             "cart": {{
                 "lines": [{{
@@ -262,7 +369,8 @@ mod tests {
                     }}
                 }}]
             }}
-        }}"#);
+        }}"#
+        );
 
         let output: schema::FunctionRunResult =
             run_function_with_input(cart_transform_run, &input).expect("should not error");

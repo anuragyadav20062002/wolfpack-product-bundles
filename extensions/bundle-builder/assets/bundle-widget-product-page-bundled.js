@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.6.1
- * Built   : 2026-04-21
+ * Built   : 2026-04-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -1645,6 +1645,8 @@ class BundleWidgetProductPage {
 
       await this.loadDesignSettingsCSS();
 
+      this._scheduleCartTransformSelfHeal();
+
       await this.loadBundleData();
 
       if (!this.bundleData) return;
@@ -1697,6 +1699,38 @@ class BundleWidgetProductPage {
       }
 
     } catch (error) {
+
+    }
+  }
+
+  _scheduleCartTransformSelfHeal() {
+    try {
+      if (window.Shopify?.designMode) return;
+
+      const shop = window.Shopify?.shop || this.container.dataset.shop || window.location.hostname;
+      if (!shop) return;
+
+      const storageKey = `wolfpack:cart-transform-heal:${shop}`;
+      const lastCheckedAt = Number(window.localStorage?.getItem(storageKey) || 0);
+      const now = Date.now();
+      const cooldownMs = 24 * 60 * 60 * 1000;
+
+      if (lastCheckedAt && now - lastCheckedAt < cooldownMs) return;
+
+      window.setTimeout(() => {
+        fetch('/apps/product-bundles/api/cart-transform-heal', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+          .then(response => {
+            if (response.ok) {
+              window.localStorage?.setItem(storageKey, String(now));
+            }
+          })
+          .catch(() => {});
+      }, 1500);
+    } catch (_error) {
 
     }
   }

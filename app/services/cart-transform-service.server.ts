@@ -12,6 +12,7 @@ export interface CartTransformActivationResult {
 }
 
 const RUST_FUNCTION_HANDLE = 'bundle-cart-transform-rs';
+const RUST_FUNCTION_TITLE = 'Bundle Cart Transform (Rust)';
 
 export class CartTransformService {
   /**
@@ -26,7 +27,9 @@ export class CartTransformService {
           edges {
             node {
               id
-              handle
+              title
+              apiType
+              description
             }
           }
         }
@@ -37,7 +40,13 @@ export class CartTransformService {
       const response = await admin.graphql(QUERY);
       const data = await response.json() as any;
       const edges = data.data?.shopifyFunctions?.edges || [];
-      const match = edges.find((e: any) => e.node.handle === RUST_FUNCTION_HANDLE);
+      const match = edges.find((e: any) => {
+        const fn = e.node;
+        return fn.apiType === 'cart_transform' && (
+          fn.title === RUST_FUNCTION_TITLE ||
+          fn.description?.includes('Rust/WASM port')
+        );
+      });
       return match?.node?.id ?? null;
     } catch {
       return null;

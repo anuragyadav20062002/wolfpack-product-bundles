@@ -13,6 +13,42 @@ import { calculateComponentPricing } from "../utils/pricing";
 import type { PriceAdjustment, BundleUiConfig, ComponentPricing } from "../types";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
 
+async function ensureBundleParentVariantRequiresComponents(
+  admin: ShopifyAdmin,
+  bundleProductId: string,
+  bundleVariantId: string,
+) {
+  const response = await admin.graphql(`
+    mutation EnsureBundleParentVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants {
+          id
+          requiresComponents
+        }
+        userErrors {
+          field
+          message
+          code
+        }
+      }
+    }
+  `, {
+    variables: {
+      productId: bundleProductId,
+      variants: [{
+        id: bundleVariantId,
+        requiresComponents: true,
+      }],
+    },
+  });
+
+  const data = await response.json();
+  const userErrors = data.data?.productVariantsBulkUpdate?.userErrors ?? [];
+  if (userErrors.length > 0) {
+    throw new Error(`Failed to mark bundle parent variant as requiring components: ${userErrors[0].message}`);
+  }
+}
+
 /**
  * Updates bundle variant metafields with Shopify Standard structure (Approach 1: Hybrid)
  *
@@ -41,6 +77,7 @@ export async function updateBundleProductMetafields(
   }
 
   const bundleVariantId = variantResult.variantId;
+  await ensureBundleParentVariantRequiresComponents(admin, bundleProductId, bundleVariantId);
 
   // Extract component references and quantities from bundle configuration
   const componentReferences: string[] = [];

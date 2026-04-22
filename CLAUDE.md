@@ -716,3 +716,33 @@ After modifying code files in this session, run:
 ```bash
 python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
 ```
+
+---
+
+## 📱 Storefront UI Audit Rule — Desktop + Mobile
+
+### MANDATORY: Test both desktop and mobile views when auditing storefront UI
+
+When asked to audit, review, or verify storefront UI, you MUST test on **both desktop and mobile viewports** using Chrome DevTools MCP.
+
+**Workflow:**
+
+1. **Desktop audit first** — take screenshots at default desktop viewport (1280×800 or wider).
+2. **Mobile audit second** — use Chrome DevTools MCP `emulate` tool to switch to a mobile device (e.g. iPhone 12/14, 390×844) and take screenshots of the same pages/components.
+3. **Compare and report** — note any layout issues, overflow, truncation, spacing problems, or broken interactions that appear only on one viewport.
+
+**Required for:**
+- Any "audit the storefront", "check the UI", "how does it look" request
+- Post-deploy visual verification
+- Bug reports related to storefront appearance
+
+**Chrome DevTools MCP commands:**
+```
+1. Navigate to the storefront page
+2. Take desktop screenshot
+3. Emulate mobile device (e.g. iPhone 14)
+4. Take mobile screenshot
+5. Report findings for both viewports
+```
+
+**Why:** Many storefront bugs are mobile-only (overflow, tap targets, font scaling, modal sizing). A desktop-only audit misses ~60% of merchant customer traffic. Always test both.

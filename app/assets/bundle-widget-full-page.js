@@ -142,6 +142,9 @@ class BundleWidgetFullPage {
       // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
 
+      // Storefront self-heal: make sure the shop has an active CartTransform.
+      this._scheduleCartTransformSelfHeal();
+
       // Load and validate bundle data
       await this.loadBundleData();
 
@@ -268,6 +271,38 @@ class BundleWidgetFullPage {
 
     } catch (_e) {
       // Non-critical — widget works without design settings CSS
+    }
+  }
+
+  _scheduleCartTransformSelfHeal() {
+    try {
+      if (window.Shopify?.designMode) return;
+
+      const shop = window.Shopify?.shop || this.container.dataset.shop || window.location.hostname;
+      if (!shop) return;
+
+      const storageKey = `wolfpack:cart-transform-heal:${shop}`;
+      const lastCheckedAt = Number(window.localStorage?.getItem(storageKey) || 0);
+      const now = Date.now();
+      const cooldownMs = 24 * 60 * 60 * 1000;
+
+      if (lastCheckedAt && now - lastCheckedAt < cooldownMs) return;
+
+      window.setTimeout(() => {
+        fetch('/apps/product-bundles/api/cart-transform-heal', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+          .then(response => {
+            if (response.ok) {
+              window.localStorage?.setItem(storageKey, String(now));
+            }
+          })
+          .catch(() => {});
+      }, 1500);
+    } catch (_error) {
+      // Non-critical: checkout still works if the self-heal request is blocked.
     }
   }
 
@@ -956,7 +991,10 @@ class BundleWidgetFullPage {
   }
 
   // Mobile sticky bottom bar + slide-up sheet (replaces sidebar on < 768px)
-  _renderMobileBottomBar() {
+  _renderMobileBottomBar({ preserveOpen = false } = {}) {
+    const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
+    const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
     document.querySelector('.fpb-mobile-backdrop')?.remove();
@@ -1033,6 +1071,12 @@ class BundleWidgetFullPage {
     document.body.appendChild(backdrop);
     document.body.appendChild(sheet);
     document.body.appendChild(bar);
+
+    if (wasOpen) {
+      sheet.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
+    }
   }
 
   _populateMobileSheet(sheet) {
@@ -1188,32 +1232,6 @@ class BundleWidgetFullPage {
     // Free gift section (locked or unlocked)
     this._renderFreeGiftSection(panel);
 
-    // Sidebar upsell slot — below items list, above total
-    // Shows discount progress incentive when pricing is enabled and a rule applies
-    if (this.selectedBundle?.pricing?.enabled && (nextRule || discountInfo.hasDiscount)) {
-      const upsellVars = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      let upsellMsg = '';
-      if (discountInfo.hasDiscount) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          upsellVars
-        );
-      } else if (nextRule) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-          upsellVars
-        );
-      }
-      if (upsellMsg) {
-        const upsellSlot = document.createElement('div');
-        upsellSlot.className = `sidebar-upsell-slot${discountInfo.hasDiscount ? ' sidebar-upsell-slot--reached' : ''}`;
-        upsellSlot.innerHTML = upsellMsg;
-        panel.appendChild(upsellSlot);
-      }
-    }
-
     // Divider
     const divider = document.createElement('div');
     divider.className = 'side-panel-divider';
@@ -1231,12 +1249,8 @@ class BundleWidgetFullPage {
     `;
     panel.appendChild(totalSection);
 
-    // Discount progress banner — above Add to Cart button
-    const sidebarBanner = this._renderDiscountProgressBanner();
-    if (sidebarBanner) {
-      sidebarBanner.classList.add('discount-progress-banner--sidebar');
-      panel.appendChild(sidebarBanner);
-    }
+    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
+    if (isMobileSheet) return;
 
     // Navigation buttons
     const navSection = document.createElement('div');
@@ -3874,6 +3888,9 @@ class BundleWidgetFullPage {
       if (layout === 'footer_side') {
         const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
         this.renderSidePanel(sidePanel);
+        if (window.matchMedia?.('(max-width: 767px)').matches) {
+          this._renderMobileBottomBar({ preserveOpen: true });
+        }
       } else {
         this.renderFullPageFooter();
       }
@@ -4729,4 +4746,3 @@ function initializeFullPageWidget() {
     }
   });
 }
-
