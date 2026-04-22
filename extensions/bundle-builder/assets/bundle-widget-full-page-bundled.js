@@ -3681,6 +3681,7 @@ class BundleWidgetFullPage {
         connectorEl.className = 'timeline-connector';
         const connectorFill = document.createElement('div');
         connectorFill.className = 'timeline-connector-fill';
+        connectorFill.style.display = 'block';
         connectorFill.style.width = `${Math.round(this._getStepProgressRatio(index) * 100)}%`;
         connectorEl.appendChild(connectorFill);
         timeline.appendChild(connectorEl);
