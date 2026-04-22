@@ -416,7 +416,7 @@ extensions/bundle-builder/assets/
 5. Commit BOTH source files AND bundled (minified) files
 
 # After making CSS-only changes:
-1. For full-page CSS, edit app/assets/widgets/full-page-css/bundle-widget-full-page.css
+1. Edit the relevant raw CSS source in app/assets/widgets/*-css/
 2. Run: npm run minify:assets css    # writes minified CSS to the extension asset
 3. Commit BOTH the raw source CSS and generated minified extension CSS
 ```
@@ -425,16 +425,18 @@ extensions/bundle-builder/assets/
 
 ## 🗜️ Asset Minification
 
-### MANDATORY: Edit raw full-page CSS source, then commit generated minified output
+### MANDATORY: Edit raw widget CSS source, then commit generated minified output
 
-For full-page widget CSS, always modify the raw unminified source file:
+For widget CSS, always modify the raw unminified source file:
 
 - `app/assets/widgets/full-page-css/bundle-widget-full-page.css`
+- `app/assets/widgets/product-page-css/bundle-widget.css`
 
 Then run `npm run minify:assets css`. The build/minify script writes the deploy-ready
 minified output to:
 
 - `extensions/bundle-builder/assets/bundle-widget-full-page.css`
+- `extensions/bundle-builder/assets/bundle-widget.css`
 
 The API and storefront must call the minified extension asset only. Do not point API
 preview code, Liquid, or storefront code at the raw source CSS file.
@@ -454,7 +456,7 @@ Other CSS targets that do not yet have a raw source file are still minified in p
 
 CSS files:
 - `app/assets/widgets/full-page-css/bundle-widget-full-page.css` → `extensions/bundle-builder/assets/bundle-widget-full-page.css`
-- `bundle-widget.css`
+- `app/assets/widgets/product-page-css/bundle-widget.css` → `extensions/bundle-builder/assets/bundle-widget.css`
 - `modal-discount-bar.css`
 
 JS files (in `extensions/bundle-builder/assets/`):
