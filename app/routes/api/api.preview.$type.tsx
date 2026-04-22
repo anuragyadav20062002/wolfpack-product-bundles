@@ -483,17 +483,17 @@ const fpbSidebarHtml = `
           </button>
         </div>
       </div>
-      <div class="side-panel-divider"></div>
-      <div class="side-panel-total">
-        <span class="side-panel-total-label">Total</span>
-        <div class="side-panel-total-prices">
-          <span class="side-panel-total-original">$69.98</span>
-          <span class="side-panel-total-final">$62.98</span>
+      <div class="side-panel-action-container">
+        <div class="side-panel-total">
+          <span class="side-panel-total-label">Total</span>
+          <div class="side-panel-total-prices">
+            <span class="side-panel-total-original">$69.98</span>
+            <span class="side-panel-total-final">$62.98</span>
+          </div>
         </div>
-      </div>
-      <div class="side-panel-nav">
-        <button class="side-panel-btn side-panel-btn-next" type="button">Next Step</button>
-        <button class="side-panel-btn side-panel-btn-back" type="button">Back</button>
+        <div class="side-panel-nav">
+          <button class="side-panel-btn side-panel-btn-next" type="button">Next Step</button>
+        </div>
       </div>
     </div><!-- /.full-page-side-panel -->
 
@@ -545,17 +545,12 @@ const fpbSidebarHtml = `
       </button>
     </div>
   </div>
-  <div class="side-panel-divider"></div>
   <div class="side-panel-total">
     <span class="side-panel-total-label">Total</span>
     <div class="side-panel-total-prices">
       <span class="side-panel-total-original">$69.98</span>
       <span class="side-panel-total-final">$62.98</span>
     </div>
-  </div>
-  <div class="side-panel-nav">
-    <button class="side-panel-btn side-panel-btn-next" type="button">Next Step</button>
-    <button class="side-panel-btn side-panel-btn-back" type="button">Back</button>
   </div>
 </div>
 

@@ -27,6 +27,12 @@ const FOOTER_KEYS = [
   "footerNextButtonBgColor", "footerNextButtonTextColor",
   "footerNextButtonBorderColor", "footerNextButtonBorderRadius",
   "footerDiscountTextVisibility",
+  "sidebarCardBgColor", "sidebarCardTextColor", "sidebarCardBorderColor",
+  "sidebarCardBorderWidth", "sidebarCardBorderRadius", "sidebarCardPadding",
+  "sidebarCardWidth", "sidebarStickyOffset", "sidebarProductListMaxHeight",
+  "sidebarSkeletonRowCount",
+  "sidebarDiscountBgColor", "sidebarDiscountTextColor",
+  "sidebarButtonBgColor", "sidebarButtonTextColor", "sidebarButtonBorderRadius",
 ] as const;
 
 const STEP_BAR_KEYS = [

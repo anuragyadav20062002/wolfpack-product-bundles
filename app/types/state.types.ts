@@ -153,6 +153,23 @@ export interface FooterSettings {
 
   // Discount Text
   footerDiscountTextVisibility: boolean;
+
+  // Sidebar card
+  sidebarCardBgColor: string;
+  sidebarCardTextColor: string;
+  sidebarCardBorderColor: string;
+  sidebarCardBorderWidth: number;
+  sidebarCardBorderRadius: number;
+  sidebarCardPadding: number;
+  sidebarCardWidth: number;
+  sidebarStickyOffset: number;
+  sidebarProductListMaxHeight: number;
+  sidebarSkeletonRowCount: number;
+  sidebarDiscountBgColor: string;
+  sidebarDiscountTextColor: string;
+  sidebarButtonBgColor: string;
+  sidebarButtonTextColor: string;
+  sidebarButtonBorderRadius: number;
 }
 
 /**

@@ -32,6 +32,20 @@ interface BundleFooterPreviewProps {
   footerNextButtonBorderColor: string;
   footerNextButtonBorderRadius: number;
   footerDiscountTextVisibility: boolean;
+  sidebarCardBgColor: string;
+  sidebarCardTextColor: string;
+  sidebarCardBorderColor: string;
+  sidebarCardBorderWidth: number;
+  sidebarCardBorderRadius: number;
+  sidebarCardPadding: number;
+  sidebarCardWidth: number;
+  sidebarProductListMaxHeight: number;
+  sidebarSkeletonRowCount: number;
+  sidebarDiscountBgColor: string;
+  sidebarDiscountTextColor: string;
+  sidebarButtonBgColor: string;
+  sidebarButtonTextColor: string;
+  sidebarButtonBorderRadius: number;
   successMessageFontSize: number;
   successMessageFontWeight: number;
   successMessageTextColor: string;
@@ -385,15 +399,25 @@ function SidebarFooterLayout({
   footerFinalPriceFontSize,
   footerFinalPriceFontWeight,
   footerPriceVisibility,
-  footerBackButtonBgColor,
-  footerBackButtonTextColor,
-  footerBackButtonBorderColor,
-  footerBackButtonBorderRadius,
   footerNextButtonBgColor,
   footerNextButtonTextColor,
   footerNextButtonBorderColor,
   footerNextButtonBorderRadius,
   footerDiscountTextVisibility,
+  sidebarCardBgColor,
+  sidebarCardTextColor,
+  sidebarCardBorderColor,
+  sidebarCardBorderWidth,
+  sidebarCardBorderRadius,
+  sidebarCardPadding,
+  sidebarCardWidth,
+  sidebarProductListMaxHeight,
+  sidebarSkeletonRowCount,
+  sidebarDiscountBgColor,
+  sidebarDiscountTextColor,
+  sidebarButtonBgColor,
+  sidebarButtonTextColor,
+  sidebarButtonBorderRadius,
   successMessageBgColor,
   successMessageTextColor,
   successMessageFontSize,
@@ -435,43 +459,55 @@ function SidebarFooterLayout({
       {/* Right: sidebar panel */}
       <div
         style={{
-          width: "220px",
-          background: footerBgColor,
-          border: "1px solid rgba(0,0,0,0.1)",
-          borderRadius: "12px",
+          width: `${Math.max(220, Math.min(sidebarCardWidth, 460))}px`,
+          maxWidth: "260px",
+          background: sidebarCardBgColor || footerBgColor,
+          color: sidebarCardTextColor,
+          border: `${sidebarCardBorderWidth}px solid ${sidebarCardBorderColor}`,
+          borderRadius: `${sidebarCardBorderRadius}px`,
+          padding: `${Math.min(sidebarCardPadding, 24)}px`,
           overflow: "hidden",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          boxSizing: "border-box",
           ...(highlightTarget === "footer" ? HIGHLIGHT_STYLE : {}),
         }}
       >
         {/* Header */}
-        <div style={{ padding: "12px 14px 8px", borderBottom: "1px solid rgba(0,0,0,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Your Bundle</span>
-          <span style={{ fontSize: "11px", color: "#999", cursor: "pointer" }}>Clear all</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+          <span style={{ fontSize: "15px", fontWeight: 700, color: sidebarCardTextColor }}>Your Bundle</span>
+          <span style={{ fontSize: "11px", color: "#BD0000", cursor: "pointer" }}>Clear</span>
         </div>
+        <p style={{ margin: "0 0 12px", fontSize: "12px", color: "rgba(17,24,39,0.62)" }}>Review your bundle</p>
 
         {/* Discount message */}
         {footerDiscountTextVisibility && (
           <div
             style={{
-              padding: "8px 14px",
-              backgroundColor: successMessageBgColor,
-              color: successMessageTextColor,
+              padding: "8px 10px",
+              backgroundColor: sidebarDiscountBgColor || successMessageBgColor,
+              color: sidebarDiscountTextColor || successMessageTextColor,
               fontSize: `${successMessageFontSize}px`,
               fontWeight: successMessageFontWeight,
               textAlign: "center",
+              borderRadius: "6px",
+              marginBottom: "12px",
               ...(highlightTarget === "footerDiscountProgress" ? HIGHLIGHT_STYLE : {}),
             }}
           >
-            🎉 10% off unlocked!
+            10% off unlocked!
           </div>
         )}
 
         {/* Selected items */}
-        <div style={{ padding: "8px 14px" }}>
-          {SAMPLE_PRODUCTS.map((product, i) => (
+        <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "6px" }}>
+          {highlightTarget === "footer" ? "0 items" : "3 items"}
+        </div>
+        <div style={{ maxHeight: `${Math.min(sidebarProductListMaxHeight, 170)}px`, overflow: "auto" }}>
+          {(highlightTarget === "footer"
+            ? Array.from({ length: sidebarSkeletonRowCount }, (_, i) => ({ name: "", variant: "", qty: 0, skeleton: true, key: `skeleton-${i}` }))
+            : SAMPLE_PRODUCTS.map((product, i) => ({ ...product, skeleton: false, key: `product-${i}` }))
+          ).map((product, i) => (
             <div
-              key={i}
+              key={product.key}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -483,9 +519,11 @@ function SidebarFooterLayout({
               <div style={{ width: "32px", height: "32px", background: "#e5e7eb", borderRadius: "4px", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: "11px", fontWeight: 500, color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {product.name}
+                  {product.skeleton ? <span style={{ display: "block", width: "72%", height: "10px", borderRadius: "4px", background: "#e5e7eb" }} /> : product.name}
                 </div>
-                {product.variant && (
+                {product.skeleton ? (
+                  <span style={{ display: "block", width: "44%", height: "8px", borderRadius: "4px", background: "#e5e7eb", marginTop: "5px" }} />
+                ) : product.variant && (
                   <div style={{ fontSize: "10px", color: "#888" }}>{product.variant}</div>
                 )}
               </div>
@@ -494,71 +532,54 @@ function SidebarFooterLayout({
                   fontSize: "11px",
                   color: footerFinalPriceColor,
                   fontWeight: footerFinalPriceFontWeight,
+                  minWidth: product.skeleton ? "32px" : undefined,
+                  height: product.skeleton ? "10px" : undefined,
+                  borderRadius: product.skeleton ? "4px" : undefined,
+                  background: product.skeleton ? "#e5e7eb" : undefined,
                   ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
                 }}
               >
-                $9.99
+                {product.skeleton ? "" : "$9.99"}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Total row */}
-        {footerPriceVisibility && (
-          <div
-            style={{
-              padding: "8px 14px",
-              borderTop: "1px solid rgba(0,0,0,0.07)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
-            }}
-          >
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Total</span>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-              <span style={{ fontSize: `${footerStrikeFontSize}px`, fontWeight: footerStrikeFontWeight, color: footerStrikePriceColor, textDecoration: "line-through" }}>
-                $29.97
-              </span>
-              <span style={{ fontSize: `${footerFinalPriceFontSize}px`, fontWeight: footerFinalPriceFontWeight, color: footerFinalPriceColor }}>
-                $26.97
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Nav buttons */}
         <div
           style={{
-            padding: "10px 14px",
-            display: "flex",
-            gap: "8px",
+            display: "grid",
+            gridTemplateColumns: "1fr auto",
+            alignItems: "center",
+            gap: "12px",
+            marginTop: "14px",
             ...(highlightTarget === "footerButton" ? HIGHLIGHT_STYLE : {}),
           }}
         >
+          {footerPriceVisibility && (
+            <div
+              style={{
+                ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
+              }}
+            >
+              <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: sidebarCardTextColor }}>Total</span>
+              <div style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
+                <span style={{ fontSize: `${footerStrikeFontSize}px`, fontWeight: footerStrikeFontWeight, color: footerStrikePriceColor, textDecoration: "line-through" }}>
+                  $69.98
+                </span>
+                <span style={{ fontSize: `${footerFinalPriceFontSize}px`, fontWeight: footerFinalPriceFontWeight, color: footerFinalPriceColor }}>
+                  $62.98
+                </span>
+              </div>
+            </div>
+          )}
           <button
             style={{
-              flex: 1,
-              backgroundColor: footerBackButtonBgColor,
-              color: footerBackButtonTextColor,
-              border: `1px solid ${footerBackButtonBorderColor}`,
-              borderRadius: `${footerBackButtonBorderRadius}px`,
-              padding: "8px",
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            Back
-          </button>
-          <button
-            style={{
-              flex: 2,
-              backgroundColor: footerNextButtonBgColor,
-              color: footerNextButtonTextColor,
+              minWidth: "104px",
+              backgroundColor: sidebarButtonBgColor || footerNextButtonBgColor,
+              color: sidebarButtonTextColor || footerNextButtonTextColor,
               border: `1px solid ${footerNextButtonBorderColor}`,
-              borderRadius: `${footerNextButtonBorderRadius}px`,
-              padding: "8px",
+              borderRadius: `${sidebarButtonBorderRadius ?? footerNextButtonBorderRadius}px`,
+              padding: "10px 14px",
               fontSize: "12px",
               fontWeight: 600,
               cursor: "pointer",
@@ -611,6 +632,20 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
+    sidebarCardBgColor,
+    sidebarCardTextColor,
+    sidebarCardBorderColor,
+    sidebarCardBorderWidth,
+    sidebarCardBorderRadius,
+    sidebarCardPadding,
+    sidebarCardWidth,
+    sidebarProductListMaxHeight,
+    sidebarSkeletonRowCount,
+    sidebarDiscountBgColor,
+    sidebarDiscountTextColor,
+    sidebarButtonBgColor,
+    sidebarButtonTextColor,
+    sidebarButtonBorderRadius,
     successMessageFontSize,
     successMessageFontWeight,
     successMessageTextColor,
@@ -664,6 +699,20 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
+    sidebarCardBgColor,
+    sidebarCardTextColor,
+    sidebarCardBorderColor,
+    sidebarCardBorderWidth,
+    sidebarCardBorderRadius,
+    sidebarCardPadding,
+    sidebarCardWidth,
+    sidebarProductListMaxHeight,
+    sidebarSkeletonRowCount,
+    sidebarDiscountBgColor,
+    sidebarDiscountTextColor,
+    sidebarButtonBgColor,
+    sidebarButtonTextColor,
+    sidebarButtonBorderRadius,
     successMessageFontSize,
     successMessageFontWeight,
     successMessageTextColor,
@@ -958,6 +1007,20 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     footerNextButtonBorderColor,
     footerNextButtonBorderRadius,
     footerDiscountTextVisibility,
+    sidebarCardBgColor,
+    sidebarCardTextColor,
+    sidebarCardBorderColor,
+    sidebarCardBorderWidth,
+    sidebarCardBorderRadius,
+    sidebarCardPadding,
+    sidebarCardWidth,
+    sidebarProductListMaxHeight,
+    sidebarSkeletonRowCount,
+    sidebarDiscountBgColor,
+    sidebarDiscountTextColor,
+    sidebarButtonBgColor,
+    sidebarButtonTextColor,
+    sidebarButtonBorderRadius,
     successMessageFontSize,
     successMessageFontWeight,
     successMessageTextColor,
