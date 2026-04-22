@@ -1315,6 +1315,61 @@ class BundleWidgetFullPage {
     </svg>`;
   }
 
+  _getStepSelectedQuantity(stepIndex) {
+    const stepSelections = this.selectedProducts?.[stepIndex] || {};
+    return Object.values(stepSelections).reduce((total, qty) => total + (Number(qty) || 0), 0);
+  }
+
+  _getStepRequiredQuantity(step) {
+    if (!step) return 1;
+
+    const toNumber = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const primaryValue = toNumber(step.conditionValue);
+    const secondaryValue = toNumber(step.conditionValue2);
+    const minQuantity = toNumber(step.minQuantity);
+    const maxQuantity = toNumber(step.maxQuantity);
+    const OPERATORS = ConditionValidator.OPERATORS;
+
+    const targetForOperator = (operator, value) => {
+      if (value == null) return null;
+      switch (operator) {
+        case OPERATORS.GREATER_THAN:
+          return value + 1;
+        case OPERATORS.LESS_THAN:
+          return Math.max(1, value - 1);
+        case OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        case OPERATORS.EQUAL_TO:
+        case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+          return value;
+        default:
+          return null;
+      }
+    };
+
+    const targets = [
+      targetForOperator(step.conditionOperator, primaryValue),
+      targetForOperator(step.conditionOperator2, secondaryValue),
+      minQuantity,
+      maxQuantity,
+    ].filter((value) => value != null && value > 0);
+
+    return targets.length > 0 ? Math.max(...targets) : 1;
+  }
+
+  _getStepProgressRatio(stepIndex) {
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    if (!step) return 0;
+    if (this.isStepCompleted(stepIndex)) return 1;
+
+    const requiredQuantity = this._getStepRequiredQuantity(step);
+    const selectedQuantity = this._getStepSelectedQuantity(stepIndex);
+    return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
+  }
+
   // Create circular icon-based step timeline with connecting lines and three icon states
   createStepTimeline() {
     const timeline = document.createElement('div');
@@ -1388,10 +1443,9 @@ class BundleWidgetFullPage {
       if (index < steps.length - 1) {
         const connectorEl = document.createElement('div');
         connectorEl.className = 'timeline-connector';
-        const isStepCompleted = this.isStepCompleted(index);
         const connectorFill = document.createElement('div');
         connectorFill.className = 'timeline-connector-fill';
-        if (isStepCompleted) connectorFill.style.width = '100%';
+        connectorFill.style.width = `${Math.round(this._getStepProgressRatio(index) * 100)}%`;
         connectorEl.appendChild(connectorFill);
         timeline.appendChild(connectorEl);
       }
