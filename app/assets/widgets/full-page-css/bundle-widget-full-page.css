@@ -1143,7 +1143,7 @@ var(--bundle-product-card-width,
   width:100%;
   min-width:unset;
   max-width:100%;
-  height:auto;
+  height:100%;
   background:var(--bundle-product-card-bg,
 #F8F8F8);
   border-radius:var(--bundle-product-card-border-radius,
@@ -1153,7 +1153,7 @@ var(--bundle-product-card-width,
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   box-sizing:border-box;
   transition:transform var(--bundle-card-transition-duration,
 200ms) ease,
@@ -1295,7 +1295,7 @@ cover)}
   font-weight:var(--bundle-product-card-font-weight,
 600);
   text-align:center;
-  margin-bottom:-14px;
+  margin-bottom:0;
   overflow:hidden;
   display:-webkit-box;
   -webkit-line-clamp:2;
@@ -1311,30 +1311,35 @@ cover)}
   min-height:calc(1.4em * 2)}
 
 .product-price-row {
-  margin:12px 0;
+  margin:12px 0 10px;
   text-align:center;
   flex-shrink:0;
   position:relative;
   z-index:15;
   display:var(--bundle-product-price-display,
-block);
+flex);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  min-height:52px;
   white-space:nowrap}
 
 .product-price-strike {
-  display:inline;
+  display:block;
   color:var(--bundle-product-strike-price-color,
 #9CA3AF);
   font-size:13px;
   font-weight:var(--bundle-product-strike-price-font-weight,
 500);
   text-decoration:line-through;
-  margin-right:6px;
+  margin-right:0;
   font-family:inherit}
 
 @media (min-width:640px) {
   .product-price-strike {
   font-size:14px;
-  margin-right:8px}
+  margin-right:0}
 }
 
 @media (min-width:1024px) {
@@ -1344,7 +1349,7 @@ block);
 }
 
 .product-price {
-  display:inline;
+  display:block;
   color:var(--bundle-product-final-price-color,
 #000000);
   font-size:16px;
@@ -1367,7 +1372,7 @@ block);
 
 .product-spacer {
   flex:1;
-  min-height:4px}
+  min-height:8px}
 
 .product-quantity-wrapper {
   display:none;
@@ -1448,7 +1453,8 @@ rgba(0,
   display:flex;
   align-items:center;
   justify-content:flex-end;
-  transition:width 180ms ease}
+  transition:width 180ms ease;
+  min-height:48px}
 
 .product-card-action.is-expanded {
   width:min(180px,
