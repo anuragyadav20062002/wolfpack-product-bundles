@@ -956,7 +956,10 @@ class BundleWidgetFullPage {
   }
 
   // Mobile sticky bottom bar + slide-up sheet (replaces sidebar on < 768px)
-  _renderMobileBottomBar() {
+  _renderMobileBottomBar({ preserveOpen = false } = {}) {
+    const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
+    const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
     document.querySelector('.fpb-mobile-backdrop')?.remove();
@@ -1033,6 +1036,12 @@ class BundleWidgetFullPage {
     document.body.appendChild(backdrop);
     document.body.appendChild(sheet);
     document.body.appendChild(bar);
+
+    if (wasOpen) {
+      sheet.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
+    }
   }
 
   _populateMobileSheet(sheet) {
@@ -1204,6 +1213,9 @@ class BundleWidgetFullPage {
       </div>
     `;
     panel.appendChild(totalSection);
+
+    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
+    if (isMobileSheet) return;
 
     // Navigation buttons
     const navSection = document.createElement('div');
@@ -3841,6 +3853,9 @@ class BundleWidgetFullPage {
       if (layout === 'footer_side') {
         const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
         this.renderSidePanel(sidePanel);
+        if (window.matchMedia?.('(max-width: 767px)').matches) {
+          this._renderMobileBottomBar({ preserveOpen: true });
+        }
       } else {
         this.renderFullPageFooter();
       }
