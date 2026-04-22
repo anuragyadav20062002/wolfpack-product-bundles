@@ -27,7 +27,8 @@ import type { WebhookProcessResult } from "../types";
  */
 export async function handleAppUninstalled(
   shopDomain: string,
-  payload: any
+  payload: any,
+  currentWebhookEventId?: string
 ): Promise<WebhookProcessResult> {
   try {
     AppLogger.info("Processing app uninstall", {
@@ -90,7 +91,10 @@ export async function handleAppUninstalled(
     // Step 6: Delete webhook events
     try {
       await db.webhookEvent.deleteMany({
-        where: { shopDomain },
+        where: {
+          shopDomain,
+          ...(currentWebhookEventId ? { id: { not: currentWebhookEventId } } : {})
+        },
       });
     } catch (e) {
       AppLogger.warn("Failed to delete webhook events", {
