@@ -3356,6 +3356,7 @@ class BundleWidgetFullPage {
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
 
     const header = document.createElement('div');
     header.className = 'side-panel-header';
@@ -3405,19 +3406,15 @@ class BundleWidgetFullPage {
       }
     }
 
-    if (allSelectedProducts.length > 0) {
-      const countLabel = document.createElement('div');
-      countLabel.className = 'side-panel-item-count';
-      countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-      panel.appendChild(countLabel);
-    }
+    const countLabel = document.createElement('div');
+    countLabel.className = 'side-panel-item-count';
+    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    panel.appendChild(countLabel);
 
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
 
-    if (allSelectedProducts.length === 0) {
-      productsContainer.innerHTML = '<div class="side-panel-empty">No products selected yet</div>';
-    } else {
+    if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
@@ -3467,19 +3464,14 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    const skeletonContainer = document.createElement('div');
-    skeletonContainer.className = 'side-panel-skeleton-slots';
-    const paidStepCount = this.paidSteps.reduce((sum, s) =>
-      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
-    const filledPaidCount = allSelectedProducts.filter(p => !p.isFreeGift && !p.isDefault).length;
-    this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
-    panel.appendChild(skeletonContainer);
+    if (!isMobileSheet && allSelectedProducts.length === 0) {
+      const skeletonContainer = document.createElement('div');
+      skeletonContainer.className = 'side-panel-skeleton-slots';
+      this._renderSidebarProductSkeletons(skeletonContainer);
+      panel.appendChild(skeletonContainer);
+    }
 
     this._renderFreeGiftSection(panel);
-
-    const divider = document.createElement('div');
-    divider.className = 'side-panel-divider';
-    panel.appendChild(divider);
 
     const totalSection = document.createElement('div');
     totalSection.className = 'side-panel-total';
@@ -3490,10 +3482,14 @@ class BundleWidgetFullPage {
         <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
-    panel.appendChild(totalSection);
+    if (isMobileSheet) {
+      panel.appendChild(totalSection);
+      return;
+    }
 
-    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
-    if (isMobileSheet) return;
+    const actionSection = document.createElement('div');
+    actionSection.className = 'side-panel-action-container';
+    actionSection.appendChild(totalSection);
 
     const navSection = document.createElement('div');
     navSection.className = 'side-panel-nav';
@@ -3525,22 +3521,9 @@ class BundleWidgetFullPage {
       }
     });
 
-    const backBtn = document.createElement('button');
-    backBtn.className = 'side-panel-btn side-panel-btn-back';
-    backBtn.textContent = 'Back';
-    if (this.currentStepIndex === 0) backBtn.disabled = true;
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex--;
-        this.renderFullPageLayoutWithSidebar();
-      }
-    });
-
     navSection.appendChild(nextBtn);
-    navSection.appendChild(backBtn);
-    panel.appendChild(navSection);
+    actionSection.appendChild(navSection);
+    panel.appendChild(actionSection);
   }
 
   _escapeHTML(str) {
@@ -4911,17 +4894,20 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
-  _renderSkeletonSlots(container, filledCount, totalRequired) {
-    const remaining = Math.max(0, totalRequired - filledCount);
-    for (let i = 0; i < remaining; i++) {
+  _renderSidebarProductSkeletons(container) {
+    for (let i = 0; i < 5; i++) {
       const slot = document.createElement('div');
-      slot.className = 'side-panel-skeleton-slot';
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot';
       slot.innerHTML = `
-        <div class="side-panel-skeleton-thumb"></div>
-        <div class="side-panel-skeleton-lines">
-          <div class="side-panel-skeleton-line line-name"></div>
-          <div class="side-panel-skeleton-line line-price"></div>
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
         </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+        </div>
+        <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
       `;
       container.appendChild(slot);
     }
