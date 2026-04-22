@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 
-const RUST_FUNCTION_HANDLE = 'bundle-cart-transform-rs';
+const RUST_FUNCTION_TITLE = 'Bundle Cart Transform (Rust)';
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin } = await requireAdminSession(request);
@@ -20,7 +20,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         edges {
           node {
             id
-            handle
+            title
+            apiType
+            description
           }
         }
       }
@@ -35,7 +37,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const functions = data.data?.shopifyFunctions?.edges || [];
 
     // Resolve the live Rust function ID — avoids hardcoding a UUID that changes on deploy
-    const rustFn = functions.find((e: any) => e.node.handle === RUST_FUNCTION_HANDLE);
+    const rustFn = functions.find((e: any) => {
+      const fn = e.node;
+      return fn.apiType === 'cart_transform' && (
+        fn.title === RUST_FUNCTION_TITLE ||
+        fn.description?.includes('Rust/WASM port')
+      );
+    });
     const rustFunctionId = rustFn?.node?.id ?? null;
 
     const activeTransform = rustFunctionId

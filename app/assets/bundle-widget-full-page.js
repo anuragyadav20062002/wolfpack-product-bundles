@@ -1188,32 +1188,6 @@ class BundleWidgetFullPage {
     // Free gift section (locked or unlocked)
     this._renderFreeGiftSection(panel);
 
-    // Sidebar upsell slot — below items list, above total
-    // Shows discount progress incentive when pricing is enabled and a rule applies
-    if (this.selectedBundle?.pricing?.enabled && (nextRule || discountInfo.hasDiscount)) {
-      const upsellVars = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      let upsellMsg = '';
-      if (discountInfo.hasDiscount) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          upsellVars
-        );
-      } else if (nextRule) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-          upsellVars
-        );
-      }
-      if (upsellMsg) {
-        const upsellSlot = document.createElement('div');
-        upsellSlot.className = `sidebar-upsell-slot${discountInfo.hasDiscount ? ' sidebar-upsell-slot--reached' : ''}`;
-        upsellSlot.innerHTML = upsellMsg;
-        panel.appendChild(upsellSlot);
-      }
-    }
-
     // Divider
     const divider = document.createElement('div');
     divider.className = 'side-panel-divider';
@@ -1230,13 +1204,6 @@ class BundleWidgetFullPage {
       </div>
     `;
     panel.appendChild(totalSection);
-
-    // Discount progress banner — above Add to Cart button
-    const sidebarBanner = this._renderDiscountProgressBanner();
-    if (sidebarBanner) {
-      sidebarBanner.classList.add('discount-progress-banner--sidebar');
-      panel.appendChild(sidebarBanner);
-    }
 
     // Navigation buttons
     const navSection = document.createElement('div');
@@ -4729,4 +4696,3 @@ function initializeFullPageWidget() {
     }
   });
 }
-

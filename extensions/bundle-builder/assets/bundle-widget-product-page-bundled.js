@@ -262,14 +262,6 @@ class CurrencyManager {
     };
   }
 
-  /**
-   * Convert an amount from shop base currency to the customer's display currency,
-   * then format it. Use this everywhere a price is rendered to the customer.
-   *
-   * @param {number} amount  Price in shop base currency cents
-   * @param {object} currencyInfo  Result of getCurrencyInfo()
-   * @returns {string}  Formatted price string in the display currency
-   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -3070,7 +3062,7 @@ class BundleWidgetProductPage {
         </div>
       `).join('')}
       <style>
-        /* Skeleton loading state - solid pulsating cards */
+
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
@@ -3086,7 +3078,6 @@ class BundleWidgetProductPage {
           box-shadow: none;
         }
 
-        /* Full card pulsating effect */
         .skeleton-card-content {
           position: absolute;
           top: 0;

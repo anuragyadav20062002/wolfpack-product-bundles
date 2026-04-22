@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.6.1
- * Built   : 2026-04-21
+ * Built   : 2026-04-22
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3434,30 +3434,6 @@ class BundleWidgetFullPage {
 
     this._renderFreeGiftSection(panel);
 
-    if (this.selectedBundle?.pricing?.enabled && (nextRule || discountInfo.hasDiscount)) {
-      const upsellVars = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      let upsellMsg = '';
-      if (discountInfo.hasDiscount) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          upsellVars
-        );
-      } else if (nextRule) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-          upsellVars
-        );
-      }
-      if (upsellMsg) {
-        const upsellSlot = document.createElement('div');
-        upsellSlot.className = `sidebar-upsell-slot${discountInfo.hasDiscount ? ' sidebar-upsell-slot--reached' : ''}`;
-        upsellSlot.innerHTML = upsellMsg;
-        panel.appendChild(upsellSlot);
-      }
-    }
-
     const divider = document.createElement('div');
     divider.className = 'side-panel-divider';
     panel.appendChild(divider);
@@ -3472,12 +3448,6 @@ class BundleWidgetFullPage {
       </div>
     `;
     panel.appendChild(totalSection);
-
-    const sidebarBanner = this._renderDiscountProgressBanner();
-    if (sidebarBanner) {
-      sidebarBanner.classList.add('discount-progress-banner--sidebar');
-      panel.appendChild(sidebarBanner);
-    }
 
     const navSection = document.createElement('div');
     navSection.className = 'side-panel-nav';
