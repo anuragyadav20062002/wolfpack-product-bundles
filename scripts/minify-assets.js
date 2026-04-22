@@ -3,9 +3,9 @@
 /**
  * Asset minification script for Shopify extension files.
  *
- * Operates in-place: reads each file, minifies it, and writes the result
- * back to the same path. The minified file IS the committed file — there is
- * no separate source directory for CSS.
+ * CSS source files can be separate from their deploy targets. When a CSS entry
+ * has { source, target }, the source remains readable and the minified output
+ * is written to the Shopify extension asset target.
  *
  * CSS minification:
  *   - Remove all block comments (/* ... *\/)
@@ -43,7 +43,10 @@ const ROOT_DIR = join(__dirname, '..');
 // ---------------------------------------------------------------------------
 
 const CSS_FILES = [
-  join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page.css'),
+  {
+    source: join(ROOT_DIR, 'app/assets/widgets/full-page-css/bundle-widget-full-page.css'),
+    target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page.css'),
+  },
   join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
   join(ROOT_DIR, 'extensions/bundle-builder/assets/modal-discount-bar.css'),
 ];
@@ -324,19 +327,22 @@ function minifyJS(js) {
 /**
  * Process a single file: read → minify → write → return result.
  *
- * @param {string} filePath
+ * @param {string | { source: string, target: string }} fileEntry
  * @param {'css'|'js'} type
  * @returns {FileResult}
  */
-function processFile(filePath, type) {
-  const label = filePath.replace(ROOT_DIR + '/', '');
+function processFile(fileEntry, type) {
+  const sourcePath = typeof fileEntry === 'string' ? fileEntry : fileEntry.source;
+  const targetPath = typeof fileEntry === 'string' ? fileEntry : fileEntry.target;
+  const label = targetPath.replace(ROOT_DIR + '/', '');
+  const sourceLabel = sourcePath.replace(ROOT_DIR + '/', '');
 
-  if (!existsSync(filePath)) {
-    console.warn(`  [SKIP] ${label} — file not found`);
+  if (!existsSync(sourcePath)) {
+    console.warn(`  [SKIP] ${sourceLabel} — file not found`);
     return { file: label, beforeBytes: 0, afterBytes: 0, skipped: true, reason: 'not found' };
   }
 
-  const original = readFileSync(filePath, 'utf-8');
+  const original = readFileSync(sourcePath, 'utf-8');
   const beforeBytes = Buffer.byteLength(original, 'utf-8');
 
   let minified;
@@ -348,7 +354,7 @@ function processFile(filePath, type) {
 
   const afterBytes = Buffer.byteLength(minified, 'utf-8');
 
-  writeFileSync(filePath, minified, 'utf-8');
+  writeFileSync(targetPath, minified, 'utf-8');
 
   // Warn if CSS exceeds Shopify's limit
   if (type === 'css' && afterBytes > CSS_SIZE_LIMIT_BYTES) {

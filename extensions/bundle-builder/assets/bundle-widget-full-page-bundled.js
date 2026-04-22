@@ -1067,6 +1067,7 @@ class ComponentGenerator {
     const variantSelectorHtml = options.variantSelectorHtml !== undefined
       ? options.variantSelectorHtml
       : (isExpandedVariantCard ? '' : this.renderVariantSelector(product));
+    const actionMode = options.actionMode || 'default';
 
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
@@ -1080,6 +1081,14 @@ class ComponentGenerator {
     };
 
     const renderBottomAction = () => {
+      if (actionMode === 'expandingQuantity') {
+        return `
+          <div class="product-card-action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`}
+          </div>
+        `;
+      }
+
       if (isSelected) {
         return renderInlineQuantityControls();
       }
@@ -3681,6 +3690,7 @@ class BundleWidgetFullPage {
         connectorEl.className = 'timeline-connector';
         const connectorFill = document.createElement('div');
         connectorFill.className = 'timeline-connector-fill';
+        connectorFill.style.display = 'block';
         connectorFill.style.width = `${Math.round(this._getStepProgressRatio(index) * 100)}%`;
         connectorEl.appendChild(connectorFill);
         timeline.appendChild(connectorEl);
@@ -4216,7 +4226,7 @@ class BundleWidgetFullPage {
       product,
       currentQuantity,
       currencyInfo,
-      { variantSelectorHtml }
+      { variantSelectorHtml, actionMode: 'expandingQuantity' }
     );
 
     const wrapper = document.createElement('div');
@@ -5976,25 +5986,32 @@ class BundleWidgetFullPage {
     if (!productCard) return;
 
     const contentWrapper = productCard.querySelector('.product-content-wrapper');
-    if (!contentWrapper) return;
+    const actionWrapper = productCard.querySelector('.product-card-action');
+    if (!contentWrapper && !actionWrapper) return;
 
+    const actionContainer = actionWrapper || contentWrapper;
     const existingAddBtn = productCard.querySelector('.product-add-btn');
     const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
     let selectedOverlay = productCard.querySelector('.selected-overlay');
 
     if (quantity > 0) {
-
-      if (existingAddBtn) {
-        existingAddBtn.remove();
+      if (actionWrapper) {
+        actionWrapper.classList.add('is-expanded');
       }
 
       if (existingQuantityControls) {
+        if (existingAddBtn) {
+          existingAddBtn.remove();
+        }
 
         const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
         if (qtyDisplay) {
           qtyDisplay.textContent = quantity;
         }
       } else {
+        if (existingAddBtn) {
+          existingAddBtn.remove();
+        }
 
         const quantityControls = document.createElement('div');
         quantityControls.className = 'inline-quantity-controls';
@@ -6003,7 +6020,7 @@ class BundleWidgetFullPage {
           <span class="inline-qty-display">${quantity}</span>
           <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
         `;
-        contentWrapper.appendChild(quantityControls);
+        actionContainer.appendChild(quantityControls);
 
         const increaseBtn = quantityControls.querySelector('.qty-increase');
         const decreaseBtn = quantityControls.querySelector('.qty-decrease');
@@ -6037,6 +6054,9 @@ class BundleWidgetFullPage {
       productCard.classList.add('selected');
 
     } else {
+      if (actionWrapper) {
+        actionWrapper.classList.remove('is-expanded');
+      }
 
       if (existingQuantityControls) {
         existingQuantityControls.remove();
@@ -6047,7 +6067,7 @@ class BundleWidgetFullPage {
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
         addButton.textContent = '+';
-        contentWrapper.appendChild(addButton);
+        actionContainer.appendChild(addButton);
 
         addButton.addEventListener('click', (e) => {
           e.stopPropagation();

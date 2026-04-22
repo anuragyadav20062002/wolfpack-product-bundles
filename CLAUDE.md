@@ -416,20 +416,30 @@ extensions/bundle-builder/assets/
 5. Commit BOTH source files AND bundled (minified) files
 
 # After making CSS-only changes:
-1. Edit extensions/bundle-builder/assets/*.css directly
-2. Run: npm run minify:assets css    # minifies CSS in-place
-3. Commit the minified CSS file
+1. For full-page CSS, edit app/assets/widgets/full-page-css/bundle-widget-full-page.css
+2. Run: npm run minify:assets css    # writes minified CSS to the extension asset
+3. Commit BOTH the raw source CSS and generated minified extension CSS
 ```
 
 ---
 
 ## 🗜️ Asset Minification
 
-### MANDATORY: Always commit minified output, never raw unminified files
+### MANDATORY: Edit raw full-page CSS source, then commit generated minified output
 
-The minifier (`scripts/minify-assets.js`) runs **in-place** — it reads each file,
-strips comments and collapses whitespace, and writes the result back to the **same path**.
-There is no separate source directory for CSS; the extension asset file IS the source.
+For full-page widget CSS, always modify the raw unminified source file:
+
+- `app/assets/widgets/full-page-css/bundle-widget-full-page.css`
+
+Then run `npm run minify:assets css`. The build/minify script writes the deploy-ready
+minified output to:
+
+- `extensions/bundle-builder/assets/bundle-widget-full-page.css`
+
+The API and storefront must call the minified extension asset only. Do not point API
+preview code, Liquid, or storefront code at the raw source CSS file.
+
+Other CSS targets that do not yet have a raw source file are still minified in place.
 
 **When to run the minifier:**
 
@@ -442,8 +452,8 @@ There is no separate source directory for CSS; the extension asset file IS the s
 
 **What gets minified:**
 
-CSS files (in `extensions/bundle-builder/assets/`):
-- `bundle-widget-full-page.css`
+CSS files:
+- `app/assets/widgets/full-page-css/bundle-widget-full-page.css` → `extensions/bundle-builder/assets/bundle-widget-full-page.css`
 - `bundle-widget.css`
 - `modal-discount-bar.css`
 
