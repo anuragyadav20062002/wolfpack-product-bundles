@@ -48,6 +48,32 @@ import {
  * Processes Pub/Sub messages from Google Cloud
  */
 export class WebhookProcessor {
+  private static async markWebhookEvent(
+    webhookEventId: string,
+    data: {
+      processed: boolean;
+      processedAt?: Date | null;
+      error?: string | null;
+    },
+    context: {
+      topic?: string;
+      shopDomain?: string;
+      webhookId?: string;
+    }
+  ): Promise<void> {
+    const result = await db.webhookEvent.updateMany({
+      where: { id: webhookEventId },
+      data
+    });
+
+    if (result.count === 0) {
+      AppLogger.info("Webhook event row was already removed before final status update", {
+        component: "webhook-processor",
+        operation: "markWebhookEvent"
+      }, context);
+    }
+  }
+
   /**
    * Process a Pub/Sub message
    * Implements idempotency and routes to appropriate handler
@@ -156,7 +182,7 @@ export class WebhookProcessor {
 
         case "app/uninstalled":
         case "APP_UNINSTALLED":
-          result = await handleAppUninstalled(shopDomain, payload);
+          result = await handleAppUninstalled(shopDomain, payload, webhookEvent.id);
           break;
 
         case "app/scopes_update":
@@ -189,23 +215,25 @@ export class WebhookProcessor {
       // SAFETY: Only mark webhook as processed if handler succeeded
       // Failed webhooks remain unprocessed for potential retry
       if (result.success) {
-        await db.webhookEvent.update({
-          where: { id: webhookEvent.id },
-          data: {
+        await this.markWebhookEvent(
+          webhookEvent.id,
+          {
             processed: true,
             processedAt: new Date(),
             error: null
-          }
-        });
+          },
+          { topic, shopDomain, webhookId }
+        );
       } else {
         // Log failure but don't mark as processed
-        await db.webhookEvent.update({
-          where: { id: webhookEvent.id },
-          data: {
+        await this.markWebhookEvent(
+          webhookEvent.id,
+          {
             processed: false,
             error: result.error
-          }
-        });
+          },
+          { topic, shopDomain, webhookId }
+        );
       }
 
       return result;
