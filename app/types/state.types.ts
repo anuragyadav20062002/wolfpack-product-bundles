@@ -164,6 +164,7 @@ export interface FooterSettings {
   sidebarCardWidth: number;
   sidebarStickyOffset: number;
   sidebarProductListMaxHeight: number;
+  sidebarSkeletonRowCount: number;
   sidebarDiscountBgColor: string;
   sidebarDiscountTextColor: string;
   sidebarButtonBgColor: string;

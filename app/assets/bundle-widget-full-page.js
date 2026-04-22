@@ -1103,6 +1103,7 @@ class BundleWidgetFullPage {
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
 
     // Header: "Your Bundle" + Clear
     const header = document.createElement('div');
@@ -1216,14 +1217,12 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    // Skeleton slots for unfilled paid step positions
-    const skeletonContainer = document.createElement('div');
-    skeletonContainer.className = 'side-panel-skeleton-slots';
-    const paidStepCount = this.paidSteps.reduce((sum, s) =>
-      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
-    const filledPaidCount = allSelectedProducts.filter(p => !p.isFreeGift && !p.isDefault).length;
-    this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
-    panel.appendChild(skeletonContainer);
+    if (!isMobileSheet && allSelectedProducts.length === 0) {
+      const skeletonContainer = document.createElement('div');
+      skeletonContainer.className = 'side-panel-skeleton-slots';
+      this._renderSidebarProductSkeletons(skeletonContainer);
+      panel.appendChild(skeletonContainer);
+    }
 
     // Free gift section (locked or unlocked)
     this._renderFreeGiftSection(panel);
@@ -1238,7 +1237,6 @@ class BundleWidgetFullPage {
         <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
-    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
     if (isMobileSheet) {
       panel.appendChild(totalSection);
       return;
@@ -2792,18 +2790,21 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
-  // Render shimmer skeleton slots for unfilled positions
-  _renderSkeletonSlots(container, filledCount, totalRequired) {
-    const remaining = Math.max(0, totalRequired - filledCount);
-    for (let i = 0; i < remaining; i++) {
+  // Render empty-summary skeleton rows that match selected product rows.
+  _renderSidebarProductSkeletons(container) {
+    for (let i = 0; i < 5; i++) {
       const slot = document.createElement('div');
-      slot.className = 'side-panel-skeleton-slot';
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot';
       slot.innerHTML = `
-        <div class="side-panel-skeleton-thumb"></div>
-        <div class="side-panel-skeleton-lines">
-          <div class="side-panel-skeleton-line line-name"></div>
-          <div class="side-panel-skeleton-line line-price"></div>
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
         </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+        </div>
+        <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
       `;
       container.appendChild(slot);
     }

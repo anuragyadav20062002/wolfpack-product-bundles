@@ -40,6 +40,7 @@ interface BundleFooterPreviewProps {
   sidebarCardPadding: number;
   sidebarCardWidth: number;
   sidebarProductListMaxHeight: number;
+  sidebarSkeletonRowCount: number;
   sidebarDiscountBgColor: string;
   sidebarDiscountTextColor: string;
   sidebarButtonBgColor: string;
@@ -411,6 +412,7 @@ function SidebarFooterLayout({
   sidebarCardPadding,
   sidebarCardWidth,
   sidebarProductListMaxHeight,
+  sidebarSkeletonRowCount,
   sidebarDiscountBgColor,
   sidebarDiscountTextColor,
   sidebarButtonBgColor,
@@ -496,11 +498,16 @@ function SidebarFooterLayout({
         )}
 
         {/* Selected items */}
-        <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "6px" }}>3 items</div>
+        <div style={{ fontSize: "11px", color: "#6B7280", marginBottom: "6px" }}>
+          {highlightTarget === "footer" ? "0 items" : "3 items"}
+        </div>
         <div style={{ maxHeight: `${Math.min(sidebarProductListMaxHeight, 170)}px`, overflow: "auto" }}>
-          {SAMPLE_PRODUCTS.map((product, i) => (
+          {(highlightTarget === "footer"
+            ? Array.from({ length: sidebarSkeletonRowCount }, (_, i) => ({ name: "", variant: "", qty: 0, skeleton: true, key: `skeleton-${i}` }))
+            : SAMPLE_PRODUCTS.map((product, i) => ({ ...product, skeleton: false, key: `product-${i}` }))
+          ).map((product, i) => (
             <div
-              key={i}
+              key={product.key}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -512,9 +519,11 @@ function SidebarFooterLayout({
               <div style={{ width: "32px", height: "32px", background: "#e5e7eb", borderRadius: "4px", flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: "11px", fontWeight: 500, color: "#333", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {product.name}
+                  {product.skeleton ? <span style={{ display: "block", width: "72%", height: "10px", borderRadius: "4px", background: "#e5e7eb" }} /> : product.name}
                 </div>
-                {product.variant && (
+                {product.skeleton ? (
+                  <span style={{ display: "block", width: "44%", height: "8px", borderRadius: "4px", background: "#e5e7eb", marginTop: "5px" }} />
+                ) : product.variant && (
                   <div style={{ fontSize: "10px", color: "#888" }}>{product.variant}</div>
                 )}
               </div>
@@ -523,10 +532,14 @@ function SidebarFooterLayout({
                   fontSize: "11px",
                   color: footerFinalPriceColor,
                   fontWeight: footerFinalPriceFontWeight,
+                  minWidth: product.skeleton ? "32px" : undefined,
+                  height: product.skeleton ? "10px" : undefined,
+                  borderRadius: product.skeleton ? "4px" : undefined,
+                  background: product.skeleton ? "#e5e7eb" : undefined,
                   ...(highlightTarget === "footerPrice" ? HIGHLIGHT_STYLE : {}),
                 }}
               >
-                $9.99
+                {product.skeleton ? "" : "$9.99"}
               </span>
             </div>
           ))}
@@ -627,6 +640,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     sidebarCardPadding,
     sidebarCardWidth,
     sidebarProductListMaxHeight,
+    sidebarSkeletonRowCount,
     sidebarDiscountBgColor,
     sidebarDiscountTextColor,
     sidebarButtonBgColor,
@@ -693,6 +707,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     sidebarCardPadding,
     sidebarCardWidth,
     sidebarProductListMaxHeight,
+    sidebarSkeletonRowCount,
     sidebarDiscountBgColor,
     sidebarDiscountTextColor,
     sidebarButtonBgColor,
@@ -1000,6 +1015,7 @@ export function BundleFooterPreview(props: BundleFooterPreviewProps) {
     sidebarCardPadding,
     sidebarCardWidth,
     sidebarProductListMaxHeight,
+    sidebarSkeletonRowCount,
     sidebarDiscountBgColor,
     sidebarDiscountTextColor,
     sidebarButtonBgColor,

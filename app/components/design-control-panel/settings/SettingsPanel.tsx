@@ -68,6 +68,7 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "sidebarCardBgColor", "sidebarCardTextColor", "sidebarCardBorderColor",
     "sidebarCardBorderWidth", "sidebarCardBorderRadius", "sidebarCardPadding",
     "sidebarCardWidth", "sidebarStickyOffset", "sidebarProductListMaxHeight",
+    "sidebarSkeletonRowCount",
     "sidebarDiscountBgColor", "sidebarDiscountTextColor",
     "sidebarButtonBgColor", "sidebarButtonTextColor", "sidebarButtonBorderRadius",
   ],

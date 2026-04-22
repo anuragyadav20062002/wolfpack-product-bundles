@@ -142,6 +142,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-sidebar-card-width: ${s.sidebarCardWidth ?? 360}px;
   --bundle-sidebar-sticky-offset: ${s.sidebarStickyOffset ?? 85}px;
   --bundle-sidebar-products-max-height: ${s.sidebarProductListMaxHeight ?? 320}px;
+  --bundle-sidebar-skeleton-row-4-display: ${(s.sidebarSkeletonRowCount ?? 3) >= 4 ? 'flex' : 'none'};
+  --bundle-sidebar-skeleton-row-5-display: ${(s.sidebarSkeletonRowCount ?? 3) >= 5 ? 'flex' : 'none'};
   --bundle-sidebar-discount-bg: ${s.sidebarDiscountBgColor || '#F3F7F3'};
   --bundle-sidebar-discount-text: ${s.sidebarDiscountTextColor || '#2E7D32'};
   --bundle-sidebar-button-bg: ${s.sidebarButtonBgColor || s.footerNextButtonBgColor || globalPrimaryButton};

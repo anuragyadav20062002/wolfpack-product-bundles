@@ -126,6 +126,7 @@ export interface CSSDesignSettings {
   sidebarCardWidth?: number;
   sidebarStickyOffset?: number;
   sidebarProductListMaxHeight?: number;
+  sidebarSkeletonRowCount?: number;
   sidebarDiscountBgColor?: string;
   sidebarDiscountTextColor?: string;
   sidebarButtonBgColor?: string;

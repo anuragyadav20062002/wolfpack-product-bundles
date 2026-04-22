@@ -30,6 +30,7 @@ const FOOTER_KEYS = [
   "sidebarCardBgColor", "sidebarCardTextColor", "sidebarCardBorderColor",
   "sidebarCardBorderWidth", "sidebarCardBorderRadius", "sidebarCardPadding",
   "sidebarCardWidth", "sidebarStickyOffset", "sidebarProductListMaxHeight",
+  "sidebarSkeletonRowCount",
   "sidebarDiscountBgColor", "sidebarDiscountTextColor",
   "sidebarButtonBgColor", "sidebarButtonTextColor", "sidebarButtonBorderRadius",
 ] as const;

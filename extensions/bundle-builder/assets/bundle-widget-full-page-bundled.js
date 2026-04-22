@@ -3356,6 +3356,7 @@ class BundleWidgetFullPage {
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
 
     const header = document.createElement('div');
     header.className = 'side-panel-header';
@@ -3463,13 +3464,12 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    const skeletonContainer = document.createElement('div');
-    skeletonContainer.className = 'side-panel-skeleton-slots';
-    const paidStepCount = this.paidSteps.reduce((sum, s) =>
-      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
-    const filledPaidCount = allSelectedProducts.filter(p => !p.isFreeGift && !p.isDefault).length;
-    this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
-    panel.appendChild(skeletonContainer);
+    if (!isMobileSheet && allSelectedProducts.length === 0) {
+      const skeletonContainer = document.createElement('div');
+      skeletonContainer.className = 'side-panel-skeleton-slots';
+      this._renderSidebarProductSkeletons(skeletonContainer);
+      panel.appendChild(skeletonContainer);
+    }
 
     this._renderFreeGiftSection(panel);
 
@@ -3482,7 +3482,6 @@ class BundleWidgetFullPage {
         <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
-    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
     if (isMobileSheet) {
       panel.appendChild(totalSection);
       return;
@@ -4895,17 +4894,20 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
-  _renderSkeletonSlots(container, filledCount, totalRequired) {
-    const remaining = Math.max(0, totalRequired - filledCount);
-    for (let i = 0; i < remaining; i++) {
+  _renderSidebarProductSkeletons(container) {
+    for (let i = 0; i < 5; i++) {
       const slot = document.createElement('div');
-      slot.className = 'side-panel-skeleton-slot';
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot';
       slot.innerHTML = `
-        <div class="side-panel-skeleton-thumb"></div>
-        <div class="side-panel-skeleton-lines">
-          <div class="side-panel-skeleton-line line-name"></div>
-          <div class="side-panel-skeleton-line line-price"></div>
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
         </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+        </div>
+        <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
       `;
       container.appendChild(slot);
     }

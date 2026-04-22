@@ -1,4 +1,4 @@
-import { BlockStack, Text, Divider, RangeSlider } from "@shopify/polaris";
+import { BlockStack, Text, Divider, RangeSlider, Select } from "@shopify/polaris";
 import { ColorPicker } from "../common/ColorPicker";
 import type { SettingsComponentProps } from "./types";
 
@@ -122,6 +122,17 @@ export function FooterSettings({ settings, onUpdate }: SettingsComponentProps) {
         min={180}
         max={520}
         output
+      />
+
+      <Select
+        label="Empty Summary Skeleton Rows"
+        value={String(settings.sidebarSkeletonRowCount)}
+        options={[
+          { label: "3 rows", value: "3" },
+          { label: "4 rows", value: "4" },
+          { label: "5 rows", value: "5" },
+        ]}
+        onChange={(value) => onUpdate("sidebarSkeletonRowCount", Number(value))}
       />
 
       <ColorPicker
