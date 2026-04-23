@@ -47,7 +47,10 @@ const CSS_FILES = [
     source: join(ROOT_DIR, 'app/assets/widgets/full-page-css/bundle-widget-full-page.css'),
     target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page.css'),
   },
-  join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
+  {
+    source: join(ROOT_DIR, 'app/assets/widgets/product-page-css/bundle-widget.css'),
+    target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
+  },
   join(ROOT_DIR, 'extensions/bundle-builder/assets/modal-discount-bar.css'),
 ];
 

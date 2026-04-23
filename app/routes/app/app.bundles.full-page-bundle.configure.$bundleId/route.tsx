@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../../../lib/logger";
+import { slugify, validateSlug } from "../../../lib/slug-utils";
 
 // Note: Using Polaris Checkbox component for toggle functionality
 // Polaris React v12 doesn't have a dedicated Switch component
@@ -86,6 +87,7 @@ import {
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
   handleCreatePreviewPage,
+  handleRenamePageSlug,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
@@ -240,7 +242,19 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "checkFullPageTemplate":
         return await handleCheckFullPageTemplate(admin, session);
       case "validateWidgetPlacement":
-        return await handleValidateWidgetPlacement(admin, session, bundleId);
+        return await handleValidateWidgetPlacement(
+          admin,
+          session,
+          bundleId,
+          String(formData.get("desiredSlug") || "")
+        );
+      case "renamePageSlug":
+        return await handleRenamePageSlug(
+          admin,
+          session,
+          bundleId,
+          String(formData.get("newSlug") || "")
+        );
       case "createPreviewPage":
         return await handleCreatePreviewPage(admin, session, bundleId);
       case "syncBundle":
@@ -387,6 +401,32 @@ export default function ConfigureBundleFlow() {
     originalValuesRef,
   } = configState;
 
+  const shopDomain = useMemo(
+    () => (shop.includes('.myshopify.com') ? shop.replace('.myshopify.com', '') : shop),
+    [shop]
+  );
+
+  const [pageSlug, setPageSlug] = useState<string>(
+    bundle.shopifyPageHandle ?? slugify(bundle.name ?? '')
+  );
+  const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState<boolean>(
+    Boolean(bundle.shopifyPageHandle)
+  );
+  const originalPageSlugRef = useRef<string>(
+    bundle.shopifyPageHandle ?? slugify(bundle.name ?? '')
+  );
+  const normalizedPageSlug = useMemo(() => slugify(pageSlug), [pageSlug]);
+  const pageSlugError = useMemo(() => validateSlug(pageSlug), [pageSlug]);
+  const pageUrlPreview = useMemo(
+    () => `https://${shopDomain}.myshopify.com/pages/${pageSlug}`,
+    [shopDomain, pageSlug]
+  );
+
+  useEffect(() => {
+    if (bundle.shopifyPageHandle || hasManuallyEditedSlug) return;
+    setPageSlug(slugify(formState.bundleName || ''));
+  }, [bundle.shopifyPageHandle, formState.bundleName, hasManuallyEditedSlug]);
+
 
   // Per-bundle promo banner background image state
   const [promoBannerBgImage, setPromoBannerBgImage] = useState<string | null>(
@@ -450,6 +490,50 @@ export default function ConfigureBundleFlow() {
   // Save handler
   const handleSave = useCallback(async () => {
     try {
+      if (bundle.bundleType === 'full_page' && bundle.shopifyPageId) {
+        const normalizedSlugError = validateSlug(normalizedPageSlug);
+        if (normalizedSlugError) {
+          shopify.toast.show(normalizedSlugError, { isError: true, duration: 5000 });
+          return;
+        }
+
+        if (normalizedPageSlug !== (bundle.shopifyPageHandle ?? '')) {
+          const renameData = new FormData();
+          renameData.append("intent", "renamePageSlug");
+          renameData.append("newSlug", normalizedPageSlug);
+
+          const renameResponse = await fetch(window.location.pathname, {
+            method: "POST",
+            body: renameData,
+          });
+          const renameResult = await renameResponse.json() as {
+            success?: boolean;
+            error?: string;
+            newHandle?: string;
+            adjusted?: boolean;
+          };
+
+          if (!renameResponse.ok || !renameResult.success || !renameResult.newHandle) {
+            shopify.toast.show(
+              renameResult.error || "Could not rename page slug",
+              { isError: true, duration: 5000 }
+            );
+            return;
+          }
+
+          if (renameResult.adjusted && renameResult.newHandle !== normalizedPageSlug) {
+            shopify.toast.show(
+              `The slug '${normalizedPageSlug}' was taken - using '${renameResult.newHandle}' instead.`,
+              { duration: 6000 }
+            );
+          }
+
+          setPageSlug(renameResult.newHandle);
+          originalPageSlugRef.current = renameResult.newHandle;
+          setHasManuallyEditedSlug(true);
+        }
+      }
+
       // Prepare form data for submission
       const formData = new FormData();
       formData.append("intent", "saveBundle");
@@ -516,6 +600,11 @@ export default function ConfigureBundleFlow() {
     promoBannerBgImage,
     promoBannerBgImageCrop,
     loadingGif,
+    pageSlug,
+    normalizedPageSlug,
+    bundle.bundleType,
+    bundle.shopifyPageId,
+    bundle.shopifyPageHandle,
     shopify
   ]);
 
@@ -661,8 +750,21 @@ export default function ConfigureBundleFlow() {
         } else if ('pageHandle' in result && result.pageHandle) {
           // Bundle page created successfully
           const pageUrl = (result as any).pageUrl;
+          const createdHandle = (result as any).pageHandle as string;
+          const slugAdjusted = Boolean((result as any).slugAdjusted);
           const installRequired = (result as any).widgetInstallationRequired;
           const installLink = (result as any).widgetInstallationLink;
+
+          setPageSlug(createdHandle);
+          originalPageSlugRef.current = createdHandle;
+          setHasManuallyEditedSlug(true);
+
+          if (slugAdjusted && createdHandle !== normalizedPageSlug) {
+            shopify.toast.show(
+              `The slug '${normalizedPageSlug}' was taken - using '${createdHandle}' instead.`,
+              { duration: 6000 }
+            );
+          }
 
           if (installRequired && installLink) {
             shopify.toast.show(
@@ -706,17 +808,19 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [fetcher.data, fetcher.state]);
+  }, [fetcher.data, fetcher.state, normalizedPageSlug, revalidator, shopify]);
 
   // Discard handler - resets hook state and all local state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
+    setPageSlug(originalPageSlugRef.current);
+    setHasManuallyEditedSlug(Boolean(bundle.shopifyPageHandle));
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
     setTierConfig(originalTierConfigRef.current);
     setShowStepTimeline(originalShowStepTimelineRef.current);
-  }, [hookHandleDiscard]);
+  }, [bundle.shopifyPageHandle, hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
@@ -1198,14 +1302,21 @@ export default function ConfigureBundleFlow() {
   // Add to Storefront: creates a Shopify page for full-page bundles
   const handleAddToStorefront = useCallback(async () => {
     try {
+      const normalizedSlugError = validateSlug(normalizedPageSlug);
+      if (normalizedSlugError) {
+        shopify.toast.show(normalizedSlugError, { isError: true, duration: 5000 });
+        return;
+      }
+
       const formData = new FormData();
       formData.append("intent", "validateWidgetPlacement");
+      formData.append("desiredSlug", normalizedPageSlug);
       fetcher.submit(formData, { method: "post" });
     } catch (error) {
       AppLogger.error('Error creating bundle page:', {}, error as any);
       shopify.toast.show("Failed to create bundle page", { isError: true, duration: 5000 });
     }
-  }, [fetcher, shopify]);
+  }, [fetcher, normalizedPageSlug, shopify]);
 
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
@@ -1317,10 +1428,7 @@ export default function ConfigureBundleFlow() {
               content: "View on Storefront",
               icon: ExternalIcon,
               onAction: () => {
-                const shopDomain = shop.includes('.myshopify.com')
-                  ? shop.replace('.myshopify.com', '')
-                  : shop;
-                const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+                const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${originalPageSlugRef.current}`;
                 window.open(storefrontUrl, '_blank');
                 shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
               },
@@ -1329,7 +1437,7 @@ export default function ConfigureBundleFlow() {
               content: "Add to Storefront",
               onAction: () => { void handleAddToStorefront(); },
               loading: fetcher.state === 'submitting',
-              disabled: false,
+              disabled: fetcher.state === 'submitting' || Boolean(pageSlugError),
             }
       }
       secondaryActions={[
@@ -1521,6 +1629,48 @@ export default function ConfigureBundleFlow() {
               )}
 
               {/* Bundle Status Card - For full-page bundles */}
+              {bundle.bundleType === 'full_page' && (
+                <Card>
+                  <BlockStack gap="300">
+                    <Text variant="headingSm" as="h3">
+                      Storefront Page
+                    </Text>
+                    <Text variant="bodySm" tone="subdued" as="p">
+                      Choose the URL where this bundle will appear on your store.
+                    </Text>
+                    <TextField
+                      label="Page URL slug"
+                      value={pageSlug}
+                      onChange={(value) => {
+                        setPageSlug(value);
+                        setHasManuallyEditedSlug(true);
+                        if (bundle.shopifyPageId) {
+                          markAsDirty();
+                        }
+                      }}
+                      onBlur={() => {
+                        const normalized = slugify(pageSlug);
+                        setPageSlug(normalized);
+                      }}
+                      prefix={`${shopDomain}.myshopify.com/pages/`}
+                      helpText={`Preview: ${pageUrlPreview}`}
+                      error={pageSlugError ?? undefined}
+                      autoComplete="off"
+                    />
+                    {bundle.shopifyPageHandle && (
+                      <Button
+                        icon={ExternalIcon}
+                        onClick={() => {
+                          window.open(`https://${shopDomain}.myshopify.com/pages/${originalPageSlugRef.current}`, '_blank');
+                        }}
+                      >
+                        View on Storefront
+                      </Button>
+                    )}
+                  </BlockStack>
+                </Card>
+              )}
+
               {bundle.bundleType === 'full_page' && (
                 <Card>
                   <BundleStatusSection
