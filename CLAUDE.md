@@ -416,20 +416,32 @@ extensions/bundle-builder/assets/
 5. Commit BOTH source files AND bundled (minified) files
 
 # After making CSS-only changes:
-1. Edit extensions/bundle-builder/assets/*.css directly
-2. Run: npm run minify:assets css    # minifies CSS in-place
-3. Commit the minified CSS file
+1. Edit the relevant raw CSS source in app/assets/widgets/*-css/
+2. Run: npm run minify:assets css    # writes minified CSS to the extension asset
+3. Commit BOTH the raw source CSS and generated minified extension CSS
 ```
 
 ---
 
 ## 🗜️ Asset Minification
 
-### MANDATORY: Always commit minified output, never raw unminified files
+### MANDATORY: Edit raw widget CSS source, then commit generated minified output
 
-The minifier (`scripts/minify-assets.js`) runs **in-place** — it reads each file,
-strips comments and collapses whitespace, and writes the result back to the **same path**.
-There is no separate source directory for CSS; the extension asset file IS the source.
+For widget CSS, always modify the raw unminified source file:
+
+- `app/assets/widgets/full-page-css/bundle-widget-full-page.css`
+- `app/assets/widgets/product-page-css/bundle-widget.css`
+
+Then run `npm run minify:assets css`. The build/minify script writes the deploy-ready
+minified output to:
+
+- `extensions/bundle-builder/assets/bundle-widget-full-page.css`
+- `extensions/bundle-builder/assets/bundle-widget.css`
+
+The API and storefront must call the minified extension asset only. Do not point API
+preview code, Liquid, or storefront code at the raw source CSS file.
+
+Other CSS targets that do not yet have a raw source file are still minified in place.
 
 **When to run the minifier:**
 
@@ -442,9 +454,9 @@ There is no separate source directory for CSS; the extension asset file IS the s
 
 **What gets minified:**
 
-CSS files (in `extensions/bundle-builder/assets/`):
-- `bundle-widget-full-page.css`
-- `bundle-widget.css`
+CSS files:
+- `app/assets/widgets/full-page-css/bundle-widget-full-page.css` → `extensions/bundle-builder/assets/bundle-widget-full-page.css`
+- `app/assets/widgets/product-page-css/bundle-widget.css` → `extensions/bundle-builder/assets/bundle-widget.css`
 - `modal-discount-bar.css`
 
 JS files (in `extensions/bundle-builder/assets/`):
@@ -716,3 +728,33 @@ After modifying code files in this session, run:
 ```bash
 python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
 ```
+
+---
+
+## 📱 Storefront UI Audit Rule — Desktop + Mobile
+
+### MANDATORY: Test both desktop and mobile views when auditing storefront UI
+
+When asked to audit, review, or verify storefront UI, you MUST test on **both desktop and mobile viewports** using Chrome DevTools MCP.
+
+**Workflow:**
+
+1. **Desktop audit first** — take screenshots at default desktop viewport (1280×800 or wider).
+2. **Mobile audit second** — use Chrome DevTools MCP `emulate` tool to switch to a mobile device (e.g. iPhone 12/14, 390×844) and take screenshots of the same pages/components.
+3. **Compare and report** — note any layout issues, overflow, truncation, spacing problems, or broken interactions that appear only on one viewport.
+
+**Required for:**
+- Any "audit the storefront", "check the UI", "how does it look" request
+- Post-deploy visual verification
+- Bug reports related to storefront appearance
+
+**Chrome DevTools MCP commands:**
+```
+1. Navigate to the storefront page
+2. Take desktop screenshot
+3. Emulate mobile device (e.g. iPhone 14)
+4. Take mobile screenshot
+5. Report findings for both viewports
+```
+
+**Why:** Many storefront bugs are mobile-only (overflow, tap targets, font scaling, modal sizing). A desktop-only audit misses ~60% of merchant customer traffic. Always test both.

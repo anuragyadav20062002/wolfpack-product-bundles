@@ -1,10 +1,41 @@
-use std::collections::HashMap;
 use shopify_function::scalars::Decimal;
+use std::collections::HashMap;
 
 use crate::helpers::{decimal_to_f64, is_free_gift_line, parse_json_or_default, truncate};
 use crate::pricing::calculate_discount_percentage;
-use crate::types::{ComponentParent};
 use crate::schema;
+use crate::types::ComponentParent;
+
+fn parent_match_count(parent: &ComponentParent, group_variant_ids: &[String]) -> usize {
+    let Some(component_reference) = &parent.component_reference else {
+        return 0;
+    };
+
+    group_variant_ids
+        .iter()
+        .filter(|variant_id| {
+            component_reference
+                .value
+                .iter()
+                .any(|ref_id| ref_id == *variant_id)
+        })
+        .count()
+}
+
+fn select_component_parent<'a>(
+    component_parents: &'a [ComponentParent],
+    group_variant_ids: &[String],
+) -> Option<&'a ComponentParent> {
+    component_parents
+        .iter()
+        .filter(|parent| !parent.id.is_empty())
+        .max_by_key(|parent| parent_match_count(parent, group_variant_ids))
+        .or_else(|| {
+            component_parents
+                .iter()
+                .find(|parent| !parent.id.is_empty())
+        })
+}
 
 /// Process all MERGE operations for one cart pass.
 ///
@@ -50,28 +81,38 @@ pub fn process_merge_operations(
     // -------------------------------------------------------------------------
     for (_, line_indices) in &bundle_groups {
         // Find first line with component_parents metafield value.
-        let component_parents_json: Option<String> = line_indices.iter().find_map(|&idx| {
-            match lines[idx].merchandise() {
-                schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
-                    v.component_parents()
-                        .map(|m| m.value().clone())
-                }
-                _ => None,
-            }
-        });
+        let component_parents_json: Option<String> =
+            line_indices
+                .iter()
+                .find_map(|&idx| match lines[idx].merchandise() {
+                    schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
+                        v.component_parents().map(|m| m.value().clone())
+                    }
+                    _ => None,
+                });
 
-        let Some(cp_json) = component_parents_json else { continue };
+        let Some(cp_json) = component_parents_json else {
+            continue;
+        };
 
-        let component_parents: Vec<ComponentParent> =
-            parse_json_or_default(Some(&cp_json));
+        let component_parents: Vec<ComponentParent> = parse_json_or_default(Some(&cp_json));
         if component_parents.is_empty() {
             continue;
         }
 
-        let parent = &component_parents[0];
-        if parent.id.is_empty() {
+        let group_variant_ids: Vec<String> = line_indices
+            .iter()
+            .filter_map(|&idx| match lines[idx].merchandise() {
+                schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
+                    Some(v.id().to_string())
+                }
+                _ => None,
+            })
+            .collect();
+
+        let Some(parent) = select_component_parent(&component_parents, &group_variant_ids) else {
             continue;
-        }
+        };
         let parent_variant_id = parent.id.clone();
 
         // -------------------------------------------------------------------------
@@ -113,7 +154,9 @@ pub fn process_merge_operations(
             let raw = (1.0 - paid_total / original_total) * 100.0;
             if raw.is_finite() {
                 ((raw * 10000.0).round() / 10000.0).clamp(0.0, 100.0)
-            } else { 0.0 }
+            } else {
+                0.0
+            }
         } else {
             0.0
         };
@@ -158,7 +201,11 @@ pub fn process_merge_operations(
             } else {
                 (retail_cents as f64 * (1.0 - discount_percentage / 100.0)).round() as i64
             };
-            let line_pct = if is_free_gift { 100.0 } else { discount_percentage };
+            let line_pct = if is_free_gift {
+                100.0
+            } else {
+                discount_percentage
+            };
             let title = match lines[idx].merchandise() {
                 schema::run::input::cart::lines::Merchandise::ProductVariant(v) => {
                     truncate(v.product().title(), 25).to_string()
@@ -175,8 +222,7 @@ pub fn process_merge_operations(
             ]));
         }
 
-        let components_json =
-            serde_json::to_string(&component_details).unwrap_or_default();
+        let components_json = serde_json::to_string(&component_details).unwrap_or_default();
 
         // -------------------------------------------------------------------------
         // Step 7: Build MERGE operation using schema-generated types.
@@ -193,14 +239,38 @@ pub fn process_merge_operations(
             .collect();
 
         let attributes = vec![
-            schema::AttributeOutput { key: "_is_bundle_parent".into(),          value: "true".into() },
-            schema::AttributeOutput { key: "_bundle_name".into(),               value: bundle_name.clone() },
-            schema::AttributeOutput { key: "_bundle_component_count".into(),    value: component_details.len().to_string() },
-            schema::AttributeOutput { key: "_bundle_components".into(),         value: components_json },
-            schema::AttributeOutput { key: "_bundle_total_retail_cents".into(), value: original_total_cents.to_string() },
-            schema::AttributeOutput { key: "_bundle_total_price_cents".into(),  value: discounted_total_cents.to_string() },
-            schema::AttributeOutput { key: "_bundle_total_savings_cents".into(),value: savings_cents.to_string() },
-            schema::AttributeOutput { key: "_bundle_discount_percent".into(),   value: format!("{:.2}", discount_percentage) },
+            schema::AttributeOutput {
+                key: "_is_bundle_parent".into(),
+                value: "true".into(),
+            },
+            schema::AttributeOutput {
+                key: "_bundle_name".into(),
+                value: bundle_name.clone(),
+            },
+            schema::AttributeOutput {
+                key: "_bundle_component_count".into(),
+                value: component_details.len().to_string(),
+            },
+            schema::AttributeOutput {
+                key: "_bundle_components".into(),
+                value: components_json,
+            },
+            schema::AttributeOutput {
+                key: "_bundle_total_retail_cents".into(),
+                value: original_total_cents.to_string(),
+            },
+            schema::AttributeOutput {
+                key: "_bundle_total_price_cents".into(),
+                value: discounted_total_cents.to_string(),
+            },
+            schema::AttributeOutput {
+                key: "_bundle_total_savings_cents".into(),
+                value: savings_cents.to_string(),
+            },
+            schema::AttributeOutput {
+                key: "_bundle_discount_percent".into(),
+                value: format!("{:.2}", discount_percentage),
+            },
         ];
 
         // price is ALWAYS included (even at 0%) so Shopify uses component sum, not parent variant price.

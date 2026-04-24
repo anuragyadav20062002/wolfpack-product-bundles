@@ -16,6 +16,7 @@ import type { SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { PLANS, GROW_ONLY_FEATURES, isFeatureGatingEnabled } from "../constants/plans";
 import { ERROR_MESSAGES } from "../constants/errors";
 import { BundleStatus } from "../constants/bundle";
+import { SubscriptionStatus as SubscriptionStatusValue } from "../constants/subscription";
 
 export interface CreateSubscriptionParams {
   shopDomain: string;
@@ -201,12 +202,12 @@ export class BillingService {
    */
   static async getSubscriptionInfo(shopDomain: string): Promise<SubscriptionInfo | null> {
     try {
-      const shop = await db.shop.findUnique({
+      let shop = await db.shop.findUnique({
         where: { shopDomain },
         include: {
           subscriptions: {
             where: {
-              status: BundleStatus.ACTIVE
+              status: SubscriptionStatusValue.active
             },
             orderBy: {
               createdAt: "desc"
@@ -217,7 +218,16 @@ export class BillingService {
       });
 
       if (!shop) {
-        return null;
+        AppLogger.warn("Shop billing record missing; creating free-plan record", {
+          component: "billing.server",
+          operation: "getSubscriptionInfo"
+        }, { shopDomain });
+
+        const createdShop = await this.ensureShop(shopDomain);
+        shop = {
+          ...createdShop,
+          subscriptions: createdShop.subscriptions.filter(subscription => subscription.status === SubscriptionStatusValue.active)
+        };
       }
 
       // Get current bundle count
@@ -257,7 +267,7 @@ export class BillingService {
       }
 
       const plan = activeSubscription?.plan ?? "free";
-      const status = activeSubscription?.status ?? BundleStatus.ACTIVE;
+      const status = activeSubscription?.status ?? SubscriptionStatusValue.active;
       const bundleLimit = PLANS[plan].bundleLimit;
 
       return {
@@ -266,7 +276,7 @@ export class BillingService {
         bundleLimit,
         currentBundleCount: bundleCount,
         canCreateBundle: bundleCount < bundleLimit,
-        isActive: status === BundleStatus.ACTIVE
+        isActive: status === SubscriptionStatusValue.active
       };
 
     } catch (error) {
@@ -381,7 +391,7 @@ export class BillingService {
       await db.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: BundleStatus.ACTIVE,
+          status: SubscriptionStatusValue.active,
           currentPeriodStart: new Date(),
           currentPeriodEnd: currentPeriodEnd
         }
@@ -431,7 +441,7 @@ export class BillingService {
         where: { shopDomain },
         include: {
           subscriptions: {
-            where: { status: BundleStatus.ACTIVE },
+            where: { status: SubscriptionStatusValue.active },
             orderBy: { createdAt: "desc" },
             take: 1
           }
@@ -487,7 +497,7 @@ export class BillingService {
       await db.subscription.update({
         where: { id: subscription.id },
         data: {
-          status: "cancelled",
+          status: SubscriptionStatusValue.cancelled,
           cancelledAt: new Date()
         }
       });
@@ -545,7 +555,7 @@ export class BillingService {
           subscriptions: {
             create: {
               plan: "free",
-              status: BundleStatus.ACTIVE,
+              status: SubscriptionStatusValue.active,
               name: PLANS.free.name,
               price: 0,
               currencyCode: "USD"
@@ -711,8 +721,8 @@ export class BillingService {
 
       // Cancel any currently active subscription so there is only one active record
       await db.subscription.updateMany({
-        where: { shopId: shop.id, status: "active" },
-        data: { status: "cancelled", cancelledAt: now }
+        where: { shopId: shop.id, status: SubscriptionStatusValue.active },
+        data: { status: SubscriptionStatusValue.cancelled, cancelledAt: now }
       });
 
       // Create owner-granted Grow subscription — no Shopify billing flow.
@@ -722,7 +732,7 @@ export class BillingService {
         data: {
           shopId: shop.id,
           plan: "grow",
-          status: "active",
+          status: SubscriptionStatusValue.active,
           name: "Grow Plan (Owner Grant)",
           price: 0,
           currencyCode: "USD",

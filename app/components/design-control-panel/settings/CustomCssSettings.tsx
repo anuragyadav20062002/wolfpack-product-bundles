@@ -184,7 +184,7 @@ export function CustomCssSettings({
               />
               <RefGroup
                 title="Sidebar (Sidebar Layout)"
-                items={[".sidebar-layout-wrapper", ".full-page-side-panel", ".sidebar-content", ".side-panel-header", ".side-panel-title", ".side-panel-products", ".side-panel-product-row", ".side-panel-product-remove", ".side-panel-progress", ".side-panel-total", ".side-panel-discount-message", ".side-panel-btn-back", ".side-panel-btn-next", ".side-panel-clear-btn"]}
+                items={[".sidebar-layout-wrapper", ".full-page-side-panel", ".sidebar-content", ".side-panel-header", ".side-panel-title", ".side-panel-products", ".side-panel-product-row", ".side-panel-product-remove", ".side-panel-action-container", ".side-panel-total", ".side-panel-discount-message", ".side-panel-btn-next", ".side-panel-clear-btn"]}
               />
               <RefGroup
                 title="Footer (Footer Layout)"

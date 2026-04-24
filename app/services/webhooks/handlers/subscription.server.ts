@@ -11,6 +11,7 @@ import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { PLANS } from "../../../constants/plans";
 import { BundleStatus } from "../../../constants/bundle";
+import { SubscriptionStatus as SubscriptionStatusValue } from "../../../constants/subscription";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import type { SubscriptionStatus } from "@prisma/client";
 import type { ShopifySubscriptionStatus, WebhookProcessResult } from "../types";
@@ -23,15 +24,15 @@ export function mapSubscriptionStatus(
   shopifyStatus: ShopifySubscriptionStatus
 ): SubscriptionStatus {
   const statusMap: Record<ShopifySubscriptionStatus, SubscriptionStatus> = {
-    ACTIVE: "active",
-    CANCELLED: "cancelled",
-    DECLINED: "declined",
-    EXPIRED: "expired",
-    FROZEN: "frozen",
-    PENDING: "pending"
+    ACTIVE: SubscriptionStatusValue.active,
+    CANCELLED: SubscriptionStatusValue.cancelled,
+    DECLINED: SubscriptionStatusValue.declined,
+    EXPIRED: SubscriptionStatusValue.expired,
+    FROZEN: SubscriptionStatusValue.frozen,
+    PENDING: SubscriptionStatusValue.pending
   };
 
-  return statusMap[shopifyStatus] || "pending";
+  return statusMap[shopifyStatus] || SubscriptionStatusValue.pending;
 }
 
 /**
@@ -97,7 +98,7 @@ export async function handleSubscriptionUpdate(
 
     // Update subscription
     // SAFETY: Explicitly handle cancelledAt based on status
-    if (mappedStatus === "cancelled") {
+    if (mappedStatus === SubscriptionStatusValue.cancelled) {
       await db.subscription.update({
         where: { id: subscription.id },
         data: {
@@ -121,7 +122,11 @@ export async function handleSubscriptionUpdate(
     }
 
     // Handle downgrade to free plan
-    const shouldDowngrade = ["cancelled", "expired", "frozen"].includes(mappedStatus);
+    const shouldDowngrade = [
+      SubscriptionStatusValue.cancelled,
+      SubscriptionStatusValue.expired,
+      SubscriptionStatusValue.frozen
+    ].includes(mappedStatus);
 
     if (shouldDowngrade && subscription.plan !== "free") {
       AppLogger.info("Downgrading subscription to free plan", {
@@ -134,7 +139,7 @@ export async function handleSubscriptionUpdate(
         where: {
           shopId: shop.id,
           plan: "free",
-          status: BundleStatus.ACTIVE
+          status: SubscriptionStatusValue.active
         }
       });
 
@@ -152,7 +157,7 @@ export async function handleSubscriptionUpdate(
           data: {
             shopId: shop.id,
             plan: "free",
-            status: BundleStatus.ACTIVE,
+            status: SubscriptionStatusValue.active,
             name: PLANS.free.name,
             price: 0,
             currencyCode: "USD"
@@ -299,7 +304,7 @@ export async function handleSubscriptionCancelled(
     await db.subscription.update({
       where: { id: subscription.id },
       data: {
-        status: "cancelled",
+        status: SubscriptionStatusValue.cancelled,
         cancelledAt: new Date()
       }
     });
@@ -309,7 +314,7 @@ export async function handleSubscriptionCancelled(
       where: {
         shopId: shop.id,
         plan: "free",
-        status: BundleStatus.ACTIVE
+        status: SubscriptionStatusValue.active
       }
     });
 
@@ -327,7 +332,7 @@ export async function handleSubscriptionCancelled(
         data: {
           shopId: shop.id,
           plan: "free",
-          status: BundleStatus.ACTIVE,
+          status: SubscriptionStatusValue.active,
           name: PLANS.free.name,
           price: 0,
           currencyCode: "USD"

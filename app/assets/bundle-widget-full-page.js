@@ -142,6 +142,9 @@ class BundleWidgetFullPage {
       // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
 
+      // Storefront self-heal: make sure the shop has an active CartTransform.
+      this._scheduleCartTransformSelfHeal();
+
       // Load and validate bundle data
       await this.loadBundleData();
 
@@ -273,6 +276,38 @@ class BundleWidgetFullPage {
 
     } catch (_e) {
       // Non-critical — widget works without design settings CSS
+    }
+  }
+
+  _scheduleCartTransformSelfHeal() {
+    try {
+      if (window.Shopify?.designMode) return;
+
+      const shop = window.Shopify?.shop || this.container.dataset.shop || window.location.hostname;
+      if (!shop) return;
+
+      const storageKey = `wolfpack:cart-transform-heal:${shop}`;
+      const lastCheckedAt = Number(window.localStorage?.getItem(storageKey) || 0);
+      const now = Date.now();
+      const cooldownMs = 24 * 60 * 60 * 1000;
+
+      if (lastCheckedAt && now - lastCheckedAt < cooldownMs) return;
+
+      window.setTimeout(() => {
+        fetch('/apps/product-bundles/api/cart-transform-heal', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+          .then(response => {
+            if (response.ok) {
+              window.localStorage?.setItem(storageKey, String(now));
+            }
+          })
+          .catch(() => {});
+      }, 1500);
+    } catch (_error) {
+      // Non-critical: checkout still works if the self-heal request is blocked.
     }
   }
 
@@ -961,7 +996,10 @@ class BundleWidgetFullPage {
   }
 
   // Mobile sticky bottom bar + slide-up sheet (replaces sidebar on < 768px)
-  _renderMobileBottomBar() {
+  _renderMobileBottomBar({ preserveOpen = false } = {}) {
+    const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
+    const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
     document.querySelector('.fpb-mobile-backdrop')?.remove();
@@ -1038,6 +1076,12 @@ class BundleWidgetFullPage {
     document.body.appendChild(backdrop);
     document.body.appendChild(sheet);
     document.body.appendChild(bar);
+
+    if (wasOpen) {
+      sheet.classList.add('is-open');
+      backdrop.classList.add('is-open');
+      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
+    }
   }
 
   _populateMobileSheet(sheet) {
@@ -1064,6 +1108,7 @@ class BundleWidgetFullPage {
     const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
 
     // Header: "Your Bundle" + Clear
     const header = document.createElement('div');
@@ -1117,20 +1162,16 @@ class BundleWidgetFullPage {
     }
 
     // Item count label
-    if (allSelectedProducts.length > 0) {
-      const countLabel = document.createElement('div');
-      countLabel.className = 'side-panel-item-count';
-      countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-      panel.appendChild(countLabel);
-    }
+    const countLabel = document.createElement('div');
+    countLabel.className = 'side-panel-item-count';
+    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    panel.appendChild(countLabel);
 
     // Selected products list
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
 
-    if (allSelectedProducts.length === 0) {
-      productsContainer.innerHTML = '<div class="side-panel-empty">No products selected yet</div>';
-    } else {
+    if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
@@ -1181,48 +1222,15 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    // Skeleton slots for unfilled paid step positions
-    const skeletonContainer = document.createElement('div');
-    skeletonContainer.className = 'side-panel-skeleton-slots';
-    const paidStepCount = this.paidSteps.reduce((sum, s) =>
-      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
-    const filledPaidCount = allSelectedProducts.filter(p => !p.isFreeGift && !p.isDefault).length;
-    this._renderSkeletonSlots(skeletonContainer, filledPaidCount, paidStepCount);
-    panel.appendChild(skeletonContainer);
+    if (!isMobileSheet && allSelectedProducts.length === 0) {
+      const skeletonContainer = document.createElement('div');
+      skeletonContainer.className = 'side-panel-skeleton-slots';
+      this._renderSidebarProductSkeletons(skeletonContainer);
+      panel.appendChild(skeletonContainer);
+    }
 
     // Free gift section (locked or unlocked)
     this._renderFreeGiftSection(panel);
-
-    // Sidebar upsell slot — below items list, above total
-    // Shows discount progress incentive when pricing is enabled and a rule applies
-    if (this.selectedBundle?.pricing?.enabled && (nextRule || discountInfo.hasDiscount)) {
-      const upsellVars = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-      );
-      let upsellMsg = '';
-      if (discountInfo.hasDiscount) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          upsellVars
-        );
-      } else if (nextRule) {
-        upsellMsg = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-          upsellVars
-        );
-      }
-      if (upsellMsg) {
-        const upsellSlot = document.createElement('div');
-        upsellSlot.className = `sidebar-upsell-slot${discountInfo.hasDiscount ? ' sidebar-upsell-slot--reached' : ''}`;
-        upsellSlot.innerHTML = upsellMsg;
-        panel.appendChild(upsellSlot);
-      }
-    }
-
-    // Divider
-    const divider = document.createElement('div');
-    divider.className = 'side-panel-divider';
-    panel.appendChild(divider);
 
     // Total
     const totalSection = document.createElement('div');
@@ -1234,16 +1242,16 @@ class BundleWidgetFullPage {
         <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
-    panel.appendChild(totalSection);
-
-    // Discount progress banner — above Add to Cart button
-    const sidebarBanner = this._renderDiscountProgressBanner();
-    if (sidebarBanner) {
-      sidebarBanner.classList.add('discount-progress-banner--sidebar');
-      panel.appendChild(sidebarBanner);
+    if (isMobileSheet) {
+      panel.appendChild(totalSection);
+      return;
     }
 
-    // Navigation buttons
+    // Action row
+    const actionSection = document.createElement('div');
+    actionSection.className = 'side-panel-action-container';
+    actionSection.appendChild(totalSection);
+
     const navSection = document.createElement('div');
     navSection.className = 'side-panel-nav';
 
@@ -1274,22 +1282,9 @@ class BundleWidgetFullPage {
       }
     });
 
-    const backBtn = document.createElement('button');
-    backBtn.className = 'side-panel-btn side-panel-btn-back';
-    backBtn.textContent = 'Back';
-    if (this.currentStepIndex === 0) backBtn.disabled = true;
-    backBtn.addEventListener('click', () => {
-      if (this.currentStepIndex > 0) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex--;
-        this.renderFullPageLayoutWithSidebar();
-      }
-    });
-
     navSection.appendChild(nextBtn);
-    navSection.appendChild(backBtn);
-    panel.appendChild(navSection);
+    actionSection.appendChild(navSection);
+    panel.appendChild(actionSection);
   }
 
   // Escape HTML special characters to prevent innerHTML injection
@@ -1323,6 +1318,61 @@ class BundleWidgetFullPage {
       <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
+  }
+
+  _getStepSelectedQuantity(stepIndex) {
+    const stepSelections = this.selectedProducts?.[stepIndex] || {};
+    return Object.values(stepSelections).reduce((total, qty) => total + (Number(qty) || 0), 0);
+  }
+
+  _getStepRequiredQuantity(step) {
+    if (!step) return 1;
+
+    const toNumber = (value) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    };
+
+    const primaryValue = toNumber(step.conditionValue);
+    const secondaryValue = toNumber(step.conditionValue2);
+    const minQuantity = toNumber(step.minQuantity);
+    const maxQuantity = toNumber(step.maxQuantity);
+    const OPERATORS = ConditionValidator.OPERATORS;
+
+    const targetForOperator = (operator, value) => {
+      if (value == null) return null;
+      switch (operator) {
+        case OPERATORS.GREATER_THAN:
+          return value + 1;
+        case OPERATORS.LESS_THAN:
+          return Math.max(1, value - 1);
+        case OPERATORS.LESS_THAN_OR_EQUAL_TO:
+        case OPERATORS.EQUAL_TO:
+        case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+          return value;
+        default:
+          return null;
+      }
+    };
+
+    const targets = [
+      targetForOperator(step.conditionOperator, primaryValue),
+      targetForOperator(step.conditionOperator2, secondaryValue),
+      minQuantity,
+      maxQuantity,
+    ].filter((value) => value != null && value > 0);
+
+    return targets.length > 0 ? Math.max(...targets) : 1;
+  }
+
+  _getStepProgressRatio(stepIndex) {
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    if (!step) return 0;
+    if (this.isStepCompleted(stepIndex)) return 1;
+
+    const requiredQuantity = this._getStepRequiredQuantity(step);
+    const selectedQuantity = this._getStepSelectedQuantity(stepIndex);
+    return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
   }
 
   // Create circular icon-based step timeline with connecting lines and three icon states
@@ -1398,10 +1448,10 @@ class BundleWidgetFullPage {
       if (index < steps.length - 1) {
         const connectorEl = document.createElement('div');
         connectorEl.className = 'timeline-connector';
-        const isStepCompleted = this.isStepCompleted(index);
         const connectorFill = document.createElement('div');
         connectorFill.className = 'timeline-connector-fill';
-        if (isStepCompleted) connectorFill.style.width = '100%';
+        connectorFill.style.display = 'block';
+        connectorFill.style.width = `${Math.round(this._getStepProgressRatio(index) * 100)}%`;
         connectorEl.appendChild(connectorFill);
         timeline.appendChild(connectorEl);
       }
@@ -1997,7 +2047,7 @@ class BundleWidgetFullPage {
       product,
       currentQuantity,
       currencyInfo,
-      { variantSelectorHtml }
+      { variantSelectorHtml, actionMode: 'expandingQuantity' }
     );
 
     // Convert HTML string to DOM element
@@ -2800,18 +2850,21 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
-  // Render shimmer skeleton slots for unfilled positions
-  _renderSkeletonSlots(container, filledCount, totalRequired) {
-    const remaining = Math.max(0, totalRequired - filledCount);
-    for (let i = 0; i < remaining; i++) {
+  // Render empty-summary skeleton rows that match selected product rows.
+  _renderSidebarProductSkeletons(container) {
+    for (let i = 0; i < 5; i++) {
       const slot = document.createElement('div');
-      slot.className = 'side-panel-skeleton-slot';
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot';
       slot.innerHTML = `
-        <div class="side-panel-skeleton-thumb"></div>
-        <div class="side-panel-skeleton-lines">
-          <div class="side-panel-skeleton-line line-name"></div>
-          <div class="side-panel-skeleton-line line-price"></div>
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
         </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+        </div>
+        <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
       `;
       container.appendChild(slot);
     }
@@ -3879,6 +3932,9 @@ class BundleWidgetFullPage {
       if (layout === 'footer_side') {
         const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
         this.renderSidePanel(sidePanel);
+        if (window.matchMedia?.('(max-width: 767px)').matches) {
+          this._renderMobileBottomBar({ preserveOpen: true });
+        }
       } else {
         this.renderFullPageFooter();
       }
@@ -3929,28 +3985,35 @@ class BundleWidgetFullPage {
     const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
     if (!productCard) return;
 
-    const contentWrapper = productCard.querySelector('.product-content-wrapper');
-    if (!contentWrapper) return;
-
     // Find existing action elements
+    const contentWrapper = productCard.querySelector('.product-content-wrapper');
+    const actionWrapper = productCard.querySelector('.product-card-action');
+    if (!contentWrapper && !actionWrapper) return;
+
+    const actionContainer = actionWrapper || contentWrapper;
     const existingAddBtn = productCard.querySelector('.product-add-btn');
     const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
     let selectedOverlay = productCard.querySelector('.selected-overlay');
 
     // Toggle between "Add to Bundle" button and quantity controls
     if (quantity > 0) {
-      // Show quantity controls, hide button
-      if (existingAddBtn) {
-        existingAddBtn.remove();
+      if (actionWrapper) {
+        actionWrapper.classList.add('is-expanded');
       }
 
       if (existingQuantityControls) {
+        if (existingAddBtn) {
+          existingAddBtn.remove();
+        }
         // Just update the quantity display
         const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
         if (qtyDisplay) {
           qtyDisplay.textContent = quantity;
         }
       } else {
+        if (existingAddBtn) {
+          existingAddBtn.remove();
+        }
         // Create quantity controls
         const quantityControls = document.createElement('div');
         quantityControls.className = 'inline-quantity-controls';
@@ -3959,7 +4022,7 @@ class BundleWidgetFullPage {
           <span class="inline-qty-display">${quantity}</span>
           <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
         `;
-        contentWrapper.appendChild(quantityControls);
+        actionContainer.appendChild(quantityControls);
 
         // Attach event listeners to the new buttons
         const increaseBtn = quantityControls.querySelector('.qty-increase');
@@ -3995,6 +4058,10 @@ class BundleWidgetFullPage {
       productCard.classList.add('selected');
 
     } else {
+      if (actionWrapper) {
+        actionWrapper.classList.remove('is-expanded');
+      }
+
       // Show "Add to Bundle" button, hide quantity controls
       if (existingQuantityControls) {
         existingQuantityControls.remove();
@@ -4005,7 +4072,7 @@ class BundleWidgetFullPage {
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
         addButton.textContent = '+';
-        contentWrapper.appendChild(addButton);
+        actionContainer.appendChild(addButton);
 
         // Attach event listener to the new button
         addButton.addEventListener('click', (e) => {
@@ -4750,4 +4817,3 @@ function initializeFullPageWidget() {
     }
   });
 }
-

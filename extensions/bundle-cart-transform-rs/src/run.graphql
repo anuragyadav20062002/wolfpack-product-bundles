@@ -23,26 +23,26 @@ query Input {
           # See: https://shopify.dev/docs/apps/build/product-merchandising/bundles/create-bundle-app
 
           # For MERGE: Check if this variant is a component in a bundle
-          component_parents: metafield(namespace: "$app", key: "component_parents") {
+          component_parents: metafield(key: "component_parents") {
             value
           }
 
           # For EXPAND: Check if this variant is a bundle parent
-          component_reference: metafield(namespace: "$app", key: "component_reference") {
+          component_reference: metafield(key: "component_reference") {
             value
           }
 
-          component_quantities: metafield(namespace: "$app", key: "component_quantities") {
+          component_quantities: metafield(key: "component_quantities") {
             value
           }
 
           # Price adjustment configuration for discounting
-          price_adjustment: metafield(namespace: "$app", key: "price_adjustment") {
+          price_adjustment: metafield(key: "price_adjustment") {
             value
           }
 
           # Component pricing for expanded checkout display (cents-based)
-          component_pricing: metafield(namespace: "$app", key: "component_pricing") {
+          component_pricing: metafield(key: "component_pricing") {
             value
           }
 

@@ -102,6 +102,23 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   // Discount Text
   footerDiscountTextVisibility: true,
 
+  // Sidebar Card
+  sidebarCardBgColor: "#FFFFFF",
+  sidebarCardTextColor: "#111827",
+  sidebarCardBorderColor: "#E5E7EB",
+  sidebarCardBorderWidth: 1,
+  sidebarCardBorderRadius: 10,
+  sidebarCardPadding: 20,
+  sidebarCardWidth: 360,
+  sidebarStickyOffset: 85,
+  sidebarProductListMaxHeight: 320,
+  sidebarSkeletonRowCount: 3,
+  sidebarDiscountBgColor: "#F3F7F3",
+  sidebarDiscountTextColor: "#2E7D32",
+  sidebarButtonBgColor: "#111111",
+  sidebarButtonTextColor: "#FFFFFF",
+  sidebarButtonBorderRadius: 8,
+
   // Success Message Styling
   successMessageFontSize: 16,
   successMessageFontWeight: 600,
@@ -409,6 +426,23 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
 
   // Discount Text
   footerDiscountTextVisibility: true,
+
+  // Sidebar Card
+  sidebarCardBgColor: "#FFFFFF",
+  sidebarCardTextColor: "#111827",
+  sidebarCardBorderColor: "#E5E7EB",
+  sidebarCardBorderWidth: 1,
+  sidebarCardBorderRadius: 10,
+  sidebarCardPadding: 20,
+  sidebarCardWidth: 360,
+  sidebarStickyOffset: 85,
+  sidebarProductListMaxHeight: 320,
+  sidebarSkeletonRowCount: 3,
+  sidebarDiscountBgColor: "#F3F7F3",
+  sidebarDiscountTextColor: "#2E7D32",
+  sidebarButtonBgColor: "#111111",
+  sidebarButtonTextColor: "#FFFFFF",
+  sidebarButtonBorderRadius: 8,
 
   // Success Message Styling
   successMessageFontSize: 16,
