@@ -1,7 +1,7 @@
 # Graph Report - .  (2026-04-24)
 
 ## Corpus Check
-- 341 files · ~2,240,173 words
+- 341 files · ~2,240,220 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -518,10 +518,6 @@ Nodes (7): BundleWidgetFullPage, ComponentGenerator, createDefaultLoadingAnimati
 Cohesion: 0.04
 Nodes (1): BundleWidgetFullPage
 
-### Community 3 - "Community 3"
-Cohesion: 0.02
-Nodes (121): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Bottom-Sheet CSS Variable Output Fix in CSS Generator, Bottom-Sheet Product Selection Modal, --bundle-drawer-bg CSS Variable (+113 more)
-
 ### Community 4 - "Community 4"
 Cohesion: 0.04
 Nodes (10): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, PricingCalculator (+2 more)
@@ -559,6 +555,10 @@ Cohesion: 0.04
 Nodes (52): Analytics Pixel Toggle Architecture, deactivateUtmPixel Service Function, getPixelStatus Service Function, Remove Pixel Auto-Activation from afterAuth, AppLogger (Structured Logger Utility), App Proxy 504 / Render Cold-Start Issue, Images & GIFs Section Minimal Card Revamp, bundle-product-page.liquid Block (+44 more)
 
 ### Community 13 - "Community 13"
+Cohesion: 0.05
+Nodes (45): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Web Pixel Extension for UTM Attribution, Analytics Custom Date Range Architecture, buildBundleTrendSeries Function (until param), DateRangeSelector Polaris Component (+37 more)
+
+### Community 14 - "Community 14"
 Cohesion: 0.06
 Nodes (39): Architecture Comparison - Hybrid Approach (3 Standard + 1 UI Config) Recommended, Architecture Comparison - Pure API Approach, Architecture Comparison - Widget Reconstructs from Minimal Data, Bundle Widget Configuration Structure, Bundle Widget Cart Transform Integration (_wolfpack_bundle_id), Cart Transform Optimization - InstructionCountLimitExceededError (2025-10-06), Minimal Bundle Config: 5 Essential Fields (~200 bytes vs 40KB), bundleParentVariantId (Critical Field for MERGE) (+31 more)
 
@@ -680,7 +680,7 @@ Nodes (5): canNavigateToStep(), getFreeGiftRemainingCount(), getFreeGiftStep(), 
 
 ### Community 44 - "Community 44"
 Cohesion: 0.18
-Nodes (1): BundleDataManager
+Nodes (1): FakeElement
 
 ### Community 45 - "Community 45"
 Cohesion: 0.18
@@ -863,8 +863,8 @@ Cohesion: 0.33
 Nodes (6): app._index.tsx Welcome Landing Screen, FPB Widget Bundle API 404 on Storefront Issue, verifyAppProxyRequest() — HMAC App Proxy Verification, Restore Landing Screen + Update Onboarding Page Issue, Login Screen Fix 2 — Token Exchange Auth Flow Issue, unstable_newEmbeddedAuthStrategy Token-Based Auth Pattern
 
 ### Community 90 - "Community 90"
-Cohesion: 0.33
-Nodes (6): app._index.tsx Welcome Landing Screen, FPB Widget Bundle API 404 on Storefront Issue, verifyAppProxyRequest() — HMAC App Proxy Verification, Restore Landing Screen + Update Onboarding Page Issue, Login Screen Fix 2 — Token Exchange Auth Flow Issue, unstable_newEmbeddedAuthStrategy Token-Based Auth Pattern
+Cohesion: 0.4
+Nodes (0): 
 
 ### Community 91 - "Community 91"
 Cohesion: 0.5
@@ -1039,8 +1039,8 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 134 - "Community 134"
-Cohesion: 1.0
-Nodes (2): createMergedSettings(), mergeSettings()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 135 - "Community 135"
 Cohesion: 1.0
@@ -1087,8 +1087,8 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 146 - "Community 146"
-Cohesion: 1.0
-Nodes (2): loader(), sanitizeBundleType()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 147 - "Community 147"
 Cohesion: 1.0
@@ -1131,8 +1131,8 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 157 - "Community 157"
-Cohesion: 1.0
-Nodes (2): isValidHexColor(), syncThemeColors()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 158 - "Community 158"
 Cohesion: 1.0
@@ -1580,7 +1580,7 @@ Nodes (0):
 
 ### Community 269 - "Community 269"
 Cohesion: 1.0
-Nodes (1): WidgetInstallationService
+Nodes (0): 
 
 ### Community 270 - "Community 270"
 Cohesion: 1.0
@@ -2649,9 +2649,9 @@ Nodes (1): Step Transition Loading State
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 375`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 376`** (1 nodes): `index.ts`
+- **Thin community `Community 376`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 377`** (1 nodes): `api.inngest.tsx`
+- **Thin community `Community 377`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 378`** (1 nodes): `api.inngest.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
