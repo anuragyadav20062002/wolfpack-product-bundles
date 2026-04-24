@@ -83,9 +83,96 @@ function chartXFormatter(dateKey: string) {
 // ─── Action ──────────────────────────────────────────────────
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await requireAdminSession(request);
+  const { admin, session } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
+
+  if (intent === "export") {
+    const shopId = session.shop;
+    const fromParam = formData.get("from") as string | null;
+    const toParam   = formData.get("to")   as string | null;
+    const daysParam = formData.get("days") as string | null;
+
+    let since: Date;
+    let until: Date;
+
+    if (fromParam && toParam) {
+      since = new Date(fromParam + "T00:00:00.000Z");
+      until = new Date(toParam   + "T23:59:59.999Z");
+    } else {
+      const days = Math.max(1, parseInt(daysParam || "30", 10));
+      until = new Date();
+      since = new Date(until);
+      since.setDate(since.getDate() - days);
+      since.setHours(0, 0, 0, 0);
+    }
+
+    const [attributions, viewEvents] = await Promise.all([
+      db.orderAttribution.findMany({
+        where: { shopId, createdAt: { gte: since, lte: until } },
+        orderBy: { createdAt: "asc" },
+      }),
+      db.bundleAnalytics.findMany({
+        where: { shopId, event: "view", createdAt: { gte: since, lte: until } },
+        select: { bundleId: true, createdAt: true },
+      }),
+    ]);
+
+    // Bundle name lookup
+    const bundleIds = [...new Set([
+      ...attributions.filter(a => a.bundleId).map(a => a.bundleId!),
+      ...viewEvents.filter(v => v.bundleId).map(v => v.bundleId!),
+    ])];
+    const bundles = bundleIds.length > 0
+      ? await db.bundle.findMany({ where: { id: { in: bundleIds } }, select: { id: true, name: true } })
+      : [];
+    const nameMap = Object.fromEntries(bundles.map(b => [b.id, b.name]));
+
+    // Build CSV rows
+    const escape = (v: string | null | undefined) =>
+      v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
+
+    const rows: string[] = [
+      ["Date", "Type", "Bundle ID", "Bundle Name", "UTM Source", "UTM Medium", "UTM Campaign", "Revenue (USD)", "Order ID", "Landing Page"].join(","),
+    ];
+
+    for (const a of attributions) {
+      rows.push([
+        new Date(a.createdAt).toISOString().split("T")[0],
+        "order",
+        escape(a.bundleId),
+        escape(a.bundleId ? nameMap[a.bundleId] : null),
+        escape(a.utmSource),
+        escape(a.utmMedium),
+        escape(a.utmCampaign),
+        (a.revenue / 100).toFixed(2),
+        escape(a.orderId),
+        escape(a.landingPage),
+      ].join(","));
+    }
+
+    for (const v of viewEvents) {
+      rows.push([
+        new Date(v.createdAt).toISOString().split("T")[0],
+        "view",
+        escape(v.bundleId),
+        escape(v.bundleId ? nameMap[v.bundleId] : null),
+        "", "", "", "", "", "",
+      ].join(","));
+    }
+
+    const csv = rows.join("\n");
+    const fromLabel = since.toISOString().split("T")[0];
+    const toLabel   = until.toISOString().split("T")[0];
+
+    return new Response(csv, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="wolfpack-analytics-${fromLabel}-to-${toLabel}.csv"`,
+      },
+    });
+  }
 
   if (intent === "enable") {
     const appUrl = process.env.SHOPIFY_APP_URL;
@@ -923,12 +1010,26 @@ export default function AttributionDashboard() {
         {/* Pixel tracking toggle */}
         <PixelStatusCard pixelActive={pixelActive} />
 
-        {/* Date range selector */}
+        {/* Date range selector + Export */}
         <div className={styles.headerRow}>
           <div />
-          <div className={styles.datePickerWrap}>
-            <DateRangeSelector days={days} from={from} to={to} />
-          </div>
+          <InlineStack gap="200" blockAlign="center">
+            <form method="post" style={{ display: "inline" }}>
+              <input type="hidden" name="intent" value="export" />
+              {from && to ? (
+                <>
+                  <input type="hidden" name="from" value={from} />
+                  <input type="hidden" name="to" value={to} />
+                </>
+              ) : (
+                <input type="hidden" name="days" value={String(days)} />
+              )}
+              <Button submit size="slim" variant="secondary">Export CSV</Button>
+            </form>
+            <div className={styles.datePickerWrap}>
+              <DateRangeSelector days={days} from={from} to={to} />
+            </div>
+          </InlineStack>
         </div>
 
         {/* ── Bundle Views Section ───────────────────────────── */}

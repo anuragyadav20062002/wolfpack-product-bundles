@@ -4,7 +4,8 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-24
-**Last Updated:** 2026-04-24 21:00
+**Last Updated:** 2026-04-24 21:30
+**Status:** Completed
 
 ## Overview
 
@@ -39,7 +40,7 @@ Items:
 - [x] Item 2: Gamified score component + dashboard loader data
 - [x] Item 3: View tracking API + widget instrumentation + analytics display
 - [x] Item 4: Bundle settings Prisma migration + editor tab + widget reads
-- [ ] Item 5: Analytics CSV export action
+- [x] Item 5: Analytics CSV export action
 
 ### 2026-04-24 19:45 - Completed Item 1 + Item 2
 
@@ -79,3 +80,11 @@ Next: Item 4 — Bundle settings panel
 - ✅ PDP editor `route.tsx`: Same pattern
 
 Next: Item 5 — Analytics CSV export
+
+### 2026-04-24 21:30 - Completed Item 5
+
+**Item 5 — Analytics CSV Export:**
+- ✅ `app/routes/app/app.attribution.tsx` action: Added `intent=export` branch — reads date range from form data (from/to or days), queries orderAttribution + bundleAnalytics view events in parallel, resolves bundle names, generates CSV with columns: Date, Type, Bundle ID, Bundle Name, UTM Source, UTM Medium, UTM Campaign, Revenue (USD), Order ID, Landing Page. Returns `text/csv` Response with `Content-Disposition: attachment` for browser download.
+- ✅ UI: Added "Export CSV" button (slim, secondary) left of the date range selector using a plain HTML form POST — browser handles the download response natively. Hidden inputs carry current from/to or days params so the export always matches the visible date range.
+
+All 5 items complete.
