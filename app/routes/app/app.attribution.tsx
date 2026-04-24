@@ -157,13 +157,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
   const pixelStatus = await getPixelStatus(admin);
 
-  const [currentAttributions, previousAttributions] = await Promise.all([
+  const [currentAttributions, previousAttributions, viewEvents, prevViewEvents] = await Promise.all([
     db.orderAttribution.findMany({
       where: { shopId, createdAt: { gte: since, lte: until } },
       orderBy: { createdAt: "asc" },
     }),
     db.orderAttribution.findMany({
       where: { shopId, createdAt: { gte: prevSince, lt: since } },
+    }),
+    db.bundleAnalytics.findMany({
+      where: { shopId, event: "view", createdAt: { gte: since, lte: until } },
+      select: { bundleId: true, createdAt: true },
+    }),
+    db.bundleAnalytics.findMany({
+      where: { shopId, event: "view", createdAt: { gte: prevSince, lt: since } },
+      select: { bundleId: true },
     }),
   ]);
 
@@ -313,6 +321,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const bundleLeaderboard = buildBundleLeaderboard(attrRows, bundleNameMap, bundleStatusMap, 10);
   const bundleRevenueTrend = buildBundleTrendSeries(attrRows, since, days, until);
 
+  // ── Bundle view counts ─────────────────────────────────────
+  const totalViews = viewEvents.length;
+  const prevTotalViews = prevViewEvents.length;
+
+  // Views per bundle (current period), sorted by views desc
+  const viewsByBundleMap: Record<string, number> = {};
+  for (const v of viewEvents) {
+    if (v.bundleId) {
+      viewsByBundleMap[v.bundleId] = (viewsByBundleMap[v.bundleId] ?? 0) + 1;
+    }
+  }
+  // Also include bundle names from view-only bundles not in attributions
+  const viewOnlyBundleIds = Object.keys(viewsByBundleMap).filter(id => !(id in bundleNameMap));
+  const viewOnlyBundles = viewOnlyBundleIds.length > 0
+    ? await db.bundle.findMany({
+        where: { id: { in: viewOnlyBundleIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const allBundleNameMap = { ...bundleNameMap, ...Object.fromEntries(viewOnlyBundles.map(b => [b.id, b.name])) };
+
+  const viewsByBundle = Object.entries(viewsByBundleMap)
+    .map(([bundleId, views]) => ({ bundleId, name: allBundleNameMap[bundleId] ?? "Unknown Bundle", views }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10);
+
   return json({
     days,
     from: fromStr,
@@ -331,6 +365,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     bundleRevenueSummary,
     bundleLeaderboard,
     bundleRevenueTrend,
+    views: { totalViews, prevTotalViews, viewsByBundle },
   });
 };
 
@@ -821,6 +856,7 @@ export default function AttributionDashboard() {
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
     pixelActive,
     bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
+    views,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   // Recharts uses ResizeObserver — only render on client to avoid SSR mismatch
@@ -894,6 +930,54 @@ export default function AttributionDashboard() {
             <DateRangeSelector days={days} from={from} to={to} />
           </div>
         </div>
+
+        {/* ── Bundle Views Section ───────────────────────────── */}
+        <div className={styles.bundleSection}>
+          <Text as="h2" variant="headingMd">Bundle Views</Text>
+        </div>
+
+        <div className={styles.statsGrid}>
+          <div className={`${styles.statCard} ${styles.accent1}`}>
+            <span className={styles.statLabel}>Total Views</span>
+            <span className={styles.statValue}>{views.totalViews.toLocaleString()}</span>
+            {views.prevTotalViews > 0 && (
+              <span className={
+                views.totalViews >= views.prevTotalViews ? styles.growthPos : styles.growthNeg
+              }>
+                {formatGrowth(views.totalViews, views.prevTotalViews)} vs prev period
+              </span>
+            )}
+            <span className={styles.statSub}>widget renders in selected period</span>
+          </div>
+        </div>
+
+        {views.viewsByBundle.length > 0 && (
+          <div style={{ background: "#fff", border: "1px solid #e3e3e3", borderRadius: 8, padding: "16px 20px" }}>
+            <BlockStack gap="300">
+              <Text as="h3" variant="headingSm">Views by Bundle</Text>
+              <div>
+                {views.viewsByBundle.map((row, i) => {
+                  const maxViews = views.viewsByBundle[0]?.views || 1;
+                  const pct = Math.round((row.views / maxViews) * 100);
+                  return (
+                    <div key={row.bundleId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                      <div style={{ width: 20, color: "#6d7175", fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{row.views.toLocaleString()}</span>
+                        </div>
+                        <div style={{ height: 6, background: "#e3e3e3", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: "#005bd3", borderRadius: 3, transition: "width 0.4s ease" }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </BlockStack>
+          </div>
+        )}
 
         {/* ── Bundle Revenue Section ─────────────────────────── */}
         <div className={styles.bundleSection}>

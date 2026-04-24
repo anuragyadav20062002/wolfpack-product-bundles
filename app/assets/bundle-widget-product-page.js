@@ -187,6 +187,11 @@ class BundleWidgetProductPage {
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
+      // Fire-and-forget: record a view event for analytics (skip in Theme Editor preview)
+      if (!window.Shopify?.designMode) {
+        this._recordView();
+      }
+
     } catch (error) {
       this.hideLoadingOverlay();
       this.showErrorUI(error);
@@ -2552,6 +2557,22 @@ class BundleWidgetProductPage {
         </details>
       </div>
     `;
+  }
+
+  _recordView() {
+    try {
+      const bundleId = this.container?.dataset?.bundleId;
+      const shop = window.Shopify?.shop;
+      if (!bundleId || !shop) return;
+      fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
+        keepalive: true,
+      }).catch(() => { /* best-effort */ });
+    } catch (_) {
+      // Never throw from analytics
+    }
   }
 }
 

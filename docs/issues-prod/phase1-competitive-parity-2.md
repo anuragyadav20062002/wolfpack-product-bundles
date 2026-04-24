@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-24
-**Last Updated:** 2026-04-24 19:45
+**Last Updated:** 2026-04-24 20:15
 
 ## Overview
 
@@ -37,7 +37,7 @@ Items:
 ## Phases Checklist
 - [x] Item 1: DCP unlock + pricing model (plans.ts, pricing-data.ts, GrowPlanCard, FreePlanCard)
 - [x] Item 2: Gamified score component + dashboard loader data
-- [ ] Item 3: View tracking API + widget instrumentation + analytics display
+- [x] Item 3: View tracking API + widget instrumentation + analytics display
 - [ ] Item 4: Bundle settings Prisma migration + editor tab + widget reads
 - [ ] Item 5: Analytics CSV export action
 
@@ -55,3 +55,14 @@ Items:
 - ✅ `app/components/SetupScoreCard.tsx`: New component — SVG circular ring (score/100), 5-step checklist with green checks / numbered circles, +20 pts badges, CTA button when no bundles
 
 Next: Item 3 — Bundle view tracking
+
+### 2026-04-24 20:15 - Completed Item 3
+
+**Item 3 — Bundle View Tracking:**
+- ✅ `app/routes/api/api.bundle.$bundleId.view.tsx`: New public POST endpoint — validates bundle ownership, writes BundleAnalytics record (event: "view"), always returns 200 to never break storefront
+- ✅ `app/assets/bundle-widget-full-page.js`: Added `_recordView()` method + call after `isInitialized = true`, skips Theme Editor designMode
+- ✅ `app/assets/bundle-widget-product-page.js`: Same pattern
+- ✅ Both bundled + minified via `npm run build:widgets`
+- ✅ `app/routes/app/app.attribution.tsx`: Loader fetches view events in parallel with attributions; computes totalViews, prevTotalViews, viewsByBundle (top 10). UI shows "Bundle Views" stat card + bar chart of views by bundle, above Bundle Revenue section
+
+Next: Item 4 — Bundle settings panel

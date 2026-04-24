@@ -199,6 +199,11 @@ class BundleWidgetFullPage {
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
+      // Fire-and-forget: record a view event for analytics (skip in Theme Editor preview)
+      if (!window.Shopify?.designMode) {
+        this._recordView();
+      }
+
     } catch (error) {
       this.hideLoadingOverlay();
       // Log full error to browser console for developer debugging
@@ -4705,6 +4710,22 @@ class BundleWidgetFullPage {
       }).catch(() => { /* best-effort — ignore if proxy is also down */ });
     } catch (_) {
       // Never throw from error reporting
+    }
+  }
+
+  _recordView() {
+    try {
+      const bundleId = this.config?.bundleId ?? this.container?.dataset?.bundleId;
+      const shop = window.Shopify?.shop;
+      if (!bundleId || !shop) return;
+      fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
+        keepalive: true,
+      }).catch(() => { /* best-effort */ });
+    } catch (_) {
+      // Never throw from analytics
     }
   }
 }
