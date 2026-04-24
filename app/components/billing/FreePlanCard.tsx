@@ -39,7 +39,7 @@ export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
               </Text>
             </InlineStack>
             <Text as="p" variant="bodyMd" tone="subdued">
-              Perfect for getting started with bundles
+              For bundle sales up to $500/month — free until you grow
             </Text>
           </BlockStack>
 

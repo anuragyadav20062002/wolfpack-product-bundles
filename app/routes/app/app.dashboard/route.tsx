@@ -26,7 +26,7 @@ import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
+import { SetupScoreCard } from "../../../components/SetupScoreCard";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
@@ -128,6 +128,34 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       ? bundle.shopifyProductHandle
       : bundle.shopifyPageHandle
   }));
+
+  // Setup score signals — run in parallel, each is non-critical
+  const bundleIds = bundlesWithPreview.map(b => b.id);
+  const [hasProductsAdded, hasDiscount, hasDcpConfigured] = await Promise.all([
+    bundleIds.length > 0
+      ? db.bundleStep.findFirst({
+          where: { bundleId: { in: bundleIds }, products: { not: null } },
+          select: { id: true },
+        }).then(r => r !== null)
+      : Promise.resolve(false),
+    bundleIds.length > 0
+      ? db.bundlePricing.findFirst({
+          where: { bundleId: { in: bundleIds }, enabled: true },
+          select: { id: true },
+        }).then(r => r !== null)
+      : Promise.resolve(false),
+    db.designSettings.findFirst({
+      where: { shopId: session.shop },
+      select: { id: true },
+    }).then(r => r !== null),
+  ]);
+  const setupScore = {
+    bundlesExist: bundlesWithPreview.length > 0,
+    hasProductsAdded,
+    hasDiscount,
+    hasActiveBundleOnStore: bundlesWithPreview.some(b => b.status === BundleStatus.ACTIVE && (b.shopifyPageHandle || b.shopifyProductHandle)),
+    hasDcpConfigured,
+  };
 
   // Get subscription info for upgrade prompt.
   // Wrapped in try-catch: on fresh install afterAuth may not yet have created the shop
@@ -248,6 +276,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleLimit: subscriptionInfo.bundleLimit,
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
+    setupScore,
   });
 };
 
@@ -337,7 +366,7 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -865,105 +894,12 @@ export default function Dashboard() {
           {/* Bottom section with setup instructions and account manager */}
           <Layout.Section>
             <div className={dashboardStyles.bottomSection}>
-              {/* Setup guide (new merchants) → Cart property fix tip (returning merchants) */}
+              {/* Gamified setup score card */}
               <div className={`${dashboardStyles.bottomSectionCol} ${dashboardStyles.fadeIn}`}>
-                {bundles.length === 0 ? (
-                  <BundleSetupInstructions
-                    title="Bundle Setup Steps"
-                    subtitle="Follow these steps to create your bundle"
-                    bundlesExist={false}
-                    steps={[
-                      {
-                        id: "create_bundle",
-                        title: 'Click "Create Bundle"',
-                        description: "Click the \"Create\" button to start making your bundle.",
-                        isClickable: true,
-                        onClick: handleCreateBundle,
-                      },
-                      {
-                        id: "name_description",
-                        title: "Enter bundle name and description",
-                        description: "Type a clear name and an optional description for your bundle.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "create_bundle_modal",
-                        title: 'Click "Bundle Settings"',
-                        description: "This will take you to your bundle set up page.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "add_steps",
-                        title: "Add bundle steps and choose products",
-                        description: "Add steps to your bundle, select products/collections you want.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "setup_pricing",
-                        title: "Set discount rules and pricing",
-                        description: "Choose how discounts and pricing should work for your bundle.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "publish",
-                        title: "Save and publish your bundle",
-                        description: "Save your settings to make your bundle live on your store.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                    ]}
-                  />
-                ) : (
-                  <BundleSetupInstructions
-                    title="Bundle Setup Steps"
-                    subtitle="Follow these steps to get your bundle live on your store"
-                    bundlesExist={true}
-                    steps={[
-                      {
-                        id: "create_bundle",
-                        title: 'Click "Create Bundle"',
-                        description: "Click the \"Create\" button to start making your bundle.",
-                        isClickable: true,
-                        onClick: handleCreateBundle,
-                      },
-                      {
-                        id: "name_description",
-                        title: "Enter bundle name and description",
-                        description: "Type a clear name and an optional description for your bundle.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "create_bundle_modal",
-                        title: 'Click "Bundle Settings"',
-                        description: "This will take you to your bundle set up page.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "add_steps",
-                        title: "Add bundle steps and choose products",
-                        description: "Add steps to your bundle, select products/collections you want.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "setup_pricing",
-                        title: "Set discount rules and pricing",
-                        description: "Choose how discounts and pricing should work for your bundle.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "publish",
-                        title: "Save and publish your bundle",
-                        description: "Save your settings to make your bundle live on your store.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                    ]}
-                  />
-                )}
+                <SetupScoreCard
+                  setupScore={setupScore}
+                  onCreateBundle={handleCreateBundle}
+                />
               </div>
 
               {/* Your Account Manager Card */}

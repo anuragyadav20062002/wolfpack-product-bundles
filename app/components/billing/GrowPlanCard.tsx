@@ -79,7 +79,7 @@ export function GrowPlanCard({
                 </Text>
               </InlineStack>
               <Text as="p" variant="bodyMd" tone="subdued">
-                For growing businesses ready to scale
+                For bundle sales above $500/month — no revenue cap
               </Text>
             </BlockStack>
 

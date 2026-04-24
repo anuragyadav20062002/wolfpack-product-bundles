@@ -29,7 +29,6 @@ import { CustomCssCard, CssGuideContent } from "../../../components/design-contr
 
 import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-control-panel/config";
 import { handleSaveSettings } from "./handlers.server";
-import { BillingService } from "../../../services/billing.server";
 import designControlPanelStyles from "../../../styles/routes/design-control-panel.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -60,13 +59,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     ? `${appUrl}/api/preview/fpb?shop=${shopId}`
     : null;
 
-  const canAccessDcp = await BillingService.isFeatureAvailable(shopId, "design_control_panel");
-
   return json({
     shopId,
     settings,
     previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl },
-    isPaywalled: !canAccessDcp
+    isPaywalled: false
   });
 }
 
