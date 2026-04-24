@@ -282,7 +282,6 @@ export function createSettingSetters(
     setProductCardImageFit: (v: string) => updateSetting("productCardImageFit", v),
     setProductCardsPerRow: (v: string | number) => updateSetting("productCardsPerRow", v),
     setProductTitleVisibility: (v: boolean) => updateSetting("productTitleVisibility", v),
-    setProductPriceVisibility: (v: boolean) => updateSetting("productPriceVisibility", v),
     setProductPriceBgColor: (v: string) => updateSetting("productPriceBgColor", v),
 
     // Product Card Typography

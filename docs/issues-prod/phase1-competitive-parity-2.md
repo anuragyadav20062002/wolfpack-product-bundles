@@ -88,3 +88,24 @@ Next: Item 5 — Analytics CSV export
 - ✅ UI: Added "Export CSV" button (slim, secondary) left of the date range selector using a plain HTML form POST — browser handles the download response natively. Hidden inputs carry current from/to or days params so the export always matches the visible date range.
 
 All 5 items complete.
+
+### 2026-04-24 22:00 - DCP Cleanup: removed productPriceVisibility
+
+Per-bundle price visibility is now owned by `showProductPrices` in Bundle Settings (Item 4).
+Removed `productPriceVisibility` from all DCP surfaces so merchants aren't confused by a
+duplicate control.
+
+Files changed:
+- ✅ `app/components/design-control-panel/settings/ProductCardTypographySettings.tsx`: Removed `productPriceVisibility` VisibilityToggle + conditional wrapper; restored `VisibilityToggle` import (still needed for `productTitleVisibility`)
+- ✅ `app/components/design-control-panel/settings/SettingsPanel.tsx`: Removed `productPriceVisibility` from `productCard` SECTION_KEYS array
+- ✅ `app/components/design-control-panel/config/mergeSettings.ts`: Removed boolean merge block for `productPriceVisibility`
+- ✅ `app/components/design-control-panel/config/defaultSettings.ts`: Removed `productPriceVisibility: true` from both PDP and FPB defaults
+- ✅ `app/components/design-control-panel/types.ts`: Removed `productPriceVisibility: boolean` from DesignSettings interface
+- ✅ `app/types/state.types.ts`: Removed `productPriceVisibility: boolean` from DesignSettings interface
+- ✅ `app/hooks/useDesignControlPanelState.ts`: Removed `setProductPriceVisibility` setter
+- ✅ `app/lib/css-generators/css-variables-generator.ts`: Removed `--bundle-product-price-display` CSS variable emission (fallback `block` in widget CSS takes over — prices always visible)
+- ✅ `app/lib/css-generators/types.ts`: Removed `productPriceVisibility?: boolean`
+- ✅ `app/routes/app/app.design-control-panel/handlers.server.ts`: Removed `productPriceVisibility` from DB update payload
+- ✅ `app/routes/api/api.design-settings.$shopDomain.tsx`: Removed `productPriceVisibility: true` from defaults object
+
+Zero ESLint errors on all modified files.

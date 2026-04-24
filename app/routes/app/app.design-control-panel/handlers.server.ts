@@ -100,7 +100,6 @@ function buildSettingsData(settings: Record<string, unknown>) {
     productCardFontWeight: settings.productCardFontWeight,
     productCardImageFit: settings.productCardImageFit,
     productCardsPerRow: settings.productCardsPerRow,
-    productPriceVisibility: settings.productPriceVisibility,
     productTitleVisibility: settings.productTitleVisibility,
     productPriceBgColor: settings.productPriceBgColor,
     productStrikePriceColor: settings.productStrikePriceColor,

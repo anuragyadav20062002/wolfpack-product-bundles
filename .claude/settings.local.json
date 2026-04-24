@@ -149,7 +149,10 @@
       "mcp__chrome-devtools__wait_for",
       "Bash(npx jest:*)",
       "mcp__chrome-devtools__list_console_messages",
-      "mcp__chrome-devtools__fill"
+      "mcp__chrome-devtools__fill",
+      "mcp__chrome-devtools__press_key",
+      "Read(//Users/adityaawasthi/Developer/wolfpack-product-bundles/app/routes/app/app.bundles.full-page-bundle.configure.$bundleId//**)",
+      "Read(//Users/adityaawasthi/Developer/wolfpack-product-bundles/app/routes/app/app.bundles.product-page-bundle.configure.$bundleId//**)"
     ],
     "deny": []
   }
