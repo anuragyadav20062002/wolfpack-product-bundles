@@ -25,6 +25,11 @@ export interface FormattedBundle {
   shopifyProductId: string | null;
   steps: FormattedStep[];
   pricing: FormattedPricing | null;
+  // Per-bundle behavioral settings
+  showProductPrices: boolean;
+  showCompareAtPrices: boolean;
+  cartRedirectToCheckout: boolean;
+  allowQuantityChanges: boolean;
 }
 
 interface FormattedStep {
@@ -157,5 +162,9 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
           messages: bundle.pricing.messages ?? {},
         }
       : null,
+    showProductPrices: bundle.showProductPrices ?? true,
+    showCompareAtPrices: bundle.showCompareAtPrices ?? false,
+    cartRedirectToCheckout: bundle.cartRedirectToCheckout ?? false,
+    allowQuantityChanges: bundle.allowQuantityChanges ?? true,
   };
 }

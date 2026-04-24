@@ -101,6 +101,11 @@ model Bundle {
   showStepTimeline Boolean? // Admin UI override for step timeline visibility; null = defer to theme editor setting
   floatingBadgeEnabled Boolean  @default(false) // Show floating dismissible promo badge on storefront
   floatingBadgeText    String   @default("")    // Badge text (max 60 chars)
+  // Per-bundle behavioral settings
+  showProductPrices      Boolean @default(true)  // Show/hide product prices on product cards
+  showCompareAtPrices    Boolean @default(false) // Show compare-at (strike-through) prices
+  cartRedirectToCheckout Boolean @default(false) // Redirect to checkout instead of cart after add
+  allowQuantityChanges   Boolean @default(true)  // Allow customers to change per-product quantity
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)

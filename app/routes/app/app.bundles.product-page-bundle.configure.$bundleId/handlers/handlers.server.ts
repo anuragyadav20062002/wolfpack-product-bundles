@@ -193,6 +193,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const templateName = formData.get("templateName") as string || null;
     const loadingGifRaw = formData.get("loadingGif") as string;
     const loadingGif = loadingGifRaw || null;
+    const showProductPrices = formData.get("showProductPrices") !== "false";
+    const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
+    const cartRedirectToCheckout = formData.get("cartRedirectToCheckout") === "true";
+    const allowQuantityChanges = formData.get("allowQuantityChanges") !== "false";
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -301,6 +305,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         shopifyProductHandle: bundleProductData?.handle || existingBundle?.shopifyProductHandle || null,
         templateName: templateName,
         loadingGif: loadingGif,
+        showProductPrices,
+        showCompareAtPrices,
+        cartRedirectToCheckout,
+        allowQuantityChanges,
         // Update steps if provided
         ...(stepsData && {
           steps: {

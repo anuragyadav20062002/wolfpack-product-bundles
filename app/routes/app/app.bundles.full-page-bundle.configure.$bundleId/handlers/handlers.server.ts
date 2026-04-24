@@ -398,6 +398,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const floatingBadgeEnabled = formData.get("floatingBadgeEnabled") === "true";
     const floatingBadgeTextRaw = (formData.get("floatingBadgeText") as string) ?? "";
     const floatingBadgeText = floatingBadgeTextRaw.slice(0, 60);
+    const showProductPrices = formData.get("showProductPrices") !== "false";
+    const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
+    const cartRedirectToCheckout = formData.get("cartRedirectToCheckout") === "true";
+    const allowQuantityChanges = formData.get("allowQuantityChanges") !== "false";
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -520,6 +524,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showStepTimeline: showStepTimelineForSave,
         floatingBadgeEnabled,
         floatingBadgeText,
+        showProductPrices,
+        showCompareAtPrices,
+        cartRedirectToCheckout,
+        allowQuantityChanges,
         // Update steps if provided
         ...(stepsData && {
           steps: {

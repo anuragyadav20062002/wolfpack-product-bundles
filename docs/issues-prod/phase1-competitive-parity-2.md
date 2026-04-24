@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-04-24
-**Last Updated:** 2026-04-24 20:15
+**Last Updated:** 2026-04-24 21:00
 
 ## Overview
 
@@ -38,7 +38,7 @@ Items:
 - [x] Item 1: DCP unlock + pricing model (plans.ts, pricing-data.ts, GrowPlanCard, FreePlanCard)
 - [x] Item 2: Gamified score component + dashboard loader data
 - [x] Item 3: View tracking API + widget instrumentation + analytics display
-- [ ] Item 4: Bundle settings Prisma migration + editor tab + widget reads
+- [x] Item 4: Bundle settings Prisma migration + editor tab + widget reads
 - [ ] Item 5: Analytics CSV export action
 
 ### 2026-04-24 19:45 - Completed Item 1 + Item 2
@@ -66,3 +66,16 @@ Next: Item 3 — Bundle view tracking
 - ✅ `app/routes/app/app.attribution.tsx`: Loader fetches view events in parallel with attributions; computes totalViews, prevTotalViews, viewsByBundle (top 10). UI shows "Bundle Views" stat card + bar chart of views by bundle, above Bundle Revenue section
 
 Next: Item 4 — Bundle settings panel
+
+### 2026-04-24 21:00 - Completed Item 4
+
+**Item 4 — Bundle Settings Panel (per-bundle behavioral toggles):**
+- ✅ `prisma/schema.prisma`: Added 4 Boolean columns to Bundle model — `showProductPrices` (default true), `showCompareAtPrices` (default false), `cartRedirectToCheckout` (default false), `allowQuantityChanges` (default true)
+- ✅ `prisma/migrations/20260424000000_add_bundle_settings_fields/migration.sql`: Manual migration for SIT/PROD (DB unreachable at time of writing; apply with `npx prisma migrate deploy` when available)
+- ✅ `app/lib/bundle-formatter.server.ts`: Added 4 new fields to FormattedBundle interface + return value (with ?? fallbacks matching defaults)
+- ✅ FPB editor `handlers.server.ts`: Reads + saves all 4 new fields from form data
+- ✅ PDP editor `handlers.server.ts`: Same
+- ✅ FPB editor `route.tsx`: Enabled bundle_settings nav item; added 4 useState hooks; appends to handleSave formData; renders "Bundle Settings" panel with 2 cards (Display + Cart behaviour)
+- ✅ PDP editor `route.tsx`: Same pattern
+
+Next: Item 5 — Analytics CSV export

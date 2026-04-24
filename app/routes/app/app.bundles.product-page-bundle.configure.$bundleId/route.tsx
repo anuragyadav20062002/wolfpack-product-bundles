@@ -252,9 +252,7 @@ const bundleSetupItems = [
   { id: "step_setup", label: "Step Setup", icon: ListNumberedIcon },
   { id: "discount_pricing", label: "Discount & Pricing", icon: DiscountIcon },
   { id: "images_gifs", label: "Bundle Assets", icon: ImageIcon },
-  // Bundle Upsell and Bundle Settings disabled for later release
-  // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
-  // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
+  { id: "bundle_settings", label: "Bundle Settings", icon: ImageIcon },
 ];
 
 // Static status options - imported from centralized constants
@@ -442,6 +440,12 @@ export default function ConfigureBundleFlow() {
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
 
+  // Bundle Settings state
+  const [showProductPrices, setShowProductPrices] = useState<boolean>((bundle as any).showProductPrices ?? true);
+  const [showCompareAtPrices, setShowCompareAtPrices] = useState<boolean>((bundle as any).showCompareAtPrices ?? false);
+  const [cartRedirectToCheckout, setCartRedirectToCheckout] = useState<boolean>((bundle as any).cartRedirectToCheckout ?? false);
+  const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
 
@@ -479,6 +483,10 @@ export default function ConfigureBundleFlow() {
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
       formData.append("loadingGif", loadingGif ?? "");
+      formData.append("showProductPrices", String(showProductPrices));
+      formData.append("showCompareAtPrices", String(showCompareAtPrices));
+      formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
+      formData.append("allowQuantityChanges", String(allowQuantityChanges));
 
       // Submit to server action using fetcher
 
@@ -2046,6 +2054,58 @@ export default function ConfigureBundleFlow() {
                         />
                       </BlockStack>
                     )}
+                  </BlockStack>
+                </Card>
+              </BlockStack>
+            )}
+
+            {activeSection === "bundle_settings" && (
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={ImageIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Bundle Settings</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Control how this bundle behaves on the storefront.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <Text variant="headingSm" as="h3">Display</Text>
+                    <Checkbox
+                      label="Show product prices"
+                      helpText="Display the price of each product on its card."
+                      checked={showProductPrices}
+                      onChange={(val) => { setShowProductPrices(val); markAsDirty(); }}
+                    />
+                    <Checkbox
+                      label="Show compare-at prices"
+                      helpText="Show the original (strike-through) price next to the sale price."
+                      checked={showCompareAtPrices}
+                      onChange={(val) => { setShowCompareAtPrices(val); markAsDirty(); }}
+                    />
+                    <Checkbox
+                      label="Allow quantity changes"
+                      helpText="Let customers adjust the quantity of individual products within the bundle."
+                      checked={allowQuantityChanges}
+                      onChange={(val) => { setAllowQuantityChanges(val); markAsDirty(); }}
+                    />
+                  </BlockStack>
+                </Card>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <Text variant="headingSm" as="h3">Cart behaviour</Text>
+                    <Checkbox
+                      label="Redirect to checkout after adding to cart"
+                      helpText="Takes customers directly to checkout instead of the cart page."
+                      checked={cartRedirectToCheckout}
+                      onChange={(val) => { setCartRedirectToCheckout(val); markAsDirty(); }}
+                    />
                   </BlockStack>
                 </Card>
               </BlockStack>
