@@ -30,6 +30,9 @@ export interface FormattedBundle {
   showCompareAtPrices: boolean;
   cartRedirectToCheckout: boolean;
   allowQuantityChanges: boolean;
+  // Per-bundle text overrides
+  textOverrides: Record<string, string> | null;
+  textOverridesByLocale: Record<string, Record<string, string>> | null;
 }
 
 interface FormattedStep {
@@ -166,5 +169,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     showCompareAtPrices: bundle.showCompareAtPrices ?? false,
     cartRedirectToCheckout: bundle.cartRedirectToCheckout ?? false,
     allowQuantityChanges: bundle.allowQuantityChanges ?? true,
+    textOverrides: (bundle.textOverrides as Record<string, string> | null) ?? null,
+    textOverridesByLocale: (bundle.textOverridesByLocale as Record<string, Record<string, string>> | null) ?? null,
   };
 }

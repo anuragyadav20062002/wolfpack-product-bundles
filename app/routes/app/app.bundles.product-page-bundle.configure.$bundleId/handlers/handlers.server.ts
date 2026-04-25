@@ -197,6 +197,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
     const cartRedirectToCheckout = formData.get("cartRedirectToCheckout") === "true";
     const allowQuantityChanges = formData.get("allowQuantityChanges") !== "false";
+    const textOverridesRaw = formData.get("textOverrides") as string | null;
+    const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
+    const textOverrides = textOverridesRaw ? JSON.parse(textOverridesRaw) : null;
+    const textOverridesByLocale = textOverridesByLocaleRaw ? JSON.parse(textOverridesByLocaleRaw) : null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -309,6 +313,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showCompareAtPrices,
         cartRedirectToCheckout,
         allowQuantityChanges,
+        textOverrides,
+        textOverridesByLocale,
         // Update steps if provided
         ...(stepsData && {
           steps: {

@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.6.1
- * Built   : 2026-04-24
+ * Built   : 2026-04-25
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3314,7 +3314,7 @@ class BundleWidgetFullPage {
     const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
-    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? 'Add to Cart' : 'Next';
+    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionlessMobile ? !hasSelectionMobile : (isLastStep && !isComplete)) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (conditionlessMobile || (isLastStep && isComplete)) {
@@ -3375,7 +3375,7 @@ class BundleWidgetFullPage {
     header.className = 'side-panel-header';
     const headerTitle = document.createElement('span');
     headerTitle.className = 'side-panel-title';
-    headerTitle.textContent = 'Your Bundle';
+    headerTitle.textContent = this._resolveText('yourBundle', 'Your Bundle');
     header.appendChild(headerTitle);
 
     if (allSelectedProducts.length > 0) {
@@ -4258,7 +4258,7 @@ class BundleWidgetFullPage {
           img.className = 'fpb-included-badge-img';
           badge.appendChild(img);
         } else {
-          badge.textContent = 'Included';
+          badge.textContent = this._resolveText('includedBadge', 'Included');
         }
         imgEl.parentElement.appendChild(badge);
       }
@@ -4283,7 +4283,7 @@ class BundleWidgetFullPage {
           img.className = 'fpb-free-badge-img';
           badge.appendChild(img);
         } else {
-          badge.textContent = 'Free';
+          badge.textContent = this._resolveText('freeBadge', 'Free');
         }
         imgEl.parentElement.appendChild(badge);
       }
@@ -4570,7 +4570,7 @@ class BundleWidgetFullPage {
     ctaBtn.setAttribute('type', 'button');
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-    ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
+    ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
@@ -6168,10 +6168,10 @@ class BundleWidgetFullPage {
     const isCurrentStepValid = this.validateStep(this.currentStepIndex);
 
     if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
-      nextButton.textContent = 'Done';
+      nextButton.textContent = this._resolveText('doneButton', 'Done');
       nextButton.disabled = !isCurrentStepValid;
     } else {
-      nextButton.textContent = 'Next';
+      nextButton.textContent = this._resolveText('nextButton', 'Next');
       nextButton.disabled = !isCurrentStepValid;
     }
   }
@@ -6670,6 +6670,17 @@ class BundleWidgetFullPage {
     } catch (_) {
 
     }
+  }
+
+  _resolveText(key, fallback) {
+    const locale = window.Shopify?.locale;
+    if (locale && this.config?.textOverridesByLocale?.[locale]?.[key]) {
+      return this.config.textOverridesByLocale[locale][key];
+    }
+    if (this.config?.textOverrides?.[key]) {
+      return this.config.textOverrides[key];
+    }
+    return fallback;
   }
 
   _recordView() {

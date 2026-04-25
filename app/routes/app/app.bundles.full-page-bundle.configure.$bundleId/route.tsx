@@ -187,6 +187,25 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     orderBy: { name: 'asc' },
   });
 
+  // Fetch shop locales for multi-language text overrides
+  let shopLocales: { locale: string; name: string; primary: boolean }[] = [];
+  try {
+    const localesResponse = await admin.graphql(`
+      query GetShopLocales {
+        shopLocales {
+          locale
+          name
+          primary
+          published
+        }
+      }
+    `);
+    const localesData = await localesResponse.json() as { data?: { shopLocales?: { locale: string; name: string; primary: boolean; published: boolean }[] } };
+    shopLocales = (localesData.data?.shopLocales ?? []).filter((l) => l.published);
+  } catch {
+    // Non-critical — fall back to English-only mode
+  }
+
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
@@ -202,6 +221,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     shop: session.shop,
     apiKey,
     blockHandle,
+    shopLocales,
   });
 };
 
@@ -279,6 +299,7 @@ const bundleSetupItems = [
   { id: "images_gifs",      label: "Bundle Assets",       icon: ImageIcon,        fullPageOnly: true  },
   { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
   { id: "bundle_settings",  label: "Bundle Settings",     icon: ImageIcon,        fullPageOnly: false },
+  { id: "messages",         label: "Messages",            icon: ListNumberedIcon, fullPageOnly: false },
 ];
 
 // Static status options - imported from centralized constants
@@ -309,7 +330,7 @@ export default function ConfigureBundleFlow() {
     loadingGif?: string | null;
     shopifyProductHandle?: string;
   };
-  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = loaderData;
+  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle, shopLocales = [] } = loaderData as any;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -474,6 +495,16 @@ export default function ConfigureBundleFlow() {
   const [cartRedirectToCheckout, setCartRedirectToCheckout] = useState<boolean>((bundle as any).cartRedirectToCheckout ?? false);
   const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
 
+  // Text overrides state (Messages tab)
+  const [textOverrides, setTextOverrides] = useState<Record<string, string>>(
+    ((bundle as any).textOverrides as Record<string, string>) ?? {}
+  );
+  const [textOverridesByLocale, setTextOverridesByLocale] = useState<Record<string, Record<string, string>>>(
+    ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
+  );
+  // Which locale the merchant is currently editing in the Messages tab
+  const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
+
   // Widget install loading state
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
 
@@ -577,6 +608,8 @@ export default function ConfigureBundleFlow() {
       formData.append("showCompareAtPrices", String(showCompareAtPrices));
       formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
       formData.append("allowQuantityChanges", String(allowQuantityChanges));
+      formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
+      formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
 
       // Submit to server action using fetcher
 
@@ -613,6 +646,8 @@ export default function ConfigureBundleFlow() {
     bundle.bundleType,
     bundle.shopifyPageId,
     bundle.shopifyPageHandle,
+    textOverrides,
+    textOverridesByLocale,
     shopify
   ]);
 
@@ -2619,6 +2654,97 @@ export default function ConfigureBundleFlow() {
                 </Card>
               </BlockStack>
             )}
+
+            {activeSection === "messages" && (() => {
+              const isEnglish = textOverridesLocale === "en";
+              const currentOverrides: Record<string, string> = isEnglish
+                ? textOverrides
+                : (textOverridesByLocale[textOverridesLocale] ?? {});
+              const setCurrentOverrides = (key: string, value: string) => {
+                if (isEnglish) {
+                  setTextOverrides((prev) => ({ ...prev, [key]: value }));
+                } else {
+                  setTextOverridesByLocale((prev) => ({
+                    ...prev,
+                    [textOverridesLocale]: { ...(prev[textOverridesLocale] ?? {}), [key]: value },
+                  }));
+                }
+                markAsDirty();
+              };
+              const localeOptions = [
+                { label: "English (default)", value: "en" },
+                ...shopLocales
+                  .filter((l: { locale: string; name: string; primary: boolean }) => l.locale !== "en")
+                  .map((l: { locale: string; name: string; primary: boolean }) => ({ label: l.name, value: l.locale })),
+              ];
+              const fields: { key: string; label: string; placeholder: string; helpText: string }[] = [
+                { key: "addToCartButton",  label: "Add to Cart button",             placeholder: "Add to Cart",                      helpText: 'Shown in the footer and mobile bar when the bundle is complete.' },
+                { key: "nextButton",       label: "Next Step button",               placeholder: "Next",                             helpText: 'Footer button to advance to the next step.' },
+                { key: "doneButton",       label: "Done button",                    placeholder: "Done",                             helpText: 'Shown on the last step in the modal navigator.' },
+                { key: "freeBadge",        label: "Free gift badge",                placeholder: "Free",                             helpText: 'Badge shown on free-gift product cards.' },
+                { key: "includedBadge",    label: "Included badge",                 placeholder: "Included",                         helpText: 'Badge shown on product cards that are already in the bundle.' },
+                { key: "yourBundle",       label: "Sidebar title",                  placeholder: "Your Bundle",                      helpText: 'Heading of the selected-products sidebar / bottom sheet.' },
+              ];
+              return (
+                <BlockStack gap="400">
+                  <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={ListNumberedIcon} tone="subdued" />
+                      <BlockStack gap="0">
+                        <Text variant="headingSm" fontWeight="semibold" as="p">Messages</Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          Customise the text shown to customers in the bundle widget.
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                  </Box>
+
+                  {localeOptions.length > 1 && (
+                    <Card>
+                      <BlockStack gap="300">
+                        <Text variant="headingSm" as="h3">Language</Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          Select a language to customise strings for that locale. Customers on English storefronts always use the default values above.
+                        </Text>
+                        <Select
+                          label="Editing language"
+                          options={localeOptions}
+                          value={textOverridesLocale}
+                          onChange={(val) => setTextOverridesLocale(val)}
+                          labelHidden={false}
+                        />
+                      </BlockStack>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <BlockStack gap="400">
+                      <Text variant="headingSm" as="h3">
+                        Widget labels{!isEnglish ? ` — ${localeOptions.find((o) => o.value === textOverridesLocale)?.label ?? textOverridesLocale}` : ""}
+                      </Text>
+                      {!isEnglish && (
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          Leave a field blank to fall back to the English default.
+                        </Text>
+                      )}
+                      <FormLayout>
+                        {fields.map(({ key, label, placeholder, helpText }) => (
+                          <TextField
+                            key={key}
+                            label={label}
+                            value={currentOverrides[key] ?? ""}
+                            placeholder={placeholder}
+                            helpText={helpText}
+                            autoComplete="off"
+                            onChange={(val) => setCurrentOverrides(key, val)}
+                          />
+                        ))}
+                      </FormLayout>
+                    </BlockStack>
+                  </Card>
+                </BlockStack>
+              );
+            })()}
           </Layout.Section>
         </Layout>
       </form>

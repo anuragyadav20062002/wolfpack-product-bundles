@@ -325,6 +325,8 @@ export async function updateBundleProductMetafields(
     loadingGif: bundleConfiguration.loadingGif ?? null,
     floatingBadgeEnabled: bundleConfiguration.floatingBadgeEnabled ?? false,
     floatingBadgeText: bundleConfiguration.floatingBadgeText ?? '',
+    textOverrides: bundleConfiguration.textOverrides ?? null,
+    textOverridesByLocale: bundleConfiguration.textOverridesByLocale ?? null,
   };
 
   // Check metafield sizes and log warnings
