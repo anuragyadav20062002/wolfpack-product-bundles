@@ -560,3 +560,52 @@
   background: #5c6ac4;
   border-top: 1px dashed #5c6ac4;
 }
+
+/* ── Compare toggle ─────────────────────────────────────────── */
+.compareToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #c9cccf;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #202223;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, color 120ms;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.compareToggle:hover {
+  background: #f6f6f7;
+  border-color: #8c9196;
+}
+
+.compareToggleActive {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.compareToggleActive:hover {
+  background: #374151;
+  border-color: #374151;
+  color: #fff;
+}
+
+.comparePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #f0f4ff;
+  border: 1px solid #dbe4ff;
+  font-size: 11px;
+  font-weight: 500;
+  color: #5c6ac4;
+  white-space: nowrap;
+}

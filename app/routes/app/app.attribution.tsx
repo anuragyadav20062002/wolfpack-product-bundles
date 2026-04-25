@@ -240,6 +240,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Previous period — same length, immediately before current
   const prevSince = new Date(since);
   prevSince.setDate(prevSince.getDate() - days);
+  const prevUntil = new Date(since);
+  prevUntil.setDate(prevUntil.getDate() - 1);
+  const prevFromStr = prevSince.toISOString().split("T")[0];
+  const prevToStr   = prevUntil.toISOString().split("T")[0];
 
   // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
   const pixelStatus = await getPixelStatus(admin);
@@ -438,6 +442,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     days,
     from: fromStr,
     to: toStr,
+    prevFrom: prevFromStr,
+    prevTo: prevToStr,
     pixelActive: pixelStatus.active,
     summary: {
       totalRevenue, totalOrders, bundleOrders, aov,
@@ -574,7 +580,7 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
 
 // ─── BundleKpiRow ─────────────────────────────────────────────
 
-function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
+function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; compare: boolean }) {
   const revDelta = formatDelta(s.totalBundleRevenue, s.prevTotalBundleRevenue);
   const ordDelta = formatDelta(s.totalBundleOrders, s.prevTotalBundleOrders);
   const aovDelta = s.bundleAOV !== null && s.prevBundleAOV !== null
@@ -602,21 +608,21 @@ function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
         <span className={styles.bundleKpiValue}>
           {s.totalBundleRevenue > 0 ? formatRevenue(s.totalBundleRevenue) : "$0"}
         </span>
-        {revDelta.label !== "—" ? (
+        {compare && (revDelta.label !== "—" ? (
           <Badge tone={deltaTone(revDelta.direction)}>{`${revDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
 
       <div className={styles.bundleKpiCard}>
         <span className={styles.bundleKpiLabel}>Bundle Orders</span>
         <span className={styles.bundleKpiValue}>{s.totalBundleOrders}</span>
-        {ordDelta.label !== "—" ? (
+        {compare && (ordDelta.label !== "—" ? (
           <Badge tone={deltaTone(ordDelta.direction)}>{`${ordDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
 
       <div className={styles.bundleKpiCard}>
@@ -624,11 +630,11 @@ function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
         <span className={styles.bundleKpiValue}>
           {s.bundleAOV !== null ? formatRevenue(s.bundleAOV) : "—"}
         </span>
-        {aovDelta && aovDelta.label !== "—" ? (
+        {compare && (aovDelta && aovDelta.label !== "—" ? (
           <Badge tone={deltaTone(aovDelta.direction)}>{`${aovDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
 
       <div className={styles.bundleKpiCard}>
@@ -636,11 +642,11 @@ function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
         <span className={styles.bundleKpiValue}>
           {s.bundleRevenuePercent > 0 ? s.bundleRevenuePercent.toFixed(1) + "%" : "0%"}
         </span>
-        {pctDelta ? (
+        {compare && (pctDelta ? (
           <Badge tone={deltaTone(pctDelta.direction)}>{`${pctDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
     </InlineGrid>
   );
@@ -939,7 +945,7 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
 export default function AttributionDashboard() {
   const {
-    days, from, to, summary, timeSeries,
+    days, from, to, prevFrom, prevTo, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
     pixelActive,
     bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
@@ -949,6 +955,18 @@ export default function AttributionDashboard() {
   // Recharts uses ResizeObserver — only render on client to avoid SSR mismatch
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
+
+  const [compare, setCompare] = useState(true);
+
+  const comparePeriodLabel = useMemo(() => {
+    if (!prevFrom || !prevTo) return null;
+    const fmt = (s: string) => {
+      const [, m, d] = s.split("-");
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${months[parseInt(m,10)-1]} ${parseInt(d,10)}`;
+    };
+    return `${fmt(prevFrom)} – ${fmt(prevTo)}`;
+  }, [prevFrom, prevTo]);
 
   const maxPlatformRevenue = byPlatform[0]?.revenue || 1;
 
@@ -1010,9 +1028,15 @@ export default function AttributionDashboard() {
         {/* Pixel tracking toggle */}
         <PixelStatusCard pixelActive={pixelActive} />
 
-        {/* Date range selector + Export */}
+        {/* Date range selector + Compare toggle + Export */}
         <div className={styles.headerRow}>
-          <div />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {compare && comparePeriodLabel && (
+              <span className={styles.comparePill}>
+                vs {comparePeriodLabel}
+              </span>
+            )}
+          </div>
           <InlineStack gap="200" blockAlign="center">
             <form method="post" style={{ display: "inline" }}>
               <input type="hidden" name="intent" value="export" />
@@ -1026,6 +1050,13 @@ export default function AttributionDashboard() {
               )}
               <Button submit size="slim" variant="secondary">Export CSV</Button>
             </form>
+            <button
+              className={`${styles.compareToggle}${compare ? ` ${styles.compareToggleActive}` : ""}`}
+              onClick={() => setCompare(v => !v)}
+              type="button"
+            >
+              Compare
+            </button>
             <div className={styles.datePickerWrap}>
               <DateRangeSelector days={days} from={from} to={to} />
             </div>
@@ -1041,7 +1072,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent1}`}>
             <span className={styles.statLabel}>Total Views</span>
             <span className={styles.statValue}>{views.totalViews.toLocaleString()}</span>
-            {views.prevTotalViews > 0 && (
+            {compare && views.prevTotalViews > 0 && (
               <span className={
                 views.totalViews >= views.prevTotalViews ? styles.growthPos : styles.growthNeg
               }>
@@ -1085,7 +1116,7 @@ export default function AttributionDashboard() {
           <Text as="h2" variant="headingMd">Bundle Revenue</Text>
         </div>
 
-        <BundleKpiRow summary={bundleRevenueSummary} />
+        <BundleKpiRow summary={bundleRevenueSummary} compare={compare} />
 
         <div className={styles.bundleSplitRow}>
           <BundleTrendChart trend={bundleRevenueTrend} days={days} isClient={isClient} />
@@ -1104,7 +1135,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent1}`}>
             <span className={styles.statLabel}>Total Ad Revenue</span>
             <span className={styles.statValue}>{formatRevenue(summary.totalRevenue)}</span>
-            {revenueGrowth && (
+            {compare && revenueGrowth && (
               <span className={
                 isPositiveGrowth(summary.totalRevenue, summary.prevTotalRevenue)
                   ? styles.growthPos : styles.growthNeg
@@ -1121,7 +1152,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent2}`}>
             <span className={styles.statLabel}>Attributed Orders</span>
             <span className={styles.statValue}>{summary.totalOrders}</span>
-            {ordersGrowth && (
+            {compare && ordersGrowth && (
               <span className={
                 isPositiveGrowth(summary.totalOrders, summary.prevTotalOrders)
                   ? styles.growthPos : styles.growthNeg
@@ -1138,7 +1169,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent3}`}>
             <span className={styles.statLabel}>Avg. Order Value</span>
             <span className={styles.statValue}>{formatRevenue(summary.aov)}</span>
-            {aovGrowth && (
+            {compare && aovGrowth && (
               <span className={
                 isPositiveGrowth(summary.aov, summary.prevAov)
                   ? styles.growthPos : styles.growthNeg
