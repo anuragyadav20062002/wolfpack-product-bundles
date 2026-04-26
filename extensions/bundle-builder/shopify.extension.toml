@@ -21,3 +21,12 @@ liquid_path = "blocks/bundle-product-page.liquid"
 target = "section"
 liquid_path = "blocks/bundle-full-page.liquid"
 
+# App Embed blocks — activated once per store in Theme Settings > App Embeds
+[[extensions.blocks]]
+target = "body"
+liquid_path = "blocks/bundle-full-page-embed.liquid"
+
+[[extensions.blocks]]
+target = "body"
+liquid_path = "blocks/bundle-product-page-embed.liquid"
+

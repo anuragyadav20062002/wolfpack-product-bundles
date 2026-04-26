@@ -148,6 +148,11 @@ model BundleStep {
   conditionValue2             Int?
   isFreeGift                  Boolean       @default(false)
   freeGiftName                String?
+  addonLabel                  String?
+  addonTitle                  String?
+  addonIconUrl                String?
+  addonDisplayFree            Boolean       @default(true)
+  addonUnlockAfterCompletion  Boolean       @default(true)
   isDefault                   Boolean       @default(false)
   defaultVariantId            String?
   imageUrl                    String?
