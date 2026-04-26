@@ -83,10 +83,20 @@ export interface BundleUiStep {
   conditionValue?: string;
   conditionOperator2?: string;
   conditionValue2?: string;
-  /** If true, this step is a free gift step — unlocks after all paid steps complete. */
+  /** If true, this step is a free gift / add-on step. */
   isFreeGift?: boolean;
-  /** Display name for the free gift (e.g. "cap", "greeting card"). */
+  /** Legacy display name for the free gift. Superseded by addonLabel. */
   freeGiftName?: string;
+  /** Add-on step tab label (shown in step navigator). */
+  addonLabel?: string | null;
+  /** Add-on step panel heading. */
+  addonTitle?: string | null;
+  /** URL of uploaded icon for the add-on step tab. */
+  addonIconUrl?: string | null;
+  /** Show products at $0.00 in this step. */
+  addonDisplayFree?: boolean;
+  /** Lock this step tab until prior steps meet minQuantity. */
+  addonUnlockAfterCompletion?: boolean;
   /** If true, this step is pre-filled and not shown in the bottom-sheet modal tabs. */
   isDefault?: boolean;
   /** Variant ID pre-selected for default steps. */

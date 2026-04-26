@@ -285,10 +285,14 @@ export async function updateBundleProductMetafields(
       conditionValue: step.conditionValue,
       conditionOperator2: step.conditionOperator2,
       conditionValue2: step.conditionValue2,
-      // Free gift + default step fields — required by widget to detect step type
-      // and by cart transform to tag _bundle_step_type: free_gift on line properties
+      // Free gift / add-on step fields — required by widget for tab rendering and cart transform
       isFreeGift: step.isFreeGift || false,
       freeGiftName: step.freeGiftName || null,
+      addonLabel: step.addonLabel ?? null,
+      addonTitle: step.addonTitle ?? null,
+      addonIconUrl: step.addonIconUrl ?? null,
+      addonDisplayFree: step.addonDisplayFree !== false,
+      addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,
       isDefault: step.isDefault || false,
       defaultVariantId: step.defaultVariantId || null,
       imageUrl: step.imageUrl ?? null,

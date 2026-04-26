@@ -27,6 +27,7 @@ import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { SetupScoreCard } from "../../../components/SetupScoreCard";
+import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
@@ -149,13 +150,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       select: { id: true },
     }).then(r => r !== null),
   ]);
+  const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
   const setupScore = {
     bundlesExist: bundlesWithPreview.length > 0,
     hasProductsAdded,
     hasDiscount,
     hasActiveBundleOnStore: bundlesWithPreview.some(b => b.status === BundleStatus.ACTIVE && (b.shopifyPageHandle || b.shopifyProductHandle)),
     hasDcpConfigured,
+    appEmbedEnabled: embedCheck.enabled,
   };
+  const themeEditorUrl = embedCheck.themeId
+    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=63077bb0483a6ce08a2d6139b14d170b%2Fbundle-full-page-embed`
+    : null;
 
   // Get subscription info for upgrade prompt.
   // Wrapped in try-catch: on fresh install afterAuth may not yet have created the shop
@@ -277,6 +283,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
     setupScore,
+    themeEditorUrl,
   });
 };
 
@@ -366,7 +373,7 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore, themeEditorUrl } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -899,6 +906,7 @@ export default function Dashboard() {
                 <SetupScoreCard
                   setupScore={setupScore}
                   onCreateBundle={handleCreateBundle}
+                  themeEditorUrl={themeEditorUrl}
                 />
               </div>
 

@@ -14,11 +14,13 @@ export interface SetupScoreData {
   hasDiscount: boolean;
   hasActiveBundleOnStore: boolean;
   hasDcpConfigured: boolean;
+  appEmbedEnabled: boolean;
 }
 
 export interface SetupScoreCardProps {
   setupScore: SetupScoreData;
   onCreateBundle: () => void;
+  themeEditorUrl?: string | null;
 }
 
 const STEPS = [
@@ -47,9 +49,16 @@ const STEPS = [
     label: "Customize your bundle design",
     description: "Use the Design Control Panel to style your bundles",
   },
+  {
+    key: "appEmbedEnabled" as keyof SetupScoreData,
+    label: "Enable your theme app extension",
+    description: "Allow Wolfpack to display bundles automatically on your storefront.",
+    actionLabel: "Enable now →",
+  },
 ];
 
 const POINTS_PER_STEP = 20;
+const MAX_SCORE = 100;
 
 function ScoreRing({ score, max = 100 }: { score: number; max?: number }) {
   const size = 96;
@@ -110,9 +119,9 @@ function ScoreRing({ score, max = 100 }: { score: number; max?: number }) {
   );
 }
 
-export function SetupScoreCard({ setupScore, onCreateBundle }: SetupScoreCardProps) {
+export function SetupScoreCard({ setupScore, onCreateBundle, themeEditorUrl }: SetupScoreCardProps) {
   const completedCount = STEPS.filter(s => setupScore[s.key]).length;
-  const score = completedCount * POINTS_PER_STEP;
+  const score = Math.min(completedCount * POINTS_PER_STEP, MAX_SCORE);
   const allDone = completedCount === STEPS.length;
 
   return (
@@ -208,6 +217,15 @@ export function SetupScoreCard({ setupScore, onCreateBundle }: SetupScoreCardPro
                     <Text as="p" variant="bodySm" tone="subdued">
                       {step.description}
                     </Text>
+                  )}
+                  {"actionLabel" in step && !done && step.key === "appEmbedEnabled" && themeEditorUrl && (
+                    <Button
+                      variant="plain"
+                      size="slim"
+                      onClick={() => window.open(themeEditorUrl, "_blank")}
+                    >
+                      {step.actionLabel}
+                    </Button>
                   )}
                 </div>
 

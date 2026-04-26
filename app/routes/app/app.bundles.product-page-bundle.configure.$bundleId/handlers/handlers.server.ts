@@ -337,9 +337,14 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
-                // Free gift & default product fields
+                // Free gift / add-on step fields
                 isFreeGift: step.isFreeGift === true,
                 freeGiftName: step.freeGiftName || null,
+                addonLabel: step.addonLabel ?? null,
+                addonTitle: step.addonTitle ?? null,
+                addonIconUrl: step.addonIconUrl ?? null,
+                addonDisplayFree: step.addonDisplayFree !== false,
+                addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,
                 isDefault: step.isDefault === true,
                 defaultVariantId: step.defaultVariantId || null,
                 // Apply condition data if available

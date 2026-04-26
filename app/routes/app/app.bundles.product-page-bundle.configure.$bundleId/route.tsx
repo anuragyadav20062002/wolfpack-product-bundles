@@ -39,6 +39,7 @@ import {
   Collapsible,
   FormLayout,
   Checkbox,
+  ChoiceList,
   Modal,
   Thumbnail,
   List,
@@ -92,6 +93,8 @@ import type {
   BundleProductCardProps,
 } from "./types";
 import type { BundleStatus } from "../../../constants/bundle";
+import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
+import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 
 declare global {
   interface Window {
@@ -205,6 +208,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     // Non-critical — fall back to English-only mode
   }
 
+  const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
+  const themeEditorUrl = embedCheck.themeId
+    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-full-page-embed`
+    : null;
+
   return json({
     bundle,
     bundleProduct,
@@ -212,6 +220,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     apiKey,
     blockHandle,
     shopLocales,
+    appEmbedEnabled: embedCheck.enabled,
+    themeEditorUrl,
   });
 };
 
@@ -368,7 +378,7 @@ export default function ConfigureBundleFlow() {
     loadingGif?: string | null;
     shopifyProductHandle?: string;
   };
-  const { bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, shopLocales = [] } = loaderData as any;
+  const { bundleProduct: loadedBundleProduct, shop, apiKey, blockHandle, shopLocales = [], appEmbedEnabled = true, themeEditorUrl = null } = loaderData as any;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -1342,6 +1352,8 @@ export default function ConfigureBundleFlow() {
         <BlockStack gap="400">
         </BlockStack>
 
+        <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+
         <Layout>
 
           {/* Left Sidebar */}
@@ -1663,26 +1675,55 @@ export default function ConfigureBundleFlow() {
                                     </Text>
                                   </BlockStack>
 
-                                  {/* Free Gift toggle */}
-                                  <Checkbox
-                                    label="Free gift step"
-                                    helpText="This step is unlocked after all regular steps are complete. Products are shown at $0.00."
-                                    checked={step.isFreeGift === true}
-                                    onChange={(checked) => {
-                                      stepsState.updateStepField(step.id, 'isFreeGift', checked);
-                                      if (!checked) stepsState.updateStepField(step.id, 'freeGiftName', '');
+                                  {/* Step type selector */}
+                                  <ChoiceList
+                                    title="Step type"
+                                    choices={[
+                                      { label: 'Regular Step', value: 'regular' },
+                                      { label: 'Add-On / Upsell Step', value: 'addon' },
+                                    ]}
+                                    selected={[step.isFreeGift ? 'addon' : 'regular']}
+                                    onChange={([val]) => {
+                                      const isAddon = val === 'addon';
+                                      stepsState.updateStepField(step.id, 'isFreeGift', isAddon);
+                                      if (!isAddon) {
+                                        stepsState.updateStepField(step.id, 'addonLabel', null);
+                                        stepsState.updateStepField(step.id, 'addonTitle', null);
+                                        stepsState.updateStepField(step.id, 'addonIconUrl', null);
+                                      }
                                     }}
                                   />
 
                                   {step.isFreeGift && (
                                     <FormLayout>
                                       <TextField
-                                        label="Gift display name"
-                                        placeholder='e.g. "cap", "greeting card"'
-                                        helpText='Shown in the widget: "Add 2 more to claim a FREE cap!"'
-                                        value={step.freeGiftName || ''}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'freeGiftName', value)}
+                                        label="Step label (tab name)"
+                                        placeholder="Add-Ons"
+                                        helpText="Shown in the bundle step navigator tab."
+                                        maxLength={40}
+                                        value={step.addonLabel ?? (step.freeGiftName || '')}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'addonLabel', value)}
                                         autoComplete="off"
+                                      />
+                                      <TextField
+                                        label="Step title (panel heading)"
+                                        placeholder="Pick a free gift!"
+                                        helpText="Shown as the heading inside the step panel."
+                                        value={step.addonTitle || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'addonTitle', value)}
+                                        autoComplete="off"
+                                      />
+                                      <Checkbox
+                                        label="Display products as free ($0.00)"
+                                        helpText="Customers see $0 on products in this step."
+                                        checked={step.addonDisplayFree !== false}
+                                        onChange={(checked) => stepsState.updateStepField(step.id, 'addonDisplayFree', checked)}
+                                      />
+                                      <Checkbox
+                                        label="Unlock after bundle completion"
+                                        helpText="This step tab is locked until all prior steps are filled."
+                                        checked={step.addonUnlockAfterCompletion !== false}
+                                        onChange={(checked) => stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', checked)}
                                       />
                                     </FormLayout>
                                   )}
