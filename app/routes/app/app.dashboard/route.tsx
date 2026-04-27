@@ -8,7 +8,6 @@ import {
   Button,
   BlockStack,
   InlineStack,
-  ButtonGroup,
   Badge,
   DataTable,
   Modal,
@@ -316,11 +315,11 @@ const STATUS_BADGES = {
   unlisted: <Badge tone="warning">unlisted</Badge>,
 } as const;
 
-// Bundle type badge component
-const BUNDLE_TYPE_BADGES = {
-  product_page: <Badge tone="info">Product Page</Badge>,
-  full_page: <Badge tone="attention">Full Page</Badge>,
-} as const;
+// Bundle type plain-text labels (no badge, matching EB's table style)
+const BUNDLE_TYPE_LABELS: Record<string, string> = {
+  product_page: 'Product page',
+  full_page: 'Full page',
+};
 
 // Memoized component for bundle action buttons — Edit | Preview | More (…)
 const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, bundle, moreOpen, onMoreToggle }: BundleActionsButtonsProps) => (
@@ -526,14 +525,15 @@ export default function Dashboard() {
     return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <Badge tone="info">{status}</Badge>;
   };
 
-  // Get bundle type badge display
   const getBundleTypeDisplay = (bundleType: string) => {
-    return BUNDLE_TYPE_BADGES[bundleType as keyof typeof BUNDLE_TYPE_BADGES] || <Badge>{bundleType}</Badge>;
+    return BUNDLE_TYPE_LABELS[bundleType] || bundleType;
   };
 
   const [bundleFilter, setBundleFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilterOpen, setTypeFilterOpen] = useState(false);
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [bundlesPerPage, setBundlesPerPage] = useState(20);
@@ -912,32 +912,53 @@ export default function Dashboard() {
                   </Card>
                 ) : (
                   <BlockStack gap="300">
-                    {/* Toolbar: type + status filters on left, search toggle on right */}
+                    {/* Toolbar: type + status filter popovers on left, search toggle on right */}
                     <InlineStack gap="200" align="space-between" blockAlign="center">
                       <InlineStack gap="200" blockAlign="center">
-                        <Select
-                          label="Bundle type"
-                          labelInline
-                          options={[
-                            { label: "All types", value: "all" },
-                            { label: "Product page", value: "product_page" },
-                            { label: "Full page", value: "full_page" },
-                          ]}
-                          value={typeFilter}
-                          onChange={(val) => { setTypeFilter(val); setCurrentPage(1); }}
-                        />
-                        <Select
-                          label="Status"
-                          labelInline
-                          options={[
-                            { label: "All statuses", value: "all" },
-                            { label: "Active", value: "active" },
-                            { label: "Draft", value: "draft" },
-                            { label: "Unlisted", value: "unlisted" },
-                          ]}
-                          value={statusFilter}
-                          onChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
-                        />
+                        {/* Bundle type filter */}
+                        <Popover
+                          active={typeFilterOpen}
+                          activator={
+                            <Button
+                              onClick={() => setTypeFilterOpen(o => !o)}
+                              disclosure
+                            >
+                              {typeFilter === "all" ? "Bundle type" : `Bundle type: ${BUNDLE_TYPE_LABELS[typeFilter] ?? typeFilter}`}
+                            </Button>
+                          }
+                          onClose={() => setTypeFilterOpen(false)}
+                        >
+                          <ActionList
+                            items={[
+                              { content: "All types", onAction: () => { setTypeFilter("all"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "all" },
+                              { content: "Product page", onAction: () => { setTypeFilter("product_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "product_page" },
+                              { content: "Full page", onAction: () => { setTypeFilter("full_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "full_page" },
+                            ]}
+                          />
+                        </Popover>
+
+                        {/* Status filter */}
+                        <Popover
+                          active={statusFilterOpen}
+                          activator={
+                            <Button
+                              onClick={() => setStatusFilterOpen(o => !o)}
+                              disclosure
+                            >
+                              {statusFilter === "all" ? "Status" : `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
+                            </Button>
+                          }
+                          onClose={() => setStatusFilterOpen(false)}
+                        >
+                          <ActionList
+                            items={[
+                              { content: "All statuses", onAction: () => { setStatusFilter("all"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "all" },
+                              { content: "Active", onAction: () => { setStatusFilter("active"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "active" },
+                              { content: "Draft", onAction: () => { setStatusFilter("draft"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "draft" },
+                              { content: "Unlisted", onAction: () => { setStatusFilter("unlisted"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "unlisted" },
+                            ]}
+                          />
+                        </Popover>
                       </InlineStack>
                       <Tooltip content={searchOpen ? "Close search" : "Search bundles"}>
                         <Button
@@ -978,41 +999,41 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* Pagination footer */}
+                    {/* Pagination footer — matches EB: [←] Page X of Y [→]  |  Bundles per page [select] */}
                     {filteredBundles.length > 0 && (
                       <InlineStack gap="300" align="space-between" blockAlign="center">
-                        <Text variant="bodySm" as="p" tone="subdued">
-                          {`Page ${effectivePage} of ${totalPages} · ${filteredBundles.length} bundle${filteredBundles.length !== 1 ? "s" : ""}`}
-                        </Text>
-                        <InlineStack gap="200" blockAlign="center">
-                          <Select
-                            label="Bundles per page"
-                            labelInline
-                            options={[
-                              { label: "10", value: "10" },
-                              { label: "20", value: "20" },
-                              { label: "50", value: "50" },
-                            ]}
-                            value={String(bundlesPerPage)}
-                            onChange={(val) => { setBundlesPerPage(Number(val)); setCurrentPage(1); }}
-                          />
-                          <ButtonGroup>
-                            <Button
-                              disabled={effectivePage <= 1}
-                              onClick={() => setCurrentPage(p => p - 1)}
-                              accessibilityLabel="Previous page"
-                            >
-                              ‹ Prev
-                            </Button>
-                            <Button
-                              disabled={effectivePage >= totalPages}
-                              onClick={() => setCurrentPage(p => p + 1)}
-                              accessibilityLabel="Next page"
-                            >
-                              Next ›
-                            </Button>
-                          </ButtonGroup>
+                        <InlineStack gap="100" blockAlign="center">
+                          <Button
+                            size="slim"
+                            disabled={effectivePage <= 1}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            accessibilityLabel="Previous page"
+                          >
+                            ‹
+                          </Button>
+                          <Text variant="bodySm" as="p">
+                            {`Page ${effectivePage} of ${totalPages}`}
+                          </Text>
+                          <Button
+                            size="slim"
+                            disabled={effectivePage >= totalPages}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            accessibilityLabel="Next page"
+                          >
+                            ›
+                          </Button>
                         </InlineStack>
+                        <Select
+                          label="Bundles per page"
+                          labelInline
+                          options={[
+                            { label: "10", value: "10" },
+                            { label: "20", value: "20" },
+                            { label: "50", value: "50" },
+                          ]}
+                          value={String(bundlesPerPage)}
+                          onChange={(val) => { setBundlesPerPage(Number(val)); setCurrentPage(1); }}
+                        />
                       </InlineStack>
                     )}
                   </BlockStack>

@@ -4,7 +4,8 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-27
-**Last Updated:** 2026-04-27 12:00
+**Status:** Completed
+**Last Updated:** 2026-04-27 13:00
 
 ## Overview
 
@@ -23,7 +24,7 @@ Redesign the dashboard bundle list to match EB's cleaner table layout:
 - [x] Phase 2 — Implement client-side filtering (type, status, search term)
 - [x] Phase 3 — Add pagination (page X of Y, prev/next, per-page selector)
 - [x] Phase 4 — Redesign action buttons column (Edit | Preview | More popover)
-- [ ] Phase 5 — Test locally (requires interactive dev server)
+- [x] Phase 5 — Test locally and compare against EB
 
 ## Progress Log
 
@@ -43,3 +44,13 @@ Redesign the dashboard bundle list to match EB's cleaner table layout:
 - Files changed: app/routes/app/app.dashboard/route.tsx, types.ts
 - Zero TypeScript errors, zero ESLint errors on modified files
 - Next: Deploy to SIT for visual verification
+
+### 2026-04-27 13:00 - EB parity pass after live comparison
+- Side-by-side comparison with EB in local dev confirmed gaps
+- Switched filter dropdowns from Polaris `Select` to `Popover + ActionList` button-style (matches EB's "Bundle type ▾" / "Status ▾" pattern)
+- Removed `BUNDLE_TYPE_BADGES` — type column now shows plain text ("Product page" / "Full page") matching EB
+- Restructured pagination: `[‹] Page X of Y [›]` arrows flanking count on left, "Bundles per page" select on right — matches EB exactly
+- Removed bundle count from pagination text (EB doesn't show it)
+- Removed unused `ButtonGroup` import
+- Verified locally: filter popovers, search toggle, More actions popover, pagination all working
+- Remaining cosmetic delta vs EB: horizontal (⋯) vs vertical (⋮) dots — not functional
