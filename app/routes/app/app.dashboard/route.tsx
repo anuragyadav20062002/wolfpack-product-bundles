@@ -15,11 +15,13 @@ import {
   FormLayout,
   TextField,
   Icon,
-  ChoiceList,
   Tooltip,
   InlineGrid,
+  Select,
+  Popover,
+  ActionList,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -320,36 +322,23 @@ const BUNDLE_TYPE_BADGES = {
   full_page: <Badge tone="attention">Full Page</Badge>,
 } as const;
 
-// Memoized component for bundle action buttons - Professional icon groups with tooltips
-const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, onPreview, bundle }: BundleActionsButtonsProps) => (
-  <InlineStack gap="300" blockAlign="center">
-    {/* Group 1: Edit & Clone (neutral actions) */}
-    <ButtonGroup variant="segmented">
-      <Tooltip content="Edit bundle">
-        <Button
-          size="micro"
-          icon={EditIcon}
-          onClick={() => onEdit(bundle)}
-          accessibilityLabel="Edit bundle"
-        />
-      </Tooltip>
-      <Tooltip content="Clone bundle">
-        <Button
-          size="micro"
-          icon={DuplicateIcon}
-          onClick={() => onClone(bundleId)}
-          accessibilityLabel="Clone bundle"
-        />
-      </Tooltip>
-    </ButtonGroup>
+// Memoized component for bundle action buttons — Edit | Preview | More (…)
+const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, bundle, moreOpen, onMoreToggle }: BundleActionsButtonsProps) => (
+  <InlineStack gap="100" blockAlign="center">
+    <Tooltip content="Edit bundle">
+      <Button
+        size="micro"
+        icon={EditIcon}
+        onClick={() => onEdit(bundle)}
+        accessibilityLabel="Edit bundle"
+      />
+    </Tooltip>
 
-    {/* Group 2: Preview (view action) */}
     <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
-      {/* span captures pointer-events so tooltip fires even when button is disabled */}
       <span style={{ display: "inline-flex" }}>
         <Button
           size="micro"
-          icon={ExternalIcon}
+          icon={ViewIcon}
           onClick={() => onPreview(bundle)}
           accessibilityLabel="Preview bundle"
           disabled={!bundle.previewHandle}
@@ -357,16 +346,36 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
       </span>
     </Tooltip>
 
-    {/* Group 3: Delete (destructive action - separate to prevent accidents) */}
-    <Tooltip content="Delete bundle">
-      <Button
-        size="micro"
-        icon={DeleteIcon}
-        onClick={() => onDelete(bundleId)}
-        accessibilityLabel="Delete bundle"
-        tone="critical"
+    <Popover
+      active={moreOpen}
+      activator={
+        <Tooltip content="More actions">
+          <Button
+            size="micro"
+            icon={MenuHorizontalIcon}
+            onClick={onMoreToggle}
+            accessibilityLabel="More actions"
+          />
+        </Tooltip>
+      }
+      onClose={onMoreToggle}
+    >
+      <ActionList
+        items={[
+          {
+            content: 'Clone bundle',
+            icon: DuplicateIcon,
+            onAction: () => { onMoreToggle(); onClone(bundleId); },
+          },
+          {
+            content: 'Delete bundle',
+            icon: DeleteIcon,
+            destructive: true,
+            onAction: () => { onMoreToggle(); onDelete(bundleId); },
+          },
+        ]}
       />
-    </Tooltip>
+    </Popover>
   </InlineStack>
 ));
 
@@ -523,11 +532,42 @@ export default function Dashboard() {
   };
 
   const [bundleFilter, setBundleFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bundlesPerPage, setBundlesPerPage] = useState(20);
+  const [moreActionsOpenId, setMoreActionsOpenId] = useState<string | null>(null);
 
-  // Memoize bundleRows to prevent unnecessary re-renders
-  const bundleRows = useMemo(() => bundles
-    .filter((b) => b.name.toLowerCase().includes(bundleFilter.toLowerCase()))
-    .map((bundle) => [
+  const handleSearchToggle = useCallback(() => {
+    setSearchOpen(prev => {
+      if (prev) setBundleFilter("");
+      return !prev;
+    });
+    setCurrentPage(1);
+  }, []);
+
+  const handleMoreActionsToggle = useCallback((bundleId: string) => {
+    setMoreActionsOpenId(prev => prev === bundleId ? null : bundleId);
+  }, []);
+
+  const filteredBundles = useMemo(() =>
+    bundles
+      .filter(b => typeFilter === "all" || b.bundleType === typeFilter)
+      .filter(b => statusFilter === "all" || b.status === statusFilter)
+      .filter(b => !bundleFilter || b.name.toLowerCase().includes(bundleFilter.toLowerCase())),
+    [bundles, typeFilter, statusFilter, bundleFilter]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredBundles.length / bundlesPerPage));
+  const effectivePage = Math.min(currentPage, totalPages);
+
+  const pagedBundles = useMemo(() =>
+    filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
+    [filteredBundles, effectivePage, bundlesPerPage]
+  );
+
+  const bundleRows = useMemo(() => pagedBundles.map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
     getBundleTypeDisplay(bundle.bundleType),
@@ -540,8 +580,10 @@ export default function Dashboard() {
       onClone={handleCloneBundle}
       onDelete={handleDeleteBundle}
       onPreview={handlePreviewBundle}
+      moreOpen={moreActionsOpenId === bundle.id}
+      onMoreToggle={() => handleMoreActionsToggle(bundle.id)}
     />,
-  ]), [bundles, handleEditBundle, handleCloneBundle, handlePreviewBundle, handleDeleteBundle]);
+  ]), [pagedBundles, handleEditBundle, handleCloneBundle, handlePreviewBundle, handleDeleteBundle, moreActionsOpenId, handleMoreActionsToggle]);
 
   return (
     <>
@@ -870,28 +912,109 @@ export default function Dashboard() {
                   </Card>
                 ) : (
                   <BlockStack gap="300">
-                    <TextField
-                      label="Filter bundles"
-                      labelHidden
-                      placeholder="Filter by name…"
-                      value={bundleFilter}
-                      onChange={setBundleFilter}
-                      clearButton
-                      onClearButtonClick={() => setBundleFilter("")}
-                      autoComplete="off"
-                    />
+                    {/* Toolbar: type + status filters on left, search toggle on right */}
+                    <InlineStack gap="200" align="space-between" blockAlign="center">
+                      <InlineStack gap="200" blockAlign="center">
+                        <Select
+                          label="Bundle type"
+                          labelInline
+                          options={[
+                            { label: "All types", value: "all" },
+                            { label: "Product page", value: "product_page" },
+                            { label: "Full page", value: "full_page" },
+                          ]}
+                          value={typeFilter}
+                          onChange={(val) => { setTypeFilter(val); setCurrentPage(1); }}
+                        />
+                        <Select
+                          label="Status"
+                          labelInline
+                          options={[
+                            { label: "All statuses", value: "all" },
+                            { label: "Active", value: "active" },
+                            { label: "Draft", value: "draft" },
+                            { label: "Unlisted", value: "unlisted" },
+                          ]}
+                          value={statusFilter}
+                          onChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}
+                        />
+                      </InlineStack>
+                      <Tooltip content={searchOpen ? "Close search" : "Search bundles"}>
+                        <Button
+                          icon={SearchIcon}
+                          onClick={handleSearchToggle}
+                          accessibilityLabel="Toggle search"
+                          variant={searchOpen ? "primary" : undefined}
+                        />
+                      </Tooltip>
+                    </InlineStack>
+
+                    {searchOpen && (
+                      <TextField
+                        label="Search bundles"
+                        labelHidden
+                        placeholder="Search by name…"
+                        value={bundleFilter}
+                        onChange={(val) => { setBundleFilter(val); setCurrentPage(1); }}
+                        clearButton
+                        onClearButtonClick={() => { setBundleFilter(""); setCurrentPage(1); }}
+                        autoComplete="off"
+                        autoFocus
+                      />
+                    )}
+
                     <div className={dashboardStyles.dataTableWrapper}>
                       <DataTable
                         columnContentTypes={["text", "text", "text", "text"]}
                         headings={["Bundle Name", "Status", "Type", "Actions"]}
                         rows={bundleRows}
                       />
-                      {bundleRows.length === 0 && bundleFilter && (
+                      {filteredBundles.length === 0 && (
                         <div style={{ padding: "24px", textAlign: "center", color: "#6d7175", fontSize: 13 }}>
-                          {`No bundles match "${bundleFilter}"`}
+                          {bundleFilter || typeFilter !== "all" || statusFilter !== "all"
+                            ? "No bundles match the current filters"
+                            : "No bundles found"}
                         </div>
                       )}
                     </div>
+
+                    {/* Pagination footer */}
+                    {filteredBundles.length > 0 && (
+                      <InlineStack gap="300" align="space-between" blockAlign="center">
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          {`Page ${effectivePage} of ${totalPages} · ${filteredBundles.length} bundle${filteredBundles.length !== 1 ? "s" : ""}`}
+                        </Text>
+                        <InlineStack gap="200" blockAlign="center">
+                          <Select
+                            label="Bundles per page"
+                            labelInline
+                            options={[
+                              { label: "10", value: "10" },
+                              { label: "20", value: "20" },
+                              { label: "50", value: "50" },
+                            ]}
+                            value={String(bundlesPerPage)}
+                            onChange={(val) => { setBundlesPerPage(Number(val)); setCurrentPage(1); }}
+                          />
+                          <ButtonGroup>
+                            <Button
+                              disabled={effectivePage <= 1}
+                              onClick={() => setCurrentPage(p => p - 1)}
+                              accessibilityLabel="Previous page"
+                            >
+                              ‹ Prev
+                            </Button>
+                            <Button
+                              disabled={effectivePage >= totalPages}
+                              onClick={() => setCurrentPage(p => p + 1)}
+                              accessibilityLabel="Next page"
+                            >
+                              Next ›
+                            </Button>
+                          </ButtonGroup>
+                        </InlineStack>
+                      </InlineStack>
+                    )}
                   </BlockStack>
                 )}
               </BlockStack>
