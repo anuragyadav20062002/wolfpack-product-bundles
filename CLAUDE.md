@@ -232,6 +232,7 @@ npm run test:coverage # coverage report
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
 11. **ALWAYS ask about DCP customizability for storefront changes** — if a storefront change is not explicitly specified as DCP-customizable, ask the user whether DCP support should be bundled with it before implementing ✅ — see DCP Customizability Rule below
+12. **NO hardcoded fallback UI copy strings** ❌ — do not invent default marketing copy (e.g. "Complete the look and get a gift free!") when a merchant-configured string is absent. If the merchant hasn't set a value, show nothing or use a neutral system message. Never fabricate storefront-visible copy on their behalf.
 
 ## 🎨 DCP Customizability Rule
 

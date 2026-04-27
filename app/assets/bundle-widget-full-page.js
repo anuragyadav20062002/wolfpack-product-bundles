@@ -950,12 +950,12 @@ class BundleWidgetFullPage {
       if (categoryTabs) contentSection.appendChild(categoryTabs);
     }
 
-    // Free gift step custom heading
+    // Add-on step custom heading — only shown when merchant explicitly sets addonTitle
     const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
-    if (currentStep?.isFreeGift) {
+    if (currentStep?.isFreeGift && currentStep?.addonTitle) {
       const freeHeading = document.createElement('div');
       freeHeading.className = 'fpb-step-free-heading';
-      freeHeading.textContent = currentStep.addonTitle || `Complete the look and get a ${currentStep.addonLabel || currentStep.freeGiftName || 'gift'} free!`;
+      freeHeading.textContent = currentStep.addonTitle;
       contentSection.appendChild(freeHeading);
     }
 
@@ -1063,7 +1063,7 @@ class BundleWidgetFullPage {
         this.currentStepIndex++;
         this.renderFullPageLayoutWithSidebar();
       } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
-        ToastManager.show(`Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName || 'gift'}!`);
+        ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {
         ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
       }
@@ -1270,8 +1270,8 @@ class BundleWidgetFullPage {
       if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
-        const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName || 'gift';
-        ToastManager.show(`Complete all steps to unlock the free ${giftName}!`);
+        const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
+        ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
         this.searchQuery = '';
