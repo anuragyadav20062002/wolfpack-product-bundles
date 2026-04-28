@@ -20,7 +20,7 @@ import {
   Popover,
   ActionList,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -1136,22 +1136,45 @@ export default function Dashboard() {
             </div>
           </Layout.Section>
 
-          {/* Demo Section */}
+          {/* Resources Section */}
           <Layout.Section>
-            <Card>
-              <BlockStack gap="300">
-                <Text variant="headingSm" as="h4">
-                  Bundles appear as separate products but your inventory syncs automatically. No need to worry about inventory tracking!
-                </Text>
-                <Link to="/app/pricing" className={dashboardStyles.demoPricingLink}>
-                  <img
-                    src="/demo.jpeg"
-                    alt="Bundle Demo"
-                    className={dashboardStyles.demoPricingImg}
-                  />
-                </Link>
-              </BlockStack>
-            </Card>
+            <BlockStack gap="300">
+              <Text variant="headingMd" as="h3">Resources</Text>
+              <div className={dashboardStyles.resourcesLayout}>
+                {/* Left: menu list */}
+                <div className={dashboardStyles.resourcesList}>
+                  <a
+                    href="https://wolfpackapps.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${dashboardStyles.resourceItem} ${dashboardStyles.resourceItemActive}`}
+                  >
+                    <div className={dashboardStyles.resourceItemIcon}><Icon source={ImageIcon} /></div>
+                    <span className={dashboardStyles.resourceItemLabel}>Bundle Inspirations</span>
+                  </a>
+                  <button type="button" className={dashboardStyles.resourceItem} onClick={handleDirectChat}>
+                    <div className={dashboardStyles.resourceItemIcon}><Icon source={QuestionCircleIcon} /></div>
+                    <span className={dashboardStyles.resourceItemLabel}>Support</span>
+                  </button>
+                  <Link to="/app/events" className={dashboardStyles.resourceItem}>
+                    <div className={dashboardStyles.resourceItemIcon}><Icon source={NotificationIcon} /></div>
+                    <span className={dashboardStyles.resourceItemLabel}>Explore Updates</span>
+                    <Icon source={ExternalSmallIcon} tone="subdued" />
+                  </Link>
+                  <div className={`${dashboardStyles.resourceItem} ${dashboardStyles.resourceItemDisabled}`}>
+                    <div className={dashboardStyles.resourceItemIcon}><Icon source={CodeIcon} /></div>
+                    <span className={dashboardStyles.resourceItemLabel}>SDK Documentation</span>
+                    <Icon source={ExternalSmallIcon} tone="subdued" />
+                  </div>
+                </div>
+
+                {/* Right: placeholder thumbnails */}
+                <div className={dashboardStyles.resourcesThumbnails}>
+                  <div className={dashboardStyles.resourceThumbnailImg} />
+                  <div className={dashboardStyles.resourceThumbnailImg} />
+                </div>
+              </div>
+            </BlockStack>
           </Layout.Section>
         </Layout>
       </Page>

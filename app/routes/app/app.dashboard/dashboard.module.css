@@ -225,3 +225,89 @@
 .dataTableWrapper .Polaris-DataTable__Cell {
   width: 25%;
 }
+
+/* Resources Section — EB-style */
+.resourcesLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  min-height: 200px;
+}
+
+.resourcesList {
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #202223;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid #f1f2f3;
+  transition: background-color 0.15s ease;
+  font-size: 13px;
+}
+
+.resourceItem:last-child {
+  border-bottom: none;
+}
+
+.resourceItem:hover {
+  background-color: #f6f6f7;
+  text-decoration: none;
+}
+
+.resourceItemActive {
+  background-color: #fdf6ec !important;
+}
+
+.resourceItemActive:hover {
+  background-color: #faecd8 !important;
+}
+
+.resourceItemIcon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #6d7175;
+}
+
+.resourceItemLabel {
+  flex: 1;
+  font-size: 13px;
+  color: #202223;
+  font-family: inherit;
+}
+
+.resourceItemDisabled {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.resourcesThumbnails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.resourceThumbnailImg {
+  width: 100%;
+  min-height: 200px;
+  background-color: #e8e9ea;
+  border-radius: 8px;
+  border: 1px solid #d1d3d5;
+}
