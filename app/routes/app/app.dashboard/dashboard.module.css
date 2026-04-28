@@ -227,6 +227,10 @@
 }
 
 /* Resources Section — EB-style */
+.resourcesSection {
+  margin-top: 20px;
+}
+
 .resourcesLayout {
   display: grid;
   grid-template-columns: 260px 1fr;

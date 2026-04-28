@@ -1138,6 +1138,7 @@ export default function Dashboard() {
 
           {/* Resources Section */}
           <Layout.Section>
+            <div className={dashboardStyles.resourcesSection}>
             <BlockStack gap="300">
               <Text variant="headingMd" as="h3">Resources</Text>
               <div className={dashboardStyles.resourcesLayout}>
@@ -1175,6 +1176,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </BlockStack>
+            </div>
           </Layout.Section>
         </Layout>
       </Page>
