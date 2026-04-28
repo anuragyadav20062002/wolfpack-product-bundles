@@ -24,6 +24,7 @@
 | [11-support.md](11-support.md) | Support page — channels, FAQs, onboarding resources |
 | [12-strategic-observations.md](12-strategic-observations.md) | Cross-cutting competitive insights and opportunities for Wolfpack |
 | [13-wolfpack-gap-analysis-phases.md](13-wolfpack-gap-analysis-phases.md) | **Wolfpack vs EB critical gap analysis — phased implementation roadmap** |
+| [14-eb-addon-upsell-analysis.md](14-eb-addon-upsell-analysis.md) | **Full end-to-end crawl: Add-Ons, Theme Extension Banner, Readiness Score, all sidebar sections** |
 
 ## Screenshots
 

@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.7.0
- * Built   : 2026-04-26
+ * Built   : 2026-04-27
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
