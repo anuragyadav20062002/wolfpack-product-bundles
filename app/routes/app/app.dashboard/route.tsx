@@ -8,25 +8,27 @@ import {
   Button,
   BlockStack,
   InlineStack,
-  ButtonGroup,
   Badge,
   DataTable,
   Modal,
   FormLayout,
   TextField,
   Icon,
-  ChoiceList,
   Tooltip,
   InlineGrid,
+  Select,
+  Popover,
+  ActionList,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertCircleIcon, AlertTriangleIcon, CheckCircleIcon, ViewIcon, ExternalIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { BundleSetupInstructions } from "../../../components/BundleSetupInstructions";
+import { SetupScoreCard } from "../../../components/SetupScoreCard";
+import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
@@ -128,6 +130,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       ? bundle.shopifyProductHandle
       : bundle.shopifyPageHandle
   }));
+
+  // Setup score signals — run in parallel, each is non-critical
+  const bundleIds = bundlesWithPreview.map(b => b.id);
+  const [hasProductsAdded, hasDiscount, hasDcpConfigured] = await Promise.all([
+    bundleIds.length > 0
+      ? db.bundleStep.findFirst({
+          where: { bundleId: { in: bundleIds }, products: { not: null } },
+          select: { id: true },
+        }).then(r => r !== null)
+      : Promise.resolve(false),
+    bundleIds.length > 0
+      ? db.bundlePricing.findFirst({
+          where: { bundleId: { in: bundleIds }, enabled: true },
+          select: { id: true },
+        }).then(r => r !== null)
+      : Promise.resolve(false),
+    db.designSettings.findFirst({
+      where: { shopId: session.shop },
+      select: { id: true },
+    }).then(r => r !== null),
+  ]);
+  const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
+  const setupScore = {
+    bundlesExist: bundlesWithPreview.length > 0,
+    hasProductsAdded,
+    hasDiscount,
+    hasActiveBundleOnStore: bundlesWithPreview.some(b => b.status === BundleStatus.ACTIVE && (b.shopifyPageHandle || b.shopifyProductHandle)),
+    hasDcpConfigured,
+    appEmbedEnabled: embedCheck.enabled,
+  };
+  const themeEditorUrl = embedCheck.themeId
+    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=63077bb0483a6ce08a2d6139b14d170b%2Fbundle-full-page-embed`
+    : null;
 
   // Get subscription info for upgrade prompt.
   // Wrapped in try-catch: on fresh install afterAuth may not yet have created the shop
@@ -248,6 +283,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleLimit: subscriptionInfo.bundleLimit,
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
+    setupScore,
+    themeEditorUrl,
   });
 };
 
@@ -278,42 +315,29 @@ const STATUS_BADGES = {
   unlisted: <Badge tone="warning">unlisted</Badge>,
 } as const;
 
-// Bundle type badge component
-const BUNDLE_TYPE_BADGES = {
-  product_page: <Badge tone="info">Product Page</Badge>,
-  full_page: <Badge tone="attention">Full Page</Badge>,
-} as const;
+// Bundle type plain-text labels (no badge, matching EB's table style)
+const BUNDLE_TYPE_LABELS: Record<string, string> = {
+  product_page: 'Product page',
+  full_page: 'Full page',
+};
 
-// Memoized component for bundle action buttons - Professional icon groups with tooltips
-const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDelete, onPreview, bundle }: BundleActionsButtonsProps) => (
-  <InlineStack gap="300" blockAlign="center">
-    {/* Group 1: Edit & Clone (neutral actions) */}
-    <ButtonGroup variant="segmented">
-      <Tooltip content="Edit bundle">
-        <Button
-          size="micro"
-          icon={EditIcon}
-          onClick={() => onEdit(bundle)}
-          accessibilityLabel="Edit bundle"
-        />
-      </Tooltip>
-      <Tooltip content="Clone bundle">
-        <Button
-          size="micro"
-          icon={DuplicateIcon}
-          onClick={() => onClone(bundleId)}
-          accessibilityLabel="Clone bundle"
-        />
-      </Tooltip>
-    </ButtonGroup>
+// Memoized component for bundle action buttons — Edit | Preview | More (…)
+const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, bundle, moreOpen, onMoreToggle }: BundleActionsButtonsProps) => (
+  <InlineStack gap="100" blockAlign="center">
+    <Tooltip content="Edit bundle">
+      <Button
+        size="micro"
+        icon={EditIcon}
+        onClick={() => onEdit(bundle)}
+        accessibilityLabel="Edit bundle"
+      />
+    </Tooltip>
 
-    {/* Group 2: Preview (view action) */}
     <Tooltip content={bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}>
-      {/* span captures pointer-events so tooltip fires even when button is disabled */}
       <span style={{ display: "inline-flex" }}>
         <Button
           size="micro"
-          icon={ExternalIcon}
+          icon={ViewIcon}
           onClick={() => onPreview(bundle)}
           accessibilityLabel="Preview bundle"
           disabled={!bundle.previewHandle}
@@ -321,23 +345,43 @@ const BundleActionsButtons = memo(({ bundleId, bundleType, onEdit, onClone, onDe
       </span>
     </Tooltip>
 
-    {/* Group 3: Delete (destructive action - separate to prevent accidents) */}
-    <Tooltip content="Delete bundle">
-      <Button
-        size="micro"
-        icon={DeleteIcon}
-        onClick={() => onDelete(bundleId)}
-        accessibilityLabel="Delete bundle"
-        tone="critical"
+    <Popover
+      active={moreOpen}
+      activator={
+        <Tooltip content="More actions">
+          <Button
+            size="micro"
+            icon={MenuHorizontalIcon}
+            onClick={onMoreToggle}
+            accessibilityLabel="More actions"
+          />
+        </Tooltip>
+      }
+      onClose={onMoreToggle}
+    >
+      <ActionList
+        items={[
+          {
+            content: 'Clone bundle',
+            icon: DuplicateIcon,
+            onAction: () => { onMoreToggle(); onClone(bundleId); },
+          },
+          {
+            content: 'Delete bundle',
+            icon: DeleteIcon,
+            destructive: true,
+            onAction: () => { onMoreToggle(); onDelete(bundleId); },
+          },
+        ]}
       />
-    </Tooltip>
+    </Popover>
   </InlineStack>
 ));
 
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore, themeEditorUrl } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -481,17 +525,49 @@ export default function Dashboard() {
     return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <Badge tone="info">{status}</Badge>;
   };
 
-  // Get bundle type badge display
   const getBundleTypeDisplay = (bundleType: string) => {
-    return BUNDLE_TYPE_BADGES[bundleType as keyof typeof BUNDLE_TYPE_BADGES] || <Badge>{bundleType}</Badge>;
+    return BUNDLE_TYPE_LABELS[bundleType] || bundleType;
   };
 
   const [bundleFilter, setBundleFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilterOpen, setTypeFilterOpen] = useState(false);
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bundlesPerPage, setBundlesPerPage] = useState(20);
+  const [moreActionsOpenId, setMoreActionsOpenId] = useState<string | null>(null);
 
-  // Memoize bundleRows to prevent unnecessary re-renders
-  const bundleRows = useMemo(() => bundles
-    .filter((b) => b.name.toLowerCase().includes(bundleFilter.toLowerCase()))
-    .map((bundle) => [
+  const handleSearchToggle = useCallback(() => {
+    setSearchOpen(prev => {
+      if (prev) setBundleFilter("");
+      return !prev;
+    });
+    setCurrentPage(1);
+  }, []);
+
+  const handleMoreActionsToggle = useCallback((bundleId: string) => {
+    setMoreActionsOpenId(prev => prev === bundleId ? null : bundleId);
+  }, []);
+
+  const filteredBundles = useMemo(() =>
+    bundles
+      .filter(b => typeFilter === "all" || b.bundleType === typeFilter)
+      .filter(b => statusFilter === "all" || b.status === statusFilter)
+      .filter(b => !bundleFilter || b.name.toLowerCase().includes(bundleFilter.toLowerCase())),
+    [bundles, typeFilter, statusFilter, bundleFilter]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredBundles.length / bundlesPerPage));
+  const effectivePage = Math.min(currentPage, totalPages);
+
+  const pagedBundles = useMemo(() =>
+    filteredBundles.slice((effectivePage - 1) * bundlesPerPage, effectivePage * bundlesPerPage),
+    [filteredBundles, effectivePage, bundlesPerPage]
+  );
+
+  const bundleRows = useMemo(() => pagedBundles.map((bundle) => [
     bundle.name,
     getStatusDisplay(bundle.status),
     getBundleTypeDisplay(bundle.bundleType),
@@ -504,8 +580,10 @@ export default function Dashboard() {
       onClone={handleCloneBundle}
       onDelete={handleDeleteBundle}
       onPreview={handlePreviewBundle}
+      moreOpen={moreActionsOpenId === bundle.id}
+      onMoreToggle={() => handleMoreActionsToggle(bundle.id)}
     />,
-  ]), [bundles, handleEditBundle, handleCloneBundle, handlePreviewBundle, handleDeleteBundle]);
+  ]), [pagedBundles, handleEditBundle, handleCloneBundle, handlePreviewBundle, handleDeleteBundle, moreActionsOpenId, handleMoreActionsToggle]);
 
   return (
     <>
@@ -834,28 +912,130 @@ export default function Dashboard() {
                   </Card>
                 ) : (
                   <BlockStack gap="300">
-                    <TextField
-                      label="Filter bundles"
-                      labelHidden
-                      placeholder="Filter by name…"
-                      value={bundleFilter}
-                      onChange={setBundleFilter}
-                      clearButton
-                      onClearButtonClick={() => setBundleFilter("")}
-                      autoComplete="off"
-                    />
+                    {/* Toolbar: type + status filter popovers on left, search toggle on right */}
+                    <InlineStack gap="200" align="space-between" blockAlign="center">
+                      <InlineStack gap="200" blockAlign="center">
+                        {/* Bundle type filter */}
+                        <Popover
+                          active={typeFilterOpen}
+                          activator={
+                            <Button
+                              onClick={() => setTypeFilterOpen(o => !o)}
+                              disclosure
+                            >
+                              {typeFilter === "all" ? "Bundle type" : `Bundle type: ${BUNDLE_TYPE_LABELS[typeFilter] ?? typeFilter}`}
+                            </Button>
+                          }
+                          onClose={() => setTypeFilterOpen(false)}
+                        >
+                          <ActionList
+                            items={[
+                              { content: "All types", onAction: () => { setTypeFilter("all"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "all" },
+                              { content: "Product page", onAction: () => { setTypeFilter("product_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "product_page" },
+                              { content: "Full page", onAction: () => { setTypeFilter("full_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "full_page" },
+                            ]}
+                          />
+                        </Popover>
+
+                        {/* Status filter */}
+                        <Popover
+                          active={statusFilterOpen}
+                          activator={
+                            <Button
+                              onClick={() => setStatusFilterOpen(o => !o)}
+                              disclosure
+                            >
+                              {statusFilter === "all" ? "Status" : `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
+                            </Button>
+                          }
+                          onClose={() => setStatusFilterOpen(false)}
+                        >
+                          <ActionList
+                            items={[
+                              { content: "All statuses", onAction: () => { setStatusFilter("all"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "all" },
+                              { content: "Active", onAction: () => { setStatusFilter("active"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "active" },
+                              { content: "Draft", onAction: () => { setStatusFilter("draft"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "draft" },
+                              { content: "Unlisted", onAction: () => { setStatusFilter("unlisted"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "unlisted" },
+                            ]}
+                          />
+                        </Popover>
+                      </InlineStack>
+                      <Tooltip content={searchOpen ? "Close search" : "Search bundles"}>
+                        <Button
+                          icon={SearchIcon}
+                          onClick={handleSearchToggle}
+                          accessibilityLabel="Toggle search"
+                          variant={searchOpen ? "primary" : undefined}
+                        />
+                      </Tooltip>
+                    </InlineStack>
+
+                    {searchOpen && (
+                      <TextField
+                        label="Search bundles"
+                        labelHidden
+                        placeholder="Search by name…"
+                        value={bundleFilter}
+                        onChange={(val) => { setBundleFilter(val); setCurrentPage(1); }}
+                        clearButton
+                        onClearButtonClick={() => { setBundleFilter(""); setCurrentPage(1); }}
+                        autoComplete="off"
+                        autoFocus
+                      />
+                    )}
+
                     <div className={dashboardStyles.dataTableWrapper}>
                       <DataTable
                         columnContentTypes={["text", "text", "text", "text"]}
                         headings={["Bundle Name", "Status", "Type", "Actions"]}
                         rows={bundleRows}
                       />
-                      {bundleRows.length === 0 && bundleFilter && (
+                      {filteredBundles.length === 0 && (
                         <div style={{ padding: "24px", textAlign: "center", color: "#6d7175", fontSize: 13 }}>
-                          {`No bundles match "${bundleFilter}"`}
+                          {bundleFilter || typeFilter !== "all" || statusFilter !== "all"
+                            ? "No bundles match the current filters"
+                            : "No bundles found"}
                         </div>
                       )}
                     </div>
+
+                    {/* Pagination footer — matches EB: [←] Page X of Y [→]  |  Bundles per page [select] */}
+                    {filteredBundles.length > 0 && (
+                      <InlineStack gap="300" align="space-between" blockAlign="center">
+                        <InlineStack gap="100" blockAlign="center">
+                          <Button
+                            size="slim"
+                            disabled={effectivePage <= 1}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            accessibilityLabel="Previous page"
+                          >
+                            ‹
+                          </Button>
+                          <Text variant="bodySm" as="p">
+                            {`Page ${effectivePage} of ${totalPages}`}
+                          </Text>
+                          <Button
+                            size="slim"
+                            disabled={effectivePage >= totalPages}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            accessibilityLabel="Next page"
+                          >
+                            ›
+                          </Button>
+                        </InlineStack>
+                        <Select
+                          label="Bundles per page"
+                          labelInline
+                          options={[
+                            { label: "10", value: "10" },
+                            { label: "20", value: "20" },
+                            { label: "50", value: "50" },
+                          ]}
+                          value={String(bundlesPerPage)}
+                          onChange={(val) => { setBundlesPerPage(Number(val)); setCurrentPage(1); }}
+                        />
+                      </InlineStack>
+                    )}
                   </BlockStack>
                 )}
               </BlockStack>
@@ -865,105 +1045,13 @@ export default function Dashboard() {
           {/* Bottom section with setup instructions and account manager */}
           <Layout.Section>
             <div className={dashboardStyles.bottomSection}>
-              {/* Setup guide (new merchants) → Cart property fix tip (returning merchants) */}
+              {/* Gamified setup score card */}
               <div className={`${dashboardStyles.bottomSectionCol} ${dashboardStyles.fadeIn}`}>
-                {bundles.length === 0 ? (
-                  <BundleSetupInstructions
-                    title="Bundle Setup Steps"
-                    subtitle="Follow these steps to create your bundle"
-                    bundlesExist={false}
-                    steps={[
-                      {
-                        id: "create_bundle",
-                        title: 'Click "Create Bundle"',
-                        description: "Click the \"Create\" button to start making your bundle.",
-                        isClickable: true,
-                        onClick: handleCreateBundle,
-                      },
-                      {
-                        id: "name_description",
-                        title: "Enter bundle name and description",
-                        description: "Type a clear name and an optional description for your bundle.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "create_bundle_modal",
-                        title: 'Click "Bundle Settings"',
-                        description: "This will take you to your bundle set up page.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "add_steps",
-                        title: "Add bundle steps and choose products",
-                        description: "Add steps to your bundle, select products/collections you want.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "setup_pricing",
-                        title: "Set discount rules and pricing",
-                        description: "Choose how discounts and pricing should work for your bundle.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "publish",
-                        title: "Save and publish your bundle",
-                        description: "Save your settings to make your bundle live on your store.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                    ]}
-                  />
-                ) : (
-                  <BundleSetupInstructions
-                    title="Bundle Setup Steps"
-                    subtitle="Follow these steps to get your bundle live on your store"
-                    bundlesExist={true}
-                    steps={[
-                      {
-                        id: "create_bundle",
-                        title: 'Click "Create Bundle"',
-                        description: "Click the \"Create\" button to start making your bundle.",
-                        isClickable: true,
-                        onClick: handleCreateBundle,
-                      },
-                      {
-                        id: "name_description",
-                        title: "Enter bundle name and description",
-                        description: "Type a clear name and an optional description for your bundle.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "create_bundle_modal",
-                        title: 'Click "Bundle Settings"',
-                        description: "This will take you to your bundle set up page.",
-                        onClick: () => {},
-                      },
-                      {
-                        id: "add_steps",
-                        title: "Add bundle steps and choose products",
-                        description: "Add steps to your bundle, select products/collections you want.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "setup_pricing",
-                        title: "Set discount rules and pricing",
-                        description: "Choose how discounts and pricing should work for your bundle.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                      {
-                        id: "publish",
-                        title: "Save and publish your bundle",
-                        description: "Save your settings to make your bundle live on your store.",
-                        isClickable: false,
-                        onClick: () => {},
-                      },
-                    ]}
-                  />
-                )}
+                <SetupScoreCard
+                  setupScore={setupScore}
+                  onCreateBundle={handleCreateBundle}
+                  themeEditorUrl={themeEditorUrl}
+                />
               </div>
 
               {/* Your Account Manager Card */}

@@ -241,7 +241,15 @@
 <script>
   (function () {
     var s = document.createElement('script');
-    s.src = '{{ 'bundle-widget-product-page-bundled.js' | asset_url }}';
+    {% if block.settings.sdk_mode %}
+      {% comment %} SDK mode: load the headless SDK instead of the pre-built widget {% endcomment %}
+      s.src = '{{ 'wolfpack-bundles-sdk.js' | asset_url }}';
+      {% comment %} Mark the container so the SDK can find it {% endcomment %}
+      var container = document.getElementById('bundle-builder-app');
+      if (container) { container.setAttribute('data-sdk-mode', 'true'); }
+    {% else %}
+      s.src = '{{ 'bundle-widget-product-page-bundled.js' | asset_url }}';
+    {% endif %}
     s.async = false;
     document.head.appendChild(s);
   })();
@@ -258,6 +266,17 @@
     {
       "type": "paragraph",
       "content": "Renders automatically on any product with a Wolfpack bundle configured. No per-product setup needed."
+    },
+    {
+      "type": "header",
+      "content": "Developer / SDK Mode"
+    },
+    {
+      "type": "checkbox",
+      "id": "sdk_mode",
+      "label": "Enable SDK mode",
+      "default": false,
+      "info": "When enabled, loads the Wolfpack Bundles SDK instead of the pre-built widget. Use this if you are building a custom bundle UI. See the SDK Usage Guide for implementation details."
     },
     {
       "type": "header",

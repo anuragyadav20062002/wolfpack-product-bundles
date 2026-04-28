@@ -56,11 +56,6 @@ export function mergeSettings(
     productCardImageFit: dbSettings.productCardImageFit || defaults.productCardImageFit,
     productCardsPerRow: dbSettings.productCardsPerRow || defaults.productCardsPerRow,
 
-    // Use !== undefined for boolean fields to preserve false values
-    productPriceVisibility: dbSettings.productPriceVisibility !== undefined && dbSettings.productPriceVisibility !== null
-      ? Boolean(dbSettings.productPriceVisibility)
-      : defaults.productPriceVisibility,
-
     productPriceBgColor: dbSettings.productPriceBgColor || defaults.productPriceBgColor,
 
     // Product Card Typography

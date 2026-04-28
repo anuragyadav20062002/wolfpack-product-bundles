@@ -190,6 +190,11 @@ class BundleWidgetProductPage {
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
+      // Fire-and-forget: record a view event for analytics (skip in Theme Editor preview)
+      if (!window.Shopify?.designMode) {
+        this._recordView();
+      }
+
     } catch (error) {
       this.hideLoadingOverlay();
       this.showErrorUI(error);
@@ -603,7 +608,7 @@ class BundleWidgetProductPage {
   createAddToCartButton() {
     const button = document.createElement('button');
     button.className = 'add-bundle-to-cart';
-    button.textContent = 'Add Bundle to Cart';
+    button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
     button.type = 'button';
     return button;
   }
@@ -1169,10 +1174,10 @@ class BundleWidgetProductPage {
     // Disable button if no paid products selected OR if not all required steps are complete
     if (paidTotalQuantity === 0 || !allStepsValid) {
       if (paidTotalQuantity === 0) {
-        button.textContent = 'Add Bundle to Cart';
+        button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
       } else {
         // Some products selected but not all required steps complete
-        button.textContent = 'Complete All Steps to Continue';
+        button.textContent = this._resolveText('completeSteps', 'Complete All Steps to Continue');
       }
       button.disabled = true;
       button.classList.add('disabled');
@@ -1181,7 +1186,7 @@ class BundleWidgetProductPage {
       const currencyInfo = CurrencyManager.getCurrencyInfo();
       const formattedPrice = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
 
-      button.textContent = `Add Bundle to Cart \u2022 ${formattedPrice}`;
+      button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \u2022 ${formattedPrice}`;
 
       button.disabled = false;
       button.classList.remove('disabled');
@@ -2074,10 +2079,10 @@ class BundleWidgetProductPage {
 
       if (addBtn) {
         if (quantity > 0) {
-          addBtn.textContent = 'Selected ✓';
+          addBtn.textContent = this._resolveText('includedBadge', 'Selected ✓');
           addBtn.classList.add('added');
         } else {
-          addBtn.textContent = 'Add to Cart';
+          addBtn.textContent = this._resolveText('addToCartButton', 'Add to Cart');
           addBtn.classList.remove('added');
         }
       }
@@ -2148,7 +2153,7 @@ class BundleWidgetProductPage {
     prevButton.disabled = false;
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    nextButton.textContent = isLastStep ? 'Done' : 'Next';
+    nextButton.textContent = isLastStep ? this._resolveText('doneButton', 'Done') : this._resolveText('nextButton', 'Next');
     nextButton.disabled = false;
   }
 
@@ -2333,7 +2338,7 @@ class BundleWidgetProductPage {
 
       // Disable button and show loading overlay during request
       this.elements.addToCartButton.disabled = true;
-      this.elements.addToCartButton.textContent = 'Adding to Cart...';
+      this.elements.addToCartButton.textContent = this._resolveText('addingToCart', 'Adding to Cart...');
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
       const response = await fetch('/cart/add.js', {
@@ -2587,6 +2592,33 @@ class BundleWidgetProductPage {
         </details>
       </div>
     `;
+  }
+
+  _resolveText(key, fallback) {
+    const locale = window.Shopify?.locale;
+    if (locale && this.config?.textOverridesByLocale?.[locale]?.[key]) {
+      return this.config.textOverridesByLocale[locale][key];
+    }
+    if (this.config?.textOverrides?.[key]) {
+      return this.config.textOverrides[key];
+    }
+    return fallback;
+  }
+
+  _recordView() {
+    try {
+      const bundleId = this.container?.dataset?.bundleId;
+      const shop = window.Shopify?.shop;
+      if (!bundleId || !shop) return;
+      fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
+        keepalive: true,
+      }).catch(() => { /* best-effort */ });
+    } catch (_) {
+      // Never throw from analytics
+    }
   }
 }
 

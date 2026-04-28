@@ -25,6 +25,14 @@ export interface FormattedBundle {
   shopifyProductId: string | null;
   steps: FormattedStep[];
   pricing: FormattedPricing | null;
+  // Per-bundle behavioral settings
+  showProductPrices: boolean;
+  showCompareAtPrices: boolean;
+  cartRedirectToCheckout: boolean;
+  allowQuantityChanges: boolean;
+  // Per-bundle text overrides
+  textOverrides: Record<string, string> | null;
+  textOverridesByLocale: Record<string, Record<string, string>> | null;
 }
 
 interface FormattedStep {
@@ -124,18 +132,18 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       enabled: step.enabled,
       displayVariantsAsIndividual: step.displayVariantsAsIndividual,
       products: productsArray,
-      ...(step.collections?.length > 0 ? { collections: step.collections } : {}),
-      ...(step.conditionType != null ? { conditionType: step.conditionType } : {}),
-      ...(step.conditionOperator != null ? { conditionOperator: step.conditionOperator } : {}),
-      ...(step.conditionValue != null ? { conditionValue: step.conditionValue } : {}),
-      ...(step.conditionOperator2 != null ? { conditionOperator2: step.conditionOperator2 } : {}),
-      ...(step.conditionValue2 != null ? { conditionValue2: step.conditionValue2 } : {}),
-      ...(step.isFreeGift ? { isFreeGift: true } : {}),
-      ...(step.freeGiftName != null ? { freeGiftName: step.freeGiftName } : {}),
-      ...(step.isDefault ? { isDefault: true } : {}),
-      ...(step.defaultVariantId != null ? { defaultVariantId: step.defaultVariantId } : {}),
-      ...(step.timelineIconUrl != null ? { timelineIconUrl: step.timelineIconUrl } : {}),
-      ...(step.primaryVariantOption != null ? { primaryVariantOption: step.primaryVariantOption } : {}),
+      collections: Array.isArray(step.collections) ? step.collections : [],
+      conditionType: step.conditionType ?? null,
+      conditionOperator: step.conditionOperator ?? null,
+      conditionValue: step.conditionValue ?? null,
+      conditionOperator2: step.conditionOperator2 ?? null,
+      conditionValue2: step.conditionValue2 ?? null,
+      isFreeGift: step.isFreeGift ?? false,
+      freeGiftName: step.freeGiftName ?? null,
+      isDefault: step.isDefault ?? false,
+      defaultVariantId: step.defaultVariantId ?? null,
+      timelineIconUrl: step.timelineIconUrl ?? null,
+      primaryVariantOption: step.primaryVariantOption ?? null,
     };
   });
 
@@ -157,5 +165,11 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
           messages: bundle.pricing.messages ?? {},
         }
       : null,
+    showProductPrices: bundle.showProductPrices ?? true,
+    showCompareAtPrices: bundle.showCompareAtPrices ?? false,
+    cartRedirectToCheckout: bundle.cartRedirectToCheckout ?? false,
+    allowQuantityChanges: bundle.allowQuantityChanges ?? true,
+    textOverrides: (bundle.textOverrides as Record<string, string> | null) ?? null,
+    textOverridesByLocale: (bundle.textOverridesByLocale as Record<string, Record<string, string>> | null) ?? null,
   };
 }

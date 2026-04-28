@@ -24,7 +24,6 @@ export interface CSSDesignSettings {
   productCardFontWeight?: number;
   productCardImageFit?: string;
   productCardsPerRow?: number;
-  productPriceVisibility?: boolean;
   productPriceBgColor?: string;
   productStrikePriceColor?: string;
   productStrikeFontSize?: number;

@@ -65,6 +65,10 @@ export interface BundleUiConfig {
   floatingBadgeEnabled?: boolean;
   /** Text shown in the floating promo badge (max 60 chars). */
   floatingBadgeText?: string;
+  /** Per-bundle English text overrides for widget strings. */
+  textOverrides?: BundleTextOverrides | null;
+  /** Per-locale text overrides keyed by Shopify locale code (e.g. "fr", "de"). */
+  textOverridesByLocale?: Record<string, Partial<BundleTextOverrides>> | null;
 }
 
 export interface BundleUiStep {
@@ -79,10 +83,20 @@ export interface BundleUiStep {
   conditionValue?: string;
   conditionOperator2?: string;
   conditionValue2?: string;
-  /** If true, this step is a free gift step — unlocks after all paid steps complete. */
+  /** If true, this step is a free gift / add-on step. */
   isFreeGift?: boolean;
-  /** Display name for the free gift (e.g. "cap", "greeting card"). */
+  /** Legacy display name for the free gift. Superseded by addonLabel. */
   freeGiftName?: string;
+  /** Add-on step tab label (shown in step navigator). */
+  addonLabel?: string | null;
+  /** Add-on step panel heading. */
+  addonTitle?: string | null;
+  /** URL of uploaded icon for the add-on step tab. */
+  addonIconUrl?: string | null;
+  /** Show products at $0.00 in this step. */
+  addonDisplayFree?: boolean;
+  /** Lock this step tab until prior steps meet minQuantity. */
+  addonUnlockAfterCompletion?: boolean;
   /** If true, this step is pre-filled and not shown in the bottom-sheet modal tabs. */
   isDefault?: boolean;
   /** Variant ID pre-selected for default steps. */
@@ -120,6 +134,26 @@ export interface BundleUiMessaging {
   successTemplate: string;
   showFooter: boolean;
   showDiscountMessaging?: boolean;
+}
+
+/** Overridable user-visible strings in the bundle widget. */
+export interface BundleTextOverrides {
+  /** Primary CTA button — "Add to Cart" / "Add Bundle to Cart" */
+  addToCartButton?: string;
+  /** Footer next-step button — "Next" */
+  nextButton?: string;
+  /** Footer last-step button — "Done" */
+  doneButton?: string;
+  /** Free gift product badge — "Free" */
+  freeBadge?: string;
+  /** Already-included product badge — "Included" */
+  includedBadge?: string;
+  /** Sidebar / sheet header title (FPB) — "Your Bundle" */
+  yourBundle?: string;
+  /** ATC loading state — "Adding to Cart..." */
+  addingToCart?: string;
+  /** PDP incomplete-steps state — "Complete All Steps to Continue" */
+  completeSteps?: string;
 }
 
 /**

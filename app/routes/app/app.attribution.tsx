@@ -83,9 +83,96 @@ function chartXFormatter(dateKey: string) {
 // ─── Action ──────────────────────────────────────────────────
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await requireAdminSession(request);
+  const { admin, session } = await requireAdminSession(request);
   const formData = await request.formData();
   const intent = formData.get("intent") as string;
+
+  if (intent === "export") {
+    const shopId = session.shop;
+    const fromParam = formData.get("from") as string | null;
+    const toParam   = formData.get("to")   as string | null;
+    const daysParam = formData.get("days") as string | null;
+
+    let since: Date;
+    let until: Date;
+
+    if (fromParam && toParam) {
+      since = new Date(fromParam + "T00:00:00.000Z");
+      until = new Date(toParam   + "T23:59:59.999Z");
+    } else {
+      const days = Math.max(1, parseInt(daysParam || "30", 10));
+      until = new Date();
+      since = new Date(until);
+      since.setDate(since.getDate() - days);
+      since.setHours(0, 0, 0, 0);
+    }
+
+    const [attributions, viewEvents] = await Promise.all([
+      db.orderAttribution.findMany({
+        where: { shopId, createdAt: { gte: since, lte: until } },
+        orderBy: { createdAt: "asc" },
+      }),
+      db.bundleAnalytics.findMany({
+        where: { shopId, event: "view", createdAt: { gte: since, lte: until } },
+        select: { bundleId: true, createdAt: true },
+      }),
+    ]);
+
+    // Bundle name lookup
+    const bundleIds = [...new Set([
+      ...attributions.filter(a => a.bundleId).map(a => a.bundleId!),
+      ...viewEvents.filter(v => v.bundleId).map(v => v.bundleId!),
+    ])];
+    const bundles = bundleIds.length > 0
+      ? await db.bundle.findMany({ where: { id: { in: bundleIds } }, select: { id: true, name: true } })
+      : [];
+    const nameMap = Object.fromEntries(bundles.map(b => [b.id, b.name]));
+
+    // Build CSV rows
+    const escape = (v: string | null | undefined) =>
+      v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
+
+    const rows: string[] = [
+      ["Date", "Type", "Bundle ID", "Bundle Name", "UTM Source", "UTM Medium", "UTM Campaign", "Revenue (USD)", "Order ID", "Landing Page"].join(","),
+    ];
+
+    for (const a of attributions) {
+      rows.push([
+        new Date(a.createdAt).toISOString().split("T")[0],
+        "order",
+        escape(a.bundleId),
+        escape(a.bundleId ? nameMap[a.bundleId] : null),
+        escape(a.utmSource),
+        escape(a.utmMedium),
+        escape(a.utmCampaign),
+        (a.revenue / 100).toFixed(2),
+        escape(a.orderId),
+        escape(a.landingPage),
+      ].join(","));
+    }
+
+    for (const v of viewEvents) {
+      rows.push([
+        new Date(v.createdAt).toISOString().split("T")[0],
+        "view",
+        escape(v.bundleId),
+        escape(v.bundleId ? nameMap[v.bundleId] : null),
+        "", "", "", "", "", "",
+      ].join(","));
+    }
+
+    const csv = rows.join("\n");
+    const fromLabel = since.toISOString().split("T")[0];
+    const toLabel   = until.toISOString().split("T")[0];
+
+    return new Response(csv, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="wolfpack-analytics-${fromLabel}-to-${toLabel}.csv"`,
+      },
+    });
+  }
 
   if (intent === "enable") {
     const appUrl = process.env.SHOPIFY_APP_URL;
@@ -153,17 +240,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // Previous period — same length, immediately before current
   const prevSince = new Date(since);
   prevSince.setDate(prevSince.getDate() - days);
+  const prevUntil = new Date(since);
+  prevUntil.setDate(prevUntil.getDate() - 1);
+  const prevFromStr = prevSince.toISOString().split("T")[0];
+  const prevToStr   = prevUntil.toISOString().split("T")[0];
 
   // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
   const pixelStatus = await getPixelStatus(admin);
 
-  const [currentAttributions, previousAttributions] = await Promise.all([
+  const [currentAttributions, previousAttributions, viewEvents, prevViewEvents] = await Promise.all([
     db.orderAttribution.findMany({
       where: { shopId, createdAt: { gte: since, lte: until } },
       orderBy: { createdAt: "asc" },
     }),
     db.orderAttribution.findMany({
       where: { shopId, createdAt: { gte: prevSince, lt: since } },
+    }),
+    db.bundleAnalytics.findMany({
+      where: { shopId, event: "view", createdAt: { gte: since, lte: until } },
+      select: { bundleId: true, createdAt: true },
+    }),
+    db.bundleAnalytics.findMany({
+      where: { shopId, event: "view", createdAt: { gte: prevSince, lt: since } },
+      select: { bundleId: true },
     }),
   ]);
 
@@ -313,10 +412,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const bundleLeaderboard = buildBundleLeaderboard(attrRows, bundleNameMap, bundleStatusMap, 10);
   const bundleRevenueTrend = buildBundleTrendSeries(attrRows, since, days, until);
 
+  // ── Bundle view counts ─────────────────────────────────────
+  const totalViews = viewEvents.length;
+  const prevTotalViews = prevViewEvents.length;
+
+  // Views per bundle (current period), sorted by views desc
+  const viewsByBundleMap: Record<string, number> = {};
+  for (const v of viewEvents) {
+    if (v.bundleId) {
+      viewsByBundleMap[v.bundleId] = (viewsByBundleMap[v.bundleId] ?? 0) + 1;
+    }
+  }
+  // Also include bundle names from view-only bundles not in attributions
+  const viewOnlyBundleIds = Object.keys(viewsByBundleMap).filter(id => !(id in bundleNameMap));
+  const viewOnlyBundles = viewOnlyBundleIds.length > 0
+    ? await db.bundle.findMany({
+        where: { id: { in: viewOnlyBundleIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const allBundleNameMap = { ...bundleNameMap, ...Object.fromEntries(viewOnlyBundles.map(b => [b.id, b.name])) };
+
+  const viewsByBundle = Object.entries(viewsByBundleMap)
+    .map(([bundleId, views]) => ({ bundleId, name: allBundleNameMap[bundleId] ?? "Unknown Bundle", views }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 10);
+
   return json({
     days,
     from: fromStr,
     to: toStr,
+    prevFrom: prevFromStr,
+    prevTo: prevToStr,
     pixelActive: pixelStatus.active,
     summary: {
       totalRevenue, totalOrders, bundleOrders, aov,
@@ -331,6 +458,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     bundleRevenueSummary,
     bundleLeaderboard,
     bundleRevenueTrend,
+    views: { totalViews, prevTotalViews, viewsByBundle },
   });
 };
 
@@ -452,7 +580,7 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
 
 // ─── BundleKpiRow ─────────────────────────────────────────────
 
-function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
+function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; compare: boolean }) {
   const revDelta = formatDelta(s.totalBundleRevenue, s.prevTotalBundleRevenue);
   const ordDelta = formatDelta(s.totalBundleOrders, s.prevTotalBundleOrders);
   const aovDelta = s.bundleAOV !== null && s.prevBundleAOV !== null
@@ -480,21 +608,21 @@ function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
         <span className={styles.bundleKpiValue}>
           {s.totalBundleRevenue > 0 ? formatRevenue(s.totalBundleRevenue) : "$0"}
         </span>
-        {revDelta.label !== "—" ? (
+        {compare && (revDelta.label !== "—" ? (
           <Badge tone={deltaTone(revDelta.direction)}>{`${revDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
 
       <div className={styles.bundleKpiCard}>
         <span className={styles.bundleKpiLabel}>Bundle Orders</span>
         <span className={styles.bundleKpiValue}>{s.totalBundleOrders}</span>
-        {ordDelta.label !== "—" ? (
+        {compare && (ordDelta.label !== "—" ? (
           <Badge tone={deltaTone(ordDelta.direction)}>{`${ordDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
 
       <div className={styles.bundleKpiCard}>
@@ -502,11 +630,11 @@ function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
         <span className={styles.bundleKpiValue}>
           {s.bundleAOV !== null ? formatRevenue(s.bundleAOV) : "—"}
         </span>
-        {aovDelta && aovDelta.label !== "—" ? (
+        {compare && (aovDelta && aovDelta.label !== "—" ? (
           <Badge tone={deltaTone(aovDelta.direction)}>{`${aovDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
 
       <div className={styles.bundleKpiCard}>
@@ -514,11 +642,11 @@ function BundleKpiRow({ summary: s }: { summary: BundleRevenueSummary }) {
         <span className={styles.bundleKpiValue}>
           {s.bundleRevenuePercent > 0 ? s.bundleRevenuePercent.toFixed(1) + "%" : "0%"}
         </span>
-        {pctDelta ? (
+        {compare && (pctDelta ? (
           <Badge tone={deltaTone(pctDelta.direction)}>{`${pctDelta.label} vs prev`}</Badge>
         ) : (
           <Badge tone="new">{"— no prior data"}</Badge>
-        )}
+        ))}
       </div>
     </InlineGrid>
   );
@@ -817,15 +945,28 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
 
 export default function AttributionDashboard() {
   const {
-    days, from, to, summary, timeSeries,
+    days, from, to, prevFrom, prevTo, summary, timeSeries,
     byPlatform, byMedium, byCampaign, byBundle, byLandingPage,
     pixelActive,
     bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
+    views,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   // Recharts uses ResizeObserver — only render on client to avoid SSR mismatch
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
+
+  const [compare, setCompare] = useState(true);
+
+  const comparePeriodLabel = useMemo(() => {
+    if (!prevFrom || !prevTo) return null;
+    const fmt = (s: string) => {
+      const [, m, d] = s.split("-");
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return `${months[parseInt(m,10)-1]} ${parseInt(d,10)}`;
+    };
+    return `${fmt(prevFrom)} – ${fmt(prevTo)}`;
+  }, [prevFrom, prevTo]);
 
   const maxPlatformRevenue = byPlatform[0]?.revenue || 1;
 
@@ -887,20 +1028,95 @@ export default function AttributionDashboard() {
         {/* Pixel tracking toggle */}
         <PixelStatusCard pixelActive={pixelActive} />
 
-        {/* Date range selector */}
+        {/* Date range selector + Compare toggle + Export */}
         <div className={styles.headerRow}>
-          <div />
-          <div className={styles.datePickerWrap}>
-            <DateRangeSelector days={days} from={from} to={to} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {compare && comparePeriodLabel && (
+              <span className={styles.comparePill}>
+                vs {comparePeriodLabel}
+              </span>
+            )}
+          </div>
+          <InlineStack gap="200" blockAlign="center">
+            <form method="post" style={{ display: "inline" }}>
+              <input type="hidden" name="intent" value="export" />
+              {from && to ? (
+                <>
+                  <input type="hidden" name="from" value={from} />
+                  <input type="hidden" name="to" value={to} />
+                </>
+              ) : (
+                <input type="hidden" name="days" value={String(days)} />
+              )}
+              <Button submit size="slim" variant="secondary">Export CSV</Button>
+            </form>
+            <button
+              className={`${styles.compareToggle}${compare ? ` ${styles.compareToggleActive}` : ""}`}
+              onClick={() => setCompare(v => !v)}
+              type="button"
+            >
+              Compare
+            </button>
+            <div className={styles.datePickerWrap}>
+              <DateRangeSelector days={days} from={from} to={to} />
+            </div>
+          </InlineStack>
+        </div>
+
+        {/* ── Bundle Views Section ───────────────────────────── */}
+        <div className={styles.bundleSection}>
+          <Text as="h2" variant="headingMd">Bundle Views</Text>
+        </div>
+
+        <div className={styles.statsGrid}>
+          <div className={`${styles.statCard} ${styles.accent1}`}>
+            <span className={styles.statLabel}>Total Views</span>
+            <span className={styles.statValue}>{views.totalViews.toLocaleString()}</span>
+            {compare && views.prevTotalViews > 0 && (
+              <span className={
+                views.totalViews >= views.prevTotalViews ? styles.growthPos : styles.growthNeg
+              }>
+                {formatGrowth(views.totalViews, views.prevTotalViews)} vs prev period
+              </span>
+            )}
+            <span className={styles.statSub}>widget renders in selected period</span>
           </div>
         </div>
+
+        {views.viewsByBundle.length > 0 && (
+          <div style={{ background: "#fff", border: "1px solid #e3e3e3", borderRadius: 8, padding: "16px 20px" }}>
+            <BlockStack gap="300">
+              <Text as="h3" variant="headingSm">Views by Bundle</Text>
+              <div>
+                {views.viewsByBundle.map((row, i) => {
+                  const maxViews = views.viewsByBundle[0]?.views || 1;
+                  const pct = Math.round((row.views / maxViews) * 100);
+                  return (
+                    <div key={row.bundleId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                      <div style={{ width: 20, color: "#6d7175", fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{row.views.toLocaleString()}</span>
+                        </div>
+                        <div style={{ height: 6, background: "#e3e3e3", borderRadius: 3, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: "#005bd3", borderRadius: 3, transition: "width 0.4s ease" }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </BlockStack>
+          </div>
+        )}
 
         {/* ── Bundle Revenue Section ─────────────────────────── */}
         <div className={styles.bundleSection}>
           <Text as="h2" variant="headingMd">Bundle Revenue</Text>
         </div>
 
-        <BundleKpiRow summary={bundleRevenueSummary} />
+        <BundleKpiRow summary={bundleRevenueSummary} compare={compare} />
 
         <div className={styles.bundleSplitRow}>
           <BundleTrendChart trend={bundleRevenueTrend} days={days} isClient={isClient} />
@@ -919,7 +1135,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent1}`}>
             <span className={styles.statLabel}>Total Ad Revenue</span>
             <span className={styles.statValue}>{formatRevenue(summary.totalRevenue)}</span>
-            {revenueGrowth && (
+            {compare && revenueGrowth && (
               <span className={
                 isPositiveGrowth(summary.totalRevenue, summary.prevTotalRevenue)
                   ? styles.growthPos : styles.growthNeg
@@ -936,7 +1152,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent2}`}>
             <span className={styles.statLabel}>Attributed Orders</span>
             <span className={styles.statValue}>{summary.totalOrders}</span>
-            {ordersGrowth && (
+            {compare && ordersGrowth && (
               <span className={
                 isPositiveGrowth(summary.totalOrders, summary.prevTotalOrders)
                   ? styles.growthPos : styles.growthNeg
@@ -953,7 +1169,7 @@ export default function AttributionDashboard() {
           <div className={`${styles.statCard} ${styles.accent3}`}>
             <span className={styles.statLabel}>Avg. Order Value</span>
             <span className={styles.statValue}>{formatRevenue(summary.aov)}</span>
-            {aovGrowth && (
+            {compare && aovGrowth && (
               <span className={
                 isPositiveGrowth(summary.aov, summary.prevAov)
                   ? styles.growthPos : styles.growthNeg

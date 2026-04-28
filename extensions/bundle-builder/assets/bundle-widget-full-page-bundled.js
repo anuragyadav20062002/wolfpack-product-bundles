@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.6.1
- * Built   : 2026-04-22
+ * Version : 2.7.0
+ * Built   : 2026-04-27
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.6.1';
+window.__BUNDLE_WIDGET_VERSION__ = '2.7.0';
 (function() {
   'use strict';
 
@@ -2539,6 +2539,10 @@ class BundleWidgetFullPage {
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
 
+      if (!window.Shopify?.designMode) {
+        this._recordView();
+      }
+
     } catch (error) {
       this.hideLoadingOverlay();
 
@@ -3214,10 +3218,10 @@ class BundleWidgetFullPage {
     }
 
     const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
-    if (currentStep?.isFreeGift) {
+    if (currentStep?.isFreeGift && currentStep?.addonTitle) {
       const freeHeading = document.createElement('div');
       freeHeading.className = 'fpb-step-free-heading';
-      freeHeading.textContent = `Complete the look and get a ${currentStep.freeGiftName || 'gift'} free!`;
+      freeHeading.textContent = currentStep.addonTitle;
       contentSection.appendChild(freeHeading);
     }
 
@@ -3310,7 +3314,7 @@ class BundleWidgetFullPage {
     const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
-    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? 'Add to Cart' : 'Next';
+    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionlessMobile ? !hasSelectionMobile : (isLastStep && !isComplete)) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (conditionlessMobile || (isLastStep && isComplete)) {
@@ -3321,7 +3325,7 @@ class BundleWidgetFullPage {
         this.currentStepIndex++;
         this.renderFullPageLayoutWithSidebar();
       } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
-        ToastManager.show(`Complete all steps to unlock the free ${this.freeGiftStep?.freeGiftName || 'gift'}!`);
+        ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {
         ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
       }
@@ -3371,7 +3375,7 @@ class BundleWidgetFullPage {
     header.className = 'side-panel-header';
     const headerTitle = document.createElement('span');
     headerTitle.className = 'side-panel-title';
-    headerTitle.textContent = 'Your Bundle';
+    headerTitle.textContent = this._resolveText('yourBundle', 'Your Bundle');
     header.appendChild(headerTitle);
 
     if (allSelectedProducts.length > 0) {
@@ -3431,7 +3435,7 @@ class BundleWidgetFullPage {
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
-        const isFreeGiftItem = item.isFreeGift === true;
+        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree !== false;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
@@ -3518,8 +3522,8 @@ class BundleWidgetFullPage {
       if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
-        const giftName = this.freeGiftStep?.freeGiftName || 'gift';
-        ToastManager.show(`Complete all steps to unlock the free ${giftName}!`);
+        const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
+        ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
         this.searchQuery = '';
@@ -3647,10 +3651,12 @@ class BundleWidgetFullPage {
       if (!isCurrent && !isCompleted) stepEl.classList.add('timeline-step--inactive');
       if (!isAccessible) stepEl.classList.add('timeline-step--locked');
 
-      const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
+      const tabLabel = (step.isFreeGift && step.addonLabel) ? step.addonLabel : step.name;
+      const escapedName = this._escapeHTML(tabLabel) || `Step ${index + 1}`;
 
-      const iconContent = step.timelineIconUrl
-        ? `<img class="timeline-step-icon" src="${step.timelineIconUrl}" alt="${escapedName}">`
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.timelineIconUrl;
+      const iconContent = uploadedIconUrl
+        ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
         : this._getDefaultTimelineIcon(step);
 
       const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -4254,13 +4260,13 @@ class BundleWidgetFullPage {
           img.className = 'fpb-included-badge-img';
           badge.appendChild(img);
         } else {
-          badge.textContent = 'Included';
+          badge.textContent = this._resolveText('includedBadge', 'Included');
         }
         imgEl.parentElement.appendChild(badge);
       }
     }
 
-    if (currentStepData?.isFreeGift) {
+    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree !== false) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -4279,7 +4285,7 @@ class BundleWidgetFullPage {
           img.className = 'fpb-free-badge-img';
           badge.appendChild(img);
         } else {
-          badge.textContent = 'Free';
+          badge.textContent = this._resolveText('freeBadge', 'Free');
         }
         imgEl.parentElement.appendChild(badge);
       }
@@ -4566,7 +4572,7 @@ class BundleWidgetFullPage {
     ctaBtn.setAttribute('type', 'button');
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-    ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
+    ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
@@ -4657,6 +4663,7 @@ class BundleWidgetFullPage {
               price: price,
               isDefault: step.isDefault ?? false,
               isFreeGift: step.isFreeGift ?? false,
+              addonDisplayFree: step.addonDisplayFree !== false,
             });
           } else {
           }
@@ -6143,7 +6150,12 @@ class BundleWidgetFullPage {
 
     if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
 
-    if (!this.canNavigateToStep(stepIndex)) return false;
+    const addonStep = this.selectedBundle?.steps[stepIndex];
+    if (addonStep?.isFreeGift && addonStep?.addonUnlockAfterCompletion === false) {
+
+    } else if (!this.canNavigateToStep(stepIndex)) {
+      return false;
+    }
 
     for (let i = 0; i < stepIndex; i++) {
       const step = this.selectedBundle?.steps[i];
@@ -6164,10 +6176,10 @@ class BundleWidgetFullPage {
     const isCurrentStepValid = this.validateStep(this.currentStepIndex);
 
     if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
-      nextButton.textContent = 'Done';
+      nextButton.textContent = this._resolveText('doneButton', 'Done');
       nextButton.disabled = !isCurrentStepValid;
     } else {
-      nextButton.textContent = 'Next';
+      nextButton.textContent = this._resolveText('nextButton', 'Next');
       nextButton.disabled = !isCurrentStepValid;
     }
   }
@@ -6661,6 +6673,33 @@ class BundleWidgetFullPage {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {  });
+    } catch (_) {
+
+    }
+  }
+
+  _resolveText(key, fallback) {
+    const locale = window.Shopify?.locale;
+    if (locale && this.config?.textOverridesByLocale?.[locale]?.[key]) {
+      return this.config.textOverridesByLocale[locale][key];
+    }
+    if (this.config?.textOverrides?.[key]) {
+      return this.config.textOverrides[key];
+    }
+    return fallback;
+  }
+
+  _recordView() {
+    try {
+      const bundleId = this.config?.bundleId ?? this.container?.dataset?.bundleId;
+      const shop = window.Shopify?.shop;
+      if (!bundleId || !shop) return;
+      fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
         keepalive: true,
       }).catch(() => {  });
     } catch (_) {

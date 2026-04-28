@@ -40,6 +40,7 @@ import {
   Collapsible,
   FormLayout,
   Checkbox,
+  ChoiceList,
   Modal,
   Thumbnail,
   List,
@@ -89,6 +90,9 @@ import {
   handleCreatePreviewPage,
   handleRenamePageSlug,
 } from "./handlers";
+
+import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
+import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 
 // Types - extracted to separate module for better organization
 import type {
@@ -187,6 +191,25 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     orderBy: { name: 'asc' },
   });
 
+  // Fetch shop locales for multi-language text overrides
+  let shopLocales: { locale: string; name: string; primary: boolean }[] = [];
+  try {
+    const localesResponse = await admin.graphql(`
+      query GetShopLocales {
+        shopLocales {
+          locale
+          name
+          primary
+          published
+        }
+      }
+    `);
+    const localesData = await localesResponse.json() as { data?: { shopLocales?: { locale: string; name: string; primary: boolean; published: boolean }[] } };
+    shopLocales = (localesData.data?.shopLocales ?? []).filter((l) => l.published);
+  } catch {
+    // Non-critical — fall back to English-only mode
+  }
+
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
@@ -195,6 +218,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // File: extensions/bundle-builder/blocks/bundle-full-page.liquid
   const blockHandle = 'bundle-full-page';
 
+  const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
+  const themeEditorUrl = embedCheck.themeId
+    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-full-page-embed`
+    : null;
+
   return json({
     bundle,
     bundleProduct,
@@ -202,6 +230,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     shop: session.shop,
     apiKey,
     blockHandle,
+    shopLocales,
+    appEmbedEnabled: embedCheck.enabled,
+    themeEditorUrl,
   });
 };
 
@@ -278,9 +309,8 @@ const bundleSetupItems = [
   { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
   { id: "images_gifs",      label: "Bundle Assets",       icon: ImageIcon,        fullPageOnly: true  },
   { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
-  // Bundle Upsell and Bundle Settings disabled for later release
-  // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
-  // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
+  { id: "bundle_settings",  label: "Bundle Settings",     icon: ImageIcon,        fullPageOnly: false },
+  { id: "messages",         label: "Messages",            icon: ListNumberedIcon, fullPageOnly: false },
 ];
 
 // Static status options - imported from centralized constants
@@ -311,7 +341,7 @@ export default function ConfigureBundleFlow() {
     loadingGif?: string | null;
     shopifyProductHandle?: string;
   };
-  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = loaderData;
+  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle, shopLocales = [], appEmbedEnabled = true, themeEditorUrl = null } = loaderData as any;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -470,6 +500,22 @@ export default function ConfigureBundleFlow() {
   const originalFloatingBadgeEnabledRef = useRef<boolean>((bundle as any).floatingBadgeEnabled ?? false);
   const originalFloatingBadgeTextRef = useRef<string>((bundle as any).floatingBadgeText ?? "");
 
+  // Bundle Settings state
+  const [showProductPrices, setShowProductPrices] = useState<boolean>((bundle as any).showProductPrices ?? true);
+  const [showCompareAtPrices, setShowCompareAtPrices] = useState<boolean>((bundle as any).showCompareAtPrices ?? false);
+  const [cartRedirectToCheckout, setCartRedirectToCheckout] = useState<boolean>((bundle as any).cartRedirectToCheckout ?? false);
+  const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
+
+  // Text overrides state (Messages tab)
+  const [textOverrides, setTextOverrides] = useState<Record<string, string>>(
+    ((bundle as any).textOverrides as Record<string, string>) ?? {}
+  );
+  const [textOverridesByLocale, setTextOverridesByLocale] = useState<Record<string, Record<string, string>>>(
+    ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
+  );
+  // Which locale the merchant is currently editing in the Messages tab
+  const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
+
   // Widget install loading state
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
 
@@ -569,6 +615,12 @@ export default function ConfigureBundleFlow() {
       }
       formData.append("floatingBadgeEnabled", String(floatingBadgeEnabled));
       formData.append("floatingBadgeText", floatingBadgeText);
+      formData.append("showProductPrices", String(showProductPrices));
+      formData.append("showCompareAtPrices", String(showCompareAtPrices));
+      formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
+      formData.append("allowQuantityChanges", String(allowQuantityChanges));
+      formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
+      formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
 
       // Submit to server action using fetcher
 
@@ -605,6 +657,8 @@ export default function ConfigureBundleFlow() {
     bundle.bundleType,
     bundle.shopifyPageId,
     bundle.shopifyPageHandle,
+    textOverrides,
+    textOverridesByLocale,
     shopify
   ]);
 
@@ -1516,6 +1570,8 @@ export default function ConfigureBundleFlow() {
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
+        <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+
         <Layout>
 
           {/* Left Sidebar */}
@@ -1946,26 +2002,55 @@ export default function ConfigureBundleFlow() {
                                     </Text>
                                   </BlockStack>
 
-                                  {/* Free Gift toggle */}
-                                  <Checkbox
-                                    label="Free gift step"
-                                    helpText="This step is unlocked after all regular steps are complete. Products are shown at $0.00."
-                                    checked={step.isFreeGift === true}
-                                    onChange={(checked) => {
-                                      stepsState.updateStepField(step.id, 'isFreeGift', checked);
-                                      if (!checked) stepsState.updateStepField(step.id, 'freeGiftName', '');
+                                  {/* Step type selector */}
+                                  <ChoiceList
+                                    title="Step type"
+                                    choices={[
+                                      { label: 'Regular Step', value: 'regular' },
+                                      { label: 'Add-On / Upsell Step', value: 'addon' },
+                                    ]}
+                                    selected={[step.isFreeGift ? 'addon' : 'regular']}
+                                    onChange={([val]) => {
+                                      const isAddon = val === 'addon';
+                                      stepsState.updateStepField(step.id, 'isFreeGift', isAddon);
+                                      if (!isAddon) {
+                                        stepsState.updateStepField(step.id, 'addonLabel', null);
+                                        stepsState.updateStepField(step.id, 'addonTitle', null);
+                                        stepsState.updateStepField(step.id, 'addonIconUrl', null);
+                                      }
                                     }}
                                   />
 
                                   {step.isFreeGift && (
                                     <FormLayout>
                                       <TextField
-                                        label="Gift display name"
-                                        placeholder='e.g. "cap", "greeting card"'
-                                        helpText='Shown in the sidebar: "Add 2 more to claim a FREE cap!"'
-                                        value={step.freeGiftName || ''}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'freeGiftName', value)}
+                                        label="Step label (tab name)"
+                                        placeholder="Add-Ons"
+                                        helpText="Shown in the bundle step navigator tab."
+                                        maxLength={40}
+                                        value={step.addonLabel ?? (step.freeGiftName || '')}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'addonLabel', value)}
                                         autoComplete="off"
+                                      />
+                                      <TextField
+                                        label="Step title (panel heading)"
+                                        placeholder="Pick a free gift!"
+                                        helpText="Shown as the heading inside the step panel."
+                                        value={step.addonTitle || ''}
+                                        onChange={(value) => stepsState.updateStepField(step.id, 'addonTitle', value)}
+                                        autoComplete="off"
+                                      />
+                                      <Checkbox
+                                        label="Display products as free ($0.00)"
+                                        helpText="Customers see $0 on products in this step."
+                                        checked={step.addonDisplayFree !== false}
+                                        onChange={(checked) => stepsState.updateStepField(step.id, 'addonDisplayFree', checked)}
+                                      />
+                                      <Checkbox
+                                        label="Unlock after bundle completion"
+                                        helpText="This step tab is locked until all prior steps are filled."
+                                        checked={step.addonUnlockAfterCompletion !== false}
+                                        onChange={(checked) => stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', checked)}
                                       />
                                     </FormLayout>
                                   )}
@@ -2559,6 +2644,149 @@ export default function ConfigureBundleFlow() {
                 />
               </BlockStack>
             )}
+
+            {activeSection === "bundle_settings" && (
+              <BlockStack gap="400">
+                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                  <InlineStack gap="200" blockAlign="center">
+                    <Icon source={ImageIcon} tone="subdued" />
+                    <BlockStack gap="0">
+                      <Text variant="headingSm" fontWeight="semibold" as="p">Bundle Settings</Text>
+                      <Text variant="bodyXs" tone="subdued" as="p">
+                        Control how this bundle behaves on the storefront.
+                      </Text>
+                    </BlockStack>
+                  </InlineStack>
+                </Box>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <Text variant="headingSm" as="h3">Display</Text>
+                    <Checkbox
+                      label="Show product prices"
+                      helpText="Display the price of each product on its card."
+                      checked={showProductPrices}
+                      onChange={(val) => { setShowProductPrices(val); markAsDirty(); }}
+                    />
+                    <Checkbox
+                      label="Show compare-at prices"
+                      helpText="Show the original (strike-through) price next to the sale price."
+                      checked={showCompareAtPrices}
+                      onChange={(val) => { setShowCompareAtPrices(val); markAsDirty(); }}
+                    />
+                    <Checkbox
+                      label="Allow quantity changes"
+                      helpText="Let customers adjust the quantity of individual products within the bundle."
+                      checked={allowQuantityChanges}
+                      onChange={(val) => { setAllowQuantityChanges(val); markAsDirty(); }}
+                    />
+                  </BlockStack>
+                </Card>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <Text variant="headingSm" as="h3">Cart behaviour</Text>
+                    <Checkbox
+                      label="Redirect to checkout after adding to cart"
+                      helpText="Takes customers directly to checkout instead of the cart page when they click Add to Bundle."
+                      checked={cartRedirectToCheckout}
+                      onChange={(val) => { setCartRedirectToCheckout(val); markAsDirty(); }}
+                    />
+                  </BlockStack>
+                </Card>
+              </BlockStack>
+            )}
+
+            {activeSection === "messages" && (() => {
+              const isEnglish = textOverridesLocale === "en";
+              const currentOverrides: Record<string, string> = isEnglish
+                ? textOverrides
+                : (textOverridesByLocale[textOverridesLocale] ?? {});
+              const setCurrentOverrides = (key: string, value: string) => {
+                if (isEnglish) {
+                  setTextOverrides((prev) => ({ ...prev, [key]: value }));
+                } else {
+                  setTextOverridesByLocale((prev) => ({
+                    ...prev,
+                    [textOverridesLocale]: { ...(prev[textOverridesLocale] ?? {}), [key]: value },
+                  }));
+                }
+                markAsDirty();
+              };
+              const localeOptions = [
+                { label: "English (default)", value: "en" },
+                ...shopLocales
+                  .filter((l: { locale: string; name: string; primary: boolean }) => l.locale !== "en")
+                  .map((l: { locale: string; name: string; primary: boolean }) => ({ label: l.name, value: l.locale })),
+              ];
+              const fields: { key: string; label: string; placeholder: string; helpText: string }[] = [
+                { key: "addToCartButton",  label: "Add to Cart button",             placeholder: "Add to Cart",                      helpText: 'Shown in the footer and mobile bar when the bundle is complete.' },
+                { key: "nextButton",       label: "Next Step button",               placeholder: "Next",                             helpText: 'Footer button to advance to the next step.' },
+                { key: "doneButton",       label: "Done button",                    placeholder: "Done",                             helpText: 'Shown on the last step in the modal navigator.' },
+                { key: "freeBadge",        label: "Free gift badge",                placeholder: "Free",                             helpText: 'Badge shown on free-gift product cards.' },
+                { key: "includedBadge",    label: "Included badge",                 placeholder: "Included",                         helpText: 'Badge shown on product cards that are already in the bundle.' },
+                { key: "yourBundle",       label: "Sidebar title",                  placeholder: "Your Bundle",                      helpText: 'Heading of the selected-products sidebar / bottom sheet.' },
+              ];
+              return (
+                <BlockStack gap="400">
+                  <Box background="bg-surface-secondary" padding="300" borderRadius="200">
+                    <InlineStack gap="200" blockAlign="center">
+                      <Icon source={ListNumberedIcon} tone="subdued" />
+                      <BlockStack gap="0">
+                        <Text variant="headingSm" fontWeight="semibold" as="p">Messages</Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          Customise the text shown to customers in the bundle widget.
+                        </Text>
+                      </BlockStack>
+                    </InlineStack>
+                  </Box>
+
+                  {localeOptions.length > 1 && (
+                    <Card>
+                      <BlockStack gap="300">
+                        <Text variant="headingSm" as="h3">Language</Text>
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          Select a language to customise strings for that locale. Customers on English storefronts always use the default values above.
+                        </Text>
+                        <Select
+                          label="Editing language"
+                          options={localeOptions}
+                          value={textOverridesLocale}
+                          onChange={(val) => setTextOverridesLocale(val)}
+                          labelHidden={false}
+                        />
+                      </BlockStack>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <BlockStack gap="400">
+                      <Text variant="headingSm" as="h3">
+                        Widget labels{!isEnglish ? ` — ${localeOptions.find((o) => o.value === textOverridesLocale)?.label ?? textOverridesLocale}` : ""}
+                      </Text>
+                      {!isEnglish && (
+                        <Text variant="bodyXs" tone="subdued" as="p">
+                          Leave a field blank to fall back to the English default.
+                        </Text>
+                      )}
+                      <FormLayout>
+                        {fields.map(({ key, label, placeholder, helpText }) => (
+                          <TextField
+                            key={key}
+                            label={label}
+                            value={currentOverrides[key] ?? ""}
+                            placeholder={placeholder}
+                            helpText={helpText}
+                            autoComplete="off"
+                            onChange={(val) => setCurrentOverrides(key, val)}
+                          />
+                        ))}
+                      </FormLayout>
+                    </BlockStack>
+                  </Card>
+                </BlockStack>
+              );
+            })()}
           </Layout.Section>
         </Layout>
       </form>

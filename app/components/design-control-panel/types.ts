@@ -15,7 +15,6 @@ export interface DesignSettings {
   productCardImageFit: string;
   productCardsPerRow: number;
   productTitleVisibility: boolean;
-  productPriceVisibility: boolean;
   productPriceBgColor: string;
   productStrikePriceColor: string;
   productStrikeFontSize: number;

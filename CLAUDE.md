@@ -232,6 +232,7 @@ npm run test:coverage # coverage report
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
 11. **ALWAYS ask about DCP customizability for storefront changes** — if a storefront change is not explicitly specified as DCP-customizable, ask the user whether DCP support should be bundled with it before implementing ✅ — see DCP Customizability Rule below
+12. **NO hardcoded fallback UI copy strings** ❌ — do not invent default marketing copy (e.g. "Complete the look and get a gift free!") when a merchant-configured string is absent. If the merchant hasn't set a value, show nothing or use a neutral system message. Never fabricate storefront-visible copy on their behalf.
 
 ## 🎨 DCP Customizability Rule
 
@@ -387,6 +388,27 @@ npm run build:widgets:full-page
 # Build only product-page widget bundle
 npm run build:widgets:product-page
 ```
+
+### SDK Build — MANDATORY After SDK Source Changes
+
+**ALWAYS run the SDK build after modifying ANY of these source files:**
+
+- `app/assets/sdk/state.js`
+- `app/assets/sdk/events.js`
+- `app/assets/sdk/config-loader.js`
+- `app/assets/sdk/cart.js`
+- `app/assets/sdk/validate-bundle.js`
+- `app/assets/sdk/get-display-price.js`
+- `app/assets/sdk/debug.js`
+- `app/assets/sdk/wolfpack-bundles.js`
+
+```bash
+npm run build:sdk
+```
+
+Output: `extensions/bundle-builder/assets/wolfpack-bundles-sdk.js`
+
+**Forgetting to build = SDK changes won't appear in the storefront!**
 
 ### Output Files
 

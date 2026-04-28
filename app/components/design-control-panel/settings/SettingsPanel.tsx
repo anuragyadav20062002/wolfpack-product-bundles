@@ -42,7 +42,7 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
   ],
   productCard: [
     "productCardBgColor", "productCardFontColor", "productCardFontSize", "productCardFontWeight",
-    "productCardImageFit", "productCardsPerRow", "productTitleVisibility", "productPriceVisibility",
+    "productCardImageFit", "productCardsPerRow", "productTitleVisibility",
     "productPriceBgColor", "productCardWidth", "productCardHeight", "productCardSpacing",
     "productCardBorderRadius", "productCardPadding", "productCardMargin", "productCardBorderWidth",
     "productCardBorderColor", "productCardShadow", "productCardHoverShadow",

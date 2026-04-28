@@ -28,7 +28,6 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   productCardImageFit: "cover",
   productCardsPerRow: 4,
   productTitleVisibility: true,
-  productPriceVisibility: true,
   productPriceBgColor: "#F0F8F0",
 
   // Product Card - Typography
@@ -353,7 +352,6 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   productCardImageFit: "contain",
   productCardsPerRow: 4,
   productTitleVisibility: true,
-  productPriceVisibility: true,
   productPriceBgColor: "#F9FAFB",
 
   // Product Card - Typography

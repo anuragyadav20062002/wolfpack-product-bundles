@@ -35,7 +35,6 @@ export interface ProductCardSettings {
   productCardImageFit: string;
   productCardsPerRow: number | string; // Can be string from select component
   productTitleVisibility: boolean;
-  productPriceVisibility: boolean;
   productPriceBgColor: string;
 
   // Price Typography

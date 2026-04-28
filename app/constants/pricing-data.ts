@@ -18,11 +18,12 @@ export interface FeatureComparisonRow {
 
 export const FEATURE_COMPARISON: FeatureComparisonRow[] = [
   { feature: "Bundle limit", free: "10 bundles", grow: "20 bundles", highlight: true },
+  { feature: "Bundle sales threshold", free: "Up to $500/mo", grow: "Unlimited", highlight: true },
   { feature: "Product Page Bundles", free: true, grow: true },
   { feature: "Full Page Bundles", free: true, grow: true },
+  { feature: "Design Control Panel", free: true, grow: true },
   { feature: "Basic discount rules", free: true, grow: true },
   { feature: "Advanced discount rules", free: false, grow: true, highlight: true },
-  { feature: "Design Control Panel", free: false, grow: true, highlight: true },
   { feature: "Bundle analytics", free: false, grow: true, highlight: true },
   { feature: "Priority support", free: false, grow: true, highlight: true },
   { feature: "Early access to features", free: false, grow: true },
@@ -46,9 +47,9 @@ export const VALUE_PROPS: ValueProp[] = [
     icon: "📦",
   },
   {
-    title: "Full design control",
-    description: "Customize colors, fonts, and layouts to match your brand perfectly",
-    icon: "🎨",
+    title: "Unlimited bundle revenue",
+    description: "No revenue cap — keep all your bundle sales income as you scale",
+    icon: "💰",
   },
   {
     title: "Priority support",
@@ -62,8 +63,8 @@ export const VALUE_PROPS: ValueProp[] = [
  * Used in the upgrade confirmation modal
  */
 export const GROW_PLAN_BENEFITS = [
-  "Up to 20 bundles",
-  "Design Control Panel for full customization",
+  "Up to 20 bundles (2× the free limit)",
+  "No bundle revenue cap — free plan is limited to $500/mo",
   "Advanced discount rules",
   "Priority support",
 ] as const;

@@ -398,6 +398,14 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const floatingBadgeEnabled = formData.get("floatingBadgeEnabled") === "true";
     const floatingBadgeTextRaw = (formData.get("floatingBadgeText") as string) ?? "";
     const floatingBadgeText = floatingBadgeTextRaw.slice(0, 60);
+    const showProductPrices = formData.get("showProductPrices") !== "false";
+    const showCompareAtPrices = formData.get("showCompareAtPrices") === "true";
+    const cartRedirectToCheckout = formData.get("cartRedirectToCheckout") === "true";
+    const allowQuantityChanges = formData.get("allowQuantityChanges") !== "false";
+    const textOverridesRaw = formData.get("textOverrides") as string | null;
+    const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
+    const textOverrides = textOverridesRaw ? JSON.parse(textOverridesRaw) : null;
+    const textOverridesByLocale = textOverridesByLocaleRaw ? JSON.parse(textOverridesByLocaleRaw) : null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -520,6 +528,12 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showStepTimeline: showStepTimelineForSave,
         floatingBadgeEnabled,
         floatingBadgeText,
+        showProductPrices,
+        showCompareAtPrices,
+        cartRedirectToCheckout,
+        allowQuantityChanges,
+        textOverrides,
+        textOverridesByLocale,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -542,9 +556,14 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
-                // Free gift & default product fields
+                // Free gift / add-on step fields
                 isFreeGift: step.isFreeGift === true,
                 freeGiftName: step.freeGiftName || null,
+                addonLabel: step.addonLabel ?? null,
+                addonTitle: step.addonTitle ?? null,
+                addonIconUrl: step.addonIconUrl ?? null,
+                addonDisplayFree: step.addonDisplayFree !== false,
+                addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,
                 isDefault: step.isDefault === true,
                 defaultVariantId: step.defaultVariantId || null,
                 // Step image fields
