@@ -389,6 +389,27 @@ npm run build:widgets:full-page
 npm run build:widgets:product-page
 ```
 
+### SDK Build — MANDATORY After SDK Source Changes
+
+**ALWAYS run the SDK build after modifying ANY of these source files:**
+
+- `app/assets/sdk/state.js`
+- `app/assets/sdk/events.js`
+- `app/assets/sdk/config-loader.js`
+- `app/assets/sdk/cart.js`
+- `app/assets/sdk/validate-bundle.js`
+- `app/assets/sdk/get-display-price.js`
+- `app/assets/sdk/debug.js`
+- `app/assets/sdk/wolfpack-bundles.js`
+
+```bash
+npm run build:sdk
+```
+
+Output: `extensions/bundle-builder/assets/wolfpack-bundles-sdk.js`
+
+**Forgetting to build = SDK changes won't appear in the storefront!**
+
 ### Output Files
 
 The build script generates bundled files in the extension assets folder:

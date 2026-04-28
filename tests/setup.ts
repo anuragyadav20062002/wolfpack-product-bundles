@@ -11,6 +11,8 @@ process.env.SHOPIFY_API_SECRET = 'test_api_secret';
 process.env.SHOPIFY_APP_URL = 'https://test-app.example.com';
 process.env.SCOPES = 'read_products,write_products,read_orders,write_orders';
 process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID = 'test-function-id';
+// Enables INNGEST_AVAILABLE=true in webhook-worker.server so inngest.send() is called
+process.env.INNGEST_EVENT_KEY = 'test-inngest-key';
 
 // Global test timeout
 jest.setTimeout(30000);

@@ -125,7 +125,7 @@ describe("updateBundleProductMetafields", () => {
 
     await updateBundleProductMetafields(admin, "gid://shopify/Product/999", config);
 
-    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
 
     expect(parsed.steps[0].imageUrl).toBe("https://cdn.shopify.com/step-icon.png");
@@ -136,7 +136,7 @@ describe("updateBundleProductMetafields", () => {
 
     await updateBundleProductMetafields(admin, "gid://shopify/Product/999", makeBundleConfig(BundleType.FULL_PAGE));
 
-    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
 
     expect(parsed.steps[0].imageUrl).toBeNull();
@@ -161,7 +161,7 @@ describe("updateBundleProductMetafields", () => {
 
     await updateBundleProductMetafields(admin, "gid://shopify/Product/999", config);
 
-    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
 
     expect(parsed.steps[0].bannerImageUrl).toBe("https://cdn.shopify.com/step-banner.jpg");
@@ -172,7 +172,7 @@ describe("updateBundleProductMetafields", () => {
 
     await updateBundleProductMetafields(admin, "gid://shopify/Product/999", makeBundleConfig(BundleType.FULL_PAGE));
 
-    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
 
     expect(parsed.steps[0].bannerImageUrl).toBeNull();
@@ -187,7 +187,7 @@ describe("updateBundleProductMetafields", () => {
       makeBundleConfig(BundleType.FULL_PAGE),
     );
 
-    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const bundleUiConfigField = metafields.find((field: any) => field.key === "bundle_ui_config");
     const parsed = JSON.parse(bundleUiConfigField.value);
 
@@ -204,7 +204,7 @@ describe("updateBundleProductMetafields", () => {
       makeBundleConfig(BundleType.PRODUCT_PAGE),
     );
 
-    const metafields = admin.graphql.mock.calls[0][1].variables.metafields;
+    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const bundleUiConfigField = metafields.find((field: any) => field.key === "bundle_ui_config");
     const parsed = JSON.parse(bundleUiConfigField.value);
 

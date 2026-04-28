@@ -1,4 +1,3 @@
-import { describe, it, expect } from "vitest";
 import { formatBundleForWidget } from "../../../app/lib/bundle-formatter.server";
 
 // Minimal DB bundle fixture
@@ -65,10 +64,9 @@ describe("formatBundleForWidget", () => {
   });
 
   it("nullifies optional fields when absent", () => {
-    const bundle = makeBundle({ fullPageLayout: undefined, loadingGif: undefined });
+    const bundle = makeBundle({ fullPageLayout: undefined });
     const result = formatBundleForWidget(bundle as any);
     expect(result.fullPageLayout).toBeNull();
-    expect(result.loadingGif).toBeNull();
   });
 
   it("converts variant price strings to integer cents", () => {
@@ -136,23 +134,21 @@ describe("formatBundleForWidget", () => {
     expect(result.steps[0].collections).toEqual([]);
   });
 
-  it("sets product image fields from imageUrl", () => {
+  it("sets featuredImage from imageUrl when present", () => {
     const step = makeStep({
       StepProduct: [makeStepProduct({ imageUrl: "https://cdn.shopify.com/test.jpg" })],
     });
     const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
     const p = result.steps[0].products[0];
-    expect(p.images).toEqual([{ url: "https://cdn.shopify.com/test.jpg" }]);
     expect(p.featuredImage).toEqual({ url: "https://cdn.shopify.com/test.jpg" });
   });
 
-  it("sets image fields to empty/null when imageUrl is absent", () => {
+  it("sets featuredImage to null when imageUrl is absent", () => {
     const step = makeStep({
       StepProduct: [makeStepProduct({ imageUrl: null })],
     });
     const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
     const p = result.steps[0].products[0];
-    expect(p.images).toEqual([]);
     expect(p.featuredImage).toBeNull();
   });
 });

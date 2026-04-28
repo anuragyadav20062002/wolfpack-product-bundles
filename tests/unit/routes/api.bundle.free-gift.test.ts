@@ -34,6 +34,7 @@ jest.mock('../../../app/db.server', () => ({
   },
 }));
 
+import { createHmac } from 'node:crypto';
 import { loader } from '../../../app/routes/api/api.bundle.$bundleId[.]json';
 import { authenticate } from '../../../app/shopify.server';
 
@@ -44,10 +45,19 @@ const mockAppProxy = authenticate.public.appProxy as jest.MockedFunction<any>;
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeRequest(bundleId: string, fields?: string) {
-  const url = fields
-    ? `https://test.myshopify.com/apps/product-bundles/api/bundle/${bundleId}.json?fields=${fields}`
-    : `https://test.myshopify.com/apps/product-bundles/api/bundle/${bundleId}.json`;
-  return new Request(url);
+  const params = new URLSearchParams({
+    shop: 'test.myshopify.com',
+    timestamp: '1234567890',
+  });
+  if (fields) params.set('fields', fields);
+  // Compute HMAC so verifyAppProxyRequest() passes (uses SHOPIFY_API_SECRET from setup.ts)
+  const message = [...params.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join('&');
+  const signature = createHmac('sha256', 'test_api_secret').update(message).digest('hex');
+  params.set('signature', signature);
+  return new Request(`https://test.myshopify.com/apps/product-bundles/api/bundle/${bundleId}.json?${params.toString()}`);
 }
 
 function makeBaseStep(overrides: Record<string, any> = {}) {

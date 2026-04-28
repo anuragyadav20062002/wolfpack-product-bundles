@@ -6,6 +6,32 @@
 import { CartTransformService } from '../../../app/services/cart-transform-service.server';
 import { mockShopifyAdmin, mockSession, createMockGraphQLResponse } from '../../setup';
 
+// The Rust function ID returned by the shopifyFunctions query mock
+const MOCK_RUST_FUNCTION_ID = 'gid://shopify/ShopifyFunction/rust-1';
+
+/** Mock for the getRustFunctionId() internal call (shopifyFunctions query) */
+function rustFunctionsMock() {
+  return createMockGraphQLResponse({
+    shopifyFunctions: {
+      edges: [{
+        node: {
+          id: MOCK_RUST_FUNCTION_ID,
+          title: 'Bundle Cart Transform (Rust)',
+          apiType: 'cart_transform',
+          description: 'Wolfpack Bundles Rust/WASM port',
+        }
+      }]
+    }
+  });
+}
+
+/** Mock that returns no matching Shopify function (simulates function not deployed) */
+function rustFunctionsEmptyMock() {
+  return createMockGraphQLResponse({
+    shopifyFunctions: { edges: [] }
+  });
+}
+
 describe('CartTransformService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -15,17 +41,19 @@ describe('CartTransformService', () => {
     const shopDomain = 'test-shop.myshopify.com';
 
     it('should activate cart transform for new installation', async () => {
-      // Mock check existing (no existing transform)
       mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — no existing transform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransforms: { edges: [] }
         }))
-        // Mock create cart transform
+        // 3. createCartTransform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransformCreate: {
             cartTransform: {
               id: 'gid://shopify/CartTransform/1',
-              functionId: process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID
+              functionId: MOCK_RUST_FUNCTION_ID
             },
             userErrors: []
           }
@@ -39,24 +67,26 @@ describe('CartTransformService', () => {
       expect(result.success).toBe(true);
       expect(result.cartTransformId).toBe('gid://shopify/CartTransform/1');
       expect(result.alreadyExists).toBeFalsy();
-      expect(mockShopifyAdmin.graphql).toHaveBeenCalledTimes(2);
+      expect(mockShopifyAdmin.graphql).toHaveBeenCalledTimes(3);
     });
 
-    it('should detect existing cart transform', async () => {
+    it('should detect existing cart transform already on Rust function', async () => {
       const existingTransformId = 'gid://shopify/CartTransform/existing';
-      
-      mockShopifyAdmin.graphql.mockResolvedValueOnce(createMockGraphQLResponse({
-        cartTransforms: {
-          edges: [
-            {
+
+      mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — transform already exists pointing to the Rust function
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: {
+            edges: [{
               node: {
                 id: existingTransformId,
-                functionId: process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID
+                functionId: MOCK_RUST_FUNCTION_ID
               }
-            }
-          ]
-        }
-      }));
+            }]
+          }
+        }));
 
       const result = await CartTransformService.activateForNewInstallation(
         mockShopifyAdmin,
@@ -66,14 +96,18 @@ describe('CartTransformService', () => {
       expect(result.success).toBe(true);
       expect(result.cartTransformId).toBe(existingTransformId);
       expect(result.alreadyExists).toBe(true);
-      expect(mockShopifyAdmin.graphql).toHaveBeenCalledTimes(1);
+      expect(mockShopifyAdmin.graphql).toHaveBeenCalledTimes(2);
     });
 
     it('should handle cart transform creation errors', async () => {
       mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — no existing transform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransforms: { edges: [] }
         }))
+        // 3. createCartTransform — userErrors returned
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransformCreate: {
             cartTransform: null,
@@ -94,9 +128,13 @@ describe('CartTransformService', () => {
 
     it('should handle GraphQL errors', async () => {
       mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — no existing transform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransforms: { edges: [] }
         }))
+        // 3. createCartTransform — GraphQL errors
         .mockResolvedValueOnce(createMockGraphQLResponse(
           null,
           [{ message: 'GraphQL error occurred' }]
@@ -112,11 +150,13 @@ describe('CartTransformService', () => {
     });
 
     it('should handle network errors gracefully', async () => {
-      // checkExistingCartTransform catches errors internally and returns {exists: false},
-      // so we must reject on both calls to trigger the outer catch.
       mockShopifyAdmin.graphql
-        .mockRejectedValueOnce(new Error('Network error'))  // checkExisting (caught internally)
-        .mockRejectedValueOnce(new Error('Network error')); // createCartTransform
+        // 1. getRustFunctionId succeeds
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — network error (caught internally, returns {exists: false})
+        .mockRejectedValueOnce(new Error('Network error'))
+        // 3. createCartTransform — network error (propagates to outer catch)
+        .mockRejectedValueOnce(new Error('Network error'));
 
       const result = await CartTransformService.activateForNewInstallation(
         mockShopifyAdmin,
@@ -133,14 +173,18 @@ describe('CartTransformService', () => {
 
     it('should complete full setup successfully', async () => {
       mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — no existing transform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransforms: { edges: [] }
         }))
+        // 3. createCartTransform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransformCreate: {
             cartTransform: {
               id: 'gid://shopify/CartTransform/1',
-              functionId: process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID
+              functionId: MOCK_RUST_FUNCTION_ID
             },
             userErrors: []
           }
@@ -157,9 +201,13 @@ describe('CartTransformService', () => {
 
     it('should handle setup failures', async () => {
       mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — no existing transform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransforms: { edges: [] }
         }))
+        // 3. createCartTransform — throws
         .mockRejectedValueOnce(new Error('Setup failed'));
 
       const result = await CartTransformService.completeSetup(
@@ -172,49 +220,31 @@ describe('CartTransformService', () => {
     });
   });
 
-  describe('function ID validation', () => {
-    it('should use correct function ID from environment', () => {
-      expect(process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID).toBe('test-function-id');
-    });
-
-    it('should handle missing function ID', async () => {
-      const originalFunctionId = process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID;
-      delete process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID;
-
-      mockShopifyAdmin.graphql
-        .mockResolvedValueOnce(createMockGraphQLResponse({
-          cartTransforms: { edges: [] }
-        }))
-        .mockResolvedValueOnce(createMockGraphQLResponse({
-          cartTransformCreate: {
-            cartTransform: {
-              id: 'gid://shopify/CartTransform/1',
-              functionId: '527a500e-5386-4a67-a61b-9cb4cb8973f8' // Default fallback
-            },
-            userErrors: []
-          }
-        }));
+  describe('function ID resolution', () => {
+    it('should return failure when Rust function is not deployed', async () => {
+      // getRustFunctionId returns null (empty edges — function not found)
+      mockShopifyAdmin.graphql.mockResolvedValueOnce(rustFunctionsEmptyMock());
 
       const result = await CartTransformService.activateForNewInstallation(
         mockShopifyAdmin,
         'test-shop.myshopify.com'
       );
 
-      expect(result.success).toBe(true);
-
-      // Restore original value
-      process.env.SHOPIFY_BUNDLE_CART_TRANSFORM_TS_ID = originalFunctionId;
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('bundle-cart-transform-rs');
     });
   });
 
   describe('edge cases', () => {
     it('should handle malformed GraphQL responses', async () => {
-      mockShopifyAdmin.graphql.mockResolvedValueOnce({
-        json: jest.fn().mockResolvedValue({
-          // Malformed response - missing data property
-          cartTransforms: { edges: [] }
-        })
-      });
+      mockShopifyAdmin.graphql
+        // 1. getRustFunctionId — malformed (no data) → returns null internally
+        .mockResolvedValueOnce({
+          json: jest.fn().mockResolvedValue({
+            // Missing data property entirely
+            shopifyFunctions: { edges: [] }
+          })
+        });
 
       const result = await CartTransformService.activateForNewInstallation(
         mockShopifyAdmin,
@@ -225,13 +255,14 @@ describe('CartTransformService', () => {
     });
 
     it('should handle empty shop domain', async () => {
-      // With empty domain, the method still runs — checkExisting will fail
-      // because no graphql mock is set up, and createCartTransform will also fail.
-      // The error propagates from the graphql call returning undefined (no json method).
       mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — no existing transform
         .mockResolvedValueOnce(createMockGraphQLResponse({
           cartTransforms: { edges: [] }
         }))
+        // 3. createCartTransform — throws
         .mockRejectedValueOnce(new Error('Unknown error'));
 
       const result = await CartTransformService.activateForNewInstallation(
@@ -253,3 +284,5 @@ describe('CartTransformService', () => {
     });
   });
 });
+
+export {};
