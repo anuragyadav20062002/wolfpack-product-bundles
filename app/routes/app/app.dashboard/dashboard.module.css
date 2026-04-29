@@ -1,3 +1,11 @@
+/* EB-style dashboard header — greeting left, action controls right */
+.dashboardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 8px;
+}
+
 /* Fade-in animation — used when a card swaps in (e.g. setup guide → cart tip) */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }

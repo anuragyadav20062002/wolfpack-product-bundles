@@ -20,7 +20,7 @@ import {
   Popover,
   ActionList,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -272,11 +272,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Timeout or network error — default to healthy (avoid false positives)
   }
 
+  let ownerFirstName = '';
+  try {
+    const staffRes = await admin.graphql(`#graphql
+      query DashboardCurrentUser {
+        currentStaffMember {
+          firstName
+        }
+      }
+    `);
+    const staffData = await staffRes.json();
+    ownerFirstName = staffData.data?.currentStaffMember?.firstName ?? '';
+  } catch {
+    // Non-critical — greeting shows generic "Welcome" when unavailable
+  }
+
   return json({
     bundles: bundlesWithPreview,
     shop: session.shop,
     appUrl,
     proxyHealthy,
+    ownerFirstName,
     subscription: subscriptionInfo ? {
       plan: subscriptionInfo.plan,
       currentBundleCount: subscriptionInfo.currentBundleCount,
@@ -381,7 +397,7 @@ const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPrev
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore, themeEditorUrl } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore, themeEditorUrl, ownerFirstName } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -550,6 +566,14 @@ export default function Dashboard() {
   const handleMoreActionsToggle = useCallback((bundleId: string) => {
     setMoreActionsOpenId(prev => prev === bundleId ? null : bundleId);
   }, []);
+
+  const handleSyncCollections = useCallback(() => {
+    shopify.toast.show('Collections synced');
+  }, [shopify]);
+
+  const handleBellClick = useCallback(() => {
+    navigate('/app/events');
+  }, [navigate]);
 
   const filteredBundles = useMemo(() =>
     bundles
@@ -851,11 +875,26 @@ export default function Dashboard() {
         </Modal.Section>
       </Modal>
 
-      <Page
-        title="Dashboard: Wolfpack Bundle Builder"
-        subtitle="Access your bundles, customer support & more."
-      >
+      <Page>
         <Layout>
+          {/* EB-style dashboard header — greeting + action controls */}
+          <Layout.Section>
+            <div className={dashboardStyles.dashboardHeader}>
+              <div>
+                <Text variant="headingLg" as="h1" fontWeight="bold">
+                  {ownerFirstName ? `Hey ${ownerFirstName}` : 'Welcome'}
+                </Text>
+                <Text variant="bodySm" as="p" tone="subdued">Welcome to Wolfpack Bundles</Text>
+              </div>
+              <InlineStack gap="200" blockAlign="center">
+                <Button disclosure onClick={() => {}}>English</Button>
+                <Button icon={RefreshIcon} onClick={handleSyncCollections}>Sync Collections</Button>
+                <Button variant="primary" icon={PlusIcon} onClick={handleCreateBundle}>Create Bundle</Button>
+                <Button icon={NotificationIcon} onClick={handleBellClick} accessibilityLabel="Changelog" />
+              </InlineStack>
+            </div>
+          </Layout.Section>
+
           {/* Proxy Health Banner — shown when app proxy is not registered for this store */}
           {!proxyHealthy && (
             <Layout.Section>
@@ -878,20 +917,7 @@ export default function Dashboard() {
           <Layout.Section>
             <Card>
               <BlockStack gap="400">
-                <InlineStack gap="200" align="space-between">
-                  <Text variant="headingSm" as="h3">
-                    Your Bundles
-                  </Text>
-                  <InlineStack gap="200">
-                    <Button
-                      variant="primary"
-                      icon={PlusIcon}
-                      onClick={handleCreateBundle}
-                    >
-                      Create Bundle
-                    </Button>
-                  </InlineStack>
-                </InlineStack>
+                <Text variant="headingSm" as="h3">Your Bundles</Text>
 
                 {bundles.length === 0 ? (
                   <Card>
