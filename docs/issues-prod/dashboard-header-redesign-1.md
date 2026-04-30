@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-04-29
-**Last Updated:** 2026-04-29 23:15
+**Last Updated:** 2026-04-30 00:30
 
 ## Overview
 
@@ -27,6 +27,13 @@ Also implement full EB parity for the bundle list toolbar: Bundle type filter, S
 - [ ] Phase 6: Visual verification desktop + mobile
 
 ## Progress Log
+
+### 2026-04-30 00:30 - ownerFirstName source corrected
+- ✅ Diagnosed: `unstable_newEmbeddedAuthStrategy: true` only stores offline sessions — no online sessions in DB, so Session table approach returns null always
+- ✅ Switched to `shop.billingAddress.firstName` via Admin GraphQL (no extra scopes, always present on real merchant stores)
+- ✅ "Welcome" fallback on test store is expected — test stores don't have billing address set
+- ✅ Cart-transform Rust WASM rebuilt (exit 0, no code changes needed)
+- ✅ Header verified in Chrome: all 4 buttons rendered, layout correct
 
 ### 2026-04-29 23:15 - Completed
 - ✅ Loader: `currentStaffMember { firstName }` query (single source per Shopify docs — `read_users` scope needed for full support; shows "Welcome" when unavailable)

@@ -274,15 +274,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   let ownerFirstName = '';
   try {
-    const staffRes = await admin.graphql(`#graphql
-      query DashboardCurrentUser {
-        currentStaffMember {
-          firstName
-        }
-      }
-    `);
-    const staffData = await staffRes.json();
-    ownerFirstName = staffData.data?.currentStaffMember?.firstName ?? '';
+    const shopRes = await admin.graphql(`query { shop { billingAddress { firstName } } }`);
+    const shopData = await shopRes.json();
+    ownerFirstName = shopData?.data?.shop?.billingAddress?.firstName ?? '';
   } catch {
     // Non-critical — greeting shows generic "Welcome" when unavailable
   }
@@ -884,7 +878,7 @@ export default function Dashboard() {
                 <Text variant="headingLg" as="h1" fontWeight="bold">
                   {ownerFirstName ? `Hey ${ownerFirstName}` : 'Welcome'}
                 </Text>
-                <Text variant="bodySm" as="p" tone="subdued">Welcome to Wolfpack Bundles</Text>
+                <Text variant="bodySm" as="p" tone="subdued">Wolfpack: Product Bundles</Text>
               </div>
               <InlineStack gap="200" blockAlign="center">
                 <Button disclosure onClick={() => {}}>English</Button>
