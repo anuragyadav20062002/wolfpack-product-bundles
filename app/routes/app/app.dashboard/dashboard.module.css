@@ -239,18 +239,24 @@
   margin-top: 20px;
 }
 
-.resourcesLayout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 16px;
-  min-height: 200px;
-}
-
-.resourcesList {
+/* Single card wrapping list + thumbnails */
+.resourcesCard {
   border: 1px solid #e1e3e5;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
+}
+
+.resourcesLayout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 220px;
+}
+
+/* Left nav list — no individual border, card handles it */
+.resourcesList {
+  display: flex;
+  flex-direction: column;
 }
 
 .resourceItem {
@@ -280,11 +286,11 @@
 }
 
 .resourceItemActive {
-  background-color: #fdf6ec !important;
+  background-color: #f6f6f7 !important;
 }
 
 .resourceItemActive:hover {
-  background-color: #faecd8 !important;
+  background-color: #ebebeb !important;
 }
 
 .resourceItemIcon {
@@ -310,16 +316,50 @@
   opacity: 0.6;
 }
 
+/* Right panel — separated from left by a vertical border */
 .resourcesThumbnails {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  padding: 12px;
+  border-left: 1px solid #e1e3e5;
+  align-content: start;
 }
 
-.resourceThumbnailImg {
-  width: 100%;
-  min-height: 200px;
-  background-color: #e8e9ea;
+/* Individual thumbnail card */
+.resourceThumbnailCard {
+  display: flex;
+  flex-direction: column;
   border-radius: 8px;
-  border: 1px solid #d1d3d5;
+  overflow: hidden;
+  border: 1px solid #e1e3e5;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.resourceThumbnailCard:hover {
+  border-color: #b5b5b5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-decoration: none;
+}
+
+/* Grey placeholder image area */
+.resourceThumbnailPlaceholder {
+  background-color: #e8e9ea;
+  min-height: 160px;
+  flex: 1;
+}
+
+/* Footer: label left, external icon right */
+.resourceThumbnailFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-top: 1px solid #e1e3e5;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #202223;
 }

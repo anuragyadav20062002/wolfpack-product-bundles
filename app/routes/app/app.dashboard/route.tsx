@@ -548,6 +548,7 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [bundlesPerPage, setBundlesPerPage] = useState(20);
   const [moreActionsOpenId, setMoreActionsOpenId] = useState<string | null>(null);
+  const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
 
   const handleSearchToggle = useCallback(() => {
     setSearchOpen(prev => {
@@ -1159,43 +1160,68 @@ export default function Dashboard() {
           {/* Resources Section */}
           <Layout.Section>
             <div className={dashboardStyles.resourcesSection}>
-            <BlockStack gap="300">
-              <Text variant="headingMd" as="h3">Resources</Text>
-              <div className={dashboardStyles.resourcesLayout}>
-                {/* Left: menu list */}
-                <div className={dashboardStyles.resourcesList}>
-                  <a
-                    href="https://wolfpackapps.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${dashboardStyles.resourceItem} ${dashboardStyles.resourceItemActive}`}
-                  >
-                    <div className={dashboardStyles.resourceItemIcon}><Icon source={ImageIcon} /></div>
-                    <span className={dashboardStyles.resourceItemLabel}>Bundle Inspirations</span>
-                  </a>
-                  <button type="button" className={dashboardStyles.resourceItem} onClick={handleDirectChat}>
-                    <div className={dashboardStyles.resourceItemIcon}><Icon source={QuestionCircleIcon} /></div>
-                    <span className={dashboardStyles.resourceItemLabel}>Support</span>
-                  </button>
-                  <Link to="/app/events" className={dashboardStyles.resourceItem}>
-                    <div className={dashboardStyles.resourceItemIcon}><Icon source={NotificationIcon} /></div>
-                    <span className={dashboardStyles.resourceItemLabel}>Explore Updates</span>
-                    <Icon source={ExternalSmallIcon} tone="subdued" />
-                  </Link>
-                  <div className={`${dashboardStyles.resourceItem} ${dashboardStyles.resourceItemDisabled}`}>
-                    <div className={dashboardStyles.resourceItemIcon}><Icon source={CodeIcon} /></div>
-                    <span className={dashboardStyles.resourceItemLabel}>SDK Documentation</span>
-                    <Icon source={ExternalSmallIcon} tone="subdued" />
+              <BlockStack gap="300">
+                <Text variant="headingLg" as="h2" fontWeight="bold">Resources</Text>
+                <div className={dashboardStyles.resourcesCard}>
+                  <div className={dashboardStyles.resourcesLayout}>
+                    {/* Left: nav list */}
+                    <div className={dashboardStyles.resourcesList}>
+                      <button
+                        type="button"
+                        className={`${dashboardStyles.resourceItem} ${activeResource === 'bundle-inspirations' ? dashboardStyles.resourceItemActive : ''}`}
+                        onClick={() => setActiveResource('bundle-inspirations')}
+                      >
+                        <div className={dashboardStyles.resourceItemIcon}><Icon source={ImageIcon} /></div>
+                        <span className={dashboardStyles.resourceItemLabel}>Bundle Inspirations</span>
+                      </button>
+                      <button type="button" className={dashboardStyles.resourceItem} onClick={handleDirectChat}>
+                        <div className={dashboardStyles.resourceItemIcon}><Icon source={QuestionCircleIcon} /></div>
+                        <span className={dashboardStyles.resourceItemLabel}>Support</span>
+                      </button>
+                      <Link to="/app/events" className={dashboardStyles.resourceItem}>
+                        <div className={dashboardStyles.resourceItemIcon}><Icon source={NotificationIcon} /></div>
+                        <span className={dashboardStyles.resourceItemLabel}>Explore Updates</span>
+                        <Icon source={ExternalSmallIcon} tone="subdued" />
+                      </Link>
+                      <div className={`${dashboardStyles.resourceItem} ${dashboardStyles.resourceItemDisabled}`}>
+                        <div className={dashboardStyles.resourceItemIcon}><Icon source={CodeIcon} /></div>
+                        <span className={dashboardStyles.resourceItemLabel}>SDK Documentation</span>
+                        <Icon source={ExternalSmallIcon} tone="subdued" />
+                      </div>
+                    </div>
+
+                    {/* Right: thumbnails shown when Bundle Inspirations is active */}
+                    {activeResource === 'bundle-inspirations' && (
+                      <div className={dashboardStyles.resourcesThumbnails}>
+                        <a
+                          href="https://wolfpackapps.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={dashboardStyles.resourceThumbnailCard}
+                        >
+                          <div className={dashboardStyles.resourceThumbnailPlaceholder} />
+                          <div className={dashboardStyles.resourceThumbnailFooter}>
+                            <span>Bundle Gallery</span>
+                            <Icon source={ExternalSmallIcon} tone="subdued" />
+                          </div>
+                        </a>
+                        <a
+                          href="https://wolfpackapps.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={dashboardStyles.resourceThumbnailCard}
+                        >
+                          <div className={dashboardStyles.resourceThumbnailPlaceholder} />
+                          <div className={dashboardStyles.resourceThumbnailFooter}>
+                            <span>Interactive Demo</span>
+                            <Icon source={ExternalSmallIcon} tone="subdued" />
+                          </div>
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Right: placeholder thumbnails */}
-                <div className={dashboardStyles.resourcesThumbnails}>
-                  <div className={dashboardStyles.resourceThumbnailImg} />
-                  <div className={dashboardStyles.resourceThumbnailImg} />
-                </div>
-              </div>
-            </BlockStack>
+              </BlockStack>
             </div>
           </Layout.Section>
         </Layout>
