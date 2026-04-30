@@ -19,15 +19,15 @@ import {
   Select,
   Popover,
   ActionList,
+  Spinner,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon, PackageIcon, LanguageIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { SetupScoreCard } from "../../../components/SetupScoreCard";
 import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
@@ -131,35 +131,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       : bundle.shopifyPageHandle
   }));
 
-  // Setup score signals — run in parallel, each is non-critical
-  const bundleIds = bundlesWithPreview.map(b => b.id);
-  const [hasProductsAdded, hasDiscount, hasDcpConfigured] = await Promise.all([
-    bundleIds.length > 0
-      ? db.bundleStep.findFirst({
-          where: { bundleId: { in: bundleIds }, products: { not: null } },
-          select: { id: true },
-        }).then(r => r !== null)
-      : Promise.resolve(false),
-    bundleIds.length > 0
-      ? db.bundlePricing.findFirst({
-          where: { bundleId: { in: bundleIds }, enabled: true },
-          select: { id: true },
-        }).then(r => r !== null)
-      : Promise.resolve(false),
-    db.designSettings.findFirst({
-      where: { shopId: session.shop },
-      select: { id: true },
-    }).then(r => r !== null),
-  ]);
   const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
-  const setupScore = {
-    bundlesExist: bundlesWithPreview.length > 0,
-    hasProductsAdded,
-    hasDiscount,
-    hasActiveBundleOnStore: bundlesWithPreview.some(b => b.status === BundleStatus.ACTIVE && (b.shopifyPageHandle || b.shopifyProductHandle)),
-    hasDcpConfigured,
-    appEmbedEnabled: embedCheck.enabled,
-  };
   const themeEditorUrl = embedCheck.themeId
     ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=63077bb0483a6ce08a2d6139b14d170b%2Fbundle-full-page-embed`
     : null;
@@ -293,7 +265,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       bundleLimit: subscriptionInfo.bundleLimit,
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
-    setupScore,
     themeEditorUrl,
   });
 };
@@ -391,7 +362,7 @@ const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPrev
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl, setupScore, themeEditorUrl, ownerFirstName } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl, themeEditorUrl } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const actionData = useActionData<typeof action>();
@@ -431,6 +402,18 @@ export default function Dashboard() {
       navigate(actionData.redirectTo);
     }
   }, [actionData, navigate, closeCreateModal]);
+
+  useEffect(() => {
+    const image = new Image();
+    image.src = "/Parth.jpeg";
+    if (image.complete) {
+      setParthImageLoaded(true);
+      return;
+    }
+
+    image.onload = () => setParthImageLoaded(true);
+    image.onerror = () => setParthImageLoaded(true);
+  }, []);
 
   // Handle clone/delete responses (submitted via fetcher, not Form)
   useEffect(() => {
@@ -544,19 +527,25 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilterOpen, setTypeFilterOpen] = useState(false);
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [bundlesPerPage, setBundlesPerPage] = useState(20);
   const [moreActionsOpenId, setMoreActionsOpenId] = useState<string | null>(null);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [parthImageLoaded, setParthImageLoaded] = useState(false);
 
-  const handleSearchToggle = useCallback(() => {
-    setSearchOpen(prev => {
-      if (prev) setBundleFilter("");
-      return !prev;
-    });
-    setCurrentPage(1);
-  }, []);
+  const languageOptions = [
+    { label: "English", value: "en" },
+    { label: "French", value: "fr" },
+    { label: "German", value: "de" },
+    { label: "Spanish", value: "es" },
+  ];
+
+  const handleLanguageChange = useCallback((language: string) => {
+    setSelectedLanguage(language);
+    const selected = languageOptions.find(option => option.value === language)?.label ?? "English";
+    shopify.toast.show(`${selected} selected. Shopify controls native Admin language from the merchant account settings.`);
+  }, [shopify]);
 
   const handleMoreActionsToggle = useCallback((bundleId: string) => {
     setMoreActionsOpenId(prev => prev === bundleId ? null : bundleId);
@@ -569,6 +558,15 @@ export default function Dashboard() {
   const handleBellClick = useCallback(() => {
     navigate('/app/events');
   }, [navigate]);
+
+  const handleAppEmbedCardClick = useCallback(() => {
+    if (themeEditorUrl) {
+      window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    shopify.toast.show("Theme editor link is unavailable for this store.", { isError: true });
+  }, [shopify, themeEditorUrl]);
 
   const filteredBundles = useMemo(() =>
     bundles
@@ -870,361 +868,317 @@ export default function Dashboard() {
         </Modal.Section>
       </Modal>
 
-      <Page>
-        <Layout>
-          {/* EB-style dashboard header — greeting + action controls */}
-          <Layout.Section>
-            <div className={dashboardStyles.dashboardHeader}>
-              <div>
-                <Text variant="headingLg" as="h1" fontWeight="bold">
-                  {ownerFirstName ? `Hey ${ownerFirstName}` : 'Welcome'}
-                </Text>
-                <Text variant="bodySm" as="p" tone="subdued">Wolfpack: Product Bundles</Text>
+      <Page fullWidth>
+        <div className={dashboardStyles.dashboardPage}>
+          <Layout>
+            <Layout.Section>
+              <div className={dashboardStyles.dashboardHeader}>
+                <div className={dashboardStyles.dashboardTitleBlock}>
+                  <Text variant="headingXl" as="h1" fontWeight="bold">
+                    Dashboard: Wolfpack Bundle Builder
+                  </Text>
+                  <Text variant="headingMd" as="p" tone="subdued">
+                    Access your bundles, Customer support and more.
+                  </Text>
+                </div>
+                <div className={dashboardStyles.dashboardActions}>
+                  <div className={dashboardStyles.languageSelect}>
+                    <Select
+                      label="Admin language"
+                      labelHidden
+                      prefix={<Icon source={LanguageIcon} />}
+                      options={languageOptions}
+                      value={selectedLanguage}
+                      onChange={handleLanguageChange}
+                    />
+                  </div>
+                  <Button icon={RefreshIcon} onClick={handleSyncCollections}>Sync Collections</Button>
+                  <Button variant="primary" icon={PlusIcon} onClick={handleCreateBundle}>Create Bundle</Button>
+                  <Button icon={NotificationIcon} onClick={handleBellClick} accessibilityLabel="Changelog" />
+                </div>
               </div>
-              <InlineStack gap="200" blockAlign="center">
-                <Button disclosure onClick={() => {}}>English</Button>
-                <Button icon={RefreshIcon} onClick={handleSyncCollections}>Sync Collections</Button>
-                <Button variant="primary" icon={PlusIcon} onClick={handleCreateBundle}>Create Bundle</Button>
-                <Button icon={NotificationIcon} onClick={handleBellClick} accessibilityLabel="Changelog" />
-              </InlineStack>
-            </div>
-          </Layout.Section>
-
-          {/* Proxy Health Banner — shown when app proxy is not registered for this store */}
-          {!proxyHealthy && (
-            <Layout.Section>
-              <ProxyHealthBanner shop={shop} appUrl={appUrl} />
             </Layout.Section>
-          )}
 
-          {/* Upgrade Prompt Banner for Free Users */}
-          {subscription && (
+            {!proxyHealthy && (
+              <Layout.Section>
+                <ProxyHealthBanner shop={shop} appUrl={appUrl} />
+              </Layout.Section>
+            )}
+
+            {subscription && (
+              <Layout.Section>
+                <UpgradePromptBanner
+                  plan={subscription.plan}
+                  currentBundleCount={subscription.currentBundleCount}
+                  bundleLimit={subscription.bundleLimit}
+                  canCreateBundle={subscription.canCreateBundle}
+                />
+              </Layout.Section>
+            )}
+
             <Layout.Section>
-              <UpgradePromptBanner
-                plan={subscription.plan}
-                currentBundleCount={subscription.currentBundleCount}
-                bundleLimit={subscription.bundleLimit}
-                canCreateBundle={subscription.canCreateBundle}
-              />
-            </Layout.Section>
-          )}
-
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingSm" as="h3">Your Bundles</Text>
-
-                {bundles.length === 0 ? (
-                  <Card>
-                    <BlockStack gap="400" align="center" inlineAlign="center">
-                      <BlockStack gap="200" align="center" inlineAlign="center">
-                        <Text variant="headingLg" as="h2" alignment="center">
-                          Create your first bundle
-                        </Text>
-                        <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                          Our bundles provide real-time cart updates and merge
-                          bundle items into a single cart line with automatic price adjustments.
+              <div className={dashboardStyles.topCardsGrid}>
+                <Card>
+                  <div className={dashboardStyles.supportCard}>
+                    <div className={dashboardStyles.supportAvatarWrap}>
+                      {!parthImageLoaded && (
+                        <div className={dashboardStyles.supportAvatarSkeleton}>
+                          <Spinner size="small" accessibilityLabel="Loading Parth profile photo" />
+                        </div>
+                      )}
+                      <img
+                        src="/Parth.jpeg"
+                        alt="Parth, Founder"
+                        className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
+                        onLoad={() => setParthImageLoaded(true)}
+                      />
+                    </div>
+                    <div className={dashboardStyles.supportContent}>
+                      <BlockStack gap="300">
+                        <BlockStack gap="150">
+                          <Text variant="headingMd" as="h2" fontWeight="bold">
+                            Need help? Speak to Parth, the Founder!
+                          </Text>
+                          <Text variant="bodyLg" as="p" tone="subdued">
+                            Get support with bundle setup, custom styling, and technical issues.
+                          </Text>
+                        </BlockStack>
+                        <Text variant="bodySm" as="p" tone="subdued">
+                          <span className={dashboardStyles.onlineNow}>ONLINE NOW</span> • Mon-Fri • Replies within 1 hour
                         </Text>
                       </BlockStack>
-                      <Button variant="primary" size="large" onClick={handleCreateBundle}>
-                        Create Bundle
+                    </div>
+                    <div className={dashboardStyles.supportCta}>
+                      <Button variant="primary" fullWidth onClick={handleDirectChat}>
+                        Chat with Parth
                       </Button>
-                    </BlockStack>
-                  </Card>
-                ) : (
+                    </div>
+                  </div>
+                </Card>
+
+                <button
+                  type="button"
+                  className={dashboardStyles.appEmbedCard}
+                  onClick={handleAppEmbedCardClick}
+                >
                   <BlockStack gap="300">
-                    {/* Toolbar: type + status filter popovers on left, search toggle on right */}
-                    <InlineStack gap="200" align="space-between" blockAlign="center">
-                      <InlineStack gap="200" blockAlign="center">
-                        {/* Bundle type filter */}
-                        <Popover
-                          active={typeFilterOpen}
-                          activator={
-                            <Button
-                              onClick={() => setTypeFilterOpen(o => !o)}
-                              disclosure
-                            >
-                              {typeFilter === "all" ? "Bundle type" : `Bundle type: ${BUNDLE_TYPE_LABELS[typeFilter] ?? typeFilter}`}
-                            </Button>
-                          }
-                          onClose={() => setTypeFilterOpen(false)}
-                        >
-                          <ActionList
-                            items={[
-                              { content: "All types", onAction: () => { setTypeFilter("all"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "all" },
-                              { content: "Product page", onAction: () => { setTypeFilter("product_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "product_page" },
-                              { content: "Full page", onAction: () => { setTypeFilter("full_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "full_page" },
-                            ]}
-                          />
-                        </Popover>
-
-                        {/* Status filter */}
-                        <Popover
-                          active={statusFilterOpen}
-                          activator={
-                            <Button
-                              onClick={() => setStatusFilterOpen(o => !o)}
-                              disclosure
-                            >
-                              {statusFilter === "all" ? "Status" : `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
-                            </Button>
-                          }
-                          onClose={() => setStatusFilterOpen(false)}
-                        >
-                          <ActionList
-                            items={[
-                              { content: "All statuses", onAction: () => { setStatusFilter("all"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "all" },
-                              { content: "Active", onAction: () => { setStatusFilter("active"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "active" },
-                              { content: "Draft", onAction: () => { setStatusFilter("draft"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "draft" },
-                              { content: "Unlisted", onAction: () => { setStatusFilter("unlisted"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "unlisted" },
-                            ]}
-                          />
-                        </Popover>
-                      </InlineStack>
-                      <Tooltip content={searchOpen ? "Close search" : "Search bundles"}>
-                        <Button
-                          icon={SearchIcon}
-                          onClick={handleSearchToggle}
-                          accessibilityLabel="Toggle search"
-                          variant={searchOpen ? "primary" : undefined}
-                        />
-                      </Tooltip>
+                    <InlineStack align="space-between" blockAlign="center">
+                      <Text variant="headingMd" as="h2" fontWeight="bold">App Embeds</Text>
+                      <Icon source={ExternalSmallIcon} tone="subdued" />
                     </InlineStack>
+                    <img
+                      src="/appEmbed.png"
+                      alt="Theme editor app embeds instructions"
+                      className={dashboardStyles.appEmbedImage}
+                    />
+                    <Text variant="bodyLg" as="p" tone="subdued">
+                      Click on Online store → Edit Theme → Enable the toggle and Save it
+                    </Text>
+                  </BlockStack>
+                </button>
+              </div>
+            </Layout.Section>
 
-                    {searchOpen && (
+            <Layout.Section>
+              <Card padding="0">
+                <div className={dashboardStyles.bundlesPanel}>
+                  <div className={dashboardStyles.bundlesToolbar}>
+                    <div className={dashboardStyles.filterGroup}>
+                      <Popover
+                        active={statusFilterOpen}
+                        activator={
+                          <Button onClick={() => setStatusFilterOpen(o => !o)} disclosure>
+                            {statusFilter === "all" ? "Status" : `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
+                          </Button>
+                        }
+                        onClose={() => setStatusFilterOpen(false)}
+                      >
+                        <ActionList
+                          items={[
+                            { content: "All statuses", onAction: () => { setStatusFilter("all"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "all" },
+                            { content: "Active", onAction: () => { setStatusFilter("active"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "active" },
+                            { content: "Draft", onAction: () => { setStatusFilter("draft"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "draft" },
+                            { content: "Unlisted", onAction: () => { setStatusFilter("unlisted"); setStatusFilterOpen(false); setCurrentPage(1); }, active: statusFilter === "unlisted" },
+                          ]}
+                        />
+                      </Popover>
+                      <Popover
+                        active={typeFilterOpen}
+                        activator={
+                          <Button onClick={() => setTypeFilterOpen(o => !o)} disclosure>
+                            {typeFilter === "all" ? "Bundle type" : `Bundle type: ${BUNDLE_TYPE_LABELS[typeFilter] ?? typeFilter}`}
+                          </Button>
+                        }
+                        onClose={() => setTypeFilterOpen(false)}
+                      >
+                        <ActionList
+                          items={[
+                            { content: "All types", onAction: () => { setTypeFilter("all"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "all" },
+                            { content: "Product page", onAction: () => { setTypeFilter("product_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "product_page" },
+                            { content: "Full page", onAction: () => { setTypeFilter("full_page"); setTypeFilterOpen(false); setCurrentPage(1); }, active: typeFilter === "full_page" },
+                          ]}
+                        />
+                      </Popover>
+                    </div>
+                    <div className={dashboardStyles.searchField}>
                       <TextField
                         label="Search bundles"
                         labelHidden
-                        placeholder="Search by name…"
+                        prefix={<Icon source={SearchIcon} tone="subdued" />}
+                        placeholder="Search...."
                         value={bundleFilter}
                         onChange={(val) => { setBundleFilter(val); setCurrentPage(1); }}
                         clearButton
                         onClearButtonClick={() => { setBundleFilter(""); setCurrentPage(1); }}
                         autoComplete="off"
-                        autoFocus
                       />
-                    )}
-
-                    <div className={dashboardStyles.dataTableWrapper}>
-                      <DataTable
-                        columnContentTypes={["text", "text", "text", "text"]}
-                        headings={["Bundle Name", "Status", "Type", "Actions"]}
-                        rows={bundleRows}
-                      />
-                      {filteredBundles.length === 0 && (
-                        <div style={{ padding: "24px", textAlign: "center", color: "#6d7175", fontSize: 13 }}>
-                          {bundleFilter || typeFilter !== "all" || statusFilter !== "all"
-                            ? "No bundles match the current filters"
-                            : "No bundles found"}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Pagination footer — matches EB: [←] Page X of Y [→]  |  Bundles per page [select] */}
-                    {filteredBundles.length > 0 && (
-                      <InlineStack gap="300" align="space-between" blockAlign="center">
-                        <InlineStack gap="100" blockAlign="center">
-                          <Button
-                            size="slim"
-                            disabled={effectivePage <= 1}
-                            onClick={() => setCurrentPage(p => p - 1)}
-                            accessibilityLabel="Previous page"
-                          >
-                            ‹
-                          </Button>
-                          <Text variant="bodySm" as="p">
-                            {`Page ${effectivePage} of ${totalPages}`}
-                          </Text>
-                          <Button
-                            size="slim"
-                            disabled={effectivePage >= totalPages}
-                            onClick={() => setCurrentPage(p => p + 1)}
-                            accessibilityLabel="Next page"
-                          >
-                            ›
-                          </Button>
-                        </InlineStack>
-                        <Select
-                          label="Bundles per page"
-                          labelInline
-                          options={[
-                            { label: "10", value: "10" },
-                            { label: "20", value: "20" },
-                            { label: "50", value: "50" },
-                          ]}
-                          value={String(bundlesPerPage)}
-                          onChange={(val) => { setBundlesPerPage(Number(val)); setCurrentPage(1); }}
-                        />
-                      </InlineStack>
-                    )}
-                  </BlockStack>
-                )}
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-
-          {/* Bottom section with setup instructions and account manager */}
-          <Layout.Section>
-            <div className={dashboardStyles.bottomSection}>
-              {/* Gamified setup score card */}
-              <div className={`${dashboardStyles.bottomSectionCol} ${dashboardStyles.fadeIn}`}>
-                <SetupScoreCard
-                  setupScore={setupScore}
-                  onCreateBundle={handleCreateBundle}
-                  themeEditorUrl={themeEditorUrl}
-                />
-              </div>
-
-              {/* Your Account Manager Card */}
-              <div className={dashboardStyles.bottomSectionCol}>
-                <Card>
-                  <div className={dashboardStyles.accountManagerCard}>
-                    {/* Header with gradient background */}
-                    <div className={dashboardStyles.accountManagerHeader}>
-                      <Text variant="headingSm" as="h4" tone="text-inverse">
-                        Need Help? Speak to Parth!
-                      </Text>
-                    </div>
-
-                    {/* Content area */}
-                    <div className={dashboardStyles.accountManagerContent}>
-                      <InlineStack gap="400" align="start" blockAlign="start">
-                        <div className={dashboardStyles.accountManagerAvatarWrapper}>
-                          <div className={dashboardStyles.accountManagerAvatar}>
-                            <img
-                              src="/Parth.jpeg"
-                              alt="Parth (Founder)"
-                              className={dashboardStyles.accountManagerAvatarImg}
-                            />
-                          </div>
-                          {/* Online status indicator */}
-                          <div className={dashboardStyles.accountManagerStatusIndicator} />
-                        </div>
-
-                        <BlockStack gap="200" align="start">
-                          <BlockStack gap="100">
-                            <Text as="h4" variant="bodyLg" fontWeight="semibold">
-                              Parth
-                            </Text>
-                            <Text as="span" variant="bodySm" tone="subdued">
-                              Founder
-                            </Text>
-                          </BlockStack>
-
-                          {/* Services offered with icons */}
-                          <BlockStack gap="150">
-                            <InlineStack gap="200" align="start">
-                              <div className={dashboardStyles.accountManagerServiceBullet} />
-                              <Text as="span" variant="bodySm">
-                                Bundle setup & publishing
-                              </Text>
-                            </InlineStack>
-                            <InlineStack gap="200" align="start">
-                              <div className={dashboardStyles.accountManagerServiceBullet} />
-                              <Text as="span" variant="bodySm">
-                                Custom design & styling
-                              </Text>
-                            </InlineStack>
-                            <InlineStack gap="200" align="start">
-                              <div className={dashboardStyles.accountManagerServiceBullet} />
-                              <Text as="span" variant="bodySm">
-                                Technical support
-                              </Text>
-                            </InlineStack>
-                          </BlockStack>
-                        </BlockStack>
-                      </InlineStack>
-                    </div>
-
-                    {/* CTA Section */}
-                    <div className={dashboardStyles.accountManagerCtaSection}>
-                      <InlineStack gap="300" align="center">
-                        <div className={dashboardStyles.accountManagerCtaText}>
-                          <Text as="span" variant="bodySm" tone="subdued">
-                            Available Mon-Fri • Responds within 1hr
-                          </Text>
-                        </div>
-                      </InlineStack>
-                      <div className={dashboardStyles.accountManagerCtaButton}>
-                        <Button variant="primary" fullWidth onClick={handleDirectChat}>
-                          Chat with Parth
-                        </Button>
-                      </div>
                     </div>
                   </div>
-                </Card>
-              </div>
-            </div>
-          </Layout.Section>
 
-          {/* Resources Section */}
-          <Layout.Section>
-            <div className={dashboardStyles.resourcesSection}>
-              <BlockStack gap="300">
-                <Text variant="headingLg" as="h2" fontWeight="bold">Resources</Text>
-                <div className={dashboardStyles.resourcesCard}>
-                  <div className={dashboardStyles.resourcesLayout}>
-                    {/* Left: nav list */}
-                    <div className={dashboardStyles.resourcesList}>
-                      <button
-                        type="button"
-                        className={`${dashboardStyles.resourceItem} ${activeResource === 'bundle-inspirations' ? dashboardStyles.resourceItemActive : ''}`}
-                        onClick={() => setActiveResource('bundle-inspirations')}
-                      >
-                        <div className={dashboardStyles.resourceItemIcon}><Icon source={ImageIcon} /></div>
-                        <span className={dashboardStyles.resourceItemLabel}>Bundle Inspirations</span>
-                      </button>
-                      <button type="button" className={dashboardStyles.resourceItem} onClick={handleDirectChat}>
-                        <div className={dashboardStyles.resourceItemIcon}><Icon source={QuestionCircleIcon} /></div>
-                        <span className={dashboardStyles.resourceItemLabel}>Support</span>
-                      </button>
-                      <Link to="/app/events" className={dashboardStyles.resourceItem}>
-                        <div className={dashboardStyles.resourceItemIcon}><Icon source={NotificationIcon} /></div>
-                        <span className={dashboardStyles.resourceItemLabel}>Explore Updates</span>
-                        <Icon source={ExternalSmallIcon} tone="subdued" />
-                      </Link>
-                      <div className={`${dashboardStyles.resourceItem} ${dashboardStyles.resourceItemDisabled}`}>
-                        <div className={dashboardStyles.resourceItemIcon}><Icon source={CodeIcon} /></div>
-                        <span className={dashboardStyles.resourceItemLabel}>SDK Documentation</span>
-                        <Icon source={ExternalSmallIcon} tone="subdued" />
-                      </div>
+                  <div className={dashboardStyles.bundlesTableShell}>
+                    <div className={dashboardStyles.bundlesTableHeader}>
+                      <span>Bundle Name</span>
+                      <span>Status</span>
+                      <span>Type</span>
+                      <span>Actions</span>
                     </div>
 
-                    {/* Right: thumbnails shown when Bundle Inspirations is active */}
-                    {activeResource === 'bundle-inspirations' && (
-                      <div className={dashboardStyles.resourcesThumbnails}>
-                        <a
-                          href="https://wolfpackapps.com/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={dashboardStyles.resourceThumbnailCard}
-                        >
-                          <div className={dashboardStyles.resourceThumbnailPlaceholder} />
-                          <div className={dashboardStyles.resourceThumbnailFooter}>
-                            <span>Bundle Gallery</span>
-                            <Icon source={ExternalSmallIcon} tone="subdued" />
-                          </div>
-                        </a>
-                        <a
-                          href="https://wolfpackapps.com/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={dashboardStyles.resourceThumbnailCard}
-                        >
-                          <div className={dashboardStyles.resourceThumbnailPlaceholder} />
-                          <div className={dashboardStyles.resourceThumbnailFooter}>
-                            <span>Interactive Demo</span>
-                            <Icon source={ExternalSmallIcon} tone="subdued" />
-                          </div>
-                        </a>
+                    {bundles.length === 0 ? (
+                      <div className={dashboardStyles.emptyBundlesState}>
+                        <div className={dashboardStyles.emptyBundlesIcon}>
+                          <Icon source={PackageIcon} />
+                        </div>
+                        <BlockStack gap="200" inlineAlign="center">
+                          <Text variant="headingMd" as="h2" alignment="center" fontWeight="bold">
+                            No bundles yet
+                          </Text>
+                          <Text variant="bodyLg" as="p" tone="subdued" alignment="center">
+                            You haven’t created any bundles for your store. Start now
+                            and boost your sales by grouping your best products.
+                          </Text>
+                        </BlockStack>
                       </div>
+                    ) : (
+                      <>
+                        <div className={dashboardStyles.dataTableWrapper}>
+                          <DataTable
+                            columnContentTypes={["text", "text", "text", "text"]}
+                            headings={["Bundle Name", "Status", "Type", "Actions"]}
+                            rows={bundleRows}
+                          />
+                          {filteredBundles.length === 0 && (
+                            <div className={dashboardStyles.noFilteredBundles}>
+                              No bundles match the current filters
+                            </div>
+                          )}
+                        </div>
+
+                        {filteredBundles.length > 0 && (
+                          <div className={dashboardStyles.paginationBar}>
+                            <InlineStack gap="100" blockAlign="center">
+                              <Button
+                                size="slim"
+                                disabled={effectivePage <= 1}
+                                onClick={() => setCurrentPage(p => p - 1)}
+                                accessibilityLabel="Previous page"
+                              >
+                                ‹
+                              </Button>
+                              <Text variant="bodySm" as="p">
+                                {`Page ${effectivePage} of ${totalPages}`}
+                              </Text>
+                              <Button
+                                size="slim"
+                                disabled={effectivePage >= totalPages}
+                                onClick={() => setCurrentPage(p => p + 1)}
+                                accessibilityLabel="Next page"
+                              >
+                                ›
+                              </Button>
+                            </InlineStack>
+                            <Select
+                              label="Bundles per page"
+                              labelInline
+                              options={[
+                                { label: "10", value: "10" },
+                                { label: "20", value: "20" },
+                                { label: "50", value: "50" },
+                              ]}
+                              value={String(bundlesPerPage)}
+                              onChange={(val) => { setBundlesPerPage(Number(val)); setCurrentPage(1); }}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
-              </BlockStack>
-            </div>
-          </Layout.Section>
-        </Layout>
+              </Card>
+            </Layout.Section>
+
+            <Layout.Section>
+              <div className={dashboardStyles.resourcesCard}>
+                <div className={dashboardStyles.resourcesLayout}>
+                  <div className={dashboardStyles.resourcesList}>
+                    <button
+                      type="button"
+                      className={`${dashboardStyles.resourceItem} ${activeResource === 'bundle-inspirations' ? dashboardStyles.resourceItemActive : ''}`}
+                      onClick={() => setActiveResource('bundle-inspirations')}
+                    >
+                      <div className={dashboardStyles.resourceItemIcon}><Icon source={ImageIcon} /></div>
+                      <span className={dashboardStyles.resourceItemLabel}>Bundle Inspiration</span>
+                    </button>
+                    <button type="button" className={dashboardStyles.resourceItem} onClick={handleDirectChat}>
+                      <div className={dashboardStyles.resourceItemIcon}><Icon source={QuestionCircleIcon} /></div>
+                      <span className={dashboardStyles.resourceItemLabel}>Support</span>
+                    </button>
+                    <Link to="/app/events" className={dashboardStyles.resourceItem}>
+                      <div className={dashboardStyles.resourceItemIcon}><Icon source={NotificationIcon} /></div>
+                      <span className={dashboardStyles.resourceItemLabel}>Explore Update</span>
+                    </Link>
+                    <a
+                      href="https://wolfpackapps.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={dashboardStyles.resourceItem}
+                    >
+                      <div className={dashboardStyles.resourceItemIcon}><Icon source={CodeIcon} /></div>
+                      <span className={dashboardStyles.resourceItemLabel}>SDK Documentation</span>
+                    </a>
+                  </div>
+
+                  <div className={dashboardStyles.resourcesThumbnails}>
+                    <a
+                      href="https://wolfpackapps.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={dashboardStyles.resourceThumbnailCard}
+                    >
+                      <img src="/bundleGallery.png" alt="Bundle Gallery" className={dashboardStyles.resourceThumbnailImage} />
+                      <div className={dashboardStyles.resourceThumbnailFooter}>
+                        <span>Bundle Gallery</span>
+                        <Icon source={ExternalSmallIcon} tone="subdued" />
+                      </div>
+                    </a>
+                    <a
+                      href="https://wolfpackapps.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={dashboardStyles.resourceThumbnailCard}
+                    >
+                      <img src="/bundleGallery.png" alt="Interactive Demo" className={dashboardStyles.resourceThumbnailImage} />
+                      <div className={dashboardStyles.resourceThumbnailFooter}>
+                        <span>Bundle Gallery</span>
+                        <Icon source={ExternalSmallIcon} tone="subdued" />
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </Layout.Section>
+          </Layout>
+
+        </div>
       </Page>
     </>
   );

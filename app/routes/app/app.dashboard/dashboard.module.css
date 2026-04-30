@@ -1,22 +1,386 @@
-/* EB-style dashboard header — greeting left, action controls right */
-.dashboardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 0 8px;
+.dashboardPage {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 4px 88px;
 }
 
-/* Fade-in animation — used when a card swaps in (e.g. setup guide → cart tip) */
+.dashboardPage :global(.Polaris-Layout) {
+  row-gap: 24px;
+}
+
+.dashboardPage :global(.Polaris-Layout__Section) {
+  margin-top: 0;
+}
+
+.dashboardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 0 8px;
+}
+
+.dashboardTitleBlock {
+  min-width: 0;
+}
+
+.dashboardActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.languageSelect {
+  width: 142px;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .fadeIn {
   animation: fadeIn 0.25s ease both;
 }
 
-/* Bundle Type Selection */
+.topCardsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.supportCard {
+  min-height: 230px;
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  gap: 14px 22px;
+  align-items: center;
+}
+
+.supportAvatarWrap {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  align-self: start;
+  margin-top: 12px;
+}
+
+.supportAvatarSkeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #eeeeee 25%, #f7f7f7 37%, #eeeeee 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.supportAvatarImage {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 18%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.supportAvatarImageLoaded {
+  opacity: 1;
+}
+
+.supportContent {
+  min-width: 0;
+}
+
+.onlineNow {
+  color: #008060;
+  font-weight: 700;
+}
+
+.supportCta {
+  grid-column: 1 / -1;
+  align-self: end;
+}
+
+.supportCta :global(.Polaris-Button--variantPrimary),
+.dashboardActions :global(.Polaris-Button--variantPrimary),
+.setupOverlayButton {
+  background: linear-gradient(180deg, #4b4b4e 0%, #2f2f31 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 0 #111;
+  border-color: #111;
+}
+
+.appEmbedCard {
+  width: 100%;
+  min-height: 230px;
+  padding: 22px 24px 20px;
+  border: 1px solid var(--p-color-border);
+  border-radius: var(--p-border-radius-300);
+  background: var(--p-color-bg-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--p-shadow-100);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.appEmbedCard:hover {
+  border-color: #8a8a8a;
+  box-shadow: var(--p-shadow-300);
+  transform: translateY(-1px);
+}
+
+.appEmbedCard:focus-visible {
+  outline: 2px solid var(--p-color-border-focus);
+  outline-offset: 2px;
+}
+
+.appEmbedImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1096 / 304;
+  object-fit: contain;
+  max-height: 126px;
+  border: 1px solid #e3e3e3;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.bundlesPanel {
+  padding: 16px 18px;
+}
+
+.bundlesToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.searchField {
+  width: min(100%, 220px);
+}
+
+.bundlesTableShell {
+  border: 1px solid #d8dbe1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.bundlesTableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid #d8dbe1;
+  background: #fafafa;
+  color: #6d7175;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.emptyBundlesState {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 34px 20px;
+}
+
+.emptyBundlesIcon {
+  width: 76px;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #303030;
+  background: #f4f4f4;
+}
+
+.emptyBundlesIcon :global(.Polaris-Icon) {
+  width: 32px;
+  height: 32px;
+}
+
+.emptyBundlesState p {
+  max-width: 520px;
+}
+
+.dataTableWrapper {
+  width: 100%;
+}
+
+.dataTableWrapper :global(.Polaris-DataTable__Table) {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.dataTableWrapper :global(.Polaris-DataTable__Table thead) {
+  display: none;
+}
+
+.dataTableWrapper :global(.Polaris-DataTable__Cell) {
+  width: 25%;
+}
+
+.noFilteredBundles {
+  padding: 28px;
+  color: #6d7175;
+  text-align: center;
+  font-size: 13px;
+}
+
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-top: 1px solid #d8dbe1;
+}
+
+.resourcesCard {
+  border: 1px solid #d8dbe1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--p-shadow-100);
+}
+
+.resourcesLayout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  min-height: 282px;
+}
+
+.resourcesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 36px 28px;
+}
+
+.resourceItem {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6d7175;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.resourceItem:hover,
+.resourceItemActive {
+  background: #ececec;
+  color: #303030;
+  text-decoration: none;
+}
+
+.resourceItemIcon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.resourceItemLabel {
+  flex: 1;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.resourcesThumbnails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  padding: 28px;
+  border-left: 1px solid #d8dbe1;
+  align-content: center;
+}
+
+.resourceThumbnailCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid #d8dbe1;
+  border-radius: 4px;
+  overflow: hidden;
+  color: inherit;
+  background: #fff;
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.resourceThumbnailCard:hover {
+  border-color: #8a8a8a;
+  box-shadow: var(--p-shadow-200);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.resourceThumbnailImage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 842 / 494;
+  object-fit: cover;
+}
+
+.resourceThumbnailFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid #d8dbe1;
+  background: #f3f3f3;
+  color: #303030;
+  font-size: 15px;
+  font-weight: 600;
+}
+
 .bundleTypeGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -80,26 +444,10 @@
   opacity: 1;
 }
 
-/* Layout selection illustration */
-.layoutIllustration {
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  border: 1px solid #c9cccf;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #FAFAFA;
-  padding: 8px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Hidden form submit button */
 .hiddenSubmit {
   display: none;
 }
 
-/* Delete Modal */
 .deleteModalIconWrapper {
   background-color: #fef3f2;
   border-radius: 50%;
@@ -109,257 +457,67 @@
   justify-content: center;
 }
 
-/* DataTable */
-.dataTableWrapper {
-  width: 100%;
+@media (max-width: 1100px) {
+  .dashboardHeader {
+    flex-direction: column;
+  }
+
+  .dashboardActions {
+    justify-content: flex-start;
+  }
+
+  .topCardsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .resourcesLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .resourcesThumbnails {
+    border-left: 0;
+    border-top: 1px solid #d8dbe1;
+  }
 }
 
-/* Bottom section layout */
-.bottomSection {
-  display: flex;
-  gap: 1.5rem;
-  align-items: stretch;
-}
+@media (max-width: 760px) {
+  .dashboardPage {
+    padding-inline: 0;
+  }
 
-.bottomSectionCol {
-  flex: 1;
-}
+  .dashboardActions,
+  .bundlesToolbar,
+  .paginationBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-/* Account Manager Card */
-.accountManagerCard {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 320px;
-  position: relative;
-}
+  .languageSelect,
+  .searchField {
+    width: 100%;
+  }
 
-.accountManagerHeader {
-  padding: 1rem 1.5rem;
-  background: linear-gradient(135deg, #006fbb 0%, #004d87 100%);
-  border-radius: 8px 8px 0 0;
-  margin-bottom: 1rem;
-}
+  .supportCard {
+    grid-template-columns: 1fr;
+  }
 
-.accountManagerContent {
-  padding: 0 1.5rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+  .supportAvatarWrap {
+    margin-top: 0;
+  }
 
-.accountManagerAvatarWrapper {
-  position: relative;
-  min-width: 120px;
-}
+  .bundlesTableHeader {
+    grid-template-columns: 1.4fr 0.8fr 0.8fr 0.8fr;
+    padding-inline: 14px;
+    font-size: 12px;
+  }
 
-.accountManagerAvatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-}
+  .resourcesList {
+    padding: 18px;
+  }
 
-.accountManagerAvatarImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+  .resourcesThumbnails {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
 
-.accountManagerStatusIndicator {
-  position: absolute;
-  bottom: -3px;
-  right: -3px;
-  width: 18px;
-  height: 18px;
-  background-color: #00a047;
-  border-radius: 50%;
-  border: 3px solid white;
-  z-index: 10;
-}
-
-.accountManagerServiceBullet {
-  width: 16px;
-  height: 16px;
-  background-color: #006fbb;
-  border-radius: 50%;
-  margin-top: 2px;
-  flex-shrink: 0;
-}
-
-.accountManagerCtaSection {
-  padding: 1.5rem;
-  margin-top: auto;
-}
-
-.accountManagerCtaText {
-  flex: 1;
-}
-
-.accountManagerCtaButton {
-  margin-top: 12px;
-}
-
-/* Demo Pricing Link */
-.demoPricingLink {
-  display: block;
-  border: 2px solid #e1e3e5;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: pointer;
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 0.35s ease, box-shadow 0.35s ease;
-}
-
-.demoPricingLink:hover {
-  border-color: #f4c430;
-  box-shadow: 0 0 16px rgba(244, 196, 48, 0.5), 0 0 32px rgba(244, 196, 48, 0.25);
-}
-
-.demoPricingImg {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-
-/* DataTable overrides */
-.dataTableWrapper .Polaris-DataTable__Table {
-  width: 100%;
-  table-layout: fixed;
-}
-
-.dataTableWrapper .Polaris-DataTable__Cell {
-  width: 25%;
-}
-
-/* Resources Section — EB-style */
-.resourcesSection {
-  margin-top: 20px;
-}
-
-/* Single card wrapping list + thumbnails */
-.resourcesCard {
-  border: 1px solid #e1e3e5;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.resourcesLayout {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: 220px;
-}
-
-/* Left nav list — no individual border, card handles it */
-.resourcesList {
-  display: flex;
-  flex-direction: column;
-}
-
-.resourceItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  cursor: pointer;
-  text-decoration: none;
-  color: #202223;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  border-bottom: 1px solid #f1f2f3;
-  transition: background-color 0.15s ease;
-  font-size: 13px;
-}
-
-.resourceItem:last-child {
-  border-bottom: none;
-}
-
-.resourceItem:hover {
-  background-color: #f6f6f7;
-  text-decoration: none;
-}
-
-.resourceItemActive {
-  background-color: #f6f6f7 !important;
-}
-
-.resourceItemActive:hover {
-  background-color: #ebebeb !important;
-}
-
-.resourceItemIcon {
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #6d7175;
-}
-
-.resourceItemLabel {
-  flex: 1;
-  font-size: 13px;
-  color: #202223;
-  font-family: inherit;
-}
-
-.resourceItemDisabled {
-  cursor: default;
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-/* Right panel — separated from left by a vertical border */
-.resourcesThumbnails {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 12px;
-  border-left: 1px solid #e1e3e5;
-  align-content: start;
-}
-
-/* Individual thumbnail card */
-.resourceThumbnailCard {
-  display: flex;
-  flex-direction: column;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e1e3e5;
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.resourceThumbnailCard:hover {
-  border-color: #b5b5b5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  text-decoration: none;
-}
-
-/* Grey placeholder image area */
-.resourceThumbnailPlaceholder {
-  background-color: #e8e9ea;
-  min-height: 160px;
-  flex: 1;
-}
-
-/* Footer: label left, external icon right */
-.resourceThumbnailFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-top: 1px solid #e1e3e5;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  color: #202223;
 }
