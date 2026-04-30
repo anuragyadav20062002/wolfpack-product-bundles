@@ -69,6 +69,8 @@ export interface BundleUiConfig {
   textOverrides?: BundleTextOverrides | null;
   /** Per-locale text overrides keyed by Shopify locale code (e.g. "fr", "de"). */
   textOverridesByLocale?: Record<string, Partial<BundleTextOverrides>> | null;
+  /** When true, loads the headless SDK instead of the pre-built widget (product-page bundles only). */
+  sdkMode?: boolean;
 }
 
 export interface BundleUiStep {

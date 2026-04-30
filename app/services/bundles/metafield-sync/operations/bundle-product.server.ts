@@ -331,6 +331,7 @@ export async function updateBundleProductMetafields(
     floatingBadgeText: bundleConfiguration.floatingBadgeText ?? '',
     textOverrides: bundleConfiguration.textOverrides ?? null,
     textOverridesByLocale: bundleConfiguration.textOverridesByLocale ?? null,
+    sdkMode: bundleConfiguration.sdkMode ?? false,
   };
 
   // Check metafield sizes and log warnings

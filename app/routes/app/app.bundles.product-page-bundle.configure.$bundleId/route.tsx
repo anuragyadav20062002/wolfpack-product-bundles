@@ -476,6 +476,7 @@ export default function ConfigureBundleFlow() {
   const [showCompareAtPrices, setShowCompareAtPrices] = useState<boolean>((bundle as any).showCompareAtPrices ?? false);
   const [cartRedirectToCheckout, setCartRedirectToCheckout] = useState<boolean>((bundle as any).cartRedirectToCheckout ?? false);
   const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
+  const [sdkMode, setSdkMode] = useState<boolean>((bundle as any).sdkMode ?? false);
 
   // Text overrides state (Messages tab)
   const [textOverrides, setTextOverrides] = useState<Record<string, string>>(
@@ -527,6 +528,7 @@ export default function ConfigureBundleFlow() {
       formData.append("showCompareAtPrices", String(showCompareAtPrices));
       formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
       formData.append("allowQuantityChanges", String(allowQuantityChanges));
+      formData.append("sdkMode", String(sdkMode));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
 
@@ -2180,6 +2182,18 @@ export default function ConfigureBundleFlow() {
                       helpText="Takes customers directly to checkout instead of the cart page."
                       checked={cartRedirectToCheckout}
                       onChange={(val) => { setCartRedirectToCheckout(val); markAsDirty(); }}
+                    />
+                  </BlockStack>
+                </Card>
+
+                <Card>
+                  <BlockStack gap="400">
+                    <Text variant="headingSm" as="h3">Developer</Text>
+                    <Checkbox
+                      label="Enable SDK mode"
+                      helpText="Loads the Wolfpack Bundles headless SDK instead of the pre-built widget. Use when building a custom bundle UI."
+                      checked={sdkMode}
+                      onChange={(val) => { setSdkMode(val); markAsDirty(); }}
                     />
                   </BlockStack>
                 </Card>

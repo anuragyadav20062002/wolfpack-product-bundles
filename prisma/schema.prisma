@@ -106,6 +106,7 @@ model Bundle {
   showCompareAtPrices    Boolean @default(false) // Show compare-at (strike-through) prices
   cartRedirectToCheckout Boolean @default(false) // Redirect to checkout instead of cart after add
   allowQuantityChanges   Boolean @default(true)  // Allow customers to change per-product quantity
+  sdkMode                Boolean @default(false) // Load headless SDK instead of pre-built widget (product-page bundles only)
   // Per-bundle text overrides
   textOverrides          Json?   // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
   textOverridesByLocale  Json?   // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }

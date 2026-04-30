@@ -58,27 +58,27 @@
   data-container-bundle-id="{{ bundle_id }}"
   data-bundle-config='{{ bundle_ui_config | json }}'
   data-hide-default-buttons="{{ is_bundle_product }}"
-  data-show-step-numbers="{{ block.settings.show_step_numbers }}"
+  data-show-step-numbers="true"
   style="
-    --step-box-size: {{ block.settings.step_box_size | default: 150 }}px;
-    --bundle-add-to-cart-button-height: {{ block.settings.button_height | default: 55 }}px;
-    --widget-max-width: {{ block.settings.widget_max_width | default: 800 }}px;
-    --step-cards-per-row: {{ block.settings.step_cards_per_row | default: 3 }};
-    --container-spacing: {{ block.settings.container_spacing | default: 20 }}px;
-    --element-spacing: {{ block.settings.element_spacing | default: 15 }}px;
-    --step-card-spacing: {{ block.settings.step_card_gap | default: 15 }}px;
-    --modal-header-padding: {{ block.settings.modal_header_padding | default: 40 }}px;
-    --modal-body-padding: {{ block.settings.modal_body_padding | default: 40 }}px;
+    --step-box-size: 150px;
+    --bundle-add-to-cart-button-height: 55px;
+    --widget-max-width: 800px;
+    --step-cards-per-row: 3;
+    --container-spacing: 20px;
+    --element-spacing: 15px;
+    --step-card-spacing: 15px;
+    --modal-header-padding: 40px;
+    --modal-body-padding: 40px;
     --button-spacing: 25px;
     --modal-footer-bg-color: #ffffff;
     --modal-footer-text-color: #2d3748;
-    --bundle-header-tab-radius: {{ block.settings.step_tab_border_radius | default: 10 }}px;
-    --modal-product-card-height: {{ block.settings.modal_product_card_height | default: 160 }}px;
-    --modal-product-image-height: {{ block.settings.modal_product_image_height | default: 70 }}px;
-    --modal-product-price-color: {{ block.settings.modal_product_price_color | default: '#2c5530' }};
-    --modal-product-price-bg: {{ block.settings.modal_product_price_bg | default: '#f0f8f0' }};
-    --modal-product-title-size: {{ block.settings.modal_product_title_size | default: 90 }}%;
-    --modal-product-price-size: {{ block.settings.modal_product_price_size | default: 85 }}%;
+    --bundle-header-tab-radius: 10px;
+    --modal-product-card-height: 160px;
+    --modal-product-image-height: 70px;
+    --modal-product-price-color: #2c5530;
+    --modal-product-price-bg: #f0f8f0;
+    --modal-product-title-size: 90%;
+    --modal-product-price-size: 85%;
     display: none;
   "
   class="bundle-widget-container"
@@ -241,10 +241,9 @@
 <script>
   (function () {
     var s = document.createElement('script');
-    {% if block.settings.sdk_mode %}
-      {% comment %} SDK mode: load the headless SDK instead of the pre-built widget {% endcomment %}
+    {% if bundle_ui_config.sdkMode == true %}
+      {% comment %} SDK mode — per-bundle setting from bundle_ui_config metafield {% endcomment %}
       s.src = '{{ 'wolfpack-bundles-sdk.js' | asset_url }}';
-      {% comment %} Mark the container so the SDK can find it {% endcomment %}
       var container = document.getElementById('bundle-builder-app');
       if (container) { container.setAttribute('data-sdk-mode', 'true'); }
     {% else %}
@@ -257,7 +256,8 @@
 
 {% schema %}
 {
-  "name": "Wolfpack Bundle (Product)",
+  "name": "Wolfpack: Product Bundles",
+  "description": "WP | Product Page",
   "target": "body",
   "enabled_on": {
     "templates": ["product"]
@@ -266,190 +266,6 @@
     {
       "type": "paragraph",
       "content": "Renders automatically on any product with a Wolfpack bundle configured. No per-product setup needed."
-    },
-    {
-      "type": "checkbox",
-      "id": "sdk_mode",
-      "label": "Enable SDK mode",
-      "default": false,
-      "info": "When enabled, loads the Wolfpack Bundles SDK instead of the pre-built widget. Use this if you are building a custom bundle UI. See the SDK Usage Guide for implementation details."
-    },
-    {
-      "type": "header",
-      "content": "Layout & Sizing"
-    },
-    {
-      "type": "range",
-      "id": "widget_max_width",
-      "min": 300,
-      "max": 1200,
-      "step": 50,
-      "unit": "px",
-      "label": "Widget max width",
-      "default": 800
-    },
-    {
-      "type": "range",
-      "id": "step_box_size",
-      "min": 100,
-      "max": 250,
-      "step": 10,
-      "unit": "px",
-      "label": "Step box size",
-      "default": 150
-    },
-    {
-      "type": "range",
-      "id": "step_cards_per_row",
-      "min": 2,
-      "max": 6,
-      "step": 1,
-      "label": "Cards per row",
-      "default": 3
-    },
-    {
-      "type": "range",
-      "id": "button_height",
-      "min": 40,
-      "max": 80,
-      "step": 5,
-      "unit": "px",
-      "label": "Button height",
-      "default": 55
-    },
-    {
-      "type": "header",
-      "content": "Display"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_step_numbers",
-      "label": "Show step numbers",
-      "default": true
-    },
-    {
-      "type": "header",
-      "content": "Spacing"
-    },
-    {
-      "type": "range",
-      "id": "container_spacing",
-      "min": 0,
-      "max": 50,
-      "step": 5,
-      "unit": "px",
-      "label": "Container spacing",
-      "default": 20
-    },
-    {
-      "type": "range",
-      "id": "element_spacing",
-      "min": 0,
-      "max": 30,
-      "step": 5,
-      "unit": "px",
-      "label": "Element spacing",
-      "default": 15
-    },
-    {
-      "type": "range",
-      "id": "step_card_gap",
-      "min": 0,
-      "max": 30,
-      "step": 5,
-      "unit": "px",
-      "label": "Step card gap",
-      "default": 15
-    },
-    {
-      "type": "range",
-      "id": "modal_header_padding",
-      "min": 10,
-      "max": 60,
-      "step": 5,
-      "unit": "px",
-      "label": "Modal header padding",
-      "default": 40
-    },
-    {
-      "type": "range",
-      "id": "modal_body_padding",
-      "min": 10,
-      "max": 60,
-      "step": 5,
-      "unit": "px",
-      "label": "Modal body padding",
-      "default": 40
-    },
-    {
-      "type": "header",
-      "content": "Step Navigation"
-    },
-    {
-      "type": "range",
-      "id": "step_tab_border_radius",
-      "min": 0,
-      "max": 20,
-      "step": 2,
-      "unit": "px",
-      "label": "Step tab border radius",
-      "default": 10
-    },
-    {
-      "type": "header",
-      "content": "Modal Product Cards"
-    },
-    {
-      "type": "range",
-      "id": "modal_product_card_height",
-      "min": 140,
-      "max": 200,
-      "step": 10,
-      "unit": "px",
-      "label": "Card height",
-      "default": 160
-    },
-    {
-      "type": "range",
-      "id": "modal_product_image_height",
-      "min": 50,
-      "max": 90,
-      "step": 5,
-      "unit": "px",
-      "label": "Image height",
-      "default": 70
-    },
-    {
-      "type": "color",
-      "id": "modal_product_price_color",
-      "label": "Price text color",
-      "default": "#2c5530"
-    },
-    {
-      "type": "color",
-      "id": "modal_product_price_bg",
-      "label": "Price background",
-      "default": "#f0f8f0"
-    },
-    {
-      "type": "range",
-      "id": "modal_product_title_size",
-      "min": 70,
-      "max": 120,
-      "step": 5,
-      "unit": "%",
-      "label": "Title font size",
-      "default": 90
-    },
-    {
-      "type": "range",
-      "id": "modal_product_price_size",
-      "min": 60,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "label": "Price font size",
-      "default": 85
     }
   ]
 }
