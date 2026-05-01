@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-01 11:30
+**Last Updated:** 2026-05-01 11:45
 
 ## Overview
 Four fixes to the dashboard:
@@ -36,6 +36,13 @@ Four fixes to the dashboard:
 - ✅ `.topCardsGrid :global(.Polaris-ShadowBevel) { height: 100% }` forces Card wrapper to stretch to grid cell height
 - Files modified: route.tsx, dashboard.module.css
 
+### 2026-05-01 11:45 - Founder card top alignment + avatar size
+- ✅ Changed `align-items: center` → `align-items: start` on `.supportCard` so content starts at the top
+- ✅ Changed `align-self: center` → `align-self: start` on `.supportAvatarWrap` for consistent top alignment
+- ✅ Avatar enlarged 72px → 84px (width, height, image dimensions, grid column 88px → 96px)
+- ✅ Button remains pinned to bottom via `grid-template-rows: 1fr auto`
+- Files modified: dashboard.module.css
+
 ## Phases Checklist
 - [x] app.tsx: load Polaris locale from ?locale= param, pass to AppProvider
 - [x] Dashboard: re-add language dropdown, navigate to ?locale= on change
@@ -44,3 +51,4 @@ Four fixes to the dashboard:
 - [x] External link icon alignment (App Embeds + thumbnails)
 - [x] Verify in browser
 - [x] Remove extra padding from founder + App Embeds cards; ensure equal heights via stretch grid + height:100%
+- [x] Founder card: align content to top (matching App Embeds top padding); button pinned to bottom; avatar enlarged to 84px

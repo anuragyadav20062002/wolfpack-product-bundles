@@ -74,17 +74,17 @@
   box-sizing: border-box;
   padding: 20px 24px;
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: 96px minmax(0, 1fr);
   grid-template-rows: 1fr auto;
   gap: 14px 18px;
-  align-items: center;
+  align-items: start;
 }
 
 .supportAvatarWrap {
   position: relative;
-  width: 72px;
-  height: 72px;
-  align-self: center;
+  width: 84px;
+  height: 84px;
+  align-self: start;
 }
 
 .supportAvatarSkeleton {
@@ -110,8 +110,8 @@
 }
 
 .supportAvatarImage {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   object-fit: cover;
   object-position: center 18%;
