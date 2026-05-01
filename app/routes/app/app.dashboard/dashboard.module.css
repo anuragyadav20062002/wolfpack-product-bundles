@@ -4,12 +4,24 @@
   padding: 0 4px 88px;
 }
 
-.dashboardPage :global(.Polaris-Layout) {
-  row-gap: 24px;
+.dashboardLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.dashboardPage :global(.Polaris-Layout__Section) {
-  margin-top: 0;
+.dashboardTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #303030;
+}
+
+.dashboardSubtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #6d7175;
 }
 
 .dashboardHeader {
@@ -37,8 +49,7 @@
   align-items: center;
 }
 
-/* Tighten the Polaris Select inside the language picker */
-.languageSelect :global(.Polaris-Select) {
+.languageSelect s-select {
   min-width: 128px;
 }
 
@@ -64,8 +75,7 @@
   align-items: stretch;
 }
 
-/* Force the Polaris Card wrapper to fill the full grid cell height */
-.topCardsGrid :global(.Polaris-ShadowBevel) {
+.topCardsGrid s-section {
   height: 100%;
 }
 
@@ -137,17 +147,13 @@
   align-self: end;
 }
 
-.supportCta :global(.Polaris-Button--variantPrimary),
-.dashboardActions :global(.Polaris-Button--variantPrimary),
-.setupOverlayButton {
-  background: linear-gradient(180deg, #4b4b4e 0%, #2f2f31 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 0 #111;
-  border-color: #111;
+.supportCta s-button[variant="primary"],
+.dashboardActions s-button[variant="primary"] {
+  --s-button-background: linear-gradient(180deg, #4b4b4e 0%, #2f2f31 100%);
 }
 
-/* Ensure Polaris Icon renders inline so it centres with adjacent text in flex/InlineStack */
-.appEmbedCard :global(.Polaris-Icon),
-.resourceThumbnailFooter :global(.Polaris-Icon) {
+.appEmbedCard s-icon,
+.resourceThumbnailFooter s-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,9 +218,20 @@
 
 .filterGroup {
   display: flex;
-  align-items: center;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.filterSelectWrap {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.perPageSelectWrap {
+  width: 160px;
+  flex-shrink: 0;
 }
 
 .searchField {
@@ -274,7 +291,7 @@
   background: #f4f4f4;
 }
 
-.emptyBundlesIcon :global(.Polaris-Icon) {
+.emptyBundlesIcon s-icon {
   width: 32px;
   height: 32px;
 }
@@ -283,28 +300,45 @@
   max-width: 520px;
 }
 
-.dataTableWrapper {
-  width: 100%;
+.bundleTableRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid #d8dbe1;
 }
 
-.dataTableWrapper :global(.Polaris-DataTable__Table) {
-  width: 100%;
-  table-layout: fixed;
+.bundleTableRow:last-child {
+  border-bottom: 0;
 }
 
-.dataTableWrapper :global(.Polaris-DataTable__Table thead) {
-  display: none;
+.bundleTableCell {
+  padding: 10px 6px;
+  font-size: 14px;
+  color: #303030;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Match the 2fr/1fr/1fr/1fr header proportions: 40%/20%/20%/20% */
-.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(1)) { width: 40%; }
-.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(2)) { width: 20%; }
-.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(3)) { width: 20%; }
-.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(4)) { width: 20%; }
+.bundleTableCell:first-child {
+  padding-left: 12px;
+}
 
-/* Hide the Polaris horizontal-scroll navigation indicator */
-.dataTableWrapper :global(.Polaris-DataTable__Navigation) {
-  display: none;
+.bundleTableCell:last-child {
+  padding-right: 12px;
+  overflow: visible;
+}
+
+.bundleActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .noFilteredBundles {
@@ -546,7 +580,7 @@
     width: 100%;
   }
 
-  .languageSelect :global(.Polaris-Select) {
+  .languageSelect s-select {
     min-width: unset;
     width: 100%;
   }

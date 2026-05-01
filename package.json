@@ -77,6 +77,7 @@
     "@remix-run/eslint-config": "^2.16.1",
     "@remix-run/route-config": "^2.16.1",
     "@shopify/api-codegen-preset": "^0.0.4",
+    "@shopify/polaris-types": "^1.0.7",
     "@shopify/ui-extensions": "2025.10.0",
     "@types/eslint": "^9.6.1",
     "@types/jest": "^29.5.12",

@@ -18,6 +18,6 @@
     "paths": {
       "~/*": ["./app/*"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "jest", "@shopify/polaris-types", "@shopify/app-bridge-types"]
   }
 }
