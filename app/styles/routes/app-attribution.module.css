@@ -446,7 +446,17 @@
   padding: 4px 0 0;
 }
 
-/* KPI cards grid */
+/* KPI cards grid — 4 cols desktop, 2 cols mobile */
+.bundleKpiGrid {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+@media (max-width: 768px) {
+  .bundleKpiGrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 .bundleKpiCard {
   background: #ffffff;
   border: 1px solid #e1e3e5;

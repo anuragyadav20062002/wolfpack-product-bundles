@@ -1,14 +1,3 @@
-/**
- * FAQ Section Component
- *
- * Displays frequently asked questions about pricing and billing.
- */
-
-import {
-  Card,
-  Text,
-  BlockStack,
-} from "@shopify/polaris";
 import { PRICING_FAQ, type FAQItem } from "../../constants/pricing-data";
 
 export interface FAQSectionProps {
@@ -17,24 +6,18 @@ export interface FAQSectionProps {
 
 export function FAQSection({ faqs = PRICING_FAQ }: FAQSectionProps) {
   return (
-    <Card>
-      <BlockStack gap="400">
-        <Text as="h3" variant="headingMd">
-          Frequently Asked Questions
-        </Text>
-        <BlockStack gap="400">
+    <s-section>
+      <s-stack direction="block" gap="base">
+        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Frequently Asked Questions</h3>
+        <s-stack direction="block" gap="base">
           {faqs.map((faq, index) => (
-            <BlockStack key={index} gap="100">
-              <Text as="p" variant="bodyMd" fontWeight="semibold">
-                {faq.question}
-              </Text>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                {faq.answer}
-              </Text>
-            </BlockStack>
+            <s-stack key={index} direction="block" gap="small-400">
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{faq.question}</p>
+              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>{faq.answer}</p>
+            </s-stack>
           ))}
-        </BlockStack>
-      </BlockStack>
-    </Card>
+        </s-stack>
+      </s-stack>
+    </s-section>
   );
 }

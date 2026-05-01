@@ -1,19 +1,4 @@
-/**
- * Upgrade Confirmation Modal Component
- *
- * Modal that confirms upgrade to Grow plan before redirecting to Shopify billing.
- */
-
-import {
-  Modal,
-  Text,
-  BlockStack,
-  InlineStack,
-  Banner,
-  Divider,
-  Icon,
-} from "@shopify/polaris";
-import { CheckIcon } from "@shopify/polaris-icons";
+import { useRef, useEffect } from "react";
 import { PLANS } from "../../constants/plans";
 import { GROW_PLAN_BENEFITS } from "../../constants/pricing-data";
 
@@ -34,67 +19,73 @@ export function UpgradeConfirmationModal({
   onConfirm,
   onClose,
 }: UpgradeConfirmationModalProps) {
+  const modalRef = useRef<any>(null);
+
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+    if (open) {
+      el.show?.();
+    } else {
+      el.hide?.();
+    }
+  }, [open]);
+
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Upgrade to Grow Plan"
-      primaryAction={{
-        content: `Confirm Upgrade - $${PLANS.grow.price}/month`,
-        onAction: onConfirm,
-        loading: isLoading,
-      }}
-      secondaryActions={[
-        {
-          content: "Cancel",
-          onAction: onClose,
-        },
-      ]}
+    <s-modal
+      ref={modalRef}
+      id="upgrade-confirmation-modal"
+      heading={`Upgrade to Grow Plan`}
+      onHide={onClose}
     >
-      <Modal.Section>
-        <BlockStack gap="400">
-          <Banner tone="info">
-            <Text as="p" variant="bodyMd">
-              You'll be redirected to Shopify to complete your subscription.
-            </Text>
-          </Banner>
+      <s-button
+        slot="primaryAction"
+        variant="primary"
+        loading={isLoading || undefined}
+        onClick={onConfirm}
+      >
+        {`Confirm Upgrade - $${PLANS.grow.price}/month`}
+      </s-button>
+      <s-button slot="secondaryActions" onClick={onClose}>
+        Cancel
+      </s-button>
 
-          <BlockStack gap="300">
-            <Text as="h3" variant="headingMd">
-              What you'll get with Grow:
-            </Text>
-            <BlockStack gap="200">
-              <InlineStack gap="200" blockAlign="center">
-                <div style={{ color: '#008060' }}>
-                  <Icon source={CheckIcon} tone="success" />
+      <s-stack direction="block" gap="base">
+        <s-banner tone="info">
+          You&apos;ll be redirected to Shopify to complete your subscription.
+        </s-banner>
+
+        <s-stack direction="block" gap="small">
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+            What you&apos;ll get with Grow:
+          </h3>
+          <s-stack direction="block" gap="small-100">
+            <s-stack direction="inline" alignItems="center" gap="small-100">
+              <div style={{ color: "#008060" }}>
+                <s-icon name="check-minor" />
+              </div>
+              <span style={{ fontSize: 14 }}>
+                Up to 20 bundles (currently {currentBundleCount}/{bundleLimit})
+              </span>
+            </s-stack>
+            {GROW_PLAN_BENEFITS.slice(1).map((benefit, index) => (
+              <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
+                <div style={{ color: "#008060" }}>
+                  <s-icon name="check-minor" />
                 </div>
-                <Text as="span" variant="bodyMd">
-                  Up to 20 bundles (currently {currentBundleCount}/{bundleLimit})
-                </Text>
-              </InlineStack>
-              {GROW_PLAN_BENEFITS.slice(1).map((benefit, index) => (
-                <InlineStack key={index} gap="200" blockAlign="center">
-                  <div style={{ color: '#008060' }}>
-                    <Icon source={CheckIcon} tone="success" />
-                  </div>
-                  <Text as="span" variant="bodyMd">{benefit}</Text>
-                </InlineStack>
-              ))}
-            </BlockStack>
-          </BlockStack>
+                <span style={{ fontSize: 14 }}>{benefit}</span>
+              </s-stack>
+            ))}
+          </s-stack>
+        </s-stack>
 
-          <Divider />
+        <s-divider />
 
-          <InlineStack align="space-between">
-            <Text as="span" variant="bodyMd" tone="subdued">
-              Billed monthly through Shopify
-            </Text>
-            <Text as="span" variant="headingMd" fontWeight="bold">
-              ${PLANS.grow.price}/month
-            </Text>
-          </InlineStack>
-        </BlockStack>
-      </Modal.Section>
-    </Modal>
+        <s-stack direction="inline" justifyContent="space-between">
+          <s-text tone="neutral" color="subdued">Billed monthly through Shopify</s-text>
+          <strong style={{ fontSize: 16 }}>${PLANS.grow.price}/month</strong>
+        </s-stack>
+      </s-stack>
+    </s-modal>
   );
 }

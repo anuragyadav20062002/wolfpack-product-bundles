@@ -1,26 +1,9 @@
-/**
- * Subscription Error Banner Component
- *
- * Displays error messages for subscription issues.
- */
-
-import {
-  Banner,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-} from "@shopify/polaris";
-
 export interface SubscriptionErrorBannerProps {
   errorCode: string | null;
   onRetry: () => void;
   onDismiss: () => void;
 }
 
-/**
- * Get human-readable error message from error code
- */
 function getErrorMessage(errorCode: string | null): string {
   switch (errorCode) {
     case "missing_charge_id":
@@ -38,31 +21,29 @@ export function SubscriptionErrorBanner({
   onDismiss,
 }: SubscriptionErrorBannerProps) {
   return (
-    <Banner
-      tone="critical"
-      onDismiss={onDismiss}
-      title="Subscription Issue"
-    >
-      <BlockStack gap="200">
-        <Text as="p" variant="bodyMd">
-          {getErrorMessage(errorCode)}
-        </Text>
-        <InlineStack gap="200">
-          <Button onClick={onRetry} variant="plain">
-            Try Again
-          </Button>
-          <Button
-            onClick={() => {
-              if (typeof window !== "undefined" && window.$crisp) {
-                window.$crisp.push(["do", "chat:open"]);
-              }
-            }}
-            variant="plain"
-          >
-            Contact Support
-          </Button>
-        </InlineStack>
-      </BlockStack>
-    </Banner>
+    <s-banner tone="critical" heading="Subscription Issue" dismissible onHide={onDismiss}>
+      <s-button slot="primaryAction" onClick={onRetry}>
+        Try Again
+      </s-button>
+      {getErrorMessage(errorCode)}
+      <s-stack direction="inline" gap="small" style={{ marginTop: 8 }}>
+        <s-button
+          variant="tertiary"
+          onClick={() => {
+            if (typeof window !== "undefined" && window.$crisp) {
+              window.$crisp.push(["do", "chat:open"]);
+            }
+          }}
+        >
+          Contact Support
+        </s-button>
+      </s-stack>
+    </s-banner>
   );
+}
+
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
 }

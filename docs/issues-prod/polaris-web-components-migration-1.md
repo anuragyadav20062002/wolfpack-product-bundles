@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-02 12:00
+**Last Updated:** 2026-05-02 14:30
 
 ## Overview
 Replace all `@shopify/polaris` React component imports in admin routes and shared components with Shopify's native `<s-*>` Polaris web components, loaded via CDN. See architecture doc at `docs/polaris-web-components-migration/02-architecture.md`.
@@ -31,10 +31,43 @@ Replace all `@shopify/polaris` React component imports in admin routes and share
 - ✅ Verified in Chrome: dashboard renders, Create Bundle modal opens with correct slotted actions (disabled until name typed), Cancel closes modal, filter selects render side-by-side with correct options, bundle table/pagination/resources card all correct
 - Files: app/routes/app/app.dashboard/route.tsx, app/routes/app/app.dashboard/dashboard.module.css
 
+### 2026-05-02 14:30 - Completed Phase 3 (Shared components + remaining routes)
+
+**Shared banner components:**
+- ✅ `app/components/AppEmbedBanner.tsx` — `<s-banner tone="warning" dismissible onHide>` + `<s-button slot="primaryAction">`
+- ✅ `app/components/ProxyHealthBanner.tsx` — `<s-banner tone="critical">` + slot action
+- ✅ `app/components/UpgradePromptBanner.tsx` — 3 banner variants (critical/warning/info)
+
+**Billing components:**
+- ✅ `app/components/billing/SubscriptionErrorBanner.tsx`
+- ✅ `app/components/billing/SubscriptionQuotaCard.tsx` — custom `CustomProgressBar` (no `s-progress-bar` exists)
+- ✅ `app/components/billing/UpgradeCTACard.tsx`
+- ✅ `app/components/billing/UpgradeConfirmationModal.tsx` — `<s-modal>` with `useRef`+`useEffect` to call `el.show()`/`el.hide()`
+- ✅ `app/components/billing/UpgradeSuccessBanner.tsx`
+- ✅ `app/components/billing/FAQSection.tsx`
+- ✅ `app/components/billing/FeatureComparisonTable.tsx` — `<s-icon name="check-minor">` / `<s-icon name="x-small">`
+- ✅ `app/components/billing/FreePlanCard.tsx`
+- ✅ `app/components/billing/GrowPlanCard.tsx`
+- ✅ `app/components/billing/ValuePropsSection.tsx` — replaced `useBreakpoints` with CSS media query
+- ✅ `app/styles/billing/value-props.module.css` — new file, responsive grid
+
+**Route pages:**
+- ✅ `app/routes/app/app.events.tsx` — `<ui-title-bar>` + `<s-badge>` + `<s-stack>` accordion items
+- ✅ `app/routes/app/app.billing.tsx` — `<ui-title-bar>`, `<s-section>`, `CustomProgressBar`, cancel button as native `<button>`
+- ✅ `app/routes/app/app.onboarding.tsx` — `<s-select>`, `<s-checkbox>`, `<ol>` list, removed `useAppBridge`
+- ✅ `app/routes/app/app.attribution.tsx` — replaced `DatePicker`+`Popover` with native `<input type="date">` custom dropdown, `InlineGrid` → CSS grid div, `Tooltip` → `<s-tooltip>`, removed `size` from `<s-button>`
+- ✅ Added `bundleKpiGrid` responsive class to `app-attribution.module.css`
+
+**Key findings:**
+- No `s-progress-bar` web component — use custom HTML div bar
+- `s-banner` uses `heading` prop (not `title`), `dismissible` boolean, `onHide` callback, `slot="primaryAction"` for action button
+- `s-button` has no `size` prop — remove `size="large"` / `size="slim"`
+- `s-modal` visibility controlled imperatively via `el.show()` / `el.hide()` using `useRef`
+
 ## Phases Checklist
 - [x] Phase 1: Infrastructure (polaris-types, CDN script, app.tsx simplification)
 - [x] Phase 2: Dashboard page migration
-- [ ] Phase 3: Simple pages (events, attribution, billing, onboarding)
+- [x] Phase 3: Shared banners, billing components, events/billing/onboarding/attribution routes
 - [ ] Phase 4: Pricing
 - [ ] Phase 5: Bundle Config pages
 - [ ] Phase 6: DCP

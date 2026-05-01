@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Banner } from "@shopify/polaris";
 
 const SESSION_KEY = "wb_embed_dismissed";
 
@@ -17,23 +16,22 @@ export function AppEmbedBanner({ appEmbedEnabled, themeEditorUrl }: AppEmbedBann
 
   if (appEmbedEnabled || dismissed) return null;
 
+  const handleDismiss = () => {
+    sessionStorage.setItem(SESSION_KEY, "1");
+    setDismissed(true);
+  };
+
   return (
-    <Banner
-      tone="warning"
-      onDismiss={() => {
-        sessionStorage.setItem(SESSION_KEY, "1");
-        setDismissed(true);
-      }}
-      action={
-        themeEditorUrl
-          ? {
-              content: "Enable here",
-              onAction: () => window.open(themeEditorUrl, "_blank"),
-            }
-          : undefined
-      }
-    >
+    <s-banner tone="warning" dismissible onHide={handleDismiss}>
+      {themeEditorUrl && (
+        <s-button
+          slot="primaryAction"
+          onClick={() => window.open(themeEditorUrl, "_blank")}
+        >
+          Enable here
+        </s-button>
+      )}
       Enable the Wolfpack theme extension to display your bundles on the storefront.
-    </Banner>
+    </s-banner>
   );
 }

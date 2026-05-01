@@ -1,6 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { Page, Layout, BlockStack, Text, InlineStack, Badge } from "@shopify/polaris";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import { authenticate } from "../../shopify.server";
 import { AccordionItem } from "../../components/AccordionItem";
 import { CartPropertyFixContent } from "../../components/CartPropertyFixCard";
@@ -23,32 +22,31 @@ const LATEST_EVENTS = [
     badgeColor: "#e6f4ea",
     badgeTextColor: "#1e7e34",
     content: (
-      <BlockStack gap="400">
-        <Text variant="bodySm" as="p" tone="subdued">
-          Released: March 2026
-        </Text>
-        <BlockStack gap="200">
-          <Text variant="bodyMd" fontWeight="semibold" as="p">What changed</Text>
-          <Text variant="bodySm" tone="subdued" as="p">
+      <s-stack direction="block" gap="base">
+        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Released: March 2026</p>
+        <s-stack direction="block" gap="small-100">
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>What changed</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
             Your full-page bundles now appear instantly when a customer visits the page —
             no more loading spinner while the bundle content loads in.
-          </Text>
-        </BlockStack>
-        <BlockStack gap="200">
-          <Text variant="bodyMd" fontWeight="semibold" as="p">Why it matters</Text>
-          <Text variant="bodySm" tone="subdued" as="p">
-            A faster first impression means a smoother shopping experience.
-            Customers see your bundle immediately, which reduces drop-off before they even engage with it.
-          </Text>
-        </BlockStack>
-        <BlockStack gap="200">
-          <Text variant="bodyMd" fontWeight="semibold" as="p">What you need to do</Text>
-          <Text variant="bodySm" tone="subdued" as="p">
-            For any full-page bundles you set up before this update, open the bundle and click{' '}
-            <strong>Sync Bundle</strong> once. That's it — bundles you create going forward are already covered.
-          </Text>
-        </BlockStack>
-      </BlockStack>
+          </p>
+        </s-stack>
+        <s-stack direction="block" gap="small-100">
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Why it matters</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+            A faster first impression means a smoother shopping experience. Customers see
+            your bundle immediately, which reduces drop-off before they even engage with it.
+          </p>
+        </s-stack>
+        <s-stack direction="block" gap="small-100">
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>What you need to do</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+            For any full-page bundles you set up before this update, open the bundle and
+            click <strong>Sync Bundle</strong> once. That&apos;s it — bundles you create going
+            forward are already covered.
+          </p>
+        </s-stack>
+      </s-stack>
     ),
   },
 ] as const;
@@ -69,23 +67,23 @@ const FAQS_AND_TUTORIALS = [
 
 export default function EventsPage() {
   useLoaderData<typeof loader>();
+  const navigate = useNavigate();
 
   return (
-    <Page
-      title="Updates &amp; FAQs"
-      subtitle="Release notes, how-tos, and tutorials"
-      backAction={{ content: "Dashboard", url: "/app/dashboard" }}
-    >
-      <Layout>
+    <>
+      <ui-title-bar title="Updates &amp; FAQs">
+        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+          Dashboard
+        </button>
+      </ui-title-bar>
 
-        {/* ── Latest Events ──────────────────────────────────────────── */}
-        <Layout.Section>
-          <BlockStack gap="400">
-            <SectionHeader
-              title="Latest Updates"
-              count={LATEST_EVENTS.length}
-            />
-            <BlockStack gap="300">
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+        <s-stack direction="block" gap="large">
+
+          {/* Latest Updates */}
+          <s-stack direction="block" gap="base">
+            <SectionHeader title="Latest Updates" count={LATEST_EVENTS.length} />
+            <s-stack direction="block" gap="small">
               {LATEST_EVENTS.map((item) => (
                 <AccordionItem
                   key={item.id}
@@ -98,18 +96,13 @@ export default function EventsPage() {
                   {item.content}
                 </AccordionItem>
               ))}
-            </BlockStack>
-          </BlockStack>
-        </Layout.Section>
+            </s-stack>
+          </s-stack>
 
-        {/* ── FAQs & Tutorials ───────────────────────────────────────── */}
-        <Layout.Section>
-          <BlockStack gap="400">
-            <SectionHeader
-              title="FAQs & Tutorials"
-              count={FAQS_AND_TUTORIALS.length}
-            />
-            <BlockStack gap="300">
+          {/* FAQs & Tutorials */}
+          <s-stack direction="block" gap="base">
+            <SectionHeader title="FAQs & Tutorials" count={FAQS_AND_TUTORIALS.length} />
+            <s-stack direction="block" gap="small">
               {FAQS_AND_TUTORIALS.map((item) => (
                 <AccordionItem
                   key={item.id}
@@ -122,20 +115,20 @@ export default function EventsPage() {
                   {item.content}
                 </AccordionItem>
               ))}
-            </BlockStack>
-          </BlockStack>
-        </Layout.Section>
+            </s-stack>
+          </s-stack>
 
-      </Layout>
-    </Page>
+        </s-stack>
+      </div>
+    </>
   );
 }
 
 function SectionHeader({ title, count }: { title: string; count: number }) {
   return (
-    <InlineStack gap="200" blockAlign="center">
-      <Text variant="headingMd" as="h2">{title}</Text>
-      <Badge tone="info">{String(count)}</Badge>
-    </InlineStack>
+    <s-stack direction="inline" alignItems="center" gap="small-100">
+      <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{title}</h2>
+      <s-badge tone="info">{String(count)}</s-badge>
+    </s-stack>
   );
 }

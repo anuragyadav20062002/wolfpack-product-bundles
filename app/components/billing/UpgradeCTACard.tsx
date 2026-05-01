@@ -1,18 +1,3 @@
-/**
- * Upgrade CTA Card Component
- *
- * Call-to-action card for Free plan users to upgrade to Grow.
- */
-
-import {
-  Card,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-  Icon,
-} from "@shopify/polaris";
-import { StarFilledIcon } from "@shopify/polaris-icons";
 import { PLANS } from "../../constants/plans";
 
 export interface UpgradeCTACardProps {
@@ -21,75 +6,56 @@ export interface UpgradeCTACardProps {
 
 export function UpgradeCTACard({ onUpgrade }: UpgradeCTACardProps) {
   return (
-    <Card>
-      <div style={{
-        background: 'linear-gradient(135deg, #f6f6f7 0%, #ebeced 100%)',
-        borderRadius: '8px',
-        padding: '20px',
-        margin: '-16px',
-      }}>
-        <BlockStack gap="400">
-          <InlineStack gap="200" blockAlign="center">
-            <div style={{
-              backgroundColor: '#ffc96b',
-              borderRadius: '50%',
-              padding: '8px',
-              display: 'flex',
-            }}>
-              <Icon source={StarFilledIcon} />
-            </div>
-            <Text as="h3" variant="headingMd">
-              Ready to grow your bundle business?
-            </Text>
-          </InlineStack>
-
-          <Text as="p" variant="bodyMd">
-            Upgrade to the Grow plan for double the bundles, full design customization, and priority support.
-          </Text>
-
-          <InlineStack gap="200">
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '6px',
-              padding: '8px 12px',
-            }}>
-              <Text as="span" variant="bodySm" fontWeight="semibold">
-                20 bundles
-              </Text>
-            </div>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '6px',
-              padding: '8px 12px',
-            }}>
-              <Text as="span" variant="bodySm" fontWeight="semibold">
-                Design Control Panel
-              </Text>
-            </div>
-            <div style={{
-              backgroundColor: 'white',
-              borderRadius: '6px',
-              padding: '8px 12px',
-            }}>
-              <Text as="span" variant="bodySm" fontWeight="semibold">
-                Priority Support
-              </Text>
-            </div>
-          </InlineStack>
-
-          <InlineStack align="space-between" blockAlign="center">
-            <Button
-              variant="primary"
-              onClick={onUpgrade}
+    <s-section>
+      <div
+        style={{
+          background: "linear-gradient(135deg, #f6f6f7 0%, #ebeced 100%)",
+          borderRadius: "8px",
+          padding: "20px",
+          margin: "-16px",
+        }}
+      >
+        <s-stack direction="block" gap="base">
+          <s-stack direction="inline" alignItems="center" gap="small-100">
+            <div
+              style={{
+                backgroundColor: "#ffc96b",
+                borderRadius: "50%",
+                padding: "8px",
+                display: "flex",
+              }}
             >
+              <s-icon name="star-filled" />
+            </div>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+              Ready to grow your bundle business?
+            </h3>
+          </s-stack>
+
+          <p style={{ margin: 0, fontSize: 14 }}>
+            Upgrade to the Grow plan for double the bundles, full design customization, and
+            priority support.
+          </p>
+
+          <s-stack direction="inline" gap="small-100">
+            {["20 bundles", "Design Control Panel", "Priority Support"].map((label) => (
+              <div
+                key={label}
+                style={{ backgroundColor: "white", borderRadius: "6px", padding: "8px 12px" }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
+              </div>
+            ))}
+          </s-stack>
+
+          <s-stack direction="inline" justifyContent="space-between" alignItems="center">
+            <s-button variant="primary" onClick={onUpgrade}>
               {`Upgrade to Grow - $${PLANS.grow.price}/month`}
-            </Button>
-            <Text as="span" variant="bodySm" tone="subdued">
-              Cancel anytime
-            </Text>
-          </InlineStack>
-        </BlockStack>
+            </s-button>
+            <span style={{ fontSize: 12, color: "#6d7175" }}>Cancel anytime</span>
+          </s-stack>
+        </s-stack>
       </div>
-    </Card>
+    </s-section>
   );
 }
