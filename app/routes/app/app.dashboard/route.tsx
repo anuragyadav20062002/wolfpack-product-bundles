@@ -968,10 +968,10 @@ export default function Dashboard() {
                   onClick={handleAppEmbedCardClick}
                 >
                   <BlockStack gap="300">
-                    <InlineStack align="space-between" blockAlign="center">
+                    <div className={dashboardStyles.appEmbedCardHeader}>
                       <Text variant="headingMd" as="h2" fontWeight="bold">App Embeds</Text>
                       <Icon source={ExternalSmallIcon} tone="subdued" />
-                    </InlineStack>
+                    </div>
                     <img
                       src="/appEmbed.png"
                       alt="Theme editor app embeds instructions"

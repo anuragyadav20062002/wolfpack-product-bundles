@@ -1,5 +1,6 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Outlet, useLoaderData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
+import { Outlet, useLoaderData, useRouteError, isRouteErrorResponse, useSearchParams } from "@remix-run/react";
+import { useState, useEffect } from "react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { NavMenu } from "@shopify/app-bridge-react";
@@ -35,9 +36,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { apiKey, polarisTranslations } = useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
+  const [i18n, setI18n] = useState(polarisTranslations);
+
+  const locale = searchParams.get("locale") ?? "en";
+  useEffect(() => {
+    const lang = locale.split("-")[0];
+    void import(`@shopify/polaris/locales/${lang}.json`)
+      .catch(() => import("@shopify/polaris/locales/en.json"))
+      .then(m => setI18n(m.default));
+  }, [locale]);
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
+    <AppProvider isEmbeddedApp apiKey={apiKey} i18n={i18n}>
       <NavMenu>
         <a href="/app/dashboard" rel="home">
           Dashboard

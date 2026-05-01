@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-01 12:00
+**Last Updated:** 2026-05-01 13:30
 
 ## Overview
 Four fixes to the dashboard:
@@ -50,6 +50,35 @@ Four fixes to the dashboard:
 - ✅ Removed `LanguageIcon` import and the `<InlineStack>`+`<Icon>` wrapper around the Select
 - Files modified: route.tsx
 
+### 2026-05-01 13:30 - Second batch of dashboard UI fixes (5-point)
+
+1. **Language translation** — Added client-side `useEffect` in `app.tsx` watching `locale`
+   from `useSearchParams`; dynamically re-imports Polaris locale JSON and calls `setI18n`
+   so AppProvider re-renders with fresh translations on each locale change.
+   Fixed floating-promise ESLint error by adding `void` operator.
+   Files: app/routes/app/app.tsx
+
+2. **Bundle grid column alignment** — Corrected `.bundlesTableHeader span` padding to
+   `0 6px` with `12px` on first/last child — matching exact Polaris DataTable cell padding
+   (`var(--p-space-150)` sides, `var(--p-space-300)` first/last).
+   Files: dashboard.module.css
+
+3. **Dashboard header top margin** — Changed `.dashboardHeader` padding-top from `0` to
+   `20px` so header row has breathing room above it.
+   Files: dashboard.module.css
+
+4. **Chat with Parth button pinned to card bottom** — Added `padding-bottom: 28px` to
+   `.supportCard` and used `grid-template-rows: 1fr auto` + `align-self: end` on `.supportCta`.
+   Files: dashboard.module.css
+
+5. **External link icon right-aligned** — Replaced `<InlineStack>` (content-width inside
+   BlockStack) with `<div className={appEmbedCardHeader}>` using explicit `justify-content:
+   space-between; width: 100%` so icon is pushed to the far right of the App Embeds header.
+   Bundle Gallery card footers use same `resourceThumbnailFooter` flex layout — icons right.
+   Files: route.tsx, dashboard.module.css
+
+- Verified all 5 fixes in browser via Chrome DevTools MCP screenshots.
+
 ## Phases Checklist
 - [x] app.tsx: load Polaris locale from ?locale= param, pass to AppProvider
 - [x] Dashboard: re-add language dropdown, navigate to ?locale= on change
@@ -60,3 +89,8 @@ Four fixes to the dashboard:
 - [x] Remove extra padding from founder + App Embeds cards; ensure equal heights via stretch grid + height:100%
 - [x] Founder card: align content to top (matching App Embeds top padding); button pinned to bottom; avatar enlarged to 84px
 - [x] Language dropdown: fix navigation (useSearchParams instead of window.location); remove LanguageIcon
+- [x] Language translation: client-side useEffect in app.tsx loads Polaris locale JSON on change
+- [x] Bundle column alignment: corrected header span padding to match DataTable cell padding
+- [x] Dashboard header top padding: 20px top on .dashboardHeader
+- [x] Chat with Parth button: pinned to card bottom via grid + align-self: end
+- [x] External link icon: App Embeds header div + resourceThumbnailFooter flex right-aligned
