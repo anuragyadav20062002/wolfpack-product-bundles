@@ -18,14 +18,26 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 // redirect short-circuits Promise.all before the layout's token exchange completes.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  const url = new URL(request.url);
+  const lang = (url.searchParams.get("locale") ?? "en").split("-")[0];
+
+  // Dynamically load the Polaris locale JSON that matches the staff member's
+  // Shopify Admin language. Fallback to English for unsupported locales.
+  const polarisTranslations = await import(
+    `@shopify/polaris/locales/${lang}.json`
+  ).catch(() => import("@shopify/polaris/locales/en.json")).then(m => m.default);
+
+  return {
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    polarisTranslations,
+  };
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, polarisTranslations } = useLoaderData<typeof loader>();
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey}>
+    <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
       <NavMenu>
         <a href="/app/dashboard" rel="home">
           Dashboard

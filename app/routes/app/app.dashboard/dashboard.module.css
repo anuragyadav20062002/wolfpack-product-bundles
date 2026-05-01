@@ -32,6 +32,15 @@
   flex-wrap: wrap;
 }
 
+.languageSelect {
+  display: flex;
+  align-items: center;
+}
+
+/* Tighten the Polaris Select inside the language picker */
+.languageSelect :global(.Polaris-Select) {
+  min-width: 128px;
+}
 
 @keyframes fadeIn {
   from {
@@ -58,7 +67,7 @@
 .supportCard {
   min-height: 230px;
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
   grid-template-rows: 1fr auto;
   gap: 14px 18px;
   align-items: center;
@@ -66,10 +75,9 @@
 
 .supportAvatarWrap {
   position: relative;
-  width: 56px;
-  height: 56px;
-  align-self: start;
-  margin-top: 4px;
+  width: 72px;
+  height: 72px;
+  align-self: center;
 }
 
 .supportAvatarSkeleton {
@@ -95,8 +103,8 @@
 }
 
 .supportAvatarImage {
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   object-fit: cover;
   object-position: center 18%;
@@ -128,6 +136,15 @@
   background: linear-gradient(180deg, #4b4b4e 0%, #2f2f31 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 2px 0 #111;
   border-color: #111;
+}
+
+/* Ensure Polaris Icon renders inline so it centres with adjacent text in flex/InlineStack */
+.appEmbedCard :global(.Polaris-Icon),
+.resourceThumbnailFooter :global(.Polaris-Icon) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .appEmbedCard {
@@ -198,14 +215,19 @@
 
 .bundlesTableHeader {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
-  gap: 12px;
-  padding: 18px 24px;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 0;
+  padding: 12px 0;
   border-bottom: 1px solid #d8dbe1;
   background: #fafafa;
   color: #6d7175;
   font-size: 14px;
   font-weight: 700;
+}
+
+/* Each header cell uses the same horizontal padding as a Polaris DataTable cell */
+.bundlesTableHeader span {
+  padding: 0 16px;
 }
 
 .emptyBundlesState {
@@ -251,10 +273,13 @@
   display: none;
 }
 
-.dataTableWrapper :global(.Polaris-DataTable__Cell) {
-  width: 25%;
-}
+/* Match the 2fr/1fr/1fr/1fr header proportions: 40%/20%/20%/20% */
+.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(1)) { width: 40%; }
+.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(2)) { width: 20%; }
+.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(3)) { width: 20%; }
+.dataTableWrapper :global(.Polaris-DataTable__Cell:nth-child(4)) { width: 20%; }
 
+/* Hide the Polaris horizontal-scroll navigation indicator */
 .dataTableWrapper :global(.Polaris-DataTable__Navigation) {
   display: none;
 }
@@ -493,7 +518,13 @@
     flex-direction: column;
   }
 
+  .languageSelect,
   .searchField {
+    width: 100%;
+  }
+
+  .languageSelect :global(.Polaris-Select) {
+    min-width: unset;
     width: 100%;
   }
 

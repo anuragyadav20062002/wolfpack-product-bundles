@@ -21,7 +21,7 @@ import {
   ActionList,
   Spinner,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon, PackageIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon, PackageIcon, LanguageIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -533,6 +533,35 @@ export default function Dashboard() {
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
   const [parthImageLoaded, setParthImageLoaded] = useState(false);
 
+  const languageOptions = [
+    { label: "English", value: "en" },
+    { label: "French", value: "fr" },
+    { label: "German", value: "de" },
+    { label: "Spanish", value: "es" },
+    { label: "Japanese", value: "ja" },
+    { label: "Portuguese (BR)", value: "pt-BR" },
+  ];
+
+  // Derive selected language from current URL locale param so the picker
+  // stays in sync after navigation.
+  const currentLocale = typeof window !== "undefined"
+    ? (new URLSearchParams(window.location.search).get("locale") ?? "en")
+    : "en";
+  const selectedLanguage = languageOptions.some(o => o.value === currentLocale)
+    ? currentLocale
+    : "en";
+
+  const handleLanguageChange = useCallback((locale: string) => {
+    // Navigate to current page with updated locale param.
+    // Remix re-fetches all loaders — app.tsx loader picks up the new locale
+    // and passes the matching Polaris translation JSON to AppProvider.
+    // Note: Shopify Admin chrome (left nav, top bar) is translated by Shopify
+    // based on the staff member's account language preference, not by this selector.
+    const url = new URL(window.location.href);
+    url.searchParams.set("locale", locale);
+    navigate(url.pathname + url.search);
+  }, [navigate]);
+
   const handleMoreActionsToggle = useCallback((bundleId: string) => {
     setMoreActionsOpenId(prev => prev === bundleId ? null : bundleId);
   }, []);
@@ -868,6 +897,18 @@ export default function Dashboard() {
                   </Text>
                 </div>
                 <div className={dashboardStyles.dashboardActions}>
+                  <div className={dashboardStyles.languageSelect}>
+                    <InlineStack gap="100" blockAlign="center">
+                      <Icon source={LanguageIcon} tone="subdued" />
+                      <Select
+                        label="Language"
+                        labelHidden
+                        options={languageOptions}
+                        value={selectedLanguage}
+                        onChange={handleLanguageChange}
+                      />
+                    </InlineStack>
+                  </div>
                   <Button icon={RefreshIcon} onClick={handleSyncCollections}>Sync Collections</Button>
                   <Button variant="primary" icon={PlusIcon} onClick={handleCreateBundle}>Create Bundle</Button>
                   <Button icon={NotificationIcon} onClick={handleBellClick} accessibilityLabel="Changelog" />
