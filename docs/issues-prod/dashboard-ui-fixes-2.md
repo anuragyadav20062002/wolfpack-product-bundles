@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-01 11:45
+**Last Updated:** 2026-05-01 12:00
 
 ## Overview
 Four fixes to the dashboard:
@@ -43,6 +43,13 @@ Four fixes to the dashboard:
 - ✅ Button remains pinned to bottom via `grid-template-rows: 1fr auto`
 - Files modified: dashboard.module.css
 
+### 2026-05-01 12:00 - Fix language dropdown navigation + remove icon
+- ✅ Replaced `navigate(window.location.href + ...)` with `setSearchParams` — avoids passing stale `id_token`/`timestamp` Shopify URL params that could break `authenticate.admin` on re-fetch
+- ✅ Replaced `window.location.search` locale read with `useSearchParams()` — reactive to Remix router state, no race condition
+- ✅ Added `useSearchParams` import from `@remix-run/react`
+- ✅ Removed `LanguageIcon` import and the `<InlineStack>`+`<Icon>` wrapper around the Select
+- Files modified: route.tsx
+
 ## Phases Checklist
 - [x] app.tsx: load Polaris locale from ?locale= param, pass to AppProvider
 - [x] Dashboard: re-add language dropdown, navigate to ?locale= on change
@@ -52,3 +59,4 @@ Four fixes to the dashboard:
 - [x] Verify in browser
 - [x] Remove extra padding from founder + App Embeds cards; ensure equal heights via stretch grid + height:100%
 - [x] Founder card: align content to top (matching App Embeds top padding); button pinned to bottom; avatar enlarged to 84px
+- [x] Language dropdown: fix navigation (useSearchParams instead of window.location); remove LanguageIcon
