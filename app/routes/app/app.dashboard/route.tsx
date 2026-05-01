@@ -21,7 +21,7 @@ import {
   ActionList,
   Spinner,
 } from "@shopify/polaris";
-import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon, PackageIcon, LanguageIcon } from "@shopify/polaris-icons";
+import { PlusIcon, EditIcon, DuplicateIcon, DeleteIcon, AlertTriangleIcon, ViewIcon, SearchIcon, MenuHorizontalIcon, ExternalSmallIcon, ImageIcon, QuestionCircleIcon, NotificationIcon, CodeIcon, RefreshIcon, PackageIcon } from "@shopify/polaris-icons";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -531,21 +531,7 @@ export default function Dashboard() {
   const [bundlesPerPage, setBundlesPerPage] = useState(20);
   const [moreActionsOpenId, setMoreActionsOpenId] = useState<string | null>(null);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
-  const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [parthImageLoaded, setParthImageLoaded] = useState(false);
-
-  const languageOptions = [
-    { label: "English", value: "en" },
-    { label: "French", value: "fr" },
-    { label: "German", value: "de" },
-    { label: "Spanish", value: "es" },
-  ];
-
-  const handleLanguageChange = useCallback((language: string) => {
-    setSelectedLanguage(language);
-    const selected = languageOptions.find(option => option.value === language)?.label ?? "English";
-    shopify.toast.show(`${selected} selected. Shopify controls native Admin language from the merchant account settings.`);
-  }, [shopify]);
 
   const handleMoreActionsToggle = useCallback((bundleId: string) => {
     setMoreActionsOpenId(prev => prev === bundleId ? null : bundleId);
@@ -882,16 +868,6 @@ export default function Dashboard() {
                   </Text>
                 </div>
                 <div className={dashboardStyles.dashboardActions}>
-                  <div className={dashboardStyles.languageSelect}>
-                    <Select
-                      label="Admin language"
-                      labelHidden
-                      prefix={<Icon source={LanguageIcon} />}
-                      options={languageOptions}
-                      value={selectedLanguage}
-                      onChange={handleLanguageChange}
-                    />
-                  </div>
                   <Button icon={RefreshIcon} onClick={handleSyncCollections}>Sync Collections</Button>
                   <Button variant="primary" icon={PlusIcon} onClick={handleCreateBundle}>Create Bundle</Button>
                   <Button icon={NotificationIcon} onClick={handleBellClick} accessibilityLabel="Changelog" />
