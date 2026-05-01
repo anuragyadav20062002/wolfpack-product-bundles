@@ -64,8 +64,15 @@
   align-items: stretch;
 }
 
+/* Force the Polaris Card wrapper to fill the full grid cell height */
+.topCardsGrid :global(.Polaris-ShadowBevel) {
+  height: 100%;
+}
+
 .supportCard {
-  min-height: 230px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 20px 24px;
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
   grid-template-rows: 1fr auto;
@@ -149,8 +156,9 @@
 
 .appEmbedCard {
   width: 100%;
-  min-height: 230px;
-  padding: 22px 24px 20px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 20px 24px;
   border: 1px solid var(--p-color-border);
   border-radius: var(--p-border-radius-300);
   background: var(--p-color-bg-surface);

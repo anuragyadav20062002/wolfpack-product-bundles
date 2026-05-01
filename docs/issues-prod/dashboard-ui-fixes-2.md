@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-01 11:00
+**Last Updated:** 2026-05-01 11:30
 
 ## Overview
 Four fixes to the dashboard:
@@ -30,6 +30,12 @@ Four fixes to the dashboard:
 ### 2026-05-01 10:30 - Starting implementation
 - Files: app/routes/app/app.tsx, route.tsx, dashboard.module.css
 
+### 2026-05-01 11:30 - Completed card padding equalisation
+- ✅ Switched `<Card>` → `<Card padding="0">` so Polaris default padding is removed
+- ✅ `.supportCard` and `.appEmbedCard` both use `padding: 20px 24px; height: 100%; box-sizing: border-box`
+- ✅ `.topCardsGrid :global(.Polaris-ShadowBevel) { height: 100% }` forces Card wrapper to stretch to grid cell height
+- Files modified: route.tsx, dashboard.module.css
+
 ## Phases Checklist
 - [x] app.tsx: load Polaris locale from ?locale= param, pass to AppProvider
 - [x] Dashboard: re-add language dropdown, navigate to ?locale= on change
@@ -37,3 +43,4 @@ Four fixes to the dashboard:
 - [x] Bundle header padding 12/16px + 2fr proportions + DataTable cell widths
 - [x] External link icon alignment (App Embeds + thumbnails)
 - [x] Verify in browser
+- [x] Remove extra padding from founder + App Embeds cards; ensure equal heights via stretch grid + height:100%

@@ -935,7 +935,7 @@ export default function Dashboard() {
 
             <Layout.Section>
               <div className={dashboardStyles.topCardsGrid}>
-                <Card>
+                <Card padding="0">
                   <div className={dashboardStyles.supportCard}>
                     <div className={dashboardStyles.supportAvatarWrap}>
                       {!parthImageLoaded && (
