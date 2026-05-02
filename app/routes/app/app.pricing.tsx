@@ -6,13 +6,7 @@
  */
 
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
-import {
-  Page,
-  Layout,
-  BlockStack,
-  useBreakpoints,
-} from "@shopify/polaris";
+import { useLoaderData, useFetcher, useNavigate } from "@remix-run/react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { BillingService } from "../../services/billing.server";
 import { PLANS } from "../../constants/plans";
@@ -124,7 +118,7 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function PricingPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const { mdDown } = useBreakpoints();
+  const navigate = useNavigate();
 
   // Upgrade confirmation modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -171,45 +165,38 @@ export default function PricingPage() {
         onClose={() => setShowUpgradeModal(false)}
       />
 
-      <Page
-        title="Pricing"
-        subtitle="Choose the plan that's right for your business"
-        backAction={{ content: "Back", url: "/app/dashboard" }}
-      >
-        <Layout>
-          <Layout.Section>
-            <BlockStack gap="600">
-              {/* Subscription Quota Card */}
-              <SubscriptionQuotaCard
-                currentBundleCount={currentBundleCount}
-                bundleLimit={bundleLimit}
-                planName={currentPlanConfig.name}
-                isFreePlan={isFreePlan}
-                showUpgradePrompt={true}
-              />
+      <ui-title-bar title="Pricing">
+        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+          Dashboard
+        </button>
+      </ui-title-bar>
 
-              {/* Value Proposition Section - Only show to Free users */}
-              {isFreePlan && <ValuePropsSection />}
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+        <s-stack direction="block" gap="large">
+          <SubscriptionQuotaCard
+            currentBundleCount={currentBundleCount}
+            bundleLimit={bundleLimit}
+            planName={currentPlanConfig.name}
+            isFreePlan={isFreePlan}
+            showUpgradePrompt={true}
+          />
 
-              {/* Plan Cards - Side by Side on Desktop */}
-              <div className={pricingStyles.planCardsGrid}>
-                <FreePlanCard isCurrentPlan={isFreePlan} />
-                <GrowPlanCard
-                  isCurrentPlan={isGrowPlan}
-                  isUpgrading={isUpgrading}
-                  onSelectPlan={() => handleSelectPlan("grow")}
-                />
-              </div>
+          {isFreePlan && <ValuePropsSection />}
 
-              {/* Feature Comparison Table */}
-              <FeatureComparisonTable />
+          <div className={pricingStyles.planCardsGrid}>
+            <FreePlanCard isCurrentPlan={isFreePlan} />
+            <GrowPlanCard
+              isCurrentPlan={isGrowPlan}
+              isUpgrading={isUpgrading}
+              onSelectPlan={() => handleSelectPlan("grow")}
+            />
+          </div>
 
-              {/* FAQ Section */}
-              <FAQSection />
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
-      </Page>
+          <FeatureComparisonTable />
+
+          <FAQSection />
+        </s-stack>
+      </div>
     </>
   );
 }

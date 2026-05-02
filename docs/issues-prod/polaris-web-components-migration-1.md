@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-02 14:30
+**Last Updated:** 2026-05-02 16:00
 
 ## Overview
 Replace all `@shopify/polaris` React component imports in admin routes and shared components with Shopify's native `<s-*>` Polaris web components, loaded via CDN. See architecture doc at `docs/polaris-web-components-migration/02-architecture.md`.
@@ -64,10 +64,27 @@ Replace all `@shopify/polaris` React component imports in admin routes and share
 - `s-button` has no `size` prop — remove `size="large"` / `size="slim"`
 - `s-modal` visibility controlled imperatively via `el.show()` / `el.hide()` using `useRef`
 
+### 2026-05-02 16:00 - Completed Phase 4 (Pricing) and Phase 6 (DCP)
+
+**Phase 4 — Pricing page:**
+- ✅ `app/routes/app/app.pricing.tsx` — removed `Page`, `Layout`, `BlockStack`, `useBreakpoints` from `@shopify/polaris`; replaced with `<ui-title-bar>` + breadcrumb, `<s-stack direction="block" gap="large">` wrapper, `useNavigate` for breadcrumb
+
+**Phase 6 — Design Control Panel:**
+- ✅ `app/routes/app/app.design-control-panel/route.tsx` — removed all `@shopify/polaris` imports (`Page`, `Frame`, `Toast`, `Layout`, `Card`, `BlockStack`, `Text`, `Button`, `InlineStack`, `Banner`, `Box`)
+- ✅ Kept `Modal`, `SaveBar`, `useAppBridge` from `@shopify/app-bridge-react` unchanged (already web component-style wrappers)
+- ✅ Replaced `Toast` with `shopify.toast.show()` via two `useEffect` hooks (one per bundle type state)
+- ✅ `Card` → `<s-section>`, `BlockStack`/`InlineStack` → `<s-stack>`, `Text` → native elements, `Button` → `<s-button>`, `Banner` → `<s-banner>` with slot action
+- ✅ `Frame` + `Page` → `<ui-title-bar>` + div wrapper, outer fragment
+- ✅ `Layout.Section` removed, `CustomCssCard` wrapper simplified
+
+**Key findings:**
+- DCP's `Modal` and `SaveBar` from `@shopify/app-bridge-react` are already web component wrappers — no change needed
+- `Toast` from polaris → `shopify.toast.show()` using existing `useAppBridge` instance
+
 ## Phases Checklist
 - [x] Phase 1: Infrastructure (polaris-types, CDN script, app.tsx simplification)
 - [x] Phase 2: Dashboard page migration
 - [x] Phase 3: Shared banners, billing components, events/billing/onboarding/attribution routes
-- [ ] Phase 4: Pricing
-- [ ] Phase 5: Bundle Config pages
-- [ ] Phase 6: DCP
+- [x] Phase 4: Pricing
+- [ ] Phase 5: Bundle Config pages (in progress)
+- [x] Phase 6: DCP
