@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-02 16:00
+**Last Updated:** 2026-05-02 18:00
 
 ## Overview
 Replace all `@shopify/polaris` React component imports in admin routes and shared components with Shopify's native `<s-*>` Polaris web components, loaded via CDN. See architecture doc at `docs/polaris-web-components-migration/02-architecture.md`.
@@ -81,10 +81,27 @@ Replace all `@shopify/polaris` React component imports in admin routes and share
 - DCP's `Modal` and `SaveBar` from `@shopify/app-bridge-react` are already web component wrappers — no change needed
 - `Toast` from polaris → `shopify.toast.show()` using existing `useAppBridge` instance
 
+### 2026-05-02 18:00 - Completed Phase 5 (Bundle Config pages)
+
+**Full-page bundle config (`app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`):**
+- ✅ Removed all `@shopify/polaris` and `@shopify/polaris-icons` imports
+- ✅ Replaced all Polaris components: `BlockStack`, `Card`, `Text`, `Icon`, `Box`, `InlineStack`, `Checkbox`, `FormLayout`, `TextField`, `Select`, `Modal`, `Modal.Section`, `Spinner`, `Thumbnail`, `Badge`, `List`, `Button` with `<s-*>` web components
+- ✅ Fixed JSX structure issues from partial agent migration: removed orphan `</Layout.Section>`, `</Layout>`, `</Page>` closing tags; added missing `</div>` closers for layout containers
+- ✅ `bundle_settings` section: `<s-checkbox>`, `<s-icon>`, `<s-section>`, `<s-stack>` + native elements
+- ✅ `messages` section: `<s-text-field>`, `<s-select>`, `<s-section>`, `<s-stack>`, `<s-icon>`
+- ✅ All 5 Polaris `<Modal>` → `<s-modal ref={...} heading="...">` with imperative `show()`/`hide()` via `useEffect` + `useRef`
+- ✅ Modal slots: `slot="primaryAction"` and `slot="secondaryActions"` buttons
+- ✅ Zero ESLint errors, zero TypeScript errors
+
+**Product-page bundle config (`app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`):**
+- ✅ Already fully migrated (no remaining `@shopify/polaris` references)
+
+**Result:** Zero `@shopify/polaris` imports remain across all app routes and components.
+
 ## Phases Checklist
 - [x] Phase 1: Infrastructure (polaris-types, CDN script, app.tsx simplification)
 - [x] Phase 2: Dashboard page migration
 - [x] Phase 3: Shared banners, billing components, events/billing/onboarding/attribution routes
 - [x] Phase 4: Pricing
-- [ ] Phase 5: Bundle Config pages (in progress)
+- [x] Phase 5: Bundle Config pages
 - [x] Phase 6: DCP

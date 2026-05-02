@@ -4,8 +4,6 @@ import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-r
 import { AppLogger } from "../../../lib/logger";
 import { slugify, validateSlug } from "../../../lib/slug-utils";
 
-// Note: Using Polaris Checkbox component for toggle functionality
-// Polaris React v12 doesn't have a dedicated Switch component
 import {
   DiscountMethod,
   ConditionType,
@@ -24,47 +22,6 @@ import {
   DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
-import {
-  Page,
-  Layout,
-  Card,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-  Icon,
-  Select,
-  Badge,
-  TextField,
-  Tabs,
-  Collapsible,
-  FormLayout,
-  Checkbox,
-  ChoiceList,
-  Modal,
-  Thumbnail,
-  List,
-  Spinner,
-  Divider,
-  Box,
-  Tooltip,
-} from "@shopify/polaris";
-import {
-  ViewIcon,
-  DragHandleIcon,
-  DeleteIcon,
-  PlusIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-  ExternalIcon,
-  ProductIcon,
-  DuplicateIcon,
-  CollectionIcon,
-  ListNumberedIcon,
-  DiscountIcon,
-  RefreshIcon,
-  ImageIcon,
-} from "@shopify/polaris-icons";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
@@ -305,12 +262,12 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.full-page-bundle.configure.$bundleId/handlers/
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
-  { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
-  { id: "images_gifs",      label: "Bundle Assets",       icon: ImageIcon,        fullPageOnly: true  },
-  { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
-  { id: "bundle_settings",  label: "Bundle Settings",     icon: ImageIcon,        fullPageOnly: false },
-  { id: "messages",         label: "Messages",            icon: ListNumberedIcon, fullPageOnly: false },
+  { id: "step_setup",       label: "Step Setup",         fullPageOnly: false },
+  { id: "discount_pricing", label: "Discount & Pricing", fullPageOnly: false },
+  { id: "images_gifs",      label: "Bundle Assets",      fullPageOnly: true  },
+  { id: "pricing_tiers",    label: "Pricing Tiers",      fullPageOnly: true  },
+  { id: "bundle_settings",  label: "Bundle Settings",    fullPageOnly: false },
+  { id: "messages",         label: "Messages",           fullPageOnly: false },
 ];
 
 // Static status options - imported from centralized constants
@@ -318,18 +275,19 @@ const statusOptions = [...BUNDLE_STATUS_OPTIONS];
 
 // Memoized BundleStatusSection component (BundleStatusSectionProps imported from types)
 const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => (
-  <BlockStack gap="200">
-    <Text variant="headingSm" as="h4">
+  <s-stack direction="block" gap="small-100">
+    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
       Bundle Status
-    </Text>
-    <Select
-      label="Bundle Status"
-      options={statusOptions}
+    </h4>
+    <s-select
       value={status}
-      onChange={(selected: string) => onChange(selected as BundleStatus)}
-      labelHidden
-    />
-  </BlockStack>
+      onChange={(e: Event) => onChange((e.target as HTMLSelectElement).value as BundleStatus)}
+    >
+      {statusOptions.map((opt) => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </s-select>
+  </s-stack>
 ));
 BundleStatusSection.displayName = 'BundleStatusSection';
 
@@ -530,6 +488,33 @@ export default function ConfigureBundleFlow() {
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+  // Modal refs for s-modal web components
+  const stepsTiersModalRef = useRef<HTMLElement>(null);
+  const pageSelectionModalRef = useRef<HTMLElement>(null);
+  const productsModalRef = useRef<HTMLElement>(null);
+  const collectionsModalRef = useRef<HTMLElement>(null);
+  const syncModalRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    stepsTiersWarning.open ? (stepsTiersModalRef.current as any)?.show() : (stepsTiersModalRef.current as any)?.hide();
+  }, [stepsTiersWarning.open]);
+
+  useEffect(() => {
+    isPageSelectionModalOpen ? (pageSelectionModalRef.current as any)?.show() : (pageSelectionModalRef.current as any)?.hide();
+  }, [isPageSelectionModalOpen]);
+
+  useEffect(() => {
+    isProductsModalOpen ? (productsModalRef.current as any)?.show() : (productsModalRef.current as any)?.hide();
+  }, [isProductsModalOpen]);
+
+  useEffect(() => {
+    isCollectionsModalOpen ? (collectionsModalRef.current as any)?.show() : (collectionsModalRef.current as any)?.hide();
+  }, [isCollectionsModalOpen]);
+
+  useEffect(() => {
+    isSyncModalOpen ? (syncModalRef.current as any)?.show() : (syncModalRef.current as any)?.hide();
+  }, [isSyncModalOpen]);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -1469,56 +1454,37 @@ export default function ConfigureBundleFlow() {
   }, [shop, shopify, bundle.id, apiKey, blockHandle]);
 
   return (
-    <Page
-      title={`Configure: ${formState.bundleName}`}
-      subtitle="Set up your cart transform bundle configuration"
-      backAction={{
-        content: "Cart Transform Bundles",
-        onAction: handleBackClick,
-      }}
-      primaryAction={
-        bundle.shopifyPageHandle
-          ? {
-              content: "View on Storefront",
-              icon: ExternalIcon,
-              onAction: () => {
-                const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${originalPageSlugRef.current}`;
-                window.open(storefrontUrl, '_blank');
-                shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
-              },
-            }
-          : {
-              content: "Add to Storefront",
-              onAction: () => { void handleAddToStorefront(); },
-              loading: fetcher.state === 'submitting',
-              disabled: fetcher.state === 'submitting' || Boolean(pageSlugError),
-            }
-      }
-      secondaryActions={[
-        ...(!bundle.shopifyPageHandle
-          ? [{
-              content: "Preview on Storefront",
-              icon: ViewIcon,
-              onAction: () => { void handlePreviewBundle(); },
-              loading: fetcher.state !== 'idle',
-              disabled: fetcher.state !== 'idle',
-            }]
-          : []),
-        {
-          content: "Sync Bundle",
-          icon: RefreshIcon,
-          destructive: true,
-          onAction: () => {
-            if (isDirty) {
-              shopify.toast.show("Save your changes before syncing", { isError: true });
-              return;
-            }
-            if (fetcher.state !== 'idle') return;
-            setIsSyncModalOpen(true);
-          },
-        },
-      ]}
-    >
+    <>
+      <ui-title-bar title={`Configure: ${formState.bundleName}`}>
+        <button variant="breadcrumb" onClick={handleBackClick}>Dashboard</button>
+        {bundle.shopifyPageHandle ? (
+          <button onClick={() => {
+            const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${originalPageSlugRef.current}`;
+            window.open(storefrontUrl, '_blank');
+            shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
+          }}>View on Storefront</button>
+        ) : (
+          <button variant="primary" onClick={() => { void handleAddToStorefront(); }} disabled={fetcher.state === 'submitting' || Boolean(pageSlugError)}>
+            {fetcher.state === 'submitting' ? 'Adding…' : 'Add to Storefront'}
+          </button>
+        )}
+        {!bundle.shopifyPageHandle && (
+          <button onClick={() => { void handlePreviewBundle(); }} disabled={fetcher.state !== 'idle'}>
+            Preview on Storefront
+          </button>
+        )}
+        <button onClick={() => {
+          if (isDirty) {
+            shopify.toast.show("Save your changes before syncing", { isError: true });
+            return;
+          }
+          if (fetcher.state !== 'idle') return;
+          setIsSyncModalOpen(true);
+        }}>
+          Sync Bundle
+        </button>
+      </ui-title-bar>
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
         onSubmit={(e) => {
@@ -1572,133 +1538,121 @@ export default function ConfigureBundleFlow() {
 
         <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
 
-        <Layout>
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
 
           {/* Left Sidebar */}
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="400">
+          <div style={{ width: "33%", flexShrink: 0 }}>
+            <s-stack direction="block" gap="base">
               {/* Bundle Setup Navigation Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                     Bundle Setup
-                  </Text>
-                  <Text variant="bodySm" tone="subdued" as="p">
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                     Set-up your bundle builder
-                  </Text>
+                  </p>
 
-                  <BlockStack gap="100">
+                  <s-stack direction="block" gap="small-400">
                     {bundleSetupItems
                       .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
                       .map((item) => (
-                        <Button
+                        <s-button
                           key={item.id}
                           variant={activeSection === item.id ? "primary" : "tertiary"}
-                          fullWidth
-                          textAlign="start"
-                          icon={item.icon}
-                          disabled={false}
                           onClick={() => handleSectionChange(item.id)}
                         >
                           {item.label}
-                        </Button>
+                        </s-button>
                       ))}
-                  </BlockStack>
-                </BlockStack>
-              </Card>
+                  </s-stack>
+                </s-stack>
+              </s-section>
 
               {/* Bundle Product Card - Only for product-page bundles */}
               {bundle.bundleType !== 'full_page' && (
-                <Card>
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text variant="headingSm" as="h3">
+                <s-section>
+                  <s-stack direction="block" gap="small">
+                    <s-stack direction="inline">
+                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
                         Bundle Product
-                      </Text>
-                      <Button
-                        variant="plain"
-                        tone="critical"
-                        onClick={handleSyncProduct}
-                      >
+                      </h3>
+                      <s-button variant="plain" onClick={handleSyncProduct}>
                         Sync Product
-                      </Button>
-                    </InlineStack>
+                      </s-button>
+                    </s-stack>
 
                     {bundleProduct ? (
-                      <BlockStack gap="300">
-                        <InlineStack gap="300" blockAlign="center" wrap={false}>
-                          <Thumbnail
-                            source={productImageUrl || "/bundle.png"}
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" gap="small">
+                          <img
+                            src={productImageUrl || "/bundle.png"}
                             alt={productTitle || "Bundle Product"}
-                            size="medium"
+                            style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }}
                           />
-                          <InlineStack gap="200" blockAlign="center" wrap={false}>
-                            <Button
+                          <s-stack direction="inline" gap="small-100">
+                            <s-button
                               variant="plain"
                               onClick={() => {
                                 const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
                                 open(productUrl, '_blank');
                               }}
-                              icon={ExternalIcon}
                             >
                               {productTitle || bundleProduct.title || "Untitled Product"}
-                            </Button>
-                            <Button
+                            </s-button>
+                            <s-button
                               variant="tertiary"
-                              size="slim"
-                              icon={RefreshIcon}
                               onClick={handleBundleProductSelect}
-                              accessibilityLabel="Change bundle product"
-                            />
-                          </InlineStack>
-                        </InlineStack>
-                      </BlockStack>
+                            >
+                              <s-icon name="refresh-minor" />
+                            </s-button>
+                          </s-stack>
+                        </s-stack>
+                      </s-stack>
                     ) : (
                       <div className={fullPageBundleStyles.productSelectionPlaceholder}>
-                        <BlockStack gap="100" inlineAlign="center">
-                          <Icon source={ProductIcon} />
-                          <Button
-                            variant="plain"
-                            onClick={handleBundleProductSelect}
-                          >
+                        <s-stack direction="block" gap="small-400">
+                          <s-icon name="product-minor" />
+                          <s-button variant="plain" onClick={handleBundleProductSelect}>
                             Select Bundle Product
-                          </Button>
-                        </BlockStack>
+                          </s-button>
+                        </s-stack>
                       </div>
                     )}
 
                     {/* Bundle Status Dropdown */}
-                    <BlockStack gap="200">
-                      <Text variant="headingSm" as="h4">
+                    <s-stack direction="block" gap="small-100">
+                      <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                         Bundle Status
-                      </Text>
-                      <Select
-                        label="Bundle Status"
-                        options={statusOptions}
+                      </h4>
+                      <s-select
                         value={formState.bundleStatus}
-                        onChange={(selected: string) => formState.setBundleStatus(selected as BundleStatus)}
-                        labelHidden
-                      />
-                    </BlockStack>
-                  </BlockStack>
-                </Card>
+                        onChange={(e: Event) => formState.setBundleStatus((e.target as HTMLSelectElement).value as BundleStatus)}
+                      >
+                        {statusOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </s-select>
+                    </s-stack>
+                  </s-stack>
+                </s-section>
               )}
 
               {/* Bundle Status Card - For full-page bundles */}
               {bundle.bundleType === 'full_page' && (
-                <Card>
-                  <BlockStack gap="300">
-                    <Text variant="headingSm" as="h3">
+                <s-section>
+                  <s-stack direction="block" gap="small">
+                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                       Storefront Page
-                    </Text>
-                    <Text variant="bodySm" tone="subdued" as="p">
+                    </h3>
+                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                       Choose the URL where this bundle will appear on your store.
-                    </Text>
-                    <TextField
+                    </p>
+                    <s-text-field
                       label="Page URL slug"
                       value={pageSlug}
-                      onChange={(value) => {
-                        setPageSlug(value);
+                      onInput={(e: Event) => {
+                        setPageSlug((e.target as HTMLInputElement).value);
                         setHasManuallyEditedSlug(true);
                         if (bundle.shopifyPageId) {
                           markAsDirty();
@@ -1708,199 +1662,214 @@ export default function ConfigureBundleFlow() {
                         const normalized = slugify(pageSlug);
                         setPageSlug(normalized);
                       }}
-                      prefix={`${shopDomain}.myshopify.com/pages/`}
                       helpText={`Preview: ${pageUrlPreview}`}
                       error={pageSlugError ?? undefined}
                       autoComplete="off"
                     />
                     {bundle.shopifyPageHandle && (
-                      <Button
-                        icon={ExternalIcon}
+                      <s-button
                         onClick={() => {
                           window.open(`https://${shopDomain}.myshopify.com/pages/${originalPageSlugRef.current}`, '_blank');
                         }}
                       >
+                        <s-icon name="external-minor" />
                         View on Storefront
-                      </Button>
+                      </s-button>
                     )}
-                  </BlockStack>
-                </Card>
+                  </s-stack>
+                </s-section>
               )}
 
               {bundle.bundleType === 'full_page' && (
-                <Card>
+                <s-section>
                   <BundleStatusSection
                     status={formState.bundleStatus}
                     onChange={formState.setBundleStatus}
                   />
-                </Card>
+                </s-section>
               )}
 
 
-            </BlockStack>
-          </Layout.Section>
+            </s-stack>
+          </div>
 
           {/* Main Content Area */}
-          <Layout.Section>
+          <div style={{ flex: 1, minWidth: 0 }}>
             {activeSection === "step_setup" && (
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <BlockStack gap="100">
-                        <Text variant="headingSm" as="h3">
+              <s-section>
+                <s-stack direction="block" gap="base">
+                  <s-stack direction="block" gap="small-100">
+                    <s-stack direction="inline">
+                      <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
+                        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                           Bundle Tabs
-                        </Text>
-                        <Text variant="bodyMd" tone="subdued" as="p">
+                        </h3>
+                        <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                           Configure each tab of your full-page bundle. Each tab represents a product selection step.
-                        </Text>
-                      </BlockStack>
+                        </p>
+                      </s-stack>
                       {/* Progress Indicator */}
-                      <Badge tone="info">
+                      <s-badge tone="info">
                         {`${stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / ${stepsState.steps.length} Configured`}
-                      </Badge>
-                    </InlineStack>
-                  </BlockStack>
+                      </s-badge>
+                    </s-stack>
+                  </s-stack>
 
                   {/* Tabs Navigation */}
                   {stepsState.steps.length > 0 && (
-                    <Tabs
-                      tabs={stepsState.steps.map((step, index) => ({
-                        id: step.id,
-                        content: step.name || `Tab ${index + 1}`,
-                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
-                      }))}
-                      selected={activeTabIndex}
-                      onSelect={setActiveTabIndex}
-                    />
+                    <div>
+                      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e1e3e5", marginBottom: 16 }}>
+                        {stepsState.steps.map((step, i) => (
+                          <button
+                            key={step.id}
+                            onClick={() => setActiveTabIndex(i)}
+                            style={{
+                              padding: "8px 16px",
+                              border: "none",
+                              background: "none",
+                              cursor: "pointer",
+                              fontSize: 14,
+                              fontWeight: activeTabIndex === i ? 600 : 400,
+                              color: activeTabIndex === i ? "#202223" : "#6d7175",
+                              borderBottom: activeTabIndex === i ? "2px solid #202223" : "2px solid transparent",
+                              marginBottom: -1,
+                            }}
+                          >
+                            {step.name || `Tab ${i + 1}`}
+                            {step.StepProduct && step.StepProduct.length > 0 ? ` (${stepsState.getUniqueProductCount(step.StepProduct)})` : ""}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
 
                   {/* Active Tab Content */}
-                  <BlockStack gap="300">
+                  <s-stack direction="block" gap="small">
                     {stepsState.steps.map((step, index) => (
                       activeTabIndex === index && (
-                      <Card
-                        key={step.id}
-                        background="bg-surface-secondary"
-                      >
-                        <BlockStack gap="400">
+                      <s-section key={step.id}>
+                        <s-stack direction="block" gap="base">
                           {/* Tab Header */}
-                          <InlineStack align="space-between" blockAlign="center" gap="300">
-                            <Text variant="bodyLg" fontWeight="semibold" as="p">
+                          <s-stack direction="inline" gap="small">
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
                               {step.name || `Tab ${index + 1}`}
-                            </Text>
+                            </p>
 
-                            <InlineStack gap="100">
-                              <Button
+                            <s-stack direction="inline" gap="small-400">
+                              <s-button
                                 variant="tertiary"
-                                size="micro"
-                                icon={DuplicateIcon}
                                 onClick={() => cloneStep(step.id)}
-                                accessibilityLabel="Clone tab"
-                              />
-                              <Button
+                              >
+                                <s-icon name="duplicate-minor" />
+                              </s-button>
+                              <s-button
                                 variant="tertiary"
-                                size="micro"
-                                tone="critical"
-                                icon={DeleteIcon}
                                 onClick={() => deleteStep(step.id)}
-                                accessibilityLabel="Delete tab"
-                              />
-                            </InlineStack>
-                          </InlineStack>
+                              >
+                                <s-icon name="delete-minor" />
+                              </s-button>
+                            </s-stack>
+                          </s-stack>
 
                           {/* Tab Content (always visible, no collapse) */}
-                          <BlockStack gap="400">
+                          <s-stack direction="block" gap="base">
                                 {/* Step Name and Page Title */}
-                                <FormLayout>
-                                  <TextField
+                                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                  <s-text-field
                                     label="Step Name"
                                     value={step.name}
-                                    onChange={(value) => stepsState.updateStepField(step.id, 'name', value)}
+                                    onInput={(e: Event) => stepsState.updateStepField(step.id, 'name', (e.target as HTMLInputElement).value)}
                                     autoComplete="off"
                                   />
-                                </FormLayout>
+                                </div>
 
                                 {/* Products/Collections Tabs */}
-                                <BlockStack gap="300">
-                                  <Tabs
-                                    tabs={[
-                                      {
-                                        id: 'products',
-                                        content: 'Products',
-                                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
-                                      },
-                                      {
-                                        id: 'collections',
-                                        content: 'Collections',
-                                      },
-                                    ]}
-                                    selected={stepsState.selectedTab}
-                                    onSelect={stepsState.setSelectedTab}
-                                  />
+                                <s-stack direction="block" gap="small">
+                                  <div>
+                                    <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e1e3e5", marginBottom: 16 }}>
+                                      {[
+                                        { id: 'products', content: `Products${step.StepProduct && step.StepProduct.length > 0 ? ` (${stepsState.getUniqueProductCount(step.StepProduct)})` : ""}` },
+                                        { id: 'collections', content: 'Collections' },
+                                      ].map((tab, i) => (
+                                        <button
+                                          key={tab.id}
+                                          onClick={() => stepsState.setSelectedTab(i)}
+                                          style={{
+                                            padding: "8px 16px",
+                                            border: "none",
+                                            background: "none",
+                                            cursor: "pointer",
+                                            fontSize: 14,
+                                            fontWeight: stepsState.selectedTab === i ? 600 : 400,
+                                            color: stepsState.selectedTab === i ? "#202223" : "#6d7175",
+                                            borderBottom: stepsState.selectedTab === i ? "2px solid #202223" : "2px solid transparent",
+                                            marginBottom: -1,
+                                          }}
+                                        >
+                                          {tab.content}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
 
                                   {stepsState.selectedTab === 0 && (
-                                    <BlockStack gap="200">
-                                      <Text as="p" variant="bodyMd" tone="subdued">
+                                    <s-stack direction="block" gap="small-100">
+                                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                         Products selected here will be displayed on this step
-                                      </Text>
-                                      <InlineStack gap="200" align="start">
-                                        <Button
+                                      </p>
+                                      <s-stack direction="inline" gap="small-100">
+                                        <s-button
                                           variant="primary"
-                                          size="medium"
                                           onClick={() => handleProductSelection(step.id)}
                                         >
                                           Add Products
-                                        </Button>
+                                        </s-button>
                                         {step.StepProduct && step.StepProduct.length > 0 && (
-                                          <Badge tone="info">
+                                          <s-badge tone="info">
                                             {`${stepsState.getUniqueProductCount(step.StepProduct)} Selected`}
-                                          </Badge>
+                                          </s-badge>
                                         )}
-                                      </InlineStack>
-                                    </BlockStack>
+                                      </s-stack>
+                                    </s-stack>
                                   )}
 
                                   {stepsState.selectedTab === 1 && (
-                                    <BlockStack gap="200">
-                                      <Text as="p" variant="bodyMd" tone="subdued">
+                                    <s-stack direction="block" gap="small-100">
+                                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                         Collections selected here will be displayed on this step
-                                      </Text>
-                                      <InlineStack gap="200" align="start">
-                                        <Button
+                                      </p>
+                                      <s-stack direction="inline" gap="small-100">
+                                        <s-button
                                           variant="primary"
-                                          size="medium"
-                                          icon={CollectionIcon}
                                           onClick={() => handleCollectionSelection(step.id)}
                                         >
+                                          <s-icon name="collection-minor" />
                                           Add Collections
-                                        </Button>
+                                        </s-button>
                                         {selectedCollections[step.id]?.length > 0 && (
-                                          <Badge tone="info">
+                                          <s-badge tone="info">
                                             {`${selectedCollections[step.id].length} Selected`}
-                                          </Badge>
+                                          </s-badge>
                                         )}
-                                      </InlineStack>
+                                      </s-stack>
 
                                       {/* Display selected collections */}
                                       {selectedCollections[step.id]?.length > 0 && (
-                                        <BlockStack gap="100">
-                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
+                                        <s-stack direction="block" gap="small-400">
+                                          <h5 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                                             Selected Collections:
-                                          </Text>
-                                          <BlockStack gap="100">
+                                          </h5>
+                                          <s-stack direction="block" gap="small-400">
                                             {selectedCollections[step.id].map((collection: any) => (
-                                              <InlineStack key={collection.id} gap="200" blockAlign="center">
-                                                <Thumbnail
-                                                  source={collection.image?.url || "/bundle.png"}
+                                              <s-stack key={collection.id} direction="inline" gap="small-100">
+                                                <img
+                                                  src={collection.image?.url || "/bundle.png"}
                                                   alt={collection.title}
-                                                  size="small"
+                                                  style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }}
                                                 />
-                                                <Text as="span" variant="bodyMd">{collection.title}</Text>
-                                                <Button
+                                                <span>{collection.title}</span>
+                                                <s-button
                                                   variant="plain"
-                                                  size="micro"
-                                                  tone="critical"
                                                   onClick={() => {
                                                     setSelectedCollections(prev => ({
                                                       ...prev,
@@ -1909,77 +1878,80 @@ export default function ConfigureBundleFlow() {
                                                   }}
                                                 >
                                                   Remove
-                                                </Button>
-                                              </InlineStack>
+                                                </s-button>
+                                              </s-stack>
                                             ))}
-                                          </BlockStack>
-                                        </BlockStack>
+                                          </s-stack>
+                                        </s-stack>
                                       )}
-                                    </BlockStack>
+                                    </s-stack>
                                   )}
-                                </BlockStack>
+                                </s-stack>
 
                                 {/* Conditions Section */}
-                                <BlockStack gap="300">
-                                  <BlockStack gap="100">
-                                    <Text variant="headingSm" as="h4">
+                                <s-stack direction="block" gap="small">
+                                  <s-stack direction="block" gap="small-400">
+                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                                       Conditions
-                                    </Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
+                                    </h4>
+                                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                       Create Conditions based on amount or quantity of products added on this step.
-                                    </Text>
-                                    <Text as="p" variant="bodySm" tone="subdued">
+                                    </p>
+                                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                       Note: Conditions are only valid on this step
-                                    </Text>
-                                  </BlockStack>
+                                    </p>
+                                  </s-stack>
 
                                   {/* Existing Condition Rules */}
                                   {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: any) => (
-                                    <Card key={rule.id} background="bg-surface-secondary">
-                                      <BlockStack gap="200">
-                                        <InlineStack align="space-between" blockAlign="center">
-                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
+                                    <s-section key={rule.id}>
+                                      <s-stack direction="block" gap="small-100">
+                                        <s-stack direction="inline">
+                                          <h5 style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
                                             Condition #{ruleIndex + 1}
-                                          </Text>
-                                          <Button
+                                          </h5>
+                                          <s-button
                                             variant="plain"
-                                            tone="critical"
                                             onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
                                           >
                                             Remove
-                                          </Button>
-                                        </InlineStack>
+                                          </s-button>
+                                        </s-stack>
 
-                                        <InlineStack gap="200" align="start">
-                                          <Select
-                                            label="Condition Type"
-                                            options={[...STEP_CONDITION_TYPE_OPTIONS]}
+                                        <s-stack direction="inline" gap="small-100">
+                                          <s-select
                                             value={rule.type}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'type', value)}
-                                          />
-                                          <Select
-                                            label="Operator"
-                                            options={[...STEP_CONDITION_OPERATOR_OPTIONS]}
+                                            onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                          >
+                                            <option value="" disabled>Condition Type</option>
+                                            {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                          </s-select>
+                                          <s-select
                                             value={rule.operator}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', value)}
-                                          />
-                                          <TextField
+                                            onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                          >
+                                            <option value="" disabled>Operator</option>
+                                            {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                          </s-select>
+                                          <s-text-field
                                             label="Value"
                                             value={rule.value}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'value', value)}
+                                            onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
                                             autoComplete="off"
                                             type="number"
                                             min="0"
                                           />
-                                        </InlineStack>
-                                      </BlockStack>
-                                    </Card>
+                                        </s-stack>
+                                      </s-stack>
+                                    </s-section>
                                   ))}
 
-                                  <Button
+                                  <s-button
                                     variant="tertiary"
-                                    fullWidth
-                                    icon={PlusIcon}
                                     onClick={() => {
                                       if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
                                         shopify.toast.show('A step can have at most 2 conditions', { isError: false });
@@ -1988,130 +1960,136 @@ export default function ConfigureBundleFlow() {
                                       conditionsState.addConditionRule(step.id);
                                     }}
                                   >
+                                    <s-icon name="plus-minor" />
                                     Add Rule
-                                  </Button>
-                                </BlockStack>
+                                  </s-button>
+                                </s-stack>
 
                                 {/* ── Step Options: Free Gift & Default Product ── */}
-                                <BlockStack gap="300">
-                                  <Divider />
-                                  <BlockStack gap="100">
-                                    <Text variant="headingSm" as="h4">Step Options</Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
+                                <s-stack direction="block" gap="small">
+                                  <s-divider />
+                                  <s-stack direction="block" gap="small-400">
+                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Options</h4>
+                                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                       Advanced options for free gift steps and pre-selected (mandatory) products.
-                                    </Text>
-                                  </BlockStack>
+                                    </p>
+                                  </s-stack>
 
                                   {/* Step type selector */}
-                                  <ChoiceList
-                                    title="Step type"
-                                    choices={[
+                                  <s-stack direction="block" gap="small-400">
+                                    <span style={{ fontSize: 14, fontWeight: 500 }}>Step type</span>
+                                    {[
                                       { label: 'Regular Step', value: 'regular' },
                                       { label: 'Add-On / Upsell Step', value: 'addon' },
-                                    ]}
-                                    selected={[step.isFreeGift ? 'addon' : 'regular']}
-                                    onChange={([val]) => {
-                                      const isAddon = val === 'addon';
-                                      stepsState.updateStepField(step.id, 'isFreeGift', isAddon);
-                                      if (!isAddon) {
-                                        stepsState.updateStepField(step.id, 'addonLabel', null);
-                                        stepsState.updateStepField(step.id, 'addonTitle', null);
-                                        stepsState.updateStepField(step.id, 'addonIconUrl', null);
-                                      }
-                                    }}
-                                  />
+                                    ].map(choice => (
+                                      <s-checkbox
+                                        key={choice.value}
+                                        checked={(step.isFreeGift ? 'addon' : 'regular') === choice.value || undefined}
+                                        onChange={() => {
+                                          const isAddon = choice.value === 'addon';
+                                          stepsState.updateStepField(step.id, 'isFreeGift', isAddon);
+                                          if (!isAddon) {
+                                            stepsState.updateStepField(step.id, 'addonLabel', null);
+                                            stepsState.updateStepField(step.id, 'addonTitle', null);
+                                            stepsState.updateStepField(step.id, 'addonIconUrl', null);
+                                          }
+                                        }}
+                                      >
+                                        {choice.label}
+                                      </s-checkbox>
+                                    ))}
+                                  </s-stack>
 
                                   {step.isFreeGift && (
-                                    <FormLayout>
-                                      <TextField
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                      <s-text-field
                                         label="Step label (tab name)"
                                         placeholder="Add-Ons"
                                         helpText="Shown in the bundle step navigator tab."
                                         maxLength={40}
                                         value={step.addonLabel ?? (step.freeGiftName || '')}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'addonLabel', value)}
+                                        onInput={(e: Event) => stepsState.updateStepField(step.id, 'addonLabel', (e.target as HTMLInputElement).value)}
                                         autoComplete="off"
                                       />
-                                      <TextField
+                                      <s-text-field
                                         label="Step title (panel heading)"
                                         placeholder="Pick a free gift!"
                                         helpText="Shown as the heading inside the step panel."
                                         value={step.addonTitle || ''}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'addonTitle', value)}
+                                        onInput={(e: Event) => stepsState.updateStepField(step.id, 'addonTitle', (e.target as HTMLInputElement).value)}
                                         autoComplete="off"
                                       />
-                                      <Checkbox
-                                        label="Display products as free ($0.00)"
-                                        helpText="Customers see $0 on products in this step."
-                                        checked={step.addonDisplayFree !== false}
-                                        onChange={(checked) => stepsState.updateStepField(step.id, 'addonDisplayFree', checked)}
-                                      />
-                                      <Checkbox
-                                        label="Unlock after bundle completion"
-                                        helpText="This step tab is locked until all prior steps are filled."
-                                        checked={step.addonUnlockAfterCompletion !== false}
-                                        onChange={(checked) => stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', checked)}
-                                      />
-                                    </FormLayout>
+                                      <s-checkbox
+                                        checked={step.addonDisplayFree !== false || undefined}
+                                        onChange={(e: Event) => stepsState.updateStepField(step.id, 'addonDisplayFree', (e.target as HTMLInputElement).checked)}
+                                      >
+                                        Display products as free ($0.00)
+                                      </s-checkbox>
+                                      <s-checkbox
+                                        checked={step.addonUnlockAfterCompletion !== false || undefined}
+                                        onChange={(e: Event) => stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', (e.target as HTMLInputElement).checked)}
+                                      >
+                                        Unlock after bundle completion
+                                      </s-checkbox>
+                                    </div>
                                   )}
 
-                                  <Divider />
+                                  <s-divider />
 
                                   {/* Default (mandatory) product toggle */}
-                                  <Checkbox
-                                    label="Mandatory default product"
-                                    helpText="A specific variant is pre-selected when the bundle loads. Customers cannot remove it."
-                                    checked={step.isDefault === true}
-                                    onChange={(checked) => {
+                                  <s-checkbox
+                                    checked={step.isDefault === true || undefined}
+                                    onChange={(e: Event) => {
+                                      const checked = (e.target as HTMLInputElement).checked;
                                       stepsState.updateStepField(step.id, 'isDefault', checked);
                                       if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
                                     }}
-                                  />
+                                  >
+                                    Mandatory default product
+                                  </s-checkbox>
 
                                   {step.isDefault && (
-                                    <FormLayout>
-                                      <TextField
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                      <s-text-field
                                         label="Default variant GID"
                                         placeholder="gid://shopify/ProductVariant/123456789"
                                         helpText="Paste the Shopify variant GID. It must be one of the products added to this step."
                                         value={step.defaultVariantId || ''}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'defaultVariantId', value)}
+                                        onInput={(e: Event) => stepsState.updateStepField(step.id, 'defaultVariantId', (e.target as HTMLInputElement).value)}
                                         autoComplete="off"
                                       />
                                       {step.StepProduct && step.StepProduct.length > 0 && (
-                                        <BlockStack gap="100">
-                                          <Text as="p" variant="bodySm" tone="subdued">
+                                        <s-stack direction="block" gap="small-400">
+                                          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                             Available variants from products in this step:
-                                          </Text>
+                                          </p>
                                           {step.StepProduct.flatMap((sp: any) =>
                                             (sp.variants || []).map((v: any) => (
-                                              <Button
+                                              <s-button
                                                 key={v.id || v.gid}
                                                 variant="plain"
-                                                size="micro"
                                                 onClick={() => stepsState.updateStepField(step.id, 'defaultVariantId', v.id || v.gid)}
                                               >
                                                 {sp.title}{v.title && v.title !== 'Default Title' ? ` · ${v.title}` : ''} — {v.id || v.gid}
-                                              </Button>
+                                              </s-button>
                                             ))
                                           )}
-                                        </BlockStack>
+                                        </s-stack>
                                       )}
-                                    </FormLayout>
+                                    </div>
                                   )}
-                                </BlockStack>
+                                </s-stack>
 
-                          </BlockStack>
-                        </BlockStack>
-                      </Card>
+                          </s-stack>
+                        </s-stack>
+                      </s-section>
                       )
                     ))}
 
                     {/* Add Tab Button */}
-                    <InlineStack gap="200" align="center">
-                      <Button
+                    <s-stack direction="inline" gap="small-100">
+                      <s-button
                         variant="primary"
-                        icon={PlusIcon}
                         onClick={() => {
                           // Warn if going from 1 → 2 steps while tiers are already active (≥ 2)
                           const isActivatingMultiStep = stepsState.steps.length === 1;
@@ -2129,93 +2107,99 @@ export default function ConfigureBundleFlow() {
                           setActiveTabIndex(stepsState.steps.length); // Switch to new tab
                         }}
                       >
+                        <s-icon name="plus-minor" />
                         Add New Tab
-                      </Button>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
+                      </s-button>
+                    </s-stack>
+                  </s-stack>
+                </s-stack>
+              </s-section>
             )}
 
             {activeSection === "discount_pricing" && (
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h3">
-                      Discount & Pricing
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
+              <s-section>
+                <s-stack direction="block" gap="base">
+                  <s-stack direction="block" gap="small-100">
+                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                      Discount &amp; Pricing
+                    </h3>
+                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                       Set up to 4 discount rules, applied from lowest to highest.
-                    </Text>
-                  </BlockStack>
+                    </p>
+                  </s-stack>
 
-                  {/* Discount Enable Toggle - Using Checkbox as toggle */}
-                  <Checkbox
-                    label="Enable discount pricing for this bundle"
-                    checked={pricingState.discountEnabled}
-                    onChange={(value) => pricingState.setDiscountEnabled(value)}
-                    helpText="Turn on to configure discount rules and pricing options"
-                  />
+                  {/* Discount Enable Toggle */}
+                  <s-checkbox
+                    checked={pricingState.discountEnabled || undefined}
+                    onChange={(e: Event) => pricingState.setDiscountEnabled((e.target as HTMLInputElement).checked)}
+                  >
+                    Enable discount pricing for this bundle
+                  </s-checkbox>
 
                   {pricingState.discountEnabled && (
-                    <BlockStack gap="400">
+                    <s-stack direction="block" gap="base">
                       {/* Discount Type */}
-                      <Select
-                        label="Discount Type"
-                        options={[...DISCOUNT_METHOD_OPTIONS]}
+                      <s-select
                         value={pricingState.discountType}
-                        onChange={(value) => {
-                          pricingState.setDiscountType(value as DiscountMethod);
-                          // Clear existing rules when discount type changes
+                        onChange={(e: Event) => {
+                          pricingState.setDiscountType((e.target as HTMLSelectElement).value as DiscountMethod);
                           pricingState.setDiscountRules([]);
-                          // Clear rule messages when discount type changes
                           setRuleMessages({});
                         }}
-                      />
+                      >
+                        {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </s-select>
 
-                      {/* Discount Rules - New Standardized Structure */}
-                      <BlockStack gap="300">
+                      {/* Discount Rules */}
+                      <s-stack direction="block" gap="small">
                         {pricingState.discountRules.map((rule, index) => (
-                          <Card key={rule.id} background="bg-surface-secondary">
-                            <BlockStack gap="300">
-                              <InlineStack align="space-between" blockAlign="center">
-                                <Text as="h4" variant="bodyMd" fontWeight="medium">
+                          <s-section key={rule.id}>
+                            <s-stack direction="block" gap="small">
+                              <s-stack direction="inline">
+                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
                                   Rule #{index + 1}
-                                </Text>
-                                <Button
+                                </h4>
+                                <s-button
                                   variant="plain"
-                                  tone="critical"
                                   onClick={() => pricingState.removeDiscountRule(rule.id)}
                                 >
                                   Remove
-                                </Button>
-                              </InlineStack>
+                                </s-button>
+                              </s-stack>
 
                               {/* Condition Section */}
-                              <BlockStack gap="200">
-                                <Text as="p" variant="bodyMd" fontWeight="semibold">When:</Text>
-                                <InlineStack gap="200" align="start">
-                                  <Select
-                                    label="Type"
-                                    options={[...DISCOUNT_CONDITION_TYPE_OPTIONS]}
+                              <s-stack direction="block" gap="small-100">
+                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>When:</p>
+                                <s-stack direction="inline" gap="small-100">
+                                  <s-select
                                     value={rule.condition.type}
-                                    onChange={(value) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, type: value as any }
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      condition: { ...rule.condition, type: (e.target as HTMLSelectElement).value as any }
                                     })}
-                                  />
-                                  <Select
-                                    label="Operator"
-                                    options={[...DISCOUNT_OPERATOR_OPTIONS]}
+                                  >
+                                    <option value="" disabled>Type</option>
+                                    {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(opt => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </s-select>
+                                  <s-select
                                     value={rule.condition.operator}
-                                    onChange={(value) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, operator: value as any }
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      condition: { ...rule.condition, operator: (e.target as HTMLSelectElement).value as any }
                                     })}
-                                  />
-                                  <TextField
+                                  >
+                                    <option value="" disabled>Operator</option>
+                                    {[...DISCOUNT_OPERATOR_OPTIONS].map(opt => (
+                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                  </s-select>
+                                  <s-text-field
                                     label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
                                     value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
-                                    onChange={(value) => {
-                                      const numValue = Number(value) || 0;
+                                    onInput={(e: Event) => {
+                                      const numValue = Number((e.target as HTMLInputElement).value) || 0;
                                       const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
                                       pricingState.updateDiscountRule(rule.id, {
                                         condition: { ...rule.condition, value: finalValue }
@@ -2223,17 +2207,16 @@ export default function ConfigureBundleFlow() {
                                     }}
                                     type="number"
                                     min="0"
-                                    step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
                                     helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
                                     autoComplete="off"
                                   />
-                                </InlineStack>
-                              </BlockStack>
+                                </s-stack>
+                              </s-stack>
 
                               {/* Discount Section */}
-                              <BlockStack gap="200">
-                                <Text as="p" variant="bodyMd" fontWeight="semibold">Apply:</Text>
-                                <TextField
+                              <s-stack direction="block" gap="small-100">
+                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Apply:</p>
+                                <s-text-field
                                   label={
                                     rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
                                       rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
@@ -2243,8 +2226,8 @@ export default function ConfigureBundleFlow() {
                                     rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
                                       centsToAmount(rule.discount.value)
                                   )}
-                                  onChange={(value) => {
-                                    const numValue = Number(value) || 0;
+                                  onInput={(e: Event) => {
+                                    const numValue = Number((e.target as HTMLInputElement).value) || 0;
                                     const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
                                     pricingState.updateDiscountRule(rule.id, {
                                       discount: { ...rule.discount, value: finalValue }
@@ -2252,58 +2235,54 @@ export default function ConfigureBundleFlow() {
                                   }}
                                   type="number"
                                   min="0"
-                                  max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
-                                  step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
-                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
                                   helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
                                   autoComplete="off"
                                 />
-                              </BlockStack>
+                              </s-stack>
 
                               {/* Preview */}
-                              <Text as="p" variant="bodySm" tone="subdued">
+                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                                 Preview: {generateRulePreview(rule)}
-                              </Text>
-                            </BlockStack>
-                          </Card>
+                              </p>
+                            </s-stack>
+                          </s-section>
                         ))}
 
                         {pricingState.discountRules.length < 4 ? (
-                          <Button
+                          <s-button
                             variant="tertiary"
-                            fullWidth
-                            icon={PlusIcon}
                             onClick={pricingState.addDiscountRule}
                           >
+                            <s-icon name="plus-minor" />
                             Add rule
-                          </Button>
+                          </s-button>
                         ) : (
-                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
+                          <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
                             Maximum 4 discount rules reached
-                          </Text>
+                          </p>
                         )}
-                      </BlockStack>
-
+                      </s-stack>
 
                       {/* Discount Messaging */}
-                      <BlockStack gap="300">
-                        <InlineStack align="space-between" blockAlign="center">
-                          <BlockStack gap="100">
-                            <Text variant="headingSm" as="h4">
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline">
+                          <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
+                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                               Discount Messaging
-                            </Text>
-                            <Text as="p" variant="bodyMd" tone="subdued">
+                            </h4>
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                               Edit how discount messages appear above the subtotal.
-                            </Text>
-                          </BlockStack>
-                          <Tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
-                            <Checkbox
-                              label="Discount Messaging"
-                              checked={pricingState.discountMessagingEnabled}
-                              onChange={pricingState.setDiscountMessagingEnabled}
-                            />
-                          </Tooltip>
-                        </InlineStack>
+                            </p>
+                          </s-stack>
+                          <s-tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
+                            <s-checkbox
+                              checked={pricingState.discountMessagingEnabled || undefined}
+                              onChange={(e: Event) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
+                            >
+                              Discount Messaging
+                            </s-checkbox>
+                          </s-tooltip>
+                        </s-stack>
 
                         {/* Integrated Variables Helper */}
                         <details>
@@ -2311,31 +2290,24 @@ export default function ConfigureBundleFlow() {
                             Show Variables
                           </summary>
                           <div className={fullPageBundleStyles.helpContainer}>
-                            {/* Essential Variables */}
                             <div className={fullPageBundleStyles.helpItem}>
                               <strong>Essential (Most Used):</strong><br />
                               <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
                               <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
                               <code>{'{{bundleName}}'}</code> - Bundle name
                             </div>
-
-                            {/* Specific Variables */}
                             <div className={fullPageBundleStyles.helpItem}>
                               <strong>Specific:</strong><br />
                               <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
                               <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
                               <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
                             </div>
-
-                            {/* Pricing Variables */}
                             <div className={fullPageBundleStyles.helpItem}>
                               <strong>Pricing:</strong><br />
                               <code>{'{{currentAmount}}'}</code> - Current total<br />
                               <code>{'{{finalPrice}}'}</code> - Price after discount<br />
                               <code>{'{{savingsAmount}}'}</code> - Amount saved
                             </div>
-
-                            {/* Quick Examples */}
                             <div className={fullPageBundleStyles.helpFooter}>
                               <strong>Quick Examples:</strong><br />
                               💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
@@ -2347,100 +2319,97 @@ export default function ConfigureBundleFlow() {
 
                         {/* Dynamic rule-based messaging */}
                         {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
-                          <BlockStack gap="300">
+                          <s-stack direction="block" gap="small">
                             {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <BlockStack key={rule.id} gap="300">
-                                <Card background="bg-surface-secondary">
-                                  <BlockStack gap="200">
-                                    <Text as="h4" variant="bodyMd" fontWeight="medium">
+                              <s-stack key={rule.id} direction="block" gap="small">
+                                <s-section>
+                                  <s-stack direction="block" gap="small-100">
+                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                                       Rule #{index + 1} Messages
-                                    </Text>
-                                    <TextField
+                                    </h4>
+                                    <s-text-area
                                       label="Discount Text"
                                       value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
-                                      multiline={2}
+                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'discountText', (e.target as HTMLTextAreaElement).value)}
                                       autoComplete="off"
                                       helpText="This message appears when the customer is close to qualifying for the discount"
                                     />
-                                  </BlockStack>
-                                </Card>
-
-                                <Card background="bg-surface-secondary">
-                                  <BlockStack gap="200">
-                                    <TextField
+                                  </s-stack>
+                                </s-section>
+                                <s-section>
+                                  <s-stack direction="block" gap="small-100">
+                                    <s-text-area
                                       label="Success Message"
                                       value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
-                                      multiline={2}
+                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'successMessage', (e.target as HTMLTextAreaElement).value)}
                                       autoComplete="off"
                                       helpText="This message appears when the customer qualifies for the discount"
                                     />
-                                  </BlockStack>
-                                </Card>
-                              </BlockStack>
+                                  </s-stack>
+                                </s-section>
+                              </s-stack>
                             ))}
-                          </BlockStack>
+                          </s-stack>
                         )}
 
                         {/* Show message when no rules exist */}
                         {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
-                          <Card background="bg-surface-secondary">
-                            <BlockStack gap="200" inlineAlign="center">
-                              <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
+                          <s-section>
+                            <s-stack direction="block" gap="small-100">
+                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
                                 Add discount rules to configure messaging
-                              </Text>
-                            </BlockStack>
-                          </Card>
+                              </p>
+                            </s-stack>
+                          </s-section>
                         )}
-                      </BlockStack>
-                    </BlockStack>
+                      </s-stack>
+                    </s-stack>
                   )}
-                </BlockStack>
-              </Card>
+                </s-stack>
+              </s-section>
             )}
 
             {activeSection === "images_gifs" && (
-              <BlockStack gap="400">
-                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={ImageIcon} tone="subdued" />
-                    <BlockStack gap="0">
-                      <Text variant="headingSm" fontWeight="semibold" as="p">Media Assets</Text>
-                      <Text variant="bodyXs" tone="subdued" as="p">
+              <s-stack direction="block" gap="base">
+                <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                  <s-stack direction="inline" gap="small-100">
+                    <s-icon name="image-alt-minor" />
+                    <s-stack direction="block">
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Media Assets</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                         Add visual media to enhance the bundle experience for shoppers.
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </Box>
+                      </p>
+                    </s-stack>
+                  </s-stack>
+                </div>
 
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Icon source={ImageIcon} tone="base" />
-                        <BlockStack gap="100">
-                          <Text variant="headingSm" fontWeight="semibold" as="p">Promo Banner</Text>
-                          <Text variant="bodyXs" tone="subdued" as="p">Wide banner displayed at the top of the full-page bundle</Text>
-                        </BlockStack>
-                      </InlineStack>
-                      <Badge tone="info">Page header</Badge>
-                    </InlineStack>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <s-stack direction="inline">
+                      <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
+                        <s-icon name="image-alt-minor" />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Promo Banner</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Wide banner displayed at the top of the full-page bundle</p>
+                        </s-stack>
+                      </s-stack>
+                      <s-badge tone="info">Page header</s-badge>
+                    </s-stack>
 
-                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                      <InlineStack gap="600">
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
-                          <Text variant="bodySm" as="p">JPG, PNG, WebP, GIF, SVG, AVIF</Text>
-                        </BlockStack>
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">1600 × 400 px · 4:1 ratio</Text>
-                        </BlockStack>
-                      </InlineStack>
-                    </Box>
+                    <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                      <s-stack direction="inline" gap="large">
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>FORMAT</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>JPG, PNG, WebP, GIF, SVG, AVIF</p>
+                        </s-stack>
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>RECOMMENDED SIZE</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>1600 × 400 px · 4:1 ratio</p>
+                        </s-stack>
+                      </s-stack>
+                    </div>
 
-                    <Divider />
+                    <s-divider />
 
                     <FilePicker
                       value={promoBannerBgImage}
@@ -2454,39 +2423,54 @@ export default function ConfigureBundleFlow() {
                         markAsDirty();
                       }}
                     />
-                  </BlockStack>
-                </Card>
+                  </s-stack>
+                </s-section>
 
                 {stepsState.steps.length > 0 && (
-                  <Card>
-                    <BlockStack gap="400">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <InlineStack gap="300" blockAlign="center">
-                          <Icon source={ImageIcon} tone="base" />
-                          <BlockStack gap="100">
-                            <Text variant="headingSm" fontWeight="semibold" as="p">Step Images</Text>
-                            <Text variant="bodyXs" tone="subdued" as="p">Tab icon and banner image per step — shown in the widget</Text>
-                          </BlockStack>
-                        </InlineStack>
-                        <Badge tone="info">Per step</Badge>
-                      </InlineStack>
+                  <s-section>
+                    <s-stack direction="block" gap="base">
+                      <s-stack direction="inline">
+                        <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
+                          <s-icon name="image-alt-minor" />
+                          <s-stack direction="block" gap="small-400">
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Images</p>
+                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Tab icon and banner image per step — shown in the widget</p>
+                          </s-stack>
+                        </s-stack>
+                        <s-badge tone="info">Per step</s-badge>
+                      </s-stack>
 
-                      <Tabs
-                        tabs={stepsState.steps.map((step, index) => ({
-                          id: `asset-step-${step.id}`,
-                          content: step.name || `Step ${index + 1}`,
-                        }))}
-                        selected={activeAssetTabIndex}
-                        onSelect={setActiveAssetTabIndex}
-                      />
+                      <div>
+                        <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e1e3e5", marginBottom: 16 }}>
+                          {stepsState.steps.map((step, i) => (
+                            <button
+                              key={`asset-step-${step.id}`}
+                              onClick={() => setActiveAssetTabIndex(i)}
+                              style={{
+                                padding: "8px 16px",
+                                border: "none",
+                                background: "none",
+                                cursor: "pointer",
+                                fontSize: 14,
+                                fontWeight: activeAssetTabIndex === i ? 600 : 400,
+                                color: activeAssetTabIndex === i ? "#202223" : "#6d7175",
+                                borderBottom: activeAssetTabIndex === i ? "2px solid #202223" : "2px solid transparent",
+                                marginBottom: -1,
+                              }}
+                            >
+                              {step.name || `Step ${i + 1}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
                       {stepsState.steps.map((step, index) => activeAssetTabIndex === index && (
-                        <BlockStack key={step.id} gap="400">
-                          <BlockStack gap="200">
-                            <BlockStack gap="100">
-                              <Text variant="bodySm" fontWeight="semibold" as="p">Tab Icon</Text>
-                              <Text variant="bodyXs" tone="subdued" as="p">Circular icon in the step tab. Replaces the step number when set. Recommended: 100 × 100 px square.</Text>
-                            </BlockStack>
+                        <s-stack key={step.id} direction="block" gap="base">
+                          <s-stack direction="block" gap="small-100">
+                            <s-stack direction="block" gap="small-400">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Tab Icon</p>
+                              <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Circular icon in the step tab. Replaces the step number when set. Recommended: 100 × 100 px square.</p>
+                            </s-stack>
                             <FilePicker
                               label="Choose tab icon"
                               hideCropEditor
@@ -2496,15 +2480,15 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                             />
-                          </BlockStack>
+                          </s-stack>
 
-                          <Divider />
+                          <s-divider />
 
-                          <BlockStack gap="200">
-                            <BlockStack gap="100">
-                              <Text variant="bodySm" fontWeight="semibold" as="p">Step Banner Image</Text>
-                              <Text variant="bodyXs" tone="subdued" as="p">Full-width image above the product grid when this step is active. Recommended: 1600 × 400 px.</Text>
-                            </BlockStack>
+                          <s-stack direction="block" gap="small-100">
+                            <s-stack direction="block" gap="small-400">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Banner Image</p>
+                              <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Full-width image above the product grid when this step is active. Recommended: 1600 × 400 px.</p>
+                            </s-stack>
                             <FilePicker
                               label="Choose banner image"
                               hideCropEditor
@@ -2514,42 +2498,42 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                             />
-                          </BlockStack>
-                        </BlockStack>
+                          </s-stack>
+                        </s-stack>
                       ))}
-                    </BlockStack>
-                  </Card>
+                    </s-stack>
+                  </s-section>
                 )}
 
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Icon source={RefreshIcon} tone="magic" />
-                        <BlockStack gap="100">
-                          <Text variant="headingSm" fontWeight="semibold" as="p">Loading Animation</Text>
-                          <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
-                        </BlockStack>
-                      </InlineStack>
-                      <Tooltip content="This setting controls the loading animation visible to shoppers on your storefront">
-                        <Badge tone="magic">Storefront</Badge>
-                      </Tooltip>
-                    </InlineStack>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <s-stack direction="inline">
+                      <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
+                        <s-icon name="refresh-minor" />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Loading Animation</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Overlay shown while bundle content is loading</p>
+                        </s-stack>
+                      </s-stack>
+                      <s-tooltip content="This setting controls the loading animation visible to shoppers on your storefront">
+                        <s-badge tone="magic">Storefront</s-badge>
+                      </s-tooltip>
+                    </s-stack>
 
-                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                      <InlineStack gap="600">
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
-                          <Text variant="bodySm" as="p">GIF only</Text>
-                        </BlockStack>
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">Max 150 × 150 px</Text>
-                        </BlockStack>
-                      </InlineStack>
-                    </Box>
+                    <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                      <s-stack direction="inline" gap="large">
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>FORMAT</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>GIF only</p>
+                        </s-stack>
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>RECOMMENDED SIZE</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>Max 150 × 150 px</p>
+                        </s-stack>
+                      </s-stack>
+                    </div>
 
-                    <Divider />
+                    <s-divider />
 
                     <FilePicker
                       label="Choose loading GIF"
@@ -2562,67 +2546,66 @@ export default function ConfigureBundleFlow() {
                     />
 
                     {loadingGif && (
-                      <BlockStack gap="200">
-                        <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">PREVIEW</Text>
+                      <s-stack direction="block" gap="small-100">
+                        <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
                         <img
                           src={loadingGif}
                           alt="Loading animation preview"
                           style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
                         />
-                      </BlockStack>
+                      </s-stack>
                     )}
-                  </BlockStack>
-                </Card>
+                  </s-stack>
+                </s-section>
 
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Icon source={DiscountIcon} tone="base" />
-                        <BlockStack gap="100">
-                          <Text variant="headingSm" fontWeight="semibold" as="p">Floating Promo Badge</Text>
-                          <Text variant="bodyXs" tone="subdued" as="p">Fixed badge at bottom-left of the page — session-dismissed when shopper clicks X</Text>
-                        </BlockStack>
-                      </InlineStack>
-                      <Badge tone="magic">Storefront</Badge>
-                    </InlineStack>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <s-stack direction="inline">
+                      <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
+                        <s-icon name="discount-minor" />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Floating Promo Badge</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Fixed badge at bottom-left of the page — session-dismissed when shopper clicks X</p>
+                        </s-stack>
+                      </s-stack>
+                      <s-badge tone="magic">Storefront</s-badge>
+                    </s-stack>
 
-                    <Checkbox
-                      label="Show floating promo badge"
-                      checked={floatingBadgeEnabled}
-                      onChange={(val) => { setFloatingBadgeEnabled(val); markAsDirty(); }}
-                    />
+                    <s-checkbox
+                      checked={floatingBadgeEnabled || undefined}
+                      onChange={(e: Event) => { setFloatingBadgeEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    >
+                      Show floating promo badge
+                    </s-checkbox>
 
                     {floatingBadgeEnabled && (
-                      <TextField
+                      <s-text-field
                         label="Badge text"
                         value={floatingBadgeText}
-                        onChange={(val) => { setFloatingBadgeText(val.slice(0, 60)); markAsDirty(); }}
-                        maxLength={60}
-                        showCharacterCount
+                        onInput={(e: Event) => { setFloatingBadgeText((e.target as HTMLInputElement).value.slice(0, 60)); markAsDirty(); }}
                         placeholder="e.g. Save 20% today only!"
                         autoComplete="off"
                         helpText="Shown in the badge. Max 60 characters."
                       />
                     )}
-                  </BlockStack>
-                </Card>
-              </BlockStack>
+                  </s-stack>
+                </s-section>
+              </s-stack>
             )}
 
             {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
-              <BlockStack gap="400">
-                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={DiscountIcon} tone="subdued" />
-                    <BlockStack gap="0">
-                      <Text variant="headingSm" fontWeight="semibold" as="p">Pricing Tiers</Text>
-                      <Text variant="bodyXs" tone="subdued" as="p">
+              <s-stack direction="block" gap="base">
+                <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                  <s-stack direction="inline" gap="small-100">
+                    <s-icon name="discount-minor" />
+                    <s-stack direction="block">
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Pricing Tiers</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                         Let shoppers switch between different bundle price points on the same page.
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </Box>
+                      </p>
+                    </s-stack>
+                  </s-stack>
+                </div>
 
                 <PricingTiersSection
                   tiers={tierConfig}
@@ -2642,59 +2625,51 @@ export default function ConfigureBundleFlow() {
                     markAsDirty();
                   }}
                 />
-              </BlockStack>
+              </s-stack>
             )}
 
             {activeSection === "bundle_settings" && (
-              <BlockStack gap="400">
-                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={ImageIcon} tone="subdued" />
-                    <BlockStack gap="0">
-                      <Text variant="headingSm" fontWeight="semibold" as="p">Bundle Settings</Text>
-                      <Text variant="bodyXs" tone="subdued" as="p">
-                        Control how this bundle behaves on the storefront.
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </Box>
-
-                <Card>
-                  <BlockStack gap="400">
-                    <Text variant="headingSm" as="h3">Display</Text>
-                    <Checkbox
-                      label="Show product prices"
+              <s-stack direction="block" gap="base">
+                <div style={{ padding: 12, background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                  <s-stack direction="inline" gap="small-100">
+                    <s-icon name="image-alt" />
+                    <s-stack direction="block" gap="small-400">
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Bundle Settings</p>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Control how this bundle behaves on the storefront.</p>
+                    </s-stack>
+                  </s-stack>
+                </div>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Display</h3>
+                    <s-checkbox
+                      checked={showProductPrices || undefined}
                       helpText="Display the price of each product on its card."
-                      checked={showProductPrices}
-                      onChange={(val) => { setShowProductPrices(val); markAsDirty(); }}
-                    />
-                    <Checkbox
-                      label="Show compare-at prices"
+                      onChange={(e: Event) => { setShowProductPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    >Show product prices</s-checkbox>
+                    <s-checkbox
+                      checked={showCompareAtPrices || undefined}
                       helpText="Show the original (strike-through) price next to the sale price."
-                      checked={showCompareAtPrices}
-                      onChange={(val) => { setShowCompareAtPrices(val); markAsDirty(); }}
-                    />
-                    <Checkbox
-                      label="Allow quantity changes"
+                      onChange={(e: Event) => { setShowCompareAtPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    >Show compare-at prices</s-checkbox>
+                    <s-checkbox
+                      checked={allowQuantityChanges || undefined}
                       helpText="Let customers adjust the quantity of individual products within the bundle."
-                      checked={allowQuantityChanges}
-                      onChange={(val) => { setAllowQuantityChanges(val); markAsDirty(); }}
-                    />
-                  </BlockStack>
-                </Card>
-
-                <Card>
-                  <BlockStack gap="400">
-                    <Text variant="headingSm" as="h3">Cart behaviour</Text>
-                    <Checkbox
-                      label="Redirect to checkout after adding to cart"
+                      onChange={(e: Event) => { setAllowQuantityChanges((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    >Allow quantity changes</s-checkbox>
+                  </s-stack>
+                </s-section>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Cart behaviour</h3>
+                    <s-checkbox
+                      checked={cartRedirectToCheckout || undefined}
                       helpText="Takes customers directly to checkout instead of the cart page when they click Add to Bundle."
-                      checked={cartRedirectToCheckout}
-                      onChange={(val) => { setCartRedirectToCheckout(val); markAsDirty(); }}
-                    />
-                  </BlockStack>
-                </Card>
-              </BlockStack>
+                      onChange={(e: Event) => { setCartRedirectToCheckout((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    >Redirect to checkout after adding to cart</s-checkbox>
+                  </s-stack>
+                </s-section>
+              </s-stack>
             )}
 
             {activeSection === "messages" && (() => {
@@ -2720,353 +2695,232 @@ export default function ConfigureBundleFlow() {
                   .map((l: { locale: string; name: string; primary: boolean }) => ({ label: l.name, value: l.locale })),
               ];
               const fields: { key: string; label: string; placeholder: string; helpText: string }[] = [
-                { key: "addToCartButton",  label: "Add to Cart button",             placeholder: "Add to Cart",                      helpText: 'Shown in the footer and mobile bar when the bundle is complete.' },
-                { key: "nextButton",       label: "Next Step button",               placeholder: "Next",                             helpText: 'Footer button to advance to the next step.' },
-                { key: "doneButton",       label: "Done button",                    placeholder: "Done",                             helpText: 'Shown on the last step in the modal navigator.' },
-                { key: "freeBadge",        label: "Free gift badge",                placeholder: "Free",                             helpText: 'Badge shown on free-gift product cards.' },
-                { key: "includedBadge",    label: "Included badge",                 placeholder: "Included",                         helpText: 'Badge shown on product cards that are already in the bundle.' },
-                { key: "yourBundle",       label: "Sidebar title",                  placeholder: "Your Bundle",                      helpText: 'Heading of the selected-products sidebar / bottom sheet.' },
+                { key: "addToCartButton",  label: "Add to Cart button",   placeholder: "Add to Cart",  helpText: 'Shown in the footer and mobile bar when the bundle is complete.' },
+                { key: "nextButton",       label: "Next Step button",     placeholder: "Next",         helpText: 'Footer button to advance to the next step.' },
+                { key: "doneButton",       label: "Done button",          placeholder: "Done",         helpText: 'Shown on the last step in the modal navigator.' },
+                { key: "freeBadge",        label: "Free gift badge",      placeholder: "Free",         helpText: 'Badge shown on free-gift product cards.' },
+                { key: "includedBadge",    label: "Included badge",       placeholder: "Included",     helpText: 'Badge shown on product cards that are already in the bundle.' },
+                { key: "yourBundle",       label: "Sidebar title",        placeholder: "Your Bundle",  helpText: 'Heading of the selected-products sidebar / bottom sheet.' },
               ];
               return (
-                <BlockStack gap="400">
-                  <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                    <InlineStack gap="200" blockAlign="center">
-                      <Icon source={ListNumberedIcon} tone="subdued" />
-                      <BlockStack gap="0">
-                        <Text variant="headingSm" fontWeight="semibold" as="p">Messages</Text>
-                        <Text variant="bodyXs" tone="subdued" as="p">
-                          Customise the text shown to customers in the bundle widget.
-                        </Text>
-                      </BlockStack>
-                    </InlineStack>
-                  </Box>
-
+                <s-stack direction="block" gap="base">
+                  <div style={{ padding: 12, background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                    <s-stack direction="inline" gap="small-100">
+                      <s-icon name="list-numbered" />
+                      <s-stack direction="block" gap="small-400">
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Messages</p>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Customise the text shown to customers in the bundle widget.</p>
+                      </s-stack>
+                    </s-stack>
+                  </div>
                   {localeOptions.length > 1 && (
-                    <Card>
-                      <BlockStack gap="300">
-                        <Text variant="headingSm" as="h3">Language</Text>
-                        <Text variant="bodyXs" tone="subdued" as="p">
-                          Select a language to customise strings for that locale. Customers on English storefronts always use the default values above.
-                        </Text>
-                        <Select
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Language</h3>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Select a language to customise strings for that locale.</p>
+                        <s-select
                           label="Editing language"
-                          options={localeOptions}
-                          value={textOverridesLocale}
-                          onChange={(val) => setTextOverridesLocale(val)}
-                          labelHidden={false}
-                        />
-                      </BlockStack>
-                    </Card>
+                          onChange={(e: Event) => setTextOverridesLocale((e.target as HTMLSelectElement).value)}
+                        >
+                          {localeOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </s-select>
+                      </s-stack>
+                    </s-section>
                   )}
-
-                  <Card>
-                    <BlockStack gap="400">
-                      <Text variant="headingSm" as="h3">
+                  <s-section>
+                    <s-stack direction="block" gap="base">
+                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                         Widget labels{!isEnglish ? ` — ${localeOptions.find((o) => o.value === textOverridesLocale)?.label ?? textOverridesLocale}` : ""}
-                      </Text>
+                      </h3>
                       {!isEnglish && (
-                        <Text variant="bodyXs" tone="subdued" as="p">
-                          Leave a field blank to fall back to the English default.
-                        </Text>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Leave a field blank to fall back to the English default.</p>
                       )}
-                      <FormLayout>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         {fields.map(({ key, label, placeholder, helpText }) => (
-                          <TextField
+                          <s-text-field
                             key={key}
                             label={label}
                             value={currentOverrides[key] ?? ""}
                             placeholder={placeholder}
                             helpText={helpText}
                             autoComplete="off"
-                            onChange={(val) => setCurrentOverrides(key, val)}
+                            onInput={(e: Event) => setCurrentOverrides(key, (e.target as HTMLInputElement).value)}
                           />
                         ))}
-                      </FormLayout>
-                    </BlockStack>
-                  </Card>
-                </BlockStack>
+                      </div>
+                    </s-stack>
+                  </s-section>
+                </s-stack>
               );
             })()}
-          </Layout.Section>
-        </Layout>
+          </div>
+        </div>
       </form>
 
       {/* Steps + Tiers Conflict Warning Modal */}
-      <Modal
-        open={stepsTiersWarning.open}
-        onClose={() => setStepsTiersWarning({ open: false, onConfirm: null })}
-        title="Steps and Pricing Tiers conflict"
-        primaryAction={{
-          content: "Continue anyway",
-          onAction: () => {
-            stepsTiersWarning.onConfirm?.();
-            setStepsTiersWarning({ open: false, onConfirm: null });
-          },
-        }}
-        secondaryActions={[{
-          content: "Cancel",
-          onAction: () => setStepsTiersWarning({ open: false, onConfirm: null }),
-        }]}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <Text as="p" variant="bodyMd">
-              <strong>Using both steps and pricing tiers creates a confusing experience for shoppers.</strong>
-            </Text>
-            <Text as="p" variant="bodyMd">
-              Pricing tier pills work best with a <strong>single-step flat-grid bundle</strong> (e.g. pick any 3 products).
-              Your bundle has <strong>{stepsState.steps.length} steps</strong> configured, which guides shoppers through a sequential flow.
-            </Text>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              Continuing will configure tiers alongside steps. Consider reducing to 1 step for the best flat-grid BYOB experience.
-            </Text>
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+      <s-modal ref={stepsTiersModalRef} heading="Steps and Pricing Tiers conflict">
+        <s-stack direction="block" gap="small">
+          <p style={{ margin: 0, fontSize: 14 }}>
+            <strong>Using both steps and pricing tiers creates a confusing experience for shoppers.</strong>
+          </p>
+          <p style={{ margin: 0, fontSize: 14 }}>
+            Pricing tier pills work best with a <strong>single-step flat-grid bundle</strong> (e.g. pick any 3 products).
+            Your bundle has <strong>{stepsState.steps.length} steps</strong> configured, which guides shoppers through a sequential flow.
+          </p>
+          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+            Continuing will configure tiers alongside steps. Consider reducing to 1 step for the best flat-grid BYOB experience.
+          </p>
+        </s-stack>
+        <s-button slot="primaryAction" variant="primary" onClick={() => { stepsTiersWarning.onConfirm?.(); setStepsTiersWarning({ open: false, onConfirm: null }); }}>
+          Continue anyway
+        </s-button>
+        <s-button slot="secondaryActions" onClick={() => setStepsTiersWarning({ open: false, onConfirm: null })}>
+          Cancel
+        </s-button>
+      </s-modal>
 
       {/* Page Selection Modal */}
-      <Modal
-        open={isPageSelectionModalOpen}
-        onClose={() => !isInstallingWidget && closePageSelectionModal()}
-        title="Add to Storefront"
-        primaryAction={{
-          content: "Cancel",
-          onAction: () => closePageSelectionModal(),
-          disabled: isInstallingWidget,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <Text as="p" variant="bodySm" tone="subdued">
-              {bundle.bundleType === 'full_page'
-                ? 'Select the bundle page — we\'ll install the widget automatically. No Theme Editor needed.'
-                : 'Select a template to open the Theme Editor with widget placement.'}
-            </Text>
-
-            {isLoadingPages ? (
-              <BlockStack gap="300" inlineAlign="center">
-                <Spinner size="small" />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
-                </Text>
-              </BlockStack>
-            ) : availablePages.length > 0 ? (
-              <BlockStack gap="200">
-                {availablePages.map((template) => (
-                  <Card key={template.id || template.handle} padding="300">
-                    <InlineStack wrap={false} gap="300" align="space-between" blockAlign="center">
-                      <BlockStack gap="100">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Text as="span" variant="bodyMd" fontWeight="medium">
-                            {template.title}
-                          </Text>
-                          {template.recommended && (
-                            <Badge tone="success">Bundle Product</Badge>
-                          )}
-                        </InlineStack>
-                        {template.description && (
-                          <Text as="p" variant="bodySm" tone="subdued">
-                            {template.description}
-                          </Text>
-                        )}
-                      </BlockStack>
-                      <Button
-                        onClick={() => handlePageSelection(template)}
-                        variant={template.recommended ? "primary" : "secondary"}
-                        icon={template.isPage ? undefined : ExternalIcon}
-                        size="slim"
-                        loading={isInstallingWidget}
-                        disabled={isInstallingWidget}
-                      >
-                        {isInstallingWidget ? 'Installing…' : 'Select'}
-                      </Button>
-                    </InlineStack>
-                  </Card>
-                ))}
-              </BlockStack>
-            ) : (
-              <Card padding="400">
-                <BlockStack gap="300" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                    {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
-                  </Text>
-                  <Button
-                    url="https://admin.shopify.com/admin/pages"
-                    external
+      <s-modal ref={pageSelectionModalRef} heading="Add to Storefront">
+        <s-stack direction="block" gap="small">
+          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+            {bundle.bundleType === 'full_page'
+              ? "Select the bundle page — we'll install the widget automatically. No Theme Editor needed."
+              : 'Select a template to open the Theme Editor with widget placement.'}
+          </p>
+          {isLoadingPages ? (
+            <s-stack direction="block" gap="small">
+              <s-spinner />
+              <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
+              </p>
+            </s-stack>
+          ) : availablePages.length > 0 ? (
+            <s-stack direction="block" gap="small-100">
+              {availablePages.map((template) => (
+                <div key={template.id || template.handle} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <s-stack direction="block" gap="small-400">
+                    <s-stack direction="inline" gap="small-400">
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>{template.title}</span>
+                      {template.recommended && <s-badge tone="success">Bundle Product</s-badge>}
+                    </s-stack>
+                    {template.description && <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>{template.description}</p>}
+                  </s-stack>
+                  <s-button
+                    variant={template.recommended ? "primary" : undefined}
+                    loading={isInstallingWidget || undefined}
+                    disabled={isInstallingWidget || undefined}
+                    onClick={() => handlePageSelection(template)}
                   >
-                    Create Page
-                  </Button>
-                </BlockStack>
-              </Card>
-            )}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+                    {isInstallingWidget ? 'Installing…' : 'Select'}
+                  </s-button>
+                </div>
+              ))}
+            </s-stack>
+          ) : (
+            <s-stack direction="block" gap="small">
+              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
+              </p>
+              <s-button href="https://admin.shopify.com/admin/pages" target="_blank">Create Page</s-button>
+            </s-stack>
+          )}
+        </s-stack>
+        <s-button slot="secondaryActions" disabled={isInstallingWidget || undefined} onClick={() => closePageSelectionModal()}>
+          Cancel
+        </s-button>
+      </s-modal>
 
       {/* Selected Products Modal */}
-      <Modal
-        open={isProductsModalOpen}
-        onClose={handleCloseProductsModal}
-        title="Selected Products"
-        primaryAction={{
-          content: "Close",
-          onAction: handleCloseProductsModal,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
-              const selectedProducts = currentStep?.StepProduct || [];
-
-              return selectedProducts.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text as="h4" variant="bodyMd" fontWeight="medium">
-                    {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {selectedProducts.map((product: any, index: number) => {
-                        // Extract product ID from Shopify GID (e.g., "gid://shopify/Product/123" -> "123")
-                        const productId = product.productId || product.id?.split('/').pop();
-                        const productUrl = productId
-                          ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
-                          : undefined;
-
-                        return (
-                          <List.Item key={product.id || index}>
-                            <InlineStack gap="200" align="space-between" blockAlign="center">
-                              <InlineStack gap="300" blockAlign="center">
-                                <Thumbnail
-                                  source={product.imageUrl || product.image?.url || "/bundle.png"}
-                                  alt={product.title || product.name || 'Product'}
-                                  size="small"
-                                />
-                                <BlockStack gap="050">
-                                  {/* Make product title clickable to navigate to Shopify Admin product page */}
-                                  <Button
-                                    variant="plain"
-                                    onClick={() => productUrl && open(productUrl, '_blank')}
-                                    icon={ExternalIcon}
-                                    disabled={!productUrl}
-                                  >
-                                    {product.title || product.name || 'Unnamed Product'}
-                                  </Button>
-                                  {product.variants && product.variants.length > 0 && (
-                                    <Text as="p" variant="bodySm" tone="subdued">
-                                      {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
-                                    </Text>
-                                  )}
-                                </BlockStack>
-                              </InlineStack>
-                              <Badge tone="info">Product</Badge>
-                            </InlineStack>
-                          </List.Item>
-                        );
-                      })}
-                    </List>
-                  </Card>
-                </BlockStack>
-              ) : (
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No products selected for this step yet.
-                  </Text>
-                </BlockStack>
-              );
-            })()}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+      <s-modal ref={productsModalRef} heading="Selected Products">
+        {(() => {
+          const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
+          const selectedProducts = currentStep?.StepProduct || [];
+          return selectedProducts.length > 0 ? (
+            <s-stack direction="block" gap="small">
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>
+                {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
+              </p>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                {selectedProducts.map((product: any, index: number) => {
+                  const productId = product.productId || product.id?.split('/').pop();
+                  const productUrl = productId
+                    ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
+                    : undefined;
+                  return (
+                    <li key={product.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f2f3" }}>
+                      <s-stack direction="inline" gap="small">
+                        <img src={product.imageUrl || product.image?.url || "/bundle.png"} alt={product.title || 'Product'} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
+                        <s-stack direction="block" gap="small-400">
+                          <s-button variant="plain" disabled={!productUrl || undefined} onClick={() => productUrl && open(productUrl, '_blank')}>
+                            {product.title || product.name || 'Unnamed Product'}
+                          </s-button>
+                          {product.variants && product.variants.length > 0 && (
+                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
+                              {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                            </p>
+                          )}
+                        </s-stack>
+                      </s-stack>
+                      <s-badge tone="info">Product</s-badge>
+                    </li>
+                  );
+                })}
+              </ul>
+            </s-stack>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No products selected for this step yet.</p>
+          );
+        })()}
+        <s-button slot="primaryAction" onClick={handleCloseProductsModal}>Close</s-button>
+      </s-modal>
 
       {/* Selected Collections Modal */}
-      <Modal
-        open={isCollectionsModalOpen}
-        onClose={handleCloseCollectionsModal}
-        title="Selected Collections"
-        primaryAction={{
-          content: "Close",
-          onAction: handleCloseCollectionsModal,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const collections = selectedCollections[currentModalStepId] || [];
-
-              return collections.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text as="h4" variant="bodyMd" fontWeight="medium">
-                    {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {collections.map((collection: any, index: number) => (
-                        <List.Item key={collection.id || index}>
-                          <InlineStack gap="200" align="space-between">
-                            <BlockStack gap="050">
-                              <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                {collection.title || 'Unnamed Collection'}
-                              </Text>
-                              {collection.handle && (
-                                <Text as="p" variant="bodySm" tone="subdued">
-                                  Handle: {collection.handle}
-                                </Text>
-                              )}
-                            </BlockStack>
-                            <Badge tone="success">Collection</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
-                    </List>
-                  </Card>
-                </BlockStack>
-              ) : (
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No collections selected for this step yet.
-                  </Text>
-                </BlockStack>
-              );
-            })()}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+      <s-modal ref={collectionsModalRef} heading="Selected Collections">
+        {(() => {
+          const collections = selectedCollections[currentModalStepId] || [];
+          return collections.length > 0 ? (
+            <s-stack direction="block" gap="small">
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>
+                {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
+              </p>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                {collections.map((collection: any, index: number) => (
+                  <li key={collection.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f2f3" }}>
+                    <s-stack direction="block" gap="small-400">
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>{collection.title || 'Unnamed Collection'}</span>
+                      {collection.handle && <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Handle: {collection.handle}</p>}
+                    </s-stack>
+                    <s-badge tone="success">Collection</s-badge>
+                  </li>
+                ))}
+              </ul>
+            </s-stack>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No collections selected for this step yet.</p>
+          );
+        })()}
+        <s-button slot="primaryAction" onClick={handleCloseCollectionsModal}>Close</s-button>
+      </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
-      <Modal
-        open={isSyncModalOpen}
-        onClose={() => setIsSyncModalOpen(false)}
-        title="Sync Bundle?"
-        primaryAction={{
-          content: "Sync Bundle",
-          destructive: true,
-          loading: fetcher.state === 'submitting',
-          onAction: handleSyncBundleConfirm,
-        }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: () => setIsSyncModalOpen(false),
-          },
-        ]}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <Text as="p" variant="bodyMd">
-              This will delete and re-create all Shopify data for this bundle:
-            </Text>
-            <List type="bullet">
-              <List.Item>The Shopify page will be deleted and re-created</List.Item>
-              <List.Item>All bundle and component metafields will be rewritten</List.Item>
-            </List>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              Bundle analytics are preserved. This action cannot be undone.
-            </Text>
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+      <s-modal ref={syncModalRef} heading="Sync Bundle?">
+        <s-stack direction="block" gap="small">
+          <p style={{ margin: 0, fontSize: 14 }}>This will delete and re-create all Shopify data for this bundle:</p>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <li>The Shopify page will be deleted and re-created</li>
+            <li>All bundle and component metafields will be rewritten</li>
+          </ul>
+          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Bundle analytics are preserved. This action cannot be undone.</p>
+        </s-stack>
+        <s-button slot="primaryAction" variant="primary" loading={fetcher.state === 'submitting' || undefined} onClick={handleSyncBundleConfirm}>
+          Sync Bundle
+        </s-button>
+        <s-button slot="secondaryActions" onClick={() => setIsSyncModalOpen(false)}>Cancel</s-button>
+      </s-modal>
 
-    </Page>
+      </div>
+    </>
   );
 }
