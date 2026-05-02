@@ -4,7 +4,8 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-01
-**Last Updated:** 2026-05-02 18:00
+**Last Updated:** 2026-05-02 19:30
+**Status:** Completed
 
 ## Overview
 Replace all `@shopify/polaris` React component imports in admin routes and shared components with Shopify's native `<s-*>` Polaris web components, loaded via CDN. See architecture doc at `docs/polaris-web-components-migration/02-architecture.md`.
@@ -97,6 +98,21 @@ Replace all `@shopify/polaris` React component imports in admin routes and share
 - ✅ Already fully migrated (no remaining `@shopify/polaris` references)
 
 **Result:** Zero `@shopify/polaris` imports remain across all app routes and components.
+
+### 2026-05-02 19:30 - Testing complete, two runtime bugs found and fixed
+
+**Bugs found during browser testing:**
+- ✅ Fixed: `syncModalRef.current?.hide is not a function` (500 error on PPB/FPB config) — `<s-modal>` not yet upgraded when `useEffect` runs on mount. Changed `el?.show()` → `el?.show?.()` and `el?.hide()` → `el?.hide?.()` across both config routes so calls are silently skipped if the method isn't available yet.
+- ✅ Fixed: React SSR hydration mismatch on `<s-banner onHide>` — server serializes function props as null for web components. Added `suppressHydrationWarning` to `<s-banner>` in `AppEmbedBanner` and `SubscriptionErrorBanner`. `<s-modal>` polaris-types rejects the prop (minor warning only, not fixed).
+
+**Pages verified in browser:**
+- ✅ Dashboard — renders correctly, modals functional
+- ✅ Design Control Panel — breadcrumb, cards, custom CSS section
+- ✅ Pricing — quota card, plan cards, feature comparison, FAQ
+- ✅ Analytics/Attribution — warning banner, KPI cards, tables
+- ✅ Subscription & Billing — current plan, upgrade CTA, feature list
+- ✅ Updates & FAQs — accordion items, badges
+- ✅ Product-page bundle config — tabs, steps panel, status section
 
 ## Phases Checklist
 - [x] Phase 1: Infrastructure (polaris-types, CDN script, app.tsx simplification)
