@@ -89,14 +89,13 @@ export default function CreateBundleWizard() {
           <div className={styles.pageHeaderLeft}>
             <h1 className={styles.pageTitle}>Select bundle builder type</h1>
           </div>
-          <a
+          <s-button
+            variant="secondary"
             href="https://wolfpackapps.com"
             target="_blank"
-            rel="noopener noreferrer"
-            className={styles.helpButton}
           >
             How do bundle builder types work?
-          </a>
+          </s-button>
         </div>
 
         <div className={styles.stepIndicator}>
@@ -200,15 +199,14 @@ export default function CreateBundleWizard() {
                     </div>
                     <div className={styles.layoutCardBody}>
                       <strong>Floating card</strong>
-                      <a
+                      <s-button
+                        variant="secondary"
                         href="https://wolfpackapps.com"
                         target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.outlinedButton}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: Event) => e.stopPropagation()}
                       >
                         View Demo
-                      </a>
+                      </s-button>
                     </div>
                   </div>
 
@@ -221,15 +219,14 @@ export default function CreateBundleWizard() {
                     </div>
                     <div className={styles.layoutCardBody}>
                       <strong>Side Panel</strong>
-                      <a
+                      <s-button
+                        variant="secondary"
                         href="https://wolfpackapps.com"
                         target="_blank"
-                        rel="noopener noreferrer"
-                        className={styles.outlinedButton}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: Event) => e.stopPropagation()}
                       >
                         View Demo
-                      </a>
+                      </s-button>
                     </div>
                   </div>
                 </div>
