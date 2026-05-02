@@ -1406,6 +1406,7 @@ export default function ConfigureBundleFlow() {
           {/* Main Content Area */}
           <div>
             {activeSection === "step_setup" && (
+              <div data-tour-target="ppb-product-selection">
               <s-section>
                 <s-stack direction="block" gap="base">
                   <s-stack direction="block" gap="small-100">
@@ -1803,9 +1804,11 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-stack>
               </s-section>
+              </div>
             )}
 
             {activeSection === "discount_pricing" && (
+              <div data-tour-target="ppb-discount-pricing">
               <s-section>
                 <s-stack direction="block" gap="base">
                   <s-stack direction="block" gap="small-100">
@@ -2058,9 +2061,11 @@ export default function ConfigureBundleFlow() {
                   )}
                 </s-stack>
               </s-section>
+              </div>
             )}
 
             {activeSection === "images_gifs" && (
+              <div data-tour-target="ppb-design-settings">
               <s-stack direction="block" gap="base">
                 <div style={{ padding: "var(--s-space-400)", background: "#f6f6f7", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100" style={{ alignItems: "center" }}>
@@ -2127,9 +2132,11 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-section>
               </s-stack>
+              </div>
             )}
 
             {activeSection === "bundle_settings" && (
+              <div data-tour-target="ppb-bundle-status">
               <s-stack direction="block" gap="base">
                 <div style={{ padding: "var(--s-space-400)", background: "#f6f6f7", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100" style={{ alignItems: "center" }}>
@@ -2196,6 +2203,7 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-section>
               </s-stack>
+              </div>
             )}
 
             {activeSection === "messages" && (() => {

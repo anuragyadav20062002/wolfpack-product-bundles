@@ -1696,6 +1696,7 @@ export default function ConfigureBundleFlow() {
           {/* Main Content Area */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {activeSection === "step_setup" && (
+              <div data-tour-target="fpb-step-setup">
               <s-section>
                 <s-stack direction="block" gap="base">
                   <s-stack direction="block" gap="small-100">
@@ -2114,9 +2115,11 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-stack>
               </s-section>
+              </div>
             )}
 
             {activeSection === "discount_pricing" && (
+              <div data-tour-target="fpb-discount-pricing">
               <s-section>
                 <s-stack direction="block" gap="base">
                   <s-stack direction="block" gap="small-100">
@@ -2367,9 +2370,11 @@ export default function ConfigureBundleFlow() {
                   )}
                 </s-stack>
               </s-section>
+              </div>
             )}
 
             {activeSection === "images_gifs" && (
+              <div data-tour-target="fpb-design-settings">
               <s-stack direction="block" gap="base">
                 <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100">
@@ -2591,6 +2596,7 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-section>
               </s-stack>
+              </div>
             )}
 
             {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
@@ -2629,6 +2635,7 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "bundle_settings" && (
+              <div data-tour-target="fpb-bundle-visibility">
               <s-stack direction="block" gap="base">
                 <div style={{ padding: 12, background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100">
@@ -2670,6 +2677,7 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-section>
               </s-stack>
+              </div>
             )}
 
             {activeSection === "messages" && (() => {

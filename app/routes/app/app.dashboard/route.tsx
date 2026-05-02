@@ -1,5 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useNavigate, useLoaderData, Form, useNavigation, useActionData, Link, useSearchParams } from "@remix-run/react";
+import { useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -15,7 +15,6 @@ import { BundleStatus, BundleType } from "../../../constants/bundle";
 import {
   handleCloneBundle,
   handleDeleteBundle,
-  handleCreateBundle,
 } from "./handlers";
 
 import type { BundleActionsButtonsProps } from "./types";
@@ -149,7 +148,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
   if (intent === "cloneBundle") return handleCloneBundle(admin, session, formData);
   if (intent === "deleteBundle") return handleDeleteBundle(admin, session, formData);
-  return handleCreateBundle(admin, session, formData);
+  return json({ error: "Unknown action" }, { status: 400 });
 };
 
 const STATUS_BADGES = {
@@ -212,65 +211,25 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
-  const actionData = useActionData<typeof action>();
-  const navigation = useNavigation();
   const shopify = useAppBridge();
 
   const dashboardState = useDashboardState();
   const {
-    openCreateModal, closeCreateModal,
-    bundleName, setBundleName,
-    description, setDescription,
-    bundleType, setBundleType,
-    fullPageLayout, setFullPageLayout,
     bundleToDelete, openDeleteModal, closeDeleteModal,
   } = dashboardState;
 
   // Refs for imperative web component modal control
-  const createModalRef = useRef<any>(null);
   const deleteModalRef = useRef<any>(null);
 
   // Refs for controlled web component inputs
-  const bundleNameRef = useRef<any>(null);
-  const descriptionRef = useRef<any>(null);
   const searchRef = useRef<any>(null);
   const langSelectRef = useRef<any>(null);
   const perPageSelectRef = useRef<any>(null);
   const statusSelectRef = useRef<any>(null);
   const typeSelectRef = useRef<any>(null);
 
-  const submitButtonRef = useRef<HTMLButtonElement>(null);
   const fetcherIntentRef = useRef<string | null>(null);
   const cloningBundleTypeRef = useRef<string | null>(null);
-
-  const isSubmitting = navigation.state === "submitting";
-
-  // Bundle name input — keep React state in sync for disabled button condition
-  useEffect(() => {
-    const el = bundleNameRef.current;
-    if (!el) return;
-    const handler = (e: Event) => setBundleName((e.target as HTMLInputElement).value ?? '');
-    el.addEventListener('input', handler);
-    return () => el.removeEventListener('input', handler);
-  }, [setBundleName]);
-
-  // Description input
-  useEffect(() => {
-    const el = descriptionRef.current;
-    if (!el) return;
-    const handler = (e: Event) => setDescription((e.target as HTMLInputElement).value ?? '');
-    el.addEventListener('input', handler);
-    return () => el.removeEventListener('input', handler);
-  }, [setDescription]);
-
-  // Handle successful bundle creation
-  useEffect(() => {
-    if (actionData && 'success' in actionData && actionData.success && 'redirectTo' in actionData && actionData.redirectTo) {
-      closeCreateModal();
-      createModalRef.current?.hideOverlay?.();
-      navigate(actionData.redirectTo);
-    }
-  }, [actionData, navigate, closeCreateModal]);
 
   useEffect(() => {
     const image = new Image();
@@ -300,20 +259,6 @@ export default function Dashboard() {
     fetcherIntentRef.current = null;
     cloningBundleTypeRef.current = null;
   }, [fetcher.state, fetcher.data, navigate, shopify]);
-
-  const handleCreateBundle = useCallback(() => {
-    openCreateModal();
-    createModalRef.current?.showOverlay?.();
-  }, [openCreateModal]);
-
-  const handleCloseModal = useCallback(() => {
-    closeCreateModal();
-    createModalRef.current?.hideOverlay?.();
-  }, [closeCreateModal]);
-
-  const handleSubmit = useCallback(() => {
-    submitButtonRef.current?.click();
-  }, []);
 
   const handleDirectChat = () => {
     if (typeof window !== 'undefined' && (window as any).$crisp) {
@@ -380,7 +325,7 @@ export default function Dashboard() {
 
   const [bundleFilter, setBundleFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [currentPage, setCurrentPage] = useState(1);
   const [bundlesPerPage, setBundlesPerPage] = useState(20);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
@@ -500,165 +445,6 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* Create Bundle Modal */}
-      <s-modal
-        ref={createModalRef}
-        id="create-bundle-modal"
-        heading="Create New Bundle"
-        onHide={handleCloseModal}
-      >
-        <s-button
-          slot="primaryAction"
-          variant="primary"
-          loading={isSubmitting || undefined}
-          disabled={!bundleName.trim() || undefined}
-          onClick={handleSubmit}
-        >
-          Create Bundle
-        </s-button>
-        <s-button slot="secondaryActions" onClick={handleCloseModal}>Cancel</s-button>
-        <Form method="post">
-          <s-stack direction="block" gap="base">
-            <s-text-field
-              ref={bundleNameRef}
-              label="Bundle name"
-              value={bundleName}
-              name="bundleName"
-              autocomplete="off"
-              error={actionData && 'error' in actionData ? String(actionData.error) : undefined}
-              details="Choose a descriptive name for your bundle"
-              required
-            />
-            <s-text-area
-              ref={descriptionRef}
-              label="Description"
-              value={description}
-              name="description"
-              rows={3}
-              autocomplete="off"
-              details="Optional: Add more details about what this bundle offers"
-            />
-
-            <s-stack direction="block" gap="small">
-              <s-heading>Bundle Type</s-heading>
-              <s-text color="subdued">Click on the thumbnails to watch demo videos</s-text>
-              <div className={dashboardStyles.bundleTypeGrid}>
-                <div
-                  className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === BundleType.PRODUCT_PAGE ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                  onClick={() => setBundleType([BundleType.PRODUCT_PAGE])}
-                >
-                  <s-stack direction="block" gap="small">
-                    <a
-                      href="https://www.loom.com/share/6eda102958f3453f9379ac4c70fcda29"
-                      target="_blank" rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className={dashboardStyles.bundleThumbnailLink}
-                    >
-                      <img src="/pdp.jpeg" alt="Product Page Bundle Demo" className={dashboardStyles.bundleThumbnailImg} />
-                      <div className={dashboardStyles.bundlePlayButton}>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="white"><path d="M5 3l12 7-12 7V3z" /></svg>
-                      </div>
-                    </a>
-                    <s-stack direction="block" gap="small-100">
-                      <s-text><strong>Product Page Bundle</strong></s-text>
-                      <s-text color="subdued">Display bundle builder on existing product pages (recommended for most stores)</s-text>
-                    </s-stack>
-                  </s-stack>
-                </div>
-
-                <div
-                  className={`${dashboardStyles.bundleTypeCard} ${bundleType[0] === BundleType.FULL_PAGE ? dashboardStyles.bundleTypeCardSelected : ''}`}
-                  onClick={() => setBundleType([BundleType.FULL_PAGE])}
-                >
-                  <s-stack direction="block" gap="small">
-                    <a
-                      href="https://www.loom.com/share/dc6b075589df45eead93edaa7acfb08c"
-                      target="_blank" rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className={dashboardStyles.bundleThumbnailLink}
-                    >
-                      <img src="/full.jpeg" alt="Full Page Bundle Demo" className={dashboardStyles.bundleThumbnailImg} />
-                      <div className={dashboardStyles.bundlePlayButton}>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="white"><path d="M5 3l12 7-12 7V3z" /></svg>
-                      </div>
-                    </a>
-                    <s-stack direction="block" gap="small-100">
-                      <s-text><strong>Full Page Bundle</strong></s-text>
-                      <s-text color="subdued">Create a dedicated landing page for your bundle with tabs and full customization</s-text>
-                    </s-stack>
-                  </s-stack>
-                </div>
-              </div>
-            </s-stack>
-
-            {bundleType[0] === BundleType.FULL_PAGE && (
-              <s-stack direction="block" gap="small">
-                <s-heading>Page Layout</s-heading>
-                <div className={dashboardStyles.layoutGrid}>
-                  <div
-                    onClick={() => setFullPageLayout("footer_bottom")}
-                    style={{
-                      border: fullPageLayout === "footer_bottom" ? "2px solid var(--p-color-border-interactive)" : "1px solid var(--p-color-border-secondary)",
-                      borderRadius: "8px", padding: "8px", cursor: "pointer",
-                      background: fullPageLayout === "footer_bottom" ? "var(--p-color-bg-surface-selected)" : "var(--p-color-bg-surface)",
-                      transition: "border 0.15s, background 0.15s",
-                    }}
-                  >
-                    <s-stack direction="block" gap="small-100" alignItems="center">
-                      <svg width="100" height="68" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
-                        <rect x="12" y="8" width="24" height="18" rx="3" fill="#E5E7EB" /><rect x="42" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
-                        <rect x="72" y="8" width="24" height="18" rx="3" fill="#E5E7EB" /><rect x="102" y="8" width="24" height="18" rx="3" fill="#E5E7EB" />
-                        <rect x="12" y="30" width="24" height="18" rx="3" fill="#E5E7EB" /><rect x="42" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
-                        <rect x="72" y="30" width="24" height="18" rx="3" fill="#E5E7EB" /><rect x="102" y="30" width="24" height="18" rx="3" fill="#E5E7EB" />
-                        <rect x="16" y="64" width="108" height="26" rx="6" fill="white" stroke="#D1D5DB" strokeWidth="1" />
-                        <rect x="16" y="63" width="108" height="2" rx="1" fill="rgba(0,0,0,0.04)" />
-                        <rect x="24" y="70" width="12" height="12" rx="3" fill="#E5E7EB" /><rect x="40" y="70" width="12" height="12" rx="3" fill="#E5E7EB" />
-                        <rect x="56" y="70" width="12" height="12" rx="3" fill="#E5E7EB" /><rect x="75" y="72" width="22" height="4" rx="2" fill="#D1D5DB" />
-                        <rect x="75" y="79" width="14" height="3" rx="1.5" fill="#E5E7EB" /><rect x="104" y="69" width="14" height="14" rx="4" fill="#111111" />
-                      </svg>
-                      <s-text><strong>Floating cart card</strong></s-text>
-                    </s-stack>
-                  </div>
-
-                  <div
-                    onClick={() => setFullPageLayout("footer_side")}
-                    style={{
-                      border: fullPageLayout === "footer_side" ? "2px solid var(--p-color-border-interactive)" : "1px solid var(--p-color-border-secondary)",
-                      borderRadius: "8px", padding: "8px", cursor: "pointer",
-                      background: fullPageLayout === "footer_side" ? "var(--p-color-bg-surface-selected)" : "var(--p-color-bg-surface)",
-                      transition: "border 0.15s, background 0.15s",
-                    }}
-                  >
-                    <s-stack direction="block" gap="small-100" alignItems="center">
-                      <svg width="100" height="68" viewBox="0 0 140 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="1" y="1" width="138" height="94" rx="4" stroke="#D1D5DB" strokeWidth="1" fill="#F9FAFB" />
-                        <rect x="10" y="10" width="22" height="16" rx="2" fill="#E5E7EB" /><rect x="36" y="10" width="22" height="16" rx="2" fill="#E5E7EB" />
-                        <rect x="62" y="10" width="22" height="16" rx="2" fill="#E5E7EB" /><rect x="10" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
-                        <rect x="36" y="32" width="22" height="16" rx="2" fill="#E5E7EB" /><rect x="62" y="32" width="22" height="16" rx="2" fill="#E5E7EB" />
-                        <rect x="10" y="54" width="22" height="16" rx="2" fill="#E5E7EB" /><rect x="36" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
-                        <rect x="62" y="54" width="22" height="16" rx="2" fill="#E5E7EB" />
-                        <rect x="90" y="1" width="49" height="94" rx="0" fill="#7C3AED" opacity="0.85" />
-                        <rect x="97" y="12" width="34" height="4" rx="2" fill="white" opacity="0.8" />
-                        <rect x="97" y="24" width="34" height="10" rx="2" fill="white" opacity="0.15" />
-                        <rect x="97" y="40" width="34" height="10" rx="2" fill="white" opacity="0.15" />
-                        <rect x="97" y="56" width="34" height="10" rx="2" fill="white" opacity="0.15" />
-                        <rect x="97" y="74" width="34" height="14" rx="3" fill="white" opacity="0.7" />
-                      </svg>
-                      <s-text><strong>Sidebar panel</strong></s-text>
-                    </s-stack>
-                  </div>
-                </div>
-              </s-stack>
-            )}
-
-            <input type="hidden" name="bundleType" value={bundleType[0]} />
-            {bundleType[0] === BundleType.FULL_PAGE && <input type="hidden" name="fullPageLayout" value={fullPageLayout} />}
-            <button ref={submitButtonRef} type="submit" className={dashboardStyles.hiddenSubmit} aria-hidden="true" />
-          </s-stack>
-        </Form>
-      </s-modal>
-
       {/* Delete Confirmation Modal */}
       <s-modal
         ref={deleteModalRef}
@@ -696,7 +482,7 @@ export default function Dashboard() {
                 </s-select>
               </div>
               <s-button icon="refresh" onClick={handleSyncCollections}>Sync Collections</s-button>
-              <s-button variant="primary" icon="plus" onClick={handleCreateBundle}>Create Bundle</s-button>
+              <s-button variant="primary" icon="plus" onClick={() => navigate('/app/bundles/create')}>Create Bundle</s-button>
               <s-button icon="notification" onClick={handleBellClick} accessibilityLabel="Changelog" />
             </div>
           </div>
@@ -764,16 +550,16 @@ export default function Dashboard() {
               <div className={dashboardStyles.bundlesToolbar}>
                 <div className={dashboardStyles.filterGroup}>
                   <div className={dashboardStyles.filterSelectWrap}>
-                    <s-select ref={statusSelectRef} label="Status" value={statusFilter}>
-                      <s-option value="all">Status</s-option>
+                    <s-select ref={statusSelectRef} label="Status" labelAccessibilityVisibility="exclusive" value={statusFilter}>
+                      <s-option value="all">All</s-option>
                       <s-option value="active">Active</s-option>
                       <s-option value="draft">Draft</s-option>
                       <s-option value="unlisted">Unlisted</s-option>
                     </s-select>
                   </div>
                   <div className={dashboardStyles.filterSelectWrap}>
-                    <s-select ref={typeSelectRef} label="Bundle type" value={typeFilter}>
-                      <s-option value="all">Bundle type</s-option>
+                    <s-select ref={typeSelectRef} label="Bundle type" labelAccessibilityVisibility="exclusive" value={typeFilter}>
+                      <s-option value="all">All</s-option>
                       <s-option value="product_page">Product page</s-option>
                       <s-option value="full_page">Full page</s-option>
                     </s-select>
