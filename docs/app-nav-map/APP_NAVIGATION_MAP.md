@@ -61,18 +61,27 @@ Dashboard
 └── Banner: Proxy health check / upgrade prompts (conditional)
 ```
 
-#### Modal: Create Bundle
-Triggered by: "Create Bundle" button
-**Screenshot:** `screenshots/06-create-bundle-modal.png`
+#### "Create Bundle" Button
+Navigates to: `/app/bundles/create` (full-page wizard — modal removed)
+
+---
+
+### 2.1a Create Bundle Wizard — `/app/bundles/create`
+
+**Route file:** `app/routes/app/app.bundles.create/route.tsx`
 
 ```
-Create Bundle Modal
-├── TextField: Bundle Name
-├── TextField: Description (optional)
-├── RadioGroup: Bundle Type
-│   ├── Product Bundle (PDP)
-│   └── Landing Page Bundle (FPB)
-└── [Button] "Create" → POST action → redirect to configure page
+Create Bundle Wizard (Step 01 of 05)
+├── Header: "Select bundle builder type" + "How do bundle builder types work?" link
+├── Step indicator: 01 Bundle name & Description (active) → 02–05 (future)
+├── Form
+│   ├── TextField: Bundle name (required, min 3 chars)
+│   ├── Textarea: Description (optional)
+│   ├── Bundle Type cards: Product Page Builder / Full Page Builder
+│   └── Page Layout cards (visible only when Full Page selected):
+│       ├── Floating cart card (footer_bottom)
+│       └── Side Panel (footer_side)
+└── [Button] "Next" → POST action → redirect to configure page
 ```
 
 #### Modal: Delete Bundle Confirmation
