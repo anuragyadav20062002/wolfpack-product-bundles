@@ -21,7 +21,7 @@ export function SubscriptionErrorBanner({
   onDismiss,
 }: SubscriptionErrorBannerProps) {
   return (
-    <s-banner tone="critical" heading="Subscription Issue" dismissible onHide={onDismiss}>
+    <s-banner tone="critical" heading="Subscription Issue" dismissible onHide={onDismiss} suppressHydrationWarning>
       <s-button slot="primaryAction" onClick={onRetry}>
         Try Again
       </s-button>

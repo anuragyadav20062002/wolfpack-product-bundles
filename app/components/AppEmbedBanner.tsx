@@ -22,7 +22,7 @@ export function AppEmbedBanner({ appEmbedEnabled, themeEditorUrl }: AppEmbedBann
   };
 
   return (
-    <s-banner tone="warning" dismissible onHide={handleDismiss}>
+    <s-banner tone="warning" dismissible onHide={handleDismiss} suppressHydrationWarning>
       {themeEditorUrl && (
         <s-button
           slot="primaryAction"
