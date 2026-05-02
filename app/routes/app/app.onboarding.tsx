@@ -8,7 +8,7 @@
 import { type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppLogger } from "../../lib/logger";
 import styles from "../../styles/routes/app-index.module.css";
 
@@ -42,6 +42,18 @@ export default function Onboarding() {
   const [selectedTemplate, setSelectedTemplate] = useState("product");
   const [selectedTarget, setSelectedTarget] = useState("newAppsSection");
   const [showAdvancedPlacement, setShowAdvancedPlacement] = useState(false);
+
+  const templateSelectRef = useRef<HTMLElement>(null);
+  const targetSelectRef = useRef<HTMLElement>(null);
+
+  // s-select doesn't apply the value attribute until after slot children mount
+  useEffect(() => {
+    if (templateSelectRef.current) (templateSelectRef.current as any).value = selectedTemplate;
+  }, [selectedTemplate]);
+
+  useEffect(() => {
+    if (targetSelectRef.current) (targetSelectRef.current as any).value = selectedTarget;
+  }, [selectedTarget]);
 
   const totalSteps = STEP_TITLES.length;
 
@@ -220,8 +232,8 @@ export default function Onboarding() {
               <s-section>
                 <s-stack direction="block" gap="base">
                   <s-select
+                    ref={templateSelectRef}
                     label="Page template"
-                    value={selectedTemplate}
                     helpText="Product pages are recommended — bundles are linked to specific products."
                     onChange={(e: Event) =>
                       setSelectedTemplate((e.target as HTMLSelectElement).value)
@@ -242,8 +254,8 @@ export default function Onboarding() {
 
                   {showAdvancedPlacement && (
                     <s-select
+                      ref={targetSelectRef}
                       label="Block placement target"
-                      value={selectedTarget}
                       helpText="Where on the template the bundle widget block will be inserted."
                       onChange={(e: Event) =>
                         setSelectedTarget((e.target as HTMLSelectElement).value)
