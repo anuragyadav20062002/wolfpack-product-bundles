@@ -497,23 +497,23 @@ export default function ConfigureBundleFlow() {
   const syncModalRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    stepsTiersWarning.open ? (stepsTiersModalRef.current as any)?.show() : (stepsTiersModalRef.current as any)?.hide();
+    stepsTiersWarning.open ? (stepsTiersModalRef.current as any)?.show?.() : (stepsTiersModalRef.current as any)?.hide?.();
   }, [stepsTiersWarning.open]);
 
   useEffect(() => {
-    isPageSelectionModalOpen ? (pageSelectionModalRef.current as any)?.show() : (pageSelectionModalRef.current as any)?.hide();
+    isPageSelectionModalOpen ? (pageSelectionModalRef.current as any)?.show?.() : (pageSelectionModalRef.current as any)?.hide?.();
   }, [isPageSelectionModalOpen]);
 
   useEffect(() => {
-    isProductsModalOpen ? (productsModalRef.current as any)?.show() : (productsModalRef.current as any)?.hide();
+    isProductsModalOpen ? (productsModalRef.current as any)?.show?.() : (productsModalRef.current as any)?.hide?.();
   }, [isProductsModalOpen]);
 
   useEffect(() => {
-    isCollectionsModalOpen ? (collectionsModalRef.current as any)?.show() : (collectionsModalRef.current as any)?.hide();
+    isCollectionsModalOpen ? (collectionsModalRef.current as any)?.show?.() : (collectionsModalRef.current as any)?.hide?.();
   }, [isCollectionsModalOpen]);
 
   useEffect(() => {
-    isSyncModalOpen ? (syncModalRef.current as any)?.show() : (syncModalRef.current as any)?.hide();
+    isSyncModalOpen ? (syncModalRef.current as any)?.show?.() : (syncModalRef.current as any)?.hide?.();
   }, [isSyncModalOpen]);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!

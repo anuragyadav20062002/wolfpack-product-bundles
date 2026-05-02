@@ -1231,33 +1231,33 @@ export default function ConfigureBundleFlow() {
 
   useEffect(() => {
     if (isSyncModalOpen) {
-      (syncModalRef.current as any)?.show();
+      (syncModalRef.current as any)?.show?.();
     } else {
-      (syncModalRef.current as any)?.hide();
+      (syncModalRef.current as any)?.hide?.();
     }
   }, [isSyncModalOpen]);
 
   useEffect(() => {
     if (isPageSelectionModalOpen) {
-      (pageSelectionModalRef.current as any)?.show();
+      (pageSelectionModalRef.current as any)?.show?.();
     } else {
-      (pageSelectionModalRef.current as any)?.hide();
+      (pageSelectionModalRef.current as any)?.hide?.();
     }
   }, [isPageSelectionModalOpen]);
 
   useEffect(() => {
     if (isProductsModalOpen) {
-      (productsModalRef.current as any)?.show();
+      (productsModalRef.current as any)?.show?.();
     } else {
-      (productsModalRef.current as any)?.hide();
+      (productsModalRef.current as any)?.hide?.();
     }
   }, [isProductsModalOpen]);
 
   useEffect(() => {
     if (isCollectionsModalOpen) {
-      (collectionsModalRef.current as any)?.show();
+      (collectionsModalRef.current as any)?.show?.();
     } else {
-      (collectionsModalRef.current as any)?.hide();
+      (collectionsModalRef.current as any)?.hide?.();
     }
   }, [isCollectionsModalOpen]);
 
