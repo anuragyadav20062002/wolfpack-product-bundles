@@ -107,6 +107,7 @@ model Bundle {
   cartRedirectToCheckout Boolean @default(false) // Redirect to checkout instead of cart after add
   allowQuantityChanges   Boolean @default(true)  // Allow customers to change per-product quantity
   sdkMode                Boolean @default(false) // Load headless SDK instead of pre-built widget (product-page bundles only)
+  searchBarEnabled       Boolean @default(false) // Show search bar in the bundle widget (all bundle types)
   // Per-bundle text overrides
   textOverrides          Json?   // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
   textOverridesByLocale  Json?   // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }
@@ -159,6 +160,8 @@ model BundleStep {
   imageUrl                    String?
   bannerImageUrl              String?
   timelineIconUrl             String?   // User-uploadable icon for step timeline (separate from bannerImageUrl)
+  pageTitle                   String?   // Page header title shown after the nav bar (full-page bundles)
+  filters                     Json?     // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
   primaryVariantOption        String?   // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
   bundleId                    String
   bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)

@@ -1,0 +1,92 @@
+.container {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 500;
+}
+
+.collapsed {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid #e3e3e3;
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: box-shadow 0.15s;
+}
+
+.collapsed:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.arc { flex-shrink: 0; }
+
+.scoreLabel {
+  display: flex;
+  flex-direction: column;
+  font-size: 11px;
+  color: #666;
+  line-height: 1.3;
+}
+
+.chevron {
+  font-size: 12px;
+  color: #999;
+  margin-left: 2px;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #e3e3e3;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  width: min(360px, calc(100vw - 40px));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  animation: slideUp 0.2s ease both;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.panelItems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.panelItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.checkDone  { color: #008060; font-size: 13px; min-width: 14px; }
+.checkPending { color: #bbb; font-size: 13px; min-width: 14px; }
+
+.itemLabel { flex: 1; color: #333; }
+.itemPoints { font-size: 11px; color: #aaa; white-space: nowrap; }
+
+.itemAction {
+  color: #005bd3;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 0 2px;
+}
+
+.statusLine {
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusReady    { color: #008060; }
+.statusNotReady { color: #d72c0d; }

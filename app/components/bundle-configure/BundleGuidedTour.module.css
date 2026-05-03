@@ -1,0 +1,103 @@
+.overlay {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, 90vw);
+  background: #005bd3;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: 20px;
+  z-index: 600;
+  color: white;
+  animation: tourEntrance 0.25s ease both;
+}
+
+@keyframes tourEntrance {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.progressTrack {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: white;
+  border-radius: 2px;
+  transition: width 0.35s ease;
+}
+
+.stepLabel {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.body {
+  font-size: 14px;
+  opacity: 0.9;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+}
+
+.dismissBtn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 0;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.dismissBtn:hover { opacity: 1; }
+
+.nextBtn {
+  background: white;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.nextBtn:hover { opacity: 0.88; }
+
+/* Applied to target DOM elements via classList — must be global */
+:global(.wpb-tour-highlight) {
+  outline: 2px solid #005bd3 !important;
+  outline-offset: 4px !important;
+  border-radius: 8px !important;
+  animation: wpbTourPulse 0.4s ease both !important;
+}
+
+@keyframes wpbTourPulse {
+  from { outline-color: transparent; }
+  to   { outline-color: #005bd3; }
+}
