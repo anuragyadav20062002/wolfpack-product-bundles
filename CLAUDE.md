@@ -235,6 +235,43 @@ npm run test:coverage # coverage report
 12. **NO hardcoded fallback UI copy strings** ❌ — do not invent default marketing copy (e.g. "Complete the look and get a gift free!") when a merchant-configured string is absent. If the merchant hasn't set a value, show nothing or use a neutral system message. Never fabricate storefront-visible copy on their behalf.
 13. **NO unnecessary API fallback chains** ❌ — when fetching a value from an API, use the single correct source per official docs. Do NOT chain multiple fallback sources (e.g. `apiA.field || apiB.field || 'default'`). If the correct source returns null/empty, surface that honestly — show nothing, a neutral placeholder, or a non-fabricated system message. Chaining fallbacks hides bugs and creates silent data quality issues.
 
+## 🧩 Polaris Web Components First Rule
+
+### ALWAYS use Polaris web components for Admin-embedded app UI
+
+When building or modifying any Admin-embedded app page, use Polaris web components (`s-*`) for **all** UI elements where a suitable component exists. Only fall back to custom HTML + CSS when **no** Polaris component covers the use case.
+
+**Available components (polaris-app-home surface):**
+- **Actions:** `s-button`, `s-button-group`, `s-link`, `s-menu`
+- **Forms:** `s-checkbox`, `s-select`, `s-text-field`, `s-text-area`, `s-switch`, `s-number-field`, `s-search-field`, `s-drop-zone`
+- **Feedback:** `s-badge`, `s-banner`, `s-spinner`
+- **Layout:** `s-box`, `s-stack`, `s-grid`, `s-section`, `s-divider`
+- **Typography:** `s-heading`, `s-text`, `s-paragraph`
+- **Media:** `s-icon`, `s-thumbnail`, `s-image`, `s-avatar`
+- **Overlays:** `s-modal`, `s-popover`
+- **Interactive:** `s-clickable`, `s-clickable-chip`, `s-chip`
+
+**Icon names for `s-icon type=""` / `s-button icon=""`:**
+`plus`, `delete`, `view`, `upload`, `globe`, `search`, `filter`, `edit`, `info`,
+`check`, `x`, `duplicate`, `menu-horizontal`, `alert-triangle`, `clock`,
+`note`, `product`, `arrow-left`, `arrow-right`
+
+**Legitimate "no Polaris component" exceptions (custom HTML is acceptable):**
+- Tab navigation (no `s-tabs` in app-home surface)
+- Step chip / pill navigation patterns
+- Custom slide/keyframe animations
+- Fixed-position overlays (e.g. BundleReadinessOverlay, BundleGuidedTour)
+- Complex grid layouts not achievable with `s-grid`
+
+**How to check if a component exists:**
+```bash
+# Use the Shopify dev MCP
+mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-home")
+mcp__shopify-dev-mcp__search_docs_chunks(prompt: "component name usage examples")
+```
+
+---
+
 ## 🎨 DCP Customizability Rule
 
 ### Always ask about DCP before implementing storefront changes

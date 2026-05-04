@@ -1,10 +1,10 @@
 # Issue: Create Bundle Wizard — Step 01
 
 **Issue ID:** create-bundle-wizard-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-02
-**Last Updated:** 2026-05-03 17:30
+**Last Updated:** 2026-05-04 10:00
 
 ## Overview
 Replace the dashboard Create Bundle modal with a full-page multi-step wizard at `/app/bundles/create`. Step 01 collects bundle name, description, bundle type, and page layout. Also adds `data-tour-target` attributes to FPB and PPB configure pages per guided-tour-reference.md Section 3.
@@ -39,6 +39,19 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - Updating handleCreateBundle redirect to point to new wizard step
 - Multi-step carousel animation with slide transitions
 - Features: step config card, product/collection picker, rules, filters, bundle status sidebar, step summary, multi-language modal
+
+### 2026-05-04 10:00 - Completed Phase 9: Migrate all admin UI elements to Polaris web components
+- ✅ Replaced 14 plain HTML elements with Polaris `s-*` components
+- ✅ `s-button` for: back arrow, Multi Language, Upload Icon, Add Product, Add Rule, Add Filter, Remove rule/filter, Preview
+- ✅ `s-badge tone="success"` + `s-clickable` for "N Selected" interactive badge
+- ✅ `s-checkbox` for pre-select all
+- ✅ `s-heading` for all card/section titles (h2/h3)
+- ✅ `s-text color="subdued"` for all helper/subtitle text
+- ✅ `s-icon type="..."` for Step Summary row icons (product, note, filter, search, edit)
+- ✅ `s-banner tone="info"` for Pro Tip card
+- ✅ CSS module cleaned: removed 18 now-unused classes (backBtn, cardTitle, cardSubtitle, multiLangBtn, uploadIconBtn, helperText, tabHelperText, addProductBtn, selectedBadge, preSelectRow, preSelectLabel, removeBtn, addRuleBtn, sideCardTitle, summaryHelperText, summaryIcon, previewBtn, proTipCard/Header/Text)
+- ✅ CLAUDE.md updated with Polaris web components first rule
+- Custom HTML kept only for: tab navigation, step chip pills, animations, modal backdrop (no Polaris equivalent)
 
 ### 2026-05-03 17:30 - Completed Phase 8: Step 02 Configuration wizard step
 - ✅ New route: `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx` (trailing underscore escapes layout nesting)

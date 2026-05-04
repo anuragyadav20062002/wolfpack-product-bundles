@@ -589,13 +589,12 @@ export default function WizardConfigureStep() {
         {/* Page header */}
         <div className={styles.pageHeader}>
           <div className={styles.pageHeaderLeft}>
-            <button
-              className={styles.backBtn}
+            <s-button
+              variant="tertiary"
+              icon="arrow-left"
+              accessibilityLabel="Back"
               onClick={() => window.history.back()}
-              aria-label="Back"
-            >
-              ←
-            </button>
+            />
             <h1 className={styles.pageTitle}>Configuration</h1>
           </div>
           <s-button
@@ -678,17 +677,14 @@ export default function WizardConfigureStep() {
                   data-tour-target="wizard-step-config"
                 >
                   <div className={styles.cardHeader}>
-                    <h2 className={styles.cardTitle}>Step Configuration</h2>
-                    <button
-                      className={styles.multiLangBtn}
+                    <s-heading>Step Configuration</s-heading>
+                    <s-button
+                      variant="secondary"
+                      icon="globe"
                       onClick={() => setLocaleModalOpen(true)}
                     >
-                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="10" cy="10" r="8" />
-                        <path d="M10 2c0 0-4 3-4 8s4 8 4 8M10 2c0 0 4 3 4 8s-4 8-4 8M2 10h16" />
-                      </svg>
                       Multi Language
-                    </button>
+                    </s-button>
                   </div>
 
                   <div className={styles.stepConfigRow}>
@@ -725,15 +721,14 @@ export default function WizardConfigureStep() {
                         )}
                       </div>
 
-                      <button
-                        className={styles.uploadIconBtn}
+                      <s-button
+                        variant="secondary"
+                        icon="upload"
                         onClick={() => setShowIconPicker((v) => !v)}
                       >
                         {showIconPicker ? "Close picker" : "Upload Icon"}
-                      </button>
-                      <p className={styles.helperText} style={{ textAlign: "center" }}>
-                        512×512 px · PNG/SVG
-                      </p>
+                      </s-button>
+                      <s-text color="subdued">512×512 px · PNG/SVG</s-text>
                     </div>
 
                     {/* Fields */}
@@ -757,9 +752,9 @@ export default function WizardConfigureStep() {
                           }
                           autoComplete="off"
                         />
-                        <p className={styles.helperText}>
+                        <s-text color="subdued">
                           This text will appear as the page header right after the navigation bar.
-                        </p>
+                        </s-text>
                       </div>
                     </div>
                   </div>
@@ -771,11 +766,9 @@ export default function WizardConfigureStep() {
                   data-tour-target="wizard-select-product"
                 >
                   <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
-                    <h2 className={styles.cardTitle}>Select Product</h2>
+                    <s-heading>Select Product</s-heading>
                   </div>
-                  <p className={styles.cardSubtitle}>
-                    Select product or collection to show in step
-                  </p>
+                  <s-text color="subdued">Select product or collection to show in step</s-text>
 
                   {/* Tabs */}
                   <div className={styles.tabRow}>
@@ -807,17 +800,15 @@ export default function WizardConfigureStep() {
                     </button>
                   </div>
 
-                  <p className={styles.tabHelperText}>
+                  <s-text color="subdued">
                     Select{" "}
-                    {currentStep.activeTab === "products"
-                      ? "product"
-                      : "collection"}{" "}
+                    {currentStep.activeTab === "products" ? "product" : "collection"}{" "}
                     here will be displayed on this step
-                  </p>
+                  </s-text>
 
                   <div className={styles.productActions}>
-                    <button
-                      className={styles.addProductBtn}
+                    <s-button
+                      variant="primary"
                       onClick={
                         currentStep.activeTab === "products"
                           ? pickProducts
@@ -827,45 +818,30 @@ export default function WizardConfigureStep() {
                       {currentStep.activeTab === "products"
                         ? "Add Product"
                         : "Add Collection"}
-                    </button>
+                    </s-button>
 
                     {currentStep.activeTab === "products" &&
                       selectedProductCount > 0 && (
-                        <button
-                          className={styles.selectedBadge}
-                          onClick={pickProducts}
-                        >
-                          {selectedProductCount} Selected
-                        </button>
+                        <s-clickable onClick={pickProducts}>
+                          <s-badge tone="success">{selectedProductCount} Selected</s-badge>
+                        </s-clickable>
                       )}
 
                     {currentStep.activeTab === "collections" &&
                       selectedCollectionCount > 0 && (
-                        <button
-                          className={styles.selectedBadge}
-                          onClick={pickCollections}
-                        >
-                          {selectedCollectionCount} Selected
-                        </button>
+                        <s-clickable onClick={pickCollections}>
+                          <s-badge tone="success">{selectedCollectionCount} Selected</s-badge>
+                        </s-clickable>
                       )}
                   </div>
 
-                  <div className={styles.preSelectRow}>
-                    <input
-                      type="checkbox"
-                      id={`preselect-${currentStep.tempId}`}
-                      checked={currentStep.preSelectAll}
-                      onChange={(e) =>
-                        updateCurrent("preSelectAll", e.target.checked)
-                      }
-                    />
-                    <label
-                      htmlFor={`preselect-${currentStep.tempId}`}
-                      className={styles.preSelectLabel}
-                    >
-                      Pre-select all products on this step
-                    </label>
-                  </div>
+                  <s-checkbox
+                    label="Pre-select all products on this step"
+                    checked={currentStep.preSelectAll || undefined}
+                    onChange={(e: Event) =>
+                      updateCurrent("preSelectAll", (e.target as HTMLInputElement).checked)
+                    }
+                  />
                 </div>
 
                 {/* ── Rules Card ── */}
@@ -874,11 +850,9 @@ export default function WizardConfigureStep() {
                   data-tour-target="wizard-rules"
                 >
                   <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
-                    <h2 className={styles.cardTitle}>Rules</h2>
+                    <s-heading>Rules</s-heading>
                   </div>
-                  <p className={styles.cardSubtitle}>
-                    Define conditions for product selection and quantity limits.
-                  </p>
+                  <s-text color="subdued">Define conditions for product selection and quantity limits.</s-text>
 
                   {currentStep.conditions.length === 0 ? (
                     <div className={styles.emptyState}>No rules defined yet</div>
@@ -948,32 +922,27 @@ export default function WizardConfigureStep() {
                             }
                           />
 
-                          <button
-                            className={styles.removeBtn}
+                          <s-button
+                            icon="delete"
+                            variant="tertiary"
+                            tone="critical"
+                            accessibilityLabel="Remove rule"
                             onClick={() => removeRule(rule.id)}
-                            title="Remove rule"
-                          >
-                            ✕
-                          </button>
+                          />
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <button className={styles.addRuleBtn} onClick={addRule}>
-                    + Add Rule
-                  </button>
+                  <s-button variant="secondary" icon="plus" onClick={addRule}>Add Rule</s-button>
                 </div>
 
                 {/* ── Filters Card ── */}
                 <div className={styles.card}>
                   <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
-                    <h2 className={styles.cardTitle}>Filters</h2>
+                    <s-heading>Filters</s-heading>
                   </div>
-                  <p className={styles.cardSubtitle}>
-                    Customer-facing filters to narrow product selection in this
-                    step.
-                  </p>
+                  <s-text color="subdued">Customer-facing filters to narrow product selection in this step.</s-text>
 
                   {currentStep.filters.length === 0 ? (
                     <div className={styles.emptyState}>No filters defined yet</div>
@@ -1019,21 +988,19 @@ export default function WizardConfigureStep() {
                             }
                           />
 
-                          <button
-                            className={styles.removeBtn}
+                          <s-button
+                            icon="delete"
+                            variant="tertiary"
+                            tone="critical"
+                            accessibilityLabel="Remove filter"
                             onClick={() => removeFilter(filter.id)}
-                            title="Remove filter"
-                          >
-                            ✕
-                          </button>
+                          />
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <button className={styles.addRuleBtn} onClick={addFilter}>
-                    + Add Filter
-                  </button>
+                  <s-button variant="secondary" icon="plus" onClick={addFilter}>Add Filter</s-button>
                 </div>
               </div>
             </div>
@@ -1046,7 +1013,7 @@ export default function WizardConfigureStep() {
               className={styles.sideCard}
               data-tour-target="wizard-bundle-status"
             >
-              <h3 className={styles.sideCardTitle}>Bundle Status</h3>
+              <s-heading>Bundle Status</s-heading>
               <s-select
                 ref={statusSelectRef}
                 label=""
@@ -1068,35 +1035,19 @@ export default function WizardConfigureStep() {
 
             {/* Step Summary */}
             <div className={styles.sideCard}>
-              <h3 className={styles.sideCardTitle}>Step Summary</h3>
-              <p className={styles.summaryHelperText}>
-                Select product here will be displayed on this step
-              </p>
+              <s-heading>Step Summary</s-heading>
+              <s-text color="subdued">Select product here will be displayed on this step</s-text>
               <div className={styles.summaryList}>
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 5l-8 4-8-4" />
-                    </svg>
-                  </span>
+                  <s-icon type="product" />
                   <span className={styles.summaryLabel}>Selected products</span>
-                  <span
-                    className={
-                      selectedProductCount + selectedCollectionCount > 0
-                        ? styles.summaryValueActive
-                        : styles.summaryValue
-                    }
-                  >
+                  <span className={selectedProductCount + selectedCollectionCount > 0 ? styles.summaryValueActive : styles.summaryValue}>
                     {selectedProductCount + selectedCollectionCount || "—"}
                   </span>
                 </div>
 
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 000 4h6a2 2 0 000-4M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </span>
+                  <s-icon type="note" />
                   <span className={styles.summaryLabel}>Rules</span>
                   <span className={rulesCount > 0 ? styles.summaryValueActive : styles.summaryValue}>
                     {rulesCount > 0 ? rulesCount : "None"}
@@ -1104,11 +1055,7 @@ export default function WizardConfigureStep() {
                 </div>
 
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                    </svg>
-                  </span>
+                  <s-icon type="filter" />
                   <span className={styles.summaryLabel}>Filters</span>
                   <span className={filtersCount > 0 ? styles.summaryValueActive : styles.summaryValue}>
                     {filtersCount > 0 ? filtersCount : "None"}
@@ -1116,11 +1063,7 @@ export default function WizardConfigureStep() {
                 </div>
 
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-                    </svg>
-                  </span>
+                  <s-icon type="search" />
                   <span className={styles.summaryLabel}>Search Bar</span>
                   <span className={searchBarEnabled ? styles.summaryValueActive : styles.summaryValue}>
                     {searchBarEnabled ? "Enabled" : "Disabled"}
@@ -1128,38 +1071,19 @@ export default function WizardConfigureStep() {
                 </div>
 
                 <div className={styles.summaryItem}>
-                  <span className={styles.summaryIcon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                    </svg>
-                  </span>
+                  <s-icon type="edit" />
                   <span className={styles.summaryLabel}>Custom Fields</span>
                   <span className={styles.summaryValue}>0</span>
                 </div>
               </div>
 
-              <button className={styles.previewBtn} onClick={handlePreview}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                </svg>
-                Preview
-              </button>
+              <s-button variant="primary" icon="view" onClick={handlePreview}>Preview</s-button>
             </div>
 
             {/* Pro Tip */}
-            <div className={styles.proTipCard}>
-              <div className={styles.proTipHeader}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="12" cy="12" r="10" />
-                  <path fill="white" d="M12 16v-4M12 8h.01" strokeWidth="2" stroke="white" />
-                </svg>
-                PRO TIP
-              </div>
-              <p className={styles.proTipText}>
-                Bundles with 3+ products see 24% higher conversion rates when
-                search filters are enabled.
-              </p>
-            </div>
+            <s-banner tone="info" heading="PRO TIP">
+              Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.
+            </s-banner>
 
             {/* Back + Next */}
             <div className={styles.wizardFooter}>
