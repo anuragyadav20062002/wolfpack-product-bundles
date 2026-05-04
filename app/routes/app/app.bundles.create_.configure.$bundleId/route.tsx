@@ -4,7 +4,7 @@ import {
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "@remix-run/node";
-import { Form, useLoaderData, useNavigation } from "@remix-run/react";
+import { useFetcher, useLoaderData, useNavigate } from "@remix-run/react";
 import {
   useState,
   useRef,
@@ -18,7 +18,17 @@ import {
   BUNDLE_STATUS_OPTIONS,
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
+  DISCOUNT_METHOD_OPTIONS,
+  DISCOUNT_CONDITION_TYPE_OPTIONS,
+  DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
+import {
+  DiscountMethod,
+  ConditionType,
+  amountToCents,
+  centsToAmount,
+} from "../../../types/pricing";
+import { useBundlePricing } from "../../../hooks/useBundlePricing";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
@@ -72,10 +82,6 @@ function newCondition(): ConditionDef {
     conditionOperator: "greater_than_or_equal_to",
     conditionValue: "1",
   };
-}
-
-function newFilter(): FilterDef {
-  return { id: crypto.randomUUID(), type: "tag", label: "" };
 }
 
 function emptyStep(): WizardStepState {
@@ -139,11 +145,6 @@ function initSteps(dbSteps: any[]): WizardStepState[] {
   }));
 }
 
-const FILTER_TYPE_OPTIONS = [
-  { label: "By Product Tag", value: "tag" },
-  { label: "By Variant Option", value: "option" },
-] as const;
-
 const STEPS_META = [
   { num: "01", label: "Bundle name\n& Description" },
   { num: "02", label: "Configuration" },
@@ -171,7 +172,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   if (!bundle) return redirect("/app/bundles");
 
-  // Shop locales for multi-language modal
   let shopLocales: { locale: string; name: string; primary: boolean }[] = [];
   try {
     const resp = await admin.graphql(
@@ -183,7 +183,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     );
   } catch {}
 
-  // App embed check for readiness score
   let appEmbedEnabled = false;
   try {
     const { checkAppEmbedEnabled } = await import(
@@ -193,7 +192,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     appEmbedEnabled = result.enabled;
   } catch {}
 
-  // Parent Shopify product status
   let parentProductActive = false;
   if (bundle.shopifyProductId) {
     try {
@@ -204,6 +202,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       parentProductActive = data.data?.product?.status === "ACTIVE";
     } catch {}
   }
+
+  const routeBase =
+    bundle.bundleType === "full_page" ? "full-page-bundle" : "product-page-bundle";
 
   return json({
     bundle: {
@@ -216,6 +217,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       shopifyPageId: bundle.shopifyPageId,
       textOverridesByLocale: (bundle.textOverridesByLocale as any) ?? {},
       steps: bundle.steps as any[],
+      pricing: bundle.pricing
+        ? {
+            enabled: bundle.pricing.enabled,
+            method: bundle.pricing.method as string,
+            rules: bundle.pricing.rules,
+            showFooter: bundle.pricing.showFooter,
+            showProgressBar: bundle.pricing.showProgressBar,
+            messages: bundle.pricing.messages,
+          }
+        : null,
     },
     readiness: {
       appEmbedEnabled,
@@ -225,6 +236,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       ),
       parentProductActive,
     },
+    configureUrl: `/app/bundles/${routeBase}/configure/${bundle.id}`,
     shopLocales,
     shop: session.shop,
   });
@@ -243,6 +255,45 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (!bundle) return redirect("/app/bundles");
 
   const formData = await request.formData();
+  const intent = formData.get("_intent") as string | null;
+
+  // ── Save Pricing (Step 03) ───────────────────────────────────
+  if (intent === "savePricing") {
+    const raw = formData.get("pricingData") as string;
+    const p = JSON.parse(raw || "{}");
+
+    await db.bundlePricing.upsert({
+      where: { bundleId },
+      create: {
+        bundleId,
+        enabled: p.discountEnabled ?? false,
+        method: p.discountType ?? "percentage_off",
+        rules: p.discountRules ?? [],
+        showFooter: p.discountMessagingEnabled ?? true,
+        showProgressBar: p.showProgressBar ?? true,
+        messages: p.messages ?? null,
+      },
+      update: {
+        enabled: p.discountEnabled ?? false,
+        method: p.discountType ?? "percentage_off",
+        rules: p.discountRules ?? [],
+        showFooter: p.discountMessagingEnabled ?? true,
+        showProgressBar: p.showProgressBar ?? true,
+        messages: p.messages ?? null,
+      },
+    });
+
+    const routeBase =
+      bundle.bundleType === "full_page" ? "full-page-bundle" : "product-page-bundle";
+
+    return json({
+      ok: true,
+      intent: "savePricing",
+      redirectTo: `/app/bundles/${routeBase}/configure/${bundle.id}`,
+    });
+  }
+
+  // ── Save Config (Step 02) ────────────────────────────────────
   const stepsJson = formData.get("steps") as string;
   const bundleStatus = formData.get("bundleStatus") as string;
   const searchBarEnabled = formData.get("searchBarEnabled") === "true";
@@ -255,17 +306,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   await db.bundle.update({
     where: { id: bundleId },
-    data: {
-      status: bundleStatus as any,
-      searchBarEnabled,
-      textOverridesByLocale,
-    },
+    data: { status: bundleStatus as any, searchBarEnabled, textOverridesByLocale },
   });
 
-  // Delete removed steps
-  const submittedDbIds = wizardSteps
-    .filter((s) => s.dbId)
-    .map((s) => s.dbId!);
+  const submittedDbIds = wizardSteps.filter((s) => s.dbId).map((s) => s.dbId!);
   const toDelete = bundle.steps
     .map((s) => s.id)
     .filter((id) => !submittedDbIds.includes(id));
@@ -283,15 +327,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       position: i,
       conditionType: c1?.conditionType || null,
       conditionOperator: c1?.conditionOperator || null,
-      conditionValue: c1?.conditionValue
-        ? parseInt(c1.conditionValue, 10)
-        : null,
+      conditionValue: c1?.conditionValue ? parseInt(c1.conditionValue, 10) : null,
       conditionOperator2: c2?.conditionOperator || null,
-      conditionValue2: c2?.conditionValue
-        ? parseInt(c2.conditionValue, 10)
-        : null,
-      filters:
-        ws.filters && ws.filters.length > 0 ? (ws.filters as any) : null,
+      conditionValue2: c2?.conditionValue ? parseInt(c2.conditionValue, 10) : null,
+      filters: ws.filters && ws.filters.length > 0 ? (ws.filters as any) : null,
     };
 
     let stepId: string;
@@ -305,7 +344,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       stepId = created.id;
     }
 
-    // Sync StepProducts
     await db.stepProduct.deleteMany({ where: { stepId } });
     for (const [pi, product] of (ws.products || []).entries()) {
       await db.stepProduct.create({
@@ -314,9 +352,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
           productId: product.id,
           title: product.title || "",
           imageUrl:
-            product.imageUrl ||
-            product.images?.[0]?.originalSrc ||
-            null,
+            product.imageUrl || product.images?.[0]?.originalSrc || null,
           variants: product.variants ?? [],
           position: pi,
         },
@@ -324,9 +360,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
   }
 
-  const routeBase =
-    bundle.bundleType === "full_page" ? "full-page-bundle" : "product-page-bundle";
-  return redirect(`/app/bundles/${routeBase}/configure/${bundleId}`);
+  return json({ ok: true, intent: "saveConfig" });
 };
 
 // ── Component ─────────────────────────────────────────────────────
@@ -334,36 +368,70 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export default function WizardConfigureStep() {
   const { bundle, readiness, shopLocales, shop } =
     useLoaderData<typeof loader>();
-  const navigation = useNavigation();
-  const isSubmitting = navigation.state === "submitting";
+  const navigate = useNavigate();
 
-  // ── State ──────────────────────────────────────────────────────
+  // ── Fetchers ───────────────────────────────────────────────────
+  const configFetcher = useFetcher<{ ok: boolean; intent: string }>();
+  const pricingFetcher = useFetcher<{
+    ok: boolean;
+    intent: string;
+    redirectTo: string;
+  }>();
+
+  // ── Wizard step (1=Config 02, 2=Pricing 03) ───────────────────
+  const [wizardStep, setWizardStep] = useState(1);
+
+  // ── Step 02 state ──────────────────────────────────────────────
   const [steps, setSteps] = useState<WizardStepState[]>(() =>
     initSteps(bundle.steps)
   );
   const [currentIdx, setCurrentIdx] = useState(0);
   const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
   const [slideKey, setSlideKey] = useState(0);
-
   const [bundleStatus, setBundleStatus] = useState<string>(bundle.status);
   const [searchBarEnabled] = useState<boolean>(bundle.searchBarEnabled);
   const [textOverridesByLocale, setTextOverridesByLocale] = useState<
     Record<string, Record<string, string>>
   >(bundle.textOverridesByLocale ?? {});
-
   const [localeModalOpen, setLocaleModalOpen] = useState(false);
   const [selectedLocale, setSelectedLocale] = useState(
     () => shopLocales.find((l) => !l.primary)?.locale ?? ""
   );
-
   const [readinessOpen, setReadinessOpen] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
 
-  const submitRef = useRef<HTMLButtonElement>(null);
   const statusSelectRef = useRef<any>(null);
   const localeSelectRef = useRef<any>(null);
 
-  // Sync Polaris web component select values
+  // ── Step 03 Pricing state ─────────────────────────────────────
+  const pricing = useBundlePricing({
+    initialPricing: bundle.pricing
+      ? {
+          enabled: bundle.pricing.enabled,
+          method: bundle.pricing.method as any,
+          rules: bundle.pricing.rules as any,
+          showFooter: bundle.pricing.showFooter,
+        }
+      : null,
+    onStateChange: () => {},
+  });
+
+  const [showProgressBar, setShowProgressBar] = useState(
+    bundle.pricing?.showProgressBar !== false
+  );
+  const [discountMessagingEnabled, setDiscountMessagingEnabled] = useState(
+    bundle.pricing?.showFooter !== false
+  );
+  const [progressMessage, setProgressMessage] = useState(
+    (bundle.pricing?.messages as any)?.progress ??
+      "Add {{conditionText}} to get {{discountText}}"
+  );
+  const [qualifiedMessage, setQualifiedMessage] = useState(
+    (bundle.pricing?.messages as any)?.qualified ??
+      "Congratulations! You got {{discountText}}!"
+  );
+
+  // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
     if (statusSelectRef.current)
       (statusSelectRef.current as any).value = bundleStatus;
@@ -374,9 +442,37 @@ export default function WizardConfigureStep() {
       (localeSelectRef.current as any).value = selectedLocale;
   }, [selectedLocale, localeModalOpen]);
 
+  useEffect(() => {
+    if (
+      configFetcher.data?.ok &&
+      configFetcher.data.intent === "saveConfig" &&
+      configFetcher.state === "idle"
+    ) {
+      setWizardStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [configFetcher.data, configFetcher.state]);
+
+  useEffect(() => {
+    if (
+      pricingFetcher.data?.ok &&
+      pricingFetcher.data.intent === "savePricing" &&
+      pricingFetcher.state === "idle"
+    ) {
+      navigate(pricingFetcher.data.redirectTo);
+    }
+  }, [pricingFetcher.data, pricingFetcher.state, navigate]);
+
   const currentStep = steps[currentIdx];
 
-  // ── Step Mutations ─────────────────────────────────────────────
+  // ── Derived ────────────────────────────────────────────────────
+  const pageTitle = wizardStep === 1 ? "Configuration" : "Pricing";
+  const isSubmitting =
+    wizardStep === 1
+      ? configFetcher.state === "submitting"
+      : pricingFetcher.state === "submitting";
+
+  // ── Step 02 mutations ──────────────────────────────────────────
   const updateStep = useCallback(
     (idx: number, field: keyof WizardStepState, value: any) => {
       setSteps((prev) =>
@@ -387,7 +483,8 @@ export default function WizardConfigureStep() {
   );
 
   const updateCurrent = useCallback(
-    (field: keyof WizardStepState, value: any) => updateStep(currentIdx, field, value),
+    (field: keyof WizardStepState, value: any) =>
+      updateStep(currentIdx, field, value),
     [currentIdx, updateStep]
   );
 
@@ -420,7 +517,6 @@ export default function WizardConfigureStep() {
     [steps.length]
   );
 
-  // ── Condition Mutations ────────────────────────────────────────
   const addRule = useCallback(() => {
     if (currentStep.conditions.length >= 2) {
       shopify.toast.show("A step can have at most 2 conditions");
@@ -449,32 +545,6 @@ export default function WizardConfigureStep() {
     [currentStep.conditions, updateCurrent]
   );
 
-  // ── Filter Mutations ───────────────────────────────────────────
-  const addFilter = useCallback(() => {
-    updateCurrent("filters", [...currentStep.filters, newFilter()]);
-  }, [currentStep.filters, updateCurrent]);
-
-  const removeFilter = useCallback(
-    (id: string) =>
-      updateCurrent(
-        "filters",
-        currentStep.filters.filter((f) => f.id !== id)
-      ),
-    [currentStep.filters, updateCurrent]
-  );
-
-  const updateFilter = useCallback(
-    (id: string, field: keyof FilterDef, val: string) =>
-      updateCurrent(
-        "filters",
-        currentStep.filters.map((f) =>
-          f.id === id ? { ...f, [field]: val } : f
-        )
-      ),
-    [currentStep.filters, updateCurrent]
-  );
-
-  // ── Resource Pickers ───────────────────────────────────────────
   const pickProducts = useCallback(async () => {
     const result = await shopify.resourcePicker({
       type: "product",
@@ -485,8 +555,7 @@ export default function WizardConfigureStep() {
       const transformed = result.selection.map((p: any) => ({
         id: p.id,
         title: p.title,
-        imageUrl:
-          p.images?.[0]?.originalSrc ?? p.images?.[0]?.url ?? null,
+        imageUrl: p.images?.[0]?.originalSrc ?? p.images?.[0]?.url ?? null,
         variants: p.variants ?? [],
       }));
       updateCurrent("products", transformed);
@@ -504,24 +573,61 @@ export default function WizardConfigureStep() {
     }
   }, [currentStep.collections, updateCurrent]);
 
-  // ── Preview ────────────────────────────────────────────────────
-  const handlePreview = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+  // ── Navigation ─────────────────────────────────────────────────
+  const handleBack = useCallback(() => {
+    if (wizardStep === 1) {
+      window.history.back();
+    } else {
+      setWizardStep((prev) => prev - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    const handle = bundle.shopifyProductId
-      ? `products/${bundle.shopifyProductId}`
-      : "";
-    shopify.toast.show("Opening preview…");
-    if (handle) window.open(`https://your-store.myshopify.com/${handle}`, "_blank");
-  }, [bundle.id, bundle.shopifyProductId]);
+  }, [wizardStep]);
 
-  // ── Next ───────────────────────────────────────────────────────
   const handleNext = useCallback(() => {
-    submitRef.current?.click();
-  }, []);
+    if (wizardStep === 1) {
+      const fd = new FormData();
+      fd.set("_intent", "saveConfig");
+      fd.set("steps", JSON.stringify(steps));
+      fd.set("bundleStatus", bundleStatus);
+      fd.set("searchBarEnabled", String(searchBarEnabled));
+      fd.set("textOverridesByLocale", JSON.stringify(textOverridesByLocale));
+      configFetcher.submit(fd, { method: "post" });
+    } else if (wizardStep === 2) {
+      const fd = new FormData();
+      fd.set("_intent", "savePricing");
+      fd.set(
+        "pricingData",
+        JSON.stringify({
+          discountEnabled: pricing.discountEnabled,
+          discountType: pricing.discountType,
+          discountRules: pricing.discountRules,
+          discountMessagingEnabled,
+          showProgressBar,
+          messages: {
+            progress: progressMessage,
+            qualified: qualifiedMessage,
+            showInCart: discountMessagingEnabled,
+          },
+        })
+      );
+      pricingFetcher.submit(fd, { method: "post" });
+    }
+  }, [
+    wizardStep,
+    steps,
+    bundleStatus,
+    searchBarEnabled,
+    textOverridesByLocale,
+    configFetcher,
+    pricingFetcher,
+    pricing,
+    showProgressBar,
+    discountMessagingEnabled,
+    progressMessage,
+    qualifiedMessage,
+  ]);
 
-  // ── Locale translation helpers ─────────────────────────────────
+  // ── Locale helpers ─────────────────────────────────────────────
   const getTranslation = (locale: string) =>
     textOverridesByLocale?.[locale]?.[`step_${currentIdx}_name`] ?? "";
 
@@ -535,51 +641,26 @@ export default function WizardConfigureStep() {
     }));
   };
 
-  // ── Readiness items ────────────────────────────────────────────
-  const hasProducts = steps.some((s) => s.products.length > 0 || s.collections.length > 0);
+  // ── Readiness ──────────────────────────────────────────────────
+  const hasProducts = steps.some(
+    (s) => s.products.length > 0 || s.collections.length > 0
+  );
   const readinessItems: BundleReadinessItem[] = [
-    {
-      key: "embed",
-      label: "App embed enabled",
-      points: 15,
-      done: readiness.appEmbedEnabled,
-    },
-    {
-      key: "products",
-      label: "Products added to a step",
-      points: 20,
-      done: hasProducts,
-    },
-    {
-      key: "discount",
-      label: "Discount configured",
-      points: 15,
-      done: readiness.hasDiscount,
-    },
-    {
-      key: "visible",
-      label: "Bundle placed / visible",
-      points: 25,
-      done: readiness.hasBundleVisibility,
-    },
-    {
-      key: "product_active",
-      label: "Parent product active",
-      points: 15,
-      done: readiness.parentProductActive,
-    },
+    { key: "embed", label: "App embed enabled", points: 15, done: readiness.appEmbedEnabled },
+    { key: "products", label: "Products added to a step", points: 20, done: hasProducts },
+    { key: "discount", label: "Discount configured", points: 15, done: readiness.hasDiscount },
+    { key: "visible", label: "Bundle placed / visible", points: 25, done: readiness.hasBundleVisibility },
+    { key: "product_active", label: "Parent product active", points: 15, done: readiness.parentProductActive },
   ];
 
-  // ── Derived summary values ─────────────────────────────────────
   const selectedProductCount = currentStep.products.length;
   const selectedCollectionCount = currentStep.collections.length;
   const rulesCount = currentStep.conditions.length;
-  const filtersCount = currentStep.filters.length;
 
   // ── Render ─────────────────────────────────────────────────────
   return (
     <>
-      <ui-title-bar title="Configuration">
+      <ui-title-bar title={pageTitle}>
         <button variant="breadcrumb" onClick={() => window.history.back()}>
           Create Bundle
         </button>
@@ -593,9 +674,9 @@ export default function WizardConfigureStep() {
               variant="tertiary"
               icon="arrow-left"
               accessibilityLabel="Back"
-              onClick={() => window.history.back()}
+              onClick={handleBack}
             />
-            <h1 className={styles.pageTitle}>Configuration</h1>
+            <h1 className={styles.pageTitle}>{pageTitle}</h1>
           </div>
           <s-button
             variant="secondary"
@@ -606,18 +687,18 @@ export default function WizardConfigureStep() {
           </s-button>
         </div>
 
-        {/* Wizard step indicator */}
+        {/* Step indicator — dynamic based on wizardStep */}
         <div className={styles.stepIndicator}>
           {STEPS_META.map((step, idx) => (
             <Fragment key={step.num}>
               {idx > 0 && <div className={styles.stepConnector} />}
               <div className={styles.stepItem}>
-                {idx === 0 ? (
+                {idx < wizardStep ? (
                   <>
                     <div className={styles.stepCircleDone}>✓</div>
                     <span className={styles.stepLabelDone}>{step.label}</span>
                   </>
-                ) : idx === 1 ? (
+                ) : idx === wizardStep ? (
                   <>
                     <div className={styles.stepCircleActive}>{step.num}</div>
                     <span className={styles.stepLabelActive}>{step.label}</span>
@@ -633,491 +714,889 @@ export default function WizardConfigureStep() {
           ))}
         </div>
 
-        {/* Step chip navigation (bundle steps) */}
-        <div className={styles.stepNav}>
-          {steps.map((s, i) => (
-            <button
-              key={s.tempId}
-              className={i === currentIdx ? styles.stepChipActive : styles.stepChip}
-              onClick={() => navigateTo(i)}
-            >
-              Step {i + 1}
-              {steps.length > 1 && i === currentIdx && (
-                <span
-                  style={{ marginLeft: 6, opacity: 0.6, fontSize: 11 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveStep(i);
-                  }}
-                  title="Remove this step"
+        {/* ══════════════════════════════════════════════════════
+            STEP 02 — Configuration
+        ══════════════════════════════════════════════════════ */}
+        {wizardStep === 1 && (
+          <>
+            {/* Step chip navigation */}
+            <div className={styles.stepNav}>
+              {steps.map((s, i) => (
+                <button
+                  key={s.tempId}
+                  className={
+                    i === currentIdx ? styles.stepChipActive : styles.stepChip
+                  }
+                  onClick={() => navigateTo(i)}
                 >
-                  ✕
-                </span>
-              )}
-            </button>
-          ))}
-          <button className={styles.addStepBtn} onClick={handleAddStep}>
-            + Add Step
-          </button>
-        </div>
-
-        {/* Main layout */}
-        <div className={styles.layout}>
-          {/* LEFT COLUMN */}
-          <div className={styles.leftCol}>
-            {/* Animated slide wrapper — key changes on step navigation */}
-            <div
-              key={slideKey}
-              className={`${slideDir ? styles[`slide${slideDir.charAt(0).toUpperCase()}${slideDir.slice(1)}`] : ""}`}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* ── Step Configuration Card ── */}
-                <div
-                  className={styles.card}
-                  data-tour-target="wizard-step-config"
-                >
-                  <div className={styles.cardHeader}>
-                    <s-heading>Step Configuration</s-heading>
-                    <s-button
-                      variant="secondary"
-                      icon="globe"
-                      onClick={() => setLocaleModalOpen(true)}
+                  Step {i + 1}
+                  {steps.length > 1 && i === currentIdx && (
+                    <span
+                      style={{ marginLeft: 6, opacity: 0.6, fontSize: 11 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveStep(i);
+                      }}
+                      title="Remove this step"
                     >
-                      Multi Language
-                    </s-button>
-                  </div>
+                      ✕
+                    </span>
+                  )}
+                </button>
+              ))}
+              <button className={styles.addStepBtn} onClick={handleAddStep}>
+                + Add Step
+              </button>
+            </div>
 
-                  <div className={styles.stepConfigRow}>
-                    {/* Icon upload */}
-                    <div className={styles.iconColumn}>
-                      <div className={styles.iconBox}>
-                        {currentStep.iconUrl ? (
-                          <img
-                            src={currentStep.iconUrl}
-                            alt="Step icon"
-                            className={styles.iconImg}
-                          />
-                        ) : (
-                          <div className={styles.iconPlaceholder}>
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
-                              <path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 5l-8 4-8-4" />
-                            </svg>
+            <div className={styles.layout}>
+              {/* LEFT — Config cards */}
+              <div className={styles.leftCol}>
+                <div
+                  key={slideKey}
+                  className={
+                    slideDir
+                      ? styles[
+                          `slide${slideDir.charAt(0).toUpperCase()}${slideDir.slice(1)}`
+                        ]
+                      : ""
+                  }
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {/* Step Configuration */}
+                    <div
+                      className={styles.card}
+                      data-tour-target="wizard-step-config"
+                    >
+                      <div className={styles.cardHeader}>
+                        <s-heading>Step Configuration</s-heading>
+                        <s-button
+                          variant="secondary"
+                          icon="globe"
+                          onClick={() => setLocaleModalOpen(true)}
+                        >
+                          Multi Language
+                        </s-button>
+                      </div>
+
+                      <div className={styles.stepConfigRow}>
+                        <div className={styles.iconColumn}>
+                          <div className={styles.iconBox}>
+                            {currentStep.iconUrl ? (
+                              <img
+                                src={currentStep.iconUrl}
+                                alt="Step icon"
+                                className={styles.iconImg}
+                              />
+                            ) : (
+                              <div className={styles.iconPlaceholder}>
+                                <svg
+                                  width="48"
+                                  height="48"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#d1d5db"
+                                  strokeWidth="1.5"
+                                >
+                                  <path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 5l-8 4-8-4" />
+                                </svg>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
 
-                      {/* Hidden FilePicker — triggered by button */}
-                      <div className={styles.filePickerHidden}>
-                        {showIconPicker && (
-                          <FilePicker
-                            value={currentStep.iconUrl}
-                            onChange={(url: string | null) => {
-                              updateCurrent("iconUrl", url);
-                              setShowIconPicker(false);
-                            }}
-                            label=""
-                            hideCropEditor
+                          <div className={styles.filePickerHidden}>
+                            {showIconPicker && (
+                              <FilePicker
+                                value={currentStep.iconUrl}
+                                onChange={(url: string | null) => {
+                                  updateCurrent("iconUrl", url);
+                                  setShowIconPicker(false);
+                                }}
+                                label=""
+                                hideCropEditor
+                              />
+                            )}
+                          </div>
+
+                          <s-button
+                            variant="secondary"
+                            icon="upload"
+                            onClick={() => setShowIconPicker((v) => !v)}
+                          >
+                            {showIconPicker ? "Close picker" : "Upload Icon"}
+                          </s-button>
+                          <s-text color="subdued">512×512 px · PNG/SVG</s-text>
+                        </div>
+
+                        <div className={styles.fieldsColumn}>
+                          <s-text-field
+                            label="Step Name"
+                            placeholder="Eg:- Add product"
+                            value={currentStep.name}
+                            onInput={(e: Event) =>
+                              updateCurrent(
+                                "name",
+                                (e.target as HTMLInputElement).value
+                              )
+                            }
+                            autoComplete="off"
                           />
-                        )}
+                          <div>
+                            <s-text-field
+                              label="Product Page Title"
+                              placeholder="Eg:- Customized T-shirt Bundle for you"
+                              value={currentStep.pageTitle}
+                              onInput={(e: Event) =>
+                                updateCurrent(
+                                  "pageTitle",
+                                  (e.target as HTMLInputElement).value
+                                )
+                              }
+                              autoComplete="off"
+                            />
+                            <s-text color="subdued">
+                              This text will appear as the page header right after the navigation bar.
+                            </s-text>
+                          </div>
+                        </div>
                       </div>
-
-                      <s-button
-                        variant="secondary"
-                        icon="upload"
-                        onClick={() => setShowIconPicker((v) => !v)}
-                      >
-                        {showIconPicker ? "Close picker" : "Upload Icon"}
-                      </s-button>
-                      <s-text color="subdued">512×512 px · PNG/SVG</s-text>
                     </div>
 
-                    {/* Fields */}
-                    <div className={styles.fieldsColumn}>
-                      <s-text-field
-                        label="Step Name"
-                        placeholder="Eg:- Add product"
-                        value={currentStep.name}
-                        onInput={(e: Event) =>
-                          updateCurrent("name", (e.target as HTMLInputElement).value)
-                        }
-                        autoComplete="off"
-                      />
-                      <div>
-                        <s-text-field
-                          label="Product Page Title"
-                          placeholder="Eg:- Customized T-shirt Bundle for you"
-                          value={currentStep.pageTitle}
-                          onInput={(e: Event) =>
-                            updateCurrent("pageTitle", (e.target as HTMLInputElement).value)
-                          }
-                          autoComplete="off"
-                        />
-                        <s-text color="subdued">
-                          This text will appear as the page header right after the navigation bar.
-                        </s-text>
+                    {/* Select Product */}
+                    <div
+                      className={styles.card}
+                      data-tour-target="wizard-select-product"
+                    >
+                      <div
+                        className={styles.cardHeader}
+                        style={{ marginBottom: 4 }}
+                      >
+                        <s-heading>Select Product</s-heading>
                       </div>
+                      <s-text color="subdued">
+                        Select product or collection to show in step
+                      </s-text>
+
+                      <div className={styles.tabRow}>
+                        <button
+                          className={
+                            currentStep.activeTab === "products"
+                              ? styles.tabActive
+                              : styles.tab
+                          }
+                          onClick={() => updateCurrent("activeTab", "products")}
+                        >
+                          Browse Products
+                          {selectedProductCount > 0 && (
+                            <span className={styles.tabBadge}>
+                              {selectedProductCount}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          className={
+                            currentStep.activeTab === "collections"
+                              ? styles.tabActive
+                              : styles.tab
+                          }
+                          onClick={() =>
+                            updateCurrent("activeTab", "collections")
+                          }
+                        >
+                          Browse Collections
+                          {selectedCollectionCount > 0 && (
+                            <span className={styles.tabBadge}>
+                              {selectedCollectionCount}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+
+                      <s-text color="subdued">
+                        Select{" "}
+                        {currentStep.activeTab === "products"
+                          ? "product"
+                          : "collection"}{" "}
+                        here will be displayed on this step
+                      </s-text>
+
+                      <div className={styles.productActions}>
+                        <s-button
+                          variant="primary"
+                          onClick={
+                            currentStep.activeTab === "products"
+                              ? pickProducts
+                              : pickCollections
+                          }
+                        >
+                          {currentStep.activeTab === "products"
+                            ? "Add Product"
+                            : "Add Collection"}
+                        </s-button>
+
+                        {currentStep.activeTab === "products" &&
+                          selectedProductCount > 0 && (
+                            <s-clickable onClick={pickProducts}>
+                              <s-badge tone="success">
+                                {selectedProductCount} Selected
+                              </s-badge>
+                            </s-clickable>
+                          )}
+
+                        {currentStep.activeTab === "collections" &&
+                          selectedCollectionCount > 0 && (
+                            <s-clickable onClick={pickCollections}>
+                              <s-badge tone="success">
+                                {selectedCollectionCount} Selected
+                              </s-badge>
+                            </s-clickable>
+                          )}
+                      </div>
+
+                      <s-checkbox
+                        label="Pre-select all products on this step"
+                        checked={currentStep.preSelectAll || undefined}
+                        onChange={(e: Event) =>
+                          updateCurrent(
+                            "preSelectAll",
+                            (e.target as HTMLInputElement).checked
+                          )
+                        }
+                      />
+                    </div>
+
+                    {/* Rules */}
+                    <div className={styles.card} data-tour-target="wizard-rules">
+                      <div
+                        className={styles.cardHeader}
+                        style={{ marginBottom: 4 }}
+                      >
+                        <s-heading>Rules</s-heading>
+                      </div>
+                      <s-text color="subdued">
+                        Define conditions for product selection and quantity limits.
+                      </s-text>
+
+                      {currentStep.conditions.length === 0 ? (
+                        <div className={styles.emptyState}>
+                          No rules defined yet
+                        </div>
+                      ) : (
+                        <div className={styles.rulesList}>
+                          {currentStep.conditions.map((rule) => (
+                            <div key={rule.id} className={styles.ruleRow}>
+                              <s-select
+                                label="Type"
+                                onChange={(e: Event) =>
+                                  updateRule(
+                                    rule.id,
+                                    "conditionType",
+                                    (e.target as HTMLSelectElement).value
+                                  )
+                                }
+                              >
+                                {[...STEP_CONDITION_TYPE_OPTIONS].map((opt) => (
+                                  <option
+                                    key={opt.value}
+                                    value={opt.value}
+                                    selected={
+                                      rule.conditionType === opt.value ||
+                                      undefined
+                                    }
+                                  >
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </s-select>
+
+                              <s-select
+                                label="Operator"
+                                onChange={(e: Event) =>
+                                  updateRule(
+                                    rule.id,
+                                    "conditionOperator",
+                                    (e.target as HTMLSelectElement).value
+                                  )
+                                }
+                              >
+                                {[...STEP_CONDITION_OPERATOR_OPTIONS].map(
+                                  (opt) => (
+                                    <option
+                                      key={opt.value}
+                                      value={opt.value}
+                                      selected={
+                                        rule.conditionOperator === opt.value ||
+                                        undefined
+                                      }
+                                    >
+                                      {opt.label}
+                                    </option>
+                                  )
+                                )}
+                              </s-select>
+
+                              <s-text-field
+                                label="Value"
+                                value={rule.conditionValue}
+                                type="number"
+                                min="0"
+                                autoComplete="off"
+                                onInput={(e: Event) =>
+                                  updateRule(
+                                    rule.id,
+                                    "conditionValue",
+                                    (e.target as HTMLInputElement).value
+                                  )
+                                }
+                              />
+
+                              <s-button
+                                icon="delete"
+                                variant="tertiary"
+                                tone="critical"
+                                accessibilityLabel="Remove rule"
+                                onClick={() => removeRule(rule.id)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <s-button variant="secondary" icon="plus" onClick={addRule}>
+                        Add Rule
+                      </s-button>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* ── Select Product Card ── */}
+              {/* RIGHT — Config sidebar */}
+              <div className={styles.rightCol}>
                 <div
-                  className={styles.card}
-                  data-tour-target="wizard-select-product"
+                  className={styles.sideCard}
+                  data-tour-target="wizard-bundle-status"
                 >
-                  <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
-                    <s-heading>Select Product</s-heading>
-                  </div>
-                  <s-text color="subdued">Select product or collection to show in step</s-text>
-
-                  {/* Tabs */}
-                  <div className={styles.tabRow}>
-                    <button
-                      className={
-                        currentStep.activeTab === "products"
-                          ? styles.tabActive
-                          : styles.tab
-                      }
-                      onClick={() => updateCurrent("activeTab", "products")}
-                    >
-                      Browse Products
-                      {selectedProductCount > 0 && (
-                        <span className={styles.tabBadge}>{selectedProductCount}</span>
-                      )}
-                    </button>
-                    <button
-                      className={
-                        currentStep.activeTab === "collections"
-                          ? styles.tabActive
-                          : styles.tab
-                      }
-                      onClick={() => updateCurrent("activeTab", "collections")}
-                    >
-                      Browse Collections
-                      {selectedCollectionCount > 0 && (
-                        <span className={styles.tabBadge}>{selectedCollectionCount}</span>
-                      )}
-                    </button>
-                  </div>
-
-                  <s-text color="subdued">
-                    Select{" "}
-                    {currentStep.activeTab === "products" ? "product" : "collection"}{" "}
-                    here will be displayed on this step
-                  </s-text>
-
-                  <div className={styles.productActions}>
-                    <s-button
-                      variant="primary"
-                      onClick={
-                        currentStep.activeTab === "products"
-                          ? pickProducts
-                          : pickCollections
-                      }
-                    >
-                      {currentStep.activeTab === "products"
-                        ? "Add Product"
-                        : "Add Collection"}
-                    </s-button>
-
-                    {currentStep.activeTab === "products" &&
-                      selectedProductCount > 0 && (
-                        <s-clickable onClick={pickProducts}>
-                          <s-badge tone="success">{selectedProductCount} Selected</s-badge>
-                        </s-clickable>
-                      )}
-
-                    {currentStep.activeTab === "collections" &&
-                      selectedCollectionCount > 0 && (
-                        <s-clickable onClick={pickCollections}>
-                          <s-badge tone="success">{selectedCollectionCount} Selected</s-badge>
-                        </s-clickable>
-                      )}
-                  </div>
-
-                  <s-checkbox
-                    label="Pre-select all products on this step"
-                    checked={currentStep.preSelectAll || undefined}
+                  <s-heading>Bundle Status</s-heading>
+                  <s-select
+                    ref={statusSelectRef}
+                    label=""
                     onChange={(e: Event) =>
-                      updateCurrent("preSelectAll", (e.target as HTMLInputElement).checked)
+                      setBundleStatus(
+                        (e.target as HTMLSelectElement).value
+                      )
+                    }
+                  >
+                    {BUNDLE_STATUS_OPTIONS.map((opt) => (
+                      <option
+                        key={opt.value}
+                        value={opt.value}
+                        selected={bundleStatus === opt.value || undefined}
+                      >
+                        {opt.label}
+                      </option>
+                    ))}
+                  </s-select>
+                </div>
+
+                <div className={styles.sideCard}>
+                  <s-heading>Step Summary</s-heading>
+                  <s-text color="subdued">
+                    Select product here will be displayed on this step
+                  </s-text>
+                  <div className={styles.summaryList}>
+                    <div className={styles.summaryItem}>
+                      <s-icon type="product" />
+                      <span className={styles.summaryLabel}>
+                        Selected products
+                      </span>
+                      <span
+                        className={
+                          selectedProductCount + selectedCollectionCount > 0
+                            ? styles.summaryValueActive
+                            : styles.summaryValue
+                        }
+                      >
+                        {selectedProductCount + selectedCollectionCount || "—"}
+                      </span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <s-icon type="note" />
+                      <span className={styles.summaryLabel}>Rules</span>
+                      <span
+                        className={
+                          rulesCount > 0
+                            ? styles.summaryValueActive
+                            : styles.summaryValue
+                        }
+                      >
+                        {rulesCount > 0 ? rulesCount : "None"}
+                      </span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <s-icon type="search" />
+                      <span className={styles.summaryLabel}>Search Bar</span>
+                      <span
+                        className={
+                          searchBarEnabled
+                            ? styles.summaryValueActive
+                            : styles.summaryValue
+                        }
+                      >
+                        {searchBarEnabled ? "Enabled" : "Disabled"}
+                      </span>
+                    </div>
+                    <div className={styles.summaryItem}>
+                      <s-icon type="edit" />
+                      <span className={styles.summaryLabel}>Custom Fields</span>
+                      <span className={styles.summaryValue}>0</span>
+                    </div>
+                  </div>
+                  <s-button
+                    variant="primary"
+                    icon="view"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+                      }
+                      shopify.toast.show("Opening preview…");
+                    }}
+                  >
+                    Preview
+                  </s-button>
+                </div>
+
+                <s-banner tone="info" heading="PRO TIP">
+                  Bundles with 3+ products see 24% higher conversion rates when
+                  search filters are enabled.
+                </s-banner>
+
+                <div className={styles.wizardFooter}>
+                  <s-button variant="secondary" onClick={handleBack}>
+                    Back
+                  </s-button>
+                  <s-button
+                    variant="primary"
+                    loading={isSubmitting || undefined}
+                    onClick={handleNext}
+                  >
+                    Next
+                  </s-button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════
+            STEP 03 — Pricing
+        ══════════════════════════════════════════════════════ */}
+        {wizardStep === 2 && (
+          <div className={styles.layout}>
+            {/* LEFT — Pricing cards */}
+            <div className={styles.leftCol}>
+              {/* Bundle pricing & Discounts */}
+              <div className={styles.card}>
+                <div className={styles.pricingCardHeader}>
+                  <div>
+                    <s-heading>Bundle pricing &amp; Discounts</s-heading>
+                    <s-text color="subdued">
+                      Set up discount rules, applied from lowest to highest.
+                    </s-text>
+                  </div>
+                  <s-switch
+                    checked={pricing.discountEnabled || undefined}
+                    onChange={(e: Event) =>
+                      pricing.toggleDiscountEnabled(
+                        (e.target as HTMLInputElement).checked
+                      )
                     }
                   />
                 </div>
 
-                {/* ── Rules Card ── */}
-                <div
-                  className={styles.card}
-                  data-tour-target="wizard-rules"
+                {pricing.discountEnabled && (
+                  <div className={styles.pricingContent}>
+                    {/* Tip banner */}
+                    <div className={styles.tipBanner}>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        style={{ flexShrink: 0, marginTop: 1 }}
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>
+                        Tip: Discounts are calculated based on the products in
+                        cart, make sure to add the &ldquo;Default Product&rdquo;
+                        quantity or amount while configuring discounts.
+                      </span>
+                    </div>
+
+                    {/* Discount Type */}
+                    <s-select
+                      label="Discount Type"
+                      onChange={(e: Event) => {
+                        pricing.changeDiscountType(
+                          (e.target as HTMLSelectElement).value as DiscountMethod
+                        );
+                        pricing.setDiscountRules([]);
+                      }}
+                    >
+                      <option
+                        value=""
+                        disabled
+                        selected={!pricing.discountType || undefined}
+                      >
+                        Select discount type
+                      </option>
+                      {[...DISCOUNT_METHOD_OPTIONS].map((opt) => (
+                        <option
+                          key={opt.value}
+                          value={opt.value}
+                          selected={
+                            pricing.discountType === opt.value || undefined
+                          }
+                        >
+                          {opt.label}
+                        </option>
+                      ))}
+                    </s-select>
+
+                    {/* Discount Rules */}
+                    {pricing.discountRules.length > 0 && (
+                      <div className={styles.rulesList}>
+                        {pricing.discountRules.map((rule, index) => (
+                          <div key={rule.id} className={styles.discountRuleRow}>
+                            <div className={styles.discountRuleHeader}>
+                              <s-text>Rule {index + 1}</s-text>
+                              <s-button
+                                variant="tertiary"
+                                tone="critical"
+                                icon="delete"
+                                accessibilityLabel="Remove rule"
+                                onClick={() =>
+                                  pricing.removeDiscountRule(rule.id)
+                                }
+                              />
+                            </div>
+                            <div className={styles.discountRuleFields}>
+                              <s-select
+                                label="Condition"
+                                onChange={(e: Event) =>
+                                  pricing.updateDiscountRule(rule.id, {
+                                    condition: {
+                                      ...rule.condition,
+                                      type: (e.target as HTMLSelectElement)
+                                        .value as any,
+                                    },
+                                  })
+                                }
+                              >
+                                {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(
+                                  (opt) => (
+                                    <option
+                                      key={opt.value}
+                                      value={opt.value}
+                                      selected={
+                                        rule.condition.type === opt.value ||
+                                        undefined
+                                      }
+                                    >
+                                      {opt.label}
+                                    </option>
+                                  )
+                                )}
+                              </s-select>
+
+                              <s-select
+                                label="Operator"
+                                onChange={(e: Event) =>
+                                  pricing.updateDiscountRule(rule.id, {
+                                    condition: {
+                                      ...rule.condition,
+                                      operator: (e.target as HTMLSelectElement)
+                                        .value as any,
+                                    },
+                                  })
+                                }
+                              >
+                                {[...DISCOUNT_OPERATOR_OPTIONS].map((opt) => (
+                                  <option
+                                    key={opt.value}
+                                    value={opt.value}
+                                    selected={
+                                      rule.condition.operator === opt.value ||
+                                      undefined
+                                    }
+                                  >
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </s-select>
+
+                              <s-text-field
+                                label={
+                                  rule.condition.type === ConditionType.AMOUNT
+                                    ? "Amount"
+                                    : "Qty"
+                                }
+                                value={String(
+                                  rule.condition.type === ConditionType.AMOUNT
+                                    ? centsToAmount(rule.condition.value)
+                                    : rule.condition.value
+                                )}
+                                type="number"
+                                min="0"
+                                autoComplete="off"
+                                onInput={(e: Event) => {
+                                  const num =
+                                    Number(
+                                      (e.target as HTMLInputElement).value
+                                    ) || 0;
+                                  pricing.updateDiscountRule(rule.id, {
+                                    condition: {
+                                      ...rule.condition,
+                                      value:
+                                        rule.condition.type ===
+                                        ConditionType.AMOUNT
+                                          ? amountToCents(num)
+                                          : num,
+                                    },
+                                  });
+                                }}
+                              />
+
+                              <s-text-field
+                                label={
+                                  pricing.discountType ===
+                                  DiscountMethod.PERCENTAGE_OFF
+                                    ? "% Off"
+                                    : pricing.discountType ===
+                                      DiscountMethod.FIXED_BUNDLE_PRICE
+                                    ? "Bundle Price"
+                                    : "Amount Off"
+                                }
+                                value={String(
+                                  pricing.discountType ===
+                                  DiscountMethod.PERCENTAGE_OFF
+                                    ? rule.discount.value
+                                    : centsToAmount(rule.discount.value)
+                                )}
+                                type="number"
+                                min="0"
+                                autoComplete="off"
+                                onInput={(e: Event) => {
+                                  const num =
+                                    Number(
+                                      (e.target as HTMLInputElement).value
+                                    ) || 0;
+                                  pricing.updateDiscountRule(rule.id, {
+                                    discount: {
+                                      ...rule.discount,
+                                      value:
+                                        pricing.discountType ===
+                                        DiscountMethod.PERCENTAGE_OFF
+                                          ? num
+                                          : amountToCents(num),
+                                    },
+                                  });
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {pricing.discountRules.length < 4 && (
+                      <s-button
+                        icon="plus"
+                        variant="primary"
+                        onClick={pricing.addDiscountRule}
+                      >
+                        Add Rule
+                      </s-button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Discount Display Options */}
+              <div
+                className={`${styles.card} ${
+                  !pricing.discountEnabled ? styles.cardDisabled : ""
+                }`}
+              >
+                <div style={{ marginBottom: 16 }}>
+                  <s-heading>Discount Display Options</s-heading>
+                  <s-text color="subdued">
+                    Choose how discounts are displayed
+                  </s-text>
+                </div>
+
+                <div className={styles.displayOptionRow}>
+                  <s-text>Progress bar</s-text>
+                  <s-switch
+                    checked={showProgressBar || undefined}
+                    onChange={(e: Event) =>
+                      setShowProgressBar(
+                        (e.target as HTMLInputElement).checked
+                      )
+                    }
+                  />
+                </div>
+
+                <div className={styles.displayOptionDivider} />
+
+                <div className={styles.displayOptionRow}>
+                  <div className={styles.displayOptionInfo}>
+                    <s-text>Discount Messaging</s-text>
+                    <s-text color="subdued">
+                      Edit how discount message appear above the subtotal.
+                    </s-text>
+                  </div>
+                  <s-switch
+                    checked={discountMessagingEnabled || undefined}
+                    onChange={(e: Event) =>
+                      setDiscountMessagingEnabled(
+                        (e.target as HTMLInputElement).checked
+                      )
+                    }
+                  />
+                </div>
+
+                {discountMessagingEnabled && pricing.discountEnabled && (
+                  <div className={styles.messageTemplateSection}>
+                    <s-text-field
+                      label="Progress message"
+                      placeholder="Add {{conditionText}} to get {{discountText}}"
+                      value={progressMessage}
+                      onInput={(e: Event) =>
+                        setProgressMessage(
+                          (e.target as HTMLInputElement).value
+                        )
+                      }
+                      autoComplete="off"
+                    />
+                    <s-text-field
+                      label="Qualified message"
+                      placeholder="Congratulations! You got {{discountText}}!"
+                      value={qualifiedMessage}
+                      onInput={(e: Event) =>
+                        setQualifiedMessage(
+                          (e.target as HTMLInputElement).value
+                        )
+                      }
+                      autoComplete="off"
+                    />
+                    <s-text color="subdued">
+                      {"Variables: {{conditionText}}, {{discountText}}, {{bundleName}}"}
+                    </s-text>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT — Pricing sidebar */}
+            <div className={styles.rightCol}>
+              <div className={styles.sideCard}>
+                <s-heading>Pricing Summary</s-heading>
+                <div className={styles.summaryList}>
+                  <div className={styles.summaryItem}>
+                    <s-icon type="note" />
+                    <span className={styles.summaryLabel}>Discounts</span>
+                    <span
+                      className={
+                        pricing.discountEnabled
+                          ? styles.summaryValueActive
+                          : styles.summaryValue
+                      }
+                    >
+                      {pricing.discountEnabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                  <div className={styles.summaryItem}>
+                    <s-icon type="product" />
+                    <span className={styles.summaryLabel}>Type</span>
+                    <span
+                      className={
+                        pricing.discountEnabled && pricing.discountType
+                          ? styles.summaryValueActive
+                          : styles.summaryValue
+                      }
+                    >
+                      {pricing.discountEnabled
+                        ? ([...DISCOUNT_METHOD_OPTIONS].find(
+                            (o) => o.value === pricing.discountType
+                          )?.label ?? "—")
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className={styles.summaryItem}>
+                    <s-icon type="note" />
+                    <span className={styles.summaryLabel}>Rules</span>
+                    <span
+                      className={
+                        pricing.discountRules.length > 0
+                          ? styles.summaryValueActive
+                          : styles.summaryValue
+                      }
+                    >
+                      {pricing.discountRules.length > 0
+                        ? pricing.discountRules.length
+                        : "None"}
+                    </span>
+                  </div>
+                  <div className={styles.summaryItem}>
+                    <s-icon type="view" />
+                    <span className={styles.summaryLabel}>Progress bar</span>
+                    <span
+                      className={
+                        showProgressBar
+                          ? styles.summaryValueActive
+                          : styles.summaryValue
+                      }
+                    >
+                      {showProgressBar ? "On" : "Off"}
+                    </span>
+                  </div>
+                  <div className={styles.summaryItem}>
+                    <s-icon type="note" />
+                    <span className={styles.summaryLabel}>Messaging</span>
+                    <span
+                      className={
+                        discountMessagingEnabled
+                          ? styles.summaryValueActive
+                          : styles.summaryValue
+                      }
+                    >
+                      {discountMessagingEnabled ? "On" : "Off"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.wizardFooter}>
+                <s-button variant="secondary" onClick={handleBack}>
+                  Back
+                </s-button>
+                <s-button
+                  variant="primary"
+                  loading={isSubmitting || undefined}
+                  onClick={handleNext}
                 >
-                  <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
-                    <s-heading>Rules</s-heading>
-                  </div>
-                  <s-text color="subdued">Define conditions for product selection and quantity limits.</s-text>
-
-                  {currentStep.conditions.length === 0 ? (
-                    <div className={styles.emptyState}>No rules defined yet</div>
-                  ) : (
-                    <div className={styles.rulesList}>
-                      {currentStep.conditions.map((rule) => (
-                        <div key={rule.id} className={styles.ruleRow}>
-                          <s-select
-                            label="Type"
-                            onChange={(e: Event) =>
-                              updateRule(
-                                rule.id,
-                                "conditionType",
-                                (e.target as HTMLSelectElement).value
-                              )
-                            }
-                          >
-                            {[...STEP_CONDITION_TYPE_OPTIONS].map((opt) => (
-                              <option
-                                key={opt.value}
-                                value={opt.value}
-                                selected={
-                                  rule.conditionType === opt.value || undefined
-                                }
-                              >
-                                {opt.label}
-                              </option>
-                            ))}
-                          </s-select>
-
-                          <s-select
-                            label="Operator"
-                            onChange={(e: Event) =>
-                              updateRule(
-                                rule.id,
-                                "conditionOperator",
-                                (e.target as HTMLSelectElement).value
-                              )
-                            }
-                          >
-                            {[...STEP_CONDITION_OPERATOR_OPTIONS].map((opt) => (
-                              <option
-                                key={opt.value}
-                                value={opt.value}
-                                selected={
-                                  rule.conditionOperator === opt.value ||
-                                  undefined
-                                }
-                              >
-                                {opt.label}
-                              </option>
-                            ))}
-                          </s-select>
-
-                          <s-text-field
-                            label="Value"
-                            value={rule.conditionValue}
-                            type="number"
-                            min="0"
-                            autoComplete="off"
-                            onInput={(e: Event) =>
-                              updateRule(
-                                rule.id,
-                                "conditionValue",
-                                (e.target as HTMLInputElement).value
-                              )
-                            }
-                          />
-
-                          <s-button
-                            icon="delete"
-                            variant="tertiary"
-                            tone="critical"
-                            accessibilityLabel="Remove rule"
-                            onClick={() => removeRule(rule.id)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <s-button variant="secondary" icon="plus" onClick={addRule}>Add Rule</s-button>
-                </div>
-
-                {/* ── Filters Card ── */}
-                <div className={styles.card}>
-                  <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
-                    <s-heading>Filters</s-heading>
-                  </div>
-                  <s-text color="subdued">Customer-facing filters to narrow product selection in this step.</s-text>
-
-                  {currentStep.filters.length === 0 ? (
-                    <div className={styles.emptyState}>No filters defined yet</div>
-                  ) : (
-                    <div className={styles.rulesList}>
-                      {currentStep.filters.map((filter) => (
-                        <div key={filter.id} className={styles.filterRow}>
-                          <s-select
-                            label="Filter by"
-                            onChange={(e: Event) =>
-                              updateFilter(
-                                filter.id,
-                                "type",
-                                (e.target as HTMLSelectElement).value
-                              )
-                            }
-                          >
-                            {[...FILTER_TYPE_OPTIONS].map((opt) => (
-                              <option
-                                key={opt.value}
-                                value={opt.value}
-                                selected={filter.type === opt.value || undefined}
-                              >
-                                {opt.label}
-                              </option>
-                            ))}
-                          </s-select>
-
-                          <s-text-field
-                            label={
-                              filter.type === "option"
-                                ? "Option name (eg. Color)"
-                                : "Tag prefix (eg. size)"
-                            }
-                            value={filter.label}
-                            autoComplete="off"
-                            onInput={(e: Event) =>
-                              updateFilter(
-                                filter.id,
-                                "label",
-                                (e.target as HTMLInputElement).value
-                              )
-                            }
-                          />
-
-                          <s-button
-                            icon="delete"
-                            variant="tertiary"
-                            tone="critical"
-                            accessibilityLabel="Remove filter"
-                            onClick={() => removeFilter(filter.id)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <s-button variant="secondary" icon="plus" onClick={addFilter}>Add Filter</s-button>
-                </div>
+                  Next
+                </s-button>
               </div>
             </div>
           </div>
-
-          {/* RIGHT COLUMN */}
-          <div className={styles.rightCol}>
-            {/* Bundle Status */}
-            <div
-              className={styles.sideCard}
-              data-tour-target="wizard-bundle-status"
-            >
-              <s-heading>Bundle Status</s-heading>
-              <s-select
-                ref={statusSelectRef}
-                label=""
-                onChange={(e: Event) =>
-                  setBundleStatus((e.target as HTMLSelectElement).value)
-                }
-              >
-                {BUNDLE_STATUS_OPTIONS.map((opt) => (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    selected={bundleStatus === opt.value || undefined}
-                  >
-                    {opt.label}
-                  </option>
-                ))}
-              </s-select>
-            </div>
-
-            {/* Step Summary */}
-            <div className={styles.sideCard}>
-              <s-heading>Step Summary</s-heading>
-              <s-text color="subdued">Select product here will be displayed on this step</s-text>
-              <div className={styles.summaryList}>
-                <div className={styles.summaryItem}>
-                  <s-icon type="product" />
-                  <span className={styles.summaryLabel}>Selected products</span>
-                  <span className={selectedProductCount + selectedCollectionCount > 0 ? styles.summaryValueActive : styles.summaryValue}>
-                    {selectedProductCount + selectedCollectionCount || "—"}
-                  </span>
-                </div>
-
-                <div className={styles.summaryItem}>
-                  <s-icon type="note" />
-                  <span className={styles.summaryLabel}>Rules</span>
-                  <span className={rulesCount > 0 ? styles.summaryValueActive : styles.summaryValue}>
-                    {rulesCount > 0 ? rulesCount : "None"}
-                  </span>
-                </div>
-
-                <div className={styles.summaryItem}>
-                  <s-icon type="filter" />
-                  <span className={styles.summaryLabel}>Filters</span>
-                  <span className={filtersCount > 0 ? styles.summaryValueActive : styles.summaryValue}>
-                    {filtersCount > 0 ? filtersCount : "None"}
-                  </span>
-                </div>
-
-                <div className={styles.summaryItem}>
-                  <s-icon type="search" />
-                  <span className={styles.summaryLabel}>Search Bar</span>
-                  <span className={searchBarEnabled ? styles.summaryValueActive : styles.summaryValue}>
-                    {searchBarEnabled ? "Enabled" : "Disabled"}
-                  </span>
-                </div>
-
-                <div className={styles.summaryItem}>
-                  <s-icon type="edit" />
-                  <span className={styles.summaryLabel}>Custom Fields</span>
-                  <span className={styles.summaryValue}>0</span>
-                </div>
-              </div>
-
-              <s-button variant="primary" icon="view" onClick={handlePreview}>Preview</s-button>
-            </div>
-
-            {/* Pro Tip */}
-            <s-banner tone="info" heading="PRO TIP">
-              Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.
-            </s-banner>
-
-            {/* Back + Next */}
-            <div className={styles.wizardFooter}>
-              <s-button variant="secondary" onClick={() => window.history.back()}>
-                Back
-              </s-button>
-              <s-button
-                variant="primary"
-                loading={isSubmitting || undefined}
-                onClick={handleNext}
-              >
-                Next
-              </s-button>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-
-      {/* Hidden submit form */}
-      <Form method="post" style={{ display: "none" }}>
-        <input type="hidden" name="steps" value={JSON.stringify(steps)} />
-        <input type="hidden" name="bundleStatus" value={bundleStatus} />
-        <input
-          type="hidden"
-          name="searchBarEnabled"
-          value={String(searchBarEnabled)}
-        />
-        <input
-          type="hidden"
-          name="textOverridesByLocale"
-          value={JSON.stringify(textOverridesByLocale)}
-        />
-        <button ref={submitRef} type="submit" />
-      </Form>
 
       {/* Multi-Language Modal */}
       {localeModalOpen && (
@@ -1125,7 +1604,10 @@ export default function WizardConfigureStep() {
           className={styles.modalBackdrop}
           onClick={() => setLocaleModalOpen(false)}
         >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          <div
+            className={styles.modal}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>Multi Language</h2>
               <button
@@ -1166,7 +1648,9 @@ export default function WizardConfigureStep() {
                           <option
                             key={l.locale}
                             value={l.locale}
-                            selected={selectedLocale === l.locale || undefined}
+                            selected={
+                              selectedLocale === l.locale || undefined
+                            }
                           >
                             {l.name}
                           </option>
@@ -1184,7 +1668,9 @@ export default function WizardConfigureStep() {
                       </p>
                       <s-text-field
                         label=""
-                        placeholder={currentStep.name || "Step name in English"}
+                        placeholder={
+                          currentStep.name || "Step name in English"
+                        }
                         value={getTranslation(selectedLocale)}
                         onInput={(e: Event) =>
                           setTranslation(

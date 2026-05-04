@@ -497,3 +497,103 @@
   .stepConfigRow { grid-template-columns: 1fr; }
   .iconBox { width: 100%; }
 }
+
+/* ── Step 03: Pricing ─────────────────────────────────────────── */
+
+/* Card header with toggle on the right */
+.pricingCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Padding + gap for enabled pricing content */
+.pricingContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Blue tip banner matching design */
+.tipBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #1d4ed8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Grayed-out / disabled card overlay */
+.cardDisabled {
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Individual discount rule card */
+.discountRuleRow {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.discountRuleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 4-column grid: Condition | Operator | Value | Discount value */
+.discountRuleFields {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 90px 90px;
+  gap: 8px;
+  align-items: end;
+}
+
+/* Display option toggle row */
+.displayOptionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+}
+
+.displayOptionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Divider between display option rows */
+.displayOptionDivider {
+  height: 1px;
+  background: #f3f4f6;
+}
+
+/* Message template fields (shown when Discount Messaging is ON) */
+.messageTemplateSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  margin-top: 2px;
+  border-top: 1px solid #f3f4f6;
+}
+
+@media (max-width: 900px) {
+  .discountRuleFields {
+    grid-template-columns: 1fr 1fr;
+  }
+}

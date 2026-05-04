@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-02
-**Last Updated:** 2026-05-04 10:00
+**Last Updated:** 2026-05-05 12:00
 
 ## Overview
 Replace the dashboard Create Bundle modal with a full-page multi-step wizard at `/app/bundles/create`. Step 01 collects bundle name, description, bundle type, and page layout. Also adds `data-tour-target` attributes to FPB and PPB configure pages per guided-tour-reference.md Section 3.
@@ -65,6 +65,20 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - ✅ Narrow viewport (390px) tested — single-column layout, all sections accessible
 - Files changed: route.tsx, wizard-configure.module.css, BundleGuidedTour.tsx, BundleReadinessOverlay.tsx, tourSteps.ts, create-bundle route action
 
+### 2026-05-05 12:00 - Completed Phase 10: Step 03 Pricing wizard step
+- ✅ Prisma migration: added `showProgressBar Boolean @default(true)` to `BundlePricing`
+- ✅ Wizard step state (`wizardStep`) added — step indicator is now dynamic (done/active/future)
+- ✅ Step 02 "Next" uses `useFetcher` (`saveConfig` intent) → saves config without redirect → advances to Step 03
+- ✅ Step 03 Pricing content: Bundle pricing & Discounts card (toggle, tip banner, discount type select, rule editor with 4-column grid, Add Rule button)
+- ✅ Discount Display Options card: Progress bar toggle (`showProgressBar`) + Discount Messaging toggle (`showFooter`) + message template fields when messaging ON
+- ✅ Discount Display Options card grays out (`cardDisabled`) when main pricing toggle is OFF
+- ✅ Step 03 "Next" uses `useFetcher` (`savePricing` intent) → upserts `BundlePricing` → navigates to full configure page
+- ✅ Pricing Summary sidebar showing Discounts/Type/Rules/Progress bar/Messaging states
+- ✅ Filters card removed from Step 02 UI; filter state preserved in `WizardStepState` for Step 04
+- ✅ Page title + breadcrumb update dynamically per wizard step
+- ✅ Back button on Step 03 returns to Step 02 (no network request), scrolls to top
+- Files changed: route.tsx, wizard-configure.module.css, schema.prisma, migration SQL
+
 ## Phases Checklist
 - [x] Phase 1: TDD — write failing tests for create-bundle action
 - [x] Phase 2: New wizard route + CSS module
@@ -74,3 +88,4 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - [x] Phase 6: Update APP_NAVIGATION_MAP.md
 - [x] Phase 7: Design polish — step indicator, images, card layout, help button, outlined buttons
 - [x] Phase 8: Step 02 Configuration — wizard route, DB migration, carousel animation, all feature cards
+- [x] Phase 10: Step 03 Pricing — DB migration, dynamic wizard step, pricing cards, sidebar, fetcher-based save
