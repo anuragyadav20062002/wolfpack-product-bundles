@@ -22,6 +22,16 @@ export function BundleGuidedTour({ steps, shop, bundleId, onComplete, onDismiss 
     }
   }, [storageKey]);
 
+  // Lock body scroll while tour is open
+  useEffect(() => {
+    if (!visible) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [visible]);
+
   // Highlight + scroll target section when step changes
   useEffect(() => {
     if (!visible) return;
