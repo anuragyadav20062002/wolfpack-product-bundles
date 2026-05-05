@@ -597,3 +597,65 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ── Step 04: Assets ──────────────────────────────────────────── */
+
+/* Full-width single-column layout (no sidebar) */
+.assetsLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 2-column grid: Promo Banner | Loading GIF */
+.assetsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* Individual asset upload block */
+.assetBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Row layout: label/description left, control right */
+.assetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Custom field card */
+.customFieldRow {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Label + Type select + Remove button in a row */
+.customFieldRowTop {
+  display: grid;
+  grid-template-columns: 1fr 140px 40px;
+  gap: 8px;
+  align-items: end;
+}
+
+@media (max-width: 900px) {
+  .assetsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .customFieldRowTop {
+    grid-template-columns: 1fr 40px;
+    grid-template-rows: auto auto;
+  }
+}

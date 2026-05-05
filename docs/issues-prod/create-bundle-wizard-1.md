@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-02
-**Last Updated:** 2026-05-05 12:00
+**Last Updated:** 2026-05-05 16:00
 
 ## Overview
 Replace the dashboard Create Bundle modal with a full-page multi-step wizard at `/app/bundles/create`. Step 01 collects bundle name, description, bundle type, and page layout. Also adds `data-tour-target` attributes to FPB and PPB configure pages per guided-tour-reference.md Section 3.
@@ -79,6 +79,17 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - ✅ Back button on Step 03 returns to Step 02 (no network request), scrolls to top
 - Files changed: route.tsx, wizard-configure.module.css, schema.prisma, migration SQL
 
+### 2026-05-05 16:00 - Completed Phase 11: Step 04 Assets wizard step + guided tour backdrop
+- ✅ Prisma migration: added `BundleCustomField` model (label, fieldType, required, position, options) with relation to Bundle
+- ✅ `saveAssets` action intent: updates bundle promo/gif/searchBar, saves per-step filters, recreates custom fields
+- ✅ `savePricing` no longer redirects — now advances wizard to step 3 (Assets)
+- ✅ Step 04 UI: Media Assets card (Promo Banner + Loading GIF side-by-side with FilePicker + full crop editor), Filters row + drawer modal (step-picker + per-step filter CRUD), Search Bar toggle, Custom Fields row + modal (label/type/required/options), Finish Setup footer
+- ✅ Search Bar row removed from Step 02 sidebar (Step 04 is now the authoritative toggle)
+- ✅ `assetsFetcher` navigates to full configure page after save
+- ✅ BundleGuidedTour: added full-page backdrop (rgba 0.45, z-580), highlighted element raised to z-595 so it appears above the dim; tour card stays at z-600
+- ✅ FILTER_TYPE_OPTIONS and CUSTOM_FIELD_TYPE_OPTIONS constants added
+- Files changed: route.tsx, wizard-configure.module.css, BundleGuidedTour.tsx, BundleGuidedTour.module.css, schema.prisma, migration SQL
+
 ## Phases Checklist
 - [x] Phase 1: TDD — write failing tests for create-bundle action
 - [x] Phase 2: New wizard route + CSS module
@@ -89,3 +100,4 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - [x] Phase 7: Design polish — step indicator, images, card layout, help button, outlined buttons
 - [x] Phase 8: Step 02 Configuration — wizard route, DB migration, carousel animation, all feature cards
 - [x] Phase 10: Step 03 Pricing — DB migration, dynamic wizard step, pricing cards, sidebar, fetcher-based save
+- [x] Phase 11: Step 04 Assets — DB migration (BundleCustomField), media assets, filters drawer, search bar, custom fields modal, guided tour backdrop

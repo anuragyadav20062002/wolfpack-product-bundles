@@ -89,6 +89,20 @@
 
 .nextBtn:hover { opacity: 0.88; }
 
+/* Dim overlay behind the tour card — highlighted element raised above it via z-index 595 */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 580;
+  animation: backdropFadeIn 0.25s ease;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* Applied to target DOM elements via classList — must be global */
 :global(.wpb-tour-highlight) {
   outline: 2px solid #005bd3 !important;

@@ -121,6 +121,7 @@ model Bundle {
   steps            BundleStep[]
   pricing          BundlePricing?
   analytics        BundleAnalytics[]
+  customFields     BundleCustomField[]
 
   @@index([shopId])
   @@index([status])
@@ -208,6 +209,22 @@ model BundlePricing {
   updatedAt      DateTime           @updatedAt
 
   @@index([bundleId])
+}
+
+model BundleCustomField {
+  id        String   @id @default(cuid())
+  bundleId  String
+  bundle    Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  label     String
+  fieldType String   @default("text") // text, select, checkbox, number
+  required  Boolean  @default(false)
+  position  Int      @default(0)
+  options   Json?    // For select fields: ["Option A", "Option B"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bundleId])
+  @@index([bundleId, position])
 }
 
 model BundleAnalytics {

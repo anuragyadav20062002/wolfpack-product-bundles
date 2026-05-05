@@ -33,7 +33,16 @@ export function BundleGuidedTour({ steps, shop, bundleId, onComplete, onDismiss 
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("wpb-tour-highlight");
-    return () => el.classList.remove("wpb-tour-highlight");
+    // Raise element above the dim backdrop so it remains visible
+    const prevPosition = el.style.position;
+    const prevZIndex = el.style.zIndex;
+    el.style.position = "relative";
+    el.style.zIndex = "595";
+    return () => {
+      el.classList.remove("wpb-tour-highlight");
+      el.style.position = prevPosition;
+      el.style.zIndex = prevZIndex;
+    };
   }, [visible, currentStep, steps]);
 
   const handleDismiss = useCallback(() => {
@@ -59,7 +68,9 @@ export function BundleGuidedTour({ steps, shop, bundleId, onComplete, onDismiss 
   const isLast = currentStep === steps.length - 1;
 
   return (
-    <div className={styles.overlay}>
+    <>
+      <div className={styles.backdrop} onClick={handleDismiss} />
+      <div className={styles.overlay}>
       <div className={styles.progressTrack}>
         <div className={styles.progressFill} style={{ width: `${progress}%` }} />
       </div>
@@ -77,5 +88,6 @@ export function BundleGuidedTour({ steps, shop, bundleId, onComplete, onDismiss 
         </button>
       </div>
     </div>
+    </>
   );
 }

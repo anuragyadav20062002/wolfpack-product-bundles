@@ -52,6 +52,15 @@ interface FilterDef {
   label: string;
 }
 
+interface CustomFieldDef {
+  id: string;
+  dbId: string | null;
+  label: string;
+  fieldType: "text" | "select" | "checkbox" | "number";
+  required: boolean;
+  options: string[];
+}
+
 interface ConditionDef {
   id: string;
   conditionType: string;
@@ -153,6 +162,18 @@ const STEPS_META = [
   { num: "05", label: "Pricing Tiers" },
 ];
 
+const FILTER_TYPE_OPTIONS = [
+  { value: "tag", label: "Tag" },
+  { value: "option", label: "Product Option" },
+];
+
+const CUSTOM_FIELD_TYPE_OPTIONS = [
+  { value: "text", label: "Text" },
+  { value: "select", label: "Dropdown" },
+  { value: "checkbox", label: "Checkbox" },
+  { value: "number", label: "Number" },
+];
+
 // ── Loader ────────────────────────────────────────────────────────
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -167,6 +188,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         include: { StepProduct: { orderBy: { position: "asc" } } },
       },
       pricing: true,
+      customFields: { orderBy: { position: "asc" } },
     },
   });
 
@@ -213,10 +235,20 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       status: bundle.status,
       bundleType: bundle.bundleType,
       searchBarEnabled: bundle.searchBarEnabled,
+      promoBannerBgImage: bundle.promoBannerBgImage ?? null,
+      promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
+      loadingGif: bundle.loadingGif ?? null,
       shopifyProductId: bundle.shopifyProductId,
       shopifyPageId: bundle.shopifyPageId,
       textOverridesByLocale: (bundle.textOverridesByLocale as any) ?? {},
       steps: bundle.steps as any[],
+      customFields: bundle.customFields.map((cf) => ({
+        id: cf.id,
+        label: cf.label,
+        fieldType: cf.fieldType,
+        required: cf.required,
+        options: (cf.options as string[] | null) ?? [],
+      })),
       pricing: bundle.pricing
         ? {
             enabled: bundle.pricing.enabled,
@@ -283,12 +315,74 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       },
     });
 
-    const routeBase =
-      bundle.bundleType === "full_page" ? "full-page-bundle" : "product-page-bundle";
+    return json({ ok: true, intent: "savePricing" });
+  }
 
+  // ── Save Assets (Step 04) ───────────────────────────────────
+  if (intent === "saveAssets") {
+    const promoBannerBgImage =
+      (formData.get("promoBannerBgImage") as string) || null;
+    const promoBannerBgImageCrop =
+      (formData.get("promoBannerBgImageCrop") as string) || null;
+    const loadingGif = (formData.get("loadingGif") as string) || null;
+    const searchBarEnabled = formData.get("searchBarEnabled") === "true";
+    const stepsFiltersJson = formData.get("stepsFilters") as string;
+    const customFieldsJson = formData.get("customFields") as string;
+
+    await db.bundle.update({
+      where: { id: bundleId },
+      data: {
+        promoBannerBgImage: promoBannerBgImage || null,
+        promoBannerBgImageCrop: promoBannerBgImageCrop || null,
+        loadingGif: loadingGif || null,
+        searchBarEnabled,
+      },
+    });
+
+    const stepsFilters: Array<{ stepDbId: string; filters: FilterDef[] }> =
+      JSON.parse(stepsFiltersJson || "[]");
+    for (const sf of stepsFilters) {
+      if (sf.stepDbId) {
+        await db.bundleStep.update({
+          where: { id: sf.stepDbId },
+          data: {
+            filters:
+              sf.filters && sf.filters.length > 0
+                ? (sf.filters as any)
+                : null,
+          },
+        });
+      }
+    }
+
+    const customFieldsData: Array<{
+      label: string;
+      fieldType: string;
+      required: boolean;
+      options: string[];
+    }> = JSON.parse(customFieldsJson || "[]");
+    await db.bundleCustomField.deleteMany({ where: { bundleId } });
+    for (const [i, cf] of customFieldsData.entries()) {
+      await db.bundleCustomField.create({
+        data: {
+          bundleId,
+          label: cf.label,
+          fieldType: cf.fieldType,
+          required: cf.required,
+          position: i,
+          options:
+            cf.options && cf.options.length > 0 ? cf.options : null,
+        },
+      });
+    }
+
+    const routeBase =
+      bundle.bundleType === "full_page"
+        ? "full-page-bundle"
+        : "product-page-bundle";
     return json({
       ok: true,
-      intent: "savePricing",
+      intent: "saveAssets",
       redirectTo: `/app/bundles/${routeBase}/configure/${bundle.id}`,
     });
   }
@@ -372,7 +466,8 @@ export default function WizardConfigureStep() {
 
   // ── Fetchers ───────────────────────────────────────────────────
   const configFetcher = useFetcher<{ ok: boolean; intent: string }>();
-  const pricingFetcher = useFetcher<{
+  const pricingFetcher = useFetcher<{ ok: boolean; intent: string }>();
+  const assetsFetcher = useFetcher<{
     ok: boolean;
     intent: string;
     redirectTo: string;
@@ -389,7 +484,7 @@ export default function WizardConfigureStep() {
   const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
   const [slideKey, setSlideKey] = useState(0);
   const [bundleStatus, setBundleStatus] = useState<string>(bundle.status);
-  const [searchBarEnabled] = useState<boolean>(bundle.searchBarEnabled);
+  const [searchBarEnabled, setSearchBarEnabled] = useState<boolean>(bundle.searchBarEnabled);
   const [textOverridesByLocale, setTextOverridesByLocale] = useState<
     Record<string, Record<string, string>>
   >(bundle.textOverridesByLocale ?? {});
@@ -431,6 +526,30 @@ export default function WizardConfigureStep() {
       "Congratulations! You got {{discountText}}!"
   );
 
+  // ── Step 04 Assets state ──────────────────────────────────────
+  const [promoBannerBgImage, setPromoBannerBgImage] = useState<string | null>(
+    bundle.promoBannerBgImage ?? null
+  );
+  const [promoBannerBgImageCrop, setPromoBannerBgImageCrop] = useState<
+    string | null
+  >(bundle.promoBannerBgImageCrop ?? null);
+  const [loadingGif, setLoadingGif] = useState<string | null>(
+    bundle.loadingGif ?? null
+  );
+  const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false);
+  const [filtersDrawerStepIdx, setFiltersDrawerStepIdx] = useState(0);
+  const [customFieldsModalOpen, setCustomFieldsModalOpen] = useState(false);
+  const [customFields, setCustomFields] = useState<CustomFieldDef[]>(() =>
+    (bundle.customFields ?? []).map((cf: any) => ({
+      id: crypto.randomUUID(),
+      dbId: cf.id as string,
+      label: cf.label as string,
+      fieldType: cf.fieldType as CustomFieldDef["fieldType"],
+      required: cf.required as boolean,
+      options: (cf.options as string[]) ?? [],
+    }))
+  );
+
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
     if (statusSelectRef.current)
@@ -459,18 +578,32 @@ export default function WizardConfigureStep() {
       pricingFetcher.data.intent === "savePricing" &&
       pricingFetcher.state === "idle"
     ) {
-      navigate(pricingFetcher.data.redirectTo);
+      setWizardStep(3);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [pricingFetcher.data, pricingFetcher.state, navigate]);
+  }, [pricingFetcher.data, pricingFetcher.state]);
+
+  useEffect(() => {
+    if (
+      assetsFetcher.data?.ok &&
+      assetsFetcher.data.intent === "saveAssets" &&
+      assetsFetcher.state === "idle"
+    ) {
+      navigate(assetsFetcher.data.redirectTo);
+    }
+  }, [assetsFetcher.data, assetsFetcher.state, navigate]);
 
   const currentStep = steps[currentIdx];
 
   // ── Derived ────────────────────────────────────────────────────
-  const pageTitle = wizardStep === 1 ? "Configuration" : "Pricing";
+  const pageTitle =
+    wizardStep === 1 ? "Configuration" : wizardStep === 2 ? "Pricing" : "Assets";
   const isSubmitting =
     wizardStep === 1
       ? configFetcher.state === "submitting"
-      : pricingFetcher.state === "submitting";
+      : wizardStep === 2
+      ? pricingFetcher.state === "submitting"
+      : assetsFetcher.state === "submitting";
 
   // ── Step 02 mutations ──────────────────────────────────────────
   const updateStep = useCallback(
@@ -573,6 +706,79 @@ export default function WizardConfigureStep() {
     }
   }, [currentStep.collections, updateCurrent]);
 
+  // ── Step 04: Filters ──────────────────────────────────────────
+  const addFilter = useCallback((stepIdx: number) => {
+    setSteps((prev) =>
+      prev.map((s, i) =>
+        i === stepIdx
+          ? {
+              ...s,
+              filters: [
+                ...s.filters,
+                { id: crypto.randomUUID(), type: "tag" as const, label: "" },
+              ],
+            }
+          : s
+      )
+    );
+  }, []);
+
+  const removeFilter = useCallback((stepIdx: number, filterId: string) => {
+    setSteps((prev) =>
+      prev.map((s, i) =>
+        i === stepIdx
+          ? { ...s, filters: s.filters.filter((f) => f.id !== filterId) }
+          : s
+      )
+    );
+  }, []);
+
+  const updateFilter = useCallback(
+    (stepIdx: number, filterId: string, updates: Partial<FilterDef>) => {
+      setSteps((prev) =>
+        prev.map((s, i) =>
+          i === stepIdx
+            ? {
+                ...s,
+                filters: s.filters.map((f) =>
+                  f.id === filterId ? { ...f, ...updates } : f
+                ),
+              }
+            : s
+        )
+      );
+    },
+    []
+  );
+
+  // ── Step 04: Custom Fields ─────────────────────────────────────
+  const addCustomField = useCallback(() => {
+    setCustomFields((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        dbId: null,
+        label: "",
+        fieldType: "text" as const,
+        required: false,
+        options: [],
+      },
+    ]);
+  }, []);
+
+  const removeCustomField = useCallback((id: string) => {
+    setCustomFields((prev) => prev.filter((cf) => cf.id !== id));
+  }, []);
+
+  const updateCustomField = useCallback(
+    (id: string, updates: Partial<CustomFieldDef>) => {
+      setCustomFields((prev) =>
+        prev.map((cf) => (cf.id === id ? { ...cf, ...updates } : cf))
+      );
+    },
+    []
+  );
+
   // ── Navigation ─────────────────────────────────────────────────
   const handleBack = useCallback(() => {
     if (wizardStep === 1) {
@@ -611,6 +817,23 @@ export default function WizardConfigureStep() {
         })
       );
       pricingFetcher.submit(fd, { method: "post" });
+    } else if (wizardStep === 3) {
+      const fd = new FormData();
+      fd.set("_intent", "saveAssets");
+      fd.set("promoBannerBgImage", promoBannerBgImage ?? "");
+      fd.set("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
+      fd.set("loadingGif", loadingGif ?? "");
+      fd.set("searchBarEnabled", String(searchBarEnabled));
+      fd.set(
+        "stepsFilters",
+        JSON.stringify(
+          steps
+            .filter((s) => s.dbId)
+            .map((s) => ({ stepDbId: s.dbId, filters: s.filters }))
+        )
+      );
+      fd.set("customFields", JSON.stringify(customFields));
+      assetsFetcher.submit(fd, { method: "post" });
     }
   }, [
     wizardStep,
@@ -620,11 +843,16 @@ export default function WizardConfigureStep() {
     textOverridesByLocale,
     configFetcher,
     pricingFetcher,
+    assetsFetcher,
     pricing,
     showProgressBar,
     discountMessagingEnabled,
     progressMessage,
     qualifiedMessage,
+    promoBannerBgImage,
+    promoBannerBgImageCrop,
+    loadingGif,
+    customFields,
   ]);
 
   // ── Locale helpers ─────────────────────────────────────────────
@@ -1132,24 +1360,6 @@ export default function WizardConfigureStep() {
                         {rulesCount > 0 ? rulesCount : "None"}
                       </span>
                     </div>
-                    <div className={styles.summaryItem}>
-                      <s-icon type="search" />
-                      <span className={styles.summaryLabel}>Search Bar</span>
-                      <span
-                        className={
-                          searchBarEnabled
-                            ? styles.summaryValueActive
-                            : styles.summaryValue
-                        }
-                      >
-                        {searchBarEnabled ? "Enabled" : "Disabled"}
-                      </span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <s-icon type="edit" />
-                      <span className={styles.summaryLabel}>Custom Fields</span>
-                      <span className={styles.summaryValue}>0</span>
-                    </div>
                   </div>
                   <s-button
                     variant="primary"
@@ -1596,6 +1806,135 @@ export default function WizardConfigureStep() {
             </div>
           </div>
         )}
+
+        {/* ══════════════════════════════════════════════════════
+            STEP 04 — Assets
+        ══════════════════════════════════════════════════════ */}
+        {wizardStep === 3 && (
+          <div className={styles.assetsLayout}>
+            {/* Media Assets */}
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <s-heading>Media Assets</s-heading>
+              </div>
+              <div className={styles.assetsGrid}>
+                <div className={styles.assetBlock}>
+                  <s-heading>Promo Banner</s-heading>
+                  <s-text color="subdued">
+                    Background image on the bundle page. Recommended: 1200×400 px · PNG/JPG
+                  </s-text>
+                  <FilePicker
+                    value={promoBannerBgImage}
+                    onChange={setPromoBannerBgImage}
+                    cropValue={promoBannerBgImageCrop}
+                    onCropChange={setPromoBannerBgImageCrop}
+                    label="Promo Banner"
+                  />
+                </div>
+                <div className={styles.assetBlock}>
+                  <s-heading>Loading GIF</s-heading>
+                  <s-text color="subdued">
+                    Displayed during step transitions and add-to-cart. GIF/WebP · 200×200 px
+                  </s-text>
+                  <FilePicker
+                    value={loadingGif}
+                    onChange={setLoadingGif}
+                    label="Loading GIF"
+                    hideCropEditor
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className={styles.card}>
+              <div
+                className={styles.assetRow}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: "pointer" }}
+                onClick={() => setFiltersDrawerOpen(true)}
+                onKeyDown={(e) => e.key === "Enter" && setFiltersDrawerOpen(true)}
+              >
+                <div>
+                  <s-heading>Filters</s-heading>
+                  <s-text color="subdued">
+                    {steps.reduce((n, s) => n + s.filters.length, 0)} filter
+                    {steps.reduce((n, s) => n + s.filters.length, 0) !== 1
+                      ? "s"
+                      : ""}{" "}
+                    configured across steps
+                  </s-text>
+                </div>
+                <s-button
+                  variant="tertiary"
+                  icon="arrow-right"
+                  accessibilityLabel="Configure filters"
+                />
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className={styles.card}>
+              <div className={styles.assetRow}>
+                <div>
+                  <s-heading>Search Bar</s-heading>
+                  <s-text color="subdued">
+                    Show a product search bar inside the bundle widget
+                  </s-text>
+                </div>
+                <s-switch
+                  checked={searchBarEnabled || undefined}
+                  onChange={(e: Event) =>
+                    setSearchBarEnabled((e.target as HTMLInputElement).checked)
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Custom Fields */}
+            <div className={styles.card}>
+              <div
+                className={styles.assetRow}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: "pointer" }}
+                onClick={() => setCustomFieldsModalOpen(true)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && setCustomFieldsModalOpen(true)
+                }
+              >
+                <div>
+                  <s-heading>Custom Fields</s-heading>
+                  <s-text color="subdued">
+                    {customFields.length} field
+                    {customFields.length !== 1 ? "s" : ""} — collected as order
+                    line item properties
+                  </s-text>
+                </div>
+                <s-button
+                  variant="tertiary"
+                  icon="arrow-right"
+                  accessibilityLabel="Configure custom fields"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className={styles.wizardFooter}>
+              <s-button variant="secondary" onClick={handleBack}>
+                Back
+              </s-button>
+              <s-button
+                variant="primary"
+                loading={isSubmitting || undefined}
+                onClick={handleNext}
+              >
+                Finish Setup
+              </s-button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Multi-Language Modal */}
@@ -1696,6 +2035,268 @@ export default function WizardConfigureStep() {
               <s-button
                 variant="primary"
                 onClick={() => setLocaleModalOpen(false)}
+              >
+                Save
+              </s-button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filters Drawer */}
+      {filtersDrawerOpen && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setFiltersDrawerOpen(false)}
+        >
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Filters</h2>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => setFiltersDrawerOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p className={styles.modalSectionTitle}>Select Step</p>
+              <div className={styles.stepNav} style={{ marginBottom: 16 }}>
+                {steps.map((s, i) => (
+                  <button
+                    key={s.tempId}
+                    className={
+                      i === filtersDrawerStepIdx
+                        ? styles.stepChipActive
+                        : styles.stepChip
+                    }
+                    onClick={() => setFiltersDrawerStepIdx(i)}
+                  >
+                    Step {i + 1}
+                    {s.filters.length > 0 && (
+                      <span
+                        className={styles.tabBadge}
+                        style={{ marginLeft: 6 }}
+                      >
+                        {s.filters.length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <p className={styles.modalSectionTitle}>
+                Filters for Step {filtersDrawerStepIdx + 1}
+              </p>
+              {(steps[filtersDrawerStepIdx]?.filters ?? []).length === 0 ? (
+                <div
+                  className={styles.emptyState}
+                  style={{ marginBottom: 12 }}
+                >
+                  No filters defined
+                </div>
+              ) : (
+                <div className={styles.rulesList}>
+                  {(steps[filtersDrawerStepIdx]?.filters ?? []).map(
+                    (filter) => (
+                      <div key={filter.id} className={styles.filterRow}>
+                        <s-select
+                          label="Type"
+                          onChange={(e: Event) =>
+                            updateFilter(filtersDrawerStepIdx, filter.id, {
+                              type: (e.target as HTMLSelectElement)
+                                .value as FilterDef["type"],
+                            })
+                          }
+                        >
+                          {FILTER_TYPE_OPTIONS.map((opt) => (
+                            <option
+                              key={opt.value}
+                              value={opt.value}
+                              selected={filter.type === opt.value || undefined}
+                            >
+                              {opt.label}
+                            </option>
+                          ))}
+                        </s-select>
+                        <s-text-field
+                          label="Label"
+                          value={filter.label}
+                          placeholder="e.g. Size, Color"
+                          autoComplete="off"
+                          onInput={(e: Event) =>
+                            updateFilter(filtersDrawerStepIdx, filter.id, {
+                              label: (e.target as HTMLInputElement).value,
+                            })
+                          }
+                        />
+                        <s-button
+                          icon="delete"
+                          variant="tertiary"
+                          tone="critical"
+                          accessibilityLabel="Remove filter"
+                          onClick={() =>
+                            removeFilter(filtersDrawerStepIdx, filter.id)
+                          }
+                        />
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+              <s-button
+                variant="secondary"
+                icon="plus"
+                onClick={() => addFilter(filtersDrawerStepIdx)}
+              >
+                Add Filter
+              </s-button>
+            </div>
+            <div className={styles.modalFooter}>
+              <s-button
+                variant="secondary"
+                onClick={() => setFiltersDrawerOpen(false)}
+              >
+                Cancel
+              </s-button>
+              <s-button
+                variant="primary"
+                onClick={() => setFiltersDrawerOpen(false)}
+              >
+                Done
+              </s-button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Fields Modal */}
+      {customFieldsModalOpen && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setCustomFieldsModalOpen(false)}
+        >
+          <div
+            className={styles.modal}
+            style={{ width: "min(600px, 100%)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Custom Fields</h2>
+              <button
+                className={styles.modalCloseBtn}
+                onClick={() => setCustomFieldsModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              <p style={{ margin: "0 0 4px", fontSize: 13, color: "#6b7280" }}>
+                Custom fields are shown to customers during bundle completion
+                and saved as Shopify order line item properties.
+              </p>
+              {customFields.length === 0 ? (
+                <div className={styles.emptyState}>
+                  No custom fields defined yet
+                </div>
+              ) : (
+                <div className={styles.rulesList}>
+                  {customFields.map((cf) => (
+                    <div key={cf.id} className={styles.customFieldRow}>
+                      <div className={styles.customFieldRowTop}>
+                        <s-text-field
+                          label="Field Label"
+                          value={cf.label}
+                          placeholder="e.g. Gift message, Engraving text"
+                          autoComplete="off"
+                          onInput={(e: Event) =>
+                            updateCustomField(cf.id, {
+                              label: (e.target as HTMLInputElement).value,
+                            })
+                          }
+                        />
+                        <s-select
+                          label="Type"
+                          onChange={(e: Event) =>
+                            updateCustomField(cf.id, {
+                              fieldType: (e.target as HTMLSelectElement)
+                                .value as CustomFieldDef["fieldType"],
+                            })
+                          }
+                        >
+                          {CUSTOM_FIELD_TYPE_OPTIONS.map((opt) => (
+                            <option
+                              key={opt.value}
+                              value={opt.value}
+                              selected={
+                                cf.fieldType === opt.value || undefined
+                              }
+                            >
+                              {opt.label}
+                            </option>
+                          ))}
+                        </s-select>
+                        <s-button
+                          icon="delete"
+                          variant="tertiary"
+                          tone="critical"
+                          accessibilityLabel="Remove field"
+                          onClick={() => removeCustomField(cf.id)}
+                        />
+                      </div>
+                      <s-checkbox
+                        label="Required"
+                        checked={cf.required || undefined}
+                        onChange={(e: Event) =>
+                          updateCustomField(cf.id, {
+                            required: (e.target as HTMLInputElement).checked,
+                          })
+                        }
+                      />
+                      {cf.fieldType === "select" && (
+                        <div style={{ marginTop: 8 }}>
+                          <s-text color="subdued">
+                            Options (one per line)
+                          </s-text>
+                          <s-text-area
+                            label=""
+                            value={cf.options.join("\n")}
+                            placeholder={"Option 1\nOption 2\nOption 3"}
+                            onInput={(e: Event) =>
+                              updateCustomField(cf.id, {
+                                options: (
+                                  e.target as HTMLTextAreaElement
+                                ).value
+                                  .split("\n")
+                                  .map((o) => o.trim())
+                                  .filter(Boolean),
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <s-button
+                variant="secondary"
+                icon="plus"
+                onClick={addCustomField}
+              >
+                Add Field
+              </s-button>
+            </div>
+            <div className={styles.modalFooter}>
+              <s-button
+                variant="secondary"
+                onClick={() => setCustomFieldsModalOpen(false)}
+              >
+                Cancel
+              </s-button>
+              <s-button
+                variant="primary"
+                onClick={() => setCustomFieldsModalOpen(false)}
               >
                 Save
               </s-button>
