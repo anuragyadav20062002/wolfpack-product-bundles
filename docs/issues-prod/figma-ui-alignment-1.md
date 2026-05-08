@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 12:00
+**Last Updated:** 2026-05-09 14:00
 
 ## Overview
 
@@ -21,8 +21,26 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 6 — Step 04 Assets layout alignment
 - [x] Phase 7 — Step 05 Pricing Tiers implementation
 - [x] Phase 8 — Readiness Score + Guided Tour competitor-parity redesign
+- [x] Phase 9 — Create bundle wizard end-to-end flow test + bug fix
 
 ## Progress Log
+
+### 2026-05-09 14:00 - Phase 9: Create bundle wizard end-to-end flow test + bug fix
+
+**End-to-end test result:** All 5 wizard steps tested in SIT; full flow works correctly.
+- Step 01 (Bundle Name & Description) → Step 02 (Configuration) → Step 03 (Pricing) →
+  Step 04 (Assets) → Step 05 (Pricing Tiers) → Full configure page — all transitions pass.
+
+**Bug found and fixed:**
+- In the Pricing Tiers step, the Linked Bundle `<s-select>` onChange handler was reading
+  `(e.currentTarget as HTMLSelectElement).value`. Polaris web component custom events can
+  dispatch with `currentTarget = null` (event dispatched outside React's synthetic event
+  system), causing a TypeError crash and Remix error boundary 500 page.
+- Fix: changed to `(e.target as HTMLSelectElement).value` — consistent with all other
+  `<s-select>` change handlers in the file.
+
+**Files changed:**
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx` (line 2025)
 
 ### 2026-05-09 12:00 - Phase 8: Readiness Score + Guided Tour redesign
 

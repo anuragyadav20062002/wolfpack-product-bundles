@@ -2022,7 +2022,7 @@ export default function WizardConfigureStep() {
                           setTiers((prev) =>
                             prev.map((t) =>
                               t.id === tier.id
-                                ? { ...t, linkedBundleId: (e.currentTarget as HTMLSelectElement).value }
+                                ? { ...t, linkedBundleId: (e.target as HTMLSelectElement).value }
                                 : t
                             )
                           )
