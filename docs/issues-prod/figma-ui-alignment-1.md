@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 00:15
+**Last Updated:** 2026-05-09 01:00
 
 ## Overview
 
@@ -19,9 +19,31 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 4 — Step 02 Configuration fixes (StepSummary, s-modal, s-option, full-width Add Rule)
 - [x] Phase 5 — Step 03 Pricing layout alignment
 - [x] Phase 6 — Step 04 Assets layout alignment
-- [ ] Phase 7 — Next page (TBD by user)
+- [x] Phase 7 — Step 05 Pricing Tiers implementation
 
 ## Progress Log
+
+### 2026-05-09 01:00 - Step 05 Pricing Tiers implementation
+
+**Gap analysis vs. Figma Image #6:**
+- Heading "Pricing Tiers" + subtitle: "Let shoppers switch between different bundle price points on the same page."
+- Tier card (bordered): "Tier N" bold label + red trash icon; 2-col grid: Label (text input, placeholder "Buy 3 @ 699", helper "Shown on the pill button (50 max characters)") + Linked Bundle (select, helper "Choose the product bundle to trigger for this tier")
+- Full-width dashed "Add Rule" button
+- Footer: "Back" (secondary) + "Finish" (primary dark)
+
+**Changes implemented:**
+- Added `tiersFetcher` fetcher for `saveTiers` action
+- Added `tiers` state initialized from `bundle.tierConfig`
+- Changed `assetsFetcher` useEffect: now advances to `wizardStep(4)` instead of navigating away
+- Added `tiersFetcher` useEffect: navigates to `redirectTo` on successful `saveTiers`
+- Updated `pageTitle` derived value to include "Pricing Tiers" for wizardStep 4
+- Updated `isSubmitting` to use `tiersFetcher.state` for wizardStep 4
+- Updated `handleNext` deps + added wizardStep 4 branch: submits `saveTiers` via `tiersFetcher`
+- Renamed "Finish Setup" → "Next" on Step 04 Assets footer
+- Added `wizardStep === 4` JSX: full Pricing Tiers card with tier rows, Label/Linked Bundle 2-col grid, dashed Add Rule button, Back/Finish footer
+
+**Files changed:**
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
 
 ### 2026-05-09 00:15 - Step 04 feature row dividers, padding, and typography fix
 
