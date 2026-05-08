@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-08 19:12
+**Last Updated:** 2026-05-08 20:45
 
 ## Overview
 
@@ -15,7 +15,9 @@ implementation is updated to match while keeping Polaris web components througho
 ## Phases Checklist
 - [x] Phase 1 — Dashboard gap analysis
 - [x] Phase 2 — Dashboard fixes (filter pills, button icon, language selector)
-- [ ] Phase 3 — Next page (TBD by user)
+- [x] Phase 3 — Step 02 Configuration gap analysis
+- [x] Phase 4 — Step 02 Configuration fixes (StepSummary, s-modal, s-option, full-width Add Rule)
+- [ ] Phase 5 — Next page (TBD by user)
 
 ## Progress Log
 
@@ -37,7 +39,23 @@ which is always the `s-select` element the listener is attached to.
 - `app/routes/app/app.dashboard/route.tsx`
 - `app/routes/app/app.dashboard/dashboard.module.css`
 
-**Next:** Continue with next Figma design image (Create Bundle wizard or Bundle Configure page)
+**Next:** Continue with next Figma design image (TBD by user)
+
+### 2026-05-08 20:45 - Step 02 Configuration fixes
+
+**Changes implemented:**
+- Created `StepSummary.tsx` — new extracted component with 5 summary rows: Selected products, Rules, Filters, Search Bar, Custom Fields; uses existing CSS classes + Polaris web components
+- Replaced old 2-row inline Step Summary sideCard with `<StepSummary />` component import
+- Added `filtersCount` and `customFieldsCount` derived values in route component
+- Migrated Multi Language modal from custom `div.modalBackdrop` to `s-modal` (controlled via `open={localeModalOpen || undefined}`, dismiss via `onHide`)
+- Replaced ALL `<option>` → `<s-option>` throughout file (10 occurrences: rule conditions/operators, bundle status, discount type/conditions/operators, locale select, filter type, custom field type)
+- Wrapped "Add Rule" button (step 02 Rules card) in `.addRuleWrap` div for full-width layout
+- Added `.previewButtonWrap` and `.addRuleWrap` CSS classes in `wizard-configure.module.css`
+
+**Files changed:**
+- `app/routes/app/app.bundles.create_.configure.$bundleId/StepSummary.tsx` (created)
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
+- `app/routes/app/app.bundles.create_.configure.$bundleId/wizard-configure.module.css`
 
 ## Related Documentation
 - Figma designs provided incrementally by user in chat

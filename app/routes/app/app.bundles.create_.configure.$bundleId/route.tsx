@@ -33,6 +33,7 @@ import { FilePicker } from "../../../components/design-control-panel/settings/Fi
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
+import { StepSummary } from "./StepSummary";
 import styles from "./wizard-configure.module.css";
 
 declare const shopify: {
@@ -926,6 +927,8 @@ export default function WizardConfigureStep() {
   const selectedProductCount = currentStep.products.length;
   const selectedCollectionCount = currentStep.collections.length;
   const rulesCount = currentStep.conditions.length;
+  const filtersCount = currentStep.filters.length;
+  const customFieldsCount = customFields.length;
 
   // ── Render ─────────────────────────────────────────────────────
   return (
@@ -1266,7 +1269,7 @@ export default function WizardConfigureStep() {
                                 }
                               >
                                 {[...STEP_CONDITION_TYPE_OPTIONS].map((opt) => (
-                                  <option
+                                  <s-option
                                     key={opt.value}
                                     value={opt.value}
                                     selected={
@@ -1275,7 +1278,7 @@ export default function WizardConfigureStep() {
                                     }
                                   >
                                     {opt.label}
-                                  </option>
+                                  </s-option>
                                 ))}
                               </s-select>
 
@@ -1291,7 +1294,7 @@ export default function WizardConfigureStep() {
                               >
                                 {[...STEP_CONDITION_OPERATOR_OPTIONS].map(
                                   (opt) => (
-                                    <option
+                                    <s-option
                                       key={opt.value}
                                       value={opt.value}
                                       selected={
@@ -1300,7 +1303,7 @@ export default function WizardConfigureStep() {
                                       }
                                     >
                                       {opt.label}
-                                    </option>
+                                    </s-option>
                                   )
                                 )}
                               </s-select>
@@ -1332,9 +1335,11 @@ export default function WizardConfigureStep() {
                         </div>
                       )}
 
-                      <s-button variant="secondary" icon="plus" onClick={addRule}>
-                        Add Rule
-                      </s-button>
+                      <div className={styles.addRuleWrap}>
+                        <s-button variant="secondary" icon="plus" onClick={addRule}>
+                          Add Rule
+                        </s-button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1357,65 +1362,30 @@ export default function WizardConfigureStep() {
                     }
                   >
                     {BUNDLE_STATUS_OPTIONS.map((opt) => (
-                      <option
+                      <s-option
                         key={opt.value}
                         value={opt.value}
                         selected={bundleStatus === opt.value || undefined}
                       >
                         {opt.label}
-                      </option>
+                      </s-option>
                     ))}
                   </s-select>
                 </div>
 
-                <div className={styles.sideCard}>
-                  <s-heading>Step Summary</s-heading>
-                  <s-text color="subdued">
-                    Select product here will be displayed on this step
-                  </s-text>
-                  <div className={styles.summaryList}>
-                    <div className={styles.summaryItem}>
-                      <s-icon type="product" />
-                      <span className={styles.summaryLabel}>
-                        Selected products
-                      </span>
-                      <span
-                        className={
-                          selectedProductCount + selectedCollectionCount > 0
-                            ? styles.summaryValueActive
-                            : styles.summaryValue
-                        }
-                      >
-                        {selectedProductCount + selectedCollectionCount || "—"}
-                      </span>
-                    </div>
-                    <div className={styles.summaryItem}>
-                      <s-icon type="note" />
-                      <span className={styles.summaryLabel}>Rules</span>
-                      <span
-                        className={
-                          rulesCount > 0
-                            ? styles.summaryValueActive
-                            : styles.summaryValue
-                        }
-                      >
-                        {rulesCount > 0 ? rulesCount : "None"}
-                      </span>
-                    </div>
-                  </div>
-                  <s-button
-                    variant="primary"
-                    icon="view"
-                    onClick={() => {
-                      if (typeof window !== "undefined") {
-                        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
-                      }
-                      shopify.toast.show("Opening preview…");
-                    }}
-                  >
-                    Preview
-                  </s-button>
-                </div>
+                <StepSummary
+                  selectedCount={selectedProductCount + selectedCollectionCount}
+                  rulesCount={rulesCount}
+                  filtersCount={filtersCount}
+                  searchBarEnabled={searchBarEnabled}
+                  customFieldsCount={customFieldsCount}
+                  onPreview={() => {
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+                    }
+                    shopify.toast.show("Opening preview…");
+                  }}
+                />
 
                 <s-banner tone="info" heading="PRO TIP">
                   Bundles with 3+ products see 24% higher conversion rates when
@@ -1499,15 +1469,15 @@ export default function WizardConfigureStep() {
                         pricing.setDiscountRules([]);
                       }}
                     >
-                      <option
+                      <s-option
                         value=""
-                        disabled
+                        disabled={true}
                         selected={!pricing.discountType || undefined}
                       >
                         Select discount type
-                      </option>
+                      </s-option>
                       {[...DISCOUNT_METHOD_OPTIONS].map((opt) => (
-                        <option
+                        <s-option
                           key={opt.value}
                           value={opt.value}
                           selected={
@@ -1515,7 +1485,7 @@ export default function WizardConfigureStep() {
                           }
                         >
                           {opt.label}
-                        </option>
+                        </s-option>
                       ))}
                     </s-select>
 
@@ -1551,7 +1521,7 @@ export default function WizardConfigureStep() {
                               >
                                 {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(
                                   (opt) => (
-                                    <option
+                                    <s-option
                                       key={opt.value}
                                       value={opt.value}
                                       selected={
@@ -1560,7 +1530,7 @@ export default function WizardConfigureStep() {
                                       }
                                     >
                                       {opt.label}
-                                    </option>
+                                    </s-option>
                                   )
                                 )}
                               </s-select>
@@ -1578,7 +1548,7 @@ export default function WizardConfigureStep() {
                                 }
                               >
                                 {[...DISCOUNT_OPERATOR_OPTIONS].map((opt) => (
-                                  <option
+                                  <s-option
                                     key={opt.value}
                                     value={opt.value}
                                     selected={
@@ -1587,7 +1557,7 @@ export default function WizardConfigureStep() {
                                     }
                                   >
                                     {opt.label}
-                                  </option>
+                                  </s-option>
                                 ))}
                               </s-select>
 
@@ -1980,110 +1950,92 @@ export default function WizardConfigureStep() {
       </div>
 
       {/* Multi-Language Modal */}
-      {localeModalOpen && (
-        <div
-          className={styles.modalBackdrop}
-          onClick={() => setLocaleModalOpen(false)}
-        >
-          <div
-            className={styles.modal}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Multi Language</h2>
-              <button
-                className={styles.modalCloseBtn}
-                onClick={() => setLocaleModalOpen(false)}
+      <s-modal
+        open={localeModalOpen || undefined}
+        label="Multi Language"
+        onHide={() => setLocaleModalOpen(false)}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
+          Translating: <strong>Step {currentIdx + 1}</strong> —{" "}
+          {currentStep.name || "unnamed step"}
+        </p>
+
+        {shopLocales.filter((l) => !l.primary).length === 0 ? (
+          <p style={{ color: "#9ca3af", fontSize: 14 }}>
+            No additional locales published in your store. Enable more
+            languages in Shopify Settings → Languages.
+          </p>
+        ) : (
+          <>
+            <div>
+              <p className={styles.modalSectionTitle}>Language</p>
+              <s-select
+                ref={localeSelectRef}
+                label=""
+                onChange={(e: Event) =>
+                  setSelectedLocale(
+                    (e.target as HTMLSelectElement).value
+                  )
+                }
               >
-                ✕
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
-                Translating: <strong>Step {currentIdx + 1}</strong> —{" "}
-                {currentStep.name || "unnamed step"}
-              </p>
-
-              {shopLocales.filter((l) => !l.primary).length === 0 ? (
-                <p style={{ color: "#9ca3af", fontSize: 14 }}>
-                  No additional locales published in your store. Enable more
-                  languages in Shopify Settings → Languages.
-                </p>
-              ) : (
-                <>
-                  <div>
-                    <p className={styles.modalSectionTitle}>Language</p>
-                    <s-select
-                      ref={localeSelectRef}
-                      label=""
-                      onChange={(e: Event) =>
-                        setSelectedLocale(
-                          (e.target as HTMLSelectElement).value
-                        )
+                {shopLocales
+                  .filter((l) => !l.primary)
+                  .map((l) => (
+                    <s-option
+                      key={l.locale}
+                      value={l.locale}
+                      selected={
+                        selectedLocale === l.locale || undefined
                       }
                     >
-                      {shopLocales
-                        .filter((l) => !l.primary)
-                        .map((l) => (
-                          <option
-                            key={l.locale}
-                            value={l.locale}
-                            selected={
-                              selectedLocale === l.locale || undefined
-                            }
-                          >
-                            {l.name}
-                          </option>
-                        ))}
-                    </s-select>
-                  </div>
-
-                  {selectedLocale && (
-                    <div>
-                      <p className={styles.modalSectionTitle}>
-                        Step Name ({selectedLocale})
-                      </p>
-                      <p className={styles.modalHint}>
-                        Leave blank to fall back to the default English name.
-                      </p>
-                      <s-text-field
-                        label=""
-                        placeholder={
-                          currentStep.name || "Step name in English"
-                        }
-                        value={getTranslation(selectedLocale)}
-                        onInput={(e: Event) =>
-                          setTranslation(
-                            selectedLocale,
-                            (e.target as HTMLInputElement).value
-                          )
-                        }
-                        autoComplete="off"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+                      {l.name}
+                    </s-option>
+                  ))}
+              </s-select>
             </div>
 
-            <div className={styles.modalFooter}>
-              <s-button
-                variant="secondary"
-                onClick={() => setLocaleModalOpen(false)}
-              >
-                Cancel
-              </s-button>
-              <s-button
-                variant="primary"
-                onClick={() => setLocaleModalOpen(false)}
-              >
-                Save
-              </s-button>
-            </div>
-          </div>
-        </div>
-      )}
+            {selectedLocale && (
+              <div>
+                <p className={styles.modalSectionTitle}>
+                  Step Name ({selectedLocale})
+                </p>
+                <p className={styles.modalHint}>
+                  Leave blank to fall back to the default English name.
+                </p>
+                <s-text-field
+                  label=""
+                  placeholder={
+                    currentStep.name || "Step name in English"
+                  }
+                  value={getTranslation(selectedLocale)}
+                  onInput={(e: Event) =>
+                    setTranslation(
+                      selectedLocale,
+                      (e.target as HTMLInputElement).value
+                    )
+                  }
+                  autoComplete="off"
+                />
+              </div>
+            )}
+          </>
+        )}
+
+        <s-button
+          slot="primaryAction"
+          variant="primary"
+          onClick={() => setLocaleModalOpen(false)}
+        >
+          Save
+        </s-button>
+        <s-button
+          slot="secondaryActions"
+          variant="secondary"
+          onClick={() => setLocaleModalOpen(false)}
+        >
+          Cancel
+        </s-button>
+      </s-modal>
 
       {/* Filters Drawer */}
       {filtersDrawerOpen && (
@@ -2152,13 +2104,13 @@ export default function WizardConfigureStep() {
                           }
                         >
                           {FILTER_TYPE_OPTIONS.map((opt) => (
-                            <option
+                            <s-option
                               key={opt.value}
                               value={opt.value}
                               selected={filter.type === opt.value || undefined}
                             >
                               {opt.label}
-                            </option>
+                            </s-option>
                           ))}
                         </s-select>
                         <s-text-field
@@ -2267,7 +2219,7 @@ export default function WizardConfigureStep() {
                           }
                         >
                           {CUSTOM_FIELD_TYPE_OPTIONS.map((opt) => (
-                            <option
+                            <s-option
                               key={opt.value}
                               value={opt.value}
                               selected={
@@ -2275,7 +2227,7 @@ export default function WizardConfigureStep() {
                               }
                             >
                               {opt.label}
-                            </option>
+                            </s-option>
                           ))}
                         </s-select>
                         <s-button
