@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-08 21:10
+**Last Updated:** 2026-05-08 22:05
 
 ## Overview
 
@@ -18,7 +18,8 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 3 — Step 02 Configuration gap analysis
 - [x] Phase 4 — Step 02 Configuration fixes (StepSummary, s-modal, s-option, full-width Add Rule)
 - [x] Phase 5 — Step 03 Pricing layout alignment
-- [ ] Phase 6 — Next page (TBD by user)
+- [x] Phase 6 — Step 04 Assets layout alignment
+- [ ] Phase 7 — Next page (TBD by user)
 
 ## Progress Log
 
@@ -41,6 +42,21 @@ which is always the `s-select` element the listener is attached to.
 - `app/routes/app/app.dashboard/dashboard.module.css`
 
 **Next:** Continue with next Figma design image (TBD by user)
+
+### 2026-05-08 22:05 - Step 04 Assets layout alignment
+
+**Changes implemented:**
+- Added card subtitle "Add visual media to your bundle configurator..." below Media Assets heading
+- Renamed "Loading GIF" → "Loading Animation" (heading + FilePicker label)
+- Added `formatChip` info pills below each FilePicker (format: JPG/PNG/WebP for banner, GIF only for animation)
+- Added `assetRowLeft` wrapper with `s-icon` (filter/search/edit) to all three feature rows
+- Merged Filters, Search Bar, Custom Fields from 3 separate cards into 1 card with `displayOptionDivider` separators
+- Updated subtitle text: Filters → "Create filters to display on this step", Custom Fields → "Add custom input fields (like gift notes or delivery dates)..."
+- Deferred: FilePicker internal empty-state UI redesign (Gap 7) — separate task
+
+**Files changed:**
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
+- `app/routes/app/app.bundles.create_.configure.$bundleId/wizard-configure.module.css`
 
 ### 2026-05-08 21:10 - Step 03 Pricing layout alignment
 

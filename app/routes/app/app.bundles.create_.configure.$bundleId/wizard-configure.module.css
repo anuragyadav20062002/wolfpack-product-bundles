@@ -636,6 +636,27 @@
   gap: 16px;
 }
 
+/* Left side of a feature row: icon + text block */
+.assetRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Blue format hint chip below upload zones */
+.formatChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 20px;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 /* Custom field card */
 .customFieldRow {
   background: #f9fafb;

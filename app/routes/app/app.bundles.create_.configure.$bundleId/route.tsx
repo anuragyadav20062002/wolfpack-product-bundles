@@ -1741,14 +1741,17 @@ export default function WizardConfigureStep() {
           <div className={styles.assetsLayout}>
             {/* Media Assets */}
             <div className={styles.card}>
-              <div className={styles.cardHeader}>
+              <div style={{ marginBottom: 20 }}>
                 <s-heading>Media Assets</s-heading>
+                <s-text color="subdued">
+                  Add visual media to your bundle configurator to enhance the customer experience on your storefront.
+                </s-text>
               </div>
               <div className={styles.assetsGrid}>
                 <div className={styles.assetBlock}>
                   <s-heading>Promo Banner</s-heading>
                   <s-text color="subdued">
-                    Background image on the bundle page. Recommended: 1200×400 px · PNG/JPG
+                    Background image on the bundle page. Recommended: 1920×400 px · PNG/JPG
                   </s-text>
                   <FilePicker
                     value={promoBannerBgImage}
@@ -1757,11 +1760,17 @@ export default function WizardConfigureStep() {
                     onCropChange={setPromoBannerBgImageCrop}
                     label="Promo Banner"
                   />
+                  <div className={styles.formatChip}>
+                    <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Format: JPG, PNG, WebP
+                  </div>
                 </div>
                 <div className={styles.assetBlock}>
-                  <s-heading>Loading GIF</s-heading>
+                  <s-heading>Loading Animation</s-heading>
                   <s-text color="subdued">
-                    Displayed during step transitions and add-to-cart. GIF/WebP · 200×200 px
+                    Displayed during step transitions and add-to-cart. GIF · 150×150 px
                   </s-text>
                   <FilePicker
                     value={loadingGif}
@@ -1769,12 +1778,19 @@ export default function WizardConfigureStep() {
                     label="Loading GIF"
                     hideCropEditor
                   />
+                  <div className={styles.formatChip}>
+                    <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Format: GIF only
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Filters */}
+            {/* Filters + Search Bar + Custom Fields — single card */}
             <div className={styles.card}>
+              {/* Filters */}
               <div
                 className={styles.assetRow}
                 role="button"
@@ -1783,15 +1799,14 @@ export default function WizardConfigureStep() {
                 onClick={() => setFiltersDrawerOpen(true)}
                 onKeyDown={(e) => e.key === "Enter" && setFiltersDrawerOpen(true)}
               >
-                <div>
-                  <s-heading>Filters</s-heading>
-                  <s-text color="subdued">
-                    {steps.reduce((n, s) => n + s.filters.length, 0)} filter
-                    {steps.reduce((n, s) => n + s.filters.length, 0) !== 1
-                      ? "s"
-                      : ""}{" "}
-                    configured across steps
-                  </s-text>
+                <div className={styles.assetRowLeft}>
+                  <s-icon type="filter" />
+                  <div>
+                    <s-heading>Filters</s-heading>
+                    <s-text color="subdued">
+                      Create filters to display on this step
+                    </s-text>
+                  </div>
                 </div>
                 <s-button
                   variant="tertiary"
@@ -1799,16 +1814,19 @@ export default function WizardConfigureStep() {
                   accessibilityLabel="Configure filters"
                 />
               </div>
-            </div>
 
-            {/* Search Bar */}
-            <div className={styles.card}>
+              <div className={styles.displayOptionDivider} />
+
+              {/* Search Bar */}
               <div className={styles.assetRow}>
-                <div>
-                  <s-heading>Search Bar</s-heading>
-                  <s-text color="subdued">
-                    Show a product search bar inside the bundle widget
-                  </s-text>
+                <div className={styles.assetRowLeft}>
+                  <s-icon type="search" />
+                  <div>
+                    <s-heading>Search Bar</s-heading>
+                    <s-text color="subdued">
+                      Show a product search bar inside the bundle widget
+                    </s-text>
+                  </div>
                 </div>
                 <s-switch
                   checked={searchBarEnabled || undefined}
@@ -1817,10 +1835,10 @@ export default function WizardConfigureStep() {
                   }
                 />
               </div>
-            </div>
 
-            {/* Custom Fields */}
-            <div className={styles.card}>
+              <div className={styles.displayOptionDivider} />
+
+              {/* Custom Fields */}
               <div
                 className={styles.assetRow}
                 role="button"
@@ -1831,13 +1849,14 @@ export default function WizardConfigureStep() {
                   e.key === "Enter" && setCustomFieldsModalOpen(true)
                 }
               >
-                <div>
-                  <s-heading>Custom Fields</s-heading>
-                  <s-text color="subdued">
-                    {customFields.length} field
-                    {customFields.length !== 1 ? "s" : ""} — collected as order
-                    line item properties
-                  </s-text>
+                <div className={styles.assetRowLeft}>
+                  <s-icon type="edit" />
+                  <div>
+                    <s-heading>Custom Fields</s-heading>
+                    <s-text color="subdued">
+                      Add custom input fields (like gift notes or delivery dates) that will be attached to the order line items.
+                    </s-text>
+                  </div>
                 </div>
                 <s-button
                   variant="tertiary"
