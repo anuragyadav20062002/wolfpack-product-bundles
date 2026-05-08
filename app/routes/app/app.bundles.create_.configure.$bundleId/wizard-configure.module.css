@@ -582,10 +582,11 @@
   gap: 3px;
 }
 
-/* Divider between display option rows */
+/* Divider between display option rows — full-width within .card (counteracts 24px padding) */
 .displayOptionDivider {
   height: 1px;
-  background: #f3f4f6;
+  background: #e5e7eb;
+  margin: 0 -24px;
 }
 
 /* Message template fields (shown when Discount Messaging is ON) */
@@ -634,13 +635,31 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  padding: 16px 0;
 }
 
 /* Left side of a feature row: icon + text block */
 .assetRowLeft {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+/* Row heading label (14px semibold — not a semantic heading) */
+.assetRowTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303030;
+  line-height: 1.4;
+}
+
+/* Row subtitle text */
+.assetRowSubtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #6d7175;
+  line-height: 1.4;
 }
 
 /* Blue format hint chip below upload zones */

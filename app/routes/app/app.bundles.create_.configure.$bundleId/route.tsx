@@ -1800,10 +1800,10 @@ export default function WizardConfigureStep() {
                 <div className={styles.assetRowLeft}>
                   <s-icon type="filter" />
                   <div>
-                    <s-heading>Filters</s-heading>
-                    <s-text color="subdued">
+                    <p className={styles.assetRowTitle}>Filters</p>
+                    <p className={styles.assetRowSubtitle}>
                       Create filters to display on this step
-                    </s-text>
+                    </p>
                   </div>
                 </div>
                 <s-button
@@ -1820,10 +1820,10 @@ export default function WizardConfigureStep() {
                 <div className={styles.assetRowLeft}>
                   <s-icon type="search" />
                   <div>
-                    <s-heading>Search Bar</s-heading>
-                    <s-text color="subdued">
+                    <p className={styles.assetRowTitle}>Search Bar</p>
+                    <p className={styles.assetRowSubtitle}>
                       Show a product search bar inside the bundle widget
-                    </s-text>
+                    </p>
                   </div>
                 </div>
                 <s-switch
@@ -1850,10 +1850,10 @@ export default function WizardConfigureStep() {
                 <div className={styles.assetRowLeft}>
                   <s-icon type="edit" />
                   <div>
-                    <s-heading>Custom Fields</s-heading>
-                    <s-text color="subdued">
+                    <p className={styles.assetRowTitle}>Custom Fields</p>
+                    <p className={styles.assetRowSubtitle}>
                       Add custom input fields (like gift notes or delivery dates) that will be attached to the order line items.
-                    </s-text>
+                    </p>
                   </div>
                 </div>
                 <s-button

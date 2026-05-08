@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-08 22:30
+**Last Updated:** 2026-05-09 00:15
 
 ## Overview
 
@@ -22,6 +22,20 @@ implementation is updated to match while keeping Polaris web components througho
 - [ ] Phase 7 — Next page (TBD by user)
 
 ## Progress Log
+
+### 2026-05-09 00:15 - Step 04 feature row dividers, padding, and typography fix
+
+**Problem:** Filters/Search Bar/Custom Fields rows were cramped with no visible separators. `s-heading`/`s-text` Polaris web components inside rows caused wrong visual weight and inconsistent spacing.
+
+**Changes implemented:**
+- Replaced `<s-heading>` + `<s-text>` in all three feature rows with `<p className={styles.assetRowTitle}>` and `<p className={styles.assetRowSubtitle}>`
+- Added `padding: 16px 0` to `.assetRow` for vertical breathing room
+- Fixed `.displayOptionDivider` background from `#f3f4f6` (nearly invisible) → `#e5e7eb` and added `margin: 0 -24px` so dividers span full card width (counteracts card's 24px padding)
+- Set `.assetRowLeft` to `align-items: flex-start` so icon pins to the top of multi-line subtitle text
+
+**Files changed:**
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
+- `app/routes/app/app.bundles.create_.configure.$bundleId/wizard-configure.module.css`
 
 ### 2026-05-08 19:12 - Dashboard gap analysis + fixes
 
