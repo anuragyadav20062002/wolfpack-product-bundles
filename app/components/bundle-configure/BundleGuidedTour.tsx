@@ -78,7 +78,11 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
     const el = document.querySelector(
       `[data-tour-target="${step.targetSection}"]`
     ) as HTMLElement | null;
-    if (!el) return;
+    if (!el) {
+      setSpotlightRect(null);
+      setTooltipStyle({});
+      return;
+    }
 
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     el.classList.add("wpb-tour-highlight");
@@ -170,9 +174,6 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
         <div className={styles.title}>{step.title}</div>
         <div className={styles.body}>{step.body}</div>
         <div className={styles.actions}>
-          <button className={styles.dismissBtn} onClick={handleDismiss}>
-            Dismiss
-          </button>
           <button className={styles.nextBtn} onClick={handleNext}>
             {isLast ? "Got it" : "Next →"}
           </button>

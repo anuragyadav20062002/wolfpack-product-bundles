@@ -963,11 +963,11 @@ export default function WizardConfigureStep() {
     (s) => s.products.length > 0 || s.collections.length > 0
   );
   const readinessItems: BundleReadinessItem[] = [
-    { key: "embed", label: "App embed enabled", points: 15, done: readiness.appEmbedEnabled },
-    { key: "products", label: "Products added to a step", points: 20, done: hasProducts },
-    { key: "discount", label: "Discount configured", points: 15, done: readiness.hasDiscount },
-    { key: "visible", label: "Bundle placed / visible", points: 25, done: readiness.hasBundleVisibility },
-    { key: "product_active", label: "Parent product active", points: 15, done: readiness.parentProductActive },
+    { key: "embed", label: "App embed enabled", description: "Required to display bundles on your storefront.", points: 15, done: readiness.appEmbedEnabled },
+    { key: "products", label: "Products added to a step", description: "Add at least one product to a bundle step.", points: 20, done: hasProducts },
+    { key: "discount", label: "Discount configured", description: "Set a discount to give customers a reason to bundle.", points: 15, done: readiness.hasDiscount },
+    { key: "visible", label: "Bundle placed / visible", description: "Place your bundle on a page so customers can find it.", points: 25, done: readiness.hasBundleVisibility },
+    { key: "product_active", label: "Parent product active", description: "Your parent product must be active to accept orders.", points: 15, done: readiness.parentProductActive },
   ];
 
   const selectedProductCount = currentStep.products.length;

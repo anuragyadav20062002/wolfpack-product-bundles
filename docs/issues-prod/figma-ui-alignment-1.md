@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 01:00
+**Last Updated:** 2026-05-09 12:00
 
 ## Overview
 
@@ -20,8 +20,38 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 5 — Step 03 Pricing layout alignment
 - [x] Phase 6 — Step 04 Assets layout alignment
 - [x] Phase 7 — Step 05 Pricing Tiers implementation
+- [x] Phase 8 — Readiness Score + Guided Tour competitor-parity redesign
 
 ## Progress Log
+
+### 2026-05-09 12:00 - Phase 8: Readiness Score + Guided Tour redesign
+
+**Gap analysis vs. competitor (Easy Bundle Builder):**
+- Collapsed state: competitor shows only donut + chevron ∧; ours had extra "Readiness / Score" text labels
+- Expanded trigger: competitor shows donut + "Readiness Score" bold + "N/M items complete" subtitle + chevron ∨; ours had same minimal trigger in both states
+- Panel items: competitor uses SVG circle indicators, description text per item, green border+bg for done items, "+N Points" badge chip; ours used text "○"/"✓" characters, no description, no done-item styling
+- Score color: competitor uses red (#d82c0d) for low scores; ours returned gray (#aaa)
+- Status line: competitor shows plain "Your bundle isn't ready to sell yet." (no ⚠ icon); ours had ⚠ prefix
+- Guided tour: two dismiss buttons (header + footer); competitor has only one action (Got it / Next)
+- Guided tour bug: when `data-tour-target` element is missing from the DOM, `tooltipStyle`/`spotlightRect` were not reset — tooltip stayed frozen at previous step's position
+
+**Changes implemented:**
+- `BundleReadinessItem` interface: added `description?: string` field
+- `scoreColor()`: changed < 40 branch from `#aaa` → `#d82c0d`
+- Collapsed trigger: removed `.scoreLabel` text; shows only donut + chevron; chevron now `∧` when collapsed, `∨` when expanded (matches competitor convention)
+- Expanded trigger: conditionally renders `.scoreLabel` block with bold "Readiness Score" title + "N/M items complete" subtitle; `.collapsedOpen` class widens trigger to match panel
+- Panel items: replaced text check chars with SVG circle indicators (filled green ✓ for done, empty gray ring for pending); added `.itemContent` flex column with bold label + description text; replaced inline points text with `.itemPoints` chip badge; `.panelItemDone` adds green border + bg
+- Status line: removed ⚠, plain text only; shows both ready/not-ready states
+- `BundleReadinessOverlay.module.css`: full CSS rewrite — removed old `.scoreLabel`, `.checkDone`, `.checkPending`, `.itemAction`, `.statusLine` classes; added new `.scoreLabelTitle`, `.scoreLabelSub`, `.collapsedOpen`, `.panelItemDone`, `.itemIndicator`, `.itemContent`, `.itemDesc`, `.itemPointsDone` classes
+- Added `description` to all 5 readiness items in route.tsx
+- `BundleGuidedTour.tsx`: removed redundant "Dismiss" button from `.actions` footer (kept header "Dismiss guided tour" link only)
+- `BundleGuidedTour.tsx`: fixed missing-element bug — when `document.querySelector` returns null, now resets `spotlightRect` and `tooltipStyle` to defaults before returning
+
+**Files changed:**
+- `app/components/bundle-configure/BundleReadinessOverlay.tsx`
+- `app/components/bundle-configure/BundleReadinessOverlay.module.css`
+- `app/components/bundle-configure/BundleGuidedTour.tsx`
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
 
 ### 2026-05-09 01:00 - Step 05 Pricing Tiers implementation
 
