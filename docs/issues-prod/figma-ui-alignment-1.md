@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-08 20:45
+**Last Updated:** 2026-05-08 21:10
 
 ## Overview
 
@@ -17,7 +17,8 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 2 — Dashboard fixes (filter pills, button icon, language selector)
 - [x] Phase 3 — Step 02 Configuration gap analysis
 - [x] Phase 4 — Step 02 Configuration fixes (StepSummary, s-modal, s-option, full-width Add Rule)
-- [ ] Phase 5 — Next page (TBD by user)
+- [x] Phase 5 — Step 03 Pricing layout alignment
+- [ ] Phase 6 — Next page (TBD by user)
 
 ## Progress Log
 
@@ -40,6 +41,17 @@ which is always the `s-select` element the listener is attached to.
 - `app/routes/app/app.dashboard/dashboard.module.css`
 
 **Next:** Continue with next Figma design image (TBD by user)
+
+### 2026-05-08 21:10 - Step 03 Pricing layout alignment
+
+**Changes implemented:**
+- Replaced 2-column `styles.layout` with single-column `styles.assetsLayout` for pricing step
+- Removed entire Pricing Summary right sidebar (Discounts, Type, Rules, Progress bar, Messaging summary)
+- Moved Back/Next footer out of sidebar to bottom of single-column layout
+- Removed `{pricing.discountEnabled && ...}` gate on `pricingContent` div — Tip banner, Discount Type select, and Add Rule button now always visible regardless of toggle state
+
+**Files changed:**
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
 
 ### 2026-05-08 20:45 - Step 02 Configuration fixes
 

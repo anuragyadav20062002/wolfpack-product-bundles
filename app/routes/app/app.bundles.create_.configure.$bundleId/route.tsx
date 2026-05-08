@@ -1413,9 +1413,7 @@ export default function WizardConfigureStep() {
             STEP 03 — Pricing
         ══════════════════════════════════════════════════════ */}
         {wizardStep === 2 && (
-          <div className={styles.layout}>
-            {/* LEFT — Pricing cards */}
-            <div className={styles.leftCol}>
+          <div className={styles.assetsLayout}>
               {/* Bundle pricing & Discounts */}
               <div className={styles.card}>
                 <div className={styles.pricingCardHeader}>
@@ -1435,8 +1433,7 @@ export default function WizardConfigureStep() {
                   />
                 </div>
 
-                {pricing.discountEnabled && (
-                  <div className={styles.pricingContent}>
+                <div className={styles.pricingContent}>
                     {/* Tip banner */}
                     <div className={styles.tipBanner}>
                       <svg
@@ -1645,7 +1642,6 @@ export default function WizardConfigureStep() {
                       </s-button>
                     )}
                   </div>
-                )}
               </div>
 
               {/* Discount Display Options */}
@@ -1722,99 +1718,18 @@ export default function WizardConfigureStep() {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* RIGHT — Pricing sidebar */}
-            <div className={styles.rightCol}>
-              <div className={styles.sideCard}>
-                <s-heading>Pricing Summary</s-heading>
-                <div className={styles.summaryList}>
-                  <div className={styles.summaryItem}>
-                    <s-icon type="note" />
-                    <span className={styles.summaryLabel}>Discounts</span>
-                    <span
-                      className={
-                        pricing.discountEnabled
-                          ? styles.summaryValueActive
-                          : styles.summaryValue
-                      }
-                    >
-                      {pricing.discountEnabled ? "Enabled" : "Disabled"}
-                    </span>
-                  </div>
-                  <div className={styles.summaryItem}>
-                    <s-icon type="product" />
-                    <span className={styles.summaryLabel}>Type</span>
-                    <span
-                      className={
-                        pricing.discountEnabled && pricing.discountType
-                          ? styles.summaryValueActive
-                          : styles.summaryValue
-                      }
-                    >
-                      {pricing.discountEnabled
-                        ? ([...DISCOUNT_METHOD_OPTIONS].find(
-                            (o) => o.value === pricing.discountType
-                          )?.label ?? "—")
-                        : "—"}
-                    </span>
-                  </div>
-                  <div className={styles.summaryItem}>
-                    <s-icon type="note" />
-                    <span className={styles.summaryLabel}>Rules</span>
-                    <span
-                      className={
-                        pricing.discountRules.length > 0
-                          ? styles.summaryValueActive
-                          : styles.summaryValue
-                      }
-                    >
-                      {pricing.discountRules.length > 0
-                        ? pricing.discountRules.length
-                        : "None"}
-                    </span>
-                  </div>
-                  <div className={styles.summaryItem}>
-                    <s-icon type="view" />
-                    <span className={styles.summaryLabel}>Progress bar</span>
-                    <span
-                      className={
-                        showProgressBar
-                          ? styles.summaryValueActive
-                          : styles.summaryValue
-                      }
-                    >
-                      {showProgressBar ? "On" : "Off"}
-                    </span>
-                  </div>
-                  <div className={styles.summaryItem}>
-                    <s-icon type="note" />
-                    <span className={styles.summaryLabel}>Messaging</span>
-                    <span
-                      className={
-                        discountMessagingEnabled
-                          ? styles.summaryValueActive
-                          : styles.summaryValue
-                      }
-                    >
-                      {discountMessagingEnabled ? "On" : "Off"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.wizardFooter}>
-                <s-button variant="secondary" onClick={handleBack}>
-                  Back
-                </s-button>
-                <s-button
-                  variant="primary"
-                  loading={isSubmitting || undefined}
-                  onClick={handleNext}
-                >
-                  Next
-                </s-button>
-              </div>
+            <div className={styles.wizardFooter}>
+              <s-button variant="secondary" onClick={handleBack}>
+                Back
+              </s-button>
+              <s-button
+                variant="primary"
+                loading={isSubmitting || undefined}
+                onClick={handleNext}
+              >
+                Next
+              </s-button>
             </div>
           </div>
         )}
