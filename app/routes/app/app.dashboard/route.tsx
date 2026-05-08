@@ -225,8 +225,12 @@ export default function Dashboard() {
   const searchRef = useRef<any>(null);
   const langSelectRef = useRef<any>(null);
   const perPageSelectRef = useRef<any>(null);
-  const statusSelectRef = useRef<any>(null);
-  const typeSelectRef = useRef<any>(null);
+
+  // Filter pill refs
+  const statusChoiceListRef = useRef<any>(null);
+  const typeChoiceListRef = useRef<any>(null);
+  const statusPopoverRef = useRef<any>(null);
+  const typePopoverRef = useRef<any>(null);
 
   const fetcherIntentRef = useRef<string | null>(null);
   const cloningBundleTypeRef = useRef<string | null>(null);
@@ -356,7 +360,7 @@ export default function Dashboard() {
     const el = langSelectRef.current;
     if (!el) return;
     const handler = (e: Event) => {
-      const val = (e as CustomEvent).detail?.value ?? (e.target as HTMLSelectElement).value ?? '';
+      const val = (e.currentTarget as HTMLInputElement).value ?? '';
       if (val) handleLanguageChange(val);
     };
     el.addEventListener('change', handler);
@@ -375,25 +379,33 @@ export default function Dashboard() {
     return () => el.removeEventListener('change', handler);
   }, []);
 
-  // Status filter select
+  // Status filter choice list
   useEffect(() => {
-    const el = statusSelectRef.current;
+    const el = statusChoiceListRef.current;
     if (!el) return;
     const handler = (e: Event) => {
-      const val = (e as CustomEvent).detail?.value ?? (e.target as HTMLSelectElement).value ?? '';
-      if (val !== undefined && val !== null) { setStatusFilter(val); setCurrentPage(1); }
+      const values = (e.currentTarget as any).values;
+      if (Array.isArray(values) && values.length > 0) {
+        setStatusFilter(values[0]);
+        setCurrentPage(1);
+        statusPopoverRef.current?.hideOverlay?.();
+      }
     };
     el.addEventListener('change', handler);
     return () => el.removeEventListener('change', handler);
   }, []);
 
-  // Type filter select
+  // Type filter choice list
   useEffect(() => {
-    const el = typeSelectRef.current;
+    const el = typeChoiceListRef.current;
     if (!el) return;
     const handler = (e: Event) => {
-      const val = (e as CustomEvent).detail?.value ?? (e.target as HTMLSelectElement).value ?? '';
-      if (val !== undefined && val !== null) { setTypeFilter(val); setCurrentPage(1); }
+      const values = (e.currentTarget as any).values;
+      if (Array.isArray(values) && values.length > 0) {
+        setTypeFilter(values[0]);
+        setCurrentPage(1);
+        typePopoverRef.current?.hideOverlay?.();
+      }
     };
     el.addEventListener('change', handler);
     return () => el.removeEventListener('change', handler);
@@ -482,7 +494,7 @@ export default function Dashboard() {
                 </s-select>
               </div>
               <s-button icon="refresh" onClick={handleSyncCollections}>Sync Collections</s-button>
-              <s-button variant="primary" icon="plus" onClick={() => navigate('/app/bundles/create')}>Create Bundle</s-button>
+              <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>Create Bundle</s-button>
               <s-button icon="notification" onClick={handleBellClick} accessibilityLabel="Changelog" />
             </div>
           </div>
@@ -549,21 +561,34 @@ export default function Dashboard() {
             <div className={dashboardStyles.bundlesPanel}>
               <div className={dashboardStyles.bundlesToolbar}>
                 <div className={dashboardStyles.filterGroup}>
-                  <div className={dashboardStyles.filterSelectWrap}>
-                    <s-select ref={statusSelectRef} label="Status" labelAccessibilityVisibility="exclusive" value={statusFilter}>
-                      <s-option value="all">All</s-option>
-                      <s-option value="active">Active</s-option>
-                      <s-option value="draft">Draft</s-option>
-                      <s-option value="unlisted">Unlisted</s-option>
-                    </s-select>
-                  </div>
-                  <div className={dashboardStyles.filterSelectWrap}>
-                    <s-select ref={typeSelectRef} label="Bundle type" labelAccessibilityVisibility="exclusive" value={typeFilter}>
-                      <s-option value="all">All</s-option>
-                      <s-option value="product_page">Product page</s-option>
-                      <s-option value="full_page">Full page</s-option>
-                    </s-select>
-                  </div>
+                  {/* Status filter pill */}
+                  <s-button id="status-filter-btn" commandFor="status-filter-popover" variant="secondary">
+                    {statusFilter === 'all' ? 'Status' : `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`} ▾
+                  </s-button>
+                  <s-popover ref={statusPopoverRef} id="status-filter-popover">
+                    <s-box padding="base">
+                      <s-choice-list ref={statusChoiceListRef} name="status-filter-list" label="Filter by status" labelAccessibilityVisibility="exclusive">
+                        <s-choice value="all" selected={statusFilter === 'all' || undefined}>All</s-choice>
+                        <s-choice value="active" selected={statusFilter === 'active' || undefined}>Active</s-choice>
+                        <s-choice value="draft" selected={statusFilter === 'draft' || undefined}>Draft</s-choice>
+                        <s-choice value="unlisted" selected={statusFilter === 'unlisted' || undefined}>Unlisted</s-choice>
+                      </s-choice-list>
+                    </s-box>
+                  </s-popover>
+
+                  {/* Bundle type filter pill */}
+                  <s-button id="type-filter-btn" commandFor="type-filter-popover" variant="secondary">
+                    {typeFilter === 'all' ? 'Bundle type' : `Type: ${getBundleTypeDisplay(typeFilter)}`} ▾
+                  </s-button>
+                  <s-popover ref={typePopoverRef} id="type-filter-popover">
+                    <s-box padding="base">
+                      <s-choice-list ref={typeChoiceListRef} name="type-filter-list" label="Filter by type" labelAccessibilityVisibility="exclusive">
+                        <s-choice value="all" selected={typeFilter === 'all' || undefined}>All</s-choice>
+                        <s-choice value="product_page" selected={typeFilter === 'product_page' || undefined}>Product page</s-choice>
+                        <s-choice value="full_page" selected={typeFilter === 'full_page' || undefined}>Full page</s-choice>
+                      </s-choice-list>
+                    </s-box>
+                  </s-popover>
                 </div>
                 <div className={dashboardStyles.searchField}>
                   <s-text-field

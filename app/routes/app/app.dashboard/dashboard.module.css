@@ -219,14 +219,9 @@
 .filterGroup {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
-}
-
-.filterSelectWrap {
-  width: 160px;
-  flex-shrink: 0;
 }
 
 .perPageSelectWrap {
