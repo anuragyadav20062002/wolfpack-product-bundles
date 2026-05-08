@@ -61,6 +61,14 @@ interface CustomFieldDef {
   options: string[];
 }
 
+interface TierDef {
+  id: string;
+  label: string;
+  linkedBundleId: string;
+}
+
+type TierErrors = Record<string, { label?: string; linkedBundleId?: string }>;
+
 interface ConditionDef {
   id: string;
   conditionType: string;
@@ -228,6 +236,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const routeBase =
     bundle.bundleType === "full_page" ? "full-page-bundle" : "product-page-bundle";
 
+  // Fetch sibling FPB bundles for the Pricing Tiers "Linked Bundle" dropdown
+  const fpbBundles = await db.bundle.findMany({
+    where: {
+      shopId: session.shop,
+      bundleType: "full_page",
+      id: { not: bundleId },
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   return json({
     bundle: {
       id: bundle.id,
@@ -238,6 +257,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       promoBannerBgImage: bundle.promoBannerBgImage ?? null,
       promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
       loadingGif: bundle.loadingGif ?? null,
+      tierConfig: (bundle.tierConfig as Array<{ label: string; linkedBundleId: string }> | null) ?? [],
       shopifyProductId: bundle.shopifyProductId,
       shopifyPageId: bundle.shopifyPageId,
       textOverridesByLocale: (bundle.textOverridesByLocale as any) ?? {},
@@ -271,6 +291,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     configureUrl: `/app/bundles/${routeBase}/configure/${bundle.id}`,
     shopLocales,
     shop: session.shop,
+    fpbBundles,
   });
 };
 
@@ -316,6 +337,27 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     });
 
     return json({ ok: true, intent: "savePricing" });
+  }
+
+  // ── Save Tiers (Step 05) ────────────────────────────────────
+  if (intent === "saveTiers") {
+    const tiersJson = formData.get("tiers") as string;
+    const tiers: Array<{ label: string; linkedBundleId: string }> = JSON.parse(
+      tiersJson || "[]"
+    );
+    await db.bundle.update({
+      where: { id: bundleId },
+      data: { tierConfig: tiers },
+    });
+    const routeBase =
+      bundle.bundleType === "full_page"
+        ? "full-page-bundle"
+        : "product-page-bundle";
+    return json({
+      ok: true,
+      intent: "saveTiers",
+      redirectTo: `/app/bundles/${routeBase}/configure/${bundle.id}`,
+    });
   }
 
   // ── Save Assets (Step 04) ───────────────────────────────────
@@ -460,7 +502,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function WizardConfigureStep() {
-  const { bundle, readiness, shopLocales, shop } =
+  const { bundle, readiness, shopLocales, shop, fpbBundles } =
     useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
@@ -2309,7 +2351,6 @@ export default function WizardConfigureStep() {
       <BundleGuidedTour
         steps={WIZARD_CONFIGURE_TOUR_STEPS}
         shop={shop}
-        bundleId={bundle.id}
         onComplete={() => setReadinessOpen(true)}
         onDismiss={() => {}}
       />

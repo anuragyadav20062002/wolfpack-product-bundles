@@ -1,7 +1,7 @@
 # Issue: Create Bundle Wizard — Step 01
 
 **Issue ID:** create-bundle-wizard-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-02
 **Last Updated:** 2026-05-05 16:00
@@ -90,6 +90,14 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - ✅ FILTER_TYPE_OPTIONS and CUSTOM_FIELD_TYPE_OPTIONS constants added
 - Files changed: route.tsx, wizard-configure.module.css, BundleGuidedTour.tsx, BundleGuidedTour.module.css, schema.prisma, migration SQL
 
+### 2026-05-08 09:30 - Completed Phase 12: Step 05 Pricing Tiers loader/action scaffold
+- ✅ `TierDef` + `TierErrors` interfaces added
+- ✅ Loader fetches sibling FPB bundles (`fpbBundles`) for "Linked Bundle" dropdown in tier config
+- ✅ `tierConfig` included in loader return (reads `bundle.tierConfig` JSON column)
+- ✅ `saveTiers` action: parses tiers JSON, writes to `bundle.tierConfig`, redirects to full configure page
+- ✅ `fpbBundles` destructured from `useLoaderData` in component
+- Files changed: route.tsx
+
 ## Phases Checklist
 - [x] Phase 1: TDD — write failing tests for create-bundle action
 - [x] Phase 2: New wizard route + CSS module
@@ -101,3 +109,4 @@ Replace the dashboard Create Bundle modal with a full-page multi-step wizard at 
 - [x] Phase 8: Step 02 Configuration — wizard route, DB migration, carousel animation, all feature cards
 - [x] Phase 10: Step 03 Pricing — DB migration, dynamic wizard step, pricing cards, sidebar, fetcher-based save
 - [x] Phase 11: Step 04 Assets — DB migration (BundleCustomField), media assets, filters drawer, search bar, custom fields modal, guided tour backdrop
+- [x] Phase 12: Step 05 Pricing Tiers — loader fetches sibling FPB bundles, `saveTiers` action persists tier config to `tierConfig` JSON column
