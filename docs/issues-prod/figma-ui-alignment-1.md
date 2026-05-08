@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-08 22:05
+**Last Updated:** 2026-05-08 22:30
 
 ## Overview
 
@@ -42,6 +42,26 @@ which is always the `s-select` element the listener is attached to.
 - `app/routes/app/app.dashboard/dashboard.module.css`
 
 **Next:** Continue with next Figma design image (TBD by user)
+
+### 2026-05-08 22:30 - Gap 7: FilePicker empty state redesign
+
+**Changes implemented:**
+- Added `hint` prop to FilePicker — displays recommendation text inside the drop zone (e.g. "Recommended: 1920×400px")
+- Added `uploadLabel` prop — controls upload button text ("Upload image" / "Upload")
+- Replaced `ImageIcon` with inline monitor SVG matching Figma design
+- Replaced "Select from store files or upload" subtitle with `hint` text
+- Added pill-style "Upload image" button inside the empty-state drop zone
+  - Triggers direct file upload (no modal) — auto-applies the uploaded file via `onChange` on success
+  - Shows inline spinner + status text in the drop zone while uploading/polling
+  - Shows errors below the zone when modal is not open
+- Moved `<input type="file">` outside the `<dialog>` so `.click()` is a trusted user gesture regardless of dialog open state
+- Added `uploadFromTrigger` state to differentiate direct-upload path from modal-upload path
+- Updated Promo Banner FilePicker: `label="Choose background image"`, `hint="Recommended: 1920×400px"`, `uploadLabel="Upload image"`, removed `<s-text>` subtitle above picker
+- Updated Loading Animation FilePicker: `label="Choose loading GIF"`, `hint="Recommended: 150×150px"`, `uploadLabel="Upload"`, removed `<s-text>` subtitle above picker
+
+**Files changed:**
+- `app/components/design-control-panel/settings/FilePicker.tsx`
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
 
 ### 2026-05-08 22:05 - Step 04 Assets layout alignment
 

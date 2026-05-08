@@ -1750,15 +1750,14 @@ export default function WizardConfigureStep() {
               <div className={styles.assetsGrid}>
                 <div className={styles.assetBlock}>
                   <s-heading>Promo Banner</s-heading>
-                  <s-text color="subdued">
-                    Background image on the bundle page. Recommended: 1920×400 px · PNG/JPG
-                  </s-text>
                   <FilePicker
                     value={promoBannerBgImage}
                     onChange={setPromoBannerBgImage}
                     cropValue={promoBannerBgImageCrop}
                     onCropChange={setPromoBannerBgImageCrop}
-                    label="Promo Banner"
+                    label="Choose background image"
+                    hint="Recommended: 1920×400px"
+                    uploadLabel="Upload image"
                   />
                   <div className={styles.formatChip}>
                     <svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
@@ -1769,13 +1768,12 @@ export default function WizardConfigureStep() {
                 </div>
                 <div className={styles.assetBlock}>
                   <s-heading>Loading Animation</s-heading>
-                  <s-text color="subdued">
-                    Displayed during step transitions and add-to-cart. GIF · 150×150 px
-                  </s-text>
                   <FilePicker
                     value={loadingGif}
                     onChange={setLoadingGif}
-                    label="Loading GIF"
+                    label="Choose loading GIF"
+                    hint="Recommended: 150×150px"
+                    uploadLabel="Upload"
                     hideCropEditor
                   />
                   <div className={styles.formatChip}>

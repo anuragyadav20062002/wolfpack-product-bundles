@@ -8,9 +8,8 @@ import {
   Text,
   Spinner,
   Banner,
-  Icon,
 } from "@shopify/polaris";
-import { ImageIcon, XCircleIcon, UploadIcon } from "@shopify/polaris-icons";
+import { UploadIcon, XCircleIcon } from "@shopify/polaris-icons";
 import type { StoreFile } from "../../../routes/app/app.store-files";
 import { ImageCropEditor } from "./ImageCropEditor";
 
@@ -20,6 +19,8 @@ interface FilePickerProps {
   cropValue?: string | null;
   onCropChange?: (crop: string | null) => void;
   label?: string;
+  hint?: string;
+  uploadLabel?: string;
   hideCropEditor?: boolean;
 }
 
@@ -67,6 +68,25 @@ function filenameFromUrl(url: string): string {
   }
 }
 
+function MonitorIcon() {
+  return (
+    <svg
+      width="28"
+      height="23"
+      viewBox="0 0 28 23"
+      fill="none"
+      stroke="#8c9196"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="1" y="1" width="26" height="16" rx="2" />
+      <path d="M9 22h10M14 17v5" />
+    </svg>
+  );
+}
+
 function ProgressCircle({ status }: { status: "spinning" | "success" }) {
   if (status === "success") {
     return (
@@ -105,7 +125,16 @@ function ProgressCircle({ status }: { status: "spinning" | "success" }) {
   );
 }
 
-export function FilePicker({ value, onChange, cropValue, onCropChange, label = "Choose background image", hideCropEditor = false }: FilePickerProps) {
+export function FilePicker({
+  value,
+  onChange,
+  cropValue,
+  onCropChange,
+  label = "Choose background image",
+  hint,
+  uploadLabel = "Upload image",
+  hideCropEditor = false,
+}: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const [cropEditorOpen, setCropEditorOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -121,6 +150,7 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [pendingFileId, setPendingFileId] = useState<string | null>(null);
   const [pollTrigger, setPollTrigger] = useState(0);
+  const [uploadFromTrigger, setUploadFromTrigger] = useState(false);
   const pollCountRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -180,6 +210,7 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
       } else {
         setUploadStatus("error");
         setUploadError(result.error ?? "Upload failed. Please try again.");
+        setUploadFromTrigger(false);
       }
     }
   }, [uploadFetcher.state, uploadFetcher.data]);
@@ -191,6 +222,7 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     if (pollCountRef.current >= MAX_POLLS) {
       setUploadStatus("timeout");
       setPendingFileId(null);
+      setUploadFromTrigger(false);
       return;
     }
 
@@ -211,22 +243,29 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     const result = statusFetcher.data;
 
     if (result.fileStatus === "READY" && result.file) {
-      setFiles((prev) => {
-        const existingIds = new Set(prev.map((f) => f.id));
-        if (existingIds.has(result.file!.id)) return prev;
-        return [result.file!, ...prev];
-      });
-      setSelectedUrl(result.file.url);
+      if (uploadFromTrigger) {
+        // Direct-upload path: auto-apply and skip the modal Select button
+        onChange(result.file.url);
+        setUploadFromTrigger(false);
+      } else {
+        setFiles((prev) => {
+          const existingIds = new Set(prev.map((f) => f.id));
+          if (existingIds.has(result.file!.id)) return prev;
+          return [result.file!, ...prev];
+        });
+        setSelectedUrl(result.file.url);
+      }
       setUploadStatus("success");
       setPendingFileId(null);
     } else if (result.fileStatus === "FAILED") {
       setUploadStatus("error");
       setUploadError("Upload processing failed. Please try again.");
       setPendingFileId(null);
+      setUploadFromTrigger(false);
     } else {
       setPollTrigger((n) => n + 1);
     }
-  }, [statusFetcher.state, statusFetcher.data, uploadStatus]);
+  }, [statusFetcher.state, statusFetcher.data, uploadStatus, uploadFromTrigger, onChange]);
 
   // Auto-reset success indicator after a brief delay
   useEffect(() => {
@@ -265,14 +304,16 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     setUploadError(null);
     setSizeError(null);
     setPendingFileId(null);
+    setUploadFromTrigger(false);
   }, []);
 
   const handleOpen = useCallback(() => {
+    if (isBlocked) return;
     setOpen(true);
     setSelectedUrl(null);
     setSearch("");
     resetUploadState();
-  }, [resetUploadState]);
+  }, [isBlocked, resetUploadState]);
 
   const handleClose = useCallback(() => {
     setOpen(false);
@@ -308,15 +349,32 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     fileInputRef.current?.click();
   }, []);
 
+  // Trigger-area direct upload — bypasses the modal, auto-applies on success
+  const handleTriggerUpload = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (isBlocked) return;
+      setUploadFromTrigger(true);
+      setSizeError(null);
+      setUploadError(null);
+      fileInputRef.current?.click();
+    },
+    [isBlocked],
+  );
+
   const handleFileInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      if (!file) return;
+      if (!file) {
+        setUploadFromTrigger(false);
+        return;
+      }
 
       if (file.size > MAX_BYTES) {
         setSizeError("File must be under 20 MB.");
+        setUploadFromTrigger(false);
         return;
       }
 
@@ -355,6 +413,8 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
         : "Upload complete!";
   const progressTone: "subdued" | "success" =
     uploadStatus === "success" ? "success" : "subdued";
+
+  const triggerIsUploading = uploadFromTrigger && isBlocked;
 
   // ─── Trigger area ──────────────────────────────────────────────────────────
 
@@ -402,31 +462,72 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
       </InlineStack>
     </div>
   ) : (
-    // Empty state — dashed upload zone button
-    <button
-      type="button"
-      onClick={handleOpen}
+    // Empty state — dashed drop zone
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={!triggerIsUploading ? handleOpen : undefined}
+      onKeyDown={
+        !triggerIsUploading
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") handleOpen();
+            }
+          : undefined
+      }
       style={{
         width: "100%",
         border: "2px dashed #c9cccf",
         borderRadius: "8px",
-        padding: "18px 12px",
+        padding: "28px 16px",
         background: "#fafbfb",
-        cursor: "pointer",
+        cursor: triggerIsUploading ? "default" : "pointer",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "6px",
+        gap: "8px",
+        textAlign: "center",
+        boxSizing: "border-box",
       }}
     >
-      <Icon source={ImageIcon} tone="subdued" />
-      <Text as="p" variant="bodySm" fontWeight="medium">
-        {label}
-      </Text>
-      <Text as="p" variant="bodyXs" tone="subdued">
-        Select from store files or upload
-      </Text>
-    </button>
+      {triggerIsUploading ? (
+        <>
+          <Spinner size="small" />
+          <Text as="p" variant="bodyXs" tone="subdued">
+            {uploadStatus === "uploading" ? "Uploading…" : "Processing…"}
+          </Text>
+        </>
+      ) : (
+        <>
+          <MonitorIcon />
+          <Text as="p" variant="bodySm" fontWeight="semibold">
+            {label}
+          </Text>
+          {hint && (
+            <Text as="p" variant="bodyXs" tone="subdued">
+              {hint}
+            </Text>
+          )}
+          <button
+            type="button"
+            onClick={handleTriggerUpload}
+            style={{
+              marginTop: "4px",
+              padding: "6px 20px",
+              border: "1px solid #c9cccf",
+              borderRadius: "20px",
+              background: "#fff",
+              cursor: "pointer",
+              fontSize: "13px",
+              fontWeight: "500",
+              color: "#303030",
+              lineHeight: "1.4",
+            }}
+          >
+            {uploadLabel}
+          </button>
+        </>
+      )}
+    </div>
   );
 
   // ─── Native <dialog> modal ─────────────────────────────────────────────────
@@ -498,16 +599,6 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
                   disabled={isBlocked}
                 />
               </div>
-              {/* File input lives here — adjacent to the Upload button so the
-                  browser treats fileInputRef.current.click() as a trusted
-                  user-gesture (portaling across DOM trees can lose that context) */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_TYPES}
-                style={{ display: "none" }}
-                onChange={handleFileInputChange}
-              />
               <Button
                 variant="plain"
                 icon={UploadIcon}
@@ -665,9 +756,30 @@ export function FilePicker({ value, onChange, cropValue, onCropChange, label = "
     <BlockStack gap="200">
       {trigger}
 
+      {/* Trigger-level errors shown when upload was initiated from the empty-state button */}
+      {!open && sizeError && (
+        <Text as="p" variant="bodySm" tone="critical">
+          {sizeError}
+        </Text>
+      )}
+      {!open && uploadStatus === "error" && uploadError && (
+        <Banner title="Upload failed" tone="critical">
+          <p>{uploadError}</p>
+        </Banner>
+      )}
+
+      {/* File input lives outside the dialog so .click() works as a trusted
+          user-gesture whether or not the dialog is currently open. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_TYPES}
+        style={{ display: "none" }}
+        onChange={handleFileInputChange}
+      />
+
       {/* Native <dialog> — rendered in the browser top layer via showModal(),
-          which places it above App Bridge's <ui-modal> regardless of z-index.
-          The hidden file input lives here so .click() is a trusted user gesture. */}
+          which places it above App Bridge's <ui-modal> regardless of z-index. */}
       <style>{`dialog.fp-dialog::backdrop { background: rgba(0,0,0,0.5); } dialog.fp-dialog { border: none; padding: 0; background: transparent; border-radius: 12px; outline: none; }`}</style>
       <dialog
         ref={dialogRef}
