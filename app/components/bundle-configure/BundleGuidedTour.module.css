@@ -7,7 +7,7 @@
   background: #005bd3;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-  padding: 20px;
+  padding: 16px 20px 20px;
   z-index: 600;
   color: white;
   animation: tourEntrance 0.25s ease both;
@@ -17,6 +17,26 @@
   from { opacity: 0; transform: translateX(-50%) translateY(12px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+.tourHeader {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.dismissTourLink {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+
+.dismissTourLink:hover { color: white; }
 
 .progressTrack {
   height: 4px;
@@ -89,13 +109,15 @@
 
 .nextBtn:hover { opacity: 0.88; }
 
-/* Dim overlay behind the tour card — highlighted element raised above it via z-index 595 */
+/* SVG spotlight backdrop — dims the page with a cutout over the target element */
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  width: 100%;
+  height: 100%;
   z-index: 580;
   animation: backdropFadeIn 0.25s ease;
+  cursor: pointer;
 }
 
 @keyframes backdropFadeIn {
