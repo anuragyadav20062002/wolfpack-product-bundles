@@ -521,6 +521,9 @@ export default function WizardConfigureStep() {
     redirectTo: string;
   }>();
 
+  const isFpb = bundle.bundleType === "full_page";
+  const stepsMeta = isFpb ? STEPS_META : STEPS_META.slice(0, 4);
+
   // ── Wizard step (1=Config 02, 2=Pricing 03) ───────────────────
   const [wizardStep, setWizardStep] = useState(1);
 
@@ -647,10 +650,14 @@ export default function WizardConfigureStep() {
       assetsFetcher.data.intent === "saveAssets" &&
       assetsFetcher.state === "idle"
     ) {
-      setWizardStep(4);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (isFpb) {
+        setWizardStep(4);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        navigate(assetsFetcher.data.redirectTo);
+      }
     }
-  }, [assetsFetcher.data, assetsFetcher.state]);
+  }, [assetsFetcher.data, assetsFetcher.state, isFpb, navigate]);
 
   useEffect(() => {
     if (
@@ -1008,7 +1015,7 @@ export default function WizardConfigureStep() {
 
         {/* Step indicator — dynamic based on wizardStep */}
         <div className={styles.stepIndicator}>
-          {STEPS_META.map((step, idx) => (
+          {stepsMeta.map((step, idx) => (
             <Fragment key={step.num}>
               {idx > 0 && <div className={styles.stepConnector} />}
               <div className={styles.stepItem}>
@@ -1929,7 +1936,7 @@ export default function WizardConfigureStep() {
         {/* ══════════════════════════════════════════════════════
             STEP 05 — Pricing Tiers
         ══════════════════════════════════════════════════════ */}
-        {wizardStep === 4 && (
+        {wizardStep === 4 && isFpb && (
           <div className={styles.assetsLayout}>
             <div className={styles.card}>
               <div style={{ marginBottom: 20 }}>

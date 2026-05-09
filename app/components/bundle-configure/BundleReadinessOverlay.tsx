@@ -84,52 +84,66 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
     </svg>
   );
 
+  const chevron = (
+    <svg className={styles.chevron} width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d={expanded ? "M2 9L7 4L12 9" : "M2 5L7 10L12 5"}
+        stroke="#555"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+
   return (
     <div className={styles.container}>
-      {expanded && (
-        <div className={styles.panel}>
-          <div className={styles.panelItems}>
-            {allItems.map((item) => (
-              <div
-                key={item.key}
-                className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""}`}
-              >
-                <div className={styles.itemIndicator}>
-                  {item.done ? (
-                    <svg width="20" height="20" viewBox="0 0 20 20">
-                      <circle cx="10" cy="10" r="10" fill="#008060" />
-                      <path
-                        d="M6 10.5l2.5 2.5L14 8"
-                        stroke="white"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        fill="none"
-                      />
-                    </svg>
-                  ) : (
-                    <svg width="20" height="20" viewBox="0 0 20 20">
-                      <circle cx="10" cy="10" r="9" fill="none" stroke="#c9cccf" strokeWidth="1.5" />
-                    </svg>
-                  )}
+      <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
+        <div className={styles.panelInner}>
+          <div className={styles.panel}>
+            <div className={styles.panelItems}>
+              {allItems.map((item) => (
+                <div
+                  key={item.key}
+                  className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""}`}
+                >
+                  <div className={styles.itemIndicator}>
+                    {item.done ? (
+                      <svg width="20" height="20" viewBox="0 0 20 20">
+                        <circle cx="10" cy="10" r="10" fill="#008060" />
+                        <path
+                          d="M6 10.5l2.5 2.5L14 8"
+                          stroke="white"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 20 20">
+                        <circle cx="10" cy="10" r="9" fill="none" stroke="#c9cccf" strokeWidth="1.5" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className={styles.itemContent}>
+                    <span className={styles.itemLabel}>{item.label}</span>
+                    {item.description && (
+                      <span className={styles.itemDesc}>{item.description}</span>
+                    )}
+                  </div>
+                  <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
+                    +{item.points}
+                  </span>
                 </div>
-                <div className={styles.itemContent}>
-                  <span className={styles.itemLabel}>{item.label}</span>
-                  {item.description && (
-                    <span className={styles.itemDesc}>{item.description}</span>
-                  )}
-                </div>
-                <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
-                  +{item.points}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className={allDone ? styles.statusReady : styles.statusNotReady}>
-            {allDone ? "Your bundle is ready to sell!" : "Your bundle isn't ready to sell yet."}
+              ))}
+            </div>
+            <div className={allDone ? styles.statusReady : styles.statusNotReady}>
+              {allDone ? "Your bundle is ready to sell!" : "Your bundle isn't ready to sell yet."}
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       <div
         className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
@@ -144,7 +158,7 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
             </span>
           </div>
         )}
-        <span className={styles.chevron}>{expanded ? "∨" : "∧"}</span>
+        {chevron}
       </div>
     </div>
   );

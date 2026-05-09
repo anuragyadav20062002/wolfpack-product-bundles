@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 14:00
+**Last Updated:** 2026-05-09 15:00
 
 ## Overview
 
@@ -22,8 +22,34 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 7 — Step 05 Pricing Tiers implementation
 - [x] Phase 8 — Readiness Score + Guided Tour competitor-parity redesign
 - [x] Phase 9 — Create bundle wizard end-to-end flow test + bug fix
+- [x] Phase 10 — Readiness overlay polish + PPB wizard Pricing Tiers guard
 
 ## Progress Log
+
+### 2026-05-09 15:00 - Phase 10: Readiness overlay polish + PPB wizard Pricing Tiers guard
+
+**Changes implemented:**
+
+*BundleReadinessOverlay — UI polish:*
+- Panel items list: added `max-height: 280px` + `overflow-y: auto` + `scrollbar-width: thin` for scrollability
+- Smooth expand/collapse animation: replaced conditional `{expanded && <panel>}` with always-rendered
+  `panelWrapper → panelInner` using CSS grid `grid-template-rows: 0fr → 1fr` transition (0.25s cubic-bezier)
+- SVG chevron: replaced `∧`/`∨` text characters with a 14×14 SVG path chevron (`stroke="#555"`, `strokeWidth="2"`)
+  that flips direction based on `expanded` state
+- Collapsed trigger: added permanent `box-shadow: 0 2px 10px rgba(0,0,0,0.12)` (was hover-only);
+  stronger hover shadow; slightly increased right padding to `14px` for better visual weight
+- Panel: updated `box-shadow` to `0 4px 20px rgba(0,0,0,0.1)` (was 0.08); border unified to `#e0e0e0`
+
+*Create bundle wizard — PPB Pricing Tiers guard:*
+- Added `isFpb = bundle.bundleType === "full_page"` and `stepsMeta = isFpb ? STEPS_META : STEPS_META.slice(0,4)`
+- Step indicator renders 4 steps (not 5) for product-page bundles
+- `assetsFetcher` useEffect: for PPB navigates directly to configure page; for FPB still advances to step 4 (Pricing Tiers)
+- Pricing Tiers JSX block guarded with `wizardStep === 4 && isFpb`
+
+**Files changed:**
+- `app/components/bundle-configure/BundleReadinessOverlay.tsx`
+- `app/components/bundle-configure/BundleReadinessOverlay.module.css`
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
 
 ### 2026-05-09 14:00 - Phase 9: Create bundle wizard end-to-end flow test + bug fix
 
