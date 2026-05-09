@@ -600,13 +600,13 @@ export default function Dashboard() {
                 {bundles.length === 0 ? (
                   <div className={dashboardStyles.emptyBundlesState}>
                     <div className={dashboardStyles.emptyBundlesIcon}>
-                      <s-icon type="package" />
+                      <img src="/bundle.png" alt="" className={dashboardStyles.emptyBundlesImg} />
                     </div>
                     <s-stack direction="block" gap="small" alignItems="center">
                       <s-heading>{t("dashboard.emptyState.title")}</s-heading>
-                      <s-text color="subdued">
+                      <p className={dashboardStyles.emptyBundlesBody}>
                         {t("dashboard.emptyState.body")}
-                      </s-text>
+                      </p>
                     </s-stack>
                   </div>
                 ) : (

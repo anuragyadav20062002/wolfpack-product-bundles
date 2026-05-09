@@ -276,23 +276,29 @@
 }
 
 .emptyBundlesIcon {
-  width: 76px;
-  height: 76px;
+  width: 100px;
+  height: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  color: #303030;
   background: #f4f4f4;
+  overflow: hidden;
 }
 
-.emptyBundlesIcon s-icon {
-  width: 32px;
-  height: 32px;
+.emptyBundlesImg {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
 }
 
-.emptyBundlesState p {
-  max-width: 520px;
+.emptyBundlesBody {
+  max-width: 340px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
 }
 
 .bundleTableRow {

@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 22:00
+**Last Updated:** 2026-05-10 14:30
 
 ## Overview
 
@@ -170,6 +170,14 @@ implementation is updated to match while keeping Polaris web components througho
 
 **Files changed:**
 - `app/components/bundle-configure/BundleReadinessOverlay.tsx`
+
+### 2026-05-10 14:30 - Dashboard empty state: bundle.png image + 2-line text + font weight
+
+- Replaced `s-icon type="package"` with `<img src="/bundle.png">` inside `.emptyBundlesIcon`
+- Replaced `s-text` body with `<p className={emptyBundlesBody}>` for explicit font control
+- CSS: `.emptyBundlesIcon` → wider (100px), overflow hidden; added `.emptyBundlesImg` (64px contain); added `.emptyBundlesBody` (max-width 340px, font-weight 500, text-align center, line-height 1.55 for 2-line wrap)
+- Disabled Vercel plugin for this project in `.claude/settings.json` (was producing Next.js false-positive warnings on Remix files)
+- Files: route.tsx, dashboard.module.css, .claude/settings.json
 
 ### 2026-05-09 15:00 - Phase 10: Readiness overlay polish + PPB wizard Pricing Tiers guard
 
