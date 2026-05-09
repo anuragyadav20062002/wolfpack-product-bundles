@@ -11,6 +11,8 @@ import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
+import { useTranslation } from "react-i18next";
+import "../../../i18n/config";
 
 import {
   handleCloneBundle,
@@ -151,58 +153,52 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return json({ error: "Unknown action" }, { status: 400 });
 };
 
-const STATUS_BADGES = {
-  active: <s-badge tone="success">active</s-badge>,
-  draft: <s-badge tone="info">draft</s-badge>,
-  unlisted: <s-badge tone="warning">unlisted</s-badge>,
-} as const;
+const STATUS_TONE_MAP = { active: 'success', draft: 'info', unlisted: 'warning' } as const;
 
-const BUNDLE_TYPE_LABELS: Record<string, string> = {
-  product_page: 'Product page',
-  full_page: 'Full page',
-};
+const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, bundle }: Omit<BundleActionsButtonsProps, 'moreOpen' | 'onMoreToggle'>) => {
+  const { t } = useTranslation();
+  return (
+    <div className={dashboardStyles.bundleActions}>
+      <s-button
+        id={`edit-${bundleId}`}
+        icon="edit"
+        variant="tertiary"
+        interestFor={`tooltip-edit-${bundleId}`}
+        onClick={() => onEdit(bundle)}
+        accessibilityLabel={t("dashboard.actions.editBundle")}
+      />
+      <s-tooltip id={`tooltip-edit-${bundleId}`}>{t("dashboard.actions.editBundle")}</s-tooltip>
 
-const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPreview, bundle }: Omit<BundleActionsButtonsProps, 'moreOpen' | 'onMoreToggle'>) => (
-  <div className={dashboardStyles.bundleActions}>
-    <s-button
-      id={`edit-${bundleId}`}
-      icon="edit"
-      variant="tertiary"
-      interestFor={`tooltip-edit-${bundleId}`}
-      onClick={() => onEdit(bundle)}
-      accessibilityLabel="Edit bundle"
-    />
-    <s-tooltip id={`tooltip-edit-${bundleId}`}>Edit bundle</s-tooltip>
+      <s-button
+        id={`preview-${bundleId}`}
+        icon="view"
+        variant="tertiary"
+        interestFor={`tooltip-preview-${bundleId}`}
+        onClick={() => onPreview(bundle)}
+        disabled={!bundle.previewHandle || undefined}
+        accessibilityLabel={t("dashboard.actions.previewBundle")}
+      />
+      <s-tooltip id={`tooltip-preview-${bundleId}`}>
+        {bundle.previewHandle ? t("dashboard.actions.previewBundle") : t("dashboard.actions.previewUnavailable")}
+      </s-tooltip>
 
-    <s-button
-      id={`preview-${bundleId}`}
-      icon="view"
-      variant="tertiary"
-      interestFor={`tooltip-preview-${bundleId}`}
-      onClick={() => onPreview(bundle)}
-      disabled={!bundle.previewHandle || undefined}
-      accessibilityLabel="Preview bundle"
-    />
-    <s-tooltip id={`tooltip-preview-${bundleId}`}>
-      {bundle.previewHandle ? "Preview in store" : "Save bundle to preview"}
-    </s-tooltip>
-
-    <s-button
-      id={`more-${bundleId}`}
-      icon="menu-horizontal"
-      variant="tertiary"
-      commandFor={`more-popover-${bundleId}`}
-      command="--toggle"
-      accessibilityLabel="More actions"
-    />
-    <s-popover id={`more-popover-${bundleId}`}>
-      <s-stack direction="block" gap="none">
-        <s-button variant="tertiary" icon="duplicate" onClick={() => onClone(bundleId)}>Clone bundle</s-button>
-        <s-button variant="tertiary" tone="critical" icon="delete" onClick={() => onDelete(bundleId)}>Delete bundle</s-button>
-      </s-stack>
-    </s-popover>
-  </div>
-));
+      <s-button
+        id={`more-${bundleId}`}
+        icon="menu-horizontal"
+        variant="tertiary"
+        commandFor={`more-popover-${bundleId}`}
+        command="--toggle"
+        accessibilityLabel={t("dashboard.actions.moreActions")}
+      />
+      <s-popover id={`more-popover-${bundleId}`}>
+        <s-stack direction="block" gap="none">
+          <s-button variant="tertiary" icon="duplicate" onClick={() => onClone(bundleId)}>{t("dashboard.actions.cloneBundle")}</s-button>
+          <s-button variant="tertiary" tone="critical" icon="delete" onClick={() => onDelete(bundleId)}>{t("dashboard.actions.deleteBundle")}</s-button>
+        </s-stack>
+      </s-popover>
+    </div>
+  );
+});
 
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
@@ -212,26 +208,21 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
   const shopify = useAppBridge();
+  const { t } = useTranslation();
 
   const dashboardState = useDashboardState();
   const {
     bundleToDelete, openDeleteModal, closeDeleteModal,
   } = dashboardState;
 
-  // Refs for imperative web component modal control
   const deleteModalRef = useRef<any>(null);
-
-  // Refs for controlled web component inputs
   const searchRef = useRef<any>(null);
   const langSelectRef = useRef<any>(null);
   const perPageSelectRef = useRef<any>(null);
-
-  // Filter pill refs
   const statusChoiceListRef = useRef<any>(null);
   const typeChoiceListRef = useRef<any>(null);
   const statusPopoverRef = useRef<any>(null);
   const typePopoverRef = useRef<any>(null);
-
   const fetcherIntentRef = useRef<string | null>(null);
   const cloningBundleTypeRef = useRef<string | null>(null);
 
@@ -243,7 +234,6 @@ export default function Dashboard() {
     image.onerror = () => setParthImageLoaded(true);
   }, []);
 
-  // Handle clone/delete responses
   useEffect(() => {
     if (fetcher.state !== 'idle' || !fetcher.data) return;
     const intent = fetcherIntentRef.current;
@@ -251,18 +241,18 @@ export default function Dashboard() {
     const data = fetcher.data as Record<string, unknown>;
     if (data.success) {
       if (intent === 'cloneBundle' && data.bundleId) {
-        shopify.toast.show('Bundle cloned successfully');
+        shopify.toast.show(t("dashboard.actions.cloneSuccess"));
         const routeBase = cloningBundleTypeRef.current === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
         navigate(`/app/bundles/${routeBase}/configure/${data.bundleId}`);
       } else if (intent === 'deleteBundle') {
-        shopify.toast.show('Bundle deleted');
+        shopify.toast.show(t("dashboard.actions.deleteSuccess"));
       }
     } else if (data.error) {
       shopify.toast.show(String(data.error), { isError: true, duration: 5000 });
     }
     fetcherIntentRef.current = null;
     cloningBundleTypeRef.current = null;
-  }, [fetcher.state, fetcher.data, navigate, shopify]);
+  }, [fetcher.state, fetcher.data, navigate, shopify, t]);
 
   const handleDirectChat = () => {
     if (typeof window !== 'undefined' && (window as any).$crisp) {
@@ -276,7 +266,7 @@ export default function Dashboard() {
   }, [navigate]);
 
   const handleCloneBundle = useCallback((bundleId: string) => {
-    if (confirm("Are you sure you want to clone this bundle?")) {
+    if (confirm(t("dashboard.actions.confirmClone"))) {
       const sourceBundle = bundles.find(b => b.id === bundleId);
       fetcherIntentRef.current = 'cloneBundle';
       cloningBundleTypeRef.current = sourceBundle?.bundleType ?? null;
@@ -285,7 +275,7 @@ export default function Dashboard() {
       formData.append("bundleId", bundleId);
       fetcher.submit(formData, { method: "post" });
     }
-  }, [fetcher, bundles]);
+  }, [fetcher, bundles, t]);
 
   const handleDeleteBundle = useCallback((bundleId: string) => {
     openDeleteModal(bundleId);
@@ -320,11 +310,12 @@ export default function Dashboard() {
   }, [shop]);
 
   const getStatusDisplay = (status: string) => {
-    return STATUS_BADGES[status as keyof typeof STATUS_BADGES] || <s-badge tone="info">{status}</s-badge>;
+    const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';
+    return <s-badge tone={tone}>{t(`dashboard.status.${status}`, status)}</s-badge>;
   };
 
   const getBundleTypeDisplay = (bundleType: string) => {
-    return BUNDLE_TYPE_LABELS[bundleType] || bundleType;
+    return t(`dashboard.bundleType.${bundleType}`, bundleType);
   };
 
   const [bundleFilter, setBundleFilter] = useState("");
@@ -335,14 +326,14 @@ export default function Dashboard() {
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
   const [parthImageLoaded, setParthImageLoaded] = useState(false);
 
-  const languageOptions = [
-    { label: "English", value: "en" },
-    { label: "French", value: "fr" },
-    { label: "German", value: "de" },
-    { label: "Spanish", value: "es" },
-    { label: "Japanese", value: "ja" },
-    { label: "Portuguese (BR)", value: "pt-BR" },
-  ];
+  const languageOptions = useMemo(() => [
+    { label: t("dashboard.language.en"), value: "en" },
+    { label: t("dashboard.language.fr"), value: "fr" },
+    { label: t("dashboard.language.de"), value: "de" },
+    { label: t("dashboard.language.es"), value: "es" },
+    { label: t("dashboard.language.ja"), value: "ja" },
+    { label: t("dashboard.language.pt-BR"), value: "pt-BR" },
+  ], [t]);
 
   const rawLocale = searchParams.get("locale") ?? "en";
   const selectedLanguage = languageOptions.some(o => o.value === rawLocale) ? rawLocale : "en";
@@ -355,7 +346,6 @@ export default function Dashboard() {
     });
   }, [setSearchParams]);
 
-  // Language select change event
   useEffect(() => {
     const el = langSelectRef.current;
     if (!el) return;
@@ -367,7 +357,6 @@ export default function Dashboard() {
     return () => el.removeEventListener('change', handler);
   }, [handleLanguageChange]);
 
-  // Bundles per page select
   useEffect(() => {
     const el = perPageSelectRef.current;
     if (!el) return;
@@ -379,7 +368,6 @@ export default function Dashboard() {
     return () => el.removeEventListener('change', handler);
   }, []);
 
-  // Status filter choice list
   useEffect(() => {
     const el = statusChoiceListRef.current;
     if (!el) return;
@@ -395,7 +383,6 @@ export default function Dashboard() {
     return () => el.removeEventListener('change', handler);
   }, []);
 
-  // Type filter choice list
   useEffect(() => {
     const el = typeChoiceListRef.current;
     if (!el) return;
@@ -411,7 +398,6 @@ export default function Dashboard() {
     return () => el.removeEventListener('change', handler);
   }, []);
 
-  // Search field input
   useEffect(() => {
     const el = searchRef.current;
     if (!el) return;
@@ -424,8 +410,8 @@ export default function Dashboard() {
   }, []);
 
   const handleSyncCollections = useCallback(() => {
-    shopify.toast.show('Collections synced');
-  }, [shopify]);
+    shopify.toast.show(t("dashboard.header.syncCollections"));
+  }, [shopify, t]);
 
   const handleBellClick = useCallback(() => {
     navigate('/app/events');
@@ -436,8 +422,8 @@ export default function Dashboard() {
       window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    shopify.toast.show("Theme editor link is unavailable for this store.", { isError: true });
-  }, [shopify, themeEditorUrl]);
+    shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true });
+  }, [shopify, themeEditorUrl, t]);
 
   const filteredBundles = useMemo(() =>
     bundles
@@ -461,13 +447,13 @@ export default function Dashboard() {
       <s-modal
         ref={deleteModalRef}
         id="delete-bundle-modal"
-        heading="Delete Bundle?"
+        heading={t("dashboard.deleteModal.heading")}
         onHide={handleCancelDelete}
       >
-        <s-button slot="primaryAction" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>Delete</s-button>
-        <s-button slot="secondaryActions" onClick={handleCancelDelete}>Cancel</s-button>
+        <s-button slot="primaryAction" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
+        <s-button slot="secondaryActions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
         <s-text color="subdued">
-          This action cannot be undone. All bundle configuration, steps, and discount rules will be permanently deleted.
+          {t("dashboard.deleteModal.body")}
         </s-text>
       </s-modal>
 
@@ -477,14 +463,14 @@ export default function Dashboard() {
           {/* Header */}
           <div className={dashboardStyles.dashboardHeader}>
             <div className={dashboardStyles.dashboardTitleBlock}>
-              <h1 className={dashboardStyles.dashboardTitle}>Dashboard: Wolfpack Bundle Builder</h1>
-              <p className={dashboardStyles.dashboardSubtitle}>Access your bundles, Customer support and more.</p>
+              <h1 className={dashboardStyles.dashboardTitle}>{t("dashboard.title")}</h1>
+              <p className={dashboardStyles.dashboardSubtitle}>{t("dashboard.subtitle")}</p>
             </div>
             <div className={dashboardStyles.dashboardActions}>
               <div className={dashboardStyles.languageSelect}>
                 <s-select
                   ref={langSelectRef}
-                  label="Language"
+                  label={t("dashboard.language.label")}
                   labelAccessibilityVisibility="exclusive"
                   value={selectedLanguage}
                 >
@@ -493,9 +479,9 @@ export default function Dashboard() {
                   ))}
                 </s-select>
               </div>
-              <s-button icon="refresh" onClick={handleSyncCollections}>Sync Collections</s-button>
-              <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>Create Bundle</s-button>
-              <s-button icon="notification" onClick={handleBellClick} accessibilityLabel="Changelog" />
+              <s-button icon="refresh" onClick={handleSyncCollections}>{t("dashboard.header.syncCollections")}</s-button>
+              <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>{t("dashboard.header.createBundle")}</s-button>
+              <s-button icon="notification" onClick={handleBellClick} accessibilityLabel={t("dashboard.header.changelog")} />
             </div>
           </div>
 
@@ -517,12 +503,12 @@ export default function Dashboard() {
                 <div className={dashboardStyles.supportAvatarWrap}>
                   {!parthImageLoaded && (
                     <div className={dashboardStyles.supportAvatarSkeleton}>
-                      <s-spinner accessibilityLabel="Loading Parth profile photo" />
+                      <s-spinner accessibilityLabel={t("dashboard.support.imageLoading")} />
                     </div>
                   )}
                   <img
                     src="/Parth.jpeg"
-                    alt="Parth, Founder"
+                    alt={t("dashboard.support.imageAlt")}
                     className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
                     onLoad={() => setParthImageLoaded(true)}
                   />
@@ -530,16 +516,16 @@ export default function Dashboard() {
                 <div className={dashboardStyles.supportContent}>
                   <s-stack direction="block" gap="base">
                     <s-stack direction="block" gap="small-100">
-                      <s-heading>Need help? Speak to Parth, the Founder!</s-heading>
-                      <s-text color="subdued">Get support with bundle setup, custom styling, and technical issues.</s-text>
+                      <s-heading>{t("dashboard.support.heading")}</s-heading>
+                      <s-text color="subdued">{t("dashboard.support.body")}</s-text>
                     </s-stack>
                     <s-text color="subdued">
-                      <span className={dashboardStyles.onlineNow}>ONLINE NOW</span> • Mon-Fri • Replies within 1 hour
+                      <span className={dashboardStyles.onlineNow}>{t("dashboard.support.onlineNow")}</span> • {t("dashboard.support.availability")}
                     </s-text>
                   </s-stack>
                 </div>
                 <div className={dashboardStyles.supportCta}>
-                  <s-button variant="primary" inlineSize="fill" onClick={handleDirectChat}>Chat with Parth</s-button>
+                  <s-button variant="primary" inlineSize="fill" onClick={handleDirectChat}>{t("dashboard.support.cta")}</s-button>
                 </div>
               </div>
             </s-section>
@@ -547,11 +533,11 @@ export default function Dashboard() {
             <button type="button" className={dashboardStyles.appEmbedCard} onClick={handleAppEmbedCardClick}>
               <s-stack direction="block" gap="base">
                 <div className={dashboardStyles.appEmbedCardHeader}>
-                  <s-heading>App Embeds</s-heading>
+                  <s-heading>{t("dashboard.appEmbeds.heading")}</s-heading>
                   <s-icon type="external" color="subdued" />
                 </div>
-                <img src="/appEmbed.png" alt="Theme editor app embeds instructions" className={dashboardStyles.appEmbedImage} />
-                <s-text color="subdued">Click on Online store → Edit Theme → Enable the toggle and Save it</s-text>
+                <img src="/appEmbed.png" alt={t("dashboard.appEmbeds.heading")} className={dashboardStyles.appEmbedImage} />
+                <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
               </s-stack>
             </button>
           </div>
@@ -563,29 +549,29 @@ export default function Dashboard() {
                 <div className={dashboardStyles.filterGroup}>
                   {/* Status filter pill */}
                   <s-button id="status-filter-btn" commandFor="status-filter-popover" variant="secondary">
-                    {statusFilter === 'all' ? 'Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} ▾
+                    {statusFilter === 'all' ? t("dashboard.filters.status") : t(`dashboard.status.${statusFilter}`, statusFilter)} ▾
                   </s-button>
                   <s-popover ref={statusPopoverRef} id="status-filter-popover">
                     <s-box padding="base">
-                      <s-choice-list ref={statusChoiceListRef} name="status-filter-list" label="Filter by status" labelAccessibilityVisibility="exclusive">
-                        <s-choice value="all" selected={statusFilter === 'all' || undefined}>All</s-choice>
-                        <s-choice value="active" selected={statusFilter === 'active' || undefined}>Active</s-choice>
-                        <s-choice value="draft" selected={statusFilter === 'draft' || undefined}>Draft</s-choice>
-                        <s-choice value="unlisted" selected={statusFilter === 'unlisted' || undefined}>Unlisted</s-choice>
+                      <s-choice-list ref={statusChoiceListRef} name="status-filter-list" label={t("dashboard.filters.byStatus")} labelAccessibilityVisibility="exclusive">
+                        <s-choice value="all" selected={statusFilter === 'all' || undefined}>{t("dashboard.filters.all")}</s-choice>
+                        <s-choice value="active" selected={statusFilter === 'active' || undefined}>{t("dashboard.status.active")}</s-choice>
+                        <s-choice value="draft" selected={statusFilter === 'draft' || undefined}>{t("dashboard.status.draft")}</s-choice>
+                        <s-choice value="unlisted" selected={statusFilter === 'unlisted' || undefined}>{t("dashboard.status.unlisted")}</s-choice>
                       </s-choice-list>
                     </s-box>
                   </s-popover>
 
                   {/* Bundle type filter pill */}
                   <s-button id="type-filter-btn" commandFor="type-filter-popover" variant="secondary">
-                    {typeFilter === 'all' ? 'Bundle type' : getBundleTypeDisplay(typeFilter)} ▾
+                    {typeFilter === 'all' ? t("dashboard.filters.bundleType") : getBundleTypeDisplay(typeFilter)} ▾
                   </s-button>
                   <s-popover ref={typePopoverRef} id="type-filter-popover">
                     <s-box padding="base">
-                      <s-choice-list ref={typeChoiceListRef} name="type-filter-list" label="Filter by type" labelAccessibilityVisibility="exclusive">
-                        <s-choice value="all" selected={typeFilter === 'all' || undefined}>All</s-choice>
-                        <s-choice value="product_page" selected={typeFilter === 'product_page' || undefined}>Product page</s-choice>
-                        <s-choice value="full_page" selected={typeFilter === 'full_page' || undefined}>Full page</s-choice>
+                      <s-choice-list ref={typeChoiceListRef} name="type-filter-list" label={t("dashboard.filters.byType")} labelAccessibilityVisibility="exclusive">
+                        <s-choice value="all" selected={typeFilter === 'all' || undefined}>{t("dashboard.filters.all")}</s-choice>
+                        <s-choice value="product_page" selected={typeFilter === 'product_page' || undefined}>{t("dashboard.bundleType.product_page")}</s-choice>
+                        <s-choice value="full_page" selected={typeFilter === 'full_page' || undefined}>{t("dashboard.bundleType.full_page")}</s-choice>
                       </s-choice-list>
                     </s-box>
                   </s-popover>
@@ -593,10 +579,10 @@ export default function Dashboard() {
                 <div className={dashboardStyles.searchField}>
                   <s-text-field
                     ref={searchRef}
-                    label="Search bundles"
+                    label={t("dashboard.search.label")}
                     labelAccessibilityVisibility="exclusive"
                     icon="search"
-                    placeholder="Search...."
+                    placeholder={t("dashboard.search.placeholder")}
                     value={bundleFilter}
                     autocomplete="off"
                   />
@@ -605,10 +591,10 @@ export default function Dashboard() {
 
               <div className={dashboardStyles.bundlesTableShell}>
                 <div className={dashboardStyles.bundlesTableHeader}>
-                  <span>Bundle Name</span>
-                  <span>Status</span>
-                  <span>Type</span>
-                  <span>Actions</span>
+                  <span>{t("dashboard.table.bundleName")}</span>
+                  <span>{t("dashboard.table.status")}</span>
+                  <span>{t("dashboard.table.type")}</span>
+                  <span>{t("dashboard.table.actions")}</span>
                 </div>
 
                 {bundles.length === 0 ? (
@@ -617,10 +603,9 @@ export default function Dashboard() {
                       <s-icon type="package" />
                     </div>
                     <s-stack direction="block" gap="small" alignItems="center">
-                      <s-heading>No bundles yet</s-heading>
+                      <s-heading>{t("dashboard.emptyState.title")}</s-heading>
                       <s-text color="subdued">
-                        You haven't created any bundles for your store. Start now
-                        and boost your sales by grouping your best products.
+                        {t("dashboard.emptyState.body")}
                       </s-text>
                     </s-stack>
                   </div>
@@ -647,22 +632,22 @@ export default function Dashboard() {
 
                     {filteredBundles.length === 0 && (
                       <div className={dashboardStyles.noFilteredBundles}>
-                        No bundles match the current filters
+                        {t("dashboard.noResults")}
                       </div>
                     )}
 
                     {filteredBundles.length > 0 && (
                       <div className={dashboardStyles.paginationBar}>
                         <s-stack direction="inline" gap="small-100">
-                          <s-button variant="tertiary" disabled={effectivePage <= 1 || undefined} onClick={() => setCurrentPage(p => p - 1)} accessibilityLabel="Previous page">‹</s-button>
-                          <s-text>{`Page ${effectivePage} of ${totalPages}`}</s-text>
-                          <s-button variant="tertiary" disabled={effectivePage >= totalPages || undefined} onClick={() => setCurrentPage(p => p + 1)} accessibilityLabel="Next page">›</s-button>
+                          <s-button variant="tertiary" disabled={effectivePage <= 1 || undefined} onClick={() => setCurrentPage(p => p - 1)} accessibilityLabel={t("dashboard.pagination.prev")}>‹</s-button>
+                          <s-text>{t("dashboard.pagination.page", { current: effectivePage, total: totalPages })}</s-text>
+                          <s-button variant="tertiary" disabled={effectivePage >= totalPages || undefined} onClick={() => setCurrentPage(p => p + 1)} accessibilityLabel={t("dashboard.pagination.next")}>›</s-button>
                         </s-stack>
                         <div className={dashboardStyles.perPageSelectWrap}>
-                          <s-select ref={perPageSelectRef} label="Bundles per page" value={String(bundlesPerPage)}>
-                            <s-option value="10">10 per page</s-option>
-                            <s-option value="20">20 per page</s-option>
-                            <s-option value="50">50 per page</s-option>
+                          <s-select ref={perPageSelectRef} label={t("dashboard.pagination.perPageLabel")} value={String(bundlesPerPage)}>
+                            <s-option value="10">{t("dashboard.pagination.per10")}</s-option>
+                            <s-option value="20">{t("dashboard.pagination.per20")}</s-option>
+                            <s-option value="50">{t("dashboard.pagination.per50")}</s-option>
                           </s-select>
                         </div>
                       </div>
@@ -683,34 +668,34 @@ export default function Dashboard() {
                   onClick={() => setActiveResource('bundle-inspirations')}
                 >
                   <div className={dashboardStyles.resourceItemIcon}><s-icon type="image" /></div>
-                  <span className={dashboardStyles.resourceItemLabel}>Bundle Inspiration</span>
+                  <span className={dashboardStyles.resourceItemLabel}>{t("dashboard.resources.bundleInspiration")}</span>
                 </button>
                 <button type="button" className={dashboardStyles.resourceItem} onClick={handleDirectChat}>
                   <div className={dashboardStyles.resourceItemIcon}><s-icon type="question-circle" /></div>
-                  <span className={dashboardStyles.resourceItemLabel}>Support</span>
+                  <span className={dashboardStyles.resourceItemLabel}>{t("dashboard.resources.support")}</span>
                 </button>
                 <Link to="/app/events" className={dashboardStyles.resourceItem}>
                   <div className={dashboardStyles.resourceItemIcon}><s-icon type="notification" /></div>
-                  <span className={dashboardStyles.resourceItemLabel}>Explore Update</span>
+                  <span className={dashboardStyles.resourceItemLabel}>{t("dashboard.resources.exploreUpdate")}</span>
                 </Link>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceItem}>
                   <div className={dashboardStyles.resourceItemIcon}><s-icon type="code" /></div>
-                  <span className={dashboardStyles.resourceItemLabel}>SDK Documentation</span>
+                  <span className={dashboardStyles.resourceItemLabel}>{t("dashboard.resources.sdkDocumentation")}</span>
                 </a>
               </div>
 
               <div className={dashboardStyles.resourcesThumbnails}>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-                  <img src="/bundleGallery.png" alt="Bundle Gallery" className={dashboardStyles.resourceThumbnailImage} />
+                  <img src="/bundleGallery.png" alt={t("dashboard.resources.bundleGallery")} className={dashboardStyles.resourceThumbnailImage} />
                   <div className={dashboardStyles.resourceThumbnailFooter}>
-                    <span>Bundle Gallery</span>
+                    <span>{t("dashboard.resources.bundleGallery")}</span>
                     <s-icon type="external" color="subdued" />
                   </div>
                 </a>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-                  <img src="/bundleGallery.png" alt="Interactive Demo" className={dashboardStyles.resourceThumbnailImage} />
+                  <img src="/bundleGallery.png" alt={t("dashboard.resources.bundleGallery")} className={dashboardStyles.resourceThumbnailImage} />
                   <div className={dashboardStyles.resourceThumbnailFooter}>
-                    <span>Bundle Gallery</span>
+                    <span>{t("dashboard.resources.bundleGallery")}</span>
                     <s-icon type="external" color="subdued" />
                   </div>
                 </a>

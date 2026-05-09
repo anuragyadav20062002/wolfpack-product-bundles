@@ -31,8 +31,41 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 16 — Filter pill labels: remove "Status: " / "Type: " prefix when option selected
 - [x] Phase 17 — Guided tour jitter fix, smooth spotlight transitions, readiness overlay tour target
 - [x] Phase 18 — i18n research doc + architecture scaffold (admin UI + storefront research)
+- [x] Phase 19 — i18n implementation: packages, config, locale files, app.tsx wiring, dashboard t() extraction
 
 ## Progress Log
+
+### 2026-05-10 - Phase 19: i18n full implementation
+
+**Packages installed:** `i18next@26.0.10`, `react-i18next@17.0.7`
+
+**Files created:**
+- `app/i18n/config.ts` — i18next singleton, pre-bundles all 6 locale resources, `fallbackLng: "en"`, `useSuspense: false`
+- `app/i18n/polaris-locales.server.ts` — server-only imports of `@shopify/polaris/locales/*.json` for all 6 locales; excluded from client bundle via `.server.ts` suffix
+- `app/i18n/locales/en.json` — English base (54 keys across dashboard namespace)
+- `app/i18n/locales/fr.json` — full French translation
+- `app/i18n/locales/de.json`, `es.json`, `ja.json`, `pt-BR.json` — stubs with English values; `label` key translated per locale (Sprache/Idioma/言語); language option names use native forms (Français, Deutsch, Español, 日本語, Português)
+
+**`app/routes/app/app.tsx` changes:**
+- Loader reads `?locale` from URL, calls `getPolarisLocale(locale)`, returns `{ locale, polarisTranslations }`
+- `AppProvider` receives `i18n={polarisTranslations}` → Polaris components translate automatically
+- `I18nextProvider` wraps `<Outlet />` to make `useTranslation()` available across all routes
+- `useEffect` calls `i18n.changeLanguage(locale)` when locale from URL changes
+
+**`app/routes/app/app.dashboard/route.tsx` changes:**
+- `useTranslation()` added to both `BundleActionsButtons` (memo) and `Dashboard`
+- All 54 hardcoded UI strings replaced with `t("dashboard.key")` calls
+- `STATUS_BADGES` static object removed → `getStatusDisplay` uses `t(`dashboard.status.${status}`)`
+- `BUNDLE_TYPE_LABELS` static object removed → `getBundleTypeDisplay` uses `t(`dashboard.bundleType.${bundleType}`)`
+- `languageOptions` labels use `t("dashboard.language.{locale}")` — wrapped in `useMemo([t])` so they update on language change
+- Pagination uses `t("dashboard.pagination.page", { current, total })` interpolation
+- `confirm()` and `toast.show()` calls use `t()` for their messages
+
+**Architecture notes:**
+- SSR always renders English (i18next singleton initialized with `lng: "en"`)
+- Client re-renders immediately after hydration when `useEffect` fires `changeLanguage(locale)`
+- All 6 locale resources are pre-bundled (locale files are ~5 KB each); no network fetch on language change
+- `pt-BR.json` Polaris locale exists in `@shopify/polaris/locales/` — all 6 locales fully covered
 
 ### 2026-05-09 19:30 - Phase 18: i18n research doc
 

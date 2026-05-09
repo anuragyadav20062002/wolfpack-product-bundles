@@ -1,0 +1,98 @@
+{
+  "dashboard": {
+    "title": "Tableau de bord : Wolfpack Bundle Builder",
+    "subtitle": "Accédez à vos bundles, au support client et bien plus.",
+    "header": {
+      "syncCollections": "Synchroniser les collections",
+      "createBundle": "Créer un bundle",
+      "changelog": "Journal des modifications"
+    },
+    "support": {
+      "heading": "Besoin d'aide ? Parlez à Parth, le fondateur !",
+      "body": "Obtenez de l'aide pour la configuration, le style personnalisé et les problèmes techniques.",
+      "onlineNow": "EN LIGNE",
+      "availability": "Lun-Ven • Réponse dans l'heure",
+      "cta": "Discuter avec Parth",
+      "imageAlt": "Parth, fondateur",
+      "imageLoading": "Chargement de la photo de Parth"
+    },
+    "appEmbeds": {
+      "heading": "Intégrations d'app",
+      "instruction": "Cliquez sur Boutique en ligne → Modifier le thème → Activez le bouton et enregistrez"
+    },
+    "filters": {
+      "status": "Statut",
+      "bundleType": "Type de bundle",
+      "byStatus": "Filtrer par statut",
+      "byType": "Filtrer par type",
+      "all": "Tout"
+    },
+    "status": {
+      "active": "Actif",
+      "draft": "Brouillon",
+      "unlisted": "Non répertorié"
+    },
+    "bundleType": {
+      "product_page": "Page produit",
+      "full_page": "Page complète"
+    },
+    "search": {
+      "label": "Rechercher des bundles",
+      "placeholder": "Rechercher...."
+    },
+    "table": {
+      "bundleName": "Nom du bundle",
+      "status": "Statut",
+      "type": "Type",
+      "actions": "Actions"
+    },
+    "emptyState": {
+      "title": "Aucun bundle pour l'instant",
+      "body": "Vous n'avez pas encore créé de bundles. Commencez maintenant et boostez vos ventes en regroupant vos meilleurs produits."
+    },
+    "noResults": "Aucun bundle ne correspond aux filtres actuels",
+    "pagination": {
+      "page": "Page {{current}} sur {{total}}",
+      "perPageLabel": "Bundles par page",
+      "per10": "10 par page",
+      "per20": "20 par page",
+      "per50": "50 par page",
+      "prev": "Page précédente",
+      "next": "Page suivante"
+    },
+    "actions": {
+      "moreActions": "Plus d'actions",
+      "editBundle": "Modifier le bundle",
+      "previewBundle": "Aperçu dans la boutique",
+      "previewUnavailable": "Enregistrez le bundle pour l'aperçu",
+      "cloneBundle": "Dupliquer le bundle",
+      "deleteBundle": "Supprimer le bundle",
+      "confirmClone": "Êtes-vous sûr de vouloir dupliquer ce bundle ?",
+      "cloneSuccess": "Bundle dupliqué avec succès",
+      "deleteSuccess": "Bundle supprimé",
+      "themeEditorUnavailable": "Le lien de l'éditeur de thème est indisponible."
+    },
+    "deleteModal": {
+      "heading": "Supprimer le bundle ?",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "body": "Cette action est irréversible. Toute la configuration, les étapes et les règles de remise seront définitivement supprimées."
+    },
+    "resources": {
+      "bundleInspiration": "Inspiration de bundle",
+      "support": "Support",
+      "exploreUpdate": "Explorer les mises à jour",
+      "sdkDocumentation": "Documentation SDK",
+      "bundleGallery": "Galerie de bundles"
+    },
+    "language": {
+      "label": "Langue",
+      "en": "English",
+      "fr": "Français",
+      "de": "Deutsch",
+      "es": "Español",
+      "ja": "日本語",
+      "pt-BR": "Português (BR)"
+    }
+  }
+}
