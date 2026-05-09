@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 16:30
+**Last Updated:** 2026-05-09 17:00
 
 ## Overview
 
@@ -24,8 +24,26 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 9 — Create bundle wizard end-to-end flow test + bug fix
 - [x] Phase 10 — Readiness overlay polish + PPB wizard Pricing Tiers guard
 - [x] Phase 11 — Readiness overlay collapsed state competitor parity (donut size, score text, chevron direction, pill shape)
+- [x] Phase 12 — Readiness overlay C-gauge arc, rounded-rect trigger, expanded background dim
 
 ## Progress Log
+
+### 2026-05-09 17:00 - Phase 12: C-gauge arc, rounded-rect trigger, expanded background dim
+
+**Gap analysis vs competitor screenshots (expanded + collapsed):**
+- Donut was a full-circle arc (strokeDashoffset approach) — competitor uses a 270° C-gauge (gap at bottom)
+- Collapsed trigger `border-radius: 50px` (pill) — competitor uses `~16px` rounded rectangle
+- No background dimming when expanded — competitor dims the page and blocks interaction
+
+**Changes:**
+- SVG donut → C-gauge: `strokeDasharray` for both track (gray, fixed 270°) and progress (colored, score-proportional), `transform="rotate(135 24 24)"` to position gap at bottom. Removed `offset` variable, added `arcLength` + `progressLength`
+- `border-radius: 50px` → `16px` on `.collapsed`
+- Added `.dimOverlay` CSS class: `position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 499`
+- JSX: wrapped return in fragment, renders `<div className={styles.dimOverlay} onClick={toggle} />` when `expanded === true` — clicking dim also collapses the panel
+
+**Files changed:**
+- `app/components/bundle-configure/BundleReadinessOverlay.tsx`
+- `app/components/bundle-configure/BundleReadinessOverlay.module.css`
 
 ### 2026-05-09 16:30 - Phase 11 (continued): Collapsed trigger pill-shape fix
 

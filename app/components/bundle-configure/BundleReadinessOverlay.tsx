@@ -51,7 +51,8 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
 
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const arcLength = circumference * 0.75; // 270° visible span
+  const progressLength = (score / 100) * arcLength;
 
   const toggle = useCallback(() => {
     setExpanded((e) => {
@@ -64,19 +65,21 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
 
   const donut = (
     <svg width="48" height="48" viewBox="0 0 48 48" className={styles.arc}>
-      <circle cx="24" cy="24" r={radius} fill="none" stroke="#e8e8e8" strokeWidth="4" />
+      {/* Gray C-gauge track (270°, gap at bottom) */}
       <circle
-        cx="24"
-        cy="24"
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth="4"
-        strokeDasharray={`${circumference} ${circumference}`}
-        strokeDashoffset={offset}
+        cx="24" cy="24" r={radius}
+        fill="none" stroke="#e8e8e8" strokeWidth="4"
+        strokeDasharray={`${arcLength} ${circumference - arcLength}`}
+        transform="rotate(135 24 24)"
+      />
+      {/* Colored progress arc */}
+      <circle
+        cx="24" cy="24" r={radius}
+        fill="none" stroke={color} strokeWidth="4"
         strokeLinecap="round"
-        transform="rotate(-90 24 24)"
-        style={{ transition: "stroke-dashoffset 0.6s ease" }}
+        strokeDasharray={`${progressLength} ${circumference - progressLength}`}
+        transform="rotate(135 24 24)"
+        style={{ transition: "stroke-dasharray 0.6s ease" }}
       />
       <text x="24" y="29" textAnchor="middle" fontSize="14" fontWeight="700" fill={color}>
         {score}
@@ -97,6 +100,10 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
   );
 
   return (
+    <>
+    {expanded && (
+      <div className={styles.dimOverlay} onClick={toggle} />
+    )}
     <div className={styles.container}>
       <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
         <div className={styles.panelInner}>
@@ -161,5 +168,6 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
         {chevron}
       </div>
     </div>
+    </>
   );
 }
