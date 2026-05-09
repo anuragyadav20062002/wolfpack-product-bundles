@@ -391,6 +391,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const loadingGif = loadingGifRaw || null;
     const tierConfigRaw = formData.get("tierConfigData") as string | null;
     const tierConfigParsed = tierConfigRaw ? JSON.parse(tierConfigRaw) : null;
+    const searchBarEnabled = formData.get("searchBarEnabled") === "true";
     const showStepTimelineRaw = formData.get("showStepTimeline") as string | null;
     // Parse: "true" → true, "false" → false, null/missing → null
     const showStepTimelineParsed: boolean | null =
@@ -532,6 +533,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showCompareAtPrices,
         cartRedirectToCheckout,
         allowQuantityChanges,
+        searchBarEnabled,
         textOverrides,
         textOverridesByLocale,
         // Update steps if provided
@@ -569,6 +571,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 // Step image fields
                 imageUrl: step.imageUrl ?? null,
                 bannerImageUrl: step.bannerImageUrl ?? null,
+                timelineIconUrl: step.timelineIconUrl ?? null,
+                pageTitle: step.pageTitle ?? null,
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,
