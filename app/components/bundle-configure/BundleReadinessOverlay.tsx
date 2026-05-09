@@ -63,11 +63,11 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
   const allDone = allItems.every((i) => i.done);
 
   const donut = (
-    <svg width="44" height="44" viewBox="0 0 44 44" className={styles.arc}>
-      <circle cx="22" cy="22" r={radius} fill="none" stroke="#e8e8e8" strokeWidth="4" />
+    <svg width="48" height="48" viewBox="0 0 48 48" className={styles.arc}>
+      <circle cx="24" cy="24" r={radius} fill="none" stroke="#e8e8e8" strokeWidth="4" />
       <circle
-        cx="22"
-        cy="22"
+        cx="24"
+        cy="24"
         r={radius}
         fill="none"
         stroke={color}
@@ -75,10 +75,10 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
         strokeDasharray={`${circumference} ${circumference}`}
         strokeDashoffset={offset}
         strokeLinecap="round"
-        transform="rotate(-90 22 22)"
+        transform="rotate(-90 24 24)"
         style={{ transition: "stroke-dashoffset 0.6s ease" }}
       />
-      <text x="22" y="27" textAnchor="middle" fontSize="11" fontWeight="600" fill={color}>
+      <text x="24" y="29" textAnchor="middle" fontSize="14" fontWeight="700" fill={color}>
         {score}
       </text>
     </svg>
@@ -87,8 +87,8 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
   const chevron = (
     <svg className={styles.chevron} width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path
-        d={expanded ? "M2 9L7 4L12 9" : "M2 5L7 10L12 5"}
-        stroke="#555"
+        d={expanded ? "M2 5L7 10L12 5" : "M2 9L7 4L12 9"}
+        stroke="#666"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"

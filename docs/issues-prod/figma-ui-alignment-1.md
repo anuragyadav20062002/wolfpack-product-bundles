@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 15:00
+**Last Updated:** 2026-05-09 16:00
 
 ## Overview
 
@@ -23,8 +23,25 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 8 — Readiness Score + Guided Tour competitor-parity redesign
 - [x] Phase 9 — Create bundle wizard end-to-end flow test + bug fix
 - [x] Phase 10 — Readiness overlay polish + PPB wizard Pricing Tiers guard
+- [x] Phase 11 — Readiness overlay collapsed state competitor parity (donut size, score text, chevron direction)
 
 ## Progress Log
+
+### 2026-05-09 16:00 - Phase 11: Readiness overlay collapsed state competitor parity
+
+**Gap analysis vs competitor collapsed state (competitor-readiness-collapsed.png):**
+- Chevron direction was **inverted**: our SVG showed ∨ (down) when collapsed, competitor shows ∧ (up) when collapsed
+- Score text inside donut was too small (fontSize="11") — competitor renders it larger/bolder (~14px)
+- Donut circle slightly undersized (44px) vs competitor (~48px)
+
+**Changes:**
+- Fixed SVG chevron paths — swapped so collapsed = ∧ (M2 9L7 4L12 9), expanded = ∨ (M2 5L7 10L12 5)
+- Donut SVG: 44×44 → 48×48, viewBox 0 0 44 44 → 0 0 48 48, center (22,22) → (24,24), text anchor y="27" → y="29"
+- Score text: fontSize="11" → fontSize="14", fontWeight="600" → fontWeight="700"
+- Stroke rotation origin updated: rotate(-90 22 22) → rotate(-90 24 24)
+
+**Files changed:**
+- `app/components/bundle-configure/BundleReadinessOverlay.tsx`
 
 ### 2026-05-09 15:00 - Phase 10: Readiness overlay polish + PPB wizard Pricing Tiers guard
 
