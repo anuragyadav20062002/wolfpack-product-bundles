@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "./BundleGuidedTour.module.css";
 import type { TourStep } from "./tourSteps";
 
@@ -24,8 +24,8 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+  const rafRef = useRef<number | null>(null);
 
-  // Shop-level key — tour fires only once per shop (first bundle creation)
   const storageKey = `wpb_first_bundle_tour_seen_${shop}`;
 
   useEffect(() => {
@@ -43,6 +43,13 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
       document.body.style.overflow = prev;
     };
   }, [visible]);
+
+  const centeredBottomStyle = useCallback((): React.CSSProperties => ({
+    top: window.innerHeight - 280,
+    left: Math.max(12, window.innerWidth / 2 - TOOLTIP_WIDTH / 2),
+    transform: "none",
+    bottom: "auto",
+  }), []);
 
   const updatePositions = useCallback((el: HTMLElement) => {
     const rect = el.getBoundingClientRect();
@@ -67,20 +74,27 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
 
   useEffect(() => {
     if (!visible) return;
+
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
     const step = steps[currentStep];
 
     if (!step?.targetSection) {
       setSpotlightRect(null);
-      setTooltipStyle({});
+      setTooltipStyle(centeredBottomStyle());
       return;
     }
 
     const el = document.querySelector(
       `[data-tour-target="${step.targetSection}"]`
     ) as HTMLElement | null;
+
     if (!el) {
       setSpotlightRect(null);
-      setTooltipStyle({});
+      setTooltipStyle(centeredBottomStyle());
       return;
     }
 
@@ -91,17 +105,38 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
     el.style.position = "relative";
     el.style.zIndex = "595";
 
-    // Position immediately, then refine once smooth-scroll settles
-    updatePositions(el);
-    const tid = window.setTimeout(() => updatePositions(el), 350);
+    // Poll via rAF until the element's viewport position has stabilised
+    // (i.e. smooth-scroll has settled). Only then update spotlight & tooltip.
+    let lastTop = -Infinity;
+    let stableFrames = 0;
+
+    const poll = () => {
+      const rect = el.getBoundingClientRect();
+      if (Math.abs(rect.top - lastTop) < 0.5) {
+        stableFrames++;
+        if (stableFrames >= 4) {
+          updatePositions(el);
+          rafRef.current = null;
+          return;
+        }
+      } else {
+        stableFrames = 0;
+      }
+      lastTop = rect.top;
+      rafRef.current = requestAnimationFrame(poll);
+    };
+    rafRef.current = requestAnimationFrame(poll);
 
     return () => {
-      clearTimeout(tid);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       el.classList.remove("wpb-tour-highlight");
       el.style.position = prevPosition;
       el.style.zIndex = prevZIndex;
     };
-  }, [visible, currentStep, steps, updatePositions]);
+  }, [visible, currentStep, steps, updatePositions, centeredBottomStyle]);
 
   const handleDismiss = useCallback(() => {
     localStorage.setItem(storageKey, "1");
@@ -138,10 +173,13 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
               <mask id="wpb-spotlight">
                 <rect width="100%" height="100%" fill="white" />
                 <rect
-                  x={spotlightRect.x}
-                  y={spotlightRect.y}
-                  width={spotlightRect.width}
-                  height={spotlightRect.height}
+                  style={{
+                    x: spotlightRect.x,
+                    y: spotlightRect.y,
+                    width: spotlightRect.width,
+                    height: spotlightRect.height,
+                    transition: "x 0.35s ease, y 0.35s ease, width 0.35s ease, height 0.35s ease",
+                  } as React.CSSProperties}
                   rx="10"
                   fill="black"
                 />

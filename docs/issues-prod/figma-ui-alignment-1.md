@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 17:30
+**Last Updated:** 2026-05-09 19:00
 
 ## Overview
 
@@ -27,8 +27,41 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 12 — Readiness overlay C-gauge arc, rounded-rect trigger, expanded background dim
 - [x] Phase 13 — Readiness overlay collapsed state: content-sized trigger width, larger donut
 - [x] Phase 14 — Dashboard status filter default changed from "active" to "all"
+- [x] Phase 15 — Dashboard horizontal margins (padding: 0 4px → 0 32px)
+- [x] Phase 16 — Filter pill labels: remove "Status: " / "Type: " prefix when option selected
+- [x] Phase 17 — Guided tour jitter fix, smooth spotlight transitions, readiness overlay tour target
+- [x] Phase 18 — i18n research doc + architecture scaffold (admin UI + storefront research)
 
 ## Progress Log
+
+### 2026-05-09 19:30 - Phase 18: i18n research doc
+
+- Created `docs/i18n-research.md` covering admin UI and storefront widget
+- Admin UI: `react-i18next` + JSON locale files; `@shopify/react-i18n` is deprecated
+- Storefront: DCP-driven `data-i18n` JSON blob injected from Liquid; no npm i18n lib needed in widget bundle
+- Includes installation steps, directory layout, config scaffold, Polaris locale wiring, string extraction order, and open questions
+- No code changes — research only
+
+### 2026-05-09 19:00 - Phase 15–17: Dashboard margins, filter labels, guided tour
+
+**Phase 15 — Dashboard horizontal margins:**
+- `.dashboardPage` `padding` changed from `0 4px 88px` → `0 32px 88px`
+- File: `app/routes/app/app.dashboard/dashboard.module.css`
+
+**Phase 16 — Filter pill label prefix removal:**
+- Status pill: `Status: Active` → `Active`
+- Type pill: `Type: Full page` → `Full page`
+- File: `app/routes/app/app.dashboard/route.tsx`
+
+**Phase 17 — Guided tour jitter + smooth spotlight + readiness target:**
+- Removed immediate `updatePositions(el)` call (source of wrong-position jitter before scroll settles)
+- Replaced 350ms fixed timeout with rAF polling that detects when scroll has settled (stable rect for ≥4 frames)
+- Added CSS transitions to SVG spotlight rect (`x`/`y`/`width`/`height` as CSS properties)
+- Added `transition: top 0.35s ease, left 0.35s ease` to `.overlay` for smooth tooltip movement
+- No-spotlight steps now compute a centered bottom position instead of falling back to CSS defaults (cleaner transition path)
+- Added `data-tour-target="fpb-readiness-score"` to collapsed trigger div in `BundleReadinessOverlay.tsx`
+- Updated last FPB_TOUR_STEPS entry `targetSection` from `""` → `"fpb-readiness-score"`
+- Files: `BundleGuidedTour.tsx`, `BundleGuidedTour.module.css`, `BundleReadinessOverlay.tsx`, `tourSteps.ts`
 
 ### 2026-05-09 18:00 - Phase 14: Dashboard status filter default fix
 

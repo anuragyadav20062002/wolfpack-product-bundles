@@ -563,7 +563,7 @@ export default function Dashboard() {
                 <div className={dashboardStyles.filterGroup}>
                   {/* Status filter pill */}
                   <s-button id="status-filter-btn" commandFor="status-filter-popover" variant="secondary">
-                    {statusFilter === 'all' ? 'Status' : `Status: ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`} ▾
+                    {statusFilter === 'all' ? 'Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} ▾
                   </s-button>
                   <s-popover ref={statusPopoverRef} id="status-filter-popover">
                     <s-box padding="base">
@@ -578,7 +578,7 @@ export default function Dashboard() {
 
                   {/* Bundle type filter pill */}
                   <s-button id="type-filter-btn" commandFor="type-filter-popover" variant="secondary">
-                    {typeFilter === 'all' ? 'Bundle type' : `Type: ${getBundleTypeDisplay(typeFilter)}`} ▾
+                    {typeFilter === 'all' ? 'Bundle type' : getBundleTypeDisplay(typeFilter)} ▾
                   </s-button>
                   <s-popover ref={typePopoverRef} id="type-filter-popover">
                     <s-box padding="base">

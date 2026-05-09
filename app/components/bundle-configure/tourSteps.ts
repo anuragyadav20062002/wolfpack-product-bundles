@@ -28,7 +28,7 @@ export const FPB_TOUR_STEPS: TourStep[] = [
   {
     title: "Your Readiness Score",
     body: "Tracks everything left before your bundle is ready to sell — it lives in the bottom-left corner.",
-    targetSection: "",
+    targetSection: "fpb-readiness-score",
   },
 ];
 

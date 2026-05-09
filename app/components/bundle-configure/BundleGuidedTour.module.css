@@ -11,6 +11,7 @@
   z-index: 600;
   color: white;
   animation: tourEntrance 0.25s ease both;
+  transition: top 0.35s ease, left 0.35s ease;
 }
 
 @keyframes tourEntrance {

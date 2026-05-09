@@ -153,6 +153,7 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
       </div>
 
       <div
+        data-tour-target="fpb-readiness-score"
         className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
         onClick={toggle}
       >
