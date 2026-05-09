@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 16:00
+**Last Updated:** 2026-05-09 16:30
 
 ## Overview
 
@@ -23,9 +23,24 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 8 — Readiness Score + Guided Tour competitor-parity redesign
 - [x] Phase 9 — Create bundle wizard end-to-end flow test + bug fix
 - [x] Phase 10 — Readiness overlay polish + PPB wizard Pricing Tiers guard
-- [x] Phase 11 — Readiness overlay collapsed state competitor parity (donut size, score text, chevron direction)
+- [x] Phase 11 — Readiness overlay collapsed state competitor parity (donut size, score text, chevron direction, pill shape)
 
 ## Progress Log
+
+### 2026-05-09 16:30 - Phase 11 (continued): Collapsed trigger pill-shape fix
+
+**Additional gap vs competitor:**
+- Trigger `border-radius` was `12px` (rounded rect) — competitor uses a fully pill-shaped trigger (~50px radius)
+- Box shadow was too subtle; hover shadow also adjusted for consistency
+
+**Changes:**
+- `.collapsed` `border-radius`: `12px` → `50px` (full pill)
+- `.collapsed` `padding`: adjusted to `6px 14px 6px 6px` for tighter pill appearance
+- `.collapsed` `box-shadow`: `0 2px 10px rgba(0,0,0,0.12)` → `0 2px 12px rgba(0,0,0,0.14)`
+- `.collapsed:hover` shadow strengthened to `0 4px 20px rgba(0,0,0,0.20)`
+
+**Files changed:**
+- `app/components/bundle-configure/BundleReadinessOverlay.module.css`
 
 ### 2026-05-09 16:00 - Phase 11: Readiness overlay collapsed state competitor parity
 
