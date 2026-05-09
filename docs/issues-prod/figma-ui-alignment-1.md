@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 19:00
+**Last Updated:** 2026-05-09 22:00
 
 ## Overview
 
@@ -44,7 +44,7 @@ implementation is updated to match while keeping Polaris web components througho
 - `app/i18n/polaris-locales.server.ts` — server-only imports of `@shopify/polaris/locales/*.json` for all 6 locales; excluded from client bundle via `.server.ts` suffix
 - `app/i18n/locales/en.json` — English base (54 keys across dashboard namespace)
 - `app/i18n/locales/fr.json` — full French translation
-- `app/i18n/locales/de.json`, `es.json`, `ja.json`, `pt-BR.json` — stubs with English values; `label` key translated per locale (Sprache/Idioma/言語); language option names use native forms (Français, Deutsch, Español, 日本語, Português)
+- `app/i18n/locales/de.json`, `es.json`, `ja.json`, `pt-BR.json` — full machine translations; all 54 dashboard keys translated per locale; `label` key translated (Sprache/Idioma/言語); language option names use native forms (Français, Deutsch, Español, 日本語, Português)
 
 **`app/routes/app/app.tsx` changes:**
 - Loader reads `?locale` from URL, calls `getPolarisLocale(locale)`, returns `{ locale, polarisTranslations }`

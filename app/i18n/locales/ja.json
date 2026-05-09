@@ -1,89 +1,89 @@
 {
   "dashboard": {
     "title": "Dashboard: Wolfpack Bundle Builder",
-    "subtitle": "Access your bundles, Customer support and more.",
+    "subtitle": "バンドル、カスタマーサポートなどにアクセスできます。",
     "header": {
-      "syncCollections": "Sync Collections",
-      "createBundle": "Create Bundle",
-      "changelog": "Changelog"
+      "syncCollections": "コレクションを同期",
+      "createBundle": "バンドルを作成",
+      "changelog": "変更履歴"
     },
     "support": {
-      "heading": "Need help? Speak to Parth, the Founder!",
-      "body": "Get support with bundle setup, custom styling, and technical issues.",
-      "onlineNow": "ONLINE NOW",
-      "availability": "Mon-Fri • Replies within 1 hour",
-      "cta": "Chat with Parth",
-      "imageAlt": "Parth, Founder",
-      "imageLoading": "Loading Parth profile photo"
+      "heading": "サポートが必要ですか？創業者のParthにお話しください！",
+      "body": "バンドルの設定、カスタムスタイル、技術的な問題についてサポートを受けられます。",
+      "onlineNow": "オンライン中",
+      "availability": "月〜金 • 1時間以内に返信",
+      "cta": "Parthとチャット",
+      "imageAlt": "Parth、創業者",
+      "imageLoading": "Parthのプロフィール写真を読み込み中"
     },
     "appEmbeds": {
-      "heading": "App Embeds",
-      "instruction": "Click on Online store → Edit Theme → Enable the toggle and Save it"
+      "heading": "アプリの埋め込み",
+      "instruction": "オンラインストア → テーマを編集 → トグルを有効にして保存"
     },
     "filters": {
-      "status": "Status",
-      "bundleType": "Bundle type",
-      "byStatus": "Filter by status",
-      "byType": "Filter by type",
-      "all": "All"
+      "status": "ステータス",
+      "bundleType": "バンドルタイプ",
+      "byStatus": "ステータスでフィルター",
+      "byType": "タイプでフィルター",
+      "all": "すべて"
     },
     "status": {
-      "active": "Active",
-      "draft": "Draft",
-      "unlisted": "Unlisted"
+      "active": "有効",
+      "draft": "下書き",
+      "unlisted": "非公開"
     },
     "bundleType": {
-      "product_page": "Product page",
-      "full_page": "Full page"
+      "product_page": "商品ページ",
+      "full_page": "フルページ"
     },
     "search": {
-      "label": "Search bundles",
-      "placeholder": "Search...."
+      "label": "バンドルを検索",
+      "placeholder": "検索...."
     },
     "table": {
-      "bundleName": "Bundle Name",
-      "status": "Status",
-      "type": "Type",
-      "actions": "Actions"
+      "bundleName": "バンドル名",
+      "status": "ステータス",
+      "type": "タイプ",
+      "actions": "操作"
     },
     "emptyState": {
-      "title": "No bundles yet",
-      "body": "You haven't created any bundles for your store. Start now and boost your sales by grouping your best products."
+      "title": "まだバンドルがありません",
+      "body": "ストアにバンドルをまだ作成していません。今すぐ始めて、最高の商品をグループ化して売上を伸ばしましょう。"
     },
-    "noResults": "No bundles match the current filters",
+    "noResults": "現在のフィルターに一致するバンドルがありません",
     "pagination": {
-      "page": "Page {{current}} of {{total}}",
-      "perPageLabel": "Bundles per page",
-      "per10": "10 per page",
-      "per20": "20 per page",
-      "per50": "50 per page",
-      "prev": "Previous page",
-      "next": "Next page"
+      "page": "{{current}} / {{total}} ページ",
+      "perPageLabel": "ページあたりのバンドル数",
+      "per10": "10件/ページ",
+      "per20": "20件/ページ",
+      "per50": "50件/ページ",
+      "prev": "前のページ",
+      "next": "次のページ"
     },
     "actions": {
-      "moreActions": "More actions",
-      "editBundle": "Edit bundle",
-      "previewBundle": "Preview in store",
-      "previewUnavailable": "Save bundle to preview",
-      "cloneBundle": "Clone bundle",
-      "deleteBundle": "Delete bundle",
-      "confirmClone": "Are you sure you want to clone this bundle?",
-      "cloneSuccess": "Bundle cloned successfully",
-      "deleteSuccess": "Bundle deleted",
-      "themeEditorUnavailable": "Theme editor link is unavailable for this store."
+      "moreActions": "その他の操作",
+      "editBundle": "バンドルを編集",
+      "previewBundle": "ストアでプレビュー",
+      "previewUnavailable": "プレビューするにはバンドルを保存してください",
+      "cloneBundle": "バンドルを複製",
+      "deleteBundle": "バンドルを削除",
+      "confirmClone": "このバンドルを複製してよろしいですか？",
+      "cloneSuccess": "バンドルが複製されました",
+      "deleteSuccess": "バンドルが削除されました",
+      "themeEditorUnavailable": "このストアではテーマエディターのリンクを利用できません。"
     },
     "deleteModal": {
-      "heading": "Delete Bundle?",
-      "delete": "Delete",
-      "cancel": "Cancel",
-      "body": "This action cannot be undone. All bundle configuration, steps, and discount rules will be permanently deleted."
+      "heading": "バンドルを削除しますか？",
+      "delete": "削除",
+      "cancel": "キャンセル",
+      "body": "この操作は取り消せません。バンドルの設定、ステップ、割引ルールがすべて完全に削除されます。"
     },
     "resources": {
-      "bundleInspiration": "Bundle Inspiration",
-      "support": "Support",
-      "exploreUpdate": "Explore Update",
-      "sdkDocumentation": "SDK Documentation",
-      "bundleGallery": "Bundle Gallery"
+      "bundleInspiration": "バンドルのインスピレーション",
+      "support": "サポート",
+      "exploreUpdate": "アップデートを見る",
+      "sdkDocumentation": "SDKドキュメント",
+      "bundleGallery": "バンドルギャラリー"
     },
     "language": {
       "label": "言語",

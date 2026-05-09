@@ -1,89 +1,89 @@
 {
   "dashboard": {
     "title": "Dashboard: Wolfpack Bundle Builder",
-    "subtitle": "Access your bundles, Customer support and more.",
+    "subtitle": "Acesse seus bundles, suporte ao cliente e muito mais.",
     "header": {
-      "syncCollections": "Sync Collections",
-      "createBundle": "Create Bundle",
-      "changelog": "Changelog"
+      "syncCollections": "Sincronizar coleções",
+      "createBundle": "Criar bundle",
+      "changelog": "Registro de alterações"
     },
     "support": {
-      "heading": "Need help? Speak to Parth, the Founder!",
-      "body": "Get support with bundle setup, custom styling, and technical issues.",
-      "onlineNow": "ONLINE NOW",
-      "availability": "Mon-Fri • Replies within 1 hour",
-      "cta": "Chat with Parth",
-      "imageAlt": "Parth, Founder",
-      "imageLoading": "Loading Parth profile photo"
+      "heading": "Precisa de ajuda? Fale com Parth, o fundador!",
+      "body": "Obtenha suporte para configuração de bundles, estilização personalizada e problemas técnicos.",
+      "onlineNow": "ONLINE AGORA",
+      "availability": "Seg–Sex • Resposta em 1 hora",
+      "cta": "Conversar com Parth",
+      "imageAlt": "Parth, fundador",
+      "imageLoading": "Carregando foto de perfil de Parth"
     },
     "appEmbeds": {
-      "heading": "App Embeds",
-      "instruction": "Click on Online store → Edit Theme → Enable the toggle and Save it"
+      "heading": "Incorporações de aplicativo",
+      "instruction": "Clique em Loja online → Editar tema → Ative o botão e salve"
     },
     "filters": {
       "status": "Status",
-      "bundleType": "Bundle type",
-      "byStatus": "Filter by status",
-      "byType": "Filter by type",
-      "all": "All"
+      "bundleType": "Tipo de bundle",
+      "byStatus": "Filtrar por status",
+      "byType": "Filtrar por tipo",
+      "all": "Todos"
     },
     "status": {
-      "active": "Active",
-      "draft": "Draft",
-      "unlisted": "Unlisted"
+      "active": "Ativo",
+      "draft": "Rascunho",
+      "unlisted": "Não listado"
     },
     "bundleType": {
-      "product_page": "Product page",
-      "full_page": "Full page"
+      "product_page": "Página de produto",
+      "full_page": "Página completa"
     },
     "search": {
-      "label": "Search bundles",
-      "placeholder": "Search...."
+      "label": "Pesquisar bundles",
+      "placeholder": "Pesquisar...."
     },
     "table": {
-      "bundleName": "Bundle Name",
+      "bundleName": "Nome do bundle",
       "status": "Status",
-      "type": "Type",
-      "actions": "Actions"
+      "type": "Tipo",
+      "actions": "Ações"
     },
     "emptyState": {
-      "title": "No bundles yet",
-      "body": "You haven't created any bundles for your store. Start now and boost your sales by grouping your best products."
+      "title": "Nenhum bundle ainda",
+      "body": "Você ainda não criou nenhum bundle para sua loja. Comece agora e aumente suas vendas agrupando seus melhores produtos."
     },
-    "noResults": "No bundles match the current filters",
+    "noResults": "Nenhum bundle corresponde aos filtros atuais",
     "pagination": {
-      "page": "Page {{current}} of {{total}}",
-      "perPageLabel": "Bundles per page",
-      "per10": "10 per page",
-      "per20": "20 per page",
-      "per50": "50 per page",
-      "prev": "Previous page",
-      "next": "Next page"
+      "page": "Página {{current}} de {{total}}",
+      "perPageLabel": "Bundles por página",
+      "per10": "10 por página",
+      "per20": "20 por página",
+      "per50": "50 por página",
+      "prev": "Página anterior",
+      "next": "Próxima página"
     },
     "actions": {
-      "moreActions": "More actions",
-      "editBundle": "Edit bundle",
-      "previewBundle": "Preview in store",
-      "previewUnavailable": "Save bundle to preview",
-      "cloneBundle": "Clone bundle",
-      "deleteBundle": "Delete bundle",
-      "confirmClone": "Are you sure you want to clone this bundle?",
-      "cloneSuccess": "Bundle cloned successfully",
-      "deleteSuccess": "Bundle deleted",
-      "themeEditorUnavailable": "Theme editor link is unavailable for this store."
+      "moreActions": "Mais ações",
+      "editBundle": "Editar bundle",
+      "previewBundle": "Visualizar na loja",
+      "previewUnavailable": "Salve o bundle para visualizar",
+      "cloneBundle": "Clonar bundle",
+      "deleteBundle": "Excluir bundle",
+      "confirmClone": "Tem certeza de que deseja clonar este bundle?",
+      "cloneSuccess": "Bundle clonado com sucesso",
+      "deleteSuccess": "Bundle excluído",
+      "themeEditorUnavailable": "O link do editor de tema não está disponível para esta loja."
     },
     "deleteModal": {
-      "heading": "Delete Bundle?",
-      "delete": "Delete",
-      "cancel": "Cancel",
-      "body": "This action cannot be undone. All bundle configuration, steps, and discount rules will be permanently deleted."
+      "heading": "Excluir bundle?",
+      "delete": "Excluir",
+      "cancel": "Cancelar",
+      "body": "Esta ação não pode ser desfeita. Toda a configuração do bundle, etapas e regras de desconto serão excluídas permanentemente."
     },
     "resources": {
-      "bundleInspiration": "Bundle Inspiration",
-      "support": "Support",
-      "exploreUpdate": "Explore Update",
-      "sdkDocumentation": "SDK Documentation",
-      "bundleGallery": "Bundle Gallery"
+      "bundleInspiration": "Inspiração de bundle",
+      "support": "Suporte",
+      "exploreUpdate": "Explorar atualizações",
+      "sdkDocumentation": "Documentação do SDK",
+      "bundleGallery": "Galeria de bundles"
     },
     "language": {
       "label": "Idioma",
