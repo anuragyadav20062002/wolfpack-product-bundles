@@ -10,6 +10,9 @@
   left: 20px;
   bottom: 20px;
   z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .collapsed {

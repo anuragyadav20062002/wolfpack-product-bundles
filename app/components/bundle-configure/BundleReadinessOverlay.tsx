@@ -49,7 +49,7 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
   const doneCount = allItems.filter((i) => i.done).length;
   const color = scoreColor(score);
 
-  const radius = 18;
+  const radius = 22;
   const circumference = 2 * Math.PI * radius;
   const arcLength = circumference * 0.75; // 270° visible span
   const progressLength = (score / 100) * arcLength;
@@ -64,24 +64,24 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
   const allDone = allItems.every((i) => i.done);
 
   const donut = (
-    <svg width="48" height="48" viewBox="0 0 48 48" className={styles.arc}>
+    <svg width="56" height="56" viewBox="0 0 56 56" className={styles.arc}>
       {/* Gray C-gauge track (270°, gap at bottom) */}
       <circle
-        cx="24" cy="24" r={radius}
-        fill="none" stroke="#e8e8e8" strokeWidth="4"
+        cx="28" cy="28" r={radius}
+        fill="none" stroke="#e8e8e8" strokeWidth="4.5"
         strokeDasharray={`${arcLength} ${circumference - arcLength}`}
-        transform="rotate(135 24 24)"
+        transform="rotate(135 28 28)"
       />
       {/* Colored progress arc */}
       <circle
-        cx="24" cy="24" r={radius}
-        fill="none" stroke={color} strokeWidth="4"
+        cx="28" cy="28" r={radius}
+        fill="none" stroke={color} strokeWidth="4.5"
         strokeLinecap="round"
         strokeDasharray={`${progressLength} ${circumference - progressLength}`}
-        transform="rotate(135 24 24)"
+        transform="rotate(135 28 28)"
         style={{ transition: "stroke-dasharray 0.6s ease" }}
       />
-      <text x="24" y="29" textAnchor="middle" fontSize="14" fontWeight="700" fill={color}>
+      <text x="28" y="34" textAnchor="middle" fontSize="16" fontWeight="700" fill={color}>
         {score}
       </text>
     </svg>

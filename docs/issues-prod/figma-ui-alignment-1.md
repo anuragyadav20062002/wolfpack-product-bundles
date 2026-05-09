@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-09 17:00
+**Last Updated:** 2026-05-09 17:30
 
 ## Overview
 
@@ -25,8 +25,29 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 10 — Readiness overlay polish + PPB wizard Pricing Tiers guard
 - [x] Phase 11 — Readiness overlay collapsed state competitor parity (donut size, score text, chevron direction, pill shape)
 - [x] Phase 12 — Readiness overlay C-gauge arc, rounded-rect trigger, expanded background dim
+- [x] Phase 13 — Readiness overlay collapsed state: content-sized trigger width, larger donut
 
 ## Progress Log
+
+### 2026-05-09 17:30 - Phase 13: Collapsed trigger width + donut size fix
+
+**Root cause of empty space:**
+- `.panelWrapper` always has `width: min(360px, calc(100vw - 40px))` even when height is 0 (collapsed)
+- This forced the container to be 360px wide, so the `.collapsed` trigger stretched to fill 360px
+- Result: donut + chevron on the left with ~280px of dead space to the right
+
+**Changes:**
+- Added `display: flex; flex-direction: column; align-items: flex-start` to `.container`
+  — with `align-items: flex-start`, flex children size to their content width instead of stretching
+  — collapsed trigger now sizes to content (donut + chevron only)
+  — `.collapsedOpen` width override still applies when expanded (360px trigger to match panel)
+- Donut SVG: 48×48 → 56×56, viewBox 0 0 48 48 → 0 0 56 56, center (24,24) → (28,28)
+- radius: 18 → 22, strokeWidth: 4 → 4.5, fontSize: 14 → 16, text y: 29 → 34
+- `transform` origin updated: `rotate(135 24 24)` → `rotate(135 28 28)`
+
+**Files changed:**
+- `app/components/bundle-configure/BundleReadinessOverlay.tsx`
+- `app/components/bundle-configure/BundleReadinessOverlay.module.css`
 
 ### 2026-05-09 17:00 - Phase 12: C-gauge arc, rounded-rect trigger, expanded background dim
 
