@@ -26,8 +26,16 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 11 — Readiness overlay collapsed state competitor parity (donut size, score text, chevron direction, pill shape)
 - [x] Phase 12 — Readiness overlay C-gauge arc, rounded-rect trigger, expanded background dim
 - [x] Phase 13 — Readiness overlay collapsed state: content-sized trigger width, larger donut
+- [x] Phase 14 — Dashboard status filter default changed from "active" to "all"
 
 ## Progress Log
+
+### 2026-05-09 18:00 - Phase 14: Dashboard status filter default fix
+
+- Changed `statusFilter` default from `"active"` → `"all"` in `route.tsx:332`
+- Design shows unfiltered "Status ▾" pill; "active" preset was hiding bundles and showing wrong empty state
+- Files modified: `app/routes/app/app.dashboard/route.tsx`
+- Next: continue dashboard UI validation
 
 ### 2026-05-09 17:30 - Phase 13: Collapsed trigger width + donut size fix
 

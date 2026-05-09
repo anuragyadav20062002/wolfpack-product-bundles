@@ -329,7 +329,7 @@ export default function Dashboard() {
 
   const [bundleFilter, setBundleFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [bundlesPerPage, setBundlesPerPage] = useState(20);
   const [activeResource, setActiveResource] = useState<string>('bundle-inspirations');
