@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.7.0
+ * Version : 2.8.0
  * Built   : 2026-05-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.7.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.8.0';
 (function() {
   'use strict';
 
@@ -4008,6 +4008,23 @@ class BundleWidgetFullPage {
       return null;
     }
 
+    const customFilters = Array.isArray(step.filters) && step.filters.length > 0
+      ? step.filters
+      : null;
+
+    const tabEntries = customFilters
+      ? customFilters
+          .map(f => {
+            const col = step.collections.find(c => (c.handle || c.id) === f.collectionHandle);
+            return col ? { id: col.id, title: f.label } : null;
+          })
+          .filter(Boolean)
+      : step.collections.map(c => ({ id: c.id, title: c.title }));
+
+    if (tabEntries.length === 0) {
+      return null;
+    }
+
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
@@ -4023,15 +4040,15 @@ class BundleWidgetFullPage {
     });
     tabsContainer.appendChild(allTab);
 
-    step.collections.forEach(collection => {
+    tabEntries.forEach(entry => {
       const tab = document.createElement('button');
       tab.className = 'category-tab';
-      if (this.activeCollectionId === collection.id) {
+      if (this.activeCollectionId === entry.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(collection.title)}</span>`;
+      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
       tab.addEventListener('click', () => {
-        this.activeCollectionId = collection.id;
+        this.activeCollectionId = entry.id;
         this.reRenderFullPage();
       });
       tabsContainer.appendChild(tab);

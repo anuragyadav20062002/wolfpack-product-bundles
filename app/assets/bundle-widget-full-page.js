@@ -1785,6 +1785,8 @@ class BundleWidgetFullPage {
   }
 
   // Create category/collection tabs (Pill Button Style)
+  // When step.filters is configured, uses those custom labels/handles.
+  // Falls back to auto-generating tabs from step.collections.
   createCategoryTabs(stepIndex) {
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
       return null;
@@ -1796,10 +1798,29 @@ class BundleWidgetFullPage {
       return null;
     }
 
+    // Resolve tab entries: use step.filters (merchant-defined labels) when present,
+    // otherwise auto-generate from step.collections.
+    const customFilters = Array.isArray(step.filters) && step.filters.length > 0
+      ? step.filters
+      : null;
+
+    const tabEntries = customFilters
+      ? customFilters
+          .map(f => {
+            const col = step.collections.find(c => (c.handle || c.id) === f.collectionHandle);
+            return col ? { id: col.id, title: f.label } : null;
+          })
+          .filter(Boolean)
+      : step.collections.map(c => ({ id: c.id, title: c.title }));
+
+    if (tabEntries.length === 0) {
+      return null;
+    }
+
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
-    // Add "All" tab - Pill button style
+    // "All" tab
     const allTab = document.createElement('button');
     allTab.className = 'category-tab';
     if (!this.activeCollectionId) {
@@ -1812,16 +1833,15 @@ class BundleWidgetFullPage {
     });
     tabsContainer.appendChild(allTab);
 
-    // Add collection tabs - Pill button style
-    step.collections.forEach(collection => {
+    tabEntries.forEach(entry => {
       const tab = document.createElement('button');
       tab.className = 'category-tab';
-      if (this.activeCollectionId === collection.id) {
+      if (this.activeCollectionId === entry.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(collection.title)}</span>`;
+      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
       tab.addEventListener('click', () => {
-        this.activeCollectionId = collection.id;
+        this.activeCollectionId = entry.id;
         this.reRenderFullPage();
       });
       tabsContainer.appendChild(tab);

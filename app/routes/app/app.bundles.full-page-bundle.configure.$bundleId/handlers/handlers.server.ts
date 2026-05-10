@@ -319,7 +319,9 @@ function buildFpbBaseConfig(
     collections: (step.collections || []).map((collection: any) => ({
       id: collection.id,
       title: collection.title || 'Collection',
+      handle: collection.handle || null,
     })),
+    filters: Array.isArray(step.filters) ? step.filters : null,
   }));
 
   const firstRuleId = discountData.discountRules?.[0]?.id;
@@ -574,6 +576,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 bannerImageUrl: step.bannerImageUrl ?? null,
                 timelineIconUrl: step.timelineIconUrl ?? null,
                 pageTitle: step.pageTitle ?? null,
+                // Category filter tabs configured by merchant
+                filters: Array.isArray(step.filters) ? step.filters : null,
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,

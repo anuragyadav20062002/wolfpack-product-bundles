@@ -2031,6 +2031,86 @@ export default function ConfigureBundleFlow() {
                       </div>
                     </div>
 
+                    {/* ── Category Filters card ── */}
+                    <div className={fullPageBundleStyles.card}>
+                      <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600 }}>Category Filters</h3>
+                      <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
+                        Add filter tabs above the product grid so shoppers can browse by category.
+                        Each tab filters to products from a specific collection on this step.
+                      </p>
+                      {(!step.collections || step.collections.length === 0) ? (
+                        <div className={fullPageBundleStyles.emptyState}>
+                          Add collections to this step first to configure category filters.
+                        </div>
+                      ) : (
+                        <s-stack direction="block" gap="small">
+                          {((step as any).filters as { label: string; collectionHandle: string }[] || []).map(
+                            (filter, fi) => (
+                              <div key={fi} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                                <s-text-field
+                                  label="Tab label"
+                                  placeholder="e.g. Shirts"
+                                  value={filter.label}
+                                  onInput={(e: Event) => {
+                                    const updated = [
+                                      ...((step as any).filters || []),
+                                    ] as { label: string; collectionHandle: string }[];
+                                    updated[fi] = { ...updated[fi], label: (e.target as HTMLInputElement).value };
+                                    stepsState.updateStepField(step.id, 'filters', updated);
+                                    markAsDirty();
+                                  }}
+                                  autoComplete="off"
+                                />
+                                <s-select
+                                  label="Collection"
+                                  value={filter.collectionHandle}
+                                  onChange={(e: Event) => {
+                                    const updated = [
+                                      ...((step as any).filters || []),
+                                    ] as { label: string; collectionHandle: string }[];
+                                    updated[fi] = { ...updated[fi], collectionHandle: (e.target as HTMLSelectElement).value };
+                                    stepsState.updateStepField(step.id, 'filters', updated);
+                                    markAsDirty();
+                                  }}
+                                >
+                                  <s-option value="" disabled>Select collection</s-option>
+                                  {(step.collections as { id: string; handle: string; title: string }[]).map(col => (
+                                    <s-option key={col.id} value={col.handle || col.id}>{col.title || col.handle}</s-option>
+                                  ))}
+                                </s-select>
+                                <s-button
+                                  variant="plain"
+                                  onClick={() => {
+                                    const updated = ((step as any).filters as { label: string; collectionHandle: string }[]).filter((_, i) => i !== fi);
+                                    stepsState.updateStepField(step.id, 'filters', updated.length > 0 ? updated : null);
+                                    markAsDirty();
+                                  }}
+                                >
+                                  <s-icon name="delete" />
+                                </s-button>
+                              </div>
+                            )
+                          )}
+                          <div className={fullPageBundleStyles.addRuleWrap}>
+                            <s-button
+                              variant="secondary"
+                              icon="plus"
+                              onClick={() => {
+                                const current = ((step as any).filters as { label: string; collectionHandle: string }[]) || [];
+                                stepsState.updateStepField(step.id, 'filters', [
+                                  ...current,
+                                  { label: "", collectionHandle: "" },
+                                ]);
+                                markAsDirty();
+                              }}
+                            >
+                              + Add Filter Tab
+                            </s-button>
+                          </div>
+                        </s-stack>
+                      )}
+                    </div>
+
                     {/* ── Advanced Step Options card ── */}
                     <div className={fullPageBundleStyles.card}>
                       <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600 }}>Advanced Step Options</h3>

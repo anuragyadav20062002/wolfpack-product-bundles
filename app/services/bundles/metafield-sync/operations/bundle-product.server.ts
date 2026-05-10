@@ -299,6 +299,7 @@ export async function updateBundleProductMetafields(
       bannerImageUrl: step.bannerImageUrl ?? null,
       timelineIconUrl: step.timelineIconUrl ?? null,
       primaryVariantOption: step.primaryVariantOption ?? null,
+      filters: Array.isArray(step.filters) ? step.filters : null,
     })),
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,
