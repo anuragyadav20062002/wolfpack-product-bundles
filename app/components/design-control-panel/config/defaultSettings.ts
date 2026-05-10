@@ -367,7 +367,7 @@ export const FULL_PAGE_DEFAULTS: DesignSettings = {
   buttonTextColor: "#FFFFFF",
   buttonFontSize: 18,
   buttonFontWeight: 700,
-  buttonBorderRadius: 12,
+  buttonBorderRadius: 8,
   buttonHoverBgColor: "#E68200",
   buttonAddToCartText: "Add to bundle",
   buttonAddedBgColor: "#10B981",
