@@ -1607,15 +1607,27 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="small-400">
                     {bundleSetupItems
                       .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
-                      .map((item) => (
-                        <s-button
-                          key={item.id}
-                          variant={activeSection === item.id ? "primary" : "tertiary"}
-                          onClick={() => handleSectionChange(item.id)}
-                        >
-                          {item.label}
-                        </s-button>
-                      ))}
+                      .map((item) => {
+                        const isActive = activeSection === item.id;
+                        let statusBadge: string | null = null;
+                        if (item.id === 'discount_pricing') {
+                          statusBadge = pricingState.discountEnabled ? null : 'None';
+                        }
+                        return (
+                          <s-button
+                            key={item.id}
+                            variant={isActive ? "primary" : "tertiary"}
+                            onClick={() => handleSectionChange(item.id)}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 8 }}>
+                              <span>{item.label}</span>
+                              {statusBadge && !isActive && (
+                                <s-badge tone="subdued">{statusBadge}</s-badge>
+                              )}
+                            </span>
+                          </s-button>
+                        );
+                      })}
                   </s-stack>
                 </s-stack>
               </s-section>
@@ -2156,282 +2168,282 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "discount_pricing" && (
               <div data-tour-target="fpb-discount-pricing">
+              <s-stack direction="block" gap="base">
               <s-section>
                 <s-stack direction="block" gap="base">
-                  <s-stack direction="block" gap="small-100">
-                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                      Discount &amp; Pricing
-                    </h3>
-                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                      Set up to 4 discount rules, applied from lowest to highest.
-                    </p>
+                  {/* Q1: Header with s-switch */}
+                  <s-stack direction="inline" gap="small">
+                    <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
+                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                        Discount &amp; Pricing
+                      </h3>
+                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                        Set up to 4 discount rules, applied from lowest to highest.
+                      </p>
+                    </s-stack>
+                    <s-switch
+                      checked={pricingState.discountEnabled || undefined}
+                      onChange={(e: Event) => pricingState.setDiscountEnabled((e.target as HTMLInputElement).checked)}
+                    >
+                      Enable
+                    </s-switch>
                   </s-stack>
 
-                  {/* Discount Enable Toggle */}
-                  <s-checkbox
-                    checked={pricingState.discountEnabled || undefined}
-                    onChange={(e: Event) => pricingState.setDiscountEnabled((e.target as HTMLInputElement).checked)}
-                  >
-                    Enable discount pricing for this bundle
-                  </s-checkbox>
+                  {/* Q5: Blue info box */}
+                  <div style={{ display: 'flex', gap: 10, padding: '10px 12px', background: '#e8f4fd', borderRadius: 6, border: '1px solid #c4dff5' }}>
+                    <s-icon name="info" style={{ color: '#0870d9', flexShrink: 0, marginTop: 1 }} />
+                    <p style={{ margin: 0, fontSize: 13, color: '#0c4a82', lineHeight: 1.5 }}>
+                      Discounts are applied at checkout via Shopify&apos;s cart transform. Rules stack from lowest to highest threshold — the highest qualifying rule wins.
+                    </p>
+                  </div>
 
-                  {pricingState.discountEnabled && (
-                    <s-stack direction="block" gap="base">
-                      {/* Discount Type */}
-                      <s-select
-                        value={pricingState.discountType}
-                        onChange={(e: Event) => {
-                          pricingState.setDiscountType((e.target as HTMLSelectElement).value as DiscountMethod);
-                          pricingState.setDiscountRules([]);
-                          setRuleMessages({});
-                        }}
-                      >
-                        {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </s-select>
+                  {/* Q2: Discount Type — always visible, grayed when disabled */}
+                  <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? 'auto' : 'none' }}>
+                    <s-select
+                      value={pricingState.discountType}
+                      onChange={(e: Event) => {
+                        pricingState.setDiscountType((e.target as HTMLSelectElement).value as DiscountMethod);
+                        pricingState.setDiscountRules([]);
+                        setRuleMessages({});
+                      }}
+                    >
+                      {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </s-select>
+                  </div>
 
-                      {/* Discount Rules */}
-                      <s-stack direction="block" gap="small">
-                        {pricingState.discountRules.map((rule, index) => (
-                          <s-section key={rule.id}>
-                            <s-stack direction="block" gap="small">
-                              <s-stack direction="inline">
-                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
-                                  Rule #{index + 1}
-                                </h4>
-                                <s-button
-                                  variant="plain"
-                                  onClick={() => pricingState.removeDiscountRule(rule.id)}
+                  {/* Q2: Discount Rules — always visible, grayed when disabled */}
+                  <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? 'auto' : 'none' }}>
+                    <s-stack direction="block" gap="small">
+                      {pricingState.discountRules.map((rule, index) => (
+                        <s-section key={rule.id}>
+                          <s-stack direction="block" gap="small">
+                            <s-stack direction="inline">
+                              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
+                                Rule #{index + 1}
+                              </h4>
+                              <s-button
+                                variant="plain"
+                                onClick={() => pricingState.removeDiscountRule(rule.id)}
+                              >
+                                Remove
+                              </s-button>
+                            </s-stack>
+
+                            {/* Condition Section */}
+                            <s-stack direction="block" gap="small-100">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>When:</p>
+                              <s-stack direction="inline" gap="small-100">
+                                <s-select
+                                  value={rule.condition.type}
+                                  onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                    condition: { ...rule.condition, type: (e.target as HTMLSelectElement).value as any }
+                                  })}
                                 >
-                                  Remove
-                                </s-button>
-                              </s-stack>
-
-                              {/* Condition Section */}
-                              <s-stack direction="block" gap="small-100">
-                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>When:</p>
-                                <s-stack direction="inline" gap="small-100">
-                                  <s-select
-                                    value={rule.condition.type}
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, type: (e.target as HTMLSelectElement).value as any }
-                                    })}
-                                  >
-                                    <option value="" disabled>Type</option>
-                                    {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(opt => (
-                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                  </s-select>
-                                  <s-select
-                                    value={rule.condition.operator}
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, operator: (e.target as HTMLSelectElement).value as any }
-                                    })}
-                                  >
-                                    <option value="" disabled>Operator</option>
-                                    {[...DISCOUNT_OPERATOR_OPTIONS].map(opt => (
-                                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                    ))}
-                                  </s-select>
-                                  <s-text-field
-                                    label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
-                                    value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
-                                    onInput={(e: Event) => {
-                                      const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                      const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
-                                      pricingState.updateDiscountRule(rule.id, {
-                                        condition: { ...rule.condition, value: finalValue }
-                                      });
-                                    }}
-                                    type="number"
-                                    min="0"
-                                    helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
-                                    autoComplete="off"
-                                  />
-                                </s-stack>
-                              </s-stack>
-
-                              {/* Discount Section */}
-                              <s-stack direction="block" gap="small-100">
-                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Apply:</p>
+                                  <option value="" disabled>Type</option>
+                                  {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </s-select>
+                                <s-select
+                                  value={rule.condition.operator}
+                                  onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                    condition: { ...rule.condition, operator: (e.target as HTMLSelectElement).value as any }
+                                  })}
+                                >
+                                  <option value="" disabled>Operator</option>
+                                  {[...DISCOUNT_OPERATOR_OPTIONS].map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </s-select>
                                 <s-text-field
-                                  label={
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                        'Bundle Price'
-                                  }
-                                  value={String(
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                      centsToAmount(rule.discount.value)
-                                  )}
+                                  label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
+                                  value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
                                   onInput={(e: Event) => {
                                     const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
+                                    const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
                                     pricingState.updateDiscountRule(rule.id, {
-                                      discount: { ...rule.discount, value: finalValue }
+                                      condition: { ...rule.condition, value: finalValue }
                                     });
                                   }}
                                   type="number"
                                   min="0"
-                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
+                                  helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
                                   autoComplete="off"
                                 />
                               </s-stack>
-
-                              {/* Preview */}
-                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                                Preview: {generateRulePreview(rule)}
-                              </p>
                             </s-stack>
-                          </s-section>
-                        ))}
 
-                        {pricingState.discountRules.length < 4 ? (
-                          <s-button
-                            variant="tertiary"
-                            onClick={pricingState.addDiscountRule}
-                          >
-                            <s-icon name="plus-minor" />
-                            Add rule
-                          </s-button>
-                        ) : (
-                          <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
-                            Maximum 4 discount rules reached
-                          </p>
-                        )}
-                      </s-stack>
-
-                      {/* Discount Messaging */}
-                      <s-stack direction="block" gap="small">
-                        <s-stack direction="inline">
-                          <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                              Discount Messaging
-                            </h4>
-                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                              Edit how discount messages appear above the subtotal.
-                            </p>
-                          </s-stack>
-                          <s-tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
-                            <s-checkbox
-                              checked={pricingState.discountMessagingEnabled || undefined}
-                              onChange={(e: Event) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
-                            >
-                              Discount Messaging
-                            </s-checkbox>
-                          </s-tooltip>
-                        </s-stack>
-
-                        {/* Integrated Variables Helper */}
-                        <details>
-                          <summary className={fullPageBundleStyles.helpSummary}>
-                            Show Variables
-                          </summary>
-                          <div className={fullPageBundleStyles.helpContainer}>
-                            <div className={fullPageBundleStyles.helpItem}>
-                              <strong>Essential (Most Used):</strong><br />
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
-                              <code>{'{{bundleName}}'}</code> - Bundle name
-                            </div>
-                            <div className={fullPageBundleStyles.helpItem}>
-                              <strong>Specific:</strong><br />
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
-                              <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
-                            </div>
-                            <div className={fullPageBundleStyles.helpItem}>
-                              <strong>Pricing:</strong><br />
-                              <code>{'{{currentAmount}}'}</code> - Current total<br />
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
-                              <code>{'{{savingsAmount}}'}</code> - Amount saved
-                            </div>
-                            <div className={fullPageBundleStyles.helpFooter}>
-                              <strong>Quick Examples:</strong><br />
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
-                              🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
-                            </div>
-                          </div>
-                        </details>
-
-                        {/* Dynamic rule-based messaging */}
-                        {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
-                          <s-stack direction="block" gap="small">
-                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <s-stack key={rule.id} direction="block" gap="small">
-                                <s-section>
-                                  <s-stack direction="block" gap="small-100">
-                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                                      Rule #{index + 1} Messages
-                                    </h4>
-                                    <s-text-area
-                                      label="Discount Text"
-                                      value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
-                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'discountText', (e.target as HTMLTextAreaElement).value)}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer is close to qualifying for the discount"
-                                    />
-                                  </s-stack>
-                                </s-section>
-                                <s-section>
-                                  <s-stack direction="block" gap="small-100">
-                                    <s-text-area
-                                      label="Success Message"
-                                      value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
-                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'successMessage', (e.target as HTMLTextAreaElement).value)}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer qualifies for the discount"
-                                    />
-                                  </s-stack>
-                                </s-section>
-                              </s-stack>
-                            ))}
-                          </s-stack>
-                        )}
-
-                        {/* Show message when no rules exist */}
-                        {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
-                          <s-section>
+                            {/* Discount Section */}
                             <s-stack direction="block" gap="small-100">
-                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
-                                Add discount rules to configure messaging
-                              </p>
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Apply:</p>
+                              <s-text-field
+                                label={
+                                  rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
+                                    rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
+                                      'Bundle Price'
+                                }
+                                value={String(
+                                  rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
+                                    centsToAmount(rule.discount.value)
+                                )}
+                                onInput={(e: Event) => {
+                                  const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                  const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
+                                  pricingState.updateDiscountRule(rule.id, {
+                                    discount: { ...rule.discount, value: finalValue }
+                                  });
+                                }}
+                                type="number"
+                                min="0"
+                                helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
+                                autoComplete="off"
+                              />
                             </s-stack>
-                          </s-section>
-                        )}
-                      </s-stack>
 
-                      {/* Discount Display Options */}
-                      <s-stack direction="block" gap="small">
-                        <s-stack direction="inline">
-                          <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                              Display Options
-                            </h4>
+                            {/* Preview */}
                             <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                              Control which discount elements are shown in the bundle widget.
+                              Preview: {generateRulePreview(rule)}
                             </p>
                           </s-stack>
+                        </s-section>
+                      ))}
+
+                      {pricingState.discountRules.length < 4 ? (
+                        <s-button
+                          variant="tertiary"
+                          onClick={pricingState.addDiscountRule}
+                        >
+                          <s-icon name="plus-minor" />
+                          Add rule
+                        </s-button>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                          Maximum 4 discount rules reached
+                        </p>
+                      )}
+                    </s-stack>
+                  </div>
+
+                  {/* Discount Messaging — only when enabled */}
+                  {pricingState.discountEnabled && (
+                    <s-stack direction="block" gap="small">
+                      <s-stack direction="inline">
+                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
+                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                            Discount Messaging
+                          </h4>
+                          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                            Edit how discount messages appear above the subtotal.
+                          </p>
                         </s-stack>
-                        <s-checkbox
-                          checked={pricingState.showFooter || undefined}
-                          onChange={(e: Event) => pricingState.setShowFooter((e.target as HTMLInputElement).checked)}
-                        >
-                          Show footer
-                        </s-checkbox>
-                        <s-checkbox
-                          checked={pricingState.showDiscountProgressBar || undefined}
-                          onChange={(e: Event) => pricingState.setShowDiscountProgressBar((e.target as HTMLInputElement).checked)}
-                        >
-                          Progress bar
-                        </s-checkbox>
+                        <s-tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
+                          <s-checkbox
+                            checked={pricingState.discountMessagingEnabled || undefined}
+                            onChange={(e: Event) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
+                          >
+                            Discount Messaging
+                          </s-checkbox>
+                        </s-tooltip>
                       </s-stack>
+
+                      {/* Q6: Compact variables reference (replaces verbose accordion) */}
+                      <div style={{ padding: '10px 12px', background: '#f6f6f7', borderRadius: 6 }}>
+                        <p style={{ margin: '0 0 8px', fontSize: 12, fontWeight: 600, color: '#443f3f' }}>Template variables:</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                          {([
+                            ['{{conditionText}}', 'Threshold ("2 items", "₹100")'],
+                            ['{{discountText}}',  'Discount ("20% off", "₹50 off")'],
+                            ['{{bundleName}}',    'Bundle name'],
+                            ['{{progressPercentage}}', 'Progress 0–100'],
+                            ['{{amountNeeded}}',  'Spend still needed'],
+                            ['{{itemsNeeded}}',   'Items still needed'],
+                          ] as [string, string][]).map(([v, desc]) => (
+                            <div key={v} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                              <code style={{ fontSize: 11, background: '#e3e5e7', padding: '1px 4px', borderRadius: 3, color: '#202223', flexShrink: 0, whiteSpace: 'nowrap' }}>{v}</code>
+                              <span style={{ fontSize: 11, color: '#6d7175' }}>{desc}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dynamic rule-based messaging */}
+                      {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
+                        <s-stack direction="block" gap="small">
+                          {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
+                            <s-stack key={rule.id} direction="block" gap="small">
+                              <s-section>
+                                <s-stack direction="block" gap="small-100">
+                                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                    Rule #{index + 1} Messages
+                                  </h4>
+                                  <s-text-area
+                                    label="Discount Text"
+                                    value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
+                                    onInput={(e: Event) => updateRuleMessage(rule.id, 'discountText', (e.target as HTMLTextAreaElement).value)}
+                                    autoComplete="off"
+                                    helpText="This message appears when the customer is close to qualifying for the discount"
+                                  />
+                                </s-stack>
+                              </s-section>
+                              <s-section>
+                                <s-stack direction="block" gap="small-100">
+                                  <s-text-area
+                                    label="Success Message"
+                                    value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
+                                    onInput={(e: Event) => updateRuleMessage(rule.id, 'successMessage', (e.target as HTMLTextAreaElement).value)}
+                                    autoComplete="off"
+                                    helpText="This message appears when the customer qualifies for the discount"
+                                  />
+                                </s-stack>
+                              </s-section>
+                            </s-stack>
+                          ))}
+                        </s-stack>
+                      )}
+
+                      {/* Show message when no rules exist */}
+                      {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
+                        <s-section>
+                          <s-stack direction="block" gap="small-100">
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                              Add discount rules to configure messaging
+                            </p>
+                          </s-stack>
+                        </s-section>
+                      )}
                     </s-stack>
                   )}
                 </s-stack>
               </s-section>
+
+              {/* Q3: Display Options — separate always-visible card, grayed when discount off */}
+              <s-section>
+                <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? 'auto' : 'none' }}>
+                  <s-stack direction="block" gap="small">
+                    <s-stack direction="block" gap="small-400">
+                      <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Display Options</h4>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                        Control which discount elements are shown in the bundle widget.
+                      </p>
+                    </s-stack>
+                    <s-checkbox
+                      checked={pricingState.showFooter || undefined}
+                      onChange={(e: Event) => pricingState.setShowFooter((e.target as HTMLInputElement).checked)}
+                    >
+                      Show footer
+                    </s-checkbox>
+                    <s-checkbox
+                      checked={pricingState.showDiscountProgressBar || undefined}
+                      onChange={(e: Event) => pricingState.setShowDiscountProgressBar((e.target as HTMLInputElement).checked)}
+                    >
+                      Progress bar
+                    </s-checkbox>
+                  </s-stack>
+                </div>
+              </s-section>
+              </s-stack>
               </div>
             )}
 
