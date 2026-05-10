@@ -1601,9 +1601,6 @@ export default function ConfigureBundleFlow() {
                   <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                     Bundle Setup
                   </h3>
-                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                    Set-up your bundle builder
-                  </p>
 
                   <s-stack direction="block" gap="small-400">
                     {bundleSetupItems
@@ -2718,7 +2715,7 @@ export default function ConfigureBundleFlow() {
                 <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100">
                     <s-icon name="discount-minor" />
-                    <s-stack direction="block">
+                    <s-stack direction="block" gap="small-400">
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Pricing Tiers</p>
                       <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                         Let shoppers switch between different bundle price points on the same page.
@@ -2842,10 +2839,11 @@ export default function ConfigureBundleFlow() {
                         <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Select a language to customise strings for that locale.</p>
                         <s-select
                           label="Editing language"
+                          value={textOverridesLocale}
                           onChange={(e: Event) => setTextOverridesLocale((e.target as HTMLSelectElement).value)}
                         >
                           {localeOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
                           ))}
                         </s-select>
                       </s-stack>

@@ -21,6 +21,7 @@ flow wizard.
 - [x] Phase 4 — Handler: save timelineIconUrl, pageTitle, searchBarEnabled per step
 - [x] Phase 5 — CSS: chip nav, card, stepConfigRow, tabRow, emptyState, rulesList, sideCard, summaryList styles
 - [x] Phase 6 — Messages nav item restored; Bundle Settings + Messages headers polished (icon, weight, padding)
+- [x] Phase 7 — Pricing Tiers header s-stack gap fix; nav subtitle removed; Messages s-select value binding + s-option migration
 
 ## Key Design Decisions
 
@@ -34,6 +35,13 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-11 14:30 - Phase 7: Minor configure page polish
+
+- Pricing Tiers header inner `s-stack`: added `gap="small-400"` for consistent subtitle spacing
+- Nav sidebar: removed stale "Set-up your bundle builder" subtitle (no longer accurate, cluttered sidebar)
+- Messages language `s-select`: added `value={textOverridesLocale}` so selected locale stays visible; migrated `<option>` → `<s-option>` per Polaris web components rule
+- Files: route.tsx
 
 ### 2026-05-11 14:00 - Phase 6: Messages nav + header polish
 
