@@ -339,6 +339,7 @@ export default function Dashboard() {
   const selectedLanguage = languageOptions.some(o => o.value === rawLocale) ? rawLocale : "en";
 
   const handleLanguageChange = useCallback((locale: string) => {
+    localStorage.setItem("wolfpack-locale", locale);
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       next.set("locale", locale);

@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Outlet, useLoaderData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
+import { Outlet, useLoaderData, useRouteError, isRouteErrorResponse, useSearchParams } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
@@ -22,13 +22,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function App() {
-  const { apiKey, locale, polarisTranslations } = useLoaderData<typeof loader>();
+  const { apiKey, polarisTranslations } = useLoaderData<typeof loader>();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    if (i18n.language !== locale) {
-      void i18n.changeLanguage(locale);
+    const urlLocale = searchParams.get("locale");
+    let target: string;
+    if (urlLocale && isSupportedLocale(urlLocale)) {
+      target = urlLocale;
+      localStorage.setItem("wolfpack-locale", target);
+    } else {
+      target = localStorage.getItem("wolfpack-locale") ?? "en";
     }
-  }, [locale]);
+    if (i18n.language !== target) {
+      void i18n.changeLanguage(target);
+    }
+  }, [searchParams]);
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>

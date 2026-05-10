@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-08
-**Last Updated:** 2026-05-10 14:30
+**Last Updated:** 2026-05-11 15:00
 
 ## Overview
 
@@ -32,8 +32,22 @@ implementation is updated to match while keeping Polaris web components througho
 - [x] Phase 17 — Guided tour jitter fix, smooth spotlight transitions, readiness overlay tour target
 - [x] Phase 18 — i18n research doc + architecture scaffold (admin UI + storefront research)
 - [x] Phase 19 — i18n implementation: packages, config, locale files, app.tsx wiring, dashboard t() extraction
+- [x] Phase 20 — Locale persistence via localStorage: language preference survives navigation away from dashboard
 
 ## Progress Log
+
+### 2026-05-11 15:00 - Phase 20: Locale persistence via localStorage
+
+- **Problem:** Language preference was URL-param driven (`?locale=fr`). Navigating to any page without `?locale=` caused `app.tsx` loader to return `locale: "en"` and `useEffect` fired `changeLanguage("en")` — reverting the language
+- **Fix in `app/routes/app/app.tsx`:**
+  - Added `useSearchParams()` import from `@remix-run/react`
+  - Replaced the loader-derived `locale` approach with `useSearchParams()`-based logic:
+    - If `?locale=` present in URL and supported → use it and save to `localStorage("wolfpack-locale")`
+    - If `?locale=` absent → read from `localStorage("wolfpack-locale")` (falls back to `"en"`)
+  - Removed `locale` from `useLoaderData` destructure (still available from loader for SSR Polaris translations but not used for i18next)
+- **Fix in `app/routes/app/app.dashboard/route.tsx`:**
+  - `handleLanguageChange` now calls `localStorage.setItem("wolfpack-locale", locale)` before updating search params
+- Files: `app/routes/app/app.tsx`, `app/routes/app/app.dashboard/route.tsx`
 
 ### 2026-05-10 - Phase 19: i18n full implementation
 
