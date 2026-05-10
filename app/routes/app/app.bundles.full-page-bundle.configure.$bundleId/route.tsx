@@ -600,6 +600,7 @@ export default function ConfigureBundleFlow() {
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
         showFooter: pricingState.showFooter,
+        showDiscountProgressBar: pricingState.showDiscountProgressBar,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages
       }));
@@ -644,6 +645,7 @@ export default function ConfigureBundleFlow() {
     pricingState.discountType,
     pricingState.discountRules,
     pricingState.showFooter,
+    pricingState.showDiscountProgressBar,
     pricingState.discountMessagingEnabled,
     ruleMessages,
     selectedCollections,
@@ -739,6 +741,7 @@ export default function ConfigureBundleFlow() {
             discountType: pricingState.discountType,
             discountRules: JSON.stringify(pricingState.discountRules),
             showFooter: pricingState.showFooter,
+            showDiscountProgressBar: pricingState.showDiscountProgressBar,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
             selectedCollections: JSON.stringify(selectedCollections),
             ruleMessages: JSON.stringify(ruleMessages),
@@ -1578,6 +1581,7 @@ export default function ConfigureBundleFlow() {
           discountType: pricingState.discountType,
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
+          showDiscountProgressBar: pricingState.showDiscountProgressBar,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
           ruleMessages
         })} />
@@ -2397,6 +2401,32 @@ export default function ConfigureBundleFlow() {
                             </s-stack>
                           </s-section>
                         )}
+                      </s-stack>
+
+                      {/* Discount Display Options */}
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline">
+                          <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
+                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                              Display Options
+                            </h4>
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                              Control which discount elements are shown in the bundle widget.
+                            </p>
+                          </s-stack>
+                        </s-stack>
+                        <s-checkbox
+                          checked={pricingState.showFooter || undefined}
+                          onChange={(e: Event) => pricingState.setShowFooter((e.target as HTMLInputElement).checked)}
+                        >
+                          Show footer
+                        </s-checkbox>
+                        <s-checkbox
+                          checked={pricingState.showDiscountProgressBar || undefined}
+                          onChange={(e: Event) => pricingState.setShowDiscountProgressBar((e.target as HTMLInputElement).checked)}
+                        >
+                          Progress bar
+                        </s-checkbox>
                       </s-stack>
                     </s-stack>
                   )}

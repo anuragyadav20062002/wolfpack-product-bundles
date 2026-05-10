@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.7.0
- * Built   : 2026-04-27
+ * Built   : 2026-05-10
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -2674,6 +2674,7 @@ class BundleWidgetFullPage {
 
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
+      showDiscountProgressBar: false,
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections,
@@ -2832,6 +2833,7 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
+      this.config.showDiscountProgressBar = messaging.showDiscountProgressBar === true;
 
     } else if (pricingMessages) {
 
@@ -2845,6 +2847,7 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
+      this.config.showDiscountProgressBar = pricingMessages.showDiscountProgressBar === true;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
@@ -3416,6 +3419,14 @@ class BundleWidgetFullPage {
         msgEl.className = 'side-panel-discount-message';
         msgEl.innerHTML = discountMessage;
         panel.appendChild(msgEl);
+      }
+
+      if (this.config.showDiscountProgressBar) {
+        const progressBar = this._renderDiscountProgress();
+        if (progressBar) {
+          progressBar.classList.add('fpb-dp-sidebar');
+          panel.appendChild(progressBar);
+        }
       }
     }
 
@@ -4425,8 +4436,10 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    const discountBanner = this._renderDiscountProgressBanner();
-    if (discountBanner) this.elements.footer.appendChild(discountBanner);
+    if (this.config.showDiscountProgressBar) {
+      const progressBar = this._renderDiscountProgress();
+      if (progressBar) this.elements.footer.appendChild(progressBar);
+    }
 
     const inner = document.createElement('div');
     inner.className = 'footer-inner';
@@ -5256,6 +5269,66 @@ class BundleWidgetFullPage {
     }
 
     this._updateDiscountProgressBanner();
+  }
+
+  _renderDiscountProgress() {
+    if (!this.selectedBundle?.pricing?.enabled) return null;
+
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle, totalPrice, totalQuantity
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    );
+
+    const isReached = discountInfo.hasDiscount;
+    const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
+
+    let message = '';
+    if (isReached) {
+      message = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+        variables
+      );
+    } else {
+      const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
+      if (!nextRule) return null;
+      message = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+        variables
+      );
+    }
+
+    const bar = document.createElement('div');
+    bar.className = 'fpb-discount-progress' + (isReached ? ' reached' : '');
+
+    const row = document.createElement('div');
+    row.className = 'fpb-dp-row';
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'fpb-dp-message';
+    msgSpan.innerHTML = message;
+    const pctSpan = document.createElement('span');
+    pctSpan.className = 'fpb-dp-pct';
+    pctSpan.textContent = progressPct + '%';
+    row.appendChild(msgSpan);
+    row.appendChild(pctSpan);
+
+    const track = document.createElement('div');
+    track.className = 'fpb-dp-track';
+    const fill = document.createElement('div');
+    fill.className = 'fpb-dp-fill';
+    fill.style.width = progressPct + '%';
+    track.appendChild(fill);
+
+    bar.appendChild(row);
+    bar.appendChild(track);
+    return bar;
   }
 
   _renderDiscountProgressBanner() {

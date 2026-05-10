@@ -158,6 +158,7 @@ function buildFullPageBundlePricing(pricing: any) {
     }),
     display: {
       showFooter: pricing.showFooter !== false,
+      showDiscountProgressBar: pricing.showProgressBar === true,
     },
     messages: {
       progress: firstRuleMessage?.discountText || DEFAULT_PROGRESS_MESSAGE,
@@ -607,6 +608,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
+                showProgressBar: discountData.showDiscountProgressBar === true,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
@@ -618,6 +620,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
+                showProgressBar: discountData.showDiscountProgressBar === true,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,

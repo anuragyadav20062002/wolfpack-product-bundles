@@ -271,6 +271,7 @@ export function useBundleConfigurationState({
     discountType: pricingState.discountType,
     discountRules: JSON.stringify(pricingState.discountRules),
     showFooter: pricingState.showFooter,
+    showDiscountProgressBar: pricingState.showDiscountProgressBar,
     discountMessagingEnabled: pricingState.discountMessagingEnabled,
     selectedCollections: JSON.stringify({}),
     ruleMessages: JSON.stringify({}),
@@ -301,6 +302,7 @@ export function useBundleConfigurationState({
       pricingState.setDiscountType(originalValues.discountType);
       pricingState.setDiscountRules(JSON.parse(originalValues.discountRules));
       pricingState.setShowFooter(originalValues.showFooter);
+      pricingState.setShowDiscountProgressBar(originalValues.showDiscountProgressBar);
       pricingState.setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
 
       // Reset collections
@@ -351,6 +353,7 @@ export function useBundleConfigurationState({
       discountType: pricingState.discountType,
       discountRules: JSON.stringify(pricingState.discountRules),
       showFooter: pricingState.showFooter,
+      showDiscountProgressBar: pricingState.showDiscountProgressBar,
       discountMessagingEnabled: pricingState.discountMessagingEnabled,
       selectedCollections: JSON.stringify(selectedCollections),
       ruleMessages: JSON.stringify(ruleMessages),

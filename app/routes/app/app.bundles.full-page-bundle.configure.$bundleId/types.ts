@@ -26,6 +26,7 @@ export interface BundlePricing {
   method: string;
   rules: PricingRule[] | string;
   showFooter: boolean;
+  showProgressBar: boolean;
   messages: any;
 }
 

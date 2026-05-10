@@ -136,6 +136,7 @@ export interface BundleUiMessaging {
   successTemplate: string;
   showFooter: boolean;
   showDiscountMessaging?: boolean;
+  showDiscountProgressBar?: boolean;
 }
 
 /** Overridable user-visible strings in the bundle widget. */

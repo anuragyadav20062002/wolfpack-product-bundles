@@ -18,6 +18,7 @@ interface UseBundlePricingProps {
     method: DiscountMethod | string;
     rules: any;
     showFooter?: boolean;
+    showDiscountProgressBar?: boolean;
   } | null;
   onStateChange?: () => void;
 }
@@ -32,6 +33,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     Array.isArray(initialPricing?.rules) ? initialPricing.rules : []
   );
   const [showFooter, setShowFooterRaw] = useState(initialPricing?.showFooter !== false);
+  const [showDiscountProgressBar, setShowDiscountProgressBarRaw] = useState(initialPricing?.showDiscountProgressBar === true);
   const [discountMessagingEnabled, setDiscountMessagingEnabledRaw] = useState(true);
 
   // Rule messaging
@@ -56,6 +58,11 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
 
   const setShowFooter = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
     setShowFooterRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setShowDiscountProgressBar = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    setShowDiscountProgressBarRaw(value);
     onStateChange?.();
   }, [onStateChange]);
 
@@ -138,10 +145,11 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
       discountType,
       discountRules,
       showFooter,
+      showDiscountProgressBar,
       discountMessagingEnabled,
       ruleMessages
     };
-  }, [discountEnabled, discountType, discountRules, showFooter, discountMessagingEnabled, ruleMessages]);
+  }, [discountEnabled, discountType, discountRules, showFooter, showDiscountProgressBar, discountMessagingEnabled, ruleMessages]);
 
   return {
     // State
@@ -149,6 +157,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     discountType,
     discountRules,
     showFooter,
+    showDiscountProgressBar,
     discountMessagingEnabled,
     ruleMessages,
     showVariables,
@@ -158,6 +167,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setDiscountType,
     setDiscountRules,
     setShowFooter,
+    setShowDiscountProgressBar,
     setDiscountMessagingEnabled,
     setRuleMessages,
     setShowVariables,
