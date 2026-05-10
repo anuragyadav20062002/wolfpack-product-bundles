@@ -267,7 +267,7 @@ const bundleSetupItems = [
   { id: "images_gifs",      label: "Bundle Assets",      fullPageOnly: true  },
   { id: "pricing_tiers",    label: "Pricing Tiers",      fullPageOnly: true  },
   { id: "bundle_settings",  label: "Bundle Settings",    fullPageOnly: false },
-  { id: "messages",         label: "Messages",           fullPageOnly: false },
+  { id: "messages",         label: "Widget Text",         fullPageOnly: false },
 ];
 
 // Static status options - imported from centralized constants
