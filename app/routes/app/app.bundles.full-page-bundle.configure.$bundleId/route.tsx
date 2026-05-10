@@ -267,6 +267,7 @@ const bundleSetupItems = [
   { id: "images_gifs",      label: "Bundle Assets",      fullPageOnly: true  },
   { id: "pricing_tiers",    label: "Pricing Tiers",      fullPageOnly: true  },
   { id: "bundle_settings",  label: "Bundle Settings",    fullPageOnly: false },
+  { id: "messages",         label: "Messages",           fullPageOnly: false },
 ];
 
 // Static status options - imported from centralized constants
@@ -2750,12 +2751,12 @@ export default function ConfigureBundleFlow() {
             {activeSection === "bundle_settings" && (
               <div data-tour-target="fpb-bundle-visibility">
               <s-stack direction="block" gap="base">
-                <div style={{ padding: 12, background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100">
-                    <s-icon name="image-alt" />
+                    <s-icon name="note" />
                     <s-stack direction="block" gap="small-400">
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Bundle Settings</p>
-                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Control how this bundle behaves on the storefront.</p>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Settings</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Control how this bundle behaves on the storefront.</p>
                     </s-stack>
                   </s-stack>
                 </div>
@@ -2825,12 +2826,12 @@ export default function ConfigureBundleFlow() {
               ];
               return (
                 <s-stack direction="block" gap="base">
-                  <div style={{ padding: 12, background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                  <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
                     <s-stack direction="inline" gap="small-100">
-                      <s-icon name="list-numbered" />
+                      <s-icon name="note" />
                       <s-stack direction="block" gap="small-400">
-                        <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Messages</p>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Customise the text shown to customers in the bundle widget.</p>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Widget Text</p>
+                        <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Customise the text shown to customers in the bundle widget.</p>
                       </s-stack>
                     </s-stack>
                   </div>

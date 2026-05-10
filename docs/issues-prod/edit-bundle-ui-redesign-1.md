@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-10 14:00
+**Last Updated:** 2026-05-11 14:00
 
 ## Overview
 
@@ -20,6 +20,7 @@ flow wizard.
 - [x] Phase 3 — Bundle Assets: add Storefront Page URL slug section at the top
 - [x] Phase 4 — Handler: save timelineIconUrl, pageTitle, searchBarEnabled per step
 - [x] Phase 5 — CSS: chip nav, card, stepConfigRow, tabRow, emptyState, rulesList, sideCard, summaryList styles
+- [x] Phase 6 — Messages nav item restored; Bundle Settings + Messages headers polished (icon, weight, padding)
 
 ## Key Design Decisions
 
@@ -33,6 +34,13 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-11 14:00 - Phase 6: Messages nav + header polish
+
+- Added `{ id: "messages", label: "Messages", fullPageOnly: false }` to `bundleSetupItems` — restores the Messages nav item that was deferred in Phase 2
+- Bundle Settings header: `s-icon name="image-alt"` → `note`, fontWeight 500 → 600, padding 12 → `var(--s-space-400)`
+- Messages section header: `s-icon name="list-numbered"` → `note`, fontWeight 500 → 600, padding 12 → `var(--s-space-400)`, label "Messages" → "Widget Text"
+- Files: route.tsx
 
 ### 2026-05-10 12:00 - Starting Phase 1–5 implementation
 - What I'm about to implement: full Step Setup redesign + sidebar + assets + handler
