@@ -2557,22 +2557,12 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
 
                       <div>
-                        <div style={{ display: "flex", gap: 4, borderBottom: "1px solid #e1e3e5", marginBottom: 16 }}>
+                        <div className={fullPageBundleStyles.tabRow}>
                           {stepsState.steps.map((step, i) => (
                             <button
                               key={`asset-step-${step.id}`}
                               onClick={() => setActiveAssetTabIndex(i)}
-                              style={{
-                                padding: "8px 16px",
-                                border: "none",
-                                background: "none",
-                                cursor: "pointer",
-                                fontSize: 14,
-                                fontWeight: activeAssetTabIndex === i ? 600 : 400,
-                                color: activeAssetTabIndex === i ? "#202223" : "#6d7175",
-                                borderBottom: activeAssetTabIndex === i ? "2px solid #202223" : "2px solid transparent",
-                                marginBottom: -1,
-                              }}
+                              className={activeAssetTabIndex === i ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
                             >
                               {step.name || `Step ${i + 1}`}
                             </button>

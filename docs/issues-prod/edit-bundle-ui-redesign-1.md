@@ -22,6 +22,7 @@ flow wizard.
 - [x] Phase 5 — CSS: chip nav, card, stepConfigRow, tabRow, emptyState, rulesList, sideCard, summaryList styles
 - [x] Phase 6 — Messages nav item restored; Bundle Settings + Messages headers polished (icon, weight, padding)
 - [x] Phase 7 — Pricing Tiers header s-stack gap fix; nav subtitle removed; Messages s-select value binding + s-option migration
+- [x] Phase 8 — Bundle Assets step image tabs: replace inline-styled buttons with tabRow/tab/tabActive CSS module classes
 
 ## Key Design Decisions
 
