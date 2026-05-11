@@ -1664,6 +1664,89 @@ export default function ConfigureBundleFlow() {
                                   </s-button>
                                 </s-stack>
 
+                                {/* ── Category Filters ── */}
+                                <s-stack direction="block" gap="small">
+                                  <s-divider />
+                                  <s-stack direction="block" gap="small-400">
+                                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Category Filters</h3>
+                                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                                      Add filter tabs above the product grid so shoppers can browse by category.
+                                      Each tab filters to products from a specific collection on this step.
+                                    </p>
+                                  </s-stack>
+                                  {(!selectedCollections[step.id] || selectedCollections[step.id].length === 0) ? (
+                                    <p style={{ fontSize: 14, color: "#6d7175", margin: 0 }}>
+                                      Add collections to this step first to configure category filters.
+                                    </p>
+                                  ) : (
+                                    <s-stack direction="block" gap="small">
+                                      {((step as any).filters as { label: string; collectionHandle: string }[] || []).map(
+                                        (filter, fi) => (
+                                          <div key={fi} style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                                            <s-text-field
+                                              label="Tab label"
+                                              placeholder="e.g. Shirts"
+                                              value={filter.label}
+                                              onInput={(e: Event) => {
+                                                const updated = [
+                                                  ...((step as any).filters || []),
+                                                ] as { label: string; collectionHandle: string }[];
+                                                updated[fi] = { ...updated[fi], label: (e.target as HTMLInputElement).value };
+                                                stepsState.updateStepField(step.id, 'filters', updated);
+                                                markAsDirty();
+                                              }}
+                                              autoComplete="off"
+                                            />
+                                            <s-select
+                                              label="Collection"
+                                              value={filter.collectionHandle}
+                                              onChange={(e: Event) => {
+                                                const updated = [
+                                                  ...((step as any).filters || []),
+                                                ] as { label: string; collectionHandle: string }[];
+                                                updated[fi] = { ...updated[fi], collectionHandle: (e.target as HTMLSelectElement).value };
+                                                stepsState.updateStepField(step.id, 'filters', updated);
+                                                markAsDirty();
+                                              }}
+                                            >
+                                              <s-option value="" disabled>Select collection</s-option>
+                                              {(selectedCollections[step.id] as { id: string; handle: string; title: string }[]).map(col => (
+                                                <s-option key={col.id} value={col.handle || col.id}>{col.title || col.handle}</s-option>
+                                              ))}
+                                            </s-select>
+                                            <s-button
+                                              variant="plain"
+                                              onClick={() => {
+                                                const updated = ((step as any).filters as { label: string; collectionHandle: string }[]).filter((_, i) => i !== fi);
+                                                stepsState.updateStepField(step.id, 'filters', updated.length > 0 ? updated : null);
+                                                markAsDirty();
+                                              }}
+                                            >
+                                              <s-icon name="delete" />
+                                            </s-button>
+                                          </div>
+                                        )
+                                      )}
+                                      <div>
+                                        <s-button
+                                          variant="secondary"
+                                          icon="plus"
+                                          onClick={() => {
+                                            const current = ((step as any).filters as { label: string; collectionHandle: string }[]) || [];
+                                            stepsState.updateStepField(step.id, 'filters', [
+                                              ...current,
+                                              { label: "", collectionHandle: "" },
+                                            ]);
+                                            markAsDirty();
+                                          }}
+                                        >
+                                          + Add Filter Tab
+                                        </s-button>
+                                      </div>
+                                    </s-stack>
+                                  )}
+                                </s-stack>
+
                                 {/* Step Options */}
                                 <s-stack direction="block" gap="small">
                                   <s-divider />

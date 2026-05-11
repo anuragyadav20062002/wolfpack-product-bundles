@@ -355,6 +355,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 conditionValue: firstCondition?.value ? parseInt(firstCondition.value) || null : null,
                 conditionOperator2: secondCondition?.operator || null,
                 conditionValue2: secondCondition?.value ? parseInt(secondCondition.value) || null : null,
+                filters: Array.isArray(step.filters) ? step.filters : null,
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map((product: any, productIndex: number) => {

@@ -1,10 +1,10 @@
 # Issue: Category Filter Sub-Tabs Per Step
 
 **Issue ID:** step-category-filters-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-11
-**Last Updated:** 2026-05-11 16:30
+**Last Updated:** 2026-05-11 17:00
 
 ## Overview
 
@@ -25,6 +25,7 @@ needed — reuse the column with shape `{ label: string; collectionHandle: strin
 - [x] Phase 5 — Widget JS: `createCategoryTabs` extended to use `step.filters` custom labels
 - [x] Phase 6 — Widget CSS: reuses existing `.category-tabs` / `.category-tab` classes (no new CSS)
 - [x] Phase 7 — Build widgets + lint + commit
+- [ ] Phase 8 — PPB handler: add `filters` to step create; PPB route: Category Filters card
 
 ## Related Documentation
 
