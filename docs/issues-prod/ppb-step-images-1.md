@@ -1,10 +1,10 @@
 # Issue: PPB Step Banner Image — Admin UI + Widget Rendering
 
 **Issue ID:** ppb-step-images-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-11
-**Last Updated:** 2026-05-11 17:20
+**Last Updated:** 2026-05-11 17:30
 
 ## Overview
 
@@ -23,10 +23,10 @@ the handler for data integrity.
 ## Phases Checklist
 
 - [x] Phase 1 — Issue file created
-- [ ] Phase 2 — PPB handler: add `bannerImageUrl`, `imageUrl`, `timelineIconUrl` to step create
-- [ ] Phase 3 — PPB route: Step Images card in Bundle Assets section
-- [ ] Phase 4 — PPB widget: inject banner image before step cards in `renderProductPageLayout`
-- [ ] Phase 5 — Build PPB widget, lint, commit
+- [x] Phase 2 — PPB handler: add `bannerImageUrl`, `imageUrl`, `timelineIconUrl` to step create
+- [x] Phase 3 — PPB route: Step Images card in Bundle Assets section
+- [x] Phase 4 — PPB widget: inject banner image before step cards in `renderProductPageLayout`
+- [x] Phase 5 — Build PPB widget, lint, commit
 
 ## Related Documentation
 
@@ -34,6 +34,14 @@ the handler for data integrity.
 - FPB issue (done): `docs/issues-prod/fpb-step-image-banner-1.md`
 
 ## Progress Log
+
+### 2026-05-11 17:30 — Implementation complete
+
+- `handlers.server.ts`: added `bannerImageUrl`, `imageUrl`, `timelineIconUrl` to step create
+- `route.tsx`: Step Images card in Bundle Assets section — `activeAssetTabIndex` state, tab row per step, `bannerImageUrl` FilePicker
+- `bundle-widget-product-page.js`: `_createStepBannerImage(step)` helper; `renderProductPageLayout` injects banner above each step's cards
+- Build: bundle-widget-product-page-bundled.js 136.3 KB
+- Lint: 0 errors
 
 ### 2026-05-11 17:20 — Starting implementation
 
