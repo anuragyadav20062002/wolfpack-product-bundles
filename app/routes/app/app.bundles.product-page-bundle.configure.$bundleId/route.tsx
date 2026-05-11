@@ -457,6 +457,7 @@ export default function ConfigureBundleFlow() {
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
 
   // Add to Storefront install state
   // Treat as already installed if bundle already has a Shopify product (saved at least once)
@@ -2161,6 +2162,71 @@ export default function ConfigureBundleFlow() {
                     </s-stack>
                   </s-stack>
                 </div>
+
+                {stepsState.steps.length > 0 && (
+                  <s-section>
+                    <s-stack direction="block" gap="base">
+                      <s-stack direction="inline">
+                        <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
+                          <s-icon name="image-alt-minor" />
+                          <s-stack direction="block" gap="small-400">
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Images</p>
+                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Banner image per step — shown above the step's products in the widget</p>
+                          </s-stack>
+                        </s-stack>
+                        <s-badge tone="info">Per step</s-badge>
+                      </s-stack>
+
+                      <div>
+                        <div style={{ display: "flex", borderBottom: "1.5px solid #e5e7eb", marginBottom: 16, gap: 0 }}>
+                          {stepsState.steps.map((step, i) => (
+                            <button
+                              key={`asset-step-${step.id}`}
+                              onClick={() => setActiveAssetTabIndex(i)}
+                              style={{
+                                padding: "10px 0",
+                                marginRight: 24,
+                                fontSize: 14,
+                                fontWeight: activeAssetTabIndex === i ? 600 : 500,
+                                color: activeAssetTabIndex === i ? "#1a1a1a" : "#6b7280",
+                                cursor: "pointer",
+                                borderBottom: activeAssetTabIndex === i ? "2px solid #1a1a1a" : "2px solid transparent",
+                                marginBottom: -1.5,
+                                background: "none",
+                                border: "none",
+                                borderBottomStyle: "solid",
+                                borderBottomWidth: 2,
+                                borderBottomColor: activeAssetTabIndex === i ? "#1a1a1a" : "transparent",
+                              }}
+                            >
+                              {step.name || `Step ${i + 1}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {stepsState.steps.map((step, index) => activeAssetTabIndex === index && (
+                        <s-stack key={step.id} direction="block" gap="base">
+                          <s-stack direction="block" gap="small-100">
+                            <s-stack direction="block" gap="small-400">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Banner Image</p>
+                              <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Full-width image shown above this step's products. Recommended: 1600 × 400 px.</p>
+                            </s-stack>
+                            <FilePicker
+                              label="Choose banner image"
+                              hideCropEditor
+                              value={(step as any).bannerImageUrl ?? null}
+                              onChange={(url) => {
+                                stepsState.updateStepField(step.id, 'bannerImageUrl', url ?? null);
+                                markAsDirty();
+                              }}
+                            />
+                          </s-stack>
+                        </s-stack>
+                      ))}
+                    </s-stack>
+                  </s-section>
+                )}
 
                 <s-section>
                   <s-stack direction="block" gap="base">

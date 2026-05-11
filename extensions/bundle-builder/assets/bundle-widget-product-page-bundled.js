@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.8.0
- * Built   : 2026-05-10
+ * Built   : 2026-05-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -2137,8 +2137,24 @@ class BundleWidgetProductPage {
     }
   }
 
+  _createStepBannerImage(step) {
+    if (!step?.bannerImageUrl) return null;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-banner-image';
+    const img = document.createElement('img');
+    img.src = step.bannerImageUrl;
+    img.alt = step.name || '';
+    img.style.cssText = 'width:100%;display:block;';
+    wrapper.appendChild(img);
+    return wrapper;
+  }
+
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
+
+      const banner = this._createStepBannerImage(step);
+      if (banner) this.elements.stepsContainer.appendChild(banner);
+
       if (step.isDefault) {
 
         const product = this._getDefaultStepProduct(stepIndex);

@@ -679,10 +679,27 @@ class BundleWidgetProductPage {
     }
   }
 
+  // Returns a full-width banner image element for a step, or null if not configured
+  _createStepBannerImage(step) {
+    if (!step?.bannerImageUrl) return null;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-banner-image';
+    const img = document.createElement('img');
+    img.src = step.bannerImageUrl;
+    img.alt = step.name || '';
+    img.style.cssText = 'width:100%;display:block;';
+    wrapper.appendChild(img);
+    return wrapper;
+  }
+
   // Product-page bundle layout: always renders all steps at once.
   // Each step gets the appropriate card variant based on its type and selection state.
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
+      // Inject per-step banner image above this step's card(s)
+      const banner = this._createStepBannerImage(step);
+      if (banner) this.elements.stepsContainer.appendChild(banner);
+
       if (step.isDefault) {
         // Default/compulsory slot — always pre-filled, not removable
         const product = this._getDefaultStepProduct(stepIndex);
