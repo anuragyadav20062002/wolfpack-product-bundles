@@ -1,10 +1,10 @@
 # Issue: Category Filter Sub-Tabs Per Step
 
 **Issue ID:** step-category-filters-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-11
-**Last Updated:** 2026-05-11 17:00
+**Last Updated:** 2026-05-11 17:10
 
 ## Overview
 
@@ -25,7 +25,7 @@ needed — reuse the column with shape `{ label: string; collectionHandle: strin
 - [x] Phase 5 — Widget JS: `createCategoryTabs` extended to use `step.filters` custom labels
 - [x] Phase 6 — Widget CSS: reuses existing `.category-tabs` / `.category-tab` classes (no new CSS)
 - [x] Phase 7 — Build widgets + lint + commit
-- [ ] Phase 8 — PPB handler: add `filters` to step create; PPB route: Category Filters card
+- [x] Phase 8 — PPB handler: add `filters` to step create; PPB route: Category Filters card
 
 ## Related Documentation
 
@@ -44,6 +44,13 @@ needed — reuse the column with shape `{ label: string; collectionHandle: strin
 - Build: `bundle-widget-full-page-bundled.js` 288.6 KB (MINOR bump for new visible feature)
 - Tests: 19/19 pass (`step-filter.test.ts` × 16 + `step-category-filters-metafield.test.ts` × 3)
 - Lint: 0 errors on all modified files
+
+### 2026-05-11 17:10 — Phase 8 complete
+
+- `handlers.server.ts` (PPB): added `filters: Array.isArray(step.filters) ? step.filters : null` to step create
+- `route.tsx` (PPB): added Category Filters section in Step Setup — same card as FPB; uses `selectedCollections[step.id]` for collection options
+- Lint: 0 errors on both files
+- Tests: no new tests needed (shared handler path covered by existing metafield test)
 
 ### 2026-05-11 15:30 — Starting implementation
 
