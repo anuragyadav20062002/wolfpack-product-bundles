@@ -552,7 +552,7 @@
 }
 
 .displayOptionRow .richHelp {
-  z-index: 40;
+  --rich-help-layer: 40;
 }
 
 .displayOptionRow .richHelpCard {
@@ -560,7 +560,6 @@
   left: auto;
   width: min(300px, calc(100vw - 48px));
   transform: translate(0, 8px);
-  z-index: 100;
 }
 
 .displayOptionRow .richHelp:hover .richHelpCard,
@@ -659,11 +658,19 @@
 
 /* ── EB-style rich help cards ─────────────────────────────────── */
 .richHelp {
+  --rich-help-layer: 40;
+  --rich-help-active-layer: 1000;
+  --rich-help-card-layer: 1001;
   position: relative;
   display: inline-flex;
   align-items: center;
   line-height: 1;
-  z-index: 5;
+  z-index: var(--rich-help-layer);
+}
+
+.richHelp:hover,
+.richHelp:focus-within {
+  z-index: var(--rich-help-active-layer);
 }
 
 .richHelpTrigger {
@@ -717,7 +724,7 @@
   text-align: center;
   transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
   visibility: hidden;
-  z-index: 30;
+  z-index: var(--rich-help-card-layer);
 }
 
 .richHelp:hover .richHelpCard,

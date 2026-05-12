@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-13 01:38
+**Last Updated:** 2026-05-13 01:44
 
 ## Overview
 
@@ -38,6 +38,20 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-13 01:42 - Starting shared tooltip stacking fix
+
+- User clarified that tooltip hover state should generally sit above its parent stacking layer so hover cards remain visible.
+- Scope: adjust the shared EB-style rich tooltip CSS so active tooltip wrappers and cards rise together instead of relying on per-parent overrides only.
+- No data model or persistence changes.
+
+### 2026-05-13 01:44 - Shared tooltip stacking fix completed
+
+- Updated the shared EB-style rich help CSS to define idle, active, and card stacking layers.
+- Hover/focus now raises the tooltip wrapper above surrounding parent content, while the tooltip card stays above the active wrapper.
+- Removed the lower Discount Display Options-specific card z-index so those tooltips inherit the shared stacking behavior.
+- Chrome verified the Step Flow hover card still renders visibly in the embedded Shopify Admin app after the shared stacking change.
+- Screenshot: `docs/app-nav-map/screenshots/wpb-shared-tooltip-stacking-step-flow-20260513.png`
 
 ### 2026-05-13 01:31 - Starting tooltip constants and clipping fix
 
