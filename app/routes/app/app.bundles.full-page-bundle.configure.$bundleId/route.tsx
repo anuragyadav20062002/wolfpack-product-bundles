@@ -3727,7 +3727,6 @@ export default function ConfigureBundleFlow() {
               const hasSenderRecipientFields = textOverrides.giftMessageSenderRecipientEnabled === "true";
               const isGiftMessageRequired = textOverrides.giftMessageRequired === "true";
               const hasMessageLimit = textOverrides.giftMessageLimitEnabled === "true";
-              const sendGiftMessageEmail = textOverrides.giftMessageEmailEnabled === "true";
 
               return (
                 <s-stack direction="block" gap="base">
@@ -3786,30 +3785,6 @@ export default function ConfigureBundleFlow() {
                         min={0}
                         onInput={(e: Event) => setMessageOverride("giftMessageLimit", (e.target as HTMLInputElement).value)}
                       />
-                    </s-stack>
-                  </div>
-
-                  <div className={fullPageBundleStyles.card}>
-                    <div className={fullPageBundleStyles.ebPanelHeader}>
-                      <div>
-                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Send message through email to the customer</h3>
-                        <p className={fullPageBundleStyles.ebPanelDescription}>
-                          Customize your email templates here
-                        </p>
-                      </div>
-                      <s-checkbox
-                        accessibilityLabel="Send message through email to the customer"
-                        checked={sendGiftMessageEmail || undefined}
-                        onChange={(e: Event) => setMessageOverride("giftMessageEmailEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
-                      />
-                    </div>
-                    <s-stack direction="block" gap="small" style={{ marginTop: 16 }}>
-                      <s-button variant="secondary">
-                        Customize Emails
-                      </s-button>
-                      <p className={fullPageBundleStyles.ebMessageNote}>
-                        Note: Please reach out to us if you wish to change the domain from where the emails are sent.
-                      </p>
                     </s-stack>
                   </div>
                 </s-stack>
