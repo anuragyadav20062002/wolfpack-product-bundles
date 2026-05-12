@@ -33,6 +33,7 @@ import { FilePicker } from "../../../components/design-control-panel/settings/Fi
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
+import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
 import { StepSummary } from "./StepSummary";
 import styles from "./wizard-configure.module.css";
 
@@ -49,8 +50,8 @@ declare const shopify: {
 
 interface FilterDef {
   id: string;
-  type: "tag" | "option";
   label: string;
+  collectionHandle: string;
 }
 
 interface CustomFieldDef {
@@ -163,17 +164,105 @@ function initSteps(dbSteps: any[]): WizardStepState[] {
   }));
 }
 
+type WizardStepLike = Partial<WizardStepState> & {
+  tempId?: string;
+  dbId?: string | null;
+};
+
+export function buildCreateWizardConfigPayload(input: {
+  steps: WizardStepLike[];
+  bundleStatus: string;
+  searchBarEnabled: boolean;
+  textOverridesByLocale: Record<string, Record<string, string>>;
+}) {
+  return JSON.stringify({
+    steps: input.steps.map((step) => ({
+      tempId: step.tempId,
+      dbId: step.dbId ?? null,
+      name: step.name ?? "",
+      pageTitle: step.pageTitle ?? "",
+      iconUrl: step.iconUrl ?? null,
+      products: step.products ?? [],
+      collections: step.collections ?? [],
+      conditions: step.conditions ?? [],
+      filters: step.filters ?? [],
+    })),
+    bundleStatus: input.bundleStatus,
+    searchBarEnabled: input.searchBarEnabled,
+    textOverridesByLocale: input.textOverridesByLocale ?? {},
+  });
+}
+
+function buildCreateWizardPricingPayload(input: {
+  discountEnabled: boolean;
+  discountType: string;
+  discountRules: any[];
+  discountMessagingEnabled: boolean;
+  showProgressBar: boolean;
+  progressMessage: string;
+  qualifiedMessage: string;
+}) {
+  return JSON.stringify({
+    discountEnabled: input.discountEnabled,
+    discountType: input.discountType,
+    discountRules: input.discountRules,
+    discountMessagingEnabled: input.discountMessagingEnabled,
+    showProgressBar: input.showProgressBar,
+    messages: {
+      progress: input.progressMessage,
+      qualified: input.qualifiedMessage,
+      showInCart: input.discountMessagingEnabled,
+    },
+  });
+}
+
+function buildCreateWizardAssetsPayload(input: {
+  promoBannerBgImage: string | null;
+  promoBannerBgImageCrop: string | null;
+  loadingGif: string | null;
+  searchBarEnabled: boolean;
+  steps: WizardStepLike[];
+  customFields: CustomFieldDef[];
+}) {
+  return JSON.stringify({
+    promoBannerBgImage: input.promoBannerBgImage ?? "",
+    promoBannerBgImageCrop: input.promoBannerBgImageCrop ?? "",
+    loadingGif: input.loadingGif ?? "",
+    searchBarEnabled: input.searchBarEnabled,
+    stepsFilters: input.steps
+      .filter((step) => step.dbId)
+      .map((step) => ({ stepDbId: step.dbId, filters: step.filters ?? [] })),
+    customFields: input.customFields,
+  });
+}
+
+function buildCreateWizardTiersPayload(
+  tiers: Array<{ label: string; linkedBundleId: string }>
+) {
+  return JSON.stringify(
+    tiers.map(({ label, linkedBundleId }) => ({ label, linkedBundleId }))
+  );
+}
+
+export function shouldSubmitCreateWizardPage(input: {
+  baseline: string | null;
+  current: string;
+  requirePersistedStepIds?: boolean;
+  steps?: Array<{ dbId?: string | null }>;
+}) {
+  if (input.baseline !== input.current) return true;
+  if (input.requirePersistedStepIds) {
+    return (input.steps ?? []).some((step) => !step.dbId);
+  }
+  return false;
+}
+
 const STEPS_META = [
   { num: "01", label: "Bundle name\n& Description" },
   { num: "02", label: "Configuration" },
   { num: "03", label: "Pricing" },
   { num: "04", label: "Assets" },
   { num: "05", label: "Pricing Tiers" },
-];
-
-const FILTER_TYPE_OPTIONS = [
-  { value: "tag", label: "Tag" },
-  { value: "option", label: "Product Option" },
 ];
 
 const CUSTOM_FIELD_TYPE_OPTIONS = [
@@ -350,14 +439,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       where: { id: bundleId },
       data: { tierConfig: tiers },
     });
-    const routeBase =
-      bundle.bundleType === "full_page"
-        ? "full-page-bundle"
-        : "product-page-bundle";
     return json({
       ok: true,
       intent: "saveTiers",
-      redirectTo: `/app/bundles/${routeBase}/configure/${bundle.id}`,
+      redirectTo: getBundleWizardConfigurePath(bundle.id),
     });
   }
 
@@ -419,14 +504,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       });
     }
 
-    const routeBase =
-      bundle.bundleType === "full_page"
-        ? "full-page-bundle"
-        : "product-page-bundle";
     return json({
       ok: true,
       intent: "saveAssets",
-      redirectTo: `/app/bundles/${routeBase}/configure/${bundle.id}`,
+      redirectTo: getBundleWizardConfigurePath(bundle.id),
     });
   }
 
@@ -454,6 +535,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     await db.bundleStep.deleteMany({ where: { id: { in: toDelete } } });
   }
 
+  const savedSteps: Array<{ tempId: string; dbId: string }> = [];
+
   for (const [i, ws] of wizardSteps.entries()) {
     const c1 = ws.conditions?.[0];
     const c2 = ws.conditions?.[1];
@@ -462,6 +545,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       pageTitle: ws.pageTitle?.trim() || null,
       timelineIconUrl: ws.iconUrl || null,
       position: i,
+      collections:
+        ws.collections && ws.collections.length > 0 ? (ws.collections as any) : null,
       conditionType: c1?.conditionType || null,
       conditionOperator: c1?.conditionOperator || null,
       conditionValue: c1?.conditionValue ? parseInt(c1.conditionValue, 10) : null,
@@ -480,6 +565,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       });
       stepId = created.id;
     }
+    savedSteps.push({ tempId: ws.tempId, dbId: stepId });
 
     await db.stepProduct.deleteMany({ where: { stepId } });
     for (const [pi, product] of (ws.products || []).entries()) {
@@ -497,7 +583,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     }
   }
 
-  return json({ ok: true, intent: "saveConfig" });
+  return json({ ok: true, intent: "saveConfig", steps: savedSteps });
 };
 
 // ── Component ─────────────────────────────────────────────────────
@@ -508,7 +594,11 @@ export default function WizardConfigureStep() {
   const navigate = useNavigate();
 
   // ── Fetchers ───────────────────────────────────────────────────
-  const configFetcher = useFetcher<{ ok: boolean; intent: string }>();
+  const configFetcher = useFetcher<{
+    ok: boolean;
+    intent: string;
+    steps?: Array<{ tempId: string; dbId: string }>;
+  }>();
   const pricingFetcher = useFetcher<{ ok: boolean; intent: string }>();
   const assetsFetcher = useFetcher<{
     ok: boolean;
@@ -611,6 +701,37 @@ export default function WizardConfigureStep() {
     }))
   );
 
+  const editRoutePath = getBundleWizardConfigurePath(bundle.id);
+  const currentConfigPayload = buildCreateWizardConfigPayload({
+    steps,
+    bundleStatus,
+    searchBarEnabled,
+    textOverridesByLocale,
+  });
+  const currentPricingPayload = buildCreateWizardPricingPayload({
+    discountEnabled: pricing.discountEnabled,
+    discountType: pricing.discountType,
+    discountRules: pricing.discountRules,
+    discountMessagingEnabled,
+    showProgressBar,
+    progressMessage,
+    qualifiedMessage,
+  });
+  const currentAssetsPayload = buildCreateWizardAssetsPayload({
+    promoBannerBgImage,
+    promoBannerBgImageCrop,
+    loadingGif,
+    searchBarEnabled,
+    steps,
+    customFields,
+  });
+  const currentTiersPayload = buildCreateWizardTiersPayload(tiers);
+
+  const configBaselineRef = useRef(currentConfigPayload);
+  const pricingBaselineRef = useRef(currentPricingPayload);
+  const assetsBaselineRef = useRef(currentAssetsPayload);
+  const tiersBaselineRef = useRef(currentTiersPayload);
+
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
     if (statusSelectRef.current)
@@ -628,6 +749,33 @@ export default function WizardConfigureStep() {
       configFetcher.data.intent === "saveConfig" &&
       configFetcher.state === "idle"
     ) {
+      if (configFetcher.data.steps?.length) {
+        setSteps((prev) => {
+          const nextSteps = prev.map((step) => {
+            const saved = configFetcher.data?.steps?.find(
+              (s) => s.tempId === step.tempId
+            );
+            return saved ? { ...step, dbId: saved.dbId } : step;
+          });
+          configBaselineRef.current = buildCreateWizardConfigPayload({
+            steps: nextSteps,
+            bundleStatus,
+            searchBarEnabled,
+            textOverridesByLocale,
+          });
+          assetsBaselineRef.current = buildCreateWizardAssetsPayload({
+            promoBannerBgImage,
+            promoBannerBgImageCrop,
+            loadingGif,
+            searchBarEnabled,
+            steps: nextSteps,
+            customFields,
+          });
+          return nextSteps;
+        });
+      } else {
+        configBaselineRef.current = currentConfigPayload;
+      }
       setWizardStep(2);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -639,6 +787,7 @@ export default function WizardConfigureStep() {
       pricingFetcher.data.intent === "savePricing" &&
       pricingFetcher.state === "idle"
     ) {
+      pricingBaselineRef.current = currentPricingPayload;
       setWizardStep(3);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -650,6 +799,7 @@ export default function WizardConfigureStep() {
       assetsFetcher.data.intent === "saveAssets" &&
       assetsFetcher.state === "idle"
     ) {
+      assetsBaselineRef.current = currentAssetsPayload;
       if (isFpb) {
         setWizardStep(4);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -665,6 +815,7 @@ export default function WizardConfigureStep() {
       tiersFetcher.data.intent === "saveTiers" &&
       tiersFetcher.state === "idle"
     ) {
+      tiersBaselineRef.current = currentTiersPayload;
       navigate(tiersFetcher.data.redirectTo);
     }
   }, [tiersFetcher.data, tiersFetcher.state, navigate]);
@@ -735,31 +886,48 @@ export default function WizardConfigureStep() {
   );
 
   const addRule = useCallback(() => {
-    if (currentStep.conditions.length >= 2) {
-      shopify.toast.show("A step can have at most 2 conditions");
-      return;
-    }
-    updateCurrent("conditions", [...currentStep.conditions, newCondition()]);
-  }, [currentStep.conditions, updateCurrent]);
+    setSteps((prev) => {
+      const step = prev[currentIdx];
+      if (!step) return prev;
+      if (step.conditions.length >= 2) {
+        shopify.toast.show("A step can have at most 2 conditions");
+        return prev;
+      }
+      return prev.map((s, i) =>
+        i === currentIdx
+          ? { ...s, conditions: [...s.conditions, newCondition()] }
+          : s
+      );
+    });
+  }, [currentIdx]);
 
   const removeRule = useCallback(
     (id: string) =>
-      updateCurrent(
-        "conditions",
-        currentStep.conditions.filter((c) => c.id !== id)
+      setSteps((prev) =>
+        prev.map((s, i) =>
+          i === currentIdx
+            ? { ...s, conditions: s.conditions.filter((c) => c.id !== id) }
+            : s
+        )
       ),
-    [currentStep.conditions, updateCurrent]
+    [currentIdx]
   );
 
   const updateRule = useCallback(
     (id: string, field: keyof ConditionDef, val: string) =>
-      updateCurrent(
-        "conditions",
-        currentStep.conditions.map((c) =>
-          c.id === id ? { ...c, [field]: val } : c
+      setSteps((prev) =>
+        prev.map((s, i) =>
+          i === currentIdx
+            ? {
+                ...s,
+                conditions: s.conditions.map((c) =>
+                  c.id === id ? { ...c, [field]: val } : c
+                ),
+              }
+            : s
         )
       ),
-    [currentStep.conditions, updateCurrent]
+    [currentIdx]
   );
 
   const pickProducts = useCallback(async () => {
@@ -794,12 +962,17 @@ export default function WizardConfigureStep() {
   const addFilter = useCallback((stepIdx: number) => {
     setSteps((prev) =>
       prev.map((s, i) =>
-        i === stepIdx
+        i === stepIdx && s.collections.length > 0
           ? {
               ...s,
               filters: [
                 ...s.filters,
-                { id: crypto.randomUUID(), type: "tag" as const, label: "" },
+                {
+                  id: crypto.randomUUID(),
+                  label: "",
+                  collectionHandle:
+                    s.collections[0]?.handle || s.collections[0]?.id || "",
+                },
               ],
             }
           : s
@@ -875,6 +1048,18 @@ export default function WizardConfigureStep() {
 
   const handleNext = useCallback(() => {
     if (wizardStep === 1) {
+      if (
+        !shouldSubmitCreateWizardPage({
+          baseline: configBaselineRef.current,
+          current: currentConfigPayload,
+          requirePersistedStepIds: true,
+          steps,
+        })
+      ) {
+        setWizardStep(2);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       const fd = new FormData();
       fd.set("_intent", "saveConfig");
       fd.set("steps", JSON.stringify(steps));
@@ -883,6 +1068,16 @@ export default function WizardConfigureStep() {
       fd.set("textOverridesByLocale", JSON.stringify(textOverridesByLocale));
       configFetcher.submit(fd, { method: "post" });
     } else if (wizardStep === 2) {
+      if (
+        !shouldSubmitCreateWizardPage({
+          baseline: pricingBaselineRef.current,
+          current: currentPricingPayload,
+        })
+      ) {
+        setWizardStep(3);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       const fd = new FormData();
       fd.set("_intent", "savePricing");
       fd.set(
@@ -902,6 +1097,20 @@ export default function WizardConfigureStep() {
       );
       pricingFetcher.submit(fd, { method: "post" });
     } else if (wizardStep === 3) {
+      if (
+        !shouldSubmitCreateWizardPage({
+          baseline: assetsBaselineRef.current,
+          current: currentAssetsPayload,
+        })
+      ) {
+        if (isFpb) {
+          setWizardStep(4);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          navigate(editRoutePath);
+        }
+        return;
+      }
       const fd = new FormData();
       fd.set("_intent", "saveAssets");
       fd.set("promoBannerBgImage", promoBannerBgImage ?? "");
@@ -919,6 +1128,15 @@ export default function WizardConfigureStep() {
       fd.set("customFields", JSON.stringify(customFields));
       assetsFetcher.submit(fd, { method: "post" });
     } else if (wizardStep === 4) {
+      if (
+        !shouldSubmitCreateWizardPage({
+          baseline: tiersBaselineRef.current,
+          current: currentTiersPayload,
+        })
+      ) {
+        navigate(editRoutePath);
+        return;
+      }
       const fd = new FormData();
       fd.set("_intent", "saveTiers");
       fd.set(
@@ -949,6 +1167,13 @@ export default function WizardConfigureStep() {
     loadingGif,
     customFields,
     tiers,
+    currentConfigPayload,
+    currentPricingPayload,
+    currentAssetsPayload,
+    currentTiersPayload,
+    isFpb,
+    editRoutePath,
+    navigate,
   ]);
 
   // ── Locale helpers ─────────────────────────────────────────────
@@ -1138,7 +1363,7 @@ export default function WizardConfigureStep() {
                                   updateCurrent("iconUrl", url);
                                   setShowIconPicker(false);
                                 }}
-                                label=""
+                                label="Step icon"
                                 hideCropEditor
                               />
                             )}
@@ -1279,16 +1504,6 @@ export default function WizardConfigureStep() {
                           )}
                       </div>
 
-                      <s-checkbox
-                        label="Pre-select all products on this step"
-                        checked={currentStep.preSelectAll || undefined}
-                        onChange={(e: Event) =>
-                          updateCurrent(
-                            "preSelectAll",
-                            (e.target as HTMLInputElement).checked
-                          )
-                        }
-                      />
                     </div>
 
                     {/* Rules */}
@@ -1407,7 +1622,8 @@ export default function WizardConfigureStep() {
                   <s-heading>Bundle Status</s-heading>
                   <s-select
                     ref={statusSelectRef}
-                    label=""
+                    label="Bundle status"
+                    labelAccessibilityVisibility="exclusive"
                     onChange={(e: Event) =>
                       setBundleStatus(
                         (e.target as HTMLSelectElement).value
@@ -1477,6 +1693,7 @@ export default function WizardConfigureStep() {
                     </s-text>
                   </div>
                   <s-switch
+                    accessibilityLabel="Enable bundle discounts"
                     checked={pricing.discountEnabled || undefined}
                     onChange={(e: Event) =>
                       pricing.toggleDiscountEnabled(
@@ -1713,6 +1930,7 @@ export default function WizardConfigureStep() {
                 <div className={styles.displayOptionRow}>
                   <s-text>Progress bar</s-text>
                   <s-switch
+                    accessibilityLabel="Show discount progress bar"
                     checked={showProgressBar || undefined}
                     onChange={(e: Event) =>
                       setShowProgressBar(
@@ -1732,6 +1950,7 @@ export default function WizardConfigureStep() {
                     </s-text>
                   </div>
                   <s-switch
+                    accessibilityLabel="Enable discount messaging"
                     checked={discountMessagingEnabled || undefined}
                     onChange={(e: Event) =>
                       setDiscountMessagingEnabled(
@@ -1880,6 +2099,7 @@ export default function WizardConfigureStep() {
                   </div>
                 </div>
                 <s-switch
+                  accessibilityLabel="Show search bar"
                   checked={searchBarEnabled || undefined}
                   onChange={(e: Event) =>
                     setSearchBarEnabled((e.target as HTMLInputElement).checked)
@@ -2000,7 +2220,8 @@ export default function WizardConfigureStep() {
                         Label
                       </p>
                       <s-text-field
-                        label=""
+                        label="Tier label"
+                        labelAccessibilityVisibility="exclusive"
                         placeholder="Buy 3 @ 699"
                         maxLength={50}
                         value={tier.label}
@@ -2024,7 +2245,8 @@ export default function WizardConfigureStep() {
                         Linked Bundle
                       </p>
                       <s-select
-                        label=""
+                        label="Linked bundle"
+                        labelAccessibilityVisibility="exclusive"
                         onChange={(e: Event) =>
                           setTiers((prev) =>
                             prev.map((t) =>
@@ -2106,6 +2328,7 @@ export default function WizardConfigureStep() {
         open={localeModalOpen || undefined}
         label="Multi Language"
         onHide={() => setLocaleModalOpen(false)}
+        suppressHydrationWarning
       >
         <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
           Translating: <strong>Step {currentIdx + 1}</strong> —{" "}
@@ -2123,7 +2346,8 @@ export default function WizardConfigureStep() {
               <p className={styles.modalSectionTitle}>Language</p>
               <s-select
                 ref={localeSelectRef}
-                label=""
+                label="Language"
+                labelAccessibilityVisibility="exclusive"
                 onChange={(e: Event) =>
                   setSelectedLocale(
                     (e.target as HTMLSelectElement).value
@@ -2155,7 +2379,8 @@ export default function WizardConfigureStep() {
                   Leave blank to fall back to the default English name.
                 </p>
                 <s-text-field
-                  label=""
+                  label={`Step name translation for ${selectedLocale}`}
+                  labelAccessibilityVisibility="exclusive"
                   placeholder={
                     currentStep.name || "Step name in English"
                   }
@@ -2234,7 +2459,14 @@ export default function WizardConfigureStep() {
               <p className={styles.modalSectionTitle}>
                 Filters for Step {filtersDrawerStepIdx + 1}
               </p>
-              {(steps[filtersDrawerStepIdx]?.filters ?? []).length === 0 ? (
+              {(steps[filtersDrawerStepIdx]?.collections ?? []).length === 0 ? (
+                <div
+                  className={styles.emptyState}
+                  style={{ marginBottom: 12 }}
+                >
+                  Add collections to this step first to configure category filters.
+                </div>
+              ) : (steps[filtersDrawerStepIdx]?.filters ?? []).length === 0 ? (
                 <div
                   className={styles.emptyState}
                   style={{ marginBottom: 12 }}
@@ -2246,29 +2478,10 @@ export default function WizardConfigureStep() {
                   {(steps[filtersDrawerStepIdx]?.filters ?? []).map(
                     (filter) => (
                       <div key={filter.id} className={styles.filterRow}>
-                        <s-select
-                          label="Type"
-                          onChange={(e: Event) =>
-                            updateFilter(filtersDrawerStepIdx, filter.id, {
-                              type: (e.target as HTMLSelectElement)
-                                .value as FilterDef["type"],
-                            })
-                          }
-                        >
-                          {FILTER_TYPE_OPTIONS.map((opt) => (
-                            <s-option
-                              key={opt.value}
-                              value={opt.value}
-                              selected={filter.type === opt.value || undefined}
-                            >
-                              {opt.label}
-                            </s-option>
-                          ))}
-                        </s-select>
                         <s-text-field
-                          label="Label"
+                          label="Tab label"
                           value={filter.label}
-                          placeholder="e.g. Size, Color"
+                          placeholder="e.g. Shirts"
                           autoComplete="off"
                           onInput={(e: Event) =>
                             updateFilter(filtersDrawerStepIdx, filter.id, {
@@ -2276,6 +2489,33 @@ export default function WizardConfigureStep() {
                             })
                           }
                         />
+                        <s-select
+                          label="Collection"
+                          value={filter.collectionHandle}
+                          onChange={(e: Event) =>
+                            updateFilter(filtersDrawerStepIdx, filter.id, {
+                              collectionHandle: (e.target as HTMLSelectElement)
+                                .value,
+                            })
+                          }
+                        >
+                          {(steps[filtersDrawerStepIdx]?.collections ?? []).map(
+                            (collection: any) => {
+                              const value = collection.handle || collection.id;
+                              return (
+                                <s-option
+                                  key={value}
+                                  value={value}
+                                  selected={
+                                    filter.collectionHandle === value || undefined
+                                  }
+                                >
+                                  {collection.title || collection.handle || collection.id}
+                                </s-option>
+                              );
+                            }
+                          )}
+                        </s-select>
                         <s-button
                           icon="delete"
                           variant="tertiary"
@@ -2293,6 +2533,10 @@ export default function WizardConfigureStep() {
               <s-button
                 variant="secondary"
                 icon="plus"
+                disabled={
+                  (steps[filtersDrawerStepIdx]?.collections ?? []).length === 0 ||
+                  undefined
+                }
                 onClick={() => addFilter(filtersDrawerStepIdx)}
               >
                 Add Filter
@@ -2405,7 +2649,8 @@ export default function WizardConfigureStep() {
                             Options (one per line)
                           </s-text>
                           <s-text-area
-                            label=""
+                            label="Dropdown options"
+                            labelAccessibilityVisibility="exclusive"
                             value={cf.options.join("\n")}
                             placeholder={"Option 1\nOption 2\nOption 3"}
                             onInput={(e: Event) =>

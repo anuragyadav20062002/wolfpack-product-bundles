@@ -1,3 +1,7 @@
+import { action } from "../../../app/routes/app/app.bundles.create/route";
+import { authenticate } from "../../../app/shopify.server";
+import { handleCreateBundle } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
+
 jest.mock("../../../app/shopify.server", () => ({
   authenticate: {
     admin: jest.fn(),
@@ -20,10 +24,6 @@ jest.mock("../../../app/lib/logger", () => ({
     startTimer: jest.fn(() => jest.fn()),
   },
 }));
-
-import { action } from "../../../app/routes/app/app.bundles.create/route";
-import { authenticate } from "../../../app/shopify.server";
-import { handleCreateBundle } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
 
 const mockAuthenticate = authenticate as jest.Mocked<typeof authenticate>;
 const mockHandleCreateBundle = handleCreateBundle as jest.MockedFunction<typeof handleCreateBundle>;
@@ -55,7 +55,7 @@ describe("app.bundles.create action", () => {
         success: true,
         bundleId: "bundle-abc",
         bundleProductId: "gid://shopify/Product/1",
-        redirectTo: "/app/bundles/product-page-bundle/configure/bundle-abc",
+        redirectTo: "/app/bundles/create/configure/bundle-abc",
         widgetStatus: { checked: false },
       }),
       status: 200,
@@ -70,7 +70,7 @@ describe("app.bundles.create action", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      "/app/bundles/product-page-bundle/configure/bundle-abc"
+      "/app/bundles/create/configure/bundle-abc"
     );
   });
 
@@ -113,7 +113,7 @@ describe("app.bundles.create action", () => {
         success: true,
         bundleId: "bundle-xyz",
         bundleProductId: "gid://shopify/Product/2",
-        redirectTo: "/app/bundles/full-page-bundle/configure/bundle-xyz",
+        redirectTo: "/app/bundles/create/configure/bundle-xyz",
         widgetStatus: { checked: false },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }

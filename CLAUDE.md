@@ -691,6 +691,20 @@ The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-s
 - Use this password when Chrome DevTools MCP or any browser automation tool
   hits the Shopify storefront password gate.
 
+## 🧭 Chrome DevTools App Verification
+
+When verifying the embedded app with Chrome DevTools MCP, always access app pages through
+the Shopify Admin embedded URL, for example:
+
+```
+https://admin.shopify.com/store/wolfpack-store-test-1/apps/wolfpack-product-bundles-sit/app/...
+```
+
+Do **not** navigate directly to the Cloudflare tunnel app URL. Direct tunnel URLs such as
+`https://<tunnel>.trycloudflare.com/app/...` do not preserve the Shopify embedded app
+context and commonly redirect to `/auth/login`, so they are not valid for live Admin UI
+verification.
+
 ---
 
 ## 🐙 GitHub Tasks — Always Use `gh` CLI

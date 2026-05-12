@@ -12,6 +12,7 @@ import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
+import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
 import "../../../i18n/config";
 
 import {
@@ -224,7 +225,6 @@ export default function Dashboard() {
   const statusPopoverRef = useRef<any>(null);
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
-  const cloningBundleTypeRef = useRef<string | null>(null);
 
   useEffect(() => {
     const image = new Image();
@@ -242,8 +242,7 @@ export default function Dashboard() {
     if (data.success) {
       if (intent === 'cloneBundle' && data.bundleId) {
         shopify.toast.show(t("dashboard.actions.cloneSuccess"));
-        const routeBase = cloningBundleTypeRef.current === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-        navigate(`/app/bundles/${routeBase}/configure/${data.bundleId}`);
+        navigate(getBundleWizardConfigurePath(String(data.bundleId)));
       } else if (intent === 'deleteBundle') {
         shopify.toast.show(t("dashboard.actions.deleteSuccess"));
       }
@@ -251,7 +250,6 @@ export default function Dashboard() {
       shopify.toast.show(String(data.error), { isError: true, duration: 5000 });
     }
     fetcherIntentRef.current = null;
-    cloningBundleTypeRef.current = null;
   }, [fetcher.state, fetcher.data, navigate, shopify, t]);
 
   const handleDirectChat = () => {
@@ -261,15 +259,12 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {
-    const routeBase = bundle.bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-    navigate(`/app/bundles/${routeBase}/configure/${bundle.id}`);
+    navigate(getBundleWizardConfigurePath(bundle.id));
   }, [navigate]);
 
   const handleCloneBundle = useCallback((bundleId: string) => {
     if (confirm(t("dashboard.actions.confirmClone"))) {
-      const sourceBundle = bundles.find(b => b.id === bundleId);
       fetcherIntentRef.current = 'cloneBundle';
-      cloningBundleTypeRef.current = sourceBundle?.bundleType ?? null;
       const formData = new FormData();
       formData.append("intent", "cloneBundle");
       formData.append("bundleId", bundleId);
