@@ -93,6 +93,31 @@ export interface PricingDisplay {
   showDiscountProgressBar: boolean; // Show visual fill-bar progress toward next discount tier
 }
 
+export type PricingProgressBarType = 'simple' | 'step_based';
+
+export interface BundleQuantityOptionDisplay {
+  label: string;
+  subtext: string;
+}
+
+export interface BundleQuantityOptionsDisplay {
+  enabled: boolean;
+  defaultRuleId: string | null;
+  optionsByRuleId: Record<string, BundleQuantityOptionDisplay>;
+}
+
+export interface PricingProgressBarDisplayOptions {
+  enabled: boolean;
+  type: PricingProgressBarType;
+  progressText: string;
+  successText: string;
+}
+
+export interface PricingDisplayOptions {
+  bundleQuantityOptions: BundleQuantityOptionsDisplay;
+  progressBar: PricingProgressBarDisplayOptions;
+}
+
 /**
  * Message templates with variable substitution
  *

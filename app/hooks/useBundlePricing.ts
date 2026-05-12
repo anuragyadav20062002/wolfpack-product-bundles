@@ -10,7 +10,14 @@
  */
 
 import { useState, useCallback } from "react";
-import { DiscountMethod, type PricingRule, createNewPricingRule } from "../types/pricing";
+import { normalizePricingDisplayOptions, serializePricingDisplayOptions } from "../lib/pricing-display-options";
+import {
+  DiscountMethod,
+  type PricingDisplayOptions,
+  type PricingProgressBarType,
+  type PricingRule,
+  createNewPricingRule,
+} from "../types/pricing";
 
 interface UseBundlePricingProps {
   initialPricing?: {
@@ -19,8 +26,22 @@ interface UseBundlePricingProps {
     rules: any;
     showFooter?: boolean;
     showDiscountProgressBar?: boolean;
+    messages?: any;
   } | null;
   onStateChange?: () => void;
+}
+
+function createInitialPricingDisplayOptions(initialPricing: UseBundlePricingProps["initialPricing"]): PricingDisplayOptions {
+  const normalized = normalizePricingDisplayOptions({
+    rules: Array.isArray(initialPricing?.rules) ? initialPricing?.rules : [],
+    messages: initialPricing?.messages || {},
+    showProgressBar: initialPricing?.showDiscountProgressBar === true,
+  });
+
+  return serializePricingDisplayOptions({
+    existingMessages: {},
+    options: normalized,
+  }).displayOptions as PricingDisplayOptions;
 }
 
 export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePricingProps) {
@@ -34,7 +55,10 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
   );
   const [showFooter, setShowFooterRaw] = useState(initialPricing?.showFooter !== false);
   const [showDiscountProgressBar, setShowDiscountProgressBarRaw] = useState(initialPricing?.showDiscountProgressBar === true);
-  const [discountMessagingEnabled, setDiscountMessagingEnabledRaw] = useState(true);
+  const [discountMessagingEnabled, setDiscountMessagingEnabledRaw] = useState(initialPricing?.messages?.showDiscountMessaging === true);
+  const [pricingDisplayOptions, setPricingDisplayOptionsRaw] = useState<PricingDisplayOptions>(() =>
+    createInitialPricingDisplayOptions(initialPricing)
+  );
 
   // Rule messaging
   const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>({});
@@ -63,6 +87,16 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
 
   const setShowDiscountProgressBar = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
     setShowDiscountProgressBarRaw(value);
+    setPricingDisplayOptionsRaw(prev => {
+      const resolved = typeof value === "function" ? value(prev.progressBar.enabled) : value;
+      return {
+        ...prev,
+        progressBar: {
+          ...prev.progressBar,
+          enabled: resolved,
+        },
+      };
+    });
     onStateChange?.();
   }, [onStateChange]);
 
@@ -70,6 +104,67 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setDiscountMessagingEnabledRaw(value);
     onStateChange?.();
   }, [onStateChange]);
+
+  const setPricingDisplayOptions = useCallback((value: PricingDisplayOptions | ((prev: PricingDisplayOptions) => PricingDisplayOptions)) => {
+    setPricingDisplayOptionsRaw(value);
+    onStateChange?.();
+  }, [onStateChange]);
+
+  const setBundleQuantityOptionsEnabled = useCallback((enabled: boolean) => {
+    setPricingDisplayOptions(prev => ({
+      ...prev,
+      bundleQuantityOptions: {
+        ...prev.bundleQuantityOptions,
+        enabled,
+      },
+    }));
+  }, [setPricingDisplayOptions]);
+
+  const setBundleQuantityDefaultRule = useCallback((ruleId: string | null) => {
+    setPricingDisplayOptions(prev => ({
+      ...prev,
+      bundleQuantityOptions: {
+        ...prev.bundleQuantityOptions,
+        defaultRuleId: ruleId,
+      },
+    }));
+  }, [setPricingDisplayOptions]);
+
+  const updateBundleQuantityOption = useCallback((ruleId: string, updates: { label?: string; subtext?: string }) => {
+    setPricingDisplayOptions(prev => ({
+      ...prev,
+      bundleQuantityOptions: {
+        ...prev.bundleQuantityOptions,
+        optionsByRuleId: {
+          ...prev.bundleQuantityOptions.optionsByRuleId,
+          [ruleId]: {
+            ...(prev.bundleQuantityOptions.optionsByRuleId[ruleId] || { label: "", subtext: "" }),
+            ...updates,
+          },
+        },
+      },
+    }));
+  }, [setPricingDisplayOptions]);
+
+  const setProgressBarType = useCallback((type: PricingProgressBarType) => {
+    setPricingDisplayOptions(prev => ({
+      ...prev,
+      progressBar: {
+        ...prev.progressBar,
+        type,
+      },
+    }));
+  }, [setPricingDisplayOptions]);
+
+  const updateProgressBarOptions = useCallback((updates: Partial<PricingDisplayOptions["progressBar"]>) => {
+    setPricingDisplayOptions(prev => ({
+      ...prev,
+      progressBar: {
+        ...prev.progressBar,
+        ...updates,
+      },
+    }));
+  }, [setPricingDisplayOptions]);
 
   // Add a new discount rule
   const addDiscountRule = useCallback(() => {
@@ -147,9 +242,10 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
       showFooter,
       showDiscountProgressBar,
       discountMessagingEnabled,
-      ruleMessages
+      ruleMessages,
+      pricingDisplayOptions
     };
-  }, [discountEnabled, discountType, discountRules, showFooter, showDiscountProgressBar, discountMessagingEnabled, ruleMessages]);
+  }, [discountEnabled, discountType, discountRules, showFooter, showDiscountProgressBar, discountMessagingEnabled, ruleMessages, pricingDisplayOptions]);
 
   return {
     // State
@@ -160,6 +256,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     showDiscountProgressBar,
     discountMessagingEnabled,
     ruleMessages,
+    pricingDisplayOptions,
     showVariables,
 
     // Setters
@@ -169,6 +266,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setShowFooter,
     setShowDiscountProgressBar,
     setDiscountMessagingEnabled,
+    setPricingDisplayOptions,
     setRuleMessages,
     setShowVariables,
 
@@ -177,6 +275,11 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     removeDiscountRule,
     updateDiscountRule,
     updateRuleMessage,
+    setBundleQuantityOptionsEnabled,
+    setBundleQuantityDefaultRule,
+    updateBundleQuantityOption,
+    setProgressBarType,
+    updateProgressBarOptions,
     toggleDiscountEnabled,
     changeDiscountType,
     toggleFooter,

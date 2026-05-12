@@ -324,7 +324,8 @@ export async function updateBundleProductMetafields(
       successTemplate: bundleConfiguration.pricing?.messages?.qualified || bundleConfiguration.messaging?.successTemplate || 'Congratulations! You got {discountText}',
       showDiscountMessaging: bundleConfiguration.pricing?.messages?.showDiscountMessaging || false,
       showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false,
-      showDiscountProgressBar: bundleConfiguration.pricing?.display?.showDiscountProgressBar === true || bundleConfiguration.pricing?.showProgressBar === true
+      showDiscountProgressBar: bundleConfiguration.pricing?.display?.showDiscountProgressBar === true || bundleConfiguration.pricing?.showProgressBar === true,
+      displayOptions: bundleConfiguration.pricing?.messages?.displayOptions || null
     },
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
     promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,

@@ -164,6 +164,7 @@ function buildFullPageBundlePricing(pricing: any) {
       progress: firstRuleMessage?.discountText || DEFAULT_PROGRESS_MESSAGE,
       qualified: firstRuleMessage?.successMessage || DEFAULT_SUCCESS_MESSAGE,
       showDiscountMessaging: parsedMessages.showDiscountMessaging || false,
+      displayOptions: parsedMessages.displayOptions || null,
     },
   };
 }
@@ -345,12 +346,16 @@ function buildFpbBaseConfig(
         condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
         discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
       })),
-      display: { showFooter: discountData.showFooter !== false },
+      display: {
+        showFooter: discountData.showFooter !== false,
+        showDiscountProgressBar: discountData.showDiscountProgressBar === true,
+      },
       messages: {
         progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
         qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
         showDiscountMessaging: discountData.discountMessagingEnabled || false,
         showInCart: true,
+        displayOptions: discountData.pricingDisplayOptions || null,
       },
     },
     bundleParentVariantId: bundleParentVariantId,
@@ -616,7 +621,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
+                  ruleMessages: discountData.ruleMessages || {},
+                  displayOptions: discountData.pricingDisplayOptions || null
                 }
               },
               update: {
@@ -628,7 +634,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
+                  ruleMessages: discountData.ruleMessages || {},
+                  displayOptions: discountData.pricingDisplayOptions || null
                 }
               }
             }

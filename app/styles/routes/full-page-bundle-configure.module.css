@@ -38,51 +38,913 @@
   color: #6c757d;
 }
 
+/* ── Edit App Canvas ─────────────────────────────────────────── */
+.editCanvas {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 0 88px;
+}
+
+.canvasHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 0 16px;
+}
+
+.canvasTitleGroup {
+  min-width: 0;
+}
+
+.canvasTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.canvasBackButton {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.canvasBackButton:hover {
+  color: #000000;
+}
+
+.canvasEyebrow {
+  margin: 0 0 4px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.canvasTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.canvasSubtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.canvasActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.readinessButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #202223;
+  font: inherit;
+  cursor: pointer;
+}
+
+.readinessButtonLow {
+  background: #fff1f1;
+  border-color: #ffd6d6;
+}
+
+.readinessButtonMedium {
+  background: #eef5ff;
+  border-color: #cfe2ff;
+}
+
+.readinessButtonHigh {
+  background: #eaf7f0;
+  border-color: #b7ead2;
+}
+
+.readinessScore {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.readinessLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editGrid {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.leftColumn {
+  flex: 0 0 274px;
+  min-width: 274px;
+}
+
+.mainColumn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.leftCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ebLinkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #005bd3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ebLinkButton:hover,
+.ebLinkButton:focus-visible {
+  color: #003a8c;
+  text-decoration: underline;
+}
+
+.leftCardTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.leftCardSubtitle {
+  margin: -2px 0 8px;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.bundleProductPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px;
+  border: 1px solid #e1e3e5;
+  border-radius: 7px;
+  background: #f6f6f7;
+}
+
+.bundleProductSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+.bundleProductIconTile {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d8dbdf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6d7175;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bundleProductIconImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.bundleProductName {
+  overflow: hidden;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bundleProductName:hover {
+  text-decoration: underline;
+}
+
+.bundleProductEditButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.bundleProductEditButton:hover {
+  border-color: #9ca3af;
+  background: #fafafa;
+}
+
+.parentProductStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.setupNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.setupNavItem {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.setupNavItem:hover {
+  background: #f1f2f4;
+}
+
+.setupNavItemActive {
+  background: #e3e3e3;
+}
+
+.setupNavIcon {
+  color: #6d7175;
+  font-size: 12px;
+  text-align: center;
+}
+
+.setupNavLabel {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setupNavMeta {
+  min-width: 0;
+}
+
+.ebSubNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 6px 28px;
+  padding-left: 12px;
+  border-left: 1px solid #d8dbdf;
+}
+
+.ebSubNavItem {
+  width: 100%;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ebSubNavItem:hover {
+  color: #202223;
+}
+
+.ebSubNavItemActive {
+  color: #202223;
+  font-weight: 600;
+}
+
+.readinessCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.readinessCardScore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: #eef5ff;
+  color: #005bd3;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.visibilityGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.visibilityGuideCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e3e5e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.visibilityGuideMedia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 74px;
+  border-radius: 8px;
+  background: #f1f2f4;
+  color: #6b7280;
+}
+
+.visibilitySetupTime {
+  color: #6d7175;
+  font-size: 12px;
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #edf0f2;
+}
+
+.settingsRow:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.settingsRowText {
+  flex: 1;
+  min-width: 0;
+}
+
+.settingsRowTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settingsRowDescription {
+  margin: 4px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settingsRowControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 168px;
+}
+
+.settingsNestedFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  background: #fafbfb;
+}
+
+.stepOverviewCard {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e3e5e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.stepNumberTile {
+  display: flex;
+  flex: 0 0 72px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  border: 1px solid #d8dadd;
+  border-radius: 8px;
+  background: #f6f6f7;
+}
+
+.stepNumberTile span {
+  color: #202223;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stepNumberTile small {
+  margin-top: 4px;
+  color: #6d7175;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stepOverviewBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.stepOverviewGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin-top: 14px;
+}
+
+.categoryFilterRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.displayOptionRow {
+  position: relative;
+  overflow: visible;
+  padding: 12px 0;
+  border-top: 1px solid #edf0f2;
+}
+
+.displayOptionRow:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.displayOptionRow .richHelp {
+  z-index: 40;
+}
+
+.displayOptionRow .richHelpCard {
+  right: -10px;
+  left: auto;
+  width: min(300px, calc(100vw - 48px));
+  transform: translate(0, 8px);
+  z-index: 100;
+}
+
+.displayOptionRow .richHelp:hover .richHelpCard,
+.displayOptionRow .richHelp:focus-within .richHelpCard {
+  transform: translate(0, 0);
+}
+
+.displayOptionRow .richHelpCard::before {
+  right: 18px;
+  left: auto;
+  transform: rotate(45deg);
+}
+
+.displayOptionText {
+  flex: 1;
+  min-width: 0;
+}
+
+.displayOptionTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.displayOptionDescription {
+  margin: 3px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.inlineHelpAction {
+  flex-shrink: 0;
+}
+
+.nestedDisplayOptions {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  background: #fafbfb;
+}
+
+.optionNote {
+  margin: 8px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.optionNote strong {
+  color: #202223;
+}
+
+.modeOptions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.modeOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.modeOption input {
+  margin: 0;
+}
+
+.templateVariableGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.templateVariableItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headingWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── EB-style rich help cards ─────────────────────────────────── */
+.richHelp {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  z-index: 5;
+}
+
+.richHelpTrigger {
+  white-space: nowrap;
+}
+
+.questionHelpButton {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid #9ca3af;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #6d7175;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: default;
+}
+
+.questionHelpButton:hover,
+.questionHelpButton:focus-visible {
+  border-color: #6d7175;
+  color: #202223;
+}
+
+.stepFlowTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.richHelpCard {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  width: min(320px, calc(100vw - 48px));
+  padding: 18px;
+  transform: translate(-50%, 8px);
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.16);
+  color: #202223;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+  visibility: hidden;
+  z-index: 30;
+}
+
+.richHelp:hover .richHelpCard,
+.richHelp:focus-within .richHelpCard {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.richHelpCard::before {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: 1px solid #dfe3e8;
+  border-top: 1px solid #dfe3e8;
+  background: #ffffff;
+  content: "";
+}
+
+.richHelpVisual {
+  --rich-help-accent: #4caf50;
+  --rich-help-secondary: #202223;
+  display: flex;
+  justify-content: center;
+  margin: 4px auto 14px;
+  min-height: 82px;
+}
+
+.richHelpVisualTrack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 220px;
+}
+
+.richHelpVisualNode {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: var(--rich-help-secondary);
+  box-shadow: 0 0 0 1px #d1d5db;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.richHelpVisualNode:first-child {
+  background: var(--rich-help-accent);
+}
+
+.richHelpVisualLine {
+  width: 54px;
+  height: 5px;
+  margin: 0 -1px;
+  background: linear-gradient(90deg, var(--rich-help-accent) 0 50%, var(--rich-help-secondary) 50% 100%);
+}
+
+.richHelpVisual_stepFlow { --rich-help-accent: #4caf50; }
+.richHelpVisual_category { --rich-help-accent: #202223; }
+.richHelpVisual_quantity { --rich-help-accent: #5c6ac4; }
+.richHelpVisual_progress { --rich-help-accent: #008060; }
+.richHelpVisual_messaging { --rich-help-accent: #007ace; }
+.richHelpVisual_rules { --rich-help-accent: #bf0711; }
+.richHelpVisual_loading { --rich-help-accent: #9c6ade; }
+
+.richHelpCategoryVisual {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 20px;
+  width: 230px;
+  margin: 42px auto 24px;
+  padding-bottom: 10px;
+  border-bottom: 3px solid #202223;
+  color: #202223;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.richHelpCategoryTab,
+.richHelpCategoryTabActive {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.richHelpCategoryTabActive::after {
+  position: absolute;
+  right: 0;
+  bottom: -13px;
+  left: 0;
+  height: 3px;
+  background: #202223;
+  content: "";
+}
+
+.richHelpTitle,
+.richHelpDescription {
+  display: block;
+}
+
+.richHelpTitle {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.richHelpDescription {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 /* ── Step Chip Navigation ─────────────────────────────────────── */
+.stepFlowCard {
+  overflow: visible;
+  padding-bottom: 0;
+}
+
 .stepNav {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  padding: 12px 16px 16px;
+  margin: 12px -24px 0;
+  border-top: 1px solid #ebecef;
 }
 
-.stepChip {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1.5px solid #d1d5db;
-  background: white;
+.stepChip,
+.stepChipActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  max-width: 220px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
   font-size: 13px;
-  font-weight: 500;
-  color: #4b5563;
+  font-weight: 600;
+  color: #202223;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
-.stepChip:hover { border-color: #9ca3af; }
+.stepChip:hover,
+.stepChipActive:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.08);
+}
 
 .stepChipActive {
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1.5px solid #1a1a1a;
-  background: #1a1a1a;
-  font-size: 13px;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
+  border-color: #b8b8b8;
+  background: #f7f7f7;
+  box-shadow: inset 0 0 0 1px #d7d7d7;
+}
+
+.stepChipNumber {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e3e3e3;
+  color: #202223;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stepChipActive .stepChipNumber {
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #c9cccf;
+}
+
+.stepChipLabel {
+  overflow: hidden;
+  min-width: 0;
+  max-width: 140px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepChipRemove {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #6d7175;
+  font-size: 12px;
+}
+
+.stepChipRemove:hover {
+  background: #e5e7eb;
+  color: #202223;
 }
 
 .addStepBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
   padding: 6px 14px;
-  border-radius: 20px;
-  border: 1.5px dashed #d1d5db;
-  background: transparent;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  background: #2f2f31;
   font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
+  font-weight: 650;
+  color: #ffffff;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
-.addStepBtn:hover { border-color: #9ca3af; color: #374151; }
+.addStepBtn:hover {
+  border-color: #111827;
+  background: #1f1f21;
+}
 
 /* ── Slide Animation ──────────────────────────────────────────── */
 .slideForward  { animation: fpbSlideInRight 0.28s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -100,7 +962,7 @@
 /* ── Card ─────────────────────────────────────────────────────── */
 .card {
   background: white;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid #e5e7eb;
   padding: 24px;
   margin-bottom: 16px;
@@ -293,7 +1155,28 @@
 .previewButtonWrap s-button { display: block; width: 100%; }
 
 @media (max-width: 600px) {
+  .canvasHeader { flex-direction: column; }
+  .canvasActions { width: 100%; justify-content: flex-start; }
+  .editGrid { flex-direction: column; }
+  .leftColumn { width: 100%; min-width: 0; flex-basis: auto; }
+  .visibilityGuideGrid { grid-template-columns: 1fr; }
+  .settingsRow { align-items: flex-start; flex-direction: column; }
+  .settingsRowControl { justify-content: flex-start; min-width: 0; width: 100%; }
+  .settingsNestedFields { grid-template-columns: 1fr; }
+  .stepOverviewCard { flex-direction: column; }
+  .stepNumberTile { flex-basis: auto; }
+  .categoryFilterRow { grid-template-columns: 1fr; }
   .stepConfigRow { grid-template-columns: 1fr; }
   .iconBox { width: 100%; }
   .ruleRow { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
+  .templateVariableGrid { grid-template-columns: 1fr; }
+  .stepNav { padding-inline: 12px; }
+  .stepChip,
+  .stepChipActive,
+  .addStepBtn { width: 100%; justify-content: flex-start; }
+  .stepChipLabel { max-width: none; }
+  .richHelpCard { left: auto; right: 0; transform: translate(0, 8px); }
+  .richHelp:hover .richHelpCard,
+  .richHelp:focus-within .richHelpCard { transform: translate(0, 0); }
+  .richHelpCard::before { left: auto; right: 18px; transform: rotate(45deg); }
 }

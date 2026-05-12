@@ -16,6 +16,7 @@ interface Props {
   bundleId: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  hideCollapsedTrigger?: boolean;
 }
 
 function scoreColor(score: number) {
@@ -24,7 +25,7 @@ function scoreColor(score: number) {
   return "#d82c0d";
 }
 
-export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: Props) {
+export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hideCollapsedTrigger = false }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [hasPreview, setHasPreview] = useState(false);
 
@@ -62,6 +63,10 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
   }, [onOpenChange]);
 
   const allDone = allItems.every((i) => i.done);
+
+  if (hideCollapsedTrigger && !expanded) {
+    return null;
+  }
 
   const donut = (
     <svg width="56" height="56" viewBox="0 0 56 56" className={styles.arc}>
@@ -152,22 +157,24 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange }: 
         </div>
       </div>
 
-      <div
-        data-tour-target="fpb-readiness-score"
-        className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
-        onClick={toggle}
-      >
-        {donut}
-        {expanded && (
-          <div className={styles.scoreLabel}>
-            <span className={styles.scoreLabelTitle}>Readiness Score</span>
-            <span className={styles.scoreLabelSub}>
-              {doneCount}/{allItems.length} items complete
-            </span>
-          </div>
-        )}
-        {chevron}
-      </div>
+      {(!hideCollapsedTrigger || expanded) && (
+        <div
+          data-tour-target="fpb-readiness-score"
+          className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
+          onClick={toggle}
+        >
+          {donut}
+          {expanded && (
+            <div className={styles.scoreLabel}>
+              <span className={styles.scoreLabelTitle}>Readiness Score</span>
+              <span className={styles.scoreLabelSub}>
+                {doneCount}/{allItems.length} items complete
+              </span>
+            </div>
+          )}
+          {chevron}
+        </div>
+      )}
     </div>
     </>
   );
