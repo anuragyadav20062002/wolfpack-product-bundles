@@ -1990,7 +1990,7 @@ export default function ConfigureBundleFlow() {
                       </button>
                     </div>
                     <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                      Create steps for your multi-step bundle here. Select product options for each step below.
+                      Create steps for your multi-step bundle here. Select product options for each step below
                     </p>
                   </s-stack>
 
@@ -2042,7 +2042,7 @@ export default function ConfigureBundleFlow() {
                         />
                       </div>
                       <p style={{ margin: "0 0 12px", fontSize: 13, color: "#6d7175" }}>
-                        Edit your step name. This is only visible when more than one step is present.
+                        Edit your step name (Only visible if more than one step is present)
                       </p>
                       <s-stack direction="block" gap="small">
                         <s-text-field
@@ -2067,11 +2067,11 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
                     </div>
 
-                    {/* ── Category List card ── */}
+                    {/* ── Category card ── */}
                     <div className={fullPageBundleStyles.card}>
-                      <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600 }}>Category List</h3>
+                      <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600 }}>Category</h3>
                       <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
-                        Select products or collections that appear in this step.
+                        Add all product selections in this step to a single category or separate them into multiple categories for better segregation.
                       </p>
                       <div className={fullPageBundleStyles.tabRow}>
                         <button
@@ -2153,10 +2153,88 @@ export default function ConfigureBundleFlow() {
                         </div>
                       )}
 
+                      {(() => {
+                        const filters = (((step as any).filters as { label: string; collectionHandle: string }[]) || [])
+                          .filter((filter) => filter.label || filter.collectionHandle);
+                        const collectionsForStep = ((selectedCollections[step.id] || step.collections || []) as { id?: string; handle?: string; title?: string }[]);
+                        const categoryRows = filters.length > 0
+                          ? filters.map((filter, filterIndex) => ({
+                              id: `${filter.collectionHandle || "filter"}-${filterIndex}`,
+                              label: filter.label || filter.collectionHandle || `Category ${filterIndex + 1}`,
+                              type: "filter" as const,
+                              index: filterIndex,
+                            }))
+                          : collectionsForStep.length > 0
+                            ? collectionsForStep.map((collection, collectionIndex) => ({
+                                id: collection.id || collection.handle || `collection-${collectionIndex}`,
+                                label: collection.title || collection.handle || `Category ${collectionIndex + 1}`,
+                                type: "collection" as const,
+                                index: collectionIndex,
+                              }))
+                            : (step.StepProduct && step.StepProduct.length > 0)
+                              ? [{
+                                  id: "selected-products",
+                                  label: "Products",
+                                  type: "products" as const,
+                                  index: 0,
+                                }]
+                              : [];
+
+                        return categoryRows.length > 0 ? (
+                          <div className={fullPageBundleStyles.ebCategoryList}>
+                            {categoryRows.map((row) => (
+                              <div key={row.id} className={fullPageBundleStyles.ebCategoryItem}>
+                                <span className={fullPageBundleStyles.ebCategoryDrag} aria-hidden="true">⋮⋮</span>
+                                <span className={fullPageBundleStyles.ebCategoryName}>{row.label}</span>
+                                <span className={fullPageBundleStyles.ebCategoryActions}>
+                                  <s-button
+                                    variant="plain"
+                                    onClick={() => {
+                                      if (row.type !== "filter") {
+                                        shopify.toast.show("Create category filter tabs before cloning categories.", { isError: false });
+                                        return;
+                                      }
+                                      const current = (((step as any).filters as { label: string; collectionHandle: string }[]) || []);
+                                      const source = current[row.index];
+                                      stepsState.updateStepField(step.id, "filters", [
+                                        ...current,
+                                        { ...source, label: `${source.label || "Category"} Copy` },
+                                      ]);
+                                      markAsDirty();
+                                    }}
+                                  >
+                                    Clone
+                                  </s-button>
+                                  <s-button
+                                    variant="plain"
+                                    onClick={() => {
+                                      if (row.type === "filter") {
+                                        const updated = (((step as any).filters as { label: string; collectionHandle: string }[]) || []).filter((_, i) => i !== row.index);
+                                        stepsState.updateStepField(step.id, "filters", updated.length > 0 ? updated : null);
+                                      } else if (row.type === "collection") {
+                                        setSelectedCollections(prev => ({
+                                          ...prev,
+                                          [step.id]: (prev[step.id] || []).filter((_: any, i: number) => i !== row.index),
+                                        }));
+                                      } else {
+                                        stepsState.updateStepField(step.id, "StepProduct", []);
+                                      }
+                                      markAsDirty();
+                                    }}
+                                  >
+                                    Delete
+                                  </s-button>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null;
+                      })()}
+
                       <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
                       <s-stack direction="block" gap="small">
                         <span className={fullPageBundleStyles.headingWithHelp}>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Category</h4>
+                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Category filters</h4>
                           <QuestionHelpTooltip tooltipKey="category" />
                         </span>
                         <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
@@ -2298,39 +2376,51 @@ export default function ConfigureBundleFlow() {
                       ) : (
                         <div className={fullPageBundleStyles.rulesList}>
                           {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
-                            <div key={rule.id} className={fullPageBundleStyles.ruleRow}>
-                              <s-select
-                                value={rule.type}
-                                onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
-                              >
-                                <option value="" disabled>Type</option>
-                                {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                              </s-select>
-                              <s-select
-                                value={rule.operator}
-                                onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
-                              >
-                                <option value="" disabled>Operator</option>
-                                {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                ))}
-                              </s-select>
-                              <s-text-field
-                                label="Value"
-                                value={rule.value}
-                                onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
-                                autoComplete="off"
-                                type="number"
-                                min="0"
+                            <div key={rule.id} className={fullPageBundleStyles.ebRuleCard}>
+                              <div className={fullPageBundleStyles.ebRuleHeader}>
+                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                <s-button
+                                  variant="plain"
+                                  onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
+                                >
+                                  Remove
+                                </s-button>
+                              </div>
+                              <div className={fullPageBundleStyles.ebRuleFields}>
+                                <s-select
+                                  value={rule.type}
+                                  onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                >
+                                  <option value="" disabled>Type</option>
+                                  {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </s-select>
+                                <s-select
+                                  value={rule.operator}
+                                  onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                >
+                                  <option value="" disabled>Operator</option>
+                                  {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                  ))}
+                                </s-select>
+                                <s-text-field
+                                  label="Value"
+                                  value={rule.value}
+                                  onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
+                                  autoComplete="off"
+                                  type="number"
+                                  min="0"
+                                />
+                              </div>
+                              <s-checkbox
+                                label="Auto Next When rule is met"
+                                checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                onChange={(e: Event) => {
+                                  conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                }}
                               />
-                              <s-button
-                                variant="plain"
-                                onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
-                              >
-                                <s-icon type="x" />
-                              </s-button>
                             </div>
                           ))}
                         </div>
@@ -2415,131 +2505,214 @@ export default function ConfigureBundleFlow() {
             {activeSection === "free_gift_addons" && (() => {
               const step = stepsState.steps[activeTabIndex] || stepsState.steps[0];
               if (!step) return null;
+              const addonMessages = ruleMessages[`addons-${step.id}`] || {
+                discountText: "",
+                successMessage: "",
+              };
 
               return (
                 <div data-tour-target="fpb-free-gift-addons">
                   <s-stack direction="block" gap="base">
-                    <s-section>
-                      <s-stack direction="block" gap="small">
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Free Gift &amp; Add Ons</h3>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Configure add-on step behaviour and default product selection for the active step.
-                        </p>
-                      </s-stack>
-                    </s-section>
-
                     <div className={fullPageBundleStyles.card}>
-                      <s-stack direction="block" gap="small">
-                        <span style={{ fontSize: 14, fontWeight: 600, color: "#374151" }}>Step type</span>
-                        {[
-                          { label: 'Regular Step', value: 'regular' },
-                          { label: 'Add-On / Upsell Step', value: 'addon' },
-                        ].map(choice => (
-                          <s-checkbox
-                            key={choice.value}
-                            label={choice.label}
-                            checked={(step.isFreeGift ? 'addon' : 'regular') === choice.value || undefined}
-                            onChange={() => {
-                              const isAddon = choice.value === 'addon';
-                              stepsState.updateStepField(step.id, 'isFreeGift', isAddon);
-                              if (!isAddon) {
-                                stepsState.updateStepField(step.id, 'addonLabel', null);
-                                stepsState.updateStepField(step.id, 'addonTitle', null);
-                                stepsState.updateStepField(step.id, 'addonIconUrl', null);
-                              }
+                      <div className={fullPageBundleStyles.ebPanelHeader}>
+                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Add-Ons and Gifting Step</h3>
+                        <s-checkbox
+                          accessibilityLabel="Enable add-ons and gifting step"
+                          checked={step.isFreeGift || undefined}
+                          onChange={(e: Event) => {
+                            const checked = (e.target as HTMLInputElement).checked;
+                            stepsState.updateStepField(step.id, "isFreeGift", checked);
+                            if (!checked) {
+                              stepsState.updateStepField(step.id, "addonLabel", null);
+                              stepsState.updateStepField(step.id, "addonTitle", null);
+                              stepsState.updateStepField(step.id, "addonIconUrl", null);
+                            }
+                            markAsDirty();
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginTop: 16 }} className={fullPageBundleStyles.ebMediaFieldGrid}>
+                        <div className={fullPageBundleStyles.iconColumn}>
+                          <div className={fullPageBundleStyles.iconBox}>
+                            {step.addonIconUrl ? (
+                              <img src={step.addonIconUrl} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
+                            ) : (
+                              <div className={fullPageBundleStyles.iconPlaceholder}>Upload file</div>
+                            )}
+                          </div>
+                          {showIconPickerForStep === `addon-${step.id}` && (
+                            <FilePicker
+                              value={step.addonIconUrl ?? null}
+                              onChange={(url: string | null) => {
+                                stepsState.updateStepField(step.id, "addonIconUrl", url);
+                                setShowIconPickerForStep(null);
+                                markAsDirty();
+                              }}
+                              label=""
+                              hideCropEditor
+                            />
+                          )}
+                          <s-button
+                            variant="secondary"
+                            icon="upload"
+                            onClick={() => setShowIconPickerForStep(prev => prev === `addon-${step.id}` ? null : `addon-${step.id}`)}
+                          >
+                            {showIconPickerForStep === `addon-${step.id}` ? "Close picker" : "Replace"}
+                          </s-button>
+                        </div>
+                        <s-stack direction="block" gap="small">
+                          <s-button variant="secondary" icon="globe" disabled>
+                            Multi Language
+                          </s-button>
+                          <s-text-field
+                            label="Step Name"
+                            value={step.addonLabel ?? step.freeGiftName ?? ""}
+                            placeholder="Add On"
+                            onInput={(e: Event) => {
+                              const value = (e.target as HTMLInputElement).value;
+                              stepsState.updateStepField(step.id, "addonLabel", value);
+                              stepsState.updateStepField(step.id, "freeGiftName", value);
                               markAsDirty();
                             }}
+                            autoComplete="off"
                           />
-                        ))}
-                      </s-stack>
+                          <s-text-field
+                            label="Step Title"
+                            value={step.addonTitle ?? ""}
+                            onInput={(e: Event) => {
+                              stepsState.updateStepField(step.id, "addonTitle", (e.target as HTMLInputElement).value);
+                              markAsDirty();
+                            }}
+                            autoComplete="off"
+                          />
+                        </s-stack>
+                      </div>
+                    </div>
 
-                      {step.isFreeGift && (
-                        <s-stack direction="block" gap="small" style={{ marginTop: 16, paddingLeft: 12, borderLeft: "2px solid #e5e7eb" }}>
-                          <s-text-field
-                            label="Step label (tab name)"
-                            placeholder="Add-Ons"
-                            helpText="Shown in the bundle step navigator tab."
-                            maxLength={40}
-                            value={step.addonLabel ?? (step.freeGiftName || '')}
-                            onInput={(e: Event) => { stepsState.updateStepField(step.id, 'addonLabel', (e.target as HTMLInputElement).value); markAsDirty(); }}
-                            autoComplete="off"
-                          />
-                          <s-text-field
-                            label="Step title (panel heading)"
-                            placeholder="Pick a free gift!"
-                            helpText="Shown as the heading inside the step panel."
-                            value={step.addonTitle || ''}
-                            onInput={(e: Event) => { stepsState.updateStepField(step.id, 'addonTitle', (e.target as HTMLInputElement).value); markAsDirty(); }}
-                            autoComplete="off"
-                          />
+                    <div className={fullPageBundleStyles.card}>
+                      <div className={fullPageBundleStyles.ebPanelHeader}>
+                        <div>
+                          <h3 className={fullPageBundleStyles.ebPanelTitle}>Add-Ons with Bundles</h3>
+                          <p className={fullPageBundleStyles.ebPanelDescription}>
+                            Enable customers to add extra items to their bundles at a discounted price, for free, or at full price.
+                          </p>
+                        </div>
+                        <s-checkbox
+                          accessibilityLabel="Enable add-ons with bundles"
+                          checked={step.addonUnlockAfterCompletion !== false || undefined}
+                          onChange={(e: Event) => {
+                            stepsState.updateStepField(step.id, "addonUnlockAfterCompletion", (e.target as HTMLInputElement).checked);
+                            markAsDirty();
+                          }}
+                        />
+                      </div>
+                      <s-stack direction="block" gap="small" style={{ marginTop: 16 }}>
+                        <s-stack direction="inline" gap="small">
+                          <s-button
+                            variant="secondary"
+                            onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                          >
+                            How to setup?
+                          </s-button>
+                          <s-button variant="secondary" icon="globe" disabled>
+                            Multi Language
+                          </s-button>
+                        </s-stack>
+                        <s-text-field
+                          label="Add on Section title"
+                          helpText="Will be visible on the storefront"
+                          value={step.freeGiftName ?? ""}
+                          onInput={(e: Event) => {
+                            stepsState.updateStepField(step.id, "freeGiftName", (e.target as HTMLInputElement).value);
+                            markAsDirty();
+                          }}
+                          autoComplete="off"
+                        />
+                        <div className={fullPageBundleStyles.ebRuleCard}>
+                          <div className={fullPageBundleStyles.ebRuleHeader}>
+                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier 1</h4>
+                            <s-button
+                              variant="plain"
+                              onClick={() => {
+                                stepsState.updateStepField(step.id, "addonDisplayFree", false);
+                                markAsDirty();
+                              }}
+                            >
+                              Delete
+                            </s-button>
+                          </div>
                           <s-checkbox
                             label="Display products as free ($0.00)"
                             checked={step.addonDisplayFree !== false || undefined}
-                            onChange={(e: Event) => { stepsState.updateStepField(step.id, 'addonDisplayFree', (e.target as HTMLInputElement).checked); markAsDirty(); }}
+                            onChange={(e: Event) => {
+                              stepsState.updateStepField(step.id, "addonDisplayFree", (e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
                           />
-                          <s-checkbox
-                            label="Unlock after bundle completion"
-                            checked={step.addonUnlockAfterCompletion !== false || undefined}
-                            onChange={(e: Event) => { stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', (e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </s-stack>
-                      )}
-
-                      <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
-
-                      <s-checkbox
-                        label="Mandatory default product"
-                        checked={step.isDefault === true || undefined}
-                        onChange={(e: Event) => {
-                          const checked = (e.target as HTMLInputElement).checked;
-                          stepsState.updateStepField(step.id, 'isDefault', checked);
-                          if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
-                          markAsDirty();
-                        }}
-                      />
-
-                      {step.isDefault && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
-                          <s-text-field
-                            label="Default variant GID"
-                            placeholder="gid://shopify/ProductVariant/123456789"
-                            helpText="Paste the Shopify variant GID. It must be one of the products added to this step."
-                            value={step.defaultVariantId || ''}
-                            onInput={(e: Event) => { stepsState.updateStepField(step.id, 'defaultVariantId', (e.target as HTMLInputElement).value); markAsDirty(); }}
-                            autoComplete="off"
-                          />
-                          {step.StepProduct && step.StepProduct.length > 0 && (
-                            <s-stack direction="block" gap="small-400">
-                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                                Available variants from products in this step:
-                              </p>
-                              {step.StepProduct.flatMap((sp: any) =>
-                                (sp.variants || []).map((v: any) => (
-                                  <s-button
-                                    key={v.id || v.gid}
-                                    variant="plain"
-                                    onClick={() => { stepsState.updateStepField(step.id, 'defaultVariantId', v.id || v.gid); markAsDirty(); }}
-                                  >
-                                    {sp.title}{v.title && v.title !== 'Default Title' ? ` · ${v.title}` : ''} — {v.id || v.gid}
-                                  </s-button>
-                                ))
-                              )}
-                            </s-stack>
-                          )}
                         </div>
-                      )}
-
-                      <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
-
-                      <s-stack direction="inline" gap="small-100">
-                        <s-button variant="secondary" icon="duplicate" onClick={() => cloneStep(step.id)}>
-                          Clone Step
+                        <s-button variant="secondary" icon="plus">
+                          Add Add Ons Tier
                         </s-button>
-                        {stepsState.steps.length > 1 && (
-                          <s-button variant="plain" onClick={() => deleteStep(step.id)}>
-                            Delete Step
+                      </s-stack>
+                    </div>
+
+                    <div className={fullPageBundleStyles.card}>
+                      <div className={fullPageBundleStyles.ebPanelHeader}>
+                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Footer Messaging</h3>
+                        <s-stack direction="inline" gap="small-100">
+                          <s-button variant="secondary" onClick={() => setTemplateVariablesModalOpen(true)}>
+                            Show Variables
                           </s-button>
-                        )}
+                          <s-button variant="secondary" icon="globe">
+                            Multi Language
+                          </s-button>
+                        </s-stack>
+                      </div>
+                      <s-stack direction="block" gap="small" style={{ marginTop: 16 }}>
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier 1</h4>
+                        <s-text-field
+                          label="Message when rule not met"
+                          value={addonMessages.discountText}
+                          placeholder="Add {{addonsConditionDiff}} more product(s) to claim {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons"
+                          onInput={(e: Event) => {
+                            const value = (e.target as HTMLInputElement).value;
+                            setRuleMessages(prev => ({
+                              ...prev,
+                              [`addons-${step.id}`]: {
+                                ...(prev[`addons-${step.id}`] || addonMessages),
+                                discountText: value,
+                              },
+                            }));
+                          }}
+                          autoComplete="off"
+                        />
+                        <s-text-field
+                          label="Success Message"
+                          value={addonMessages.successMessage}
+                          placeholder="Congrats you are eligible for {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons"
+                          onInput={(e: Event) => {
+                            const value = (e.target as HTMLInputElement).value;
+                            setRuleMessages(prev => ({
+                              ...prev,
+                              [`addons-${step.id}`]: {
+                                ...(prev[`addons-${step.id}`] || addonMessages),
+                                successMessage: value,
+                              },
+                            }));
+                          }}
+                          autoComplete="off"
+                        />
+                        <s-divider />
+                        <s-stack direction="inline" gap="small-100">
+                          <s-button variant="secondary" icon="duplicate" onClick={() => cloneStep(step.id)}>
+                            Clone Step
+                          </s-button>
+                          {stepsState.steps.length > 1 && (
+                            <s-button variant="plain" onClick={() => deleteStep(step.id)}>
+                              Delete Step
+                            </s-button>
+                          )}
+                        </s-stack>
                       </s-stack>
                     </div>
                   </s-stack>
@@ -3546,86 +3719,99 @@ export default function ConfigureBundleFlow() {
             })()}
 
             {activeSection === "messages" && (() => {
-              const isEnglish = textOverridesLocale === "en";
-              const currentOverrides: Record<string, string> = isEnglish
-                ? textOverrides
-                : (textOverridesByLocale[textOverridesLocale] ?? {});
-              const setCurrentOverrides = (key: string, value: string) => {
-                if (isEnglish) {
-                  setTextOverrides((prev) => ({ ...prev, [key]: value }));
-                } else {
-                  setTextOverridesByLocale((prev) => ({
-                    ...prev,
-                    [textOverridesLocale]: { ...(prev[textOverridesLocale] ?? {}), [key]: value },
-                  }));
-                }
+              const setMessageOverride = (key: string, value: string) => {
+                setTextOverrides((prev) => ({ ...prev, [key]: value }));
                 markAsDirty();
               };
-              const localeOptions = [
-                { label: "English (default)", value: "en" },
-                ...shopLocales
-                  .filter((l: { locale: string; name: string; primary: boolean }) => l.locale !== "en")
-                  .map((l: { locale: string; name: string; primary: boolean }) => ({ label: l.name, value: l.locale })),
-              ];
-              const fields: { key: string; label: string; placeholder: string; helpText: string }[] = [
-                { key: "addToCartButton",  label: "Add to Cart button",   placeholder: "Add to Cart",  helpText: 'Shown in the footer and mobile bar when the bundle is complete.' },
-                { key: "nextButton",       label: "Next Step button",     placeholder: "Next",         helpText: 'Footer button to advance to the next step.' },
-                { key: "doneButton",       label: "Done button",          placeholder: "Done",         helpText: 'Shown on the last step in the modal navigator.' },
-                { key: "freeBadge",        label: "Free gift badge",      placeholder: "Free",         helpText: 'Badge shown on free-gift product cards.' },
-                { key: "includedBadge",    label: "Included badge",       placeholder: "Included",     helpText: 'Badge shown on product cards that are already in the bundle.' },
-                { key: "yourBundle",       label: "Sidebar title",        placeholder: "Your Bundle",  helpText: 'Heading of the selected-products sidebar / bottom sheet.' },
-              ];
+              const isGiftMessageEnabled = textOverrides.giftMessageEnabled === "true";
+              const hasSenderRecipientFields = textOverrides.giftMessageSenderRecipientEnabled === "true";
+              const isGiftMessageRequired = textOverrides.giftMessageRequired === "true";
+              const hasMessageLimit = textOverrides.giftMessageLimitEnabled === "true";
+              const sendGiftMessageEmail = textOverrides.giftMessageEmailEnabled === "true";
+
               return (
                 <s-stack direction="block" gap="base">
-                  <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
-                    <s-stack direction="inline" gap="small-100">
-                      <s-icon name="note" />
-                      <s-stack direction="block" gap="small-400">
-                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Widget Text</p>
-                        <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Customise the text shown to customers in the bundle widget.</p>
-                      </s-stack>
+                  <div className={fullPageBundleStyles.card}>
+                    <div className={fullPageBundleStyles.ebPanelHeader}>
+                      <div>
+                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Enable Messages</h3>
+                        <p className={fullPageBundleStyles.ebPanelDescription}>
+                          Message will show up as a product at checkout
+                        </p>
+                      </div>
+                      <s-checkbox
+                        accessibilityLabel="Enable messages"
+                        checked={isGiftMessageEnabled || undefined}
+                        onChange={(e: Event) => setMessageOverride("giftMessageEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                      />
+                    </div>
+
+                    <div style={{ marginTop: 16 }} className={fullPageBundleStyles.ebMessagePreview}>
+                      <div className={fullPageBundleStyles.ebMessagePreviewIcon} aria-hidden="true">
+                        <s-icon type="note" />
+                      </div>
+                      <div>
+                        <p className={fullPageBundleStyles.ebMessagePreviewTitle}>
+                          {textOverrides.giftMessageProductTitle || "Message"}
+                        </p>
+                        <p className={fullPageBundleStyles.ebMessageNote}>
+                          Add a message product so shoppers can include a note with the bundle.
+                        </p>
+                      </div>
+                      <s-button variant="secondary">
+                        Edit
+                      </s-button>
+                    </div>
+
+                    <s-stack direction="block" gap="small" style={{ marginTop: 16 }}>
+                      <s-checkbox
+                        label="Enable Sender and Recipient Fields"
+                        checked={hasSenderRecipientFields || undefined}
+                        onChange={(e: Event) => setMessageOverride("giftMessageSenderRecipientEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                      />
+                      <s-checkbox
+                        label="Make Gift Message mandatory"
+                        checked={isGiftMessageRequired || undefined}
+                        onChange={(e: Event) => setMessageOverride("giftMessageRequired", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                      />
+                      <s-checkbox
+                        label="Enable Message Limit (Characters)"
+                        checked={hasMessageLimit || undefined}
+                        onChange={(e: Event) => setMessageOverride("giftMessageLimitEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                      />
+                      <s-number-field
+                        label="Enter Message Limit"
+                        value={textOverrides.giftMessageLimit ?? ""}
+                        disabled={!hasMessageLimit}
+                        min={0}
+                        onInput={(e: Event) => setMessageOverride("giftMessageLimit", (e.target as HTMLInputElement).value)}
+                      />
                     </s-stack>
                   </div>
-                  {localeOptions.length > 1 && (
-                    <s-section>
-                      <s-stack direction="block" gap="small">
-                        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Language</h3>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Select a language to customise strings for that locale.</p>
-                        <s-select
-                          label="Editing language"
-                          value={textOverridesLocale}
-                          onChange={(e: Event) => setTextOverridesLocale((e.target as HTMLSelectElement).value)}
-                        >
-                          {localeOptions.map(opt => (
-                            <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                          ))}
-                        </s-select>
-                      </s-stack>
-                    </s-section>
-                  )}
-                  <s-section>
-                    <s-stack direction="block" gap="base">
-                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                        Widget labels{!isEnglish ? ` — ${localeOptions.find((o) => o.value === textOverridesLocale)?.label ?? textOverridesLocale}` : ""}
-                      </h3>
-                      {!isEnglish && (
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Leave a field blank to fall back to the English default.</p>
-                      )}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        {fields.map(({ key, label, placeholder, helpText }) => (
-                          <s-text-field
-                            key={key}
-                            label={label}
-                            value={currentOverrides[key] ?? ""}
-                            placeholder={placeholder}
-                            helpText={helpText}
-                            autoComplete="off"
-                            onInput={(e: Event) => setCurrentOverrides(key, (e.target as HTMLInputElement).value)}
-                          />
-                        ))}
+
+                  <div className={fullPageBundleStyles.card}>
+                    <div className={fullPageBundleStyles.ebPanelHeader}>
+                      <div>
+                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Send message through email to the customer</h3>
+                        <p className={fullPageBundleStyles.ebPanelDescription}>
+                          Customize your email templates here
+                        </p>
                       </div>
+                      <s-checkbox
+                        accessibilityLabel="Send message through email to the customer"
+                        checked={sendGiftMessageEmail || undefined}
+                        onChange={(e: Event) => setMessageOverride("giftMessageEmailEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                      />
+                    </div>
+                    <s-stack direction="block" gap="small" style={{ marginTop: 16 }}>
+                      <s-button variant="secondary">
+                        Customize Emails
+                      </s-button>
+                      <p className={fullPageBundleStyles.ebMessageNote}>
+                        Note: Please reach out to us if you wish to change the domain from where the emails are sent.
+                      </p>
                     </s-stack>
-                  </s-section>
+                  </div>
                 </s-stack>
               );
             })()}

@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-13 01:44
+**Last Updated:** 2026-05-13 01:58
 
 ## Overview
 
@@ -38,6 +38,32 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-13 01:49 - Starting final Step Setup parity pass
+
+- User requested finalizing Step Setup parity against Easy Bundles, including the Step Setup child sections `Free Gift & Add Ons` and `Messages`.
+- Scope: compare WPB page 1 and EB page 2 through Chrome DevTools, inspect current route/CSS code, then patch visible UI/UX parity gaps without data model changes unless explicitly approved.
+- User also requested `CLAUDE.md` be updated so screenshots captured during Chrome investigation or verification are not committed.
+- Commit requirement: commit only non-image implementation/documentation changes after verification; screenshots must remain unstaged/uncommitted.
+
+### 2026-05-13 01:58 - Final Step Setup parity pass completed
+
+- Added the screenshot rule to `CLAUDE.md`: Chrome investigation/verification screenshots must stay unstaged and uncommitted unless explicitly requested.
+- Updated Step Setup copy and structure to more closely match Easy Bundles:
+  - Step Flow copy now matches EB punctuation.
+  - Step Setup helper copy now matches EB wording.
+  - Category block is now the primary product-selection block and shows EB-style category rows with Clone/Delete actions.
+  - Rules now render as EB-style `Rule #` cards with a Remove action and `Auto Next When rule is met`.
+- Reworked `Free Gift & Add Ons` into EB's three-block structure:
+  `Add-Ons and Gifting Step`, `Add-Ons with Bundles`, and `Footer Messaging`.
+- Reworked `Messages` from widget-label editing into the EB-style gift-message configuration screen.
+- No Prisma/schema changes were made. New controls are mapped to existing step fields or existing `textOverrides`/`ruleMessages` state.
+- Chrome verified in the embedded Shopify Admin app:
+  - Step Setup renders Category rows and the Auto Next rule control.
+  - Free Gift & Add Ons renders the EB-style blocks and controls.
+  - Messages renders the EB-style message controls.
+  - Message limit toggle opens the App Bridge Save Bar and Discard restores the UI state.
+  - No browser console errors appeared.
 
 ### 2026-05-13 01:42 - Starting shared tooltip stacking fix
 
