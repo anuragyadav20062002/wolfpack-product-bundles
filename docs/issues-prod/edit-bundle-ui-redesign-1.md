@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-13 01:58
+**Last Updated:** 2026-05-13 11:14
 
 ## Overview
 
@@ -39,6 +39,33 @@ flow wizard.
 
 ## Progress Log
 
+### 2026-05-13 10:54 - Starting Step Setup and Discount & Pricing wiring pass
+
+- User requested wiring all merchant controls in `Step Setup` and `Discount & Pricing`, using Easy Bundles as the behavioral and UI reference.
+- Scope: interact with Easy Bundles end-to-end through Shopify Admin and storefront where possible, compare against Wolfpack Bundles, inspect current persistence paths, then implement only controls that can map to the existing state/schema.
+- Any feature that needs new persistence or a data model change will pause for user options before implementation.
+- Storefront password for verification, if prompted: `1`.
+
+### 2026-05-13 11:14 - Discount & Pricing wiring pass completed
+
+- Added EB-compatible discount message template variables and tests for `{{discountConditionDiff}}`, `{{discountUnit}}`, `{{discountValue}}`, `{{discountValueUnit}}`, and `{{discountedItems}}`.
+- Normalized discount rule messages from saved pricing data so the edit flow pre-populates existing templates and generates EB-style defaults for new rules without schema changes.
+- Updated Discount & Pricing UI copy and control labels toward EB, including display-option copy, default discount text/success message templates, and the lighter template variables modal.
+- Wired pricing display options into the edit save payload and hidden form payload; rebuilt the full-page bundled widget after widget JS changes.
+- Added widget-side support for progress-bar display option metadata and EB-compatible template variables. The current storefront bar remains visually step-based until the simple-bar visual treatment is approved.
+- Chrome verification attempted on page 1 after reload. The embedded Step Setup page rendered, but DevTools MCP clicks did not switch sections inside the Shopify iframe in this session; direct iframe access redirected through Shopify auth, matching the known tunnel limitation. No new screenshots were captured.
+- Validation:
+  - `npx jest --selectProjects unit --runTestsByPath tests/unit/assets/template-manager.test.ts tests/unit/lib/pricing-display-options.test.ts --coverage=false`
+  - `npx eslint --max-warnings 9999 app/lib/pricing-display-options.ts app/hooks/useBundlePricing.ts app/hooks/useBundleConfigurationState.ts app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+  - `npx eslint --max-warnings 9999 app/assets/widgets/shared/template-manager.js app/assets/bundle-widget-full-page.js` (widget files are ignored by repo ESLint config)
+  - `git diff --check -- . ':!graphify-out/GRAPH_REPORT.md'`
+- Deferred for user decision before schema/runtime changes:
+  - EB `Buy X, get Y` discount method
+  - weight-based Step Setup rules
+  - persistent per-category rules
+  - persisted per-rule `Auto Next` semantics
+  - visually distinct `Simple` progress bar behavior
+
 ### 2026-05-13 01:49 - Starting final Step Setup parity pass
 
 - User requested finalizing Step Setup parity against Easy Bundles, including the Step Setup child sections `Free Gift & Add Ons` and `Messages`.
@@ -64,6 +91,12 @@ flow wizard.
   - Messages renders the EB-style message controls.
   - Message limit toggle opens the App Bridge Save Bar and Discard restores the UI state.
   - No browser console errors appeared.
+
+### 2026-05-13 01:59 - Removing unsupported message email UI
+
+- User clarified that `Send message through email to the customer` should not be supported for now.
+- Scope: remove the email delivery card from the `Messages` child section and remove the unused email toggle state.
+- No schema, persistence, or screenshot changes.
 
 ### 2026-05-13 01:42 - Starting shared tooltip stacking fix
 

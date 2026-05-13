@@ -343,6 +343,9 @@ class BundleWidgetFullPage {
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       showDiscountProgressBar: false,
+      discountProgressBarType: 'step_based',
+      discountProgressTextTemplate: null,
+      discountProgressSuccessTemplate: null,
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections,
@@ -509,6 +512,9 @@ class BundleWidgetFullPage {
     // snake-style keys (progress / qualified). Try both shapes.
     const messaging = this.selectedBundle?.messaging;
     const pricingMessages = this.selectedBundle?.pricing?.messages;
+    const pricingDisplay = this.selectedBundle?.pricing?.display;
+    const displayOptions = messaging?.displayOptions || pricingMessages?.displayOptions || {};
+    const progressBarOptions = displayOptions?.progressBar || {};
 
     if (messaging) {
       if (messaging.progressTemplate) {
@@ -519,7 +525,7 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
-      this.config.showDiscountProgressBar = messaging.showDiscountProgressBar === true;
+      this.config.showDiscountProgressBar = progressBarOptions.enabled === true || messaging.showDiscountProgressBar === true;
 
     } else if (pricingMessages) {
       // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
@@ -533,11 +539,19 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
-      this.config.showDiscountProgressBar = pricingMessages.showDiscountProgressBar === true;
+      this.config.showDiscountProgressBar =
+        progressBarOptions.enabled === true ||
+        pricingMessages.showDiscountProgressBar === true ||
+        pricingDisplay?.showDiscountProgressBar === true;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
+      this.config.showDiscountProgressBar = pricingDisplay?.showDiscountProgressBar === true;
     }
+
+    this.config.discountProgressBarType = progressBarOptions.type === 'simple' ? 'simple' : 'step_based';
+    this.config.discountProgressTextTemplate = progressBarOptions.progressText || this.config.discountTextTemplate;
+    this.config.discountProgressSuccessTemplate = progressBarOptions.successText || this.config.successMessageTemplate;
   }
 
   initializeDataStructures() {
@@ -3227,20 +3241,20 @@ class BundleWidgetFullPage {
     let message = '';
     if (isReached) {
       message = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+        this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
         variables
       );
     } else {
       const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
       if (!nextRule) return null;
       message = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+        this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
         variables
       );
     }
 
     const bar = document.createElement('div');
-    bar.className = 'fpb-discount-progress' + (isReached ? ' reached' : '');
+    bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
 
     const row = document.createElement('div');
     row.className = 'fpb-dp-row';

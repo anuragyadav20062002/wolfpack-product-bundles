@@ -10,7 +10,13 @@
  */
 
 import { useState, useCallback } from "react";
-import { normalizePricingDisplayOptions, serializePricingDisplayOptions } from "../lib/pricing-display-options";
+import {
+  DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
+  DEFAULT_DISCOUNT_RULE_TEXT,
+  normalizePricingDisplayOptions,
+  normalizePricingRuleMessages,
+  serializePricingDisplayOptions,
+} from "../lib/pricing-display-options";
 import {
   DiscountMethod,
   type PricingDisplayOptions,
@@ -61,7 +67,12 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
   );
 
   // Rule messaging
-  const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>({});
+  const [ruleMessages, setRuleMessages] = useState<Record<string, { discountText: string; successMessage: string }>>(
+    normalizePricingRuleMessages({
+      rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
+      messages: initialPricing?.messages || {},
+    })
+  );
   const [showVariables, setShowVariables] = useState(false);
 
   // Wrapped setters that trigger dirty flag
@@ -175,8 +186,8 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setRuleMessages(prev => ({
       ...prev,
       [newRule.id]: {
-        discountText: 'Add {{conditionText}} to get {{discountText}}',
-        successMessage: 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'
+        discountText: DEFAULT_DISCOUNT_RULE_TEXT,
+        successMessage: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE
       }
     }));
   }, [discountType, setDiscountRules]);

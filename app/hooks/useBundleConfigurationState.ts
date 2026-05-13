@@ -18,6 +18,7 @@ import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
 import { useBundlePricing } from "./useBundlePricing";
 import { FullPageLayout, type BundleStatus } from "../constants/bundle";
+import { normalizePricingRuleMessages } from "../lib/pricing-display-options";
 
 // ============================================
 // TYPES
@@ -239,7 +240,15 @@ export function useBundleConfigurationState({
   }, [markAsDirty]);
 
   // Rule messages state
-  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>({});
+  const initialRuleMessages = useMemo(
+    () => normalizePricingRuleMessages({
+      rules: Array.isArray(bundle.pricing?.rules) ? bundle.pricing.rules : [],
+      messages: bundle.pricing?.messages || {},
+    }),
+    [bundle.pricing?.messages, bundle.pricing?.rules]
+  );
+
+  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>(initialRuleMessages);
 
   const setRuleMessages = useCallback((
     value: Record<string, { discountText: string; successMessage: string }> |
@@ -275,7 +284,7 @@ export function useBundleConfigurationState({
     discountMessagingEnabled: pricingState.discountMessagingEnabled,
     pricingDisplayOptions: JSON.stringify(pricingState.pricingDisplayOptions),
     selectedCollections: JSON.stringify({}),
-    ruleMessages: JSON.stringify({}),
+    ruleMessages: JSON.stringify(initialRuleMessages),
     stepConditions: JSON.stringify(conditionsState.stepConditions),
     bundleProduct: loadedBundleProduct || null,
     productStatus: loadedBundleProduct?.status || "ACTIVE",

@@ -46,8 +46,15 @@ export interface NormalizedPricingDisplayOptions {
   };
 }
 
+export interface NormalizedRuleMessageInput {
+  rules?: PricingRule[] | null;
+  messages?: any;
+}
+
 export const DEFAULT_PROGRESS_BAR_PROGRESS_TEXT = "Add {{conditionText}} to unlock {{discountText}}";
 export const DEFAULT_PROGRESS_BAR_SUCCESS_TEXT = "{{discountText}} unlocked";
+export const DEFAULT_DISCOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!";
+export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.";
 
 interface NormalizeInput {
   rules?: PricingRule[] | null;
@@ -126,6 +133,37 @@ function normalizeProgressType(value: unknown): PricingProgressBarType {
 
 function normalizeTemplate(value: unknown, defaultValue: string): string {
   return typeof value === "string" && value.trim().length > 0 ? value : defaultValue;
+}
+
+export function normalizePricingRuleMessages({
+  rules = [],
+  messages = {},
+}: NormalizedRuleMessageInput): Record<string, { discountText: string; successMessage: string }> {
+  const safeRules = Array.isArray(rules) ? rules : [];
+  const savedRuleMessages = messages && typeof messages === "object" && messages.ruleMessages
+    ? messages.ruleMessages
+    : {};
+
+  return safeRules.reduce<Record<string, { discountText: string; successMessage: string }>>((acc, rule) => {
+    const savedMessage = savedRuleMessages?.[rule.id];
+    if (!savedMessage || typeof savedMessage !== "object") {
+      acc[rule.id] = {
+        discountText: DEFAULT_DISCOUNT_RULE_TEXT,
+        successMessage: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
+      };
+      return acc;
+    }
+
+    const discountText = typeof savedMessage.discountText === "string" && savedMessage.discountText.trim().length > 0
+      ? savedMessage.discountText
+      : DEFAULT_DISCOUNT_RULE_TEXT;
+    const successMessage = typeof savedMessage.successMessage === "string" && savedMessage.successMessage.trim().length > 0
+      ? savedMessage.successMessage
+      : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+
+    acc[rule.id] = { discountText, successMessage };
+    return acc;
+  }, {});
 }
 
 export function normalizePricingDisplayOptions({

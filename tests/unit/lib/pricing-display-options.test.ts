@@ -1,4 +1,5 @@
 import {
+  normalizePricingRuleMessages,
   normalizePricingDisplayOptions,
   serializePricingDisplayOptions,
 } from "../../../app/lib/pricing-display-options";
@@ -162,6 +163,43 @@ describe("normalizePricingDisplayOptions", () => {
     });
 
     expect(result.progressBar.type).toBe("step_based");
+  });
+});
+
+describe("normalizePricingRuleMessages", () => {
+  it("rehydrates saved message templates for current discount rules only", () => {
+    expect(normalizePricingRuleMessages({
+      rules: [quantityRule("rule-3", 3, 15)],
+      messages: {
+        ruleMessages: {
+          "rule-3": {
+            discountText: "Add {{discountConditionDiff}} product(s)",
+            successMessage: "Saved {{discountValue}}{{discountValueUnit}}",
+          },
+          "deleted-rule": {
+            discountText: "ignore",
+            successMessage: "ignore",
+          },
+        },
+      },
+    })).toEqual({
+      "rule-3": {
+        discountText: "Add {{discountConditionDiff}} product(s)",
+        successMessage: "Saved {{discountValue}}{{discountValueUnit}}",
+      },
+    });
+  });
+
+  it("creates EB-style default message templates for rules without saved copy", () => {
+    expect(normalizePricingRuleMessages({
+      rules: [quantityRule("rule-3", 3, 15)],
+      messages: {},
+    })).toEqual({
+      "rule-3": {
+        discountText: "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
+        successMessage: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+      },
+    });
   });
 });
 

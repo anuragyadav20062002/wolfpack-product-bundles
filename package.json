@@ -71,6 +71,7 @@
     "react-i18next": "^17.0.7",
     "recharts": "^3.8.0",
     "tailwindcss": "^4.1.12",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "vite-tsconfig-paths": "^5.0.1"
   },

@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.8.0
- * Built   : 2026-05-10
+ * Built   : 2026-05-13
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -262,6 +262,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -819,6 +827,11 @@ class TemplateManager {
       conditionText: conditionData.conditionText,
 
       discountText: discountData.discountText,
+      discountConditionDiff: conditionType === 'amount' ? conditionData.amountNeeded : conditionData.itemsNeeded,
+      discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
+      discountValue: discountData.discountValue,
+      discountValueUnit: discountData.discountValueUnit,
+      discountedItems: conditionType === 'quantity' ? targetValue.toString() : '0',
 
       alreadyQualified: conditionData.alreadyQualified || false,
 
@@ -956,7 +969,9 @@ class TemplateManager {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
         const percentage = Math.round(safeValue);
         return {
-          discountText: `${percentage}% off`
+          discountText: `${percentage}% off`,
+          discountValue: String(percentage),
+          discountValueUnit: '% off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -969,7 +984,9 @@ class TemplateManager {
         );
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${amountOff} off`
+          discountText: `${currencyInfo.display.symbol}${amountOff} off`,
+          discountValue: `${currencyInfo.display.symbol}${amountOff}`,
+          discountValueUnit: ' off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -982,12 +999,16 @@ class TemplateManager {
         );
         const bundlePrice = (convertedPrice / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${bundlePrice}`
+          discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValueUnit: ''
         };
 
       default:
         return {
-          discountText: 'discount'
+          discountText: 'discount',
+          discountValue: String(safeValue),
+          discountValueUnit: ''
         };
     }
   }
@@ -999,6 +1020,11 @@ class TemplateManager {
       itemsNeeded: '0',
       conditionText: '0 items',
       discountText: 'No discount',
+      discountConditionDiff: '0',
+      discountUnit: '',
+      discountValue: '0',
+      discountValueUnit: '',
+      discountedItems: '0',
 
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       currentQuantity: totalQuantity.toString(),
@@ -2667,6 +2693,9 @@ class BundleWidgetFullPage {
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       showDiscountProgressBar: false,
+      discountProgressBarType: 'step_based',
+      discountProgressTextTemplate: null,
+      discountProgressSuccessTemplate: null,
       currentProductId: window.currentProductId,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections,
@@ -2815,6 +2844,9 @@ class BundleWidgetFullPage {
 
     const messaging = this.selectedBundle?.messaging;
     const pricingMessages = this.selectedBundle?.pricing?.messages;
+    const pricingDisplay = this.selectedBundle?.pricing?.display;
+    const displayOptions = messaging?.displayOptions || pricingMessages?.displayOptions || {};
+    const progressBarOptions = displayOptions?.progressBar || {};
 
     if (messaging) {
       if (messaging.progressTemplate) {
@@ -2825,7 +2857,7 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
-      this.config.showDiscountProgressBar = messaging.showDiscountProgressBar === true;
+      this.config.showDiscountProgressBar = progressBarOptions.enabled === true || messaging.showDiscountProgressBar === true;
 
     } else if (pricingMessages) {
 
@@ -2839,11 +2871,19 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
-      this.config.showDiscountProgressBar = pricingMessages.showDiscountProgressBar === true;
+      this.config.showDiscountProgressBar =
+        progressBarOptions.enabled === true ||
+        pricingMessages.showDiscountProgressBar === true ||
+        pricingDisplay?.showDiscountProgressBar === true;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
+      this.config.showDiscountProgressBar = pricingDisplay?.showDiscountProgressBar === true;
     }
+
+    this.config.discountProgressBarType = progressBarOptions.type === 'simple' ? 'simple' : 'step_based';
+    this.config.discountProgressTextTemplate = progressBarOptions.progressText || this.config.discountTextTemplate;
+    this.config.discountProgressSuccessTemplate = progressBarOptions.successText || this.config.successMessageTemplate;
   }
 
   initializeDataStructures() {
@@ -4164,7 +4204,7 @@ class BundleWidgetFullPage {
         `).join('')}
       </div>
       <style>
-
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
@@ -4180,6 +4220,7 @@ class BundleWidgetFullPage {
           box-shadow: none;
         }
 
+        /* Full card pulsating effect */
         .skeleton-card-content {
           position: absolute;
           top: 0;
@@ -5301,20 +5342,20 @@ class BundleWidgetFullPage {
     let message = '';
     if (isReached) {
       message = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+        this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
         variables
       );
     } else {
       const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
       if (!nextRule) return null;
       message = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+        this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
         variables
       );
     }
 
     const bar = document.createElement('div');
-    bar.className = 'fpb-discount-progress' + (isReached ? ' reached' : '');
+    bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
 
     const row = document.createElement('div');
     row.className = 'fpb-dp-row';
@@ -5707,6 +5748,15 @@ class BundleWidgetFullPage {
     });
   }
 
+  /**
+   * Look up real stock for a variant in a step's product data.
+   * Returns:
+   *   - available: numeric remaining stock, or null (untracked/unlimited)
+   *   - outOfStock: true when the variant is known to be out of stock and does
+   *     not accept backorders (available === 0 and currentlyNotInStock is false)
+   *   - acceptsBackorder: true when out of stock but backorders are allowed
+   *     — in that case the UI should not clamp to zero.
+   */
   getVariantAvailable(stepIndex, variantId) {
     const products = this.stepProductData[stepIndex] || [];
     const product = products.find(p => (p.variantId || p.id) === variantId);
