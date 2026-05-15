@@ -41,6 +41,7 @@ enum DiscountMethodType {
   percentage_off
   fixed_bundle_price
   free_shipping
+  buy_x_get_y
 }
 
 enum DiscountImplementationType {
@@ -111,6 +112,32 @@ model Bundle {
   // Per-bundle text overrides
   textOverrides          Json?   // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
   textOverridesByLocale  Json?   // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }
+  // Gift Messages (FR-02)
+  giftMessagesEnabled              Boolean  @default(false)
+  giftMessageProductId             String?
+  giftMessageProductTitle          String?
+  giftMessageEnableSenderRecipient Boolean  @default(false)
+  giftMessageMandatory             Boolean  @default(false)
+  giftMessageEnableLimit           Boolean  @default(false)
+  giftMessageCharLimit             Int?
+  giftMessageSendEmail             Boolean  @default(false)
+  // Bundle Visibility — Bundle Widget (FR-04)
+  upsellWidgetEnabled              Boolean  @default(false)
+  upsellWidgetDisplayMode          String?
+  upsellWidgetDisplayOn            String?
+  autoSelectBrowsedProduct         Boolean  @default(false)
+  // Bundle Settings (FR-05)
+  preSelectedProductVariantId      String?
+  maxQtyPerProduct                 Int?
+  productSlotsEnabled              Boolean  @default(false)
+  productSlotIconUrl               String?
+  variantSelectorEnabled           Boolean  @default(true)
+  showTextOnAddButton              Boolean  @default(false)
+  bundleCartTitle                  String?
+  bundleCartSubtitle               String?
+  bundleBannerDesktopUrl           String?
+  bundleBannerMobileUrl            String?
+  bundleLevelCss                   String?
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
@@ -223,6 +250,7 @@ model BundlePricing {
   showProgressBar        Boolean            @default(false)
   messages               Json? // Stores progress and qualified messages with showInCart flag
   ruleMessagesByLocale   Json? // Stores per-locale rule messages: Record<locale, Record<ruleId, {discountText, successMessage}>>
+  displayOptions         Json? // BundleQuantityOptionsDisplay + PricingProgressBarDisplayOptions (FR-03)
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
