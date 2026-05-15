@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-15 18:30
+**Last Updated:** 2026-05-15 19:15
 
 ## Overview
 
@@ -590,6 +590,13 @@ flow wizard.
 - Files modified: route.tsx (~2934→~2610 lines), handlers.server.ts, full-page-bundle-configure.module.css
 - ESLint: 0 errors, 880 warnings (all pre-existing any usage)
 - Next: await design images for remaining sections (Discount & Pricing, Bundle Assets full, Pricing Tiers, Bundle Settings)
+
+### 2026-05-15 19:15 - E2E verification + CLAUDE.md test spec rule
+- ✅ E2E verified: multi-language toggle persists across page reload — DB confirmed `ruleMessagesByLocale` written correctly after stale closure fix (commit 106f13c3)
+- ✅ Added Test Spec Files subsection to TDD section in CLAUDE.md — specs live in `test-spec/`, referenced in commits and PRs
+- ✅ Created `test-spec/` directory with `.gitkeep`
+- Files: CLAUDE.md, test-spec/.gitkeep
+- Next: no remaining items for this sub-issue; branch ready for PR review
 
 ## Related Documentation
 

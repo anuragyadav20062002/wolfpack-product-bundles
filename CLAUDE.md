@@ -217,6 +217,56 @@ npm run test:coverage # coverage report
 - Documentation changes
 - Route annotation comments (`// auth: public`)
 
+### Test Spec Files — Mandatory in TDD Sessions
+
+**Whenever working in a TDD environment, always create a test spec file** alongside the
+test and implementation. Test specs are human-readable documentation of _what_ is being
+tested and _why_ — they are the source of truth referenced in commits and PRs.
+
+**Location:** `test-spec/{module-name}.spec.md`
+
+**Format:**
+
+```markdown
+# Test Spec: {Module / Feature Name}
+
+**Spec ID:** {module-name}
+**Issue:** [{issue-id}]
+**Created:** YYYY-MM-DD
+
+## Purpose
+One paragraph describing what this module does and why it needs tests.
+
+## Test Cases
+
+### {TestSuiteName}
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|----------|-------|-----------------|-------|
+| 1 | Happy path | ... | ... | |
+| 2 | Edge case | ... | ... | |
+| 3 | Error path | ... | ... | |
+
+## Acceptance Criteria
+- [ ] All listed test cases pass
+- [ ] Coverage target met (if applicable)
+```
+
+**Referencing in commits and PRs:**
+
+```bash
+# Commit message
+[issue-id] test: add unit tests for {module}
+
+Spec: test-spec/{module-name}.spec.md
+```
+
+```markdown
+## Test Spec
+See [`test-spec/{module-name}.spec.md`](../../test-spec/{module-name}.spec.md)
+for the full scenario table and acceptance criteria.
+```
+
 ---
 
 ## 🚫 Strict Rules
@@ -232,6 +282,7 @@ npm run test:coverage # coverage report
 9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
 10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
 11. **ALWAYS ask about DCP customizability for storefront changes** — if a storefront change is not explicitly specified as DCP-customizable, ask the user whether DCP support should be bundled with it before implementing ✅ — see DCP Customizability Rule below
+12. **CREATE a test spec file in `test-spec/` for every TDD session** ✅ — spec acts as test documentation and must be referenced in the commit message and PR description — see Test Spec Files above
 12. **NO hardcoded fallback UI copy strings** ❌ — do not invent default marketing copy (e.g. "Complete the look and get a gift free!") when a merchant-configured string is absent. If the merchant hasn't set a value, show nothing or use a neutral system message. Never fabricate storefront-visible copy on their behalf.
 13. **NO unnecessary API fallback chains** ❌ — when fetching a value from an API, use the single correct source per official docs. Do NOT chain multiple fallback sources (e.g. `apiA.field || apiB.field || 'default'`). If the correct source returns null/empty, surface that honestly — show nothing, a neutral placeholder, or a non-fabricated system message. Chaining fallbacks hides bugs and creates silent data quality issues.
 14. **NEVER commit Chrome investigation or verification screenshots** ❌ — screenshots captured through Chrome DevTools MCP are temporary evidence only. Keep them unstaged/uncommitted unless the user explicitly asks for a specific screenshot artifact to be versioned.
