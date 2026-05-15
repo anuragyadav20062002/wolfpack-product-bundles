@@ -639,7 +639,11 @@ export default function ConfigureBundleFlow() {
   const [discountMessagingMultiLanguageEnabled, setDiscountMessagingMultiLanguageEnabled] = useState<boolean>(
     !!(bundle as any).pricing?.ruleMessagesByLocale
   );
+  const originalDiscountMessagingMultiLanguageEnabledRef = useRef<boolean>(!!(bundle as any).pricing?.ruleMessagesByLocale);
   const [ruleMessagesByLocale, setRuleMessagesByLocale] = useState<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
+    ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
+  );
+  const originalRuleMessagesByLocaleRef = useRef<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
     ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
   );
   const [activeDiscountLocale, setActiveDiscountLocale] = useState<string>(
@@ -1021,6 +1025,8 @@ export default function ConfigureBundleFlow() {
           originalAllowQuantityChangesRef.current = allowQuantityChanges;
           originalTextOverridesRef.current = textOverrides;
           originalTextOverridesByLocaleRef.current = textOverridesByLocale;
+          originalDiscountMessagingMultiLanguageEnabledRef.current = discountMessagingMultiLanguageEnabled;
+          originalRuleMessagesByLocaleRef.current = ruleMessagesByLocale;
 
           // Reset dirty flag after successful save
           setIsDirty(false);
@@ -1150,6 +1156,8 @@ export default function ConfigureBundleFlow() {
     setAllowQuantityChanges(originalAllowQuantityChangesRef.current);
     setTextOverrides(originalTextOverridesRef.current);
     setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
+    setDiscountMessagingMultiLanguageEnabled(originalDiscountMessagingMultiLanguageEnabledRef.current);
+    setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
   }, [bundle.shopifyPageHandle, hookHandleDiscard]);
 
   const promptSaveBarBeforeNavigation = useCallback(() => {
@@ -3295,7 +3303,7 @@ export default function ConfigureBundleFlow() {
                         onInput={(e: Event) => {
                           setPageSlug((e.target as HTMLInputElement).value);
                           setHasManuallyEditedSlug(true);
-                          if (bundle.shopifyPageId) markAsDirty();
+                          markAsDirty();
                         }}
                         onBlur={() => setPageSlug(slugify(pageSlug))}
                         helpText="Rename the page slug here. Changes take effect on save."

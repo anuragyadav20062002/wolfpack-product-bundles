@@ -441,16 +441,27 @@ export default function ConfigureBundleFlow() {
 
   // Bundle Settings state
   const [showProductPrices, setShowProductPrices] = useState<boolean>((bundle as any).showProductPrices ?? true);
+  const originalShowProductPricesRef = useRef<boolean>((bundle as any).showProductPrices ?? true);
   const [showCompareAtPrices, setShowCompareAtPrices] = useState<boolean>((bundle as any).showCompareAtPrices ?? false);
+  const originalShowCompareAtPricesRef = useRef<boolean>((bundle as any).showCompareAtPrices ?? false);
   const [cartRedirectToCheckout, setCartRedirectToCheckout] = useState<boolean>((bundle as any).cartRedirectToCheckout ?? false);
+  const originalCartRedirectToCheckoutRef = useRef<boolean>((bundle as any).cartRedirectToCheckout ?? false);
   const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
+  const originalAllowQuantityChangesRef = useRef<boolean>((bundle as any).allowQuantityChanges ?? true);
   const [sdkMode, setSdkMode] = useState<boolean>((bundle as any).sdkMode ?? false);
+  const originalSdkModeRef = useRef<boolean>((bundle as any).sdkMode ?? false);
 
   // Text overrides state (Messages tab)
   const [textOverrides, setTextOverrides] = useState<Record<string, string>>(
     ((bundle as any).textOverrides as Record<string, string>) ?? {}
   );
+  const originalTextOverridesRef = useRef<Record<string, string>>(
+    ((bundle as any).textOverrides as Record<string, string>) ?? {}
+  );
   const [textOverridesByLocale, setTextOverridesByLocale] = useState<Record<string, Record<string, string>>>(
+    ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
+  );
+  const originalTextOverridesByLocaleRef = useRef<Record<string, Record<string, string>>>(
     ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
   );
   const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
@@ -598,9 +609,16 @@ export default function ConfigureBundleFlow() {
         // Check if this was a save bundle action by looking for bundle data in response
         if ('bundle' in result && result.bundle) {
           // This is a save bundle response
-          // Update discard baseline for fields managed outside the hook
+          // Update discard baselines for all Tier-2 fields
           originalLoadingGifRef.current = loadingGif;
-          // Mark state as saved (updates baseline ref and resets dirty flag)
+          originalShowProductPricesRef.current = showProductPrices;
+          originalShowCompareAtPricesRef.current = showCompareAtPrices;
+          originalCartRedirectToCheckoutRef.current = cartRedirectToCheckout;
+          originalAllowQuantityChangesRef.current = allowQuantityChanges;
+          originalSdkModeRef.current = sdkMode;
+          originalTextOverridesRef.current = textOverrides;
+          originalTextOverridesByLocaleRef.current = textOverridesByLocale;
+          // Mark state as saved (updates hook baseline ref and resets dirty flag)
           markAsSaved();
 
           shopify.toast.show(('message' in result ? result.message : null) || "Changes saved successfully", { isError: false });
@@ -662,32 +680,27 @@ export default function ConfigureBundleFlow() {
     );
   }, [shop, apiKey, shopify]);
 
-  // Discard handler - resets hook state and local gif state
+  // Discard handler - resets hook state and all local state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
     setLoadingGif(originalLoadingGifRef.current);
+    setShowProductPrices(originalShowProductPricesRef.current);
+    setShowCompareAtPrices(originalShowCompareAtPricesRef.current);
+    setCartRedirectToCheckout(originalCartRedirectToCheckoutRef.current);
+    setAllowQuantityChanges(originalAllowQuantityChangesRef.current);
+    setSdkMode(originalSdkModeRef.current);
+    setTextOverrides(originalTextOverridesRef.current);
+    setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
   }, [hookHandleDiscard]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
     if (isDirty && !forceNavigation) {
-      // Show user-friendly message about unsaved changes with force option
-      const proceed = confirm(
-        "You have unsaved changes. Are you sure you want to leave this page?\n\n" +
-        "Click 'OK' to leave anyway (changes will be lost)\n" +
-        "Click 'Cancel' to stay and save your changes"
-      );
-
-      if (proceed) {
-        setForceNavigation(true);
-        // Force navigation even with unsaved changes
-        navigate("/app/dashboard");
-      } else {
-        shopify.toast.show("Save or discard your changes to continue", {
-          isError: true,
-          duration: 4000
-        });
-      }
+      shopify.toast.show("Save or discard your changes before moving to another section.", {
+        isError: true,
+        duration: 5000
+      });
+      void (shopify as any).saveBar?.leaveConfirmation?.();
       return;
     }
     navigate("/app/dashboard");
