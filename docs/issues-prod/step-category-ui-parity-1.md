@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-15 22:00
+**Last Updated:** 2026-05-15 22:15
 
 ## Overview
 
@@ -70,6 +70,15 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [ ] Chrome DevTools screenshot comparison: WPB vs EB Step Setup + Category section
 
 ## Progress Log
+
+### 2026-05-15 22:15 — Auto-save bug fix (FPB + PDP)
+
+- **Root cause**: `<form>` wrapped the entire canvas (~2000 lines of JSX including all text inputs). Pressing Enter in any text field submitted the form → `handleSave()` → auto-save
+- **Fix FPB**: Closed `</form>` after the last `<input type="hidden">` (stepConditions), BEFORE `<div className={canvasHeader}>` — canvas content now outside the form
+- **Fix PDP**: Same fix applied — form closed after hidden inputs, before AppEmbedBanner
+- `handleSave()` uses `fetcher.submit(formData)` with a freshly built FormData from React state; the SaveBar `<button type="submit">` still submits the (now smaller) form correctly
+- Lint: 0 errors on both routes
+- Files modified: `route.tsx` (FPB), `route.tsx` (PDP)
 
 ### 2026-05-15 22:00 — Completed Phase 4
 

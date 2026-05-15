@@ -1362,6 +1362,7 @@ export default function ConfigureBundleFlow() {
           ruleMessages
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
+      </form>
 
         <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
 
@@ -2462,7 +2463,6 @@ export default function ConfigureBundleFlow() {
             })()}
           </div>
         </div>
-      </form>
 
       {/* Page Selection Modal */}
       <s-modal ref={pageSelectionModalRef} heading="Place Widget">

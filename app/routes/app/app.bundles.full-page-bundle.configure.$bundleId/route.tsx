@@ -1842,6 +1842,7 @@ export default function ConfigureBundleFlow() {
           ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
+      </form>
 
         <div className={fullPageBundleStyles.canvasHeader}>
           <div className={fullPageBundleStyles.canvasTitleGroup}>
@@ -3899,7 +3900,6 @@ export default function ConfigureBundleFlow() {
             })()}
           </div>
         </div>
-      </form>
 
       {/* Steps + Tiers Conflict Warning Modal */}
       <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup">
