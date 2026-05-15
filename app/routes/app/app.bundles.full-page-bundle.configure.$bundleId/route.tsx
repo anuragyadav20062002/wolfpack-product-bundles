@@ -1952,31 +1952,27 @@ export default function ConfigureBundleFlow() {
                             className={fullPageBundleStyles.bundleProductIconImage}
                           />
                         ) : (
-                          <span aria-hidden="true">□</span>
+                          <s-icon type="product" />
                         )}
                       </div>
-                      <button
-                        type="button"
-                        className={fullPageBundleStyles.bundleProductName}
-                        onClick={() => {
-                          const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || bundle.shopifyProductId?.split('/').pop();
-                          if (!productId) {
-                            void handleBundleProductSelect();
-                            return;
-                          }
-                          const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
-                          open(productUrl, '_blank');
-                        }}
-                      >
+                      <span className={fullPageBundleStyles.bundleProductName}>
                         {productTitle || bundleProduct?.title || formState.bundleName || "Bundle Product"}
-                      </button>
+                      </span>
                     </div>
                     <button
                       type="button"
                       className={fullPageBundleStyles.bundleProductEditButton}
-                      onClick={handleBundleProductSelect}
+                      onClick={() => {
+                        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || bundle.shopifyProductId?.split('/').pop();
+                        if (!productId) {
+                          void handleBundleProductSelect();
+                          return;
+                        }
+                        const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
+                        shopify.navigate(productUrl);
+                      }}
                     >
-                      <span aria-hidden="true">↗</span>
+                      <s-icon type="edit" />
                       <span>Edit Product</span>
                     </button>
                   </div>

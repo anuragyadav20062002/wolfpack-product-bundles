@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-16 02:00
+**Last Updated:** 2026-05-16 10:00
 
 ## Overview
 
@@ -92,7 +92,25 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [x] CSS: `.catNameRow` flex row, `.categoryNameInput` updated to visible border + 36px height in body context
 - [x] Lint: 0 ESLint errors on all modified files
 
+### Phase 10 — Bundle Product card EB parity
+- [x] Product name: `<button>` → `<span>` (plain non-interactive text, matches EB generic div)
+- [x] Edit Product icon: `↗` → `<s-icon type="edit" />` (pencil icon, matches EB)
+- [x] Edit Product flow: `window.open(_blank)` → `shopify.navigate()` (opens admin product modal, matches EB)
+- [x] Product placeholder icon: `□` → `<s-icon type="product" />` (Polaris icon, matches EB style)
+- [x] CSS: `.bundleProductName` stripped of button styles (cursor, hover underline, border, background)
+- [x] Lint: 0 ESLint errors
+
 ## Progress Log
+
+### 2026-05-16 10:00 — Completed Phase 10 — Bundle Product card EB parity
+
+- ✅ Product name changed from `<button>` (clickable, opens admin) to `<span>` (plain text) — matches EB exactly
+- ✅ Edit Product icon: `↗` → `<s-icon type="edit" />` pencil icon — matches EB
+- ✅ Edit Product flow: `shopify.navigate(productUrl)` instead of `window.open(_blank)` — opens admin product page as Shopify modal, matches EB
+- ✅ Placeholder icon: `□` character → `<s-icon type="product" />` Polaris icon — cleaner UI
+- ✅ CSS: `.bundleProductName` stripped of cursor, hover underline, border, background (no longer a button)
+- ✅ Lint: 0 ESLint errors on route.tsx
+- Files modified: `route.tsx` (FPB), `full-page-bundle-configure.module.css`, `step-category-ui-parity-1.md`
 
 ### 2026-05-16 02:00 — Completed Phase 8 + Phase 9 — Category accordion body EB parity
 
