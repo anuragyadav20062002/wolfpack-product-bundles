@@ -78,6 +78,14 @@ interface ConditionDef {
   conditionValue: string;
 }
 
+interface StepCategoryState {
+  id: string;
+  name: string;
+  sortOrder: number;
+  products: any[];
+  collections: any[];
+}
+
 interface WizardStepState {
   tempId: string;
   dbId: string | null;
@@ -86,6 +94,7 @@ interface WizardStepState {
   iconUrl: string | null;
   products: any[];
   collections: any[];
+  StepCategory: StepCategoryState[];
   conditions: ConditionDef[];
   filters: FilterDef[];
   preSelectAll: boolean;
@@ -112,6 +121,7 @@ function emptyStep(): WizardStepState {
     iconUrl: null,
     products: [],
     collections: [],
+    StepCategory: [{ id: `cat-${Date.now()}`, name: "Category 1", sortOrder: 0, products: [], collections: [] }],
     conditions: [],
     filters: [],
     preSelectAll: false,
@@ -142,26 +152,38 @@ function buildConditions(s: any): ConditionDef[] {
 
 function initSteps(dbSteps: any[]): WizardStepState[] {
   if (!dbSteps || dbSteps.length === 0) return [emptyStep()];
-  return dbSteps.map((s) => ({
-    tempId: crypto.randomUUID(),
-    dbId: s.id,
-    name: s.name ?? "",
-    pageTitle: s.pageTitle ?? "",
-    iconUrl: s.timelineIconUrl ?? null,
-    products: Array.isArray(s.StepProduct)
-      ? s.StepProduct.map((sp: any) => ({
-          id: sp.productId,
-          title: sp.title,
-          imageUrl: sp.imageUrl,
-          variants: sp.variants ?? [],
+  return dbSteps.map((s) => {
+    const dbCats: StepCategoryState[] = Array.isArray(s.StepCategory) && s.StepCategory.length > 0
+      ? s.StepCategory.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name || '',
+          sortOrder: cat.sortOrder ?? 0,
+          products: Array.isArray(cat.products) ? cat.products : [],
+          collections: Array.isArray(cat.collections) ? cat.collections : [],
         }))
-      : [],
-    collections: Array.isArray(s.collections) ? (s.collections as any[]) : [],
-    conditions: buildConditions(s),
-    filters: Array.isArray(s.filters) ? (s.filters as FilterDef[]) : [],
-    preSelectAll: false,
-    activeTab: "products" as const,
-  }));
+      : [{ id: `cat-${Date.now()}`, name: 'Category 1', sortOrder: 0, products: [], collections: [] }];
+    return {
+      tempId: crypto.randomUUID(),
+      dbId: s.id,
+      name: s.name ?? "",
+      pageTitle: s.pageTitle ?? "",
+      iconUrl: s.timelineIconUrl ?? null,
+      products: Array.isArray(s.StepProduct)
+        ? s.StepProduct.map((sp: any) => ({
+            id: sp.productId,
+            title: sp.title,
+            imageUrl: sp.imageUrl,
+            variants: sp.variants ?? [],
+          }))
+        : [],
+      collections: Array.isArray(s.collections) ? (s.collections as any[]) : [],
+      StepCategory: dbCats,
+      conditions: buildConditions(s),
+      filters: Array.isArray(s.filters) ? (s.filters as FilterDef[]) : [],
+      preSelectAll: false,
+      activeTab: "products" as const,
+    };
+  });
 }
 
 type WizardStepLike = Partial<WizardStepState> & {
@@ -184,6 +206,7 @@ export function buildCreateWizardConfigPayload(input: {
       iconUrl: step.iconUrl ?? null,
       products: step.products ?? [],
       collections: step.collections ?? [],
+      StepCategory: step.StepCategory ?? [],
       conditions: step.conditions ?? [],
       filters: step.filters ?? [],
     })),
@@ -283,7 +306,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     include: {
       steps: {
         orderBy: { position: "asc" },
-        include: { StepProduct: { orderBy: { position: "asc" } } },
+        include: {
+          StepProduct: { orderBy: { position: "asc" } },
+          StepCategory: { orderBy: { sortOrder: "asc" } },
+        },
       },
       pricing: true,
       customFields: { orderBy: { position: "asc" } },
@@ -581,6 +607,20 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         },
       });
     }
+
+    // Persist StepCategory rows (delete all then recreate)
+    await db.stepCategory.deleteMany({ where: { stepId } });
+    for (const [ci, cat] of (ws.StepCategory || []).entries()) {
+      await db.stepCategory.create({
+        data: {
+          stepId,
+          name: cat.name || '',
+          sortOrder: cat.sortOrder ?? ci,
+          products: Array.isArray(cat.products) && cat.products.length > 0 ? cat.products : null,
+          collections: Array.isArray(cat.collections) && cat.collections.length > 0 ? cat.collections : null,
+        },
+      });
+    }
   }
 
   return json({ ok: true, intent: "saveConfig", steps: savedSteps });
@@ -677,6 +717,7 @@ export default function WizardConfigureStep() {
   const [loadingGif, setLoadingGif] = useState<string | null>(
     bundle.loadingGif ?? null
   );
+  const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
   const [filtersDrawerOpen, setFiltersDrawerOpen] = useState(false);
   const [filtersDrawerStepIdx, setFiltersDrawerStepIdx] = useState(0);
   const [customFieldsModalOpen, setCustomFieldsModalOpen] = useState(false);
@@ -957,6 +998,89 @@ export default function WizardConfigureStep() {
       updateCurrent("collections", result.selection);
     }
   }, [currentStep.collections, updateCurrent]);
+
+  // ── Category mutations ────────────────────────────────────────
+  const updateStepCategory = useCallback(
+    (catId: string, field: keyof StepCategoryState, value: any) => {
+      setSteps((prev) =>
+        prev.map((s, i) =>
+          i === currentIdx
+            ? { ...s, StepCategory: s.StepCategory.map((c) => c.id === catId ? { ...c, [field]: value } : c) }
+            : s
+        )
+      );
+    },
+    [currentIdx]
+  );
+
+  const addCategory = useCallback(() => {
+    setSteps((prev) =>
+      prev.map((s, i) =>
+        i === currentIdx
+          ? {
+              ...s,
+              StepCategory: [
+                ...s.StepCategory,
+                { id: `cat-${Date.now()}`, name: `Category ${s.StepCategory.length + 1}`, sortOrder: s.StepCategory.length, products: [], collections: [] },
+              ],
+            }
+          : s
+      )
+    );
+  }, [currentIdx]);
+
+  const deleteCategory = useCallback(
+    (catId: string) => {
+      setSteps((prev) =>
+        prev.map((s, i) =>
+          i === currentIdx
+            ? { ...s, StepCategory: s.StepCategory.filter((c) => c.id !== catId).map((c, idx) => ({ ...c, sortOrder: idx })) }
+            : s
+        )
+      );
+    },
+    [currentIdx]
+  );
+
+  const pickCategoryProducts = useCallback(
+    async (catId: string) => {
+      const cat = steps[currentIdx]?.StepCategory.find((c) => c.id === catId);
+      const result = await shopify.resourcePicker({
+        type: "product",
+        multiple: true,
+        selectionIds: (cat?.products ?? []).map((p: any) => ({ id: p.id })),
+      });
+      if (result?.selection) {
+        const transformed = result.selection.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          imageUrl: p.images?.[0]?.originalSrc ?? p.images?.[0]?.url ?? null,
+        }));
+        updateStepCategory(catId, "products", transformed);
+      }
+    },
+    [steps, currentIdx, updateStepCategory]
+  );
+
+  const pickCategoryCollections = useCallback(
+    async (catId: string) => {
+      const cat = steps[currentIdx]?.StepCategory.find((c) => c.id === catId);
+      const result = await shopify.resourcePicker({
+        type: "collection",
+        multiple: true,
+        selectionIds: (cat?.collections ?? []).map((c: any) => ({ id: c.id })),
+      });
+      if (result?.selection) {
+        const transformed = result.selection.map((c: any) => ({
+          id: c.id,
+          handle: c.handle,
+          title: c.title,
+        }));
+        updateStepCategory(catId, "collections", transformed);
+      }
+    },
+    [steps, currentIdx, updateStepCategory]
+  );
 
   // ── Step 04: Filters ──────────────────────────────────────────
   const addFilter = useCallback((stepIdx: number) => {
@@ -1413,97 +1537,113 @@ export default function WizardConfigureStep() {
                       </div>
                     </div>
 
-                    {/* Select Product */}
+                    {/* Categories — EB-style accordion */}
                     <div
                       className={styles.card}
                       data-tour-target="wizard-select-product"
                     >
-                      <div
-                        className={styles.cardHeader}
-                        style={{ marginBottom: 4 }}
-                      >
+                      <div className={styles.cardHeader} style={{ marginBottom: 4 }}>
                         <s-heading>Select Product</s-heading>
                       </div>
                       <s-text color="subdued">
-                        Select product or collection to show in step
+                        Add categories and select products or collections for each.
                       </s-text>
 
-                      <div className={styles.tabRow}>
-                        <button
-                          className={
-                            currentStep.activeTab === "products"
-                              ? styles.tabActive
-                              : styles.tab
-                          }
-                          onClick={() => updateCurrent("activeTab", "products")}
-                        >
-                          Browse Products
-                          {selectedProductCount > 0 && (
-                            <span className={styles.tabBadge}>
-                              {selectedProductCount}
-                            </span>
-                          )}
-                        </button>
-                        <button
-                          className={
-                            currentStep.activeTab === "collections"
-                              ? styles.tabActive
-                              : styles.tab
-                          }
-                          onClick={() =>
-                            updateCurrent("activeTab", "collections")
-                          }
-                        >
-                          Browse Collections
-                          {selectedCollectionCount > 0 && (
-                            <span className={styles.tabBadge}>
-                              {selectedCollectionCount}
-                            </span>
-                          )}
-                        </button>
+                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                        {currentStep.StepCategory.map((cat) => {
+                          const tabKey = `${currentStep.tempId}__${cat.id}`;
+                          const activeTab = categoryActiveTabs[tabKey] ?? 0;
+                          return (
+                            <div key={cat.id} className={styles.categoryAccordion}>
+                              <div className={styles.categoryAccordionHeader}>
+                                <span style={{ color: "#8c9196", cursor: "grab", fontSize: 14 }}>⠿</span>
+                                <input
+                                  className={styles.categoryNameInput}
+                                  value={cat.name}
+                                  placeholder="Category name"
+                                  onInput={(e: Event) => updateStepCategory(cat.id, "name", (e.target as HTMLInputElement).value)}
+                                />
+                                <div style={{ display: "flex", gap: 4 }}>
+                                  {currentStep.StepCategory.length > 1 && (
+                                    <s-button
+                                      variant="plain"
+                                      icon="delete"
+                                      tone="critical"
+                                      onClick={() => deleteCategory(cat.id)}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+
+                              <div style={{ padding: "8px 10px" }}>
+                                <div className={styles.tabRow} style={{ marginBottom: 8 }}>
+                                  <button
+                                    className={activeTab === 0 ? styles.tabActive : styles.tab}
+                                    onClick={() => setCategoryActiveTabs((prev) => ({ ...prev, [tabKey]: 0 }))}
+                                  >
+                                    Browse Products
+                                    {cat.products.length > 0 && (
+                                      <span className={styles.tabBadge}>{cat.products.length}</span>
+                                    )}
+                                  </button>
+                                  <button
+                                    className={activeTab === 1 ? styles.tabActive : styles.tab}
+                                    onClick={() => setCategoryActiveTabs((prev) => ({ ...prev, [tabKey]: 1 }))}
+                                  >
+                                    Browse Collections
+                                    {cat.collections.length > 0 && (
+                                      <span className={styles.tabBadge}>{cat.collections.length}</span>
+                                    )}
+                                  </button>
+                                </div>
+
+                                {activeTab === 0 && (
+                                  <div>
+                                    <s-button variant="primary" onClick={() => pickCategoryProducts(cat.id)}>
+                                      {cat.products.length > 0 ? "Edit Products" : "Add Products"}
+                                    </s-button>
+                                    {cat.products.length > 0 && (
+                                      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                                        {cat.products.map((p: any) => (
+                                          <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                                            {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover" }} />}
+                                            <s-text>{p.title}</s-text>
+                                            <s-button variant="plain" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+
+                                {activeTab === 1 && (
+                                  <div>
+                                    <s-button variant="primary" onClick={() => pickCategoryCollections(cat.id)}>
+                                      {cat.collections.length > 0 ? "Edit Collections" : "Add Collections"}
+                                    </s-button>
+                                    {cat.collections.length > 0 && (
+                                      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                                        {cat.collections.map((c: any) => (
+                                          <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
+                                            <s-text>{c.title}</s-text>
+                                            <s-button variant="plain" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      <s-text color="subdued">
-                        Select{" "}
-                        {currentStep.activeTab === "products"
-                          ? "product"
-                          : "collection"}{" "}
-                        here will be displayed on this step
-                      </s-text>
-
-                      <div className={styles.productActions}>
-                        <s-button
-                          variant="primary"
-                          onClick={
-                            currentStep.activeTab === "products"
-                              ? pickProducts
-                              : pickCollections
-                          }
-                        >
-                          {currentStep.activeTab === "products"
-                            ? "Add Product"
-                            : "Add Collection"}
+                      <div style={{ marginTop: 8 }}>
+                        <s-button variant="plain" icon="plus" onClick={addCategory}>
+                          Add Category
                         </s-button>
-
-                        {currentStep.activeTab === "products" &&
-                          selectedProductCount > 0 && (
-                            <s-clickable onClick={pickProducts}>
-                              <s-badge tone="success">
-                                {selectedProductCount} Selected
-                              </s-badge>
-                            </s-clickable>
-                          )}
-
-                        {currentStep.activeTab === "collections" &&
-                          selectedCollectionCount > 0 && (
-                            <s-clickable onClick={pickCollections}>
-                              <s-badge tone="success">
-                                {selectedCollectionCount} Selected
-                              </s-badge>
-                            </s-clickable>
-                          )}
                       </div>
-
                     </div>
 
                     {/* Rules */}

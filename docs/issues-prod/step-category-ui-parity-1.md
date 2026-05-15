@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-15 23:00
+**Last Updated:** 2026-05-15 23:30
 
 ## Overview
 
@@ -63,13 +63,28 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [x] Metafield shape extended with `categories` field; widget backward compat maintained via flattened `products`/`collections`
 
 ### Phase 6 — Create wizard parity
-- [ ] Update `app.bundles.create_.configure.$bundleId/route.tsx` for same Category UI
+- [x] Update `app.bundles.create_.configure.$bundleId/route.tsx` for same Category UI
 
 ### Phase 7 — Lint + Chrome DevTools verification
 - [ ] 0 ESLint errors on all modified files
 - [ ] Chrome DevTools screenshot comparison: WPB vs EB Step Setup + Category section
 
 ## Progress Log
+
+### 2026-05-15 23:30 — Completed Phase 6
+
+- ✅ Added `StepCategoryState` interface to create wizard
+- ✅ `emptyStep()` now initializes with 1 default category
+- ✅ `initSteps()` loads `StepCategory` from DB; falls back to 1 default category for legacy bundles
+- ✅ Loader includes `StepCategory: { orderBy: { sortOrder: "asc" } }` alongside StepProduct
+- ✅ `buildCreateWizardConfigPayload` serializes `StepCategory` in the payload
+- ✅ Save action: `db.stepCategory.deleteMany + create` for each step's categories
+- ✅ Added `categoryActiveTabs` state (keyed by `${tempId}__${catId}`)
+- ✅ Added `updateStepCategory`, `addCategory`, `deleteCategory`, `pickCategoryProducts`, `pickCategoryCollections` callbacks
+- ✅ "Select Product" card replaced with EB-style category accordion
+- ✅ CSS: `.categoryAccordion`, `.categoryAccordionHeader`, `.categoryNameInput` added to wizard CSS
+- ✅ Lint: 0 errors on route + CSS
+- Files modified: `route.tsx` (create wizard), `wizard-configure.module.css`
 
 ### 2026-05-15 23:00 — Completed Phase 5
 
