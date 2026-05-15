@@ -87,7 +87,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     include: {
       steps: {
         include: {
-          StepProduct: true
+          StepProduct: true,
+          StepCategory: { orderBy: { sortOrder: "asc" } }
         }
       },
       pricing: true

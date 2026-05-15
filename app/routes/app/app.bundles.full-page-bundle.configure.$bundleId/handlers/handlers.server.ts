@@ -605,6 +605,15 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                       position: productIndex + 1
                     };
                   })
+                },
+                // Create StepCategory records for merchant-defined categories
+                StepCategory: {
+                  create: Array.isArray(step.StepCategory) ? step.StepCategory.map((cat: any, catIndex: number) => ({
+                    name: cat.name || '',
+                    sortOrder: cat.sortOrder ?? catIndex,
+                    products: Array.isArray(cat.products) ? cat.products : null,
+                    collections: Array.isArray(cat.collections) ? cat.collections : null,
+                  })) : []
                 }
               };
             })
@@ -649,7 +658,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       include: {
         steps: {
           include: {
-            StepProduct: true  // Include StepProduct for component metafield updates
+            StepProduct: true,
+            StepCategory: { orderBy: { sortOrder: 'asc' } }
           }
         },
         pricing: true
@@ -1067,7 +1077,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });
@@ -1355,7 +1365,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });
@@ -1536,7 +1546,7 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });
@@ -1628,7 +1638,7 @@ export async function handleRenamePageSlug(
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });

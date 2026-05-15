@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-15 21:30
+**Last Updated:** 2026-05-15 21:45
 
 ## Overview
 
@@ -42,8 +42,9 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [x] Run Prisma migration: `npx prisma migrate dev` → `20260515135812_add_step_category`
 
 ### Phase 3 — FPB save handler + loader
-- [ ] Update `handlers.server.ts` to write/read `StepCategory` rows (upsert + delete orphans)
-- [ ] Update FPB loader Prisma include to load `StepCategory[]`
+- [x] Update FPB loader Prisma include to load `StepCategory[]` (`route.tsx` + all handler re-fetches)
+- [x] Save handler: add `StepCategory: { create: [...] }` to step create block
+- [x] All 5 Prisma includes in `handlers.server.ts` updated with `StepCategory: { orderBy: { sortOrder: 'asc' } }`
 
 ### Phase 4 — FPB route UI — Category accordion rows
 - [ ] Render EB-style expandable category rows (name textbox, Products tab, Collections tab)
@@ -65,6 +66,14 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [ ] Chrome DevTools screenshot comparison: WPB vs EB Step Setup + Category section
 
 ## Progress Log
+
+### 2026-05-15 21:45 — Completed Phase 3
+
+- ✅ `route.tsx` loader include: added `StepCategory: { orderBy: { sortOrder: 'asc' } }` alongside `StepProduct: true`
+- ✅ `handlers.server.ts`: all 5 `StepProduct: true` includes updated to also include `StepCategory`
+- ✅ `handlers.server.ts` step create: added `StepCategory: { create: [...] }` block — creates category rows from payload on save
+- ✅ Lint: 0 errors on both files
+- Files modified: `route.tsx` (FPB), `handlers.server.ts`
 
 ### 2026-05-15 21:30 — Completed Phase 1 + Phase 2
 
