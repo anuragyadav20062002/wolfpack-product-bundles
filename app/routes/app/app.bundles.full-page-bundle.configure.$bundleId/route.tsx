@@ -1972,10 +1972,7 @@ export default function ConfigureBundleFlow() {
                               onClick={() => handleSectionChange(item.id)}
                             >
                               <span className={fullPageBundleStyles.setupNavIcon} aria-hidden="true">
-                                {item.id === "step_setup" && "✥"}
-                                {item.id === "discount_pricing" && "◌"}
-                                {item.id === "bundle_visibility" && "⌂"}
-                                {item.id === "bundle_settings" && "⌘"}
+                                {isActive ? "●" : "○"}
                               </span>
                               <span className={fullPageBundleStyles.setupNavLabel}>{item.label}</span>
                               <span className={fullPageBundleStyles.setupNavMeta}>
@@ -2045,15 +2042,6 @@ export default function ConfigureBundleFlow() {
                       >
                         <span className={fullPageBundleStyles.stepChipNumber}>{i + 1}</span>
                         <span className={fullPageBundleStyles.stepChipLabel}>{step.name || `Step ${i + 1}`}</span>
-                        {stepsState.steps.length > 1 && activeTabIndex === i && (
-                          <span
-                            className={fullPageBundleStyles.stepChipRemove}
-                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); deleteStep(step.id); }}
-                            title="Remove this step"
-                          >
-                            ✕
-                          </span>
-                        )}
                       </button>
                     ))}
                     <button className={fullPageBundleStyles.addStepBtn} onClick={handleAddNewStep}>
@@ -2073,14 +2061,33 @@ export default function ConfigureBundleFlow() {
                     <div className={fullPageBundleStyles.card}>
                       <div className={fullPageBundleStyles.cardHeader}>
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Step Setup</h3>
-                        <s-checkbox
-                          accessibilityLabel="Enable step"
-                          checked={step.enabled !== false || undefined}
-                          onChange={(e: Event) => {
-                            stepsState.updateStepField(step.id, "enabled", (e.target as HTMLInputElement).checked);
-                            markAsDirty();
-                          }}
-                        />
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          {shopLocales.length > 0 && (
+                            <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language" />
+                          )}
+                          <s-button
+                            variant="plain"
+                            icon="duplicate"
+                            accessibilityLabel="Clone step"
+                            onClick={() => cloneStep(step.id)}
+                          />
+                          {stepsState.steps.length > 1 && (
+                            <s-button
+                              variant="plain"
+                              icon="delete"
+                              accessibilityLabel="Delete step"
+                              onClick={() => deleteStep(step.id)}
+                            />
+                          )}
+                          <s-checkbox
+                            accessibilityLabel="Enable step"
+                            checked={step.enabled !== false || undefined}
+                            onChange={(e: Event) => {
+                              stepsState.updateStepField(step.id, "enabled", (e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
+                          />
+                        </div>
                       </div>
                       <p style={{ margin: "0 0 12px", fontSize: 13, color: "#6d7175" }}>
                         Edit your step name (Only visible if more than one step is present)
@@ -2777,17 +2784,6 @@ export default function ConfigureBundleFlow() {
                           }}
                           autoComplete="off"
                         />
-                        <s-divider />
-                        <s-stack direction="inline" gap="small-100">
-                          <s-button variant="secondary" icon="duplicate" onClick={() => cloneStep(step.id)}>
-                            Clone Step
-                          </s-button>
-                          {stepsState.steps.length > 1 && (
-                            <s-button variant="plain" onClick={() => deleteStep(step.id)}>
-                              Delete Step
-                            </s-button>
-                          )}
-                        </s-stack>
                       </s-stack>
                     </div>
                   </s-stack>

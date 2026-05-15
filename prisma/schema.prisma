@@ -134,46 +134,62 @@ model Bundle {
 }
 
 model BundleStep {
-  id                          String        @id @default(uuid())
+  id                          String         @id @default(uuid())
   name                        String
-  icon                        String?       @default("box")
-  position                    Int           @default(0)
-  minQuantity                 Int           @default(1)
-  maxQuantity                 Int           @default(1)
-  enabled                     Boolean       @default(true)
+  icon                        String?        @default("box")
+  position                    Int            @default(0)
+  minQuantity                 Int            @default(1)
+  maxQuantity                 Int            @default(1)
+  enabled                     Boolean        @default(true)
   collections                 Json?
   products                    Json?
-  displayVariantsAsIndividual Boolean       @default(false)
+  displayVariantsAsIndividual Boolean        @default(false)
   conditionType               String?
   conditionOperator           String?
   conditionValue              Int?
   conditionOperator2          String?
   conditionValue2             Int?
-  isFreeGift                  Boolean       @default(false)
+  isFreeGift                  Boolean        @default(false)
   freeGiftName                String?
   addonLabel                  String?
   addonTitle                  String?
   addonIconUrl                String?
-  addonDisplayFree            Boolean       @default(true)
+  addonDisplayFree            Boolean        @default(true)
   addonTiers                  Json?
-  addonUnlockAfterCompletion  Boolean       @default(true)
-  isDefault                   Boolean       @default(false)
+  addonUnlockAfterCompletion  Boolean        @default(true)
+  isDefault                   Boolean        @default(false)
   defaultVariantId            String?
   imageUrl                    String?
   bannerImageUrl              String?
-  timelineIconUrl             String?   // User-uploadable icon for step timeline (separate from bannerImageUrl)
-  pageTitle                   String?   // Page header title shown after the nav bar (full-page bundles)
-  filters                     Json?     // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
-  primaryVariantOption        String?   // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
+  timelineIconUrl             String?        // User-uploadable icon for step timeline (separate from bannerImageUrl)
+  pageTitle                   String?        // Page header title shown after the nav bar (full-page bundles)
+  filters                     Json?          // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
+  primaryVariantOption        String?        // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
   bundleId                    String
-  bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  bundle                      Bundle         @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
+  StepCategory                StepCategory[]
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
 
   @@index([bundleId])
   @@index([bundleId, position])
   @@index([bundleId, enabled])
+}
+
+model StepCategory {
+  id          String     @id @default(cuid())
+  stepId      String
+  step        BundleStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  name        String     @default("")
+  sortOrder   Int        @default(0)
+  products    Json?      // [{id, title, imageUrl, variants, minQuantity, maxQuantity, position}]
+  collections Json?      // [{id, handle, title}]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([stepId])
+  @@index([stepId, sortOrder])
 }
 
 model StepProduct {
