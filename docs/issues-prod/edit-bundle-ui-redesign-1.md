@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-13 11:14
+**Last Updated:** 2026-05-15 14:00
 
 ## Overview
 
@@ -24,6 +24,7 @@ flow wizard.
 - [x] Phase 7 — Pricing Tiers header s-stack gap fix; nav subtitle removed; Messages s-select value binding + s-option migration
 - [x] Phase 8 — Bundle Assets step image tabs: replace inline-styled buttons with tabRow/tab/tabActive CSS module classes
 - [x] Phase 9 — Rename nav item "Messages" → "Widget Text" to match section header
+- [x] Phase 10 — EB UX wireup: fix 8 broken controls, gift message product picker, addon tiers array, collection/product row clone
 
 ## Key Design Decisions
 
@@ -38,6 +39,28 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-15 14:00 - Completed Phase 10: EB UX wireup fixes
+
+- ✅ Fix 1: Rules Config s-select → s-option children (dropdowns now populate)
+- ✅ Fix 2: Footer Messaging "Show Variables" — was calling undefined setTemplateVariablesModalOpen; rewired to showPolarisModal(templateVariablesModalRef)
+- ✅ Fix 3: Footer Messaging "Multi Language" button → disabled
+- ✅ Fix 4: Step Locale "Multi Language" button → disabled
+- ✅ Fix 5: s-icon type="note" → name="note" (correct Polaris attribute)
+- ✅ Fix 6: Slot Icon "Reset" button now clears timelineIconUrl field
+- ✅ Fix 7: Progress Bar type selector — raw <input type="radio"> → s-choice-list / s-choice
+- ✅ Fix 8: Bundle Quantity Options "Multi Language" → disabled
+- ✅ Decision A: Messages "Edit" button → shopify.resourcePicker (single product); stores giftMessageProductId + giftMessageProductTitle in textOverrides
+- ✅ Decision B: addonTiers Json? added to BundleStep schema (migration add-step-addon-tiers); static tier 1 replaced with dynamic array render; handlers.server.ts saves addonTiers
+- ✅ Decision C: Collection row Clone now duplicates selectedCollections[step.id] entry; product row Clone shows improved toast directing user to product picker
+- Files modified: prisma/schema.prisma, handlers/handlers.server.ts, route.tsx, docs/issues-prod/edit-bundle-ui-redesign-1.md
+
+### 2026-05-15 00:00 - Starting Phase 10: EB UX wireup fixes
+
+- Full Chrome + code audit identified 11 broken/missing-handler controls across all sections.
+- User decisions: A=resource picker for gift message product, B=addonTiers DB field, C=clone for all category row types.
+- Files to modify: prisma/schema.prisma, handlers.server.ts, route.tsx
+- Breaking changes: addonTiers DB migration required (add-step-addon-tiers); addonDisplayFree kept for backwards compat.
 
 ### 2026-05-13 10:54 - Starting Step Setup and Discount & Pricing wiring pass
 

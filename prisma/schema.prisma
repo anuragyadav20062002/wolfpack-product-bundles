@@ -155,6 +155,7 @@ model BundleStep {
   addonTitle                  String?
   addonIconUrl                String?
   addonDisplayFree            Boolean       @default(true)
+  addonTiers                  Json?
   addonUnlockAfterCompletion  Boolean       @default(true)
   isDefault                   Boolean       @default(false)
   defaultVariantId            String?

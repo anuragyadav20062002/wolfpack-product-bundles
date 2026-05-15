@@ -2075,7 +2075,7 @@ export default function ConfigureBundleFlow() {
                           <s-button
                             variant="secondary"
                             icon="globe"
-                            onClick={() => setIsStepLocaleModalOpen(true)}
+                            disabled
                           >
                             Multi Language
                           </s-button>
@@ -2206,17 +2206,25 @@ export default function ConfigureBundleFlow() {
                                   <s-button
                                     variant="plain"
                                     onClick={() => {
-                                      if (row.type !== "filter") {
-                                        shopify.toast.show("Create category filter tabs before cloning categories.", { isError: false });
-                                        return;
+                                      if (row.type === "filter") {
+                                        const current = (((step as any).filters as { label: string; collectionHandle: string }[]) || []);
+                                        const source = current[row.index];
+                                        stepsState.updateStepField(step.id, "filters", [
+                                          ...current,
+                                          { ...source, label: `${source.label || "Category"} Copy` },
+                                        ]);
+                                        markAsDirty();
+                                      } else if (row.type === "collection") {
+                                        const current = selectedCollections[step.id] || [];
+                                        const source = current[row.index];
+                                        setSelectedCollections(prev => ({
+                                          ...prev,
+                                          [step.id]: [...(prev[step.id] || []), { ...source }],
+                                        }));
+                                        markAsDirty();
+                                      } else {
+                                        shopify.toast.show("Use the product picker to add more products.", { isError: false });
                                       }
-                                      const current = (((step as any).filters as { label: string; collectionHandle: string }[]) || []);
-                                      const source = current[row.index];
-                                      stepsState.updateStepField(step.id, "filters", [
-                                        ...current,
-                                        { ...source, label: `${source.label || "Category"} Copy` },
-                                      ]);
-                                      markAsDirty();
                                     }}
                                   >
                                     Clone
@@ -2407,18 +2415,18 @@ export default function ConfigureBundleFlow() {
                                   value={rule.type}
                                   onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
                                 >
-                                  <option value="" disabled>Type</option>
+                                  <s-option value="" disabled>Type</s-option>
                                   {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
                                   ))}
                                 </s-select>
                                 <s-select
                                   value={rule.operator}
                                   onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
                                 >
-                                  <option value="" disabled>Operator</option>
+                                  <s-option value="" disabled>Operator</s-option>
                                   {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
                                   ))}
                                 </s-select>
                                 <s-text-field
@@ -2644,31 +2652,56 @@ export default function ConfigureBundleFlow() {
                           }}
                           autoComplete="off"
                         />
-                        <div className={fullPageBundleStyles.ebRuleCard}>
-                          <div className={fullPageBundleStyles.ebRuleHeader}>
-                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier 1</h4>
-                            <s-button
-                              variant="plain"
-                              onClick={() => {
-                                stepsState.updateStepField(step.id, "addonDisplayFree", false);
-                                markAsDirty();
-                              }}
-                            >
-                              Delete
-                            </s-button>
-                          </div>
-                          <s-checkbox
-                            label="Display products as free ($0.00)"
-                            checked={step.addonDisplayFree !== false || undefined}
-                            onChange={(e: Event) => {
-                              stepsState.updateStepField(step.id, "addonDisplayFree", (e.target as HTMLInputElement).checked);
-                              markAsDirty();
-                            }}
-                          />
-                        </div>
-                        <s-button variant="secondary" icon="plus">
-                          Add Add Ons Tier
-                        </s-button>
+                        {(() => {
+                          const addonTiers: { displayFree: boolean }[] = Array.isArray(step.addonTiers)
+                            ? (step.addonTiers as { displayFree: boolean }[])
+                            : [{ displayFree: step.addonDisplayFree !== false }];
+
+                          const updateAddonTiers = (updated: { displayFree: boolean }[]) => {
+                            stepsState.updateStepField(step.id, "addonTiers", updated);
+                            markAsDirty();
+                          };
+
+                          return (
+                            <>
+                              {addonTiers.map((tier, idx) => (
+                                <div key={idx} className={fullPageBundleStyles.ebRuleCard}>
+                                  <div className={fullPageBundleStyles.ebRuleHeader}>
+                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
+                                    <s-button
+                                      variant="plain"
+                                      disabled={addonTiers.length <= 1 || undefined}
+                                      onClick={() => {
+                                        if (addonTiers.length > 1) {
+                                          updateAddonTiers(addonTiers.filter((_, i) => i !== idx));
+                                        }
+                                      }}
+                                    >
+                                      Delete
+                                    </s-button>
+                                  </div>
+                                  <s-checkbox
+                                    label="Display products as free ($0.00)"
+                                    checked={tier.displayFree || undefined}
+                                    onChange={(e: Event) => {
+                                      const updated = addonTiers.map((t, i) =>
+                                        i === idx ? { ...t, displayFree: (e.target as HTMLInputElement).checked } : t
+                                      );
+                                      updateAddonTiers(updated);
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                              <s-button
+                                variant="secondary"
+                                icon="plus"
+                                onClick={() => updateAddonTiers([...addonTiers, { displayFree: true }])}
+                              >
+                                Add Add Ons Tier
+                              </s-button>
+                            </>
+                          );
+                        })()}
                       </s-stack>
                     </div>
 
@@ -2676,10 +2709,10 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.ebPanelHeader}>
                         <h3 className={fullPageBundleStyles.ebPanelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
-                          <s-button variant="secondary" onClick={() => setTemplateVariablesModalOpen(true)}>
+                          <s-button variant="secondary" onClick={() => showPolarisModal(templateVariablesModalRef)}>
                             Show Variables
                           </s-button>
-                          <s-button variant="secondary" icon="globe">
+                          <s-button variant="secondary" icon="globe" disabled>
                             Multi Language
                           </s-button>
                         </s-stack>
@@ -2911,7 +2944,7 @@ export default function ConfigureBundleFlow() {
                       {pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled && (
                         <div className={fullPageBundleStyles.nestedDisplayOptions}>
                         <s-stack direction="block" gap="small">
-                          <s-button variant="secondary" icon="globe">
+                          <s-button variant="secondary" icon="globe" disabled>
                             Multi Language
                           </s-button>
                           <p className={fullPageBundleStyles.optionNote}>
@@ -2989,24 +3022,18 @@ export default function ConfigureBundleFlow() {
                         <s-button variant="secondary" icon="globe" disabled>
                           Multi Language
                         </s-button>
-                        <div className={fullPageBundleStyles.modeOptions}>
-                          <label className={fullPageBundleStyles.modeOption}>
-                            <input
-                              type="radio"
-                              checked={pricingState.pricingDisplayOptions.progressBar.type === "simple"}
-                              onChange={() => pricingState.setProgressBarType("simple")}
-                            />
-                            Simple Bar
-                          </label>
-                          <label className={fullPageBundleStyles.modeOption}>
-                            <input
-                              type="radio"
-                              checked={pricingState.pricingDisplayOptions.progressBar.type === "step_based"}
-                              onChange={() => pricingState.setProgressBarType("step_based")}
-                            />
-                            Step Based Bar
-                          </label>
-                        </div>
+                        <s-choice-list
+                          label="Progress bar type"
+                          labelAccessibilityVisibility="exclusive"
+                          values={[pricingState.pricingDisplayOptions.progressBar.type || "step_based"]}
+                          onChange={(e: Event) => {
+                            const val = ((e.currentTarget as any).values as string[] | undefined)?.[0];
+                            if (val) pricingState.setProgressBarType(val as "simple" | "step_based");
+                          }}
+                        >
+                          <s-choice value="simple">Simple Bar</s-choice>
+                          <s-choice value="step_based">Step Based Bar</s-choice>
+                        </s-choice-list>
                         <s-stack direction="inline" gap="small">
                           <s-text-area
                             label="Progress Text"
@@ -3565,7 +3592,13 @@ export default function ConfigureBundleFlow() {
                           <s-button variant="primary" icon="upload" onClick={() => handleSectionChange("step_setup")}>
                             Change Icon
                           </s-button>
-                          <s-button variant="secondary" onClick={() => handleSectionChange("step_setup")}>
+                          <s-button
+                            variant="secondary"
+                            onClick={() => {
+                              stepsState.updateStepField(settingsStep.id, 'timelineIconUrl', null);
+                              markAsDirty();
+                            }}
+                          >
                             Reset
                           </s-button>
                         </s-stack>
@@ -3757,7 +3790,7 @@ export default function ConfigureBundleFlow() {
 
                     <div style={{ marginTop: 16 }} className={fullPageBundleStyles.ebMessagePreview}>
                       <div className={fullPageBundleStyles.ebMessagePreviewIcon} aria-hidden="true">
-                        <s-icon type="note" />
+                        <s-icon name="note" />
                       </div>
                       <div>
                         <p className={fullPageBundleStyles.ebMessagePreviewTitle}>
@@ -3767,7 +3800,24 @@ export default function ConfigureBundleFlow() {
                           Add a message product so shoppers can include a note with the bundle.
                         </p>
                       </div>
-                      <s-button variant="secondary">
+                      <s-button
+                        variant="secondary"
+                        onClick={async () => {
+                          try {
+                            const picked = await shopify.resourcePicker({
+                              type: "product",
+                              multiple: false,
+                            });
+                            if (picked && picked.length > 0) {
+                              const product = picked[0] as any;
+                              setMessageOverride("giftMessageProductId", product.id ?? "");
+                              setMessageOverride("giftMessageProductTitle", product.title ?? "");
+                            }
+                          } catch (_) {
+                            // user cancelled picker — no-op
+                          }
+                        }}
+                      >
                         Edit
                       </s-button>
                     </div>
