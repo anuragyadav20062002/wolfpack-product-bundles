@@ -915,6 +915,8 @@ export default function ConfigureBundleFlow() {
     searchBarEnabled,
     textOverrides,
     textOverridesByLocale,
+    discountMessagingMultiLanguageEnabled,
+    ruleMessagesByLocale,
     shopify
   ]);
 

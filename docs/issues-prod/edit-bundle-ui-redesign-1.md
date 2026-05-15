@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-15 17:30
+**Last Updated:** 2026-05-15 18:30
 
 ## Overview
 
@@ -41,6 +41,13 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-15 18:30 - Fix: stale closure in handleSave for multi-language state
+
+- ✅ Bug: `discountMessagingMultiLanguageEnabled` and `ruleMessagesByLocale` were missing from `handleSave`'s `useCallback` deps array — stale closure always sent the initial `false`/`{}` values, so enabling multi-language never persisted to DB
+- ✅ Fix: added both to the dependency array in `route.tsx` (line ~919)
+- ✅ Verified: DB still held `null` for `ruleMessagesByLocale` after the first save; after the fix the checkbox persists correctly across page reloads
+- Files modified: `route.tsx`
 
 ### 2026-05-15 17:30 - Completed Phase 11 + 12: design gap fixes and multi-language discount messaging
 

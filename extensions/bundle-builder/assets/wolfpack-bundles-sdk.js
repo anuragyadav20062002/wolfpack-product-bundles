@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundles SDK
  * Version : 2.8.0
- * Built   : 2026-05-10
+ * Built   : 2026-05-15
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
@@ -1006,6 +1006,11 @@ class TemplateManager {
 
       // Discount-specific variables
       discountText: discountData.discountText,
+      discountConditionDiff: conditionType === 'amount' ? conditionData.amountNeeded : conditionData.itemsNeeded,
+      discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
+      discountValue: discountData.discountValue,
+      discountValueUnit: discountData.discountValueUnit,
+      discountedItems: conditionType === 'quantity' ? targetValue.toString() : '0',
 
       // Qualification status
       alreadyQualified: conditionData.alreadyQualified || false,
@@ -1155,7 +1160,9 @@ class TemplateManager {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
         const percentage = Math.round(safeValue);
         return {
-          discountText: `${percentage}% off`
+          discountText: `${percentage}% off`,
+          discountValue: String(percentage),
+          discountValueUnit: '% off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -1168,7 +1175,9 @@ class TemplateManager {
         );
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${amountOff} off`
+          discountText: `${currencyInfo.display.symbol}${amountOff} off`,
+          discountValue: `${currencyInfo.display.symbol}${amountOff}`,
+          discountValueUnit: ' off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -1181,12 +1190,16 @@ class TemplateManager {
         );
         const bundlePrice = (convertedPrice / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${bundlePrice}`
+          discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValueUnit: ''
         };
 
       default:
         return {
-          discountText: 'discount'
+          discountText: 'discount',
+          discountValue: String(safeValue),
+          discountValueUnit: ''
         };
     }
   }
@@ -1198,6 +1211,11 @@ class TemplateManager {
       itemsNeeded: '0',
       conditionText: '0 items',
       discountText: 'No discount',
+      discountConditionDiff: '0',
+      discountUnit: '',
+      discountValue: '0',
+      discountValueUnit: '',
+      discountedItems: '0',
 
       // Progress variables
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
