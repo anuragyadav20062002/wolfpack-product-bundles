@@ -15,8 +15,8 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 
 ## Phases Checklist
 
-- [ ] Phase 1: Schema + types + discount mapper (atomic)
-- [ ] Phase 2: Server handler extensions (3 parse helpers + Prisma extensions)
+- [x] Phase 1: Schema + types + discount mapper (atomic)
+- [x] Phase 2: Server handler extensions (3 parse helpers + Prisma extensions)
 - [ ] Phase 3: Nav reorder + Bundle Visibility section (FR-04, FR-06)
 - [ ] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
 - [ ] Phase 5: Gift Messages in Messages section (FR-02)
@@ -70,3 +70,11 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ Migration applied: `20260515211833_ppb_edit_bundle_flow` — zero data loss
 - ✅ Lint: 0 errors on modified files
 - Next: Phase 2 — Server handler extensions
+
+### 2026-05-16 00:03 - Phase 2: Server Handler Extensions — Completed
+- ✅ Tests written first (TDD Red): `ppb-gift-messages.test.ts`, `ppb-bundle-visibility.test.ts`, `ppb-bundle-settings.test.ts`, `discount-mappers.test.ts` — 36 tests
+- ✅ Created `handlers/parsers.ts` with `parsePPBGiftMessages`, `parsePPBBundleVisibility`, `parsePPBBundleSettings`
+- ✅ `handlers.server.ts`: added parsers import, spread all 3 helpers into `db.bundle.update` data block
+- ✅ `handlers.server.ts`: extended `BundlePricing` upsert (create + update) with `displayOptions`
+- ✅ All 36 tests green, 0 lint errors
+- Next: Phase 3 — Nav reorder + Bundle Visibility section

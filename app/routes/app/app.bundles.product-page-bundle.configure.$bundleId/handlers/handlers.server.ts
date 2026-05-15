@@ -25,6 +25,7 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
+import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings } from "./parsers";
 import {
   normaliseShopifyProductId,
   safeJsonParse,
@@ -317,6 +318,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         sdkMode,
         textOverrides,
         textOverridesByLocale,
+        ...parsePPBGiftMessages(formData),
+        ...parsePPBBundleVisibility(formData),
+        ...parsePPBBundleSettings(formData),
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -387,6 +391,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
+                displayOptions: discountData.displayOptions ?? null,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
@@ -398,6 +403,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
+                displayOptions: discountData.displayOptions ?? null,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
