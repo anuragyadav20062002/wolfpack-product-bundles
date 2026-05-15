@@ -167,6 +167,49 @@ export async function updateComponentProductMetafields(
         }
       }
     }
+
+    // StepCategory: resolve per-category products (direct GIDs) and collections
+    const stepCats = Array.isArray(step.StepCategory) ? step.StepCategory : [];
+    for (const cat of stepCats) {
+      const catProducts = Array.isArray(cat.products) ? cat.products : [];
+      for (const p of catProducts) {
+        if (p.id && !isUUID(p.id) && !handledProductIds.has(p.id)) {
+          productIdMap.push({ productId: p.id, stepMinQuantity: step.minQuantity || 1, source: `StepCategory:${cat.name}` });
+          handledProductIds.add(p.id);
+        }
+      }
+
+      const catCollections = Array.isArray(cat.collections) ? cat.collections : [];
+      for (const collection of catCollections) {
+        const handle = collection.handle;
+        if (!handle) continue;
+        try {
+          const collResponse = await admin.graphql(`
+            query getCollectionProductIds($handle: String!) {
+              collection(handle: $handle) {
+                products(first: 250) {
+                  edges { node { id } }
+                }
+              }
+            }
+          `, { variables: { handle } });
+          const collData = await collResponse.json();
+          const edges = collData.data?.collection?.products?.edges || [];
+          for (const edge of edges) {
+            const productId = edge.node?.id;
+            if (productId && !isUUID(productId) && !handledProductIds.has(productId)) {
+              productIdMap.push({ productId, stepMinQuantity: step.minQuantity || 1, source: `StepCategory:${cat.name}:collection:${handle}` });
+              handledProductIds.add(productId);
+            }
+          }
+        } catch {
+          AppLogger.warn("Could not fetch products from StepCategory collection", {
+            component: "component-product.server",
+            handle,
+          });
+        }
+      }
+    }
   }
 
   // Batch fetch first variants only for products where no variant data was cached in the DB

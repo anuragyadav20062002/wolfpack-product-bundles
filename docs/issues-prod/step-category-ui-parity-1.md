@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-15 22:15
+**Last Updated:** 2026-05-15 23:00
 
 ## Overview
 
@@ -57,10 +57,10 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [x] Lint: 0 errors
 
 ### Phase 5 — Metafield builders + widget
-- [ ] Update `bundle-product.server.ts` to read `StepCategory[]` for metafield config
-- [ ] Update `component-product.server.ts` for variant GID resolution
-- [ ] Update `handlers.server.ts` buildFpbBaseConfig / buildFullPageBundleMetafieldSteps
-- [ ] If metafield JSON shape changes: rebuild widget (`npm run build:widgets`)
+- [x] Update `bundle-product.server.ts` to read `StepCategory[]` for metafield config
+- [x] Update `component-product.server.ts` for variant GID resolution
+- [x] Update `handlers.server.ts` buildFpbBaseConfig / buildFullPageBundleMetafieldSteps
+- [x] Metafield shape extended with `categories` field; widget backward compat maintained via flattened `products`/`collections`
 
 ### Phase 6 — Create wizard parity
 - [ ] Update `app.bundles.create_.configure.$bundleId/route.tsx` for same Category UI
@@ -70,6 +70,15 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [ ] Chrome DevTools screenshot comparison: WPB vs EB Step Setup + Category section
 
 ## Progress Log
+
+### 2026-05-15 23:00 — Completed Phase 5
+
+- ✅ `buildFullPageBundleMetafieldSteps` updated: flattens StepCategory products into `step.products` (backward compat) and StepCategory collections into `step.collections`; writes optional `step.categories` array for future widget tab support
+- ✅ Validation in `handleSaveBundle` now counts StepCategory products/collections as valid "has products" signal
+- ✅ `bundle-product.server.ts`: after StepProduct/collections processing, also resolves product GIDs from `step.StepCategory[i].products` and fetches collection products from `step.StepCategory[i].collections`
+- ✅ `component-product.server.ts`: same StepCategory additions — ensures `component_parents` metafield is written to component variants even when products come from categories
+- ✅ Lint: 0 errors on all modified files
+- Files modified: `handlers.server.ts`, `bundle-product.server.ts`, `component-product.server.ts`
 
 ### 2026-05-15 22:15 — Auto-save bug fix (FPB + PDP)
 

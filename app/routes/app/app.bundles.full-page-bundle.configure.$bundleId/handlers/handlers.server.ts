@@ -186,6 +186,44 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       }))
       .filter((product: { productId: string | null }) => Boolean(product.productId));
 
+    // Collect per-category data from StepCategory (new relational model)
+    const stepCategories = Array.isArray(step.StepCategory) ? step.StepCategory : [];
+    const categoriesForMetafield = stepCategories.map((cat: any) => ({
+      name: cat.name || '',
+      products: Array.isArray(cat.products)
+        ? cat.products.map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null }))
+        : [],
+      collections: Array.isArray(cat.collections)
+        ? cat.collections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' }))
+        : [],
+    }));
+
+    // Flatten category products into step.products (backward compat — widget reads step.products)
+    const existingProductIds = new Set(stepProducts.map((p: any) => p.productId));
+    const flatCategoryProducts = stepCategories
+      .flatMap((cat: any) => (Array.isArray(cat.products) ? cat.products : []))
+      .filter((p: any) => p.id && !existingProductIds.has(p.id))
+      .reduce((acc: any[], p: any) => {
+        if (!acc.some((x: any) => x.id === p.id)) acc.push(p);
+        return acc;
+      }, []);
+
+    // Flatten category collections into step.collections (backward compat)
+    const legacyCollections: any[] = Array.isArray(step.collections) ? step.collections : [];
+    const existingCollectionIds = new Set(legacyCollections.map((c: any) => c.id));
+    const flatCategoryCollections = stepCategories
+      .flatMap((cat: any) => (Array.isArray(cat.collections) ? cat.collections : []))
+      .filter((c: any) => c.id && !existingCollectionIds.has(c.id))
+      .reduce((acc: any[], c: any) => {
+        if (!acc.some((x: any) => x.id === c.id)) acc.push(c);
+        return acc;
+      }, []);
+
+    const allCollections = [
+      ...legacyCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
+      ...flatCategoryCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
+    ];
+
     return {
       id: step.id,
       name: step.name || `Step ${index + 1}`,
@@ -199,18 +237,16 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       conditionOperator2: step.conditionOperator2 ?? null,
       conditionValue2: step.conditionValue2 ?? null,
       StepProduct: stepProducts,
-      products: stepProducts.map((product: any) => ({
-        id: product.productId,
-        title: product.title,
-        imageUrl: product.imageUrl,
-      })),
-      collections: Array.isArray(step.collections)
-        ? step.collections.map((collection: any) => ({
-            id: collection.id,
-            handle: collection.handle,
-            title: collection.title || "Collection",
-          }))
-        : [],
+      products: [
+        ...stepProducts.map((product: any) => ({
+          id: product.productId,
+          title: product.title,
+          imageUrl: product.imageUrl,
+        })),
+        ...flatCategoryProducts.map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null })),
+      ],
+      collections: allCollections,
+      ...(categoriesForMetafield.length > 0 ? { categories: categoriesForMetafield } : {}),
     };
   });
 }
@@ -699,7 +735,11 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       const hasProducts = fullBundleConfig.steps.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
         (step.products && step.products.length > 0) ||
-        (Array.isArray(step.collections) && step.collections.length > 0)
+        (Array.isArray(step.collections) && step.collections.length > 0) ||
+        (Array.isArray(step.StepCategory) && step.StepCategory.some((cat: any) =>
+          (Array.isArray(cat.products) && cat.products.length > 0) ||
+          (Array.isArray(cat.collections) && cat.collections.length > 0)
+        ))
       );
 
       if (!hasProducts) {

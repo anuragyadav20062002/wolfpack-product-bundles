@@ -181,6 +181,49 @@ export async function updateBundleProductMetafields(
           }
         }
       }
+
+      // StepCategory: process per-category products (direct GIDs) and collections
+      const stepCats = Array.isArray(step.StepCategory) ? step.StepCategory : [];
+      for (const cat of stepCats) {
+        // Direct product GIDs in this category
+        const catProducts = Array.isArray(cat.products) ? cat.products : [];
+        for (const p of catProducts) {
+          if (p.id && !isUUID(p.id) && !productIdMap.some(item => item.productId === p.id)) {
+            productIdMap.push({ productId: p.id, stepMinQuantity: step.minQuantity || 1, source: `StepCategory:${cat.name}` });
+          }
+        }
+
+        // Collections in this category — resolve to product IDs
+        const catCollections = Array.isArray(cat.collections) ? cat.collections : [];
+        for (const collection of catCollections) {
+          const handle = collection.handle;
+          if (!handle) continue;
+          try {
+            const collResponse = await admin.graphql(`
+              query getCollectionProductIds($handle: String!) {
+                collection(handle: $handle) {
+                  products(first: 250) {
+                    edges { node { id } }
+                  }
+                }
+              }
+            `, { variables: { handle } });
+            const collData = await collResponse.json();
+            const edges = collData.data?.collection?.products?.edges || [];
+            for (const edge of edges) {
+              const productId = edge.node?.id;
+              if (productId && !isUUID(productId) && !productIdMap.some(item => item.productId === productId)) {
+                productIdMap.push({ productId, stepMinQuantity: step.minQuantity || 1, source: `StepCategory:${cat.name}:collection:${handle}` });
+              }
+            }
+          } catch {
+            AppLogger.warn("Could not fetch products from StepCategory collection", {
+              component: "bundle-product.server",
+              handle,
+            });
+          }
+        }
+      }
     }
   }
 
