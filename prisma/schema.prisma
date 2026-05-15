@@ -197,17 +197,18 @@ model StepProduct {
 }
 
 model BundlePricing {
-  id             String             @id @default(uuid())
-  bundleId       String             @unique
-  bundle         Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  enabled        Boolean            @default(false)
-  method         DiscountMethodType @default(percentage_off)
-  rules          Json? // Stores array of standardized pricing rules with nested condition/discount structure
-  showFooter      Boolean            @default(true)
-  showProgressBar Boolean            @default(false)
-  messages        Json? // Stores progress and qualified messages with showInCart flag
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                     String             @id @default(uuid())
+  bundleId               String             @unique
+  bundle                 Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  enabled                Boolean            @default(false)
+  method                 DiscountMethodType @default(percentage_off)
+  rules                  Json? // Stores array of standardized pricing rules with nested condition/discount structure
+  showFooter             Boolean            @default(true)
+  showProgressBar        Boolean            @default(false)
+  messages               Json? // Stores progress and qualified messages with showInCart flag
+  ruleMessagesByLocale   Json? // Stores per-locale rule messages: Record<locale, Record<ruleId, {discountText, successMessage}>>
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   @@index([bundleId])
 }

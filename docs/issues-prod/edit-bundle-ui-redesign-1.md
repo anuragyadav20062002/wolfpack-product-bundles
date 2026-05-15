@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-10
-**Last Updated:** 2026-05-15 14:00
+**Last Updated:** 2026-05-15 17:30
 
 ## Overview
 
@@ -25,6 +25,8 @@ flow wizard.
 - [x] Phase 8 — Bundle Assets step image tabs: replace inline-styled buttons with tabRow/tab/tabActive CSS module classes
 - [x] Phase 9 — Rename nav item "Messages" → "Widget Text" to match section header
 - [x] Phase 10 — EB UX wireup: fix 8 broken controls, gift message product picker, addon tiers array, collection/product row clone
+- [x] Phase 11 — Design gap fixes: icon-only category row buttons, red Remove buttons (tone=critical), full-width Add Rule/Add rule buttons, plain-link Show Variables, multi-language layout restructure
+- [x] Phase 12 — Multi-language Discount Messaging: new BundlePricing.ruleMessagesByLocale column (migration), locale tabs UI, checkbox wired to state, per-locale message editing, Admin→DB→metafield→widget pipeline complete
 
 ## Key Design Decisions
 
@@ -39,6 +41,29 @@ flow wizard.
 - Step Clone button → in Advanced Step Options card
 
 ## Progress Log
+
+### 2026-05-15 17:30 - Completed Phase 11 + 12: design gap fixes and multi-language discount messaging
+
+**Phase 11 — Design gap fixes (Step Setup + Discount & Pricing):**
+- ✅ Category row Clone → icon-only `icon="duplicate"` plain button
+- ✅ Category row Delete → icon-only `icon="delete"` plain tone=critical button
+- ✅ Rules Config "Remove" rule → `tone="critical"` (red text)
+- ✅ Rules Config "+ Add Rule" → `variant="secondary"` full-width (`style={{ width: "100%" }}`)
+- ✅ Discount rule "Remove" → `tone="critical"` (red text)
+- ✅ Discount "Add rule" → `variant="secondary"` `icon="plus"` full-width
+- ✅ Footer Messaging "Show Variables" → `variant="plain"` (link style)
+- ✅ Discount Messaging "Show Variables" → moved to own right-aligned row below checkbox
+
+**Phase 12 — Multi-language Discount Messaging (Admin → Storefront):**
+- ✅ Schema: `BundlePricing.ruleMessagesByLocale Json?` column added (migration `20260515081527_add_bundle_pricing_rule_messages_by_locale`)
+- ✅ Route: `discountMessagingMultiLanguageEnabled`, `ruleMessagesByLocale`, `activeDiscountLocale` state added
+- ✅ UI: "Enable multi-language" checkbox wired to `discountMessagingMultiLanguageEnabled` state; locale tabs (tabRow/tab/tabActive CSS) shown when enabled; per-locale rule message editing
+- ✅ Serialization: both `formData.append("discountData")` paths include `ruleMessagesByLocale` and `discountMessagingMultiLanguageEnabled`
+- ✅ Handler: `handlers.server.ts` upsert create/update now writes `ruleMessagesByLocale` to DB column
+- ✅ Metafield config: `buildFpbBaseConfig` includes `ruleMessagesByLocale` inside `pricing.messages`
+- ✅ Widget: `updateMessagesFromBundle` checks `ruleMessagesByLocale[window.Shopify.locale]` before falling back to default `ruleMessages`
+- ✅ Widget rebuilt: `npm run build:widgets`
+- Files modified: `prisma/schema.prisma`, `prisma/migrations/…`, `handlers.server.ts`, `route.tsx`, `bundle-widget-full-page.js`, `bundle-widget-full-page-bundled.js`, `bundle-widget-product-page-bundled.js`
 
 ### 2026-05-15 14:00 - Completed Phase 10: EB UX wireup fixes
 

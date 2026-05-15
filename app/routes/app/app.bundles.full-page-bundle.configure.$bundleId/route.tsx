@@ -635,6 +635,17 @@ export default function ConfigureBundleFlow() {
   // Which locale the merchant is currently editing in the Messages tab
   const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
 
+  // Multi-language discount messaging state
+  const [discountMessagingMultiLanguageEnabled, setDiscountMessagingMultiLanguageEnabled] = useState<boolean>(
+    !!(bundle as any).pricing?.ruleMessagesByLocale
+  );
+  const [ruleMessagesByLocale, setRuleMessagesByLocale] = useState<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
+    ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
+  );
+  const [activeDiscountLocale, setActiveDiscountLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+
   // Widget install loading state
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
 
@@ -832,7 +843,9 @@ export default function ConfigureBundleFlow() {
         showDiscountProgressBar: pricingState.showDiscountProgressBar,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages: normalizedRuleMessages,
-        pricingDisplayOptions: pricingMessages.displayOptions
+        pricingDisplayOptions: pricingMessages.displayOptions,
+        discountMessagingMultiLanguageEnabled,
+        ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
@@ -1810,7 +1823,9 @@ export default function ConfigureBundleFlow() {
               ruleMessages: normalizedRuleMessages,
             },
             options: normalizedPricingDisplayOptions,
-          }).displayOptions
+          }).displayOptions,
+          discountMessagingMultiLanguageEnabled,
+          ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
 
@@ -2205,6 +2220,7 @@ export default function ConfigureBundleFlow() {
                                 <span className={fullPageBundleStyles.ebCategoryActions}>
                                   <s-button
                                     variant="plain"
+                                    icon="duplicate"
                                     onClick={() => {
                                       if (row.type === "filter") {
                                         const current = (((step as any).filters as { label: string; collectionHandle: string }[]) || []);
@@ -2226,11 +2242,11 @@ export default function ConfigureBundleFlow() {
                                         shopify.toast.show("Use the product picker to add more products.", { isError: false });
                                       }
                                     }}
-                                  >
-                                    Clone
-                                  </s-button>
+                                  />
                                   <s-button
                                     variant="plain"
+                                    icon="delete"
+                                    tone="critical"
                                     onClick={() => {
                                       if (row.type === "filter") {
                                         const updated = (((step as any).filters as { label: string; collectionHandle: string }[]) || []).filter((_, i) => i !== row.index);
@@ -2245,9 +2261,7 @@ export default function ConfigureBundleFlow() {
                                       }
                                       markAsDirty();
                                     }}
-                                  >
-                                    Delete
-                                  </s-button>
+                                  />
                                 </span>
                               </div>
                             ))}
@@ -2405,6 +2419,7 @@ export default function ConfigureBundleFlow() {
                                 <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                 <s-button
                                   variant="plain"
+                                  tone="critical"
                                   onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
                                 >
                                   Remove
@@ -2453,6 +2468,7 @@ export default function ConfigureBundleFlow() {
                         <s-button
                           variant="secondary"
                           icon="plus"
+                          style={{ width: "100%" }}
                           onClick={() => {
                             if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
                               shopify.toast.show('A step can have at most 2 rules', { isError: false });
@@ -2461,7 +2477,7 @@ export default function ConfigureBundleFlow() {
                             conditionsState.addConditionRule(step.id);
                           }}
                         >
-                          + Add Rule
+                          Add Rule
                         </s-button>
                       </div>
                     </div>
@@ -2709,7 +2725,7 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.ebPanelHeader}>
                         <h3 className={fullPageBundleStyles.ebPanelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
-                          <s-button variant="secondary" onClick={() => showPolarisModal(templateVariablesModalRef)}>
+                          <s-button variant="plain" onClick={() => showPolarisModal(templateVariablesModalRef)}>
                             Show Variables
                           </s-button>
                           <s-button variant="secondary" icon="globe" disabled>
@@ -2826,6 +2842,7 @@ export default function ConfigureBundleFlow() {
                               </h4>
                               <s-button
                                 variant="plain"
+                                tone="critical"
                                 onClick={() => pricingState.removeDiscountRule(rule.id)}
                               >
                                 Remove
@@ -2898,11 +2915,12 @@ export default function ConfigureBundleFlow() {
 
                       {pricingState.discountRules.length < 4 ? (
                         <s-button
-                          variant="tertiary"
+                          variant="secondary"
+                          icon="plus"
+                          style={{ width: "100%" }}
                           onClick={pricingState.addDiscountRule}
                         >
-                          <s-icon name="plus-minor" />
-                          Add rule
+                          Add Rule
                         </s-button>
                       ) : (
                         <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
@@ -3084,45 +3102,99 @@ export default function ConfigureBundleFlow() {
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <s-checkbox
                             label="Enable multi-language"
-                            checked={false}
-                            disabled
+                            checked={discountMessagingMultiLanguageEnabled || undefined}
+                            onChange={(e: Event) => {
+                              const enabled = (e.target as HTMLInputElement).checked;
+                              setDiscountMessagingMultiLanguageEnabled(enabled);
+                              if (enabled && Object.keys(ruleMessagesByLocale).length === 0) {
+                                const primaryLocale = shopLocales.find((l: any) => l.primary)?.locale ?? "en";
+                                setRuleMessagesByLocale({ [primaryLocale]: normalizedRuleMessages });
+                              }
+                              markAsDirty();
+                            }}
                           />
+                        </s-stack>
+                        <div style={{ textAlign: "right" }}>
                           <s-button
-                            variant="tertiary"
-                            icon="info"
-                            commandFor="template-variables-modal"
-                            command="--show"
+                            variant="plain"
                             onClick={() => showPolarisModal(templateVariablesModalRef)}
                           >
                             Show Variables
                           </s-button>
-                        </s-stack>
+                        </div>
+
+                        {discountMessagingMultiLanguageEnabled && shopLocales.length > 0 && (
+                          <div className={fullPageBundleStyles.tabRow}>
+                            {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                              <button
+                                key={loc.locale}
+                                className={activeDiscountLocale === loc.locale ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                onClick={() => setActiveDiscountLocale(loc.locale)}
+                              >
+                                {loc.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
 
                         {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 ? (
                           <s-stack direction="block" gap="small">
-                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <s-section key={rule.id}>
-                                <s-stack direction="block" gap="small">
-                                  <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-                                    Rule #{index + 1} Messages
-                                  </h5>
-                                  <s-text-area
-                                    label="Discount Text"
-                                    value={normalizedRuleMessages[rule.id]?.discountText || DEFAULT_DISCOUNT_RULE_TEXT}
-                                    onInput={(e: Event) => updateRuleMessage(rule.id, "discountText", (e.target as HTMLTextAreaElement).value)}
-                                    autoComplete="off"
-                                    helpText="This message appears when the customer is close to qualifying for the discount."
-                                  />
-                                  <s-text-area
-                                    label="Success Message"
-                                    value={normalizedRuleMessages[rule.id]?.successMessage || DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE}
-                                    onInput={(e: Event) => updateRuleMessage(rule.id, "successMessage", (e.target as HTMLTextAreaElement).value)}
-                                    autoComplete="off"
-                                    helpText="This message appears when the customer qualifies for the discount."
-                                  />
-                                </s-stack>
-                              </s-section>
-                            ))}
+                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => {
+                              const localeMessages = discountMessagingMultiLanguageEnabled
+                                ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? normalizedRuleMessages[rule.id])
+                                : normalizedRuleMessages[rule.id];
+                              return (
+                                <s-section key={rule.id}>
+                                  <s-stack direction="block" gap="small">
+                                    <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+                                      Rule #{index + 1} Messages
+                                    </h5>
+                                    <s-text-area
+                                      label="Discount Text"
+                                      value={localeMessages?.discountText || DEFAULT_DISCOUNT_RULE_TEXT}
+                                      onInput={(e: Event) => {
+                                        const val = (e.target as HTMLTextAreaElement).value;
+                                        if (discountMessagingMultiLanguageEnabled) {
+                                          setRuleMessagesByLocale(prev => ({
+                                            ...prev,
+                                            [activeDiscountLocale]: {
+                                              ...(prev[activeDiscountLocale] || {}),
+                                              [rule.id]: { ...(prev[activeDiscountLocale]?.[rule.id] || {}), discountText: val },
+                                            },
+                                          }));
+                                          markAsDirty();
+                                        } else {
+                                          updateRuleMessage(rule.id, "discountText", val);
+                                        }
+                                      }}
+                                      autoComplete="off"
+                                      helpText="This message appears when the customer is close to qualifying for the discount."
+                                    />
+                                    <s-text-area
+                                      label="Success Message"
+                                      value={localeMessages?.successMessage || DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE}
+                                      onInput={(e: Event) => {
+                                        const val = (e.target as HTMLTextAreaElement).value;
+                                        if (discountMessagingMultiLanguageEnabled) {
+                                          setRuleMessagesByLocale(prev => ({
+                                            ...prev,
+                                            [activeDiscountLocale]: {
+                                              ...(prev[activeDiscountLocale] || {}),
+                                              [rule.id]: { ...(prev[activeDiscountLocale]?.[rule.id] || {}), successMessage: val },
+                                            },
+                                          }));
+                                          markAsDirty();
+                                        } else {
+                                          updateRuleMessage(rule.id, "successMessage", val);
+                                        }
+                                      }}
+                                      autoComplete="off"
+                                      helpText="This message appears when the customer qualifies for the discount."
+                                    />
+                                  </s-stack>
+                                </s-section>
+                              );
+                            })}
                           </s-stack>
                         ) : (
                           <s-section>

@@ -356,6 +356,7 @@ function buildFpbBaseConfig(
         showDiscountMessaging: discountData.discountMessagingEnabled || false,
         showInCart: true,
         displayOptions: discountData.pricingDisplayOptions || null,
+        ruleMessagesByLocale: discountData.ruleMessagesByLocale || null,
       },
     },
     bundleParentVariantId: bundleParentVariantId,
@@ -624,7 +625,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {},
                   displayOptions: discountData.pricingDisplayOptions || null
-                }
+                },
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               },
               update: {
                 enabled: discountData.discountEnabled,
@@ -637,7 +639,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {},
                   displayOptions: discountData.pricingDisplayOptions || null
-                }
+                },
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               }
             }
           }

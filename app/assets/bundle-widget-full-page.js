@@ -528,8 +528,12 @@ class BundleWidgetFullPage {
       this.config.showDiscountProgressBar = progressBarOptions.enabled === true || messaging.showDiscountProgressBar === true;
 
     } else if (pricingMessages) {
-      // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
-      const ruleMessages = pricingMessages.ruleMessages;
+      // Full-page bundle API path: templates live in ruleMessages (first rule = global template).
+      // When ruleMessagesByLocale is present, prefer the locale-specific messages.
+      const shopLocale = window.Shopify?.locale;
+      const byLocale = pricingMessages.ruleMessagesByLocale;
+      const localeRuleMessages = shopLocale && byLocale?.[shopLocale];
+      const ruleMessages = localeRuleMessages || pricingMessages.ruleMessages;
       const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
       if (firstRuleMsg?.discountText) {
         this.config.discountTextTemplate = firstRuleMsg.discountText;

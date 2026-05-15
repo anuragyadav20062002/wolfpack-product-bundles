@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.8.0
- * Built   : 2026-05-13
+ * Built   : 2026-05-15
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -2861,7 +2861,10 @@ class BundleWidgetFullPage {
 
     } else if (pricingMessages) {
 
-      const ruleMessages = pricingMessages.ruleMessages;
+      const shopLocale = window.Shopify?.locale;
+      const byLocale = pricingMessages.ruleMessagesByLocale;
+      const localeRuleMessages = shopLocale && byLocale?.[shopLocale];
+      const ruleMessages = localeRuleMessages || pricingMessages.ruleMessages;
       const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
       if (firstRuleMsg?.discountText) {
         this.config.discountTextTemplate = firstRuleMsg.discountText;

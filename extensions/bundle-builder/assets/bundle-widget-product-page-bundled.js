@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.8.0
- * Built   : 2026-05-11
+ * Built   : 2026-05-15
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -262,6 +262,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -819,6 +827,11 @@ class TemplateManager {
       conditionText: conditionData.conditionText,
 
       discountText: discountData.discountText,
+      discountConditionDiff: conditionType === 'amount' ? conditionData.amountNeeded : conditionData.itemsNeeded,
+      discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
+      discountValue: discountData.discountValue,
+      discountValueUnit: discountData.discountValueUnit,
+      discountedItems: conditionType === 'quantity' ? targetValue.toString() : '0',
 
       alreadyQualified: conditionData.alreadyQualified || false,
 
@@ -956,7 +969,9 @@ class TemplateManager {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
         const percentage = Math.round(safeValue);
         return {
-          discountText: `${percentage}% off`
+          discountText: `${percentage}% off`,
+          discountValue: String(percentage),
+          discountValueUnit: '% off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -969,7 +984,9 @@ class TemplateManager {
         );
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${amountOff} off`
+          discountText: `${currencyInfo.display.symbol}${amountOff} off`,
+          discountValue: `${currencyInfo.display.symbol}${amountOff}`,
+          discountValueUnit: ' off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -982,12 +999,16 @@ class TemplateManager {
         );
         const bundlePrice = (convertedPrice / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${bundlePrice}`
+          discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValueUnit: ''
         };
 
       default:
         return {
-          discountText: 'discount'
+          discountText: 'discount',
+          discountValue: String(safeValue),
+          discountValueUnit: ''
         };
     }
   }
@@ -999,6 +1020,11 @@ class TemplateManager {
       itemsNeeded: '0',
       conditionText: '0 items',
       discountText: 'No discount',
+      discountConditionDiff: '0',
+      discountUnit: '',
+      discountValue: '0',
+      discountValueUnit: '',
+      discountedItems: '0',
 
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       currentQuantity: totalQuantity.toString(),
@@ -3125,7 +3151,7 @@ class BundleWidgetProductPage {
         </div>
       `).join('')}
       <style>
-
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
@@ -3141,6 +3167,7 @@ class BundleWidgetProductPage {
           box-shadow: none;
         }
 
+        /* Full card pulsating effect */
         .skeleton-card-content {
           position: absolute;
           top: 0;
