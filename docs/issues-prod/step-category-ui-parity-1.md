@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-15 21:45
+**Last Updated:** 2026-05-15 22:00
 
 ## Overview
 
@@ -47,10 +47,14 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [x] All 5 Prisma includes in `handlers.server.ts` updated with `StepCategory: { orderBy: { sortOrder: 'asc' } }`
 
 ### Phase 4 — FPB route UI — Category accordion rows
-- [ ] Render EB-style expandable category rows (name textbox, Products tab, Collections tab)
-- [ ] Per-category: Browse Products browser + Browse Collections browser
-- [ ] Add Category / Delete Category buttons
-- [ ] Wire all category changes through `markAsDirty()` and `handleDiscard`
+- [x] Add `categoryActiveTabs: Record<string, number>` state (keyed by `${stepId}__${catId}`)
+- [x] Replace old step-level Browse Products/Collections tabs + legacy Category filters section with EB-style per-category accordion rows
+- [x] Each row: drag handle + inline name textbox + clone/delete icon buttons
+- [x] Per-category Browse Products tab + Browse Collections tab with resourcePicker
+- [x] Add Category button appends new empty `StepCategory` to state
+- [x] All mutations wired to `stepsState.updateStepField` + `markAsDirty()`
+- [x] CSS: added `.categoryAccordion`, `.categoryAccordionHeader`, `.categoryNameInput` classes
+- [x] Lint: 0 errors
 
 ### Phase 5 — Metafield builders + widget
 - [ ] Update `bundle-product.server.ts` to read `StepCategory[]` for metafield config
@@ -66,6 +70,16 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [ ] Chrome DevTools screenshot comparison: WPB vs EB Step Setup + Category section
 
 ## Progress Log
+
+### 2026-05-15 22:00 — Completed Phase 4
+
+- ✅ Added `categoryActiveTabs` state to FPB route for per-category tab selection
+- ✅ Replaced old Category card body (step-level tabs + legacy filters section) with EB-style accordion
+- ✅ Each `StepCategory` row renders: drag handle (⋮⋮), inline-editable name input, clone/delete icons, Browse Products + Browse Collections tabs with resourcePicker, product/collection lists with Remove buttons
+- ✅ "Add Category" button appends `{ id: cat-${Date.now()}, name, sortOrder, products: [], collections: [] }` to `step.StepCategory`
+- ✅ CSS: `.categoryAccordion`, `.categoryAccordionHeader`, `.categoryNameInput` added to `full-page-bundle-configure.module.css`
+- ✅ Lint: 0 errors on FPB route
+- Files modified: `route.tsx` (FPB), `full-page-bundle-configure.module.css`
 
 ### 2026-05-15 21:45 — Completed Phase 3
 

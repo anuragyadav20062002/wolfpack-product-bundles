@@ -667,6 +667,9 @@ export default function ConfigureBundleFlow() {
   const [slideKey, setSlideKey] = useState(0);
   const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
 
+  // Per-category active tab: keyed by `${stepId}__${catId}`, value 0=Products 1=Collections
+  const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
+
   // Icon picker visibility (tracks which step's picker is open)
   const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
 
@@ -2122,250 +2125,215 @@ export default function ConfigureBundleFlow() {
                       <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
                         Add all product selections in this step to a single category or separate them into multiple categories for better segregation.
                       </p>
-                      <div className={fullPageBundleStyles.tabRow}>
-                        <button
-                          className={stepsState.selectedTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
-                          onClick={() => stepsState.setSelectedTab(0)}
-                        >
-                          Browse Products
-                          {step.StepProduct && step.StepProduct.length > 0 && (
-                            <span className={fullPageBundleStyles.tabBadge}>{stepsState.getUniqueProductCount(step.StepProduct)}</span>
-                          )}
-                        </button>
-                        <button
-                          className={stepsState.selectedTab === 1 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
-                          onClick={() => stepsState.setSelectedTab(1)}
-                        >
-                          Browse Collections
-                          {(selectedCollections[step.id]?.length > 0) && (
-                            <span className={fullPageBundleStyles.tabBadge}>{selectedCollections[step.id].length}</span>
-                          )}
-                        </button>
-                      </div>
 
-                      {stepsState.selectedTab === 0 && (
-                        <div>
-                          <p style={{ margin: "0 0 12px", fontSize: 14, color: "#6d7175" }}>
-                            Products selected here will be displayed in this step.
-                          </p>
-                          <div className={fullPageBundleStyles.productActions}>
-                            <s-button variant="primary" onClick={() => handleProductSelection(step.id)}>
-                              Add Product
-                            </s-button>
-                            {step.StepProduct && step.StepProduct.length > 0 && (
-                              <s-badge tone="success">
-                                {stepsState.getUniqueProductCount(step.StepProduct)} Selected
-                              </s-badge>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {stepsState.selectedTab === 1 && (
-                        <div>
-                          <p style={{ margin: "0 0 12px", fontSize: 14, color: "#6d7175" }}>
-                            Collections selected here will be displayed in this step.
-                          </p>
-                          <div className={fullPageBundleStyles.productActions}>
-                            <s-button variant="primary" onClick={() => handleCollectionSelection(step.id)}>
-                              Add Collections
-                            </s-button>
-                            {selectedCollections[step.id]?.length > 0 && (
-                              <s-badge tone="success">
-                                {selectedCollections[step.id].length} Selected
-                              </s-badge>
-                            )}
-                          </div>
-                          {selectedCollections[step.id]?.length > 0 && (
-                            <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
-                              {selectedCollections[step.id].map((col: any) => (
-                                <s-stack key={col.id} direction="inline" gap="small-100">
-                                  <img
-                                    src={col.image?.url || "/bundle.png"}
-                                    alt={col.title}
-                                    style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
-                                  />
-                                  <span style={{ flex: 1, fontSize: 14 }}>{col.title}</span>
-                                  <s-button
-                                    variant="plain"
-                                    onClick={() => setSelectedCollections(prev => ({
-                                      ...prev,
-                                      [step.id]: prev[step.id]?.filter((c: any) => c.id !== col.id) || []
-                                    }))}
-                                  >
-                                    Remove
-                                  </s-button>
-                                </s-stack>
-                              ))}
-                            </s-stack>
-                          )}
-                        </div>
-                      )}
-
-                      {(() => {
-                        const filters = (((step as any).filters as { label: string; collectionHandle: string }[]) || [])
-                          .filter((filter) => filter.label || filter.collectionHandle);
-                        const collectionsForStep = ((selectedCollections[step.id] || step.collections || []) as { id?: string; handle?: string; title?: string }[]);
-                        const categoryRows = filters.length > 0
-                          ? filters.map((filter, filterIndex) => ({
-                              id: `${filter.collectionHandle || "filter"}-${filterIndex}`,
-                              label: filter.label || filter.collectionHandle || `Category ${filterIndex + 1}`,
-                              type: "filter" as const,
-                              index: filterIndex,
-                            }))
-                          : collectionsForStep.length > 0
-                            ? collectionsForStep.map((collection, collectionIndex) => ({
-                                id: collection.id || collection.handle || `collection-${collectionIndex}`,
-                                label: collection.title || collection.handle || `Category ${collectionIndex + 1}`,
-                                type: "collection" as const,
-                                index: collectionIndex,
-                              }))
-                            : (step.StepProduct && step.StepProduct.length > 0)
-                              ? [{
-                                  id: "selected-products",
-                                  label: "Products",
-                                  type: "products" as const,
-                                  index: 0,
-                                }]
-                              : [];
-
-                        return categoryRows.length > 0 ? (
-                          <div className={fullPageBundleStyles.ebCategoryList}>
-                            {categoryRows.map((row) => (
-                              <div key={row.id} className={fullPageBundleStyles.ebCategoryItem}>
-                                <span className={fullPageBundleStyles.ebCategoryDrag} aria-hidden="true">⋮⋮</span>
-                                <span className={fullPageBundleStyles.ebCategoryName}>{row.label}</span>
-                                <span className={fullPageBundleStyles.ebCategoryActions}>
-                                  <s-button
-                                    variant="plain"
-                                    icon="duplicate"
-                                    onClick={() => {
-                                      if (row.type === "filter") {
-                                        const current = (((step as any).filters as { label: string; collectionHandle: string }[]) || []);
-                                        const source = current[row.index];
-                                        stepsState.updateStepField(step.id, "filters", [
-                                          ...current,
-                                          { ...source, label: `${source.label || "Category"} Copy` },
-                                        ]);
-                                        markAsDirty();
-                                      } else if (row.type === "collection") {
-                                        const current = selectedCollections[step.id] || [];
-                                        const source = current[row.index];
-                                        setSelectedCollections(prev => ({
-                                          ...prev,
-                                          [step.id]: [...(prev[step.id] || []), { ...source }],
-                                        }));
-                                        markAsDirty();
-                                      } else {
-                                        shopify.toast.show("Use the product picker to add more products.", { isError: false });
-                                      }
-                                    }}
-                                  />
-                                  <s-button
-                                    variant="plain"
-                                    icon="delete"
-                                    tone="critical"
-                                    onClick={() => {
-                                      if (row.type === "filter") {
-                                        const updated = (((step as any).filters as { label: string; collectionHandle: string }[]) || []).filter((_, i) => i !== row.index);
-                                        stepsState.updateStepField(step.id, "filters", updated.length > 0 ? updated : null);
-                                      } else if (row.type === "collection") {
-                                        setSelectedCollections(prev => ({
-                                          ...prev,
-                                          [step.id]: (prev[step.id] || []).filter((_: any, i: number) => i !== row.index),
-                                        }));
-                                      } else {
-                                        stepsState.updateStepField(step.id, "StepProduct", []);
-                                      }
-                                      markAsDirty();
-                                    }}
-                                  />
-                                </span>
+                      {/* EB-style per-category accordion rows */}
+                      {((step.StepCategory as any[] | undefined) ?? []).map((cat: any, catIndex: number) => {
+                        const catTabKey = `${step.id}__${cat.id ?? catIndex}`;
+                        const catActiveTab = categoryActiveTabs[catTabKey] ?? 0;
+                        const catProducts = (cat.products as any[]) ?? [];
+                        const catCollections = (cat.collections as any[]) ?? [];
+                        return (
+                          <div key={cat.id ?? catIndex} className={fullPageBundleStyles.categoryAccordion}>
+                            <div className={fullPageBundleStyles.categoryAccordionHeader}>
+                              <span className={fullPageBundleStyles.ebCategoryDrag} aria-hidden="true">⋮⋮</span>
+                              <input
+                                className={fullPageBundleStyles.categoryNameInput}
+                                type="text"
+                                value={cat.name ?? ""}
+                                placeholder={`Category ${catIndex + 1}`}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                  const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                    i === catIndex ? { ...c, name: e.target.value } : c
+                                  );
+                                  stepsState.updateStepField(step.id, "StepCategory", updated);
+                                  markAsDirty();
+                                }}
+                              />
+                              <div style={{ display: "flex", gap: 4 }}>
+                                <s-button
+                                  variant="plain"
+                                  icon="duplicate"
+                                  accessibilityLabel="Clone category"
+                                  onClick={() => {
+                                    const cats = (step.StepCategory as any[]) ?? [];
+                                    stepsState.updateStepField(step.id, "StepCategory", [
+                                      ...cats,
+                                      { ...cats[catIndex], id: `cat-${Date.now()}`, name: `${cats[catIndex].name || `Category ${catIndex + 1}`} Copy`, sortOrder: cats.length },
+                                    ]);
+                                    markAsDirty();
+                                  }}
+                                />
+                                <s-button
+                                  variant="plain"
+                                  icon="delete"
+                                  accessibilityLabel="Delete category"
+                                  onClick={() => {
+                                    const updated = ((step.StepCategory as any[]) ?? []).filter((_: any, i: number) => i !== catIndex);
+                                    stepsState.updateStepField(step.id, "StepCategory", updated);
+                                    markAsDirty();
+                                  }}
+                                />
                               </div>
-                            ))}
-                          </div>
-                        ) : null;
-                      })()}
+                            </div>
 
-                      <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
-                      <s-stack direction="block" gap="small">
-                        <span className={fullPageBundleStyles.headingWithHelp}>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Category filters</h4>
-                          <QuestionHelpTooltip tooltipKey="category" />
-                        </span>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Add product selections to a single category or separate them into multiple filter tabs for better segregation.
-                        </p>
-                        {((selectedCollections[step.id] || step.collections || []).length === 0) ? (
-                          <div className={fullPageBundleStyles.emptyState}>
-                            Add collections to this step first to configure category filter tabs.
-                          </div>
-                        ) : (
-                          <s-stack direction="block" gap="small">
-                            {((step as any).filters as { label: string; collectionHandle: string }[] || []).map(
-                              (filter, fi) => (
-                                <div key={fi} className={fullPageBundleStyles.categoryFilterRow}>
-                                  <s-text-field
-                                    label="Tab label"
-                                    placeholder="e.g. Snowboards"
-                                    value={filter.label}
-                                    onInput={(e: Event) => {
-                                      const updated = [
-                                        ...((step as any).filters || []),
-                                      ] as { label: string; collectionHandle: string }[];
-                                      updated[fi] = { ...updated[fi], label: (e.target as HTMLInputElement).value };
-                                      stepsState.updateStepField(step.id, 'filters', updated);
-                                      markAsDirty();
-                                    }}
-                                    autoComplete="off"
-                                  />
-                                  <s-select
-                                    label="Collection"
-                                    value={filter.collectionHandle}
-                                    onChange={(e: Event) => {
-                                      const updated = [
-                                        ...((step as any).filters || []),
-                                      ] as { label: string; collectionHandle: string }[];
-                                      updated[fi] = { ...updated[fi], collectionHandle: (e.target as HTMLSelectElement).value };
-                                      stepsState.updateStepField(step.id, 'filters', updated);
-                                      markAsDirty();
-                                    }}
-                                  >
-                                    <s-option value="" disabled>Select collection</s-option>
-                                    {((selectedCollections[step.id] || step.collections || []) as { id: string; handle: string; title: string }[]).map(col => (
-                                      <s-option key={col.id} value={col.handle || col.id}>{col.title || col.handle}</s-option>
-                                    ))}
-                                  </s-select>
+                            <div className={fullPageBundleStyles.tabRow}>
+                              <button
+                                className={catActiveTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catTabKey]: 0 }))}
+                              >
+                                Browse Products
+                                {catProducts.length > 0 && (
+                                  <span className={fullPageBundleStyles.tabBadge}>{catProducts.length}</span>
+                                )}
+                              </button>
+                              <button
+                                className={catActiveTab === 1 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catTabKey]: 1 }))}
+                              >
+                                Browse Collections
+                                {catCollections.length > 0 && (
+                                  <span className={fullPageBundleStyles.tabBadge}>{catCollections.length}</span>
+                                )}
+                              </button>
+                            </div>
+
+                            {catActiveTab === 0 && (
+                              <div style={{ marginTop: 12 }}>
+                                <div className={fullPageBundleStyles.productActions}>
                                   <s-button
-                                    variant="plain"
-                                    onClick={() => {
-                                      const updated = ((step as any).filters as { label: string; collectionHandle: string }[]).filter((_, i) => i !== fi);
-                                      stepsState.updateStepField(step.id, 'filters', updated.length > 0 ? updated : null);
+                                    variant="primary"
+                                    onClick={async () => {
+                                      const picked = await (shopify as any).resourcePicker({
+                                        type: "product",
+                                        multiple: true,
+                                        selectionIds: catProducts.map((p: any) => ({ id: p.id })),
+                                      });
+                                      if (!picked) return;
+                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                        i === catIndex ? { ...c, products: picked.map((p: any) => ({
+                                          id: p.id,
+                                          title: p.title,
+                                          imageUrl: p.images?.[0]?.originalSrc || p.images?.[0]?.url || null,
+                                          variants: p.variants || null,
+                                          minQuantity: 1,
+                                          maxQuantity: 10,
+                                        })) } : c
+                                      );
+                                      stepsState.updateStepField(step.id, "StepCategory", updated);
                                       markAsDirty();
                                     }}
                                   >
-                                    <s-icon name="delete" />
+                                    {catProducts.length > 0 ? "Edit Products" : "Add Products"}
                                   </s-button>
+                                  {catProducts.length > 0 && (
+                                    <s-badge tone="success">{catProducts.length} Selected</s-badge>
+                                  )}
                                 </div>
-                              )
+                                {catProducts.length > 0 && (
+                                  <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                    {catProducts.map((product: any) => (
+                                      <s-stack key={product.id} direction="inline" gap="small-100">
+                                        <img
+                                          src={product.imageUrl || "/bundle.png"}
+                                          alt={product.title}
+                                          style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
+                                        />
+                                        <span style={{ flex: 1, fontSize: 14 }}>{product.title}</span>
+                                        <s-button
+                                          variant="plain"
+                                          onClick={() => {
+                                            const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                              i === catIndex ? { ...c, products: c.products.filter((p: any) => p.id !== product.id) } : c
+                                            );
+                                            stepsState.updateStepField(step.id, "StepCategory", updated);
+                                            markAsDirty();
+                                          }}
+                                        >
+                                          Remove
+                                        </s-button>
+                                      </s-stack>
+                                    ))}
+                                  </s-stack>
+                                )}
+                              </div>
                             )}
-                            <s-button
-                              variant="secondary"
-                              icon="plus"
-                              onClick={() => {
-                                const current = ((step as any).filters as { label: string; collectionHandle: string }[]) || [];
-                                stepsState.updateStepField(step.id, 'filters', [
-                                  ...current,
-                                  { label: "", collectionHandle: "" },
-                                ]);
-                                markAsDirty();
-                              }}
-                            >
-                              Add Category
-                            </s-button>
-                          </s-stack>
-                        )}
-                      </s-stack>
+
+                            {catActiveTab === 1 && (
+                              <div style={{ marginTop: 12 }}>
+                                <div className={fullPageBundleStyles.productActions}>
+                                  <s-button
+                                    variant="primary"
+                                    onClick={async () => {
+                                      const picked = await (shopify as any).resourcePicker({
+                                        type: "collection",
+                                        multiple: true,
+                                        selectionIds: catCollections.map((c: any) => ({ id: c.id })),
+                                      });
+                                      if (!picked) return;
+                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                        i === catIndex ? { ...c, collections: picked.map((col: any) => ({
+                                          id: col.id,
+                                          handle: col.handle,
+                                          title: col.title,
+                                        })) } : c
+                                      );
+                                      stepsState.updateStepField(step.id, "StepCategory", updated);
+                                      markAsDirty();
+                                    }}
+                                  >
+                                    {catCollections.length > 0 ? "Edit Collections" : "Add Collections"}
+                                  </s-button>
+                                  {catCollections.length > 0 && (
+                                    <s-badge tone="success">{catCollections.length} Selected</s-badge>
+                                  )}
+                                </div>
+                                {catCollections.length > 0 && (
+                                  <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                    {catCollections.map((col: any) => (
+                                      <s-stack key={col.id} direction="inline" gap="small-100">
+                                        <img
+                                          src={col.image?.url || "/bundle.png"}
+                                          alt={col.title}
+                                          style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
+                                        />
+                                        <span style={{ flex: 1, fontSize: 14 }}>{col.title}</span>
+                                        <s-button
+                                          variant="plain"
+                                          onClick={() => {
+                                            const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                              i === catIndex ? { ...c, collections: c.collections.filter((col2: any) => col2.id !== col.id) } : c
+                                            );
+                                            stepsState.updateStepField(step.id, "StepCategory", updated);
+                                            markAsDirty();
+                                          }}
+                                        >
+                                          Remove
+                                        </s-button>
+                                      </s-stack>
+                                    ))}
+                                  </s-stack>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      <s-button
+                        variant="secondary"
+                        icon="plus"
+                        onClick={() => {
+                          const cats = (step.StepCategory as any[]) ?? [];
+                          stepsState.updateStepField(step.id, "StepCategory", [
+                            ...cats,
+                            { id: `cat-${Date.now()}`, name: "", sortOrder: cats.length, products: [], collections: [] },
+                          ]);
+                          markAsDirty();
+                        }}
+                      >
+                        Add Category
+                      </s-button>
+
                       <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
                       <s-checkbox
                         label="Display variants as individual products"

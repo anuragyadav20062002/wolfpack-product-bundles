@@ -1141,6 +1141,50 @@
   gap: 6px;
 }
 
+/* EB-style per-category accordion row */
+.categoryAccordion {
+  margin-bottom: 8px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 1px rgba(31, 41, 55, 0.04);
+  overflow: hidden;
+}
+
+.categoryAccordionHeader {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f2f4;
+  background: #fafafa;
+}
+
+.categoryNameInput {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.categoryNameInput:hover {
+  border-color: #c9cccf;
+  background: #ffffff;
+}
+
+.categoryNameInput:focus {
+  border-color: #458fff;
+  background: #ffffff;
+}
+
 .ebRuleCard {
   display: flex;
   flex-direction: column;
