@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-16 00:15
+**Last Updated:** 2026-05-16 02:00
 
 ## Overview
 
@@ -76,10 +76,36 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 - [x] CLAUDE.md: documented JS iframe click workaround via `select_page` + `evaluate_script`
 - [x] Lint: 0 ESLint errors on all modified files
 
-### Phase 8 — Chrome DevTools E2E verification
-- [ ] Screenshot comparison: WPB vs EB Step Setup + Category section
+### Phase 8 — Rules / Step Config / Category DnD pixel-perfect pass
+- [x] Category accordion: wire HTML5 drag-to-reorder (drag handle → DnD, drop indicator)
+- [x] Rules Configuration header: inline QuestionHelpTooltip (match EB, remove RichHelpTooltip on right)
+- [x] Rules Configuration: "Add Rule" → variant="plain" left-aligned (not full-width secondary)
+- [x] Step Config: "Upload icon" → variant="plain" (EB button style parity)
+- [x] Chrome DevTools E2E screenshot comparison
+
+### Phase 9 — Category accordion body EB parity
+- [x] Category header: always plain text (never input) — matches EB collapsed AND expanded header
+- [x] Category body: name input + disabled "Multi Language" globe button at top of body
+- [x] Tab labels: "Browse Products" → "Products", "Browse Collections" → "Collections" (matches EB tab text)
+- [x] Rules Configuration: native `<input>` replaces `s-text-field` for value field (hides label correctly)
+- [x] Same tab label fixes applied to create wizard route
+- [x] CSS: `.catNameRow` flex row, `.categoryNameInput` updated to visible border + 36px height in body context
+- [x] Lint: 0 ESLint errors on all modified files
 
 ## Progress Log
+
+### 2026-05-16 02:00 — Completed Phase 8 + Phase 9 — Category accordion body EB parity
+
+- ✅ HTML5 DnD wired: `handleCatDragStart`, `handleCatDragEnd`, `handleCatDrop`, `categoryDragOver` CSS highlight
+- ✅ Rules Configuration: inline QuestionHelpTooltip, "Add Rule" plain left-aligned, native number input for rule value
+- ✅ Step Config: "Upload icon" plain button, "Cancel" toggle
+- ✅ Category accordion header: always shows plain text (never editable input) — matches EB exactly
+- ✅ Category accordion body: name input (visible border, 36px height) + disabled "Multi Language" button at top — matches EB expanded layout
+- ✅ Tab labels updated: "Browse Products"→"Products", "Browse Collections"→"Collections" (FPB + create wizard)
+- ✅ CSS: `.catNameRow` flex container, `.categoryNameInput` updated to bordered body-context style
+- ✅ E2E verified via Chrome DevTools MCP snapshot/screenshot comparison with EB (page 2)
+- ✅ Lint: 0 ESLint errors on all modified files
+- Files modified: `route.tsx` (FPB), `route.tsx` (create wizard), `full-page-bundle-configure.module.css`, `step-category-ui-parity-1.md`
 
 ### 2026-05-16 00:15 — Completed Phase 7 — Category card 100% EB design match
 

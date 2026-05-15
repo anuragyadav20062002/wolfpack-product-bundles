@@ -1121,16 +1121,18 @@
 .ebCategoryDrag {
   display: grid;
   place-items: center;
-  color: #9ca3af;
-  font-size: 14px;
+  color: #6b7280;
+  font-size: 16px;
   line-height: 1;
   cursor: grab;
+  flex-shrink: 0;
 }
 
 .ebCategoryName {
   overflow: hidden;
   font-size: 13px;
   font-weight: 600;
+  color: #202223;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1138,53 +1140,64 @@
 .ebCategoryActions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
 }
 
 /* EB-style per-category accordion row */
 .categoryAccordion {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   border: 1px solid #dfe3e8;
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: 0 1px 1px rgba(31, 41, 55, 0.04);
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06);
   overflow: hidden;
 }
 
 .categoryAccordionHeader {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  min-height: 42px;
-  background: #fafafa;
+  gap: 8px;
+  padding: 6px 8px 6px 10px;
+  min-height: 40px;
+  background: #ffffff;
   cursor: pointer;
   user-select: none;
 }
 
+.categoryAccordionHeader:hover {
+  background: #f9fafb;
+}
+
 .categoryAccordionHeader[aria-expanded="true"] {
-  border-bottom: 1px solid #f1f2f4;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
 }
 
 .categoryAccordionBody {
-  padding: 12px 12px 4px;
+  padding: 14px 14px 8px;
+  background: #ffffff;
+}
+
+.categoryDragOver {
+  border: 2px solid #458fff;
+  box-shadow: 0 0 0 3px rgba(69, 143, 255, 0.12);
 }
 
 .categoryChevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
   border-radius: 4px;
   background: transparent;
   color: #6b7280;
-  font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
 }
 
 .categoryChevron:hover {
@@ -1192,35 +1205,43 @@
   color: #202223;
 }
 
+.catNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
 .categoryNameInput {
-  width: 100%;
-  padding: 4px 6px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #c9cccf;
+  border-radius: 8px;
+  background: #ffffff;
   color: #202223;
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   outline: none;
-  transition: border-color 0.15s, background 0.15s;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .categoryNameInput:hover {
-  border-color: #c9cccf;
-  background: #ffffff;
+  border-color: #919eab;
 }
 
 .categoryNameInput:focus {
   border-color: #458fff;
-  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(69, 143, 255, 0.15);
 }
 
 .ebRuleCard {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 12px;
   padding: 14px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -1236,9 +1257,40 @@
 
 .ebRuleFields {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 92px;
-  gap: 10px;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.ruleValueInput {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #c9cccf;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #202223;
+  background: #ffffff;
+  outline: none;
+  box-sizing: border-box;
+  -moz-appearance: textfield;
+}
+
+.ruleValueInput:hover {
+  border-color: #919eab;
+}
+
+.ruleValueInput:focus {
+  border-color: #458fff;
+  box-shadow: 0 0 0 2px rgba(69, 143, 255, 0.18);
+  outline: none;
+}
+
+.ruleValueInput::-webkit-outer-spin-button,
+.ruleValueInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .ebPanelHeader {

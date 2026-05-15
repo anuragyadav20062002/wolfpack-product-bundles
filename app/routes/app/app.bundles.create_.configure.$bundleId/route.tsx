@@ -1581,7 +1581,7 @@ export default function WizardConfigureStep() {
                                     className={activeTab === 0 ? styles.tabActive : styles.tab}
                                     onClick={() => setCategoryActiveTabs((prev) => ({ ...prev, [tabKey]: 0 }))}
                                   >
-                                    Browse Products
+                                    Products
                                     {cat.products.length > 0 && (
                                       <span className={styles.tabBadge}>{cat.products.length}</span>
                                     )}
@@ -1590,7 +1590,7 @@ export default function WizardConfigureStep() {
                                     className={activeTab === 1 ? styles.tabActive : styles.tab}
                                     onClick={() => setCategoryActiveTabs((prev) => ({ ...prev, [tabKey]: 1 }))}
                                   >
-                                    Browse Collections
+                                    Collections
                                     {cat.collections.length > 0 && (
                                       <span className={styles.tabBadge}>{cat.collections.length}</span>
                                     )}

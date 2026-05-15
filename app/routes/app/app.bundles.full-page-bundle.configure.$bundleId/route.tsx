@@ -1510,9 +1510,13 @@ export default function ConfigureBundleFlow() {
     setActiveTabIndex(stepsState.steps.length);
   }, [stepsState, tierConfig, setStepsTiersWarning, setActiveTabIndex]);
 
-  // Drag and drop state
+  // Drag and drop state — steps
   const [draggedStep, setDraggedStep] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Drag and drop state — categories (keyed by `${stepId}__${catId}`)
+  const [draggedCatKey, setDraggedCatKey] = useState<string | null>(null);
+  const [dragOverCatKey, setDragOverCatKey] = useState<string | null>(null);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e: React.DragEvent, stepId: string, _index: number) => {
@@ -1569,6 +1573,42 @@ export default function ConfigureBundleFlow() {
     setDraggedStep(null);
     setDragOverIndex(null);
   }, [draggedStep, stepsState.steps, stepsState.setSteps, shopify]);
+
+  // Category drag-and-drop handlers
+  const handleCatDragStart = useCallback((e: React.DragEvent, stepId: string, catKey: string) => {
+    setDraggedCatKey(catKey);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", catKey);
+    // Dim the whole accordion row for drag feedback
+    const accordion = (e.currentTarget as HTMLElement).closest('[data-cat-key]') as HTMLElement | null;
+    if (accordion) accordion.style.opacity = "0.5";
+  }, []);
+
+  const handleCatDragEnd = useCallback((e: React.DragEvent) => {
+    setDraggedCatKey(null);
+    setDragOverCatKey(null);
+    const accordion = (e.currentTarget as HTMLElement).closest('[data-cat-key]') as HTMLElement | null;
+    if (accordion) accordion.style.opacity = "1";
+  }, []);
+
+  const handleCatDrop = useCallback((e: React.DragEvent, stepId: string, dropCatKey: string) => {
+    e.preventDefault();
+    const srcKey = draggedCatKey;
+    setDraggedCatKey(null);
+    setDragOverCatKey(null);
+    if (!srcKey || srcKey === dropCatKey) return;
+    const targetStep = stepsState.steps.find(s => s.id === stepId);
+    if (!targetStep) return;
+    const cats = (targetStep.StepCategory as any[]) ?? [];
+    const srcIdx = cats.findIndex((_: any, i: number) => `${stepId}__${cats[i].id ?? i}` === srcKey);
+    const dstIdx = cats.findIndex((_: any, i: number) => `${stepId}__${cats[i].id ?? i}` === dropCatKey);
+    if (srcIdx === -1 || dstIdx === -1 || srcIdx === dstIdx) return;
+    const reordered = [...cats];
+    const [moved] = reordered.splice(srcIdx, 1);
+    reordered.splice(dstIdx, 0, moved);
+    stepsState.updateStepField(stepId, "StepCategory", reordered.map((c: any, i: number) => ({ ...c, sortOrder: i })));
+    markAsDirty();
+  }, [draggedCatKey, stepsState, markAsDirty]);
 
   // NOTE: addStep is now provided by stepsState hook
 
@@ -2140,7 +2180,14 @@ export default function ConfigureBundleFlow() {
                         const catCollections = (cat.collections as any[]) ?? [];
                         const isOpen = categoryOpen[catKey] ?? false;
                         return (
-                          <div key={cat.id ?? catIndex} className={fullPageBundleStyles.categoryAccordion}>
+                          <div
+                            key={cat.id ?? catIndex}
+                            data-cat-key={catKey}
+                            className={`${fullPageBundleStyles.categoryAccordion}${dragOverCatKey === catKey ? ` ${fullPageBundleStyles.categoryDragOver}` : ''}`}
+                            onDragOver={(e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (draggedCatKey && draggedCatKey !== catKey) setDragOverCatKey(catKey); }}
+                            onDragLeave={(e: React.DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCatKey(null); }}
+                            onDrop={(e: React.DragEvent) => handleCatDrop(e, step.id, catKey)}
+                          >
                             {/* Header — click anywhere to toggle; action buttons stop propagation */}
                             <div
                               className={fullPageBundleStyles.categoryAccordionHeader}
@@ -2148,27 +2195,17 @@ export default function ConfigureBundleFlow() {
                               aria-expanded={isOpen}
                               onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
                             >
-                              <span className={fullPageBundleStyles.ebCategoryDrag} aria-hidden="true">⠿</span>
-                              {isOpen ? (
-                                <input
-                                  className={fullPageBundleStyles.categoryNameInput}
-                                  type="text"
-                                  value={cat.name ?? ""}
-                                  placeholder={`Category ${catIndex + 1}`}
-                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                    const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                      i === catIndex ? { ...c, name: e.target.value } : c
-                                    );
-                                    stepsState.updateStepField(step.id, "StepCategory", updated);
-                                    markAsDirty();
-                                  }}
-                                />
-                              ) : (
-                                <span className={fullPageBundleStyles.ebCategoryName}>
-                                  {cat.name || `Category ${catIndex + 1}`}
-                                </span>
-                              )}
+                              <span
+                                className={fullPageBundleStyles.ebCategoryDrag}
+                                aria-hidden="true"
+                                draggable="true"
+                                onDragStart={(e: React.DragEvent) => { e.stopPropagation(); handleCatDragStart(e, step.id, catKey); }}
+                                onDragEnd={handleCatDragEnd}
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                              >⠿</span>
+                              <span className={fullPageBundleStyles.ebCategoryName}>
+                                {cat.name || `Category ${catIndex + 1}`}
+                              </span>
                               <div
                                 className={fullPageBundleStyles.ebCategoryActions}
                                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
@@ -2201,7 +2238,15 @@ export default function ConfigureBundleFlow() {
                                   aria-label={isOpen ? "Collapse category" : "Expand category"}
                                   onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
                                 >
-                                  {isOpen ? "▴" : "▾"}
+                                  {isOpen ? (
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                      <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  ) : (
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                      <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  )}
                                 </button>
                               </div>
                             </div>
@@ -2209,12 +2254,30 @@ export default function ConfigureBundleFlow() {
                             {/* Expandable body — only visible when open */}
                             {isOpen && (
                               <div className={fullPageBundleStyles.categoryAccordionBody}>
+                                {/* Category name input + Multi Language — matches EB body layout */}
+                                <div className={fullPageBundleStyles.catNameRow}>
+                                  <input
+                                    className={fullPageBundleStyles.categoryNameInput}
+                                    type="text"
+                                    value={cat.name ?? ""}
+                                    placeholder={`Category ${catIndex + 1}`}
+                                    aria-label="Category name"
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                        i === catIndex ? { ...c, name: e.target.value } : c
+                                      );
+                                      stepsState.updateStepField(step.id, "StepCategory", updated);
+                                      markAsDirty();
+                                    }}
+                                  />
+                                  <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language">Multi Language</s-button>
+                                </div>
                                 <div className={fullPageBundleStyles.tabRow}>
                                   <button
                                     className={catActiveTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
                                     onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catKey]: 0 }))}
                                   >
-                                    Browse Products
+                                    Products
                                     {catProducts.length > 0 && (
                                       <span className={fullPageBundleStyles.tabBadge}>{catProducts.length}</span>
                                     )}
@@ -2223,7 +2286,7 @@ export default function ConfigureBundleFlow() {
                                     className={catActiveTab === 1 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
                                     onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catKey]: 1 }))}
                                   >
-                                    Browse Collections
+                                    Collections
                                     {catCollections.length > 0 && (
                                       <span className={fullPageBundleStyles.tabBadge}>{catCollections.length}</span>
                                     )}
@@ -2384,18 +2447,13 @@ export default function ConfigureBundleFlow() {
 
                     {/* ── Rules Configuration card ── */}
                     <div className={fullPageBundleStyles.card}>
-                      <div className={fullPageBundleStyles.cardHeader}>
-                        <div>
-                          <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600 }}>Rules Configuration</h3>
-                          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                            Apply rules to the entire step or to specific categories to guide your customer's selections.
-                          </p>
-                        </div>
-                        <RichHelpTooltip
-                          label="Learn More"
-                          tooltipKey="rulesConfiguration"
-                        />
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Rules Configuration</h3>
+                        <QuestionHelpTooltip tooltipKey="rulesConfiguration" />
                       </div>
+                      <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
+                        Apply rules to the entire step or to specific categories to guide your customer's selections.
+                      </p>
                       {(() => {
                         const filters = ((step as any).filters as { label: string; collectionHandle: string }[] || []);
                         const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
@@ -2465,13 +2523,14 @@ export default function ConfigureBundleFlow() {
                                     <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
                                   ))}
                                 </s-select>
-                                <s-text-field
-                                  label="Value"
-                                  value={rule.value}
-                                  onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
-                                  autoComplete="off"
+                                <input
                                   type="number"
                                   min="0"
+                                  placeholder="Value"
+                                  className={fullPageBundleStyles.ruleValueInput}
+                                  value={rule.value ?? ""}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => conditionsState.updateConditionRule(step.id, rule.id, 'value', e.target.value)}
+                                  autoComplete="off"
                                 />
                               </div>
                               <s-checkbox
@@ -2485,11 +2544,10 @@ export default function ConfigureBundleFlow() {
                           ))}
                         </div>
                       )}
-                      <div className={fullPageBundleStyles.addRuleWrap}>
+                      <div className={fullPageBundleStyles.addRuleWrap} style={{ marginTop: 4 }}>
                         <s-button
-                          variant="secondary"
+                          variant="plain"
                           icon="plus"
-                          style={{ width: "100%" }}
                           onClick={() => {
                             if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
                               shopify.toast.show('A step can have at most 2 rules', { isError: false });
@@ -2505,7 +2563,7 @@ export default function ConfigureBundleFlow() {
 
                     {/* ── Step Config card ── */}
                     <div className={fullPageBundleStyles.card}>
-                      <h3 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 600 }}>Step Config</h3>
+                      <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 650, color: "#202223", letterSpacing: 0 }}>Step Config</h3>
                       <div className={fullPageBundleStyles.stepConfigRow}>
                         <div className={fullPageBundleStyles.iconColumn}>
                           <div className={fullPageBundleStyles.iconBox}>
@@ -2536,11 +2594,11 @@ export default function ConfigureBundleFlow() {
                             />
                           )}
                           <s-button
-                            variant="secondary"
+                            variant="plain"
                             icon="upload"
                             onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
                           >
-                            {showIconPickerForStep === step.id ? "Close picker" : "Replace"}
+                            {showIconPickerForStep === step.id ? "Cancel" : "Upload icon"}
                           </s-button>
                         </div>
                         <div className={fullPageBundleStyles.fieldsColumn}>
