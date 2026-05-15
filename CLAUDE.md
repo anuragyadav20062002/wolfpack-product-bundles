@@ -884,3 +884,58 @@ When asked to audit, review, or verify storefront UI, you MUST test on **both de
 ```
 
 **Why:** Many storefront bugs are mobile-only (overflow, tap targets, font scaling, modal sizing). A desktop-only audit misses ~60% of merchant customer traffic. Always test both.
+
+---
+
+## 🖱️ Chrome DevTools — Clicking Inside the Shopify Admin Iframe
+
+### Problem
+
+The Shopify Admin embeds the app inside a cross-origin OOPIF (Out-of-Process IFrame). Chrome DevTools MCP cannot address elements inside the iframe by element uid because the OOPIF registers as a separate CDP target with its own page context — `contentDocument` is null and `contentWindow.document` throws a `SecurityError` from the outer page.
+
+### Workaround — Use `evaluate_script` with synthetic JS events
+
+You **can** dispatch synthetic click / pointer events from inside the iframe's own page context using the `evaluate_script` tool after switching to the correct CDP target.
+
+**Step-by-step:**
+
+1. **List all open pages** to find the iframe's target:
+   ```
+   mcp__chrome-devtools__list_pages()
+   ```
+   The embedded app page appears as a separate target (URL matches the tunnel or `admin.shopify.com/...`). Note its `pageId`.
+
+2. **Switch to the iframe's page target:**
+   ```
+   mcp__chrome-devtools__select_page(pageId: "<iframe-page-id>")
+   ```
+
+3. **Dispatch a JS click on any element by selector:**
+   ```
+   mcp__chrome-devtools__evaluate_script(script: `
+     document.querySelector('<CSS selector>').click();
+   `)
+   ```
+   Or, for elements that need pointer events:
+   ```
+   mcp__chrome-devtools__evaluate_script(script: `
+     const el = document.querySelector('<CSS selector>');
+     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+     el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+     el.click();
+   `)
+   ```
+
+4. **Take a screenshot** to verify the result:
+   ```
+   mcp__chrome-devtools__take_screenshot()
+   ```
+
+5. **Switch back to the outer Admin page** when done:
+   ```
+   mcp__chrome-devtools__select_page(pageId: "<admin-page-id>")
+   ```
+
+### Key rule
+
+Always `select_page` to the **iframe target** before using `evaluate_script` or `click` — never try to reach iframe DOM from the outer Admin page context.

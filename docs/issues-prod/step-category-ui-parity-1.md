@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-15
-**Last Updated:** 2026-05-15 23:30
+**Last Updated:** 2026-05-16 00:15
 
 ## Overview
 
@@ -65,11 +65,35 @@ resolved. Architectural/data model changes are driven by EB's category-per-row m
 ### Phase 6 — Create wizard parity
 - [x] Update `app.bundles.create_.configure.$bundleId/route.tsx` for same Category UI
 
-### Phase 7 — Lint + Chrome DevTools verification
-- [ ] 0 ESLint errors on all modified files
-- [ ] Chrome DevTools screenshot comparison: WPB vs EB Step Setup + Category section
+### Phase 7 — Category card 100% EB design match
+- [x] Category heading: "Category ?" with QuestionHelpTooltip (tooltipKey="category")
+- [x] Category rows collapsed by default — `categoryOpen` state added
+- [x] Collapsed row: ⠿ drag handle + name as plain text + (clone, delete, chevron-▾)
+- [x] Expanded row: ⠿ drag handle + name as editable input + (clone, delete, chevron-▴) + Browse tabs body
+- [x] Header click toggles open/closed; action buttons stop event propagation
+- [x] "Add Category" button: variant="plain" (matches EB link-style button)
+- [x] CSS: `.categoryAccordionBody` (padding), `.categoryChevron` (styled button), header `cursor: pointer` + `aria-expanded` border
+- [x] CLAUDE.md: documented JS iframe click workaround via `select_page` + `evaluate_script`
+- [x] Lint: 0 ESLint errors on all modified files
+
+### Phase 8 — Chrome DevTools E2E verification
+- [ ] Screenshot comparison: WPB vs EB Step Setup + Category section
 
 ## Progress Log
+
+### 2026-05-16 00:15 — Completed Phase 7 — Category card 100% EB design match
+
+- ✅ Added `categoryOpen: Record<string, boolean>` state to FPB route (keyed by `${stepId}__${catId}`)
+- ✅ Category heading: "Category ?" with `<QuestionHelpTooltip tooltipKey="category" />`
+- ✅ Rows collapsed by default; entire header row is clickable (role="button", aria-expanded)
+- ✅ Collapsed state: `⠿ | name-as-text | [clone] [delete] [▾]`
+- ✅ Expanded state: `⠿ | name-as-editable-input | [clone] [delete] [▴]` + body with Browse tabs
+- ✅ Action buttons (`ebCategoryActions` div) stop click propagation so they don't toggle the row
+- ✅ "Add Category" changed from `variant="secondary"` to `variant="plain"` (matches EB plain link style)
+- ✅ CSS: `.categoryAccordionBody` (12px padding), `.categoryChevron` (hover bg), header `cursor: pointer`, `aria-expanded="true"` adds bottom border
+- ✅ CLAUDE.md: added "🖱️ Chrome DevTools — Clicking Inside the Shopify Admin Iframe" section
+- ✅ Lint: 0 ESLint errors on FPB route
+- Files modified: `route.tsx` (FPB), `full-page-bundle-configure.module.css`, `CLAUDE.md`, `step-category-ui-parity-1.md`
 
 ### 2026-05-15 23:30 — Completed Phase 6
 

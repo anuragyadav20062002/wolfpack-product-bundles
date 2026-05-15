@@ -1157,8 +1157,39 @@
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
-  border-bottom: 1px solid #f1f2f4;
+  min-height: 42px;
   background: #fafafa;
+  cursor: pointer;
+  user-select: none;
+}
+
+.categoryAccordionHeader[aria-expanded="true"] {
+  border-bottom: 1px solid #f1f2f4;
+}
+
+.categoryAccordionBody {
+  padding: 12px 12px 4px;
+}
+
+.categoryChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.categoryChevron:hover {
+  background: #f1f2f4;
+  color: #202223;
 }
 
 .categoryNameInput {

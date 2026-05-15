@@ -669,6 +669,8 @@ export default function ConfigureBundleFlow() {
 
   // Per-category active tab: keyed by `${stepId}__${catId}`, value 0=Products 1=Collections
   const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
+  // Per-category open/collapsed state: keyed by `${stepId}__${catId}`
+  const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
 
   // Icon picker visibility (tracks which step's picker is open)
   const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
@@ -2122,35 +2124,55 @@ export default function ConfigureBundleFlow() {
 
                     {/* ── Category card ── */}
                     <div className={fullPageBundleStyles.card}>
-                      <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600 }}>Category</h3>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Category</h3>
+                        <QuestionHelpTooltip tooltipKey="category" />
+                      </div>
                       <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
                         Add all product selections in this step to a single category or separate them into multiple categories for better segregation.
                       </p>
 
-                      {/* EB-style per-category accordion rows */}
+                      {/* EB-style per-category accordion rows — collapsed by default */}
                       {((step.StepCategory as any[] | undefined) ?? []).map((cat: any, catIndex: number) => {
-                        const catTabKey = `${step.id}__${cat.id ?? catIndex}`;
-                        const catActiveTab = categoryActiveTabs[catTabKey] ?? 0;
+                        const catKey = `${step.id}__${cat.id ?? catIndex}`;
+                        const catActiveTab = categoryActiveTabs[catKey] ?? 0;
                         const catProducts = (cat.products as any[]) ?? [];
                         const catCollections = (cat.collections as any[]) ?? [];
+                        const isOpen = categoryOpen[catKey] ?? false;
                         return (
                           <div key={cat.id ?? catIndex} className={fullPageBundleStyles.categoryAccordion}>
-                            <div className={fullPageBundleStyles.categoryAccordionHeader}>
-                              <span className={fullPageBundleStyles.ebCategoryDrag} aria-hidden="true">⋮⋮</span>
-                              <input
-                                className={fullPageBundleStyles.categoryNameInput}
-                                type="text"
-                                value={cat.name ?? ""}
-                                placeholder={`Category ${catIndex + 1}`}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                  const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                    i === catIndex ? { ...c, name: e.target.value } : c
-                                  );
-                                  stepsState.updateStepField(step.id, "StepCategory", updated);
-                                  markAsDirty();
-                                }}
-                              />
-                              <div style={{ display: "flex", gap: 4 }}>
+                            {/* Header — click anywhere to toggle; action buttons stop propagation */}
+                            <div
+                              className={fullPageBundleStyles.categoryAccordionHeader}
+                              role="button"
+                              aria-expanded={isOpen}
+                              onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                            >
+                              <span className={fullPageBundleStyles.ebCategoryDrag} aria-hidden="true">⠿</span>
+                              {isOpen ? (
+                                <input
+                                  className={fullPageBundleStyles.categoryNameInput}
+                                  type="text"
+                                  value={cat.name ?? ""}
+                                  placeholder={`Category ${catIndex + 1}`}
+                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                      i === catIndex ? { ...c, name: e.target.value } : c
+                                    );
+                                    stepsState.updateStepField(step.id, "StepCategory", updated);
+                                    markAsDirty();
+                                  }}
+                                />
+                              ) : (
+                                <span className={fullPageBundleStyles.ebCategoryName}>
+                                  {cat.name || `Category ${catIndex + 1}`}
+                                </span>
+                              )}
+                              <div
+                                className={fullPageBundleStyles.ebCategoryActions}
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                              >
                                 <s-button
                                   variant="plain"
                                   icon="duplicate"
@@ -2174,145 +2196,157 @@ export default function ConfigureBundleFlow() {
                                     markAsDirty();
                                   }}
                                 />
+                                <button
+                                  className={fullPageBundleStyles.categoryChevron}
+                                  aria-label={isOpen ? "Collapse category" : "Expand category"}
+                                  onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                                >
+                                  {isOpen ? "▴" : "▾"}
+                                </button>
                               </div>
                             </div>
 
-                            <div className={fullPageBundleStyles.tabRow}>
-                              <button
-                                className={catActiveTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
-                                onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catTabKey]: 0 }))}
-                              >
-                                Browse Products
-                                {catProducts.length > 0 && (
-                                  <span className={fullPageBundleStyles.tabBadge}>{catProducts.length}</span>
-                                )}
-                              </button>
-                              <button
-                                className={catActiveTab === 1 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
-                                onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catTabKey]: 1 }))}
-                              >
-                                Browse Collections
-                                {catCollections.length > 0 && (
-                                  <span className={fullPageBundleStyles.tabBadge}>{catCollections.length}</span>
-                                )}
-                              </button>
-                            </div>
-
-                            {catActiveTab === 0 && (
-                              <div style={{ marginTop: 12 }}>
-                                <div className={fullPageBundleStyles.productActions}>
-                                  <s-button
-                                    variant="primary"
-                                    onClick={async () => {
-                                      const picked = await (shopify as any).resourcePicker({
-                                        type: "product",
-                                        multiple: true,
-                                        selectionIds: catProducts.map((p: any) => ({ id: p.id })),
-                                      });
-                                      if (!picked) return;
-                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                        i === catIndex ? { ...c, products: picked.map((p: any) => ({
-                                          id: p.id,
-                                          title: p.title,
-                                          imageUrl: p.images?.[0]?.originalSrc || p.images?.[0]?.url || null,
-                                          variants: p.variants || null,
-                                          minQuantity: 1,
-                                          maxQuantity: 10,
-                                        })) } : c
-                                      );
-                                      stepsState.updateStepField(step.id, "StepCategory", updated);
-                                      markAsDirty();
-                                    }}
+                            {/* Expandable body — only visible when open */}
+                            {isOpen && (
+                              <div className={fullPageBundleStyles.categoryAccordionBody}>
+                                <div className={fullPageBundleStyles.tabRow}>
+                                  <button
+                                    className={catActiveTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                    onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catKey]: 0 }))}
                                   >
-                                    {catProducts.length > 0 ? "Edit Products" : "Add Products"}
-                                  </s-button>
-                                  {catProducts.length > 0 && (
-                                    <s-badge tone="success">{catProducts.length} Selected</s-badge>
-                                  )}
-                                </div>
-                                {catProducts.length > 0 && (
-                                  <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
-                                    {catProducts.map((product: any) => (
-                                      <s-stack key={product.id} direction="inline" gap="small-100">
-                                        <img
-                                          src={product.imageUrl || "/bundle.png"}
-                                          alt={product.title}
-                                          style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
-                                        />
-                                        <span style={{ flex: 1, fontSize: 14 }}>{product.title}</span>
-                                        <s-button
-                                          variant="plain"
-                                          onClick={() => {
-                                            const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                              i === catIndex ? { ...c, products: c.products.filter((p: any) => p.id !== product.id) } : c
-                                            );
-                                            stepsState.updateStepField(step.id, "StepCategory", updated);
-                                            markAsDirty();
-                                          }}
-                                        >
-                                          Remove
-                                        </s-button>
-                                      </s-stack>
-                                    ))}
-                                  </s-stack>
-                                )}
-                              </div>
-                            )}
-
-                            {catActiveTab === 1 && (
-                              <div style={{ marginTop: 12 }}>
-                                <div className={fullPageBundleStyles.productActions}>
-                                  <s-button
-                                    variant="primary"
-                                    onClick={async () => {
-                                      const picked = await (shopify as any).resourcePicker({
-                                        type: "collection",
-                                        multiple: true,
-                                        selectionIds: catCollections.map((c: any) => ({ id: c.id })),
-                                      });
-                                      if (!picked) return;
-                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                        i === catIndex ? { ...c, collections: picked.map((col: any) => ({
-                                          id: col.id,
-                                          handle: col.handle,
-                                          title: col.title,
-                                        })) } : c
-                                      );
-                                      stepsState.updateStepField(step.id, "StepCategory", updated);
-                                      markAsDirty();
-                                    }}
+                                    Browse Products
+                                    {catProducts.length > 0 && (
+                                      <span className={fullPageBundleStyles.tabBadge}>{catProducts.length}</span>
+                                    )}
+                                  </button>
+                                  <button
+                                    className={catActiveTab === 1 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                    onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catKey]: 1 }))}
                                   >
-                                    {catCollections.length > 0 ? "Edit Collections" : "Add Collections"}
-                                  </s-button>
-                                  {catCollections.length > 0 && (
-                                    <s-badge tone="success">{catCollections.length} Selected</s-badge>
-                                  )}
+                                    Browse Collections
+                                    {catCollections.length > 0 && (
+                                      <span className={fullPageBundleStyles.tabBadge}>{catCollections.length}</span>
+                                    )}
+                                  </button>
                                 </div>
-                                {catCollections.length > 0 && (
-                                  <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
-                                    {catCollections.map((col: any) => (
-                                      <s-stack key={col.id} direction="inline" gap="small-100">
-                                        <img
-                                          src={col.image?.url || "/bundle.png"}
-                                          alt={col.title}
-                                          style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
-                                        />
-                                        <span style={{ flex: 1, fontSize: 14 }}>{col.title}</span>
-                                        <s-button
-                                          variant="plain"
-                                          onClick={() => {
-                                            const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                              i === catIndex ? { ...c, collections: c.collections.filter((col2: any) => col2.id !== col.id) } : c
-                                            );
-                                            stepsState.updateStepField(step.id, "StepCategory", updated);
-                                            markAsDirty();
-                                          }}
-                                        >
-                                          Remove
-                                        </s-button>
+
+                                {catActiveTab === 0 && (
+                                  <div>
+                                    <div className={fullPageBundleStyles.productActions}>
+                                      <s-button
+                                        variant="primary"
+                                        onClick={async () => {
+                                          const picked = await (shopify as any).resourcePicker({
+                                            type: "product",
+                                            multiple: true,
+                                            selectionIds: catProducts.map((p: any) => ({ id: p.id })),
+                                          });
+                                          if (!picked) return;
+                                          const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                            i === catIndex ? { ...c, products: picked.map((p: any) => ({
+                                              id: p.id,
+                                              title: p.title,
+                                              imageUrl: p.images?.[0]?.originalSrc || p.images?.[0]?.url || null,
+                                              variants: p.variants || null,
+                                              minQuantity: 1,
+                                              maxQuantity: 10,
+                                            })) } : c
+                                          );
+                                          stepsState.updateStepField(step.id, "StepCategory", updated);
+                                          markAsDirty();
+                                        }}
+                                      >
+                                        {catProducts.length > 0 ? "Edit Products" : "Add Products"}
+                                      </s-button>
+                                      {catProducts.length > 0 && (
+                                        <s-badge tone="success">{catProducts.length} Selected</s-badge>
+                                      )}
+                                    </div>
+                                    {catProducts.length > 0 && (
+                                      <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                        {catProducts.map((product: any) => (
+                                          <s-stack key={product.id} direction="inline" gap="small-100">
+                                            <img
+                                              src={product.imageUrl || "/bundle.png"}
+                                              alt={product.title}
+                                              style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
+                                            />
+                                            <span style={{ flex: 1, fontSize: 14 }}>{product.title}</span>
+                                            <s-button
+                                              variant="plain"
+                                              onClick={() => {
+                                                const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                  i === catIndex ? { ...c, products: c.products.filter((p: any) => p.id !== product.id) } : c
+                                                );
+                                                stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                markAsDirty();
+                                              }}
+                                            >
+                                              Remove
+                                            </s-button>
+                                          </s-stack>
+                                        ))}
                                       </s-stack>
-                                    ))}
-                                  </s-stack>
+                                    )}
+                                  </div>
+                                )}
+
+                                {catActiveTab === 1 && (
+                                  <div>
+                                    <div className={fullPageBundleStyles.productActions}>
+                                      <s-button
+                                        variant="primary"
+                                        onClick={async () => {
+                                          const picked = await (shopify as any).resourcePicker({
+                                            type: "collection",
+                                            multiple: true,
+                                            selectionIds: catCollections.map((c: any) => ({ id: c.id })),
+                                          });
+                                          if (!picked) return;
+                                          const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                            i === catIndex ? { ...c, collections: picked.map((col: any) => ({
+                                              id: col.id,
+                                              handle: col.handle,
+                                              title: col.title,
+                                            })) } : c
+                                          );
+                                          stepsState.updateStepField(step.id, "StepCategory", updated);
+                                          markAsDirty();
+                                        }}
+                                      >
+                                        {catCollections.length > 0 ? "Edit Collections" : "Add Collections"}
+                                      </s-button>
+                                      {catCollections.length > 0 && (
+                                        <s-badge tone="success">{catCollections.length} Selected</s-badge>
+                                      )}
+                                    </div>
+                                    {catCollections.length > 0 && (
+                                      <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                        {catCollections.map((col: any) => (
+                                          <s-stack key={col.id} direction="inline" gap="small-100">
+                                            <img
+                                              src={col.image?.url || "/bundle.png"}
+                                              alt={col.title}
+                                              style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
+                                            />
+                                            <span style={{ flex: 1, fontSize: 14 }}>{col.title}</span>
+                                            <s-button
+                                              variant="plain"
+                                              onClick={() => {
+                                                const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                  i === catIndex ? { ...c, collections: c.collections.filter((col2: any) => col2.id !== col.id) } : c
+                                                );
+                                                stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                markAsDirty();
+                                              }}
+                                            >
+                                              Remove
+                                            </s-button>
+                                          </s-stack>
+                                        ))}
+                                      </s-stack>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -2321,7 +2355,7 @@ export default function ConfigureBundleFlow() {
                       })}
 
                       <s-button
-                        variant="secondary"
+                        variant="plain"
                         icon="plus"
                         onClick={() => {
                           const cats = (step.StepCategory as any[]) ?? [];
