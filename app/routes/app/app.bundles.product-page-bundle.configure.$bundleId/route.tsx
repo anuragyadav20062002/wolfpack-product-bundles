@@ -474,6 +474,16 @@ export default function ConfigureBundleFlow() {
   const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>((bundle as any).upsellWidgetDisplayOn ?? "all");
   const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>((bundle as any).autoSelectBrowsedProduct ?? false);
 
+  // FR-02: Gift Messages state
+  const [giftMessagesEnabled, setGiftMessagesEnabled] = useState<boolean>((bundle as any).giftMessagesEnabled ?? false);
+  const [giftMessageProductId, setGiftMessageProductId] = useState<string | null>((bundle as any).giftMessageProductId ?? null);
+  const [giftMessageProductTitle, setGiftMessageProductTitle] = useState<string | null>((bundle as any).giftMessageProductTitle ?? null);
+  const [giftMessageEnableSenderRecipient, setGiftMessageEnableSenderRecipient] = useState<boolean>((bundle as any).giftMessageEnableSenderRecipient ?? false);
+  const [giftMessageMandatory, setGiftMessageMandatory] = useState<boolean>((bundle as any).giftMessageMandatory ?? false);
+  const [giftMessageEnableLimit, setGiftMessageEnableLimit] = useState<boolean>((bundle as any).giftMessageEnableLimit ?? false);
+  const [giftMessageCharLimit, setGiftMessageCharLimit] = useState<string>((bundle as any).giftMessageCharLimit?.toString() ?? "");
+  const [giftMessageSendEmail, setGiftMessageSendEmail] = useState<boolean>((bundle as any).giftMessageSendEmail ?? false);
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
@@ -524,6 +534,15 @@ export default function ConfigureBundleFlow() {
       formData.append("upsellWidgetDisplayMode", upsellWidgetDisplayMode);
       formData.append("upsellWidgetDisplayOn", upsellWidgetDisplayOn);
       formData.append("autoSelectBrowsedProduct", String(autoSelectBrowsedProduct));
+      // FR-02: Gift Messages
+      formData.append("giftMessagesEnabled", String(giftMessagesEnabled));
+      formData.append("giftMessageProductId", giftMessageProductId ?? "");
+      formData.append("giftMessageProductTitle", giftMessageProductTitle ?? "");
+      formData.append("giftMessageEnableSenderRecipient", String(giftMessageEnableSenderRecipient));
+      formData.append("giftMessageMandatory", String(giftMessageMandatory));
+      formData.append("giftMessageEnableLimit", String(giftMessageEnableLimit));
+      formData.append("giftMessageCharLimit", giftMessageCharLimit);
+      formData.append("giftMessageSendEmail", String(giftMessageSendEmail));
 
       // Submit to server action using fetcher
 
@@ -2676,6 +2695,102 @@ export default function ConfigureBundleFlow() {
                           />
                         ))}
                       </div>
+                    </s-stack>
+                  </s-section>
+
+                  {/* FR-02: Gift Messages sub-section */}
+                  <s-section heading="Gift Messages">
+                    <s-stack direction="vertical" gap="400">
+                      <s-stack direction="horizontal" gap="300" align-y="center">
+                        <s-switch
+                          checked={giftMessagesEnabled}
+                          onChange={(e: any) => setGiftMessagesEnabled(e.target.checked)}
+                        />
+                        <s-stack direction="vertical" gap="100">
+                          <s-text>Enable gift messages</s-text>
+                          <s-text size="small" tone="subdued">Let customers include a personal message when purchasing this bundle as a gift.</s-text>
+                        </s-stack>
+                      </s-stack>
+
+                      {giftMessagesEnabled && (
+                        <s-stack direction="vertical" gap="300">
+                          {/* Gift product picker */}
+                          <s-stack direction="vertical" gap="200">
+                            <s-text>Gift product (optional)</s-text>
+                            <s-text size="small" tone="subdued">Associate a specific product as the gift item.</s-text>
+                            {giftMessageProductId ? (
+                              <s-stack direction="horizontal" gap="200" align-y="center">
+                                <s-badge tone="success">{giftMessageProductTitle ?? giftMessageProductId}</s-badge>
+                                <s-button
+                                  variant="plain"
+                                  onClick={() => {
+                                    setGiftMessageProductId(null);
+                                    setGiftMessageProductTitle(null);
+                                  }}
+                                >
+                                  Remove
+                                </s-button>
+                              </s-stack>
+                            ) : (
+                              <s-button
+                                variant="secondary"
+                                onClick={async () => {
+                                  const selected = await (window as any).shopify?.resourcePicker({ type: "product", multiple: false });
+                                  if (selected?.length) {
+                                    setGiftMessageProductId(selected[0].id as string);
+                                    setGiftMessageProductTitle(selected[0].title as string);
+                                  }
+                                }}
+                              >
+                                Select gift product
+                              </s-button>
+                            )}
+                          </s-stack>
+
+                          <s-checkbox
+                            checked={giftMessageEnableSenderRecipient || undefined}
+                            onChange={(e: any) => setGiftMessageEnableSenderRecipient(e.target.checked)}
+                            helpText="Adds sender name and recipient name fields to the gift message form."
+                          >
+                            Enable sender &amp; recipient fields
+                          </s-checkbox>
+
+                          <s-checkbox
+                            checked={giftMessageMandatory || undefined}
+                            onChange={(e: any) => setGiftMessageMandatory(e.target.checked)}
+                            helpText="Customers must fill in the gift message before adding the bundle to cart."
+                          >
+                            Make gift message mandatory
+                          </s-checkbox>
+
+                          <s-checkbox
+                            checked={giftMessageSendEmail || undefined}
+                            onChange={(e: any) => setGiftMessageSendEmail(e.target.checked)}
+                            helpText="Automatically send the gift message to the recipient via email on order completion."
+                          >
+                            Send gift message by email
+                          </s-checkbox>
+
+                          <s-stack direction="vertical" gap="200">
+                            <s-stack direction="horizontal" gap="300" align-y="center">
+                              <s-switch
+                                checked={giftMessageEnableLimit}
+                                onChange={(e: any) => setGiftMessageEnableLimit(e.target.checked)}
+                              />
+                              <s-text>Limit message character count</s-text>
+                            </s-stack>
+                            {giftMessageEnableLimit && (
+                              <s-number-field
+                                label="Character limit"
+                                min={10}
+                                max={2000}
+                                value={giftMessageCharLimit}
+                                onInput={(e: Event) => setGiftMessageCharLimit((e.target as HTMLInputElement).value)}
+                              />
+                            )}
+                          </s-stack>
+                        </s-stack>
+                      )}
                     </s-stack>
                   </s-section>
                 </s-stack>

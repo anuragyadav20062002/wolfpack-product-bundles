@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 01:30
+**Last Updated:** 2026-05-16 02:00
 
 ## Overview
 
@@ -19,7 +19,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 2: Server handler extensions (3 parse helpers + Prisma extensions)
 - [x] Phase 3: Nav reorder + Bundle Visibility section (FR-04, FR-06)
 - [x] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
-- [ ] Phase 5: Gift Messages in Messages section (FR-02)
+- [x] Phase 5: Gift Messages in Messages section (FR-02)
 - [ ] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
 - [ ] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
 - [ ] Phase 8: Readiness indicator in sidebar (FR-07)
@@ -94,3 +94,10 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ Per-step cards render: addonLabel, addonTitle, addonDisplayFree checkbox, addonUnlockAfterCompletion checkbox — all wired to `stepsState.updateStepField` (same state as Step Setup)
 - ✅ Lint: 0 errors
 - Next: Phase 5 — Gift Messages in Messages section
+
+### 2026-05-16 02:00 - Phase 5: Gift Messages in Messages Section — Completed
+- ✅ `route.tsx` (line ~476): Added 8 gift message state vars (giftMessagesEnabled, giftMessageProductId, giftMessageProductTitle, giftMessageEnableSenderRecipient, giftMessageMandatory, giftMessageEnableLimit, giftMessageCharLimit, giftMessageSendEmail)
+- ✅ `route.tsx` (handleSave): Appended all 8 gift message fields to FormData
+- ✅ `route.tsx` (Messages section): Added Gift Messages `s-section` with toggle, gift product picker (shopify.resourcePicker), sender/recipient checkbox, mandatory checkbox, send-email checkbox, character limit switch + number field
+- ✅ Lint: 0 errors
+- Next: Phase 6 — Discount & Pricing expansions
