@@ -1482,6 +1482,37 @@ export default function ConfigureBundleFlow() {
                 </s-stack>
               </s-section>
 
+              {/* FR-07: Readiness indicator */}
+              {(() => {
+                const checks = [
+                  { label: "Steps configured",      done: stepsState.steps.length > 0 },
+                  { label: "Bundle product linked",  done: !!bundleProduct?.id },
+                  { label: "Discount set up",        done: !pricingState.discountEnabled || pricingState.discountRules.length > 0 },
+                  { label: "Widget enabled",         done: upsellWidgetEnabled },
+                  { label: "App embed active",       done: !!appEmbedEnabled },
+                ];
+                const doneCount = checks.filter(c => c.done).length;
+                const allDone = doneCount === checks.length;
+                return (
+                  <s-section>
+                    <s-stack direction="vertical" gap="200">
+                      <s-stack direction="horizontal" gap="200" align-y="center">
+                        <s-text style={{ fontWeight: 600, fontSize: 13 }}>Readiness</s-text>
+                        <s-badge tone={allDone ? "success" : "attention"}>
+                          {doneCount}/{checks.length}
+                        </s-badge>
+                      </s-stack>
+                      {checks.map(c => (
+                        <s-stack key={c.label} direction="horizontal" gap="200" align-y="center">
+                          <s-icon type={c.done ? "check" : "x"} />
+                          <s-text size="small" tone={c.done ? "subdued" : undefined}>{c.label}</s-text>
+                        </s-stack>
+                      ))}
+                    </s-stack>
+                  </s-section>
+                );
+              })()}
+
               {/* Bundle Product Card - Memoized to prevent unnecessary re-renders */}
               <BundleProductCard
                 bundleProduct={bundleProduct}

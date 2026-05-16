@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 03:30
+**Last Updated:** 2026-05-16 04:00
 
 ## Overview
 
@@ -22,7 +22,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 5: Gift Messages in Messages section (FR-02)
 - [x] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
 - [x] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
-- [ ] Phase 8: Readiness indicator in sidebar (FR-07)
+- [x] Phase 8: Readiness indicator in sidebar (FR-07)
 - [ ] Phase 9: Widget extensions — addon steps, gift message UI, qty pills, progress bar
 - [ ] Phase 10: Nav map update + issue close-out
 
@@ -118,3 +118,11 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ `route.tsx` (bundle_settings section): Added 8 new s-section blocks: Pre-selected Variant, Product Quantity Limits, Product Slots (+ icon URL), Variant Selector toggle, Add-to-Bundle Button, Cart Line Labels (title + subtitle), Bundle Banners (desktop + mobile), Custom CSS (textarea)
 - ✅ Lint: 0 errors
 - Next: Phase 8 — Readiness indicator in sidebar
+
+### 2026-05-16 04:00 - Phase 8: Readiness Indicator — Completed
+- ✅ `route.tsx` (sidebar, line ~1485): Inserted readiness indicator IIFE block between nav buttons and BundleProductCard
+- ✅ 5 checks: steps configured, bundle product linked, discount set up, widget enabled, app embed active
+- ✅ Badge shows done/total count with success (green) or attention tone
+- ✅ Each row shows check/x icon with label — reacts live to state changes
+- ✅ Lint: 0 errors
+- Next: Phase 9 — Widget extensions (skipped per scope; Phases 9-10 remain)
