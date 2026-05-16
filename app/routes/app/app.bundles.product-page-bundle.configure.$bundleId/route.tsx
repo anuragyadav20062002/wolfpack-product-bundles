@@ -237,11 +237,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup", label: "Step Setup", iconName: "list-numbered-minor" },
-  { id: "discount_pricing", label: "Discount & Pricing", iconName: "discount-minor" },
-  { id: "images_gifs", label: "Bundle Assets", iconName: "image-alt-minor" },
-  { id: "bundle_settings", label: "Bundle Settings", iconName: "image-alt-minor" },
-  { id: "messages", label: "Messages", iconName: "list-numbered-minor" },
+  { id: "step_setup",        label: "Step Setup",          iconName: "list-numbered-minor" },
+  { id: "free_gift_add_ons", label: "Free Gift & Add Ons", iconName: "gift-minor" },
+  { id: "messages",          label: "Messages",            iconName: "list-numbered-minor" },
+  { id: "discount_pricing",  label: "Discount & Pricing",  iconName: "discount-minor" },
+  { id: "bundle_visibility", label: "Bundle Visibility",   iconName: "view-minor" },
+  { id: "images_gifs",       label: "Bundle Assets",       iconName: "image-alt-minor" },
+  { id: "bundle_settings",   label: "Bundle Settings",     iconName: "settings-minor" },
 ];
 
 // Static status options - imported from centralized constants
@@ -466,6 +468,12 @@ export default function ConfigureBundleFlow() {
   );
   const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
 
+  // Bundle Visibility — Bundle Widget state (FR-04)
+  const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>((bundle as any).upsellWidgetEnabled ?? false);
+  const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "block");
+  const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>((bundle as any).upsellWidgetDisplayOn ?? "all");
+  const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>((bundle as any).autoSelectBrowsedProduct ?? false);
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
@@ -511,6 +519,11 @@ export default function ConfigureBundleFlow() {
       formData.append("sdkMode", String(sdkMode));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
+      // FR-04: Bundle Visibility — Bundle Widget
+      formData.append("upsellWidgetEnabled", String(upsellWidgetEnabled));
+      formData.append("upsellWidgetDisplayMode", upsellWidgetDisplayMode);
+      formData.append("upsellWidgetDisplayOn", upsellWidgetDisplayOn);
+      formData.append("autoSelectBrowsedProduct", String(autoSelectBrowsedProduct));
 
       // Submit to server action using fetcher
 
@@ -2159,6 +2172,139 @@ export default function ConfigureBundleFlow() {
                   )}
                 </s-stack>
               </s-section>
+              </div>
+            )}
+
+            {activeSection === "bundle_visibility" && (
+              <div>
+                {/* App Embed Status */}
+                <s-section heading="App Embed Status">
+                  <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+                </s-section>
+
+                {/* Publishing Best Practices */}
+                <s-section heading="Publishing Best Practices">
+                  <s-stack direction="vertical" gap="300">
+                    <s-text>Follow these steps to ensure your bundle widget appears correctly for customers.</s-text>
+                    <s-grid columns="2" gap="300">
+                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                        <s-stack direction="vertical" gap="200">
+                          <s-icon type="view" />
+                          <s-heading size="small">Enable App Embed</s-heading>
+                          <s-text size="small" tone="subdued">Turn on the wolfpack-product-bundles embed in your theme settings to activate the widget.</s-text>
+                        </s-stack>
+                      </s-box>
+                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                        <s-stack direction="vertical" gap="200">
+                          <s-icon type="product" />
+                          <s-heading size="small">Add to Product Page</s-heading>
+                          <s-text size="small" tone="subdued">Place the bundle widget block on your product page template using the theme editor.</s-text>
+                        </s-stack>
+                      </s-box>
+                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                        <s-stack direction="vertical" gap="200">
+                          <s-icon type="check" />
+                          <s-heading size="small">Test on Storefront</s-heading>
+                          <s-text size="small" tone="subdued">Visit your product page as a customer to confirm the bundle widget is visible and functional.</s-text>
+                        </s-stack>
+                      </s-box>
+                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                        <s-stack direction="vertical" gap="200">
+                          <s-icon type="globe" />
+                          <s-heading size="small">Go Live</s-heading>
+                          <s-text size="small" tone="subdued">Once tested, publish your theme to make the bundle available to all customers.</s-text>
+                        </s-stack>
+                      </s-box>
+                    </s-grid>
+                  </s-stack>
+                </s-section>
+
+                {/* Your Bundle Link */}
+                <s-section heading="Your Bundle Link">
+                  <s-stack direction="vertical" gap="300">
+                    <s-text>Share or preview your bundle on the storefront.</s-text>
+                    {bundle.shopifyProductHandle && shop ? (
+                      <s-stack direction="horizontal" gap="200" align-y="center">
+                        <s-text>
+                          {`https://${shop}/products/${bundle.shopifyProductHandle}`}
+                        </s-text>
+                        <s-button
+                          variant="plain"
+                          icon="duplicate"
+                          onClick={() => {
+                            const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
+                            navigator.clipboard.writeText(url).catch(() => {});
+                          }}
+                        >
+                          Copy
+                        </s-button>
+                        <s-button
+                          variant="plain"
+                          icon="view"
+                          onClick={() => {
+                            const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
+                            window.open(url, "_blank");
+                          }}
+                        >
+                          Preview
+                        </s-button>
+                      </s-stack>
+                    ) : (
+                      <s-text tone="subdued">Bundle product not yet linked.</s-text>
+                    )}
+                  </s-stack>
+                </s-section>
+
+                {/* Bundle Widget */}
+                <s-section heading="Bundle Widget">
+                  <s-stack direction="vertical" gap="400">
+                    <s-stack direction="horizontal" gap="300" align-y="center">
+                      <s-switch
+                        checked={upsellWidgetEnabled}
+                        onChange={(e: any) => setUpsellWidgetEnabled(e.target.checked)}
+                      />
+                      <s-stack direction="vertical" gap="100">
+                        <s-text>Enable bundle widget on product page</s-text>
+                        <s-text size="small" tone="subdued">When enabled, the bundle widget will appear on the associated product page.</s-text>
+                      </s-stack>
+                    </s-stack>
+
+                    {upsellWidgetEnabled && (
+                      <s-stack direction="vertical" gap="300">
+                        <s-select
+                          label="Display Mode"
+                          value={upsellWidgetDisplayMode}
+                          onChange={(e: any) => setUpsellWidgetDisplayMode(e.target.value)}
+                        >
+                          <option value="block">Block — full width below product info</option>
+                          <option value="inline">Inline — embedded within product description</option>
+                          <option value="drawer">Drawer — slide-out panel</option>
+                        </s-select>
+
+                        <s-select
+                          label="Display On"
+                          value={upsellWidgetDisplayOn}
+                          onChange={(e: any) => setUpsellWidgetDisplayOn(e.target.value)}
+                        >
+                          <option value="all">All product pages</option>
+                          <option value="bundle_product">Bundle product page only</option>
+                          <option value="component_products">Component product pages</option>
+                        </s-select>
+
+                        <s-stack direction="horizontal" gap="300" align-y="center">
+                          <s-switch
+                            checked={autoSelectBrowsedProduct}
+                            onChange={(e: any) => setAutoSelectBrowsedProduct(e.target.checked)}
+                          />
+                          <s-stack direction="vertical" gap="100">
+                            <s-text>Auto-select browsed product</s-text>
+                            <s-text size="small" tone="subdued">Automatically pre-select the product the customer is currently viewing when the bundle loads.</s-text>
+                          </s-stack>
+                        </s-stack>
+                      </s-stack>
+                    )}
+                  </s-stack>
+                </s-section>
               </div>
             )}
 

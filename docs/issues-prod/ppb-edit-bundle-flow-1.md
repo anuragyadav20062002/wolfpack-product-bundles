@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 00:00
+**Last Updated:** 2026-05-16 01:00
 
 ## Overview
 
@@ -17,7 +17,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 
 - [x] Phase 1: Schema + types + discount mapper (atomic)
 - [x] Phase 2: Server handler extensions (3 parse helpers + Prisma extensions)
-- [ ] Phase 3: Nav reorder + Bundle Visibility section (FR-04, FR-06)
+- [x] Phase 3: Nav reorder + Bundle Visibility section (FR-04, FR-06)
 - [ ] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
 - [ ] Phase 5: Gift Messages in Messages section (FR-02)
 - [ ] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
@@ -78,3 +78,11 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ `handlers.server.ts`: extended `BundlePricing` upsert (create + update) with `displayOptions`
 - ✅ All 36 tests green, 0 lint errors
 - Next: Phase 3 — Nav reorder + Bundle Visibility section
+
+### 2026-05-16 01:00 - Phase 3: Nav Reorder + Bundle Visibility — Completed
+- ✅ `route.tsx` (line 239): Replaced `bundleSetupItems` array with new 7-item ordered nav (step_setup → free_gift_add_ons → messages → discount_pricing → bundle_visibility → images_gifs → bundle_settings)
+- ✅ `route.tsx` (line 472): Added 4 Bundle Visibility state vars: `upsellWidgetEnabled`, `upsellWidgetDisplayMode`, `upsellWidgetDisplayOn`, `autoSelectBrowsedProduct`
+- ✅ `route.tsx` (line 523): Extended `handleSave` to append all 4 Bundle Visibility fields to FormData
+- ✅ `route.tsx` (line ~2178): Inserted `bundle_visibility` JSX section with 4 sub-sections: App Embed Status (inline AppEmbedBanner), Publishing Best Practices 2×2 card grid, Your Bundle Link (copy + preview), Bundle Widget (toggle + Display Mode + Display On + Auto-Select)
+- ✅ Lint: 0 errors on modified files
+- Next: Phase 4 — Free Gift & Add Ons section + step-mode control
