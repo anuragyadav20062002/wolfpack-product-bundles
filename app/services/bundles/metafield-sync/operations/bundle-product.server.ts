@@ -368,7 +368,7 @@ export async function updateBundleProductMetafields(
       showDiscountMessaging: bundleConfiguration.pricing?.messages?.showDiscountMessaging || false,
       showFooter: bundleConfiguration.pricing?.display?.showFooter !== false && bundleConfiguration.messaging?.showFooter !== false,
       showDiscountProgressBar: bundleConfiguration.pricing?.display?.showDiscountProgressBar === true || bundleConfiguration.pricing?.showProgressBar === true,
-      displayOptions: bundleConfiguration.pricing?.messages?.displayOptions || null
+      displayOptions: bundleConfiguration.pricing?.displayOptions ?? bundleConfiguration.pricing?.messages?.displayOptions ?? null
     },
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
     promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
@@ -378,6 +378,14 @@ export async function updateBundleProductMetafields(
     textOverrides: bundleConfiguration.textOverrides ?? null,
     textOverridesByLocale: bundleConfiguration.textOverridesByLocale ?? null,
     sdkMode: bundleConfiguration.sdkMode ?? false,
+    giftMessagesEnabled:              bundleConfiguration.giftMessagesEnabled ?? false,
+    giftMessageProductId:             bundleConfiguration.giftMessageProductId ?? null,
+    giftMessageProductTitle:          bundleConfiguration.giftMessageProductTitle ?? null,
+    giftMessageEnableSenderRecipient: bundleConfiguration.giftMessageEnableSenderRecipient ?? false,
+    giftMessageMandatory:             bundleConfiguration.giftMessageMandatory ?? false,
+    giftMessageEnableLimit:           bundleConfiguration.giftMessageEnableLimit ?? false,
+    giftMessageCharLimit:             bundleConfiguration.giftMessageCharLimit ?? null,
+    giftMessageSendEmail:             bundleConfiguration.giftMessageSendEmail ?? false,
   };
 
   // Check metafield sizes and log warnings

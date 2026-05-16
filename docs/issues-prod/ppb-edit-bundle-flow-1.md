@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 05:30
+**Last Updated:** 2026-05-16 07:00
 
 ## Overview
 
@@ -23,7 +23,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
 - [x] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
 - [x] Phase 8: Readiness indicator in sidebar (FR-07)
-- [ ] Phase 9: Widget extensions — addon steps, gift message UI, qty pills, progress bar
+- [x] Phase 9: Widget extensions — addon steps, gift message UI, qty pills, progress bar
 - [ ] Phase 10: Nav map update + issue close-out
 
 ## Related Documentation
@@ -137,3 +137,26 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ Lint: 0 errors on modified file
 - ✅ Chrome verified: all 6 sections render correctly, gauge visible at 60, Pending badge visible
 - Next: Phase 9 — Widget extensions
+
+### 2026-05-16 07:00 - Phase 9: Widget Extensions — Completed
+- ✅ Part A: Metafield sync
+  - `types.ts`: Added 8 gift message fields to `BundleUiConfig` (giftMessagesEnabled + 7 config fields)
+  - `types.ts`: Added `displayOptions?: any | null` to `BundleUiMessaging`
+  - `bundle-product.server.ts`: Added all 8 gift message fields to `bundleUiConfig` (from Bundle Prisma model)
+  - `bundle-product.server.ts`: Fixed `displayOptions` path — was reading `pricing?.messages?.displayOptions` (wrong for PPB); now reads `pricing?.displayOptions` first (correct PPB column), falling back to FPB legacy path
+- ✅ Part B: Widget JS (`bundle-widget-product-page.js`)
+  - `renderModalTabs()`: Free gift step tabs now use `step.addonLabel` when set (FR-01d)
+  - `createFreeGiftSlotCard()`: Slot label now uses `step.addonLabel` when set (FR-01d)
+  - `initializeDataStructures()`: Added `this.giftMessageState = { message, from, to }` reset on each init
+  - `setupDOMElements()`: Added `qtyPillsEl` (.bw-qty-pills) + `giftMessageEl` (.bw-gift-message) to elements; appended footer + new elements between steps and ATC button
+  - `renderUI()`: Added calls to `renderQuantityOptionPills()` + `renderGiftMessageUI()`
+  - `renderQuantityOptionPills()`: New — reads `messaging.displayOptions.bundleQuantityOptions`; renders one pill per pricing rule; pill click applies active styling + re-renders footer/ATC (FR-03b)
+  - `renderGiftMessageUI()`: New — renders gift message textarea + optional From/To fields + char counter; syncs to `giftMessageState` (FR-02d)
+  - `renderFooter()` / `updateFooterMessaging()`: Revived — reads `messaging.displayOptions.progressBar`; renders live progress bar with template message + fill bar (FR-03c)
+  - `createFooter()`: Removed old "removed by design" comment
+  - `updateAddToCartButton()`: Added `giftMandatoryBlocking` check — disables ATC when gift message is mandatory but empty; distinct button text "Add a gift message to continue" (FR-02d)
+  - `buildCartItems()`: Adds gift message product as separate cart line item with `_bundle_id`, `_gift_message`, `_gift_from`, `_gift_to` properties (FR-02c)
+- ✅ `scripts/build-widget-bundles.js`: Bumped `WIDGET_VERSION` 2.8.0 → 2.9.0 (MINOR — new storefront features)
+- ✅ Lint: 0 errors on modified TS files
+- ✅ Build: `npm run build:widgets` + `npm run minify:assets css` — both pass, no size limit violations
+- Next: Phase 10 — Nav map update + issue close-out

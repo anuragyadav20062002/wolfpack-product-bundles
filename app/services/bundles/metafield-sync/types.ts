@@ -71,6 +71,22 @@ export interface BundleUiConfig {
   textOverridesByLocale?: Record<string, Partial<BundleTextOverrides>> | null;
   /** When true, loads the headless SDK instead of the pre-built widget (product-page bundles only). */
   sdkMode?: boolean;
+  /** PPB — gift messages feature toggle. */
+  giftMessagesEnabled?: boolean;
+  /** PPB — Shopify product ID of the gift message product added as a line item. */
+  giftMessageProductId?: string | null;
+  /** PPB — display title of the gift message product (shown in widget UI). */
+  giftMessageProductTitle?: string | null;
+  /** PPB — show sender + recipient name fields above the message textarea. */
+  giftMessageEnableSenderRecipient?: boolean;
+  /** PPB — disable ATC button until customer fills in the message. */
+  giftMessageMandatory?: boolean;
+  /** PPB — apply maxlength to the textarea and show a char counter. */
+  giftMessageEnableLimit?: boolean;
+  /** PPB — max character count for the message textarea (null = unlimited). */
+  giftMessageCharLimit?: number | null;
+  /** PPB — whether a copy of the gift message is emailed to the merchant. */
+  giftMessageSendEmail?: boolean;
 }
 
 export interface BundleUiStep {
@@ -137,6 +153,8 @@ export interface BundleUiMessaging {
   showFooter: boolean;
   showDiscountMessaging?: boolean;
   showDiscountProgressBar?: boolean;
+  /** Persisted from `BundlePricing.displayOptions` — qty option pills + progress bar config. */
+  displayOptions?: any | null;
 }
 
 /** Overridable user-visible strings in the bundle widget. */
