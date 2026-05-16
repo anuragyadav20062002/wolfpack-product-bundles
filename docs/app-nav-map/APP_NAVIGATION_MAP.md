@@ -305,12 +305,86 @@ FPB Configure Page
 **URL:** `/app/bundles/product-page-bundle/configure/:bundleId`
 
 ```
-PDP Configure Page  (same tab structure as FPB except:)
-├── No "Target page" selector (widget lives on product page)
-├── No Theme Templates Modal
-├── No Widget Placement Validation Modal
-└── Same: Bundle Settings, Steps, Pricing, Sync Bundle tabs
+PPB Configure Page
+├── Sidebar Nav (6 sections — mirrors Easy Bundles hierarchy)
+│   ├── [📝] Step Setup              → step_setup section
+│   ├── Free Gift & Add Ons          → free_gift_add_ons section
+│   ├── Messages                     → messages section
+│   ├── Discount & Pricing           → discount_pricing section
+│   ├── [👁] Bundle Visibility       → bundle_visibility section  [Pending badge when widget disabled]
+│   └── [✏] Bundle Settings         → bundle_settings section
+│
+├── Step Setup
+│   ├── Bundle product picker (Shopify resource picker)
+│   ├── Accordion step cards (DnD reorder)
+│   │   ├── Step name, min/max qty
+│   │   ├── Products / Collections pickers
+│   │   ├── Step conditions
+│   │   └── isFreeGift toggle + addon fields (label, title, icon, displayFree, unlockAfterCompletion)
+│   └── [+ Add Step] button
+│
+├── Free Gift & Add Ons
+│   ├── Empty state: "No add-on steps configured" with [Go to Step Setup] CTA
+│   └── Per-addon-step cards: addonLabel, addonTitle, addonDisplayFree, addonUnlockAfterCompletion
+│
+├── Messages
+│   ├── 7 text override fields + locale selector (existing)
+│   └── Gift Messages sub-section
+│       ├── Toggle: giftMessagesEnabled
+│       ├── Gift product picker (Shopify resource picker → giftMessageProductId)
+│       ├── Sender/Recipient checkbox (giftMessageEnableSenderRecipient)
+│       ├── Mandatory checkbox (giftMessageMandatory)
+│       ├── Send email checkbox (giftMessageSendEmail)
+│       └── Char limit switch + number field (giftMessageEnableLimit + giftMessageCharLimit)
+│
+├── Discount & Pricing
+│   ├── Enable toggle + discount method selector
+│   ├── Buy X Get Y rule builder (shown when method = BUY_X_GET_Y)
+│   │   └── Per-rule: buyStepId, getStepId, getQty selectors
+│   ├── Standard rule builder (shown for other methods)
+│   ├── Bundle Quantity Options sub-section
+│   │   ├── Toggle: qtyOptionsEnabled
+│   │   ├── Per-rule: Box Label + Box Subtext inputs
+│   │   └── Default rule radio selector (qtyOptionsDefaultRuleId)
+│   └── Discount Progress Bar sub-section
+│       ├── Toggle: progressBarEnabled
+│       ├── Style: Simple Bar / Step-Based Bar radio
+│       ├── Progress Text textarea
+│       └── Success Text textarea
+│
+├── Bundle Visibility
+│   ├── App Embed Status (inline AppEmbedBanner when disabled)
+│   ├── Publishing Best Practices (2×2 card grid)
+│   ├── Your Bundle Link (copy + preview button)
+│   └── Bundle Widget sub-section
+│       ├── Toggle: upsellWidgetEnabled
+│       ├── Display Mode: radio (block / button)
+│       ├── Display On: select (all / specific_products / specific_collections)
+│       └── Auto-Select Browsed Product: toggle (autoSelectBrowsedProduct)
+│
+├── Bundle Settings
+│   ├── Pre-selected Variant (text field)
+│   ├── Product Quantity Limits (maxQtyPerProduct number field)
+│   ├── Product Slots (toggle + icon URL input)
+│   ├── Variant Selector toggle (variantSelectorEnabled)
+│   ├── Add-to-Bundle Button text toggle (showTextOnAddButton)
+│   ├── Cart Line Labels (bundleCartTitle + bundleCartSubtitle)
+│   ├── Bundle Banners (bundleBannerDesktopUrl + bundleBannerMobileUrl)
+│   └── Custom CSS textarea (bundleLevelCss — sanitized via processCss)
+│
+└── Floating Readiness Gauge (position: fixed, bottom-left)
+    ├── Circular SVG progress ring (score 0–100)
+    ├── Expandable checklist: Steps configured, Bundle product linked,
+    │   Discount set up, Widget enabled, App embed active
+    └── Click to expand/collapse
 ```
+
+**Widget storefront features (as of v2.9.0):**
+- Step slot cards (empty/filled/locked states) with `addonLabel` for free gift tabs
+- Quantity option pills (from `displayOptions.bundleQuantityOptions`)
+- Gift message UI: textarea + optional From/To fields + char counter
+- Progress bar (from `displayOptions.progressBar`)
+- Gift message cart line item with `_bundle_id` + `_gift_message` properties
 
 ---
 

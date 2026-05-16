@@ -1,10 +1,10 @@
 # Issue: PPB Edit Bundle Flow — EB Parity
 
 **Issue ID:** ppb-edit-bundle-flow-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 07:00
+**Last Updated:** 2026-05-16 07:30
 
 ## Overview
 
@@ -24,7 +24,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
 - [x] Phase 8: Readiness indicator in sidebar (FR-07)
 - [x] Phase 9: Widget extensions — addon steps, gift message UI, qty pills, progress bar
-- [ ] Phase 10: Nav map update + issue close-out
+- [x] Phase 10: Nav map update + issue close-out
 
 ## Related Documentation
 
@@ -160,3 +160,30 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ Lint: 0 errors on modified TS files
 - ✅ Build: `npm run build:widgets` + `npm run minify:assets css` — both pass, no size limit violations
 - Next: Phase 10 — Nav map update + issue close-out
+
+### 2026-05-16 07:30 - Phase 10: Nav Map Update + Issue Close-Out — Completed
+
+- ✅ `docs/app-nav-map/APP_NAVIGATION_MAP.md`: Replaced sparse 5-line PPB stub (§2.7) with full 70-line section map — sidebar nav (6 sections), all sub-sections, all fields, floating readiness gauge, and widget v2.9.0 storefront feature summary
+- ✅ Issue status → Completed
+
+**Total Commits:** 9 (Phases 1–10)
+**Lines Added:** ~1500+ (route.tsx), ~600 (widget JS), ~90 (metafield sync), ~200 (tests), ~300 (issue docs/nav map)
+**Files Created:** handlers/parsers.ts, 4 test files
+**Files Modified:** prisma/schema.prisma, app/types/pricing.ts, app/utils/discount-mappers.ts, route.tsx, handlers.server.ts, bundle-product.server.ts, types.ts, bundle-widget-product-page.js, scripts/build-widget-bundles.js, APP_NAVIGATION_MAP.md, constants/bundle.ts
+
+**Key Achievements:**
+- ✅ PPB configure route brought to full EB parity: 6-section sidebar matching EB's proven hierarchy
+- ✅ 4 major new feature areas: Free Gift & Add Ons, Gift Messages, Bundle Visibility, Bundle Settings expansion
+- ✅ 3 Discount & Pricing expansions: Buy X Get Y, Qty Options, Progress Bar
+- ✅ Readiness indicator (floating circular gauge with expandable checklist)
+- ✅ Widget v2.9.0: addon step labels, gift message UI, qty option pills, progress bar, gift message cart line items
+- ✅ Metafield sync: gift messages fully synced; displayOptions path bug fixed for PPB
+
+**Impact:**
+- Merchants can now configure PPB bundles with full EB feature parity from the admin UI
+- Gift messages enable personalization for gift-oriented bundles
+- Qty option pills give merchants a storefront tier-selection UI matching EB's pattern
+- Progress bar incentivizes higher cart value via visual discount progress
+- Readiness gauge gives merchants a clear actionable checklist before going live
+
+**Status:** Ready for testing and review
