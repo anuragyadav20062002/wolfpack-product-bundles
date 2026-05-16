@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 01:00
+**Last Updated:** 2026-05-16 01:30
 
 ## Overview
 
@@ -18,7 +18,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 1: Schema + types + discount mapper (atomic)
 - [x] Phase 2: Server handler extensions (3 parse helpers + Prisma extensions)
 - [x] Phase 3: Nav reorder + Bundle Visibility section (FR-04, FR-06)
-- [ ] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
+- [x] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
 - [ ] Phase 5: Gift Messages in Messages section (FR-02)
 - [ ] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
 - [ ] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
@@ -86,3 +86,11 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ `route.tsx` (line ~2178): Inserted `bundle_visibility` JSX section with 4 sub-sections: App Embed Status (inline AppEmbedBanner), Publishing Best Practices 2×2 card grid, Your Bundle Link (copy + preview), Bundle Widget (toggle + Display Mode + Display On + Auto-Select)
 - ✅ Lint: 0 errors on modified files
 - Next: Phase 4 — Free Gift & Add Ons section + step-mode control
+
+### 2026-05-16 01:30 - Phase 4: Free Gift & Add Ons Section — Completed
+- ✅ `route.tsx` (line ~2518): Inserted `free_gift_add_ons` JSX section block using IIFE pattern (matches `messages` section convention)
+- ✅ Filters `stepsState.steps` for `isFreeGift === true` to show only addon steps
+- ✅ Empty state with CTA: "Go to Step Setup" button navigates to `step_setup` section via `setActiveSection`
+- ✅ Per-step cards render: addonLabel, addonTitle, addonDisplayFree checkbox, addonUnlockAfterCompletion checkbox — all wired to `stepsState.updateStepField` (same state as Step Setup)
+- ✅ Lint: 0 errors
+- Next: Phase 5 — Gift Messages in Messages section

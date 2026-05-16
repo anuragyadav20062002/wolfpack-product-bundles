@@ -2515,6 +2515,80 @@ export default function ConfigureBundleFlow() {
               </div>
             )}
 
+            {activeSection === "free_gift_add_ons" && (() => {
+              const addonSteps = stepsState.steps.filter((s: any) => s.isFreeGift === true);
+              return (
+                <div>
+                  <s-section heading="Free Gift & Add-On Steps">
+                    <s-stack direction="vertical" gap="300">
+                      <s-text tone="subdued">
+                        Steps marked as "Add-On / Upsell" in Step Setup appear here. Configure their display options below.
+                      </s-text>
+                      {addonSteps.length === 0 ? (
+                        <s-box padding="500" border-color="subdued" border-width="025" border-radius="200">
+                          <s-stack direction="vertical" gap="300" align-x="center">
+                            <s-icon type="product" />
+                            <s-heading size="small">No add-on steps yet</s-heading>
+                            <s-text size="small" tone="subdued">
+                              Go to Step Setup and change a step type to "Add-On / Upsell Step" to configure it here.
+                            </s-text>
+                            <s-button variant="plain" onClick={() => setActiveSection("step_setup")}>
+                              Go to Step Setup
+                            </s-button>
+                          </s-stack>
+                        </s-box>
+                      ) : (
+                        <s-stack direction="vertical" gap="400">
+                          {addonSteps.map((step: any) => (
+                            <s-box key={step.id} padding="400" border-color="subdued" border-width="025" border-radius="200">
+                              <s-stack direction="vertical" gap="300">
+                                <s-stack direction="horizontal" gap="200" align-y="center">
+                                  <s-badge tone="info">Add-On</s-badge>
+                                  <s-heading size="small">{step.name || step.addonLabel || `Step ${step.position ?? ''}`}</s-heading>
+                                </s-stack>
+                                <s-divider />
+                                <s-text-field
+                                  label="Step label (tab name)"
+                                  placeholder="Add-Ons"
+                                  helpText="Shown in the bundle step navigator tab."
+                                  maxLength={40}
+                                  value={step.addonLabel ?? (step.freeGiftName || '')}
+                                  onInput={(e: Event) => stepsState.updateStepField(step.id, 'addonLabel', (e.target as HTMLInputElement).value)}
+                                  autoComplete="off"
+                                />
+                                <s-text-field
+                                  label="Step title (panel heading)"
+                                  placeholder="Pick a free gift!"
+                                  helpText="Shown as the heading inside the step panel."
+                                  value={step.addonTitle || ''}
+                                  onInput={(e: Event) => stepsState.updateStepField(step.id, 'addonTitle', (e.target as HTMLInputElement).value)}
+                                  autoComplete="off"
+                                />
+                                <s-checkbox
+                                  checked={step.addonDisplayFree !== false || undefined}
+                                  onChange={(e: Event) => stepsState.updateStepField(step.id, 'addonDisplayFree', (e.target as HTMLInputElement).checked)}
+                                  helpText="Customers see $0 on products in this step."
+                                >
+                                  Display products as free ($0.00)
+                                </s-checkbox>
+                                <s-checkbox
+                                  checked={step.addonUnlockAfterCompletion !== false || undefined}
+                                  onChange={(e: Event) => stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', (e.target as HTMLInputElement).checked)}
+                                  helpText="This step tab is locked until all prior steps are filled."
+                                >
+                                  Unlock after bundle completion
+                                </s-checkbox>
+                              </s-stack>
+                            </s-box>
+                          ))}
+                        </s-stack>
+                      )}
+                    </s-stack>
+                  </s-section>
+                </div>
+              );
+            })()}
+
             {activeSection === "messages" && (() => {
               const isEnglish = textOverridesLocale === "en";
               const currentOverrides: Record<string, string> = isEnglish
