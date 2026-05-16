@@ -236,14 +236,13 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.product-page-bundle.configure.$bundleId/handlers/
 
 // Static navigation items - moved outside component to prevent recreation on every render
-const bundleSetupItems = [
-  { id: "step_setup",        label: "Step Setup",          iconName: "list-numbered-minor" },
-  { id: "free_gift_add_ons", label: "Free Gift & Add Ons", iconName: "gift-minor" },
-  { id: "messages",          label: "Messages",            iconName: "list-numbered-minor" },
-  { id: "discount_pricing",  label: "Discount & Pricing",  iconName: "discount-minor" },
-  { id: "bundle_visibility", label: "Bundle Visibility",   iconName: "view-minor" },
-  { id: "images_gifs",       label: "Bundle Assets",       iconName: "image-alt-minor" },
-  { id: "bundle_settings",   label: "Bundle Settings",     iconName: "settings-minor" },
+const bundleSetupItems: Array<{ id: string; label: string; iconType: string | null }> = [
+  { id: "step_setup",        label: "Step Setup",          iconType: "note"   },
+  { id: "free_gift_add_ons", label: "Free Gift & Add Ons", iconType: null     },
+  { id: "messages",          label: "Messages",            iconType: null     },
+  { id: "discount_pricing",  label: "Discount & Pricing",  iconType: null     },
+  { id: "bundle_visibility", label: "Bundle Visibility",   iconType: "view"   },
+  { id: "bundle_settings",   label: "Bundle Settings",     iconType: "edit"   },
 ];
 
 // Static status options - imported from centralized constants
@@ -511,6 +510,7 @@ export default function ConfigureBundleFlow() {
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
+  const [readinessExpanded, setReadinessExpanded] = useState(false);
 
   // Add to Storefront install state
   // Treat as already installed if bundle already has a Shopify product (saved at least once)
@@ -1474,44 +1474,17 @@ export default function ConfigureBundleFlow() {
                         style={{ width: "100%", textAlign: "start" }}
                         onClick={() => handleSectionChange(item.id)}
                       >
-                        <s-icon name={item.iconName} />
+                        {item.iconType && <s-icon type={item.iconType} />}
                         {item.label}
+                        {item.id === "bundle_visibility" && !upsellWidgetEnabled && (
+                          <s-badge tone="attention">Pending</s-badge>
+                        )}
                       </s-button>
                     ))}
                   </s-stack>
                 </s-stack>
               </s-section>
 
-              {/* FR-07: Readiness indicator */}
-              {(() => {
-                const checks = [
-                  { label: "Steps configured",      done: stepsState.steps.length > 0 },
-                  { label: "Bundle product linked",  done: !!bundleProduct?.id },
-                  { label: "Discount set up",        done: !pricingState.discountEnabled || pricingState.discountRules.length > 0 },
-                  { label: "Widget enabled",         done: upsellWidgetEnabled },
-                  { label: "App embed active",       done: !!appEmbedEnabled },
-                ];
-                const doneCount = checks.filter(c => c.done).length;
-                const allDone = doneCount === checks.length;
-                return (
-                  <s-section>
-                    <s-stack direction="vertical" gap="200">
-                      <s-stack direction="horizontal" gap="200" align-y="center">
-                        <s-text style={{ fontWeight: 600, fontSize: 13 }}>Readiness</s-text>
-                        <s-badge tone={allDone ? "success" : "attention"}>
-                          {doneCount}/{checks.length}
-                        </s-badge>
-                      </s-stack>
-                      {checks.map(c => (
-                        <s-stack key={c.label} direction="horizontal" gap="200" align-y="center">
-                          <s-icon type={c.done ? "check" : "x"} />
-                          <s-text size="small" tone={c.done ? "subdued" : undefined}>{c.label}</s-text>
-                        </s-stack>
-                      ))}
-                    </s-stack>
-                  </s-section>
-                );
-              })()}
 
               {/* Bundle Product Card - Memoized to prevent unnecessary re-renders */}
               <BundleProductCard
@@ -3366,6 +3339,79 @@ export default function ConfigureBundleFlow() {
         <s-button slot="primaryAction" variant="primary" loading={fetcher.state === 'submitting' || undefined} onClick={handleSyncBundleConfirm}>Sync Bundle</s-button>
         <s-button slot="secondaryActions" onClick={() => setIsSyncModalOpen(false)}>Cancel</s-button>
       </s-modal>
+
+      {/* FR-07: Floating Readiness Gauge */}
+      {(() => {
+        const checks = [
+          { label: "Steps configured",      done: stepsState.steps.length > 0 },
+          { label: "Bundle product linked",  done: !!bundleProduct?.id },
+          { label: "Discount set up",        done: !pricingState.discountEnabled || pricingState.discountRules.length > 0 },
+          { label: "Widget enabled",         done: upsellWidgetEnabled },
+          { label: "App embed active",       done: !!appEmbedEnabled },
+        ];
+        const doneCount = checks.filter(c => c.done).length;
+        const score = Math.round((doneCount / checks.length) * 100);
+        const radius = 22;
+        const circumference = 2 * Math.PI * radius;
+        const offset = circumference - (score / 100) * circumference;
+        const scoreColor = score === 100 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#e53e3e';
+        return (
+          <div style={{ position: 'fixed', bottom: 24, left: 16, zIndex: 200 }}>
+            {readinessExpanded && (
+              <div style={{
+                background: 'white',
+                border: '1px solid #e1e3e5',
+                borderRadius: 8,
+                padding: '12px 16px',
+                marginBottom: 8,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                minWidth: 190,
+              }}>
+                <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>Readiness</p>
+                {checks.map(c => (
+                  <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
+                    <span style={{ fontSize: 13, color: c.done ? '#22c55e' : '#e53e3e', lineHeight: 1, flexShrink: 0 }}>
+                      {c.done ? '✓' : '✗'}
+                    </span>
+                    <span style={{ fontSize: 12, color: c.done ? '#6d7175' : '#1a1a1a' }}>{c.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={() => setReadinessExpanded(v => !v)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'white',
+                border: '1px solid #e1e3e5',
+                borderRadius: 40,
+                padding: '4px 14px 4px 4px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="48" height="48" viewBox="0 0 56 56">
+                <circle cx="28" cy="28" r={radius} fill="none" stroke="#e1e3e5" strokeWidth="5" />
+                <circle
+                  cx="28" cy="28" r={radius}
+                  fill="none"
+                  stroke={scoreColor}
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={offset}
+                  style={{ transform: 'rotate(-90deg)', transformOrigin: '28px 28px', transition: 'stroke-dashoffset 0.4s ease' }}
+                />
+                <text x="28" y="33" textAnchor="middle" fill={scoreColor} fontSize="14" fontWeight="700">{score}</text>
+              </svg>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>Readiness Score</span>
+              <span style={{ fontSize: 10, color: '#6d7175' }}>{readinessExpanded ? '▼' : '▲'}</span>
+            </button>
+          </div>
+        );
+      })()}
 
       </div>
     </>

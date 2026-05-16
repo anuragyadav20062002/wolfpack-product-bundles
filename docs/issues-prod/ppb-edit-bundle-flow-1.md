@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 04:00
+**Last Updated:** 2026-05-16 05:30
 
 ## Overview
 
@@ -125,4 +125,15 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ Badge shows done/total count with success (green) or attention tone
 - ✅ Each row shows check/x icon with label — reacts live to state changes
 - ✅ Lint: 0 errors
-- Next: Phase 9 — Widget extensions (skipped per scope; Phases 9-10 remain)
+- Next: Chrome UI review vs EB parity
+
+### 2026-05-16 05:00 - Chrome UI Review vs EB — Completed, Gaps Fixed
+- ✅ Compared PPB configure page section-by-section against EB (side-by-side Chrome screenshots)
+- ✅ Gap 1: Removed "Bundle Assets" nav item — EB has no such section (6 items now matches EB)
+- ✅ Gap 2: Fixed nav icons — replaced invalid `name="*-minor"` with valid `type` attr (`note`, `view`, `edit`); Free Gift & Add Ons, Messages, Discount & Pricing have no icon (matches EB)
+- ✅ Gap 3: Added "Pending" orange badge to Bundle Visibility nav item when `upsellWidgetEnabled === false`
+- ✅ Gap 4: Replaced sidebar readiness checklist with floating circular SVG gauge (position: fixed, bottom-left) — matches EB's circular readiness score widget
+- ✅ `route.tsx`: `bundleSetupItems` updated, `readinessExpanded` state added, nav rendering updated, old sidebar IIFE removed, floating gauge added at end of JSX
+- ✅ Lint: 0 errors on modified file
+- ✅ Chrome verified: all 6 sections render correctly, gauge visible at 60, Pending badge visible
+- Next: Phase 9 — Widget extensions
