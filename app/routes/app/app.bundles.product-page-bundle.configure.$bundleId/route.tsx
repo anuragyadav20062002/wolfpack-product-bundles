@@ -495,6 +495,19 @@ export default function ConfigureBundleFlow() {
   const [progressBarProgressText, setProgressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? "Add {{conditionText}} to unlock {{discountText}}");
   const [progressBarSuccessText, setProgressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? "{{discountText}} unlocked");
 
+  // FR-05: Bundle Settings — new sub-sections
+  const [preSelectedProductVariantId, setPreSelectedProductVariantId] = useState<string>((bundle as any).preSelectedProductVariantId ?? "");
+  const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>((bundle as any).maxQtyPerProduct?.toString() ?? "");
+  const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
+  const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
+  const [variantSelectorEnabled, setVariantSelectorEnabled] = useState<boolean>((bundle as any).variantSelectorEnabled ?? true);
+  const [showTextOnAddButton, setShowTextOnAddButton] = useState<boolean>((bundle as any).showTextOnAddButton ?? false);
+  const [bundleCartTitle, setBundleCartTitle] = useState<string>((bundle as any).bundleCartTitle ?? "");
+  const [bundleCartSubtitle, setBundleCartSubtitle] = useState<string>((bundle as any).bundleCartSubtitle ?? "");
+  const [bundleBannerDesktopUrl, setBundleBannerDesktopUrl] = useState<string>((bundle as any).bundleBannerDesktopUrl ?? "");
+  const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
+  const [bundleLevelCss, setBundleLevelCss] = useState<string>((bundle as any).bundleLevelCss ?? "");
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
@@ -572,6 +585,18 @@ export default function ConfigureBundleFlow() {
       formData.append("giftMessageEnableLimit", String(giftMessageEnableLimit));
       formData.append("giftMessageCharLimit", giftMessageCharLimit);
       formData.append("giftMessageSendEmail", String(giftMessageSendEmail));
+      // FR-05: Bundle Settings
+      formData.append("preSelectedProductVariantId", preSelectedProductVariantId);
+      formData.append("maxQtyPerProduct", maxQtyPerProduct);
+      formData.append("productSlotsEnabled", String(productSlotsEnabled));
+      formData.append("productSlotIconUrl", productSlotIconUrl);
+      formData.append("variantSelectorEnabled", String(variantSelectorEnabled));
+      formData.append("showTextOnAddButton", String(showTextOnAddButton));
+      formData.append("bundleCartTitle", bundleCartTitle);
+      formData.append("bundleCartSubtitle", bundleCartSubtitle);
+      formData.append("bundleBannerDesktopUrl", bundleBannerDesktopUrl);
+      formData.append("bundleBannerMobileUrl", bundleBannerMobileUrl);
+      formData.append("bundleLevelCss", bundleLevelCss);
 
       // Submit to server action using fetcher
 
@@ -2708,6 +2733,151 @@ export default function ConfigureBundleFlow() {
                     >
                       Enable SDK mode
                     </s-checkbox>
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 1: Pre-selected variant */}
+                <s-section heading="Pre-selected Variant">
+                  <s-stack direction="vertical" gap="300">
+                    <s-text tone="subdued">Optionally pre-select a specific variant when the bundle widget loads.</s-text>
+                    <s-text-field
+                      label="Variant ID"
+                      placeholder="gid://shopify/ProductVariant/123456"
+                      helpText="Paste the Shopify variant GID to pre-select it on load."
+                      value={preSelectedProductVariantId}
+                      onInput={(e: Event) => { setPreSelectedProductVariantId((e.target as HTMLInputElement).value); markAsDirty(); }}
+                      autoComplete="off"
+                    />
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 2: Product quantity limits */}
+                <s-section heading="Product Quantity Limits">
+                  <s-stack direction="vertical" gap="300">
+                    <s-number-field
+                      label="Max quantity per product"
+                      helpText="Maximum number of times a single product can be added across all bundle steps. Leave blank for no limit."
+                      min={1}
+                      value={maxQtyPerProduct}
+                      onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
+                    />
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 3: Product slots */}
+                <s-section heading="Product Slots">
+                  <s-stack direction="vertical" gap="300">
+                    <s-stack direction="horizontal" gap="300" align-y="center">
+                      <s-switch
+                        checked={productSlotsEnabled}
+                        onChange={(e: any) => { setProductSlotsEnabled(e.target.checked); markAsDirty(); }}
+                      />
+                      <s-stack direction="vertical" gap="100">
+                        <s-text>Enable product slot indicators</s-text>
+                        <s-text size="small" tone="subdued">Show empty slot placeholders in the widget to visualise how many items remain to be selected.</s-text>
+                      </s-stack>
+                    </s-stack>
+                    {productSlotsEnabled && (
+                      <s-text-field
+                        label="Slot icon URL (optional)"
+                        placeholder="https://cdn.shopify.com/..."
+                        helpText="Custom icon shown in empty slots. Defaults to a generic placeholder if left blank."
+                        value={productSlotIconUrl}
+                        onInput={(e: Event) => { setProductSlotIconUrl((e.target as HTMLInputElement).value); markAsDirty(); }}
+                        autoComplete="off"
+                      />
+                    )}
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 4: Variant selector */}
+                <s-section heading="Variant Selector">
+                  <s-stack direction="vertical" gap="300">
+                    <s-stack direction="horizontal" gap="300" align-y="center">
+                      <s-switch
+                        checked={variantSelectorEnabled}
+                        onChange={(e: any) => { setVariantSelectorEnabled(e.target.checked); markAsDirty(); }}
+                      />
+                      <s-stack direction="vertical" gap="100">
+                        <s-text>Show variant selector on product cards</s-text>
+                        <s-text size="small" tone="subdued">Display size/colour dropdowns on each product card so customers can pick a variant before adding to the bundle.</s-text>
+                      </s-stack>
+                    </s-stack>
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 5: Add-to-bundle button */}
+                <s-section heading="Add to Bundle Button">
+                  <s-stack direction="vertical" gap="300">
+                    <s-checkbox
+                      checked={showTextOnAddButton || undefined}
+                      onChange={(e: Event) => { setShowTextOnAddButton((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                      helpText="Show an 'Add' label inside the add-to-bundle button on product cards."
+                    >
+                      Show text on add button
+                    </s-checkbox>
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 6: Cart title & subtitle */}
+                <s-section heading="Cart Line Labels">
+                  <s-stack direction="vertical" gap="300">
+                    <s-text tone="subdued">Customise how the bundle appears in the cart line item.</s-text>
+                    <s-text-field
+                      label="Bundle cart title"
+                      placeholder="My Bundle"
+                      helpText="Overrides the bundle name shown in the cart line item."
+                      value={bundleCartTitle}
+                      onInput={(e: Event) => { setBundleCartTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
+                      autoComplete="off"
+                    />
+                    <s-text-field
+                      label="Bundle cart subtitle"
+                      placeholder="Build your own"
+                      helpText="Secondary line shown beneath the cart title."
+                      value={bundleCartSubtitle}
+                      onInput={(e: Event) => { setBundleCartSubtitle((e.target as HTMLInputElement).value); markAsDirty(); }}
+                      autoComplete="off"
+                    />
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 7: Bundle banners */}
+                <s-section heading="Bundle Banners">
+                  <s-stack direction="vertical" gap="300">
+                    <s-text tone="subdued">Optional banner images shown at the top of the bundle widget.</s-text>
+                    <s-text-field
+                      label="Desktop banner URL"
+                      placeholder="https://cdn.shopify.com/..."
+                      helpText="Recommended: 1200×300 px. Shown on screens wider than 768 px."
+                      value={bundleBannerDesktopUrl}
+                      onInput={(e: Event) => { setBundleBannerDesktopUrl((e.target as HTMLInputElement).value); markAsDirty(); }}
+                      autoComplete="off"
+                    />
+                    <s-text-field
+                      label="Mobile banner URL"
+                      placeholder="https://cdn.shopify.com/..."
+                      helpText="Recommended: 600×200 px. Shown on screens 768 px and narrower."
+                      value={bundleBannerMobileUrl}
+                      onInput={(e: Event) => { setBundleBannerMobileUrl((e.target as HTMLInputElement).value); markAsDirty(); }}
+                      autoComplete="off"
+                    />
+                  </s-stack>
+                </s-section>
+
+                {/* FR-05 sub-section 8: Bundle-level CSS */}
+                <s-section heading="Custom CSS">
+                  <s-stack direction="vertical" gap="300">
+                    <s-text tone="subdued">Inject custom CSS scoped to this bundle widget. Sanitized on save.</s-text>
+                    <s-text-area
+                      label="Bundle-level CSS"
+                      placeholder=".wolfpack-bundle { background: #f9f9f9; }"
+                      helpText="CSS is sanitized on save. Use .wolfpack-bundle as the root selector."
+                      value={bundleLevelCss}
+                      onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
+                      autoComplete="off"
+                      rows={8}
+                    />
                   </s-stack>
                 </s-section>
               </s-stack>

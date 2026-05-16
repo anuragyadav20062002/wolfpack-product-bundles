@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 02:45
+**Last Updated:** 2026-05-16 03:30
 
 ## Overview
 
@@ -21,7 +21,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
 - [x] Phase 5: Gift Messages in Messages section (FR-02)
 - [x] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
-- [ ] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
+- [x] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
 - [ ] Phase 8: Readiness indicator in sidebar (FR-07)
 - [ ] Phase 9: Widget extensions — addon steps, gift message UI, qty pills, progress bar
 - [ ] Phase 10: Nav map update + issue close-out
@@ -111,3 +111,10 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ `route.tsx` (discount section): Added "Discount Progress Bar" s-section with toggle + style select + progressText + successText
 - ✅ Lint: 0 errors
 - Next: Phase 7 — Bundle Settings expansion
+
+### 2026-05-16 03:30 - Phase 7: Bundle Settings Expansion — Completed
+- ✅ `route.tsx` (state block): Added 11 Bundle Settings state vars (preSelectedProductVariantId, maxQtyPerProduct, productSlotsEnabled, productSlotIconUrl, variantSelectorEnabled, showTextOnAddButton, bundleCartTitle, bundleCartSubtitle, bundleBannerDesktopUrl, bundleBannerMobileUrl, bundleLevelCss)
+- ✅ `route.tsx` (handleSave): Appended all 11 Bundle Settings fields to FormData
+- ✅ `route.tsx` (bundle_settings section): Added 8 new s-section blocks: Pre-selected Variant, Product Quantity Limits, Product Slots (+ icon URL), Variant Selector toggle, Add-to-Bundle Button, Cart Line Labels (title + subtitle), Bundle Banners (desktop + mobile), Custom CSS (textarea)
+- ✅ Lint: 0 errors
+- Next: Phase 8 — Readiness indicator in sidebar
