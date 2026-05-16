@@ -53,6 +53,7 @@ import type {
 import type { BundleStatus } from "../../../constants/bundle";
 import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
 import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
+import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 
 declare global {
   interface Window {
@@ -236,13 +237,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.product-page-bundle.configure.$bundleId/handlers/
 
 // Static navigation items - moved outside component to prevent recreation on every render
-const bundleSetupItems: Array<{ id: string; label: string; iconType: string | null }> = [
-  { id: "step_setup",        label: "Step Setup",          iconType: "note"   },
-  { id: "free_gift_add_ons", label: "Free Gift & Add Ons", iconType: null     },
-  { id: "messages",          label: "Messages",            iconType: null     },
-  { id: "discount_pricing",  label: "Discount & Pricing",  iconType: null     },
-  { id: "bundle_visibility", label: "Bundle Visibility",   iconType: "view"   },
-  { id: "bundle_settings",   label: "Bundle Settings",     iconType: "edit"   },
+const bundleSetupItems = [
+  { id: "step_setup",       label: "Step Setup",         iconType: "note"   },
+  { id: "discount_pricing", label: "Discount & Pricing", iconType: "filter" },
+  { id: "bundle_settings",  label: "Bundle Settings",    iconType: "edit"   },
+];
+
+const stepSetupChildItems = [
+  { id: "free_gift_addons", label: "Free Gift & Add Ons" },
+  { id: "messages",         label: "Messages"            },
 ];
 
 // Static status options - imported from centralized constants
@@ -510,7 +513,11 @@ export default function ConfigureBundleFlow() {
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
-  const [readinessExpanded, setReadinessExpanded] = useState(false);
+  const [readinessOpen, setReadinessOpen] = useState(false);
+
+  // Step chip navigation slide animation
+  const [slideKey, setSlideKey] = useState(0);
+  const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
 
   // Add to Storefront install state
   // Treat as already installed if bundle already has a Shopify product (saved at least once)
@@ -866,9 +873,38 @@ export default function ConfigureBundleFlow() {
     }
   }, [isDirty, bundle, bundleProduct, shop, shopify]);
 
+  const readinessItems = useMemo<BundleReadinessItem[]>(() => {
+    const hasProducts = stepsState.steps.some((step) =>
+      Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+    );
+    const widgetPlaced = upsellWidgetEnabled;
+    const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
+
+    return [
+      { key: "embed",          label: "App embed enabled",           description: "Required to display bundles on your storefront.",          points: 15, done: appEmbedEnabled },
+      { key: "products",       label: "Products added to a step",    description: "Add at least one product to a bundle step.",               points: 20, done: hasProducts },
+      { key: "discount",       label: "Discount configured",         description: "Set a discount to give customers a reason to bundle.",     points: 15, done: pricingState.discountEnabled },
+      { key: "widget",         label: "Widget placed on product page",description: "Place the bundle widget on your product page template.",   points: 25, done: widgetPlaced },
+      { key: "product_active", label: "Parent product active",       description: "Your parent product must be active to accept orders.",     points: 15, done: parentProductActive },
+    ];
+  }, [
+    appEmbedEnabled,
+    loadedBundleProduct?.status,
+    pricingState.discountEnabled,
+    productStatus,
+    stepsState.steps,
+    upsellWidgetEnabled,
+  ]);
+
+  const readinessScore = readinessItems.reduce((sum, item) => sum + (item.done ? item.points : 0), 0);
+  const readinessClassName = readinessScore >= 80
+    ? productPageBundleStyles.readinessButtonHigh
+    : readinessScore >= 40
+      ? productPageBundleStyles.readinessButtonMedium
+      : productPageBundleStyles.readinessButtonLow;
+
   const handleSectionChange = useCallback((section: string) => {
     if (isDirty) {
-      // Show user-friendly message about unsaved changes
       shopify.toast.show("Please save or discard your changes before switching sections", {
         isError: true,
         duration: 4000
@@ -878,6 +914,20 @@ export default function ConfigureBundleFlow() {
 
     setActiveSection(section);
   }, [isDirty, shopify]);
+
+  const navigateToStep = useCallback((idx: number) => {
+    if (idx === activeTabIndex) return;
+    setSlideDir(idx > activeTabIndex ? "forward" : "backward");
+    setSlideKey(prev => prev + 1);
+    setActiveTabIndex(idx);
+  }, [activeTabIndex, setActiveTabIndex]);
+
+  const handleAddNewStep = useCallback(() => {
+    stepsState.addStep();
+    setSlideDir("forward");
+    setSlideKey(prev => prev + 1);
+    setActiveTabIndex(stepsState.steps.length);
+  }, [stepsState, setActiveTabIndex]);
 
   // Modal handlers for products and collections view
   // handleShowProducts and handleShowCollections removed - modals managed inline
@@ -1365,39 +1415,8 @@ export default function ConfigureBundleFlow() {
     <>
       <ui-title-bar title={`Configure: ${formState.bundleName}`}>
         <button variant="breadcrumb" onClick={handleBackClick}>Dashboard</button>
-        <button
-          variant="primary"
-          onClick={widgetInstalled ? handlePreviewBundle : handleAddToStorefront}
-          disabled={(!bundleProduct || stepsState.steps.length === 0 || (!widgetInstalled && isDirty)) || undefined}
-        >
-          {widgetInstalled ? "Preview Bundle" : "Add to Storefront"}
-        </button>
-        <button
-          onClick={() => {
-            const productHandle = bundle.shopifyProductHandle;
-            const previewParam = productHandle ? `&previewPath=${encodeURIComponent(`/products/${productHandle}`)}` : '';
-            const editorUrl = widgetInstalled
-              ? `https://${shop}/admin/themes/current/editor?template=product${previewParam}`
-              : `https://${shop}/admin/themes/current/editor?template=product&addAppBlockId=${apiKey}/${blockHandle}&target=newAppsSection${previewParam}`;
-            window.open(editorUrl, '_blank');
-          }}
-        >
-          Open in Theme Editor
-        </button>
-        <button
-          onClick={() => {
-            if (isDirty) {
-              shopify.toast.show("Save your changes before syncing", { isError: true });
-              return;
-            }
-            if (fetcher.state !== 'idle') return;
-            setIsSyncModalOpen(true);
-          }}
-        >
-          Sync Bundle
-        </button>
       </ui-title-bar>
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+      <div className={productPageBundleStyles.editCanvas}>
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
         onSubmit={(e) => {
@@ -1450,158 +1469,228 @@ export default function ConfigureBundleFlow() {
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
       </form>
 
+        <div className={productPageBundleStyles.canvasHeader}>
+          <div className={productPageBundleStyles.canvasTitleGroup}>
+            <div className={productPageBundleStyles.canvasTitleRow}>
+              <button
+                type="button"
+                className={productPageBundleStyles.canvasBackButton}
+                onClick={handleBackClick}
+                aria-label="Back to dashboard"
+              >
+                ←
+              </button>
+              <h1 className={productPageBundleStyles.canvasTitle}>Configure Bundle Flow</h1>
+            </div>
+          </div>
+          <div className={productPageBundleStyles.canvasActions}>
+            <button
+              type="button"
+              className={`${productPageBundleStyles.readinessButton} ${readinessClassName}`}
+              onClick={() => setReadinessOpen(true)}
+            >
+              <span className={productPageBundleStyles.readinessScore}>{readinessScore}</span>
+              <span className={productPageBundleStyles.readinessLabel}>Readiness Score</span>
+            </button>
+            <s-button
+              variant="secondary"
+              icon="view"
+              onClick={() => { void handlePreviewBundle(); }}
+              disabled={fetcher.state !== "idle"}
+            >
+              Preview Bundle
+            </s-button>
+          </div>
+        </div>
+
         <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16, alignItems: "start" }}>
+        <div className={productPageBundleStyles.editGrid}>
 
           {/* Left Sidebar */}
-          <s-stack direction="block" gap="base">
+          <div className={productPageBundleStyles.leftColumn}>
+            <s-stack direction="block" gap="base">
+
+              {/* Bundle Product Card */}
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <div className={productPageBundleStyles.leftCardHeader}>
+                    <h3 className={productPageBundleStyles.leftCardTitle}>Bundle Product</h3>
+                    <button
+                      type="button"
+                      className={productPageBundleStyles.ebLinkButton}
+                      onClick={handleSyncProduct}
+                    >
+                      Sync Product
+                    </button>
+                  </div>
+
+                  <div className={productPageBundleStyles.bundleProductPanel}>
+                    <div className={productPageBundleStyles.bundleProductSummary}>
+                      <div className={productPageBundleStyles.bundleProductIconTile}>
+                        {productImageUrl ? (
+                          <img
+                            src={productImageUrl}
+                            alt=""
+                            className={productPageBundleStyles.bundleProductIconImage}
+                          />
+                        ) : (
+                          <s-icon type="product" />
+                        )}
+                      </div>
+                      <span className={productPageBundleStyles.bundleProductName}>
+                        {productTitle || bundleProduct?.title || formState.bundleName || "Bundle Product"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={productPageBundleStyles.bundleProductEditButton}
+                      onClick={() => {
+                        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
+                        if (!productId) {
+                          void handleBundleProductSelect();
+                          return;
+                        }
+                        const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
+                        shopify.navigate(productUrl);
+                      }}
+                    >
+                      <s-icon type="edit" />
+                      <span>Edit Product</span>
+                    </button>
+                  </div>
+
+                  <div className={productPageBundleStyles.parentProductStatus}>
+                    <span>Parent Product Status</span>
+                    <s-badge tone={String(productStatus).toLowerCase() === "active" ? "success" : "warning"}>
+                      {String(productStatus || "Unlisted").toLowerCase() === "active" ? "Active" : "Unlisted"}
+                    </s-badge>
+                  </div>
+                </s-stack>
+              </s-section>
+
               {/* Bundle Setup Navigation Card */}
               <s-section>
                 <s-stack direction="block" gap="small">
-                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                    Bundle Setup
-                  </h3>
-                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                    Set-up your bundle builder
-                  </p>
+                  <h3 className={productPageBundleStyles.leftCardTitle}>Bundle Setup</h3>
+                  <p className={productPageBundleStyles.leftCardSubtitle}>Set-up your bundle builder</p>
 
                   <div className={productPageBundleStyles.setupNavList}>
                     {bundleSetupItems.map((item) => {
-                      const isActive = activeSection === item.id;
-                      let badge: { label: string; tone?: string } | null = null;
-                      if (item.id === "bundle_visibility" && !upsellWidgetEnabled) {
-                        badge = { label: "Pending", tone: "attention" };
+                      const isActive = activeSection === item.id || (item.id === "step_setup" && (activeSection === "free_gift_addons" || activeSection === "messages"));
+                      let statusBadge: { label: string; tone?: string } | null = null;
+                      if (item.id === "discount_pricing") {
+                        statusBadge = pricingState.discountEnabled ? null : { label: "None" };
                       }
                       return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
-                          onClick={() => handleSectionChange(item.id)}
-                        >
-                          <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
-                            {item.iconType
-                              ? <s-icon type={item.iconType as any} />
-                              : null}
-                          </span>
-                          <span className={productPageBundleStyles.setupNavLabel}>{item.label}</span>
-                          <span className={productPageBundleStyles.setupNavMeta}>
-                            {badge && !isActive && (
-                              <s-badge tone={badge.tone as any}>{badge.label}</s-badge>
-                            )}
-                          </span>
-                        </button>
+                        <div key={item.id}>
+                          <button
+                            type="button"
+                            className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
+                            onClick={() => handleSectionChange(item.id)}
+                          >
+                            <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
+                              {item.iconType
+                                ? <s-icon type={item.iconType as any} />
+                                : (isActive ? "●" : "○")}
+                            </span>
+                            <span className={productPageBundleStyles.setupNavLabel}>{item.label}</span>
+                            <span className={productPageBundleStyles.setupNavMeta}>
+                              {statusBadge && !isActive && (
+                                <s-badge tone={(statusBadge.tone as any) || "subdued"}>{statusBadge.label}</s-badge>
+                              )}
+                            </span>
+                          </button>
+                          {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons" || activeSection === "messages") && (
+                            <div className={productPageBundleStyles.ebSubNav}>
+                              {stepSetupChildItems.map((child) => (
+                                <button
+                                  key={child.id}
+                                  type="button"
+                                  className={`${productPageBundleStyles.ebSubNavItem} ${activeSection === child.id ? productPageBundleStyles.ebSubNavItemActive : ""}`}
+                                  onClick={() => handleSectionChange(child.id)}
+                                >
+                                  {child.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
                 </s-stack>
               </s-section>
 
-
-              {/* Bundle Product Card - Memoized to prevent unnecessary re-renders */}
-              <BundleProductCard
-                bundleProduct={bundleProduct}
-                productImageUrl={productImageUrl}
-                productTitle={productTitle}
-                shop={shop}
-                onSync={handleSyncProduct}
-                onSelect={handleBundleProductSelect}
-              />
-
-              {/* Bundle Status Card */}
-              <s-section>
-                <s-stack direction="block" gap="small">
-                  <BundleStatusSection
-                    status={formState.bundleStatus}
-                    onChange={formState.setBundleStatus}
-                  />
-                </s-stack>
-              </s-section>
-
-          </s-stack>
+            </s-stack>
+          </div>
 
           {/* Main Content Area */}
-          <div>
+          <div className={productPageBundleStyles.mainColumn}>
             {activeSection === "step_setup" && (
               <div data-tour-target="ppb-product-selection">
-              <s-section>
-                <s-stack direction="block" gap="base">
-                  <s-stack direction="block" gap="small-100">
-                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                      Bundle Steps
-                    </h3>
-                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                <div className={`${productPageBundleStyles.card} ${productPageBundleStyles.stepFlowCard}`}>
+                  <s-stack direction="block" gap="small">
+                    <div className={productPageBundleStyles.stepFlowTitleRow}>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>Step Flow</h3>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                       Create steps for your multi-step bundle here. Select product options for each step below
                     </p>
                   </s-stack>
+                  <div className={productPageBundleStyles.stepNav}>
+                    {stepsState.steps.map((step, i) => (
+                      <button
+                        key={step.id}
+                        className={activeTabIndex === i ? productPageBundleStyles.stepChipActive : productPageBundleStyles.stepChip}
+                        onClick={() => navigateToStep(i)}
+                      >
+                        <span className={productPageBundleStyles.stepChipNumber}>{i + 1}</span>
+                        <span className={productPageBundleStyles.stepChipLabel}>{step.name || `Step ${i + 1}`}</span>
+                      </button>
+                    ))}
+                    <button className={productPageBundleStyles.addStepBtn} onClick={handleAddNewStep}>
+                      <span aria-hidden="true">+</span>
+                      <span>Add Step</span>
+                    </button>
+                  </div>
+                </div>
 
-                  {/* Steps List */}
-                  <s-stack direction="block" gap="small">
-                    {stepsState.steps.map((step, index) => (
-                      <s-section key={step.id}>
-                        <div
-                          data-step-id={step.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, step.id, index)}
-                          onDragEnd={handleDragEnd}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, index)}
-                          className={`${productPageBundleStyles.stepCard} ${
-                            draggedStep === step.id ? productPageBundleStyles.stepCardDragging : ''
-                          } ${
-                            dragOverIndex === index && draggedStep !== step.id ? productPageBundleStyles.stepCardDragOver : ''
-                          }`}
-                        >
-                          <s-stack direction="block" gap="small">
-                            {/* Step Header */}
-                            <s-stack direction="inline" gap="small" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                              <s-stack direction="inline" gap="small-100" style={{ alignItems: "center" }}>
-                                <s-icon name="drag-handle-minor" />
-                                <p style={{ margin: 0, fontSize: 14 }}>
-                                  Step {index + 1}
-                                </p>
-                              </s-stack>
-
-                              <s-stack direction="inline" gap="small-400">
-                                <s-button
-                                  variant="tertiary"
-                                  onClick={() => cloneStep(step.id)}
-                                  aria-label="Clone step"
-                                >
-                                  <s-icon name="duplicate-minor" />
-                                </s-button>
-                                <s-button
-                                  variant="tertiary"
-                                  tone="critical"
-                                  onClick={() => deleteStep(step.id)}
-                                  aria-label="Delete step"
-                                >
-                                  <s-icon name="delete-minor" />
-                                </s-button>
-                                <s-button
-                                  variant="tertiary"
-                                  onClick={() => stepsState.toggleStepExpansion(step.id)}
-                                  aria-label={stepsState.expandedSteps.has(step.id) ? "Collapse step" : "Expand step"}
-                                >
-                                  <s-icon name={stepsState.expandedSteps.has(step.id) ? "chevron-up-minor" : "chevron-down-minor"} />
-                                </s-button>
-                              </s-stack>
-                            </s-stack>
-
-                            {/* Expanded Step Content */}
-                            <div style={{ display: stepsState.expandedSteps.has(step.id) ? "block" : "none" }}>
-                              <s-stack direction="block" gap="base">
-                                {/* Step Name */}
-                                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                  <s-text-field
-                                    label="Step Name"
-                                    value={step.name}
-                                    onInput={(e: Event) => stepsState.updateStepField(step.id, 'name', (e.target as HTMLInputElement).value)}
-                                    autoComplete="off"
-                                  />
-                                </div>
+                {stepsState.steps.map((step, index) => activeTabIndex === index && (
+                  <div
+                    key={`${step.id}-${slideKey}`}
+                    className={slideDir === "forward" ? productPageBundleStyles.slideForward : slideDir === "backward" ? productPageBundleStyles.slideBackward : ""}
+                  >
+                    <div className={productPageBundleStyles.card}>
+                      <div className={productPageBundleStyles.cardHeader}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Step Setup</h3>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <s-button
+                            variant="plain"
+                            icon="duplicate"
+                            accessibilityLabel="Clone step"
+                            onClick={() => cloneStep(step.id)}
+                          />
+                          {stepsState.steps.length > 1 && (
+                            <s-button
+                              variant="plain"
+                              icon="delete"
+                              accessibilityLabel="Delete step"
+                              onClick={() => deleteStep(step.id)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <s-stack direction="block" gap="base">
+                        {/* Step Name */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                          <s-text-field
+                            label="Step Name"
+                            value={step.name}
+                            onInput={(e: Event) => stepsState.updateStepField(step.id, 'name', (e.target as HTMLInputElement).value)}
+                            autoComplete="off"
+                          />
+                        </div>
 
                                 {/* Products/Collections Tabs */}
                                 <s-stack direction="block" gap="small">
@@ -1980,31 +2069,10 @@ export default function ConfigureBundleFlow() {
                                   )}
                                 </s-stack>
 
-                              </s-stack>
-                            </div>
-                          </s-stack>
-                        </div>
-                      </s-section>
-                    ))}
-
-                    {/* Add Step Button */}
-                    <s-button
-                      variant="plain"
-                      style={{ width: "100%" }}
-                      onClick={() => {
-                        const newStepId = stepsState.addStep();
-                        requestAnimationFrame(() => {
-                          const el = document.querySelector(`[data-step-id="${newStepId}"]`);
-                          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        });
-                      }}
-                    >
-                      <s-icon name="plus-minor" />
-                      Add Step
-                    </s-button>
-                  </s-stack>
-                </s-stack>
-              </s-section>
+                      </s-stack>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -3353,78 +3421,12 @@ export default function ConfigureBundleFlow() {
         <s-button slot="secondaryActions" onClick={() => setIsSyncModalOpen(false)}>Cancel</s-button>
       </s-modal>
 
-      {/* FR-07: Floating Readiness Gauge */}
-      {(() => {
-        const checks = [
-          { label: "Steps configured",      done: stepsState.steps.length > 0 },
-          { label: "Bundle product linked",  done: !!bundleProduct?.id },
-          { label: "Discount set up",        done: !pricingState.discountEnabled || pricingState.discountRules.length > 0 },
-          { label: "Widget enabled",         done: upsellWidgetEnabled },
-          { label: "App embed active",       done: !!appEmbedEnabled },
-        ];
-        const doneCount = checks.filter(c => c.done).length;
-        const score = Math.round((doneCount / checks.length) * 100);
-        const radius = 22;
-        const circumference = 2 * Math.PI * radius;
-        const offset = circumference - (score / 100) * circumference;
-        const scoreColor = score === 100 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#e53e3e';
-        return (
-          <div style={{ position: 'fixed', bottom: 24, left: 16, zIndex: 200 }}>
-            {readinessExpanded && (
-              <div style={{
-                background: 'white',
-                border: '1px solid #e1e3e5',
-                borderRadius: 8,
-                padding: '12px 16px',
-                marginBottom: 8,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                minWidth: 190,
-              }}>
-                <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>Readiness</p>
-                {checks.map(c => (
-                  <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
-                    <span style={{ fontSize: 13, color: c.done ? '#22c55e' : '#e53e3e', lineHeight: 1, flexShrink: 0 }}>
-                      {c.done ? '✓' : '✗'}
-                    </span>
-                    <span style={{ fontSize: 12, color: c.done ? '#6d7175' : '#1a1a1a' }}>{c.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              onClick={() => setReadinessExpanded(v => !v)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                background: 'white',
-                border: '1px solid #e1e3e5',
-                borderRadius: 40,
-                padding: '4px 14px 4px 4px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                cursor: 'pointer',
-              }}
-            >
-              <svg width="48" height="48" viewBox="0 0 56 56">
-                <circle cx="28" cy="28" r={radius} fill="none" stroke="#e1e3e5" strokeWidth="5" />
-                <circle
-                  cx="28" cy="28" r={radius}
-                  fill="none"
-                  stroke={scoreColor}
-                  strokeWidth="5"
-                  strokeLinecap="round"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={offset}
-                  style={{ transform: 'rotate(-90deg)', transformOrigin: '28px 28px', transition: 'stroke-dashoffset 0.4s ease' }}
-                />
-                <text x="28" y="33" textAnchor="middle" fill={scoreColor} fontSize="14" fontWeight="700">{score}</text>
-              </svg>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>Readiness Score</span>
-              <span style={{ fontSize: 10, color: '#6d7175' }}>{readinessExpanded ? '▼' : '▲'}</span>
-            </button>
-          </div>
-        );
-      })()}
+      <BundleReadinessOverlay
+        items={readinessItems}
+        bundleId={bundle.id}
+        open={readinessOpen}
+        onOpenChange={setReadinessOpen}
+      />
 
       </div>
     </>

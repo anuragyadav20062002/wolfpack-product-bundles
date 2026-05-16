@@ -8,32 +8,6 @@
   border-radius: 8px;
 }
 
-/* Step card base styles */
-.stepCard {
-  cursor: grab;
-  transition: all 0.2s ease;
-  border-radius: 8px;
-  position: relative;
-  border: 2px solid transparent;
-  z-index: 1;
-}
-
-/* Step card when dragging */
-.stepCardDragging {
-  cursor: grabbing;
-  opacity: 0.6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-}
-
-/* Step card when drag over */
-.stepCardDragOver {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(33, 150, 243, 0.3);
-  border: 2px dashed rgba(33, 150, 243, 0.5);
-  background: rgba(33, 150, 243, 0.05);
-}
-
 /* Help section summary */
 .helpSummary {
   cursor: pointer;
@@ -64,8 +38,247 @@
   color: #6c757d;
 }
 
-/* ── Sidebar Navigation (matches FPB configure nav pattern) ──────────────── */
+/* ── Edit App Canvas ─────────────────────────────────────────── */
+.editCanvas {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 0 88px;
+}
 
+.canvasHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 0 16px;
+}
+
+.canvasTitleGroup {
+  min-width: 0;
+}
+
+.canvasTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.canvasBackButton {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.canvasBackButton:hover {
+  color: #000000;
+}
+
+.canvasTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.canvasActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.readinessButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #202223;
+  font: inherit;
+  cursor: pointer;
+}
+
+.readinessButtonLow {
+  background: #fff1f1;
+  border-color: #ffd6d6;
+}
+
+.readinessButtonMedium {
+  background: #eef5ff;
+  border-color: #cfe2ff;
+}
+
+.readinessButtonHigh {
+  background: #eaf7f0;
+  border-color: #b7ead2;
+}
+
+.readinessScore {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.readinessLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editGrid {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.leftColumn {
+  flex: 0 0 274px;
+  min-width: 274px;
+}
+
+.mainColumn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.leftCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ebLinkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #005bd3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.ebLinkButton:hover,
+.ebLinkButton:focus-visible {
+  color: #003a8c;
+  text-decoration: underline;
+}
+
+.leftCardTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.leftCardSubtitle {
+  margin: -2px 0 8px;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.bundleProductPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px;
+  border: 1px solid #e1e3e5;
+  border-radius: 7px;
+  background: #f6f6f7;
+}
+
+.bundleProductSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+.bundleProductIconTile {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d8dbdf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6d7175;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bundleProductIconImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.bundleProductName {
+  overflow: hidden;
+  min-width: 0;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bundleProductEditButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.bundleProductEditButton:hover {
+  border-color: #9ca3af;
+  background: #fafafa;
+}
+
+.parentProductStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Sidebar Navigation ──────────────────────────────────────── */
 .setupNavList {
   display: flex;
   flex-direction: column;
@@ -117,4 +330,233 @@
 
 .setupNavMeta {
   min-width: 0;
+}
+
+.ebSubNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 6px 28px;
+  padding-left: 12px;
+  border-left: 1px solid #d8dbdf;
+}
+
+.ebSubNavItem {
+  width: 100%;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ebSubNavItem:hover {
+  color: #202223;
+}
+
+.ebSubNavItemActive {
+  color: #202223;
+  font-weight: 600;
+}
+
+/* ── Step Flow card ──────────────────────────────────────────── */
+.card {
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e3e5e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stepFlowCard {
+  margin-bottom: 0;
+}
+
+.stepFlowTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ── Step Chip Navigation ────────────────────────────────────── */
+.stepNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.stepChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.stepChip:hover {
+  border-color: #9ca3af;
+  background: #f6f6f7;
+}
+
+.stepChipActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid #202223;
+  border-radius: 8px;
+  background: #202223;
+  color: white;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stepChipNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.stepChipActive .stepChipNumber {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.stepChipLabel {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addStepBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #202223;
+  color: white;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addStepBtn:hover {
+  background: #303233;
+}
+
+/* ── Slide animations ────────────────────────────────────────── */
+@keyframes slideInFromRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+.slideForward {
+  animation: slideInFromRight 0.2s ease;
+}
+
+.slideBackward {
+  animation: slideInFromLeft 0.2s ease;
+}
+
+/* ── Step card styles (kept for drag handle in step content) ─── */
+.stepCard {
+  cursor: grab;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  position: relative;
+  border: 2px solid transparent;
+  z-index: 1;
+}
+
+.stepCardDragging {
+  cursor: grabbing;
+  opacity: 0.6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.stepCardDragOver {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(33, 150, 243, 0.3);
+  border: 2px dashed rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.05);
+}
+
+/* ── Settings rows ───────────────────────────────────────────── */
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #edf0f2;
+}
+
+.settingsRow:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.settingsRowText {
+  flex: 1;
+  min-width: 0;
+}
+
+.settingsRowTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settingsRowDescription {
+  margin: 4px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settingsRowControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 168px;
 }
