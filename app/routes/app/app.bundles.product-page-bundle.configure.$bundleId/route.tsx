@@ -1466,22 +1466,35 @@ export default function ConfigureBundleFlow() {
                     Set-up your bundle builder
                   </p>
 
-                  <s-stack direction="block" gap="small-400">
-                    {bundleSetupItems.map((item) => (
-                      <s-button
-                        key={item.id}
-                        variant={activeSection === item.id ? "primary" : "tertiary"}
-                        style={{ width: "100%", textAlign: "start" }}
-                        onClick={() => handleSectionChange(item.id)}
-                      >
-                        {item.iconType && <s-icon type={item.iconType} />}
-                        {item.label}
-                        {item.id === "bundle_visibility" && !upsellWidgetEnabled && (
-                          <s-badge tone="attention">Pending</s-badge>
-                        )}
-                      </s-button>
-                    ))}
-                  </s-stack>
+                  <div className={productPageBundleStyles.setupNavList}>
+                    {bundleSetupItems.map((item) => {
+                      const isActive = activeSection === item.id;
+                      let badge: { label: string; tone?: string } | null = null;
+                      if (item.id === "bundle_visibility" && !upsellWidgetEnabled) {
+                        badge = { label: "Pending", tone: "attention" };
+                      }
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
+                          onClick={() => handleSectionChange(item.id)}
+                        >
+                          <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
+                            {item.iconType
+                              ? <s-icon type={item.iconType as any} />
+                              : null}
+                          </span>
+                          <span className={productPageBundleStyles.setupNavLabel}>{item.label}</span>
+                          <span className={productPageBundleStyles.setupNavMeta}>
+                            {badge && !isActive && (
+                              <s-badge tone={badge.tone as any}>{badge.label}</s-badge>
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </s-stack>
               </s-section>
 

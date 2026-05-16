@@ -273,10 +273,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.full-page-bundle.configure.$bundleId/handlers/
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup",       label: "Step Setup",         fullPageOnly: false },
-  { id: "discount_pricing", label: "Discount & Pricing", fullPageOnly: false },
-  { id: "bundle_visibility", label: "Bundle Visibility", fullPageOnly: true  },
-  { id: "bundle_settings",  label: "Bundle Settings",    fullPageOnly: false },
+  { id: "step_setup",        label: "Step Setup",         iconType: "note",   fullPageOnly: false },
+  { id: "discount_pricing",  label: "Discount & Pricing", iconType: "filter", fullPageOnly: false },
+  { id: "bundle_visibility", label: "Bundle Visibility",  iconType: "view",   fullPageOnly: true  },
+  { id: "bundle_settings",   label: "Bundle Settings",    iconType: "edit",   fullPageOnly: false },
 ];
 
 const stepSetupChildItems = [
@@ -2015,7 +2015,9 @@ export default function ConfigureBundleFlow() {
                               onClick={() => handleSectionChange(item.id)}
                             >
                               <span className={fullPageBundleStyles.setupNavIcon} aria-hidden="true">
-                                {isActive ? "●" : "○"}
+                                {item.iconType
+                                  ? <s-icon type={item.iconType as any} />
+                                  : (isActive ? "●" : "○")}
                               </span>
                               <span className={fullPageBundleStyles.setupNavLabel}>{item.label}</span>
                               <span className={fullPageBundleStyles.setupNavMeta}>

@@ -63,3 +63,58 @@
   font-size: 12px;
   color: #6c757d;
 }
+
+/* ── Sidebar Navigation (matches FPB configure nav pattern) ──────────────── */
+
+.setupNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.setupNavItem {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.setupNavItem:hover {
+  background: #f1f2f4;
+}
+
+.setupNavItemActive {
+  background: #e3e3e3;
+}
+
+.setupNavIcon {
+  color: #6d7175;
+  font-size: 12px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setupNavLabel {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setupNavMeta {
+  min-width: 0;
+}
