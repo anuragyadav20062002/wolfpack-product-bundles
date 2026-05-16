@@ -484,6 +484,17 @@ export default function ConfigureBundleFlow() {
   const [giftMessageCharLimit, setGiftMessageCharLimit] = useState<string>((bundle as any).giftMessageCharLimit?.toString() ?? "");
   const [giftMessageSendEmail, setGiftMessageSendEmail] = useState<boolean>((bundle as any).giftMessageSendEmail ?? false);
 
+  // FR-03: Display options state (Quantity Options + Progress Bar)
+  const _savedDisplayOpts = (bundle as any).bundlePricing?.displayOptions ?? {};
+  const [qtyOptionsEnabled, setQtyOptionsEnabled] = useState<boolean>(_savedDisplayOpts?.bundleQuantityOptions?.enabled === true);
+  const [qtyOptionsDefaultRuleId, setQtyOptionsDefaultRuleId] = useState<string | null>(_savedDisplayOpts?.bundleQuantityOptions?.defaultRuleId ?? null);
+  const [qtyRuleLabels, setQtyRuleLabels] = useState<Record<string, string>>({});
+  const [qtyRuleSubtexts, setQtyRuleSubtexts] = useState<Record<string, string>>({});
+  const [progressBarEnabled, setProgressBarEnabled] = useState<boolean>(_savedDisplayOpts?.progressBar?.enabled === true);
+  const [progressBarType, setProgressBarType] = useState<string>(_savedDisplayOpts?.progressBar?.type ?? "step_based");
+  const [progressBarProgressText, setProgressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? "Add {{conditionText}} to unlock {{discountText}}");
+  const [progressBarSuccessText, setProgressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? "{{discountText}} unlocked");
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
@@ -517,7 +528,25 @@ export default function ConfigureBundleFlow() {
         discountRules: pricingState.discountRules,
         showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
-        ruleMessages
+        ruleMessages,
+        displayOptions: {
+          bundleQuantityOptions: {
+            enabled: qtyOptionsEnabled,
+            defaultRuleId: qtyOptionsDefaultRuleId,
+            optionsByRuleId: Object.fromEntries(
+              pricingState.discountRules.map((r: any) => [
+                r.id,
+                { label: qtyRuleLabels[r.id] ?? `Box of ${r.condition?.value ?? ''}`, subtext: qtyRuleSubtexts[r.id] ?? '' },
+              ])
+            ),
+          },
+          progressBar: {
+            enabled: progressBarEnabled,
+            type: progressBarType,
+            progressText: progressBarProgressText,
+            successText: progressBarSuccessText,
+          },
+        },
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
@@ -1975,7 +2004,58 @@ export default function ConfigureBundleFlow() {
                         ))}
                       </s-select>
 
-                      {/* Discount Rules */}
+                      {/* Buy X Get Y rule builder */}
+                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (() => {
+                        const bxyRule = pricingState.discountRules[0];
+                        if (!bxyRule) {
+                          return (
+                            <s-button variant="tertiary" style={{ width: "100%" }} onClick={pricingState.addDiscountRule}>
+                              Configure Buy X Get Y
+                            </s-button>
+                          );
+                        }
+                        return (
+                          <s-section>
+                            <s-stack direction="vertical" gap="300">
+                              <s-heading size="small">Buy X Get Y Configuration</s-heading>
+                              <s-select
+                                label="Buy from step"
+                                helpText="Customer must fill this step to trigger the offer."
+                                onChange={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { buyStepId: (e.target as HTMLSelectElement).value })}
+                              >
+                                <option value="">— select step —</option>
+                                {stepsState.steps.map((s: any) => (
+                                  <option key={s.id} value={s.id} selected={(bxyRule as any).buyStepId === s.id || undefined}>
+                                    {s.name || `Step ${s.position ?? ''}`}
+                                  </option>
+                                ))}
+                              </s-select>
+                              <s-select
+                                label="Get (free gift step)"
+                                helpText="Products in this step are given free when the offer triggers."
+                                onChange={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { getStepId: (e.target as HTMLSelectElement).value })}
+                              >
+                                <option value="">— select step —</option>
+                                {stepsState.steps.map((s: any) => (
+                                  <option key={s.id} value={s.id} selected={(bxyRule as any).getStepId === s.id || undefined}>
+                                    {s.name || `Step ${s.position ?? ''}`}
+                                  </option>
+                                ))}
+                              </s-select>
+                              <s-number-field
+                                label="Free quantity"
+                                helpText="How many items from the get-step are discounted to $0."
+                                min={1}
+                                value={String((bxyRule as any).getQty ?? 1)}
+                                onInput={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { getQty: Number((e.target as HTMLInputElement).value) || 1 })}
+                              />
+                            </s-stack>
+                          </s-section>
+                        );
+                      })()}
+
+                      {/* Discount Rules (non-BUY_X_GET_Y types) */}
+                      {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
                       <s-stack direction="block" gap="small">
                         {pricingState.discountRules.map((rule, index) => (
                           <s-section key={rule.id}>
@@ -2087,6 +2167,7 @@ export default function ConfigureBundleFlow() {
                           </p>
                         )}
                       </s-stack>
+                      )}
 
                       {/* Discount Messaging */}
                       <s-stack direction="block" gap="small">
@@ -2187,6 +2268,105 @@ export default function ConfigureBundleFlow() {
                           </s-section>
                         )}
                       </s-stack>
+                    </s-stack>
+                  )}
+                </s-stack>
+              </s-section>
+
+              {/* FR-03: Bundle Quantity Options */}
+              <s-section heading="Bundle Quantity Options">
+                <s-stack direction="vertical" gap="400">
+                  <s-stack direction="horizontal" gap="300" align-y="center">
+                    <s-switch
+                      checked={qtyOptionsEnabled}
+                      onChange={(e: any) => setQtyOptionsEnabled(e.target.checked)}
+                    />
+                    <s-stack direction="vertical" gap="100">
+                      <s-text>Enable bundle quantity selector</s-text>
+                      <s-text size="small" tone="subdued">Show a quantity picker so customers can choose how many bundles to add in one go.</s-text>
+                    </s-stack>
+                  </s-stack>
+
+                  {qtyOptionsEnabled && pricingState.discountRules.length > 0 && (
+                    <s-stack direction="vertical" gap="300">
+                      <s-select
+                        label="Default quantity option"
+                        onChange={(e: any) => setQtyOptionsDefaultRuleId(e.target.value || null)}
+                      >
+                        <option value="">— none —</option>
+                        {pricingState.discountRules.map((r: any, i: number) => (
+                          <option key={r.id} value={r.id} selected={qtyOptionsDefaultRuleId === r.id || undefined}>
+                            {`Rule #${i + 1} — qty ${r.condition?.value ?? '?'}`}
+                          </option>
+                        ))}
+                      </s-select>
+                      {pricingState.discountRules.map((r: any, i: number) => (
+                        <s-box key={r.id} padding="300" border-color="subdued" border-width="025" border-radius="200">
+                          <s-stack direction="vertical" gap="200">
+                            <s-text>Rule #{i + 1} — qty {r.condition?.value ?? '?'}</s-text>
+                            <s-text-field
+                              label="Label"
+                              placeholder={`Box of ${r.condition?.value ?? ''}`}
+                              value={qtyRuleLabels[r.id] ?? ''}
+                              onInput={(e: Event) => setQtyRuleLabels(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value }))}
+                              autoComplete="off"
+                            />
+                            <s-text-field
+                              label="Subtext"
+                              placeholder="e.g. 20% off"
+                              value={qtyRuleSubtexts[r.id] ?? ''}
+                              onInput={(e: Event) => setQtyRuleSubtexts(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value }))}
+                              autoComplete="off"
+                            />
+                          </s-stack>
+                        </s-box>
+                      ))}
+                    </s-stack>
+                  )}
+                  {qtyOptionsEnabled && pricingState.discountRules.length === 0 && (
+                    <s-text tone="subdued" size="small">Add discount rules first to configure quantity options per tier.</s-text>
+                  )}
+                </s-stack>
+              </s-section>
+
+              {/* FR-03: Progress Bar */}
+              <s-section heading="Discount Progress Bar">
+                <s-stack direction="vertical" gap="400">
+                  <s-stack direction="horizontal" gap="300" align-y="center">
+                    <s-switch
+                      checked={progressBarEnabled}
+                      onChange={(e: any) => setProgressBarEnabled(e.target.checked)}
+                    />
+                    <s-stack direction="vertical" gap="100">
+                      <s-text>Enable progress bar</s-text>
+                      <s-text size="small" tone="subdued">Show a visual progress bar in the widget motivating customers toward the next discount tier.</s-text>
+                    </s-stack>
+                  </s-stack>
+
+                  {progressBarEnabled && (
+                    <s-stack direction="vertical" gap="300">
+                      <s-select
+                        label="Progress bar style"
+                        value={progressBarType}
+                        onChange={(e: any) => setProgressBarType(e.target.value)}
+                      >
+                        <option value="step_based">Step-based (milestone markers per rule)</option>
+                        <option value="simple">Simple (single fill bar)</option>
+                      </s-select>
+                      <s-text-field
+                        label="Progress text"
+                        helpText="Shown while customer is working toward a discount. Supports {{conditionText}}, {{discountText}}."
+                        value={progressBarProgressText}
+                        onInput={(e: Event) => setProgressBarProgressText((e.target as HTMLInputElement).value)}
+                        autoComplete="off"
+                      />
+                      <s-text-field
+                        label="Success text"
+                        helpText="Shown when the discount is unlocked. Supports {{discountText}}."
+                        value={progressBarSuccessText}
+                        onInput={(e: Event) => setProgressBarSuccessText((e.target as HTMLInputElement).value)}
+                        autoComplete="off"
+                      />
                     </s-stack>
                   )}
                 </s-stack>

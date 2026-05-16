@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-16
-**Last Updated:** 2026-05-16 02:00
+**Last Updated:** 2026-05-16 02:45
 
 ## Overview
 
@@ -20,7 +20,7 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - [x] Phase 3: Nav reorder + Bundle Visibility section (FR-04, FR-06)
 - [x] Phase 4: Free Gift & Add Ons section + step-mode control (FR-01)
 - [x] Phase 5: Gift Messages in Messages section (FR-02)
-- [ ] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
+- [x] Phase 6: Discount & Pricing expansions — Buy X Get Y + Qty Options + Progress Bar (FR-03)
 - [ ] Phase 7: Bundle Settings expansion — 8 new sub-sections (FR-05)
 - [ ] Phase 8: Readiness indicator in sidebar (FR-07)
 - [ ] Phase 9: Widget extensions — addon steps, gift message UI, qty pills, progress bar
@@ -101,3 +101,13 @@ Bring the Product Page Bundle (PPB) configure route to full Easy Bundles (EB) pa
 - ✅ `route.tsx` (Messages section): Added Gift Messages `s-section` with toggle, gift product picker (shopify.resourcePicker), sender/recipient checkbox, mandatory checkbox, send-email checkbox, character limit switch + number field
 - ✅ Lint: 0 errors
 - Next: Phase 6 — Discount & Pricing expansions
+
+### 2026-05-16 02:45 - Phase 6: Discount & Pricing Expansions — Completed
+- ✅ `app/constants/bundle.ts`: Added `BUY_X_GET_Y` to `DISCOUNT_METHOD_OPTIONS`
+- ✅ `route.tsx` (state block): Added 8 displayOptions state vars (qtyOptionsEnabled, qtyOptionsDefaultRuleId, qtyRuleLabels, qtyRuleSubtexts, progressBarEnabled, progressBarType, progressBarProgressText, progressBarSuccessText) — initialized from `bundle.bundlePricing.displayOptions`
+- ✅ `route.tsx` (handleSave): Extended `discountData` payload with `displayOptions` object (bundleQuantityOptions + progressBar)
+- ✅ `route.tsx` (discount section): Added Buy X Get Y rule builder (buyStepId, getStepId, getQty) — shown only when discountType === BUY_X_GET_Y; generic rules block conditionally hidden
+- ✅ `route.tsx` (discount section): Added "Bundle Quantity Options" s-section with toggle + per-rule label/subtext + defaultRuleId selector
+- ✅ `route.tsx` (discount section): Added "Discount Progress Bar" s-section with toggle + style select + progressText + successText
+- ✅ Lint: 0 errors
+- Next: Phase 7 — Bundle Settings expansion
