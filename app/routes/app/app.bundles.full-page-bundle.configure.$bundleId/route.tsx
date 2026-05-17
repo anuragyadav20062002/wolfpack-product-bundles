@@ -388,13 +388,12 @@ function QuestionHelpTooltip({
 
   return (
     <span className={fullPageBundleStyles.richHelp}>
-      <button
-        type="button"
+      <span
         className={fullPageBundleStyles.questionHelpButton}
-        aria-label={tooltip.accessibilityLabel || tooltip.title}
+        aria-hidden="true"
       >
         ?
-      </button>
+      </span>
       <span className={fullPageBundleStyles.richHelpCard} role="tooltip">
         <HelpTooltipVisualBlock visual={tooltip.visual} title={tooltip.title} />
         <span className={fullPageBundleStyles.richHelpDescription}>{tooltip.description}</span>
@@ -2475,19 +2474,25 @@ export default function ConfigureBundleFlow() {
                         };
 
                         return (
-                          <s-choice-list
-                            label="Rule mode"
-                            labelAccessibilityVisibility="exclusive"
-                            values={[activeRuleMode]}
-                            onChange={(e: Event) => {
-                              const nextMode = ((e.currentTarget as any).values as string[] | undefined)?.[0];
-                              if (nextMode) handleRuleModeChange(nextMode);
-                            }}
-                          >
-                            <s-choice value="none" selected={activeRuleMode === "none" || undefined}>No rules</s-choice>
-                            <s-choice value="step" selected={activeRuleMode === "step" || undefined}>Step rules</s-choice>
-                            <s-choice value="category" selected={activeRuleMode === "category" || undefined}>Category rules</s-choice>
-                          </s-choice-list>
+                          <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
+                            {[
+                              { label: "No rules", value: "none" },
+                              { label: "Step rules", value: "step" },
+                              { label: "Category rules", value: "category" },
+                            ].map(opt => (
+                              <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+                                <input
+                                  type="radio"
+                                  name={`fpb-rule-mode-${step.id}`}
+                                  value={opt.value}
+                                  checked={activeRuleMode === opt.value}
+                                  onChange={() => handleRuleModeChange(opt.value)}
+                                  style={{ margin: 0 }}
+                                />
+                                {opt.label}
+                              </label>
+                            ))}
+                          </div>
                         );
                       })()}
                       {(conditionsState.stepConditions[step.id] || []).length === 0 ? (
@@ -2587,6 +2592,8 @@ export default function ConfigureBundleFlow() {
                           </div>
                           {showIconPickerForStep === step.id && (
                             <FilePicker
+                              autoOpen
+                              onClose={() => setShowIconPickerForStep(null)}
                               value={(step as any).timelineIconUrl ?? null}
                               onChange={(url: string | null) => {
                                 stepsState.updateStepField(step.id, 'timelineIconUrl', url);

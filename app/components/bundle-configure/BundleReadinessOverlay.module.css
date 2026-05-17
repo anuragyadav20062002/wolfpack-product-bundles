@@ -22,6 +22,7 @@
 }
 
 .collapsed {
+  width: 265px;
   display: flex;
   align-items: center;
   gap: 10px;

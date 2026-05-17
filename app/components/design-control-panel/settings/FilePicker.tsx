@@ -22,6 +22,8 @@ interface FilePickerProps {
   hint?: string;
   uploadLabel?: string;
   hideCropEditor?: boolean;
+  autoOpen?: boolean;
+  onClose?: () => void;
 }
 
 type UploadStatus = "idle" | "uploading" | "polling" | "success" | "timeout" | "error";
@@ -134,6 +136,8 @@ export function FilePicker({
   hint,
   uploadLabel = "Upload image",
   hideCropEditor = false,
+  autoOpen = false,
+  onClose,
 }: FilePickerProps) {
   const [open, setOpen] = useState(false);
   const [cropEditorOpen, setCropEditorOpen] = useState(false);
@@ -299,6 +303,11 @@ export function FilePicker({
     };
   }, [open]);
 
+  // Auto-open dialog on mount when autoOpen is true (Step Config upload button pattern)
+  useEffect(() => {
+    if (autoOpen) handleOpen();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const resetUploadState = useCallback(() => {
     setUploadStatus("idle");
     setUploadError(null);
@@ -320,7 +329,8 @@ export function FilePicker({
     setSelectedUrl(null);
     setSearch("");
     resetUploadState();
-  }, [resetUploadState]);
+    onClose?.();
+  }, [resetUploadState, onClose]);
 
   const handleSelect = useCallback(() => {
     if (selectedUrl) {
@@ -754,7 +764,7 @@ export function FilePicker({
 
   return (
     <BlockStack gap="200">
-      {trigger}
+      {!autoOpen && trigger}
 
       {/* Trigger-level errors shown when upload was initiated from the empty-state button */}
       {!open && sizeError && (

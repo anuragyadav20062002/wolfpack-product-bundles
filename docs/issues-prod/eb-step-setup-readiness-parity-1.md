@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-17
-**Last Updated:** 2026-05-17 15:00
+**Last Updated:** 2026-05-17 16:30
 
 ## Overview
 
@@ -65,6 +65,17 @@ Architecture doc: `docs/eb-step-setup-readiness-parity/02-architecture.md`
 - ✅ PPB CSS: added `.addSectionButton` class (full-width, bordered, centered, hover state)
 - ✅ FPB CSS: added `.addSectionButton` class (same); changed `.ebRuleFields` from grid to flex-column
 - Files changed: BundleReadinessOverlay.tsx, BundleReadinessOverlay.module.css, PPB route.tsx, PPB configure.module.css (via product-page-bundle-configure.module.css), FPB route.tsx, FPB configure.module.css (via full-page-bundle-configure.module.css)
+
+### 2026-05-17 16:30 - Fixed UI polish: upload zone, readiness text, radios, tooltip, checkbox labels
+- ✅ BundleReadinessOverlay.module.css: added `width: 265px` to `.collapsed` so subtitle text wraps to 2 lines in both collapsed and expanded states
+- ✅ FilePicker.tsx: added `autoOpen?: boolean` + `onClose?: () => void` props; `autoOpen` fires `handleOpen()` on mount and suppresses the inline trigger (no dashed drop zone rendered); `onClose` is called by `handleClose` so parent can unmount the picker on cancel
+- ✅ FPB route: Step Config FilePicker now uses `autoOpen` + `onClose` — clicking "Upload file" / "Replace" immediately shows the modal dialog without expanding the section inline
+- ✅ PPB route: same FilePicker `autoOpen` + `onClose` fix applied
+- ✅ FPB route: Rules Configuration radio group changed from `s-choice-list` (vertical) to inline `<label><input type="radio">` row (3 options: No rules / Step rules / Category rules)
+- ✅ PPB route: Rules Configuration radio group same fix (2 options: No rules / Step rules)
+- ✅ PPB route: Step Options `s-checkbox` labels — all 4 checkboxes fixed to use `label` attribute instead of slot children (Regular Step, Add-On / Upsell Step, Display products as free, Unlock after bundle completion, Mandatory default product)
+- ✅ FPB route: QuestionHelpTooltip `<button>` changed to `<span aria-hidden="true">` — tooltip now shown via CSS hover on parent `.richHelp` span (non-interactive, matching EB)
+- Files changed: BundleReadinessOverlay.module.css, FilePicker.tsx, FPB route.tsx, PPB route.tsx
 
 ## Related Documentation
 - Architecture: `docs/eb-step-setup-readiness-parity/02-architecture.md`

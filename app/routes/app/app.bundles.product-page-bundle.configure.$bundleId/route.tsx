@@ -2063,22 +2063,30 @@ export default function ConfigureBundleFlow() {
                                     const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
                                     const activeRuleMode = ruleCount === 0 ? "none" : "step";
                                     return (
-                                      <s-choice-list
-                                        label="Rule mode"
-                                        labelAccessibilityVisibility="exclusive"
-                                        values={[activeRuleMode]}
-                                        onChange={(e: Event) => {
-                                          const nextMode = ((e.currentTarget as any).values as string[] | undefined)?.[0];
-                                          if (nextMode === "none") {
-                                            conditionsState.clearStepConditions(step.id);
-                                          } else if (nextMode === "step" && ruleCount === 0) {
-                                            conditionsState.addConditionRule(step.id);
-                                          }
-                                        }}
-                                      >
-                                        <s-choice value="none" selected={activeRuleMode === "none" || undefined}>No rules</s-choice>
-                                        <s-choice value="step" selected={activeRuleMode === "step" || undefined}>Step rules</s-choice>
-                                      </s-choice-list>
+                                      <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
+                                        {[
+                                          { label: "No rules", value: "none" },
+                                          { label: "Step rules", value: "step" },
+                                        ].map(opt => (
+                                          <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+                                            <input
+                                              type="radio"
+                                              name={`ppb-rule-mode-${step.id}`}
+                                              value={opt.value}
+                                              checked={activeRuleMode === opt.value}
+                                              onChange={() => {
+                                                if (opt.value === "none") {
+                                                  conditionsState.clearStepConditions(step.id);
+                                                } else if (opt.value === "step" && ruleCount === 0) {
+                                                  conditionsState.addConditionRule(step.id);
+                                                }
+                                              }}
+                                              style={{ margin: 0 }}
+                                            />
+                                            {opt.label}
+                                          </label>
+                                        ))}
+                                      </div>
                                     );
                                   })()}
                                   {(conditionsState.stepConditions[step.id] || []).length > 0 && (
@@ -2253,6 +2261,7 @@ export default function ConfigureBundleFlow() {
                                     {[{ label: 'Regular Step', value: 'regular' }, { label: 'Add-On / Upsell Step', value: 'addon' }].map(choice => (
                                       <s-checkbox
                                         key={choice.value}
+                                        label={choice.label}
                                         checked={(step.isFreeGift ? 'addon' : 'regular') === choice.value || undefined}
                                         onChange={() => {
                                           const isAddon = choice.value === 'addon';
@@ -2263,9 +2272,7 @@ export default function ConfigureBundleFlow() {
                                             stepsState.updateStepField(step.id, 'addonIconUrl', null);
                                           }
                                         }}
-                                      >
-                                        {choice.label}
-                                      </s-checkbox>
+                                      />
                                     ))}
                                   </s-stack>
 
@@ -2289,19 +2296,17 @@ export default function ConfigureBundleFlow() {
                                         autoComplete="off"
                                       />
                                       <s-checkbox
+                                        label="Display products as free ($0.00)"
                                         checked={step.addonDisplayFree !== false || undefined}
                                         onChange={(e: Event) => stepsState.updateStepField(step.id, 'addonDisplayFree', (e.target as HTMLInputElement).checked)}
                                         helpText="Customers see $0 on products in this step."
-                                      >
-                                        Display products as free ($0.00)
-                                      </s-checkbox>
+                                      />
                                       <s-checkbox
+                                        label="Unlock after bundle completion"
                                         checked={step.addonUnlockAfterCompletion !== false || undefined}
                                         onChange={(e: Event) => stepsState.updateStepField(step.id, 'addonUnlockAfterCompletion', (e.target as HTMLInputElement).checked)}
                                         helpText="This step tab is locked until all prior steps are filled."
-                                      >
-                                        Unlock after bundle completion
-                                      </s-checkbox>
+                                      />
                                     </div>
                                   )}
 
@@ -2309,6 +2314,7 @@ export default function ConfigureBundleFlow() {
 
                                   {/* Default (mandatory) product toggle */}
                                   <s-checkbox
+                                    label="Mandatory default product"
                                     checked={step.isDefault === true || undefined}
                                     onChange={(e: Event) => {
                                       const checked = (e.target as HTMLInputElement).checked;
@@ -2316,9 +2322,7 @@ export default function ConfigureBundleFlow() {
                                       if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
                                     }}
                                     helpText="A specific variant is pre-selected when the bundle loads. Customers cannot remove it."
-                                  >
-                                    Mandatory default product
-                                  </s-checkbox>
+                                  />
 
                                   {step.isDefault && (
                                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2378,6 +2382,8 @@ export default function ConfigureBundleFlow() {
                                       </s-button>
                                       {showIconPickerForStep === step.id && (
                                         <FilePicker
+                                          autoOpen
+                                          onClose={() => setShowIconPickerForStep(null)}
                                           value={(step as any).timelineIconUrl ?? null}
                                           onChange={(url: string | null) => {
                                             stepsState.updateStepField(step.id, 'timelineIconUrl', url);
