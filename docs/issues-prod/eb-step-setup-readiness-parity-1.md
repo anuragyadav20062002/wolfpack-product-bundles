@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-17
-**Last Updated:** 2026-05-17 13:30
+**Last Updated:** 2026-05-17 14:00
 
 ## Overview
 
@@ -44,6 +44,10 @@ Architecture doc: `docs/eb-step-setup-readiness-parity/02-architecture.md`
 - ✅ PPB CSS: added full set of category accordion classes (categoryAccordion, categoryAccordionHeader, categoryAccordionBody, tab/tabActive/tabBadge, catNameRow, categoryNameInput, productActions, ebCategoryDrag/Name/Actions, categoryDragOver, categoryChevron)
 - Files changed: PPB route.tsx, PPB handlers.server.ts, PPB configure.module.css, issue file
 - Breaking change note: existing PPB StepProduct records will not appear in new category UI — merchants must re-add products. Sync prompt banner can be added as a follow-on.
+
+### 2026-05-17 14:00 - Fixed minor gap: Categories heading "How to setup?" link
+- ✅ PPB route: added "How to setup?" link button to the right of the Categories heading (EB PPB has this inline; was missing from WPB PPB)
+- Files changed: PPB route.tsx, issue file
 
 ### 2026-05-17 13:30 - Added legacy products migration banner
 - ✅ PPB route: added `s-banner tone="warning"` above the Categories section for steps where `StepProduct.length > 0` AND `StepCategory.length === 0` — prompts merchants to re-add products via the new category system

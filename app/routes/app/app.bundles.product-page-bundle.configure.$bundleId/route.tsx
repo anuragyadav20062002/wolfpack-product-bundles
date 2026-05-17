@@ -1785,6 +1785,13 @@ export default function ConfigureBundleFlow() {
                                 <div>
                                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Categories</h3>
+                                    <button
+                                      type="button"
+                                      className={productPageBundleStyles.ebLinkButton}
+                                      onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                                    >
+                                      How to setup?
+                                    </button>
                                   </div>
                                   <p style={{ margin: "0 0 12px", fontSize: 14, color: "#6d7175" }}>
                                     Add all product selections to a single category or separate them into multiple categories for easier bundling
