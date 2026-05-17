@@ -560,3 +560,130 @@
   justify-content: flex-end;
   min-width: 168px;
 }
+
+/* ── Add-Ons / Messages panel styles ────────────────────────── */
+.ebPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ebPanelTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.ebPanelDescription {
+  margin: 6px 0 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ebMediaFieldGrid {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.iconColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.iconBox {
+  width: 140px;
+  height: 120px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #fafafa;
+}
+
+.iconImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.iconPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+}
+
+.ebRuleCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ebRuleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ebMessagePreview {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafbfb;
+}
+
+.ebMessagePreviewIcon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #f1f2f4;
+  color: #6d7175;
+  font-size: 24px;
+}
+
+.ebMessagePreviewTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.ebMessageNote {
+  margin: 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.templateVariableGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.templateVariableItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
