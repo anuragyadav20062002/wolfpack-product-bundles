@@ -129,6 +129,12 @@ function buildBundleBaseConfig(
       id: collection.id,
       title: collection.title || 'Collection',
     })),
+    categories: Array.isArray(step.StepCategory) ? step.StepCategory.map((cat: any) => ({
+      name: cat.name || '',
+      sortOrder: cat.sortOrder ?? 0,
+      products: (cat.products || []).map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null })),
+      collections: (cat.collections || []).map((c: any) => ({ id: c.id, title: c.title || 'Collection' })),
+    })) : [],
   }));
 
   const firstRuleId = discountData.discountRules?.[0]?.id;
@@ -276,7 +282,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     if (bundleStatus === BundleStatus.DRAFT && stepsData && stepsData.length > 0) {
       const hasConfiguredSteps = stepsData.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
-        (step.collections && step.collections.length > 0)
+        (step.collections && step.collections.length > 0) ||
+        (Array.isArray(step.StepCategory) && step.StepCategory.some((cat: any) =>
+          (cat.products && cat.products.length > 0) || (cat.collections && cat.collections.length > 0)
+        ))
       );
       AppLogger.debug("[BUNDLE_CONFIG] Status evaluation:", {
         originalStatus: bundleStatus,
@@ -377,6 +386,15 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                       position: productIndex + 1
                     };
                   })
+                },
+                // Create StepCategory records for merchant-defined categories
+                StepCategory: {
+                  create: Array.isArray(step.StepCategory) ? step.StepCategory.map((cat: any, catIndex: number) => ({
+                    name: cat.name || '',
+                    sortOrder: cat.sortOrder ?? catIndex,
+                    products: Array.isArray(cat.products) ? cat.products : null,
+                    collections: Array.isArray(cat.collections) ? cat.collections : null,
+                  })) : []
                 }
               };
             })
@@ -417,7 +435,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       include: {
         steps: {
           include: {
-            StepProduct: true  // Include StepProduct for component metafield updates
+            StepProduct: true,
+            StepCategory: { orderBy: { sortOrder: "asc" } }
           }
         },
         pricing: true
