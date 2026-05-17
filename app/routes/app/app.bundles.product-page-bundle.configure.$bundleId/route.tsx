@@ -1772,6 +1772,15 @@ export default function ConfigureBundleFlow() {
                           />
                         </div>
 
+                                {/* Legacy products migration banner — shown when step has StepProduct rows but no StepCategory yet */}
+                                {step.StepProduct && step.StepProduct.length > 0 && (((step as any).StepCategory as any[] | undefined) ?? []).length === 0 && (
+                                  <s-banner tone="warning">
+                                    <p style={{ margin: 0, fontSize: 14 }}>
+                                      <strong>Action needed:</strong> This step has {step.StepProduct.length} product{step.StepProduct.length !== 1 ? "s" : ""} from the previous system. Use <strong>+ Add Category</strong> below to re-add them to the new category system.
+                                    </p>
+                                  </s-banner>
+                                )}
+
                                 {/* ── Categories (multi-category accordion — EB parity) ── */}
                                 <div>
                                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
