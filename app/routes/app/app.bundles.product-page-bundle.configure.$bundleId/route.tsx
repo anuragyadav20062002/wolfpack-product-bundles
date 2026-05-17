@@ -2032,9 +2032,9 @@ export default function ConfigureBundleFlow() {
                                     );
                                   })}
 
-                                  <s-button
-                                    variant="plain"
-                                    icon="plus"
+                                  <button
+                                    type="button"
+                                    className={productPageBundleStyles.addSectionButton}
                                     onClick={() => {
                                       const cats = ((step as any).StepCategory as any[]) ?? [];
                                       stepsState.updateStepField(step.id, "StepCategory", [
@@ -2044,8 +2044,11 @@ export default function ConfigureBundleFlow() {
                                       markAsDirty();
                                     }}
                                   >
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                    </svg>
                                     Add Category
-                                  </s-button>
+                                  </button>
                                 </div>
 
                                 {/* ── Rules Configuration card ── */}
@@ -2092,9 +2095,10 @@ export default function ConfigureBundleFlow() {
                                               Remove
                                             </s-button>
                                           </div>
-                                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                                          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
                                             <s-select
                                               value={rule.type}
+                                              label="Type"
                                               onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
                                             >
                                               <s-option value="" disabled>Type</s-option>
@@ -2104,6 +2108,7 @@ export default function ConfigureBundleFlow() {
                                             </s-select>
                                             <s-select
                                               value={rule.operator}
+                                              label="Operator"
                                               onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
                                             >
                                               <s-option value="" disabled>Operator</s-option>
@@ -2111,13 +2116,12 @@ export default function ConfigureBundleFlow() {
                                                 <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
                                               ))}
                                             </s-select>
-                                            <input
-                                              type="number"
-                                              min="0"
-                                              placeholder="Value"
-                                              style={{ padding: "6px 10px", border: "1px solid #c9cccf", borderRadius: 6, fontSize: 14, width: 90 }}
+                                            <s-number-field
+                                              label="Value"
+                                              min={0}
+                                              placeholder="0"
                                               value={rule.value ?? ""}
-                                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => conditionsState.updateConditionRule(step.id, rule.id, 'value', e.target.value)}
+                                              onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
                                               autoComplete="off"
                                             />
                                           </div>
@@ -2132,21 +2136,22 @@ export default function ConfigureBundleFlow() {
                                       ))}
                                     </div>
                                   )}
-                                  <div style={{ marginTop: 4 }}>
-                                    <s-button
-                                      variant="plain"
-                                      icon="plus"
-                                      onClick={() => {
-                                        if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
-                                          shopify.toast.show('A step can have at most 2 rules', { isError: false });
-                                          return;
-                                        }
-                                        conditionsState.addConditionRule(step.id);
-                                      }}
-                                    >
-                                      Add Rule
-                                    </s-button>
-                                  </div>
+                                  <button
+                                    type="button"
+                                    className={productPageBundleStyles.addSectionButton}
+                                    onClick={() => {
+                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                        shopify.toast.show('A step can have at most 2 rules', { isError: false });
+                                        return;
+                                      }
+                                      conditionsState.addConditionRule(step.id);
+                                    }}
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                    </svg>
+                                    Add Rule
+                                  </button>
                                 </div>
 
                                 {/* ── Category Filters ── */}
@@ -2353,12 +2358,12 @@ export default function ConfigureBundleFlow() {
                                   <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 650, color: "#202223" }}>Step Config</h3>
                                   <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
                                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                                      <div style={{ width: 72, height: 72, border: "1px dashed #c9cccf", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f6f7" }}>
+                                      <div style={{ width: 72, height: 72, border: "1px dashed #c9cccf", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f6f7", overflow: "hidden" }}>
                                         {(step as any).timelineIconUrl ? (
                                           <img
                                             src={(step as any).timelineIconUrl}
                                             alt="Step icon"
-                                            style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6 }}
+                                            style={{ width: 72, height: 72, objectFit: "cover" }}
                                           />
                                         ) : (
                                           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
@@ -2367,11 +2372,9 @@ export default function ConfigureBundleFlow() {
                                         )}
                                       </div>
                                       <s-button
-                                        variant="plain"
-                                        icon="upload"
                                         onClick={() => setShowIconPickerForStep((prev: string | null) => prev === step.id ? null : step.id)}
                                       >
-                                        {showIconPickerForStep === step.id ? "Cancel" : "Upload icon"}
+                                        {(step as any).timelineIconUrl ? "Replace" : "Upload file"}
                                       </s-button>
                                       {showIconPickerForStep === step.id && (
                                         <FilePicker

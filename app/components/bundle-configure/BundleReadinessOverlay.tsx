@@ -166,7 +166,7 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
           onClick={toggle}
         >
           {donut}
-          <div className={`${styles.scoreLabel} ${expanded ? styles.scoreLabelVisible : ""}`}>
+          <div className={styles.scoreLabel}>
             <span className={styles.scoreLabelTitle}>Readiness Score</span>
             <span className={styles.scoreLabelSub}>
               Complete all steps to maximise your bundle's success.

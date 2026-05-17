@@ -2416,9 +2416,9 @@ export default function ConfigureBundleFlow() {
                         );
                       })}
 
-                      <s-button
-                        variant="plain"
-                        icon="plus"
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.addSectionButton}
                         onClick={() => {
                           const cats = (step.StepCategory as any[]) ?? [];
                           stepsState.updateStepField(step.id, "StepCategory", [
@@ -2428,8 +2428,11 @@ export default function ConfigureBundleFlow() {
                           markAsDirty();
                         }}
                       >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
                         Add Category
-                      </s-button>
+                      </button>
 
                       <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
                       <s-checkbox
@@ -2505,6 +2508,7 @@ export default function ConfigureBundleFlow() {
                               </div>
                               <div className={fullPageBundleStyles.ebRuleFields}>
                                 <s-select
+                                  label="Type"
                                   value={rule.type}
                                   onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
                                 >
@@ -2514,6 +2518,7 @@ export default function ConfigureBundleFlow() {
                                   ))}
                                 </s-select>
                                 <s-select
+                                  label="Operator"
                                   value={rule.operator}
                                   onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
                                 >
@@ -2522,13 +2527,12 @@ export default function ConfigureBundleFlow() {
                                     <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
                                   ))}
                                 </s-select>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  placeholder="Value"
-                                  className={fullPageBundleStyles.ruleValueInput}
+                                <s-number-field
+                                  label="Value"
+                                  min={0}
+                                  placeholder="0"
                                   value={rule.value ?? ""}
-                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => conditionsState.updateConditionRule(step.id, rule.id, 'value', e.target.value)}
+                                  onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
                                   autoComplete="off"
                                 />
                               </div>
@@ -2543,21 +2547,22 @@ export default function ConfigureBundleFlow() {
                           ))}
                         </div>
                       )}
-                      <div className={fullPageBundleStyles.addRuleWrap} style={{ marginTop: 4 }}>
-                        <s-button
-                          variant="plain"
-                          icon="plus"
-                          onClick={() => {
-                            if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
-                              shopify.toast.show('A step can have at most 2 rules', { isError: false });
-                              return;
-                            }
-                            conditionsState.addConditionRule(step.id);
-                          }}
-                        >
-                          Add Rule
-                        </s-button>
-                      </div>
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.addSectionButton}
+                        onClick={() => {
+                          if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                            shopify.toast.show('A step can have at most 2 rules', { isError: false });
+                            return;
+                          }
+                          conditionsState.addConditionRule(step.id);
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                        Add Rule
+                      </button>
                     </div>
 
                     {/* ── Step Config card ── */}
@@ -2593,11 +2598,9 @@ export default function ConfigureBundleFlow() {
                             />
                           )}
                           <s-button
-                            variant="plain"
-                            icon="upload"
                             onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
                           >
-                            {showIconPickerForStep === step.id ? "Cancel" : "Upload icon"}
+                            {(step as any).timelineIconUrl ? "Replace" : "Upload file"}
                           </s-button>
                         </div>
                         <div className={fullPageBundleStyles.fieldsColumn}>

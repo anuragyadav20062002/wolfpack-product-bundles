@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-17
-**Last Updated:** 2026-05-17 14:00
+**Last Updated:** 2026-05-17 15:00
 
 ## Overview
 
@@ -52,6 +52,19 @@ Architecture doc: `docs/eb-step-setup-readiness-parity/02-architecture.md`
 ### 2026-05-17 13:30 - Added legacy products migration banner
 - ✅ PPB route: added `s-banner tone="warning"` above the Categories section for steps where `StepProduct.length > 0` AND `StepCategory.length === 0` — prompts merchants to re-add products via the new category system
 - Files changed: PPB route.tsx, issue file
+
+### 2026-05-17 15:00 - Fixed UI gaps: Readiness overlay, Rules layout, Add buttons, Upload states
+- ✅ BundleReadinessOverlay.module.css: removed `max-width: 0; opacity: 0; overflow: hidden; transition` from `.scoreLabel` — title + subtitle now always visible in collapsed bar (matching EB)
+- ✅ BundleReadinessOverlay.tsx: removed conditional `scoreLabelVisible` class — scoreLabel always rendered
+- ✅ PPB route: Rules Configuration dropdowns changed from flex-row (`flexWrap: wrap`) to `flexDirection: column` (stacked vertically matching EB); raw `<input>` replaced with `s-number-field`; added `label` props to `s-select` elements
+- ✅ PPB route: "Add Category" button changed from `s-button variant="plain"` to full-width bordered `<button className={addSectionButton}>` with inline + SVG icon
+- ✅ PPB route: "Add Rule" button same treatment — full-width bordered button
+- ✅ PPB route: Step Config upload button changed from `variant="plain" icon="upload"` → default bordered `s-button`; label now `"Replace"` when image exists, `"Upload file"` when not (removed "Cancel" state)
+- ✅ FPB route: same Add Category, Add Rule, and Step Config upload fixes applied
+- ✅ FPB route: ebRuleFields changed from 3-column CSS grid to `flex-direction: column` stack; added `label` props and replaced `<input>` with `s-number-field`
+- ✅ PPB CSS: added `.addSectionButton` class (full-width, bordered, centered, hover state)
+- ✅ FPB CSS: added `.addSectionButton` class (same); changed `.ebRuleFields` from grid to flex-column
+- Files changed: BundleReadinessOverlay.tsx, BundleReadinessOverlay.module.css, PPB route.tsx, PPB configure.module.css (via product-page-bundle-configure.module.css), FPB route.tsx, FPB configure.module.css (via full-page-bundle-configure.module.css)
 
 ## Related Documentation
 - Architecture: `docs/eb-step-setup-readiness-parity/02-architecture.md`

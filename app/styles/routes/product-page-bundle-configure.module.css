@@ -883,3 +883,31 @@
   flex-wrap: wrap;
   margin-top: 4px;
 }
+
+.addSectionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid #c9cccf;
+  border-radius: 8px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  margin-top: 8px;
+}
+
+.addSectionButton:hover {
+  background: #f6f6f7;
+  border-color: #8c9196;
+}
+
+.addSectionButton:active {
+  background: #edeeef;
+}
