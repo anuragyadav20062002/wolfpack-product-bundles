@@ -3,6 +3,12 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   z-index: 499;
+  animation: fadeInOverlay 0.22s ease forwards;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .container {
@@ -44,7 +50,18 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
+  flex: 0 0 auto;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.18s ease;
+}
+
+.scoreLabelVisible {
   flex: 1;
+  max-width: 200px;
+  opacity: 1;
 }
 
 .scoreLabelTitle {
@@ -64,18 +81,28 @@
   margin-left: 2px;
   display: flex;
   align-items: center;
+  transform: rotate(0deg);
+  transition: transform 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.chevronExpanded {
+  transform: rotate(180deg);
 }
 
 .panelWrapper {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  opacity: 0;
+  transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.22s ease,
+              margin-bottom 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   width: min(360px, calc(100vw - 40px));
   margin-bottom: 0;
 }
 
 .panelWrapperOpen {
   grid-template-rows: 1fr;
+  opacity: 1;
   margin-bottom: 8px;
 }
 

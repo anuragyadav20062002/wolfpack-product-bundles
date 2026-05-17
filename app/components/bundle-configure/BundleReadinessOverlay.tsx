@@ -93,9 +93,12 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
   );
 
   const chevron = (
-    <svg className={styles.chevron} width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      className={`${styles.chevron} ${expanded ? styles.chevronExpanded : ""}`}
+      width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+    >
       <path
-        d={expanded ? "M2 5L7 10L12 5" : "M2 9L7 4L12 9"}
+        d="M2 9L7 4L12 9"
         stroke="#666"
         strokeWidth="2"
         strokeLinecap="round"
@@ -164,14 +167,12 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
           onClick={toggle}
         >
           {donut}
-          {expanded && (
-            <div className={styles.scoreLabel}>
-              <span className={styles.scoreLabelTitle}>Readiness Score</span>
-              <span className={styles.scoreLabelSub}>
-                {doneCount}/{allItems.length} items complete
-              </span>
-            </div>
-          )}
+          <div className={`${styles.scoreLabel} ${expanded ? styles.scoreLabelVisible : ""}`}>
+            <span className={styles.scoreLabelTitle}>Readiness Score</span>
+            <span className={styles.scoreLabelSub}>
+              {doneCount}/{allItems.length} items complete
+            </span>
+          </div>
           {chevron}
         </div>
       )}

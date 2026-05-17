@@ -538,6 +538,9 @@ export default function ConfigureBundleFlow() {
   // Template variables modal ref (for Footer Messaging "Show Variables")
   const templateVariablesModalRef = useRef<HTMLElement>(null);
 
+  // Step chip navigation
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+
   // Step chip navigation slide animation
   const [slideKey, setSlideKey] = useState(0);
   const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
@@ -3363,11 +3366,6 @@ export default function ConfigureBundleFlow() {
                         disabled={!giftMessageEnableLimit}
                         min={0}
                         onInput={(e: Event) => { setGiftMessageCharLimit((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      />
-                      <s-checkbox
-                        label="Send message through email to the customer"
-                        checked={giftMessageSendEmail || undefined}
-                        onChange={(e: Event) => { setGiftMessageSendEmail((e.target as HTMLInputElement).checked); markAsDirty(); }}
                       />
                     </s-stack>
                   </div>
