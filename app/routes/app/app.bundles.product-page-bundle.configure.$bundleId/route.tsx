@@ -14,7 +14,6 @@ import {
   amountToCents,
 } from "../../../types/pricing";
 import {
-  BUNDLE_STATUS_OPTIONS,
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
@@ -45,15 +44,20 @@ import {
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
-import type {
-  LoaderData,
-  BundleStatusSectionProps,
-  BundleProductCardProps,
-} from "./types";
-import type { BundleStatus } from "../../../constants/bundle";
-import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
+import type { LoaderData, BundleProductCardProps } from "./types";
 import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
+import {
+  fetchBundleProduct,
+  fetchShopLocales,
+  fetchEmbedData,
+} from "../../../lib/bundle-configure-loader.server";
+import {
+  showPolarisModal,
+  hidePolarisModal,
+} from "../_shared/bundle-configure/modal-utils";
+import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
+import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 
 declare global {
   interface Window {
@@ -61,17 +65,7 @@ declare global {
   }
 }
 
-function showPolarisModal(ref: { current: any }) {
-  const modal = ref.current as any;
-  modal?.showOverlay?.();
-  if (!modal?.showOverlay) modal?.show?.();
-}
-
-function hidePolarisModal(ref: { current: any }) {
-  const modal = ref.current as any;
-  modal?.hideOverlay?.();
-  if (!modal?.hideOverlay) modal?.hide?.();
-}
+// showPolarisModal / hidePolarisModal imported from _shared/bundle-configure/modal-utils
 
 const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
   ["{{addonsConditionDiff}}", "The remaining quantity a customer needs to add to unlock the add-on discount."],
@@ -110,54 +104,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
 
 
-  // Fetch bundle product data from Shopify if it exists
-  let bundleProduct = null;
-  if (bundle.shopifyProductId) {
-    try {
-      const GET_BUNDLE_PRODUCT = `
-        query GetBundleProduct($id: ID!) {
-          product(id: $id) {
-            id
-            title
-            handle
-            status
-            onlineStoreUrl
-            onlineStorePreviewUrl
-            description
-            productType
-            vendor
-            tags
-            variants(first: 1) {
-              edges {
-                node {
-                  id
-                  title
-                  price
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const productResponse = await admin.graphql(GET_BUNDLE_PRODUCT, {
-        variables: {
-          id: bundle.shopifyProductId
-        }
-      });
-
-      const productData = await productResponse.json();
-      bundleProduct = productData.data?.product;
-    } catch (error) {
-      AppLogger.warn("Failed to fetch bundle product", {
-        component: 'bundle-config',
-        bundleId: params.bundleId,
-        operation: 'fetch-product'
-      }, error);
-      // Don't fail the entire request if we can't fetch the product
-    }
-  }
-
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
@@ -166,29 +112,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // File: extensions/bundle-builder/blocks/bundle-product-page.liquid
   const blockHandle = 'bundle-product-page';
 
-  // Fetch shop locales for multi-language text overrides
-  let shopLocales: { locale: string; name: string; primary: boolean }[] = [];
-  try {
-    const localesResponse = await admin.graphql(`
-      query GetShopLocales {
-        shopLocales {
-          locale
-          name
-          primary
-          published
-        }
-      }
-    `);
-    const localesData = await localesResponse.json() as { data?: { shopLocales?: { locale: string; name: string; primary: boolean; published: boolean }[] } };
-    shopLocales = (localesData.data?.shopLocales ?? []).filter((l) => l.published);
-  } catch {
-    // Non-critical — fall back to English-only mode
-  }
-
-  const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
-  const themeEditorUrl = embedCheck.themeId
-    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-full-page-embed`
-    : null;
+  const [bundleProduct, shopLocales, embedData] = await Promise.all([
+    bundle.shopifyProductId
+      ? fetchBundleProduct(admin, bundle.shopifyProductId, bundleId)
+      : Promise.resolve(null),
+    fetchShopLocales(admin),
+    fetchEmbedData(admin, session.shop, apiKey),
+  ]);
 
   return json({
     bundle,
@@ -197,8 +127,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     apiKey,
     blockHandle,
     shopLocales,
-    appEmbedEnabled: embedCheck.enabled,
-    themeEditorUrl,
+    appEmbedEnabled: embedData.appEmbedEnabled,
+    themeEditorUrl: embedData.themeEditorUrl,
   });
 };
 
@@ -266,9 +196,6 @@ const stepSetupChildItems = [
   { id: "messages",         label: "Messages"            },
 ];
 
-// Static status options - imported from centralized constants
-const statusOptions = [...BUNDLE_STATUS_OPTIONS];
-
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
   <s-section>
@@ -334,33 +261,7 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
 
 BundleProductCard.displayName = 'BundleProductCard';
 
-// Memoized Bundle Status section to prevent unnecessary re-renders
-const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => {
-  const selectRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (selectRef.current) {
-      (selectRef.current as any).value = status;
-    }
-  }, [status]);
-  return (
-    <s-stack direction="block" gap="small-100">
-      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-        Bundle Status
-      </h3>
-      <s-select
-        ref={selectRef}
-        label="Bundle Status"
-        onChange={(e: Event) => onChange((e.target as HTMLSelectElement).value as BundleStatus)}
-      >
-        {statusOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </s-select>
-    </s-stack>
-  );
-});
-
-BundleStatusSection.displayName = 'BundleStatusSection';
+// BundleStatusSection imported from _shared/bundle-configure/BundleStatusSection
 
 export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
@@ -539,8 +440,6 @@ export default function ConfigureBundleFlow() {
   // Category accordion state (multi-category system — EB parity)
   const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
   const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
-  const [draggedCatKey, setDraggedCatKey] = useState<string | null>(null);
-  const [dragOverCatKey, setDragOverCatKey] = useState<string | null>(null);
 
   // Template variables modal ref (for Footer Messaging "Show Variables")
   const templateVariablesModalRef = useRef<HTMLElement>(null);
@@ -671,48 +570,48 @@ export default function ConfigureBundleFlow() {
     shopify
   ]);
 
-  // Function to enhance template list with user's selected template
-  const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
-    if (!formState.templateName || formState.templateName.trim() === '') {
-      return templates;
-    }
-
-    const userTemplateHandle = formState.templateName.startsWith('product.') ? formState.templateName : `product.${formState.templateName}`;
-
-    // Check if user's template already exists in the list
-    const templateExists = templates.some(t => t.handle === userTemplateHandle || t.handle === formState.templateName);
-
-    if (!templateExists) {
-      // Add user's selected template at the top of the list
-      const userTemplate = {
-        id: userTemplateHandle,
-        title: `🎯 ${formState.templateName} (Your Selection)`,
-        handle: userTemplateHandle,
-        description: `Custom template "${formState.templateName}" - your selected bundle container template`,
-        recommended: true,
-        bundleRelevant: true,
-        fileType: 'User Selected',
-        fullKey: `templates/${userTemplateHandle}.liquid`,
-        isBundleContainer: true,
-        isUserSelected: true
-      };
-
-      return [userTemplate, ...templates];
-    }
-
-    // If template exists, mark it as user selected
-    return templates.map(t => {
-      if (t.handle === userTemplateHandle || t.handle === formState.templateName) {
-        return {
-          ...t,
-          title: `🎯 ${t.title} (Your Selection)`,
-          recommended: true,
-          isUserSelected: true
-        };
-      }
-      return t;
-    });
-  }, [formState.templateName]);
+  const {
+    draggedStep,
+    dragOverIndex,
+    draggedCatKey,
+    dragOverCatKey,
+    setDragOverCatKey,
+    enhanceTemplateListWithUserSelection,
+    handleProductSelection,
+    handleSyncProduct,
+    handleSyncBundleConfirm,
+    handleBundleProductSelect,
+    cloneStep,
+    deleteStep,
+    navigateToStep,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleCatDragStart,
+    handleCatDragEnd,
+    handleCatDrop,
+    handleCollectionSelection,
+    updateRuleMessage,
+  } = useSharedBundleHandlers({
+    stepsState,
+    formState,
+    selectedCollections,
+    setSelectedCollections,
+    setRuleMessages,
+    setBundleProduct,
+    setProductTitle,
+    setProductImageUrl,
+    markAsDirty,
+    activeTabIndex,
+    setActiveTabIndex,
+    shopify,
+    fetcher,
+    setIsSyncModalOpen,
+    setSlideDir,
+    setSlideKey,
+  });
 
   // Handle fetcher response
   // CRITICAL FIX: Only process NEW fetcher responses to prevent auto-save bug
@@ -948,12 +847,6 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, shopify]);
 
-  const navigateToStep = useCallback((idx: number) => {
-    if (idx === activeTabIndex) return;
-    setSlideDir(idx > activeTabIndex ? "forward" : "backward");
-    setSlideKey(prev => prev + 1);
-    setActiveTabIndex(idx);
-  }, [activeTabIndex, setActiveTabIndex]);
 
   const handleAddNewStep = useCallback(() => {
     stepsState.addStep();
@@ -974,353 +867,6 @@ export default function ConfigureBundleFlow() {
     closeCollectionsModal();
     setCurrentModalStepId('');
   }, [closeCollectionsModal, setCurrentModalStepId]);
-
-  // Step management functions
-
-
-  // NOTE: toggleStepExpansion, getUniqueProductCount, updateStepField, addConditionRule,
-  // removeConditionRule, updateConditionRule are now provided by stepsState and conditionsState hooks
-
-  // Product selection handlers
-  const handleProductSelection = useCallback(async (stepId: string) => {
-    try {
-      const step = stepsState.steps.find(s => s.id === stepId);
-      const currentProducts = step?.StepProduct || [];
-
-      // Build selectionIds from StepProduct
-      // When loaded from DB: use productId field
-      // When from resource picker: use id field
-      // If variants exist and are selected, include them in the format needed by resource picker
-      const selectionIds = currentProducts.map((p: any) => {
-        const productGid = p.productId || p.id; // productId from DB, id from picker
-
-        // Check if this product has specific variants selected
-        // If variants array exists and has items, include them in selectionIds
-        if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
-          const variantIds = p.variants.map((v: any) => ({ id: v.id }));
-          return {
-            id: productGid,
-            variants: variantIds
-          };
-        }
-
-        return { id: productGid };
-      });
-
-
-
-      const products = await shopify.resourcePicker({
-        type: "product",
-        multiple: true,
-        selectionIds: selectionIds,
-      });
-
-
-      if (products && products.selection) {
-
-        // Transform products to include imageUrl from images array
-        const transformedProducts = products.selection.map((product: any) => {
-          const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
-          return {
-            ...product,
-            imageUrl: imageUrl
-          };
-        });
-
-
-        // Update the step with selected products (this replaces the entire selection)
-        // Deselected products will not be in the selection array, so they're automatically removed
-        stepsState.setSteps(stepsState.steps.map(step =>
-          step.id === stepId
-            ? { ...step, StepProduct: transformedProducts }
-            : step
-        ) as any);
-
-        const addedCount = transformedProducts.length - currentProducts.length;
-        const message = addedCount > 0
-          ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
-          : addedCount < 0
-            ? `Removed ${Math.abs(addedCount)} product${Math.abs(addedCount) !== 1 ? 's' : ''}!`
-            : transformedProducts.length === 0
-              ? "All products removed"
-              : "Products updated successfully!";
-
-        shopify.toast.show(message);
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_PRODUCTS, { isError: true, duration: 5000 });
-      }
-    }
-  }, [stepsState.steps, stepsState.setSteps, shopify]);
-
-  const handleSyncProduct = useCallback(() => {
-    try {
-
-      // Show loading toast
-      shopify.toast.show("Syncing bundle product with Shopify...", { isError: false });
-
-      // Prepare form data for sync operation
-      const formData = new FormData();
-      formData.append("intent", "syncProduct");
-
-      // Submit to server action using fetcher
-      fetcher.submit(formData, { method: "post" });
-
-      // Response will be handled by the existing useEffect
-    } catch (error) {
-      AppLogger.error("Product sync failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || ERROR_MESSAGES.FAILED_TO_SYNC_PRODUCT, { isError: true, duration: 5000 });
-    }
-  }, [fetcher, shopify]);
-
-  const handleSyncBundleConfirm = useCallback(() => {
-    setIsSyncModalOpen(false);
-    const formData = new FormData();
-    formData.append("intent", "syncBundle");
-    fetcher.submit(formData, { method: "post" });
-  }, [fetcher]);
-
-  const handleBundleProductSelect = useCallback(async () => {
-    try {
-      const products = await shopify.resourcePicker({
-        type: "product",
-        multiple: false,
-      });
-
-      if (products && products.length > 0) {
-        const selectedProduct = products[0] as any;
-        setBundleProduct(selectedProduct);
-        setProductTitle(selectedProduct.title || "");
-        setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
-
-        shopify.toast.show("Bundle product updated successfully", { isError: false });
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_BUNDLE_PRODUCT, { isError: true, duration: 5000 });
-      }
-    }
-  }, [shopify]);
-
-  // Step management handlers
-  const cloneStep = useCallback((stepId: string) => {
-    const stepToClone = stepsState.steps.find(step => step.id === stepId);
-    if (stepToClone) {
-      const newStep = {
-        ...stepToClone,
-        id: `step-${Date.now()}`,
-        name: `${stepToClone.name} (Copy)`,
-        StepProduct: stepToClone.StepProduct || []
-      };
-      stepsState.setSteps(prev => {
-        const stepIndex = prev.findIndex(step => step.id === stepId);
-        const newSteps = [...prev];
-        newSteps.splice(stepIndex + 1, 0, newStep);
-        return newSteps;
-      });
-      shopify.toast.show("Step cloned successfully", { isError: false });
-    }
-  }, [stepsState.steps, stepsState.setSteps, shopify]);
-
-  const deleteStep = useCallback((stepId: string) => {
-    if (stepsState.steps.length <= 1) {
-      shopify.toast.show(ERROR_MESSAGES.CANNOT_DELETE_LAST_STEP, { isError: true, duration: 5000 });
-      return;
-    }
-
-    // Use hook's removeStep which handles expandedSteps cleanup and dirty flag
-    stepsState.removeStep(stepId);
-  }, [stepsState]);
-
-  // Drag and drop state
-  const [draggedStep, setDraggedStep] = useState<string | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  // Drag and drop handlers
-  const handleDragStart = useCallback((e: React.DragEvent, stepId: string, _index: number) => {
-    setDraggedStep(stepId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", stepId);
-
-    // Add visual feedback by setting drag image
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = "0.5";
-  }, []);
-
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    setDraggedStep(null);
-    setDragOverIndex(null);
-
-    // Reset visual feedback
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = "1";
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverIndex(index);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if we're leaving the container entirely
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDragOverIndex(null);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-
-    if (!draggedStep) return;
-
-    const dragIndex = stepsState.steps.findIndex(step => step.id === draggedStep);
-
-    if (dragIndex !== -1 && dragIndex !== dropIndex) {
-      stepsState.setSteps(prev => {
-        const newSteps = [...prev];
-        const draggedStepData = newSteps[dragIndex];
-        newSteps.splice(dragIndex, 1);
-        newSteps.splice(dropIndex, 0, draggedStepData);
-        return newSteps;
-      });
-
-      shopify.toast.show("Step reordered successfully", { isError: false });
-    }
-
-    setDraggedStep(null);
-    setDragOverIndex(null);
-  }, [draggedStep, stepsState.steps, stepsState.setSteps, shopify]);
-
-  // NOTE: addStep is now provided by stepsState hook
-
-  // Collection management handlers
-  const handleCollectionSelection = useCallback(async (stepId: string) => {
-    try {
-      const currentCollections = selectedCollections[stepId] || [];
-
-      const collections = await shopify.resourcePicker({
-        type: "collection",
-        multiple: true,
-        selectionIds: currentCollections.map((c: any) => ({ id: c.id })),
-      });
-
-      if (collections && collections.length > 0) {
-
-        setSelectedCollections(prev => ({
-          ...prev,
-          [stepId]: collections as any
-        }));
-
-        const addedCount = collections.length - currentCollections.length;
-        const message = addedCount > 0
-          ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
-          : addedCount < 0
-            ? `Removed ${Math.abs(addedCount)} collection${Math.abs(addedCount) !== 1 ? 's' : ''}!`
-            : "Collections updated successfully!";
-
-        shopify.toast.show(message, { isError: false });
-      } else if (collections && collections.length === 0) {
-        // User deselected all collections
-        setSelectedCollections(prev => ({
-          ...prev,
-          [stepId]: []
-        }));
-        shopify.toast.show("All collections removed", { isError: false });
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_COLLECTIONS, { isError: true, duration: 5000 });
-      }
-    }
-  }, [shopify, selectedCollections]);
-
-  // Category drag-and-drop handlers (multi-category system)
-  const handleCatDragStart = useCallback((e: React.DragEvent, stepId: string, catKey: string) => {
-    setDraggedCatKey(catKey);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", catKey);
-    const accordion = (e.currentTarget as HTMLElement).closest('[data-cat-key]') as HTMLElement | null;
-    if (accordion) accordion.style.opacity = "0.5";
-  }, []);
-
-  const handleCatDragEnd = useCallback((e: React.DragEvent) => {
-    setDraggedCatKey(null);
-    setDragOverCatKey(null);
-    const accordion = (e.currentTarget as HTMLElement).closest('[data-cat-key]') as HTMLElement | null;
-    if (accordion) accordion.style.opacity = "1";
-  }, []);
-
-  const handleCatDrop = useCallback((e: React.DragEvent, stepId: string, dropCatKey: string) => {
-    e.preventDefault();
-    const srcKey = draggedCatKey;
-    setDraggedCatKey(null);
-    setDragOverCatKey(null);
-    if (!srcKey || srcKey === dropCatKey) return;
-    const targetStep = stepsState.steps.find((s: any) => s.id === stepId);
-    if (!targetStep) return;
-    const cats = ((targetStep as any).StepCategory as any[]) ?? [];
-    const srcIdx = cats.findIndex((_: any, i: number) => `${stepId}__${cats[i].id ?? i}` === srcKey);
-    const dstIdx = cats.findIndex((_: any, i: number) => `${stepId}__${cats[i].id ?? i}` === dropCatKey);
-    if (srcIdx === -1 || dstIdx === -1 || srcIdx === dstIdx) return;
-    const reordered = [...cats];
-    const [moved] = reordered.splice(srcIdx, 1);
-    reordered.splice(dstIdx, 0, moved);
-    stepsState.updateStepField(stepId, "StepCategory", reordered.map((c: any, i: number) => ({ ...c, sortOrder: i })));
-    markAsDirty();
-  }, [draggedCatKey, stepsState, markAsDirty]);
-
-
-  // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
-  // is now provided by pricingState hook
-
-  // Rule message management
-  const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
-    setRuleMessages(prev => ({
-      ...prev,
-      [ruleId]: {
-        ...prev[ruleId],
-        [field]: value
-      }
-    }));
-  }, []);
 
   // Function to load available theme templates
   const loadAvailablePages = useCallback(() => {

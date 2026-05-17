@@ -25,6 +25,10 @@ jest.mock("../../../app/db.server", () => ({
       create: jest.fn(),
       deleteMany: jest.fn(),
     },
+    stepCategory: {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
   },
 }));
 
@@ -86,6 +90,8 @@ describe("create bundle configure action", () => {
     getDb().bundle.update.mockResolvedValue({});
     getDb().bundleStep.deleteMany.mockResolvedValue({});
     getDb().stepProduct.deleteMany.mockResolvedValue({});
+    getDb().stepCategory.deleteMany.mockResolvedValue({});
+    getDb().stepCategory.create.mockResolvedValue({});
   });
 
   it("returns generated DB step IDs after saving new configuration steps", async () => {
