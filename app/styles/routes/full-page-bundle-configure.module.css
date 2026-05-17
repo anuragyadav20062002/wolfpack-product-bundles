@@ -908,6 +908,13 @@
   white-space: nowrap;
 }
 
+.stepChipChevron {
+  flex: 0 0 auto;
+  color: #6d7175;
+  font-size: 14px;
+  line-height: 1;
+}
+
 .stepChipRemove {
   display: grid;
   flex: 0 0 auto;

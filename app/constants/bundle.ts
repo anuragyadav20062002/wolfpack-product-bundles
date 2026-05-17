@@ -58,6 +58,7 @@ export const BUNDLE_TYPE_OPTIONS = [
 export const STEP_CONDITION_TYPE_OPTIONS = [
   { label: "Quantity", value: "quantity" },
   { label: "Amount", value: "amount" },
+  { label: "Weight", value: "weight" },
 ] as const;
 
 /** Operator options for step condition rules */

@@ -1658,7 +1658,17 @@ export default function ConfigureBundleFlow() {
                 <div className={`${productPageBundleStyles.card} ${productPageBundleStyles.stepFlowCard}`}>
                   <s-stack direction="block" gap="small">
                     <div className={productPageBundleStyles.stepFlowTitleRow}>
-                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>Step Flow</h3>
+                      <span className={productPageBundleStyles.headingWithHelp}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>Step Flow</h3>
+                        <s-button variant="plain" icon="info" accessibilityLabel="Step flow info" />
+                      </span>
+                      <button
+                        type="button"
+                        className={productPageBundleStyles.ebLinkButton}
+                        onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                      >
+                        How to setup?
+                      </button>
                     </div>
                     <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                       Create steps for your multi-step bundle here. Select product options for each step below
@@ -1673,6 +1683,7 @@ export default function ConfigureBundleFlow() {
                       >
                         <span className={productPageBundleStyles.stepChipNumber}>{i + 1}</span>
                         <span className={productPageBundleStyles.stepChipLabel}>{step.name || `Step ${i + 1}`}</span>
+                        <span className={productPageBundleStyles.stepChipChevron}>›</span>
                       </button>
                     ))}
                     <button className={productPageBundleStyles.addStepBtn} onClick={handleAddNewStep}>
@@ -1822,80 +1833,106 @@ export default function ConfigureBundleFlow() {
                                   </div>
                                 </s-stack>
 
-                                {/* Conditions Section */}
-                                <s-stack direction="block" gap="small">
-                                  <s-stack direction="block" gap="small-400">
-                                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                                      Conditions
-                                    </h3>
-                                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                                      Create Conditions based on amount or quantity of products added on this step.
-                                    </p>
-                                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                                      Note: Conditions are only valid on this step
-                                    </p>
-                                  </s-stack>
-
-                                  {/* Existing Condition Rules */}
-                                  {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: any) => (
-                                    <s-section key={rule.id}>
-                                      <s-stack direction="block" gap="small-100">
-                                        <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                                          <span style={{ fontSize: 14, fontWeight: 500 }}>Condition #{ruleIndex + 1}</span>
-                                          <s-button
-                                            variant="plain"
-                                            tone="critical"
-                                            onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
-                                          >
-                                            Remove
-                                          </s-button>
-                                        </s-stack>
-
-                                        <s-stack direction="inline" gap="small-100">
-                                          <s-select
-                                            label="Condition Type"
-                                            onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
-                                          >
-                                            {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                              <option key={opt.value} value={opt.value} selected={rule.type === opt.value || undefined}>{opt.label}</option>
-                                            ))}
-                                          </s-select>
-                                          <s-select
-                                            label="Operator"
-                                            onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
-                                          >
-                                            {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                              <option key={opt.value} value={opt.value} selected={rule.operator === opt.value || undefined}>{opt.label}</option>
-                                            ))}
-                                          </s-select>
-                                          <s-text-field
-                                            label="Value"
-                                            value={rule.value}
-                                            onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
-                                            autoComplete="off"
-                                            type="number"
-                                            min="0"
+                                {/* ── Rules Configuration card ── */}
+                                <div style={{ marginTop: 8 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Rules Configuration</h3>
+                                  </div>
+                                  <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
+                                    Apply rules to the entire step to guide your customer's selections.
+                                  </p>
+                                  {(() => {
+                                    const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
+                                    const activeRuleMode = ruleCount === 0 ? "none" : "step";
+                                    return (
+                                      <s-choice-list
+                                        label="Rule mode"
+                                        labelAccessibilityVisibility="exclusive"
+                                        values={[activeRuleMode]}
+                                        onChange={(e: Event) => {
+                                          const nextMode = ((e.currentTarget as any).values as string[] | undefined)?.[0];
+                                          if (nextMode === "none") {
+                                            conditionsState.clearStepConditions(step.id);
+                                          } else if (nextMode === "step" && ruleCount === 0) {
+                                            conditionsState.addConditionRule(step.id);
+                                          }
+                                        }}
+                                      >
+                                        <s-choice value="none" selected={activeRuleMode === "none" || undefined}>No rules</s-choice>
+                                        <s-choice value="step" selected={activeRuleMode === "step" || undefined}>Step rules</s-choice>
+                                      </s-choice-list>
+                                    );
+                                  })()}
+                                  {(conditionsState.stepConditions[step.id] || []).length > 0 && (
+                                    <div style={{ marginTop: 12 }}>
+                                      {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
+                                        <div key={rule.id} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: "12px 14px", marginBottom: 8 }}>
+                                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                                            <span style={{ fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</span>
+                                            <s-button
+                                              variant="plain"
+                                              tone="critical"
+                                              onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
+                                            >
+                                              Remove
+                                            </s-button>
+                                          </div>
+                                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                                            <s-select
+                                              value={rule.type}
+                                              onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                            >
+                                              <s-option value="" disabled>Type</s-option>
+                                              {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                                <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                              ))}
+                                            </s-select>
+                                            <s-select
+                                              value={rule.operator}
+                                              onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                            >
+                                              <s-option value="" disabled>Operator</s-option>
+                                              {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                              ))}
+                                            </s-select>
+                                            <input
+                                              type="number"
+                                              min="0"
+                                              placeholder="Value"
+                                              style={{ padding: "6px 10px", border: "1px solid #c9cccf", borderRadius: 6, fontSize: 14, width: 90 }}
+                                              value={rule.value ?? ""}
+                                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => conditionsState.updateConditionRule(step.id, rule.id, 'value', e.target.value)}
+                                              autoComplete="off"
+                                            />
+                                          </div>
+                                          <s-checkbox
+                                            label="Auto Next When rule is met"
+                                            checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                            onChange={(e: Event) => {
+                                              conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                            }}
                                           />
-                                        </s-stack>
-                                      </s-stack>
-                                    </s-section>
-                                  ))}
-
-                                  <s-button
-                                    variant="tertiary"
-                                    style={{ width: "100%" }}
-                                    onClick={() => {
-                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
-                                        shopify.toast.show('A step can have at most 2 conditions', { isError: false });
-                                        return;
-                                      }
-                                      conditionsState.addConditionRule(step.id);
-                                    }}
-                                  >
-                                    <s-icon name="plus-minor" />
-                                    Add Rule
-                                  </s-button>
-                                </s-stack>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div style={{ marginTop: 4 }}>
+                                    <s-button
+                                      variant="plain"
+                                      icon="plus"
+                                      onClick={() => {
+                                        if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                          shopify.toast.show('A step can have at most 2 rules', { isError: false });
+                                          return;
+                                        }
+                                        conditionsState.addConditionRule(step.id);
+                                      }}
+                                    >
+                                      Add Rule
+                                    </s-button>
+                                  </div>
+                                </div>
 
                                 {/* ── Category Filters ── */}
                                 <s-stack direction="block" gap="small">
@@ -2094,6 +2131,60 @@ export default function ConfigureBundleFlow() {
                                     </div>
                                   )}
                                 </s-stack>
+
+                                {/* ── Step Config ── */}
+                                <div style={{ marginTop: 8 }}>
+                                  <s-divider style={{ marginBottom: 16 }} />
+                                  <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 650, color: "#202223" }}>Step Config</h3>
+                                  <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                      <div style={{ width: 72, height: 72, border: "1px dashed #c9cccf", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#f6f6f7" }}>
+                                        {(step as any).timelineIconUrl ? (
+                                          <img
+                                            src={(step as any).timelineIconUrl}
+                                            alt="Step icon"
+                                            style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6 }}
+                                          />
+                                        ) : (
+                                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
+                                            <path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 5l-8 4-8-4" />
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <s-button
+                                        variant="plain"
+                                        icon="upload"
+                                        onClick={() => setShowIconPickerForStep((prev: string | null) => prev === step.id ? null : step.id)}
+                                      >
+                                        {showIconPickerForStep === step.id ? "Cancel" : "Upload icon"}
+                                      </s-button>
+                                      {showIconPickerForStep === step.id && (
+                                        <FilePicker
+                                          value={(step as any).timelineIconUrl ?? null}
+                                          onChange={(url: string | null) => {
+                                            stepsState.updateStepField(step.id, 'timelineIconUrl', url);
+                                            setShowIconPickerForStep(null);
+                                            markAsDirty();
+                                          }}
+                                          label=""
+                                          hideCropEditor
+                                        />
+                                      )}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                      <s-text-field
+                                        label="Step Title"
+                                        placeholder="Eg:- Customized T-shirt Bundle for you"
+                                        value={(step as any).pageTitle ?? ""}
+                                        onInput={(e: Event) => {
+                                          stepsState.updateStepField(step.id, 'pageTitle', (e.target as HTMLInputElement).value);
+                                          markAsDirty();
+                                        }}
+                                        autoComplete="off"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
 
                       </s-stack>
                     </div>

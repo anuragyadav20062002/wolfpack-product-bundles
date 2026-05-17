@@ -391,6 +391,14 @@
   min-width: 0;
 }
 
+.headingWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Step Chip Navigation ────────────────────────────────────── */
 .stepNav {
   display: flex;
@@ -456,6 +464,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.stepChipChevron {
+  flex: 0 0 auto;
+  color: #6d7175;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.stepChipActive .stepChipChevron {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .addStepBtn {

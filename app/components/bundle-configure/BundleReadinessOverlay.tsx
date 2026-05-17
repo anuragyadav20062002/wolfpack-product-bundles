@@ -47,7 +47,6 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
 
   const allItems = [...items, previewItem];
   const score = allItems.reduce((sum, i) => sum + (i.done ? i.points : 0), 0);
-  const doneCount = allItems.filter((i) => i.done).length;
   const color = scoreColor(score);
 
   const radius = 22;
@@ -170,7 +169,7 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
           <div className={`${styles.scoreLabel} ${expanded ? styles.scoreLabelVisible : ""}`}>
             <span className={styles.scoreLabelTitle}>Readiness Score</span>
             <span className={styles.scoreLabelSub}>
-              {doneCount}/{allItems.length} items complete
+              Complete all steps to maximise your bundle's success.
             </span>
           </div>
           {chevron}

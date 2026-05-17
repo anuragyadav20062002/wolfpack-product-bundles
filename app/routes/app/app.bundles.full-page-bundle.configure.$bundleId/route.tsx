@@ -2087,6 +2087,7 @@ export default function ConfigureBundleFlow() {
                       >
                         <span className={fullPageBundleStyles.stepChipNumber}>{i + 1}</span>
                         <span className={fullPageBundleStyles.stepChipLabel}>{step.name || `Step ${i + 1}`}</span>
+                        <span className={fullPageBundleStyles.stepChipChevron}>›</span>
                       </button>
                     ))}
                     <button className={fullPageBundleStyles.addStepBtn} onClick={handleAddNewStep}>
@@ -2124,7 +2125,7 @@ export default function ConfigureBundleFlow() {
                               onClick={() => deleteStep(step.id)}
                             />
                           )}
-                          <s-checkbox
+                          <s-switch
                             accessibilityLabel="Enable step"
                             checked={step.enabled !== false || undefined}
                             onChange={(e: Event) => {
