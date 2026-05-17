@@ -887,6 +887,50 @@ When asked to audit, review, or verify storefront UI, you MUST test on **both de
 
 ---
 
+## 🔬 Competitor Parity Audit Rule — Pixel-Perfect Deep Dive
+
+### MANDATORY: Perform deep, pixel-accurate parity analysis for all competitor comparisons
+
+Whenever the user asks for a **comparison**, **comparative study**, or to **implement parity** with a competitor (e.g. EB, GiftBox, another Shopify app), you MUST conduct a thorough, methodical audit before writing any code. "Close enough" is not acceptable.
+
+### What "parity" means
+
+Parity is not just "same features". It means:
+
+- **Pixel-level placement** — exact position of every element relative to its container and siblings
+- **Visual hierarchy** — font sizes, weights, colors, and which elements draw the eye first
+- **Spacing** — padding and margin between every element, inside and outside every card/section
+- **UX & interaction** — how toggling, expanding, clicking, hovering, and scrolling behave; what animations run; what feedback the user gets
+- **Edge cases** — empty states, disabled states, error states, long text overflow
+
+### Audit workflow
+
+1. **Open the competitor app in Chrome DevTools MCP** — navigate to the exact equivalent page/section.
+2. **Take a full-page screenshot** of the competitor's UI at desktop viewport.
+3. **Inspect specific elements** — use `take_snapshot` (a11y tree) to understand the DOM structure, then `evaluate_script` to read computed styles (`getComputedStyle`) for spacing, font, color values you can't read visually.
+4. **Interact with the UI** — click toggles, open modals, hover items, trigger animations. Screenshot each state.
+5. **If `evaluate_script` is blocked by CORS** — use `take_snapshot` for DOM structure, `hover` to trigger hover states, `click`/`press_key` for interactions, and take screenshots at each state to document behavior without JS access.
+6. **Document every gap** — list each element present in competitor that differs from WPB (placement, size, color, spacing, label, behavior). No gap is too small to note.
+7. **Implement** — only after the audit is complete and gaps are documented.
+
+### Required for
+
+Any user message containing the words: "parity", "compare", "comparison", "comparative study", "match EB", "match competitor", "same as EB", "copy from EB", "should look like X".
+
+### Strictness
+
+- ❌ Do NOT estimate spacing — measure it via `getComputedStyle` or the a11y snapshot bounding boxes.
+- ❌ Do NOT skip mobile viewport when the competitor has a responsive layout.
+- ❌ Do NOT implement partial parity and call it done — every identified gap must be addressed or explicitly deferred with a reason.
+- ✅ Take screenshots before AND after implementing each gap so the diff is visible.
+- ✅ Re-open the competitor UI after implementation and screenshot side-by-side to confirm closure.
+
+### Why
+
+Shallow parity audits leave visual regressions that damage trust with merchants who compare WPB directly against competitors. Pixel-perfect execution is a differentiator. Taking 10 extra minutes to audit correctly saves hours of back-and-forth fix cycles.
+
+---
+
 ## 🖱️ Chrome DevTools — Clicking Inside the Shopify Admin Iframe
 
 ### Problem
