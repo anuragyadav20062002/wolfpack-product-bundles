@@ -2607,7 +2607,7 @@ export default function ConfigureBundleFlow() {
                           <s-button
                             onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
                           >
-                            {(step as any).timelineIconUrl ? "Replace" : "Upload file"}
+                            {(step as any).timelineIconUrl ? "Replace" : "Upload"}
                           </s-button>
                         </div>
                         <div className={fullPageBundleStyles.fieldsColumn}>

@@ -1892,6 +1892,34 @@ export default function ConfigureBundleFlow() {
                                                 }}
                                               />
                                             </div>
+                                            <div style={{ marginBottom: 10 }}>
+                                              <s-text-field
+                                                label="Category Title"
+                                                placeholder="Visible title on storefront"
+                                                value={(cat as any).title ?? ""}
+                                                onInput={(e: Event) => {
+                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                    i === catIndex ? { ...c, title: (e.target as HTMLInputElement).value } : c
+                                                  );
+                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                  markAsDirty();
+                                                }}
+                                                autoComplete="off"
+                                              />
+                                            </div>
+                                            <div style={{ marginBottom: 10 }}>
+                                              <s-checkbox
+                                                label="Display variants as individual products"
+                                                checked={(cat as any).displayVariantsAsIndividual ?? false}
+                                                onChange={(e: Event) => {
+                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                    i === catIndex ? { ...c, displayVariantsAsIndividual: (e.target as HTMLInputElement).checked } : c
+                                                  );
+                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                  markAsDirty();
+                                                }}
+                                              />
+                                            </div>
                                             <div className={productPageBundleStyles.tabRow}>
                                               <button
                                                 className={catActiveTab === 0 ? productPageBundleStyles.tabActive : productPageBundleStyles.tab}
@@ -2378,7 +2406,7 @@ export default function ConfigureBundleFlow() {
                                       <s-button
                                         onClick={() => setShowIconPickerForStep((prev: string | null) => prev === step.id ? null : step.id)}
                                       >
-                                        {(step as any).timelineIconUrl ? "Replace" : "Upload file"}
+                                        {(step as any).timelineIconUrl ? "Replace" : "Upload"}
                                       </s-button>
                                       {showIconPickerForStep === step.id && (
                                         <FilePicker

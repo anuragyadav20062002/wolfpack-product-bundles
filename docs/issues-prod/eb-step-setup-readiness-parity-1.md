@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-17
-**Last Updated:** 2026-05-17 16:30
+**Last Updated:** 2026-05-17 17:30
 
 ## Overview
 
@@ -76,6 +76,13 @@ Architecture doc: `docs/eb-step-setup-readiness-parity/02-architecture.md`
 - ✅ PPB route: Step Options `s-checkbox` labels — all 4 checkboxes fixed to use `label` attribute instead of slot children (Regular Step, Add-On / Upsell Step, Display products as free, Unlock after bundle completion, Mandatory default product)
 - ✅ FPB route: QuestionHelpTooltip `<button>` changed to `<span aria-hidden="true">` — tooltip now shown via CSS hover on parent `.richHelp` span (non-interactive, matching EB)
 - Files changed: BundleReadinessOverlay.module.css, FilePicker.tsx, FPB route.tsx, PPB route.tsx
+
+### 2026-05-17 17:30 - Fixed remaining EB parity gaps from deep Chrome DevTools comparison
+- ✅ PPB route: Added "Category Title" `s-text-field` inside each category accordion body (EB has this as a separate storefont-visible title distinct from the internal Category Name)
+- ✅ PPB route: Added "Display variants as individual products" `s-checkbox` inside each category accordion body (EB has this per-category, confirmed via a11y snapshot uid=25_27)
+- ✅ PPB route: Step Config upload button text changed from "Upload file" → "Upload" (matching EB uid label)
+- ✅ FPB route: Step Config upload button text changed from "Upload file" → "Upload" (matching EB)
+- Files changed: PPB route.tsx, FPB route.tsx, issue file
 
 ## Related Documentation
 - Architecture: `docs/eb-step-setup-readiness-parity/02-architecture.md`
