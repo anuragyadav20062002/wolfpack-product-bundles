@@ -12,7 +12,7 @@ import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
-import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
+import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import "../../../i18n/config";
 
 import {
@@ -259,7 +259,7 @@ export default function Dashboard() {
   };
 
   const handleEditBundle = useCallback((bundle: typeof bundles[number]) => {
-    navigate(getBundleWizardConfigurePath(bundle.id));
+    navigate(getBundleEditPath(bundle.id, bundle.bundleType));
   }, [navigate]);
 
   const handleCloneBundle = useCallback((bundleId: string) => {
