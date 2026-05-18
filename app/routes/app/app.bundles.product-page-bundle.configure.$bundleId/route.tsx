@@ -2950,7 +2950,11 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "free_gift_addons" && (() => {
               const step = stepsState.steps[activeTabIndex] || stepsState.steps[0];
-              if (!step) return null;
+              if (!step) return (
+                <div className={productPageBundleStyles.card} style={{ textAlign: "center", padding: "32px 16px" }}>
+                  <s-text tone="subdued">Add at least one step in <strong>Step Setup</strong> to configure Free Gift &amp; Add Ons settings.</s-text>
+                </div>
+              );
               const addonMessages = ruleMessages[`addons-${step.id}`] || {
                 discountText: "",
                 successMessage: "",
