@@ -452,6 +452,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
     const textOverrides = textOverridesRaw ? JSON.parse(textOverridesRaw) : null;
     const textOverridesByLocale = textOverridesByLocaleRaw ? JSON.parse(textOverridesByLocaleRaw) : null;
+    const upsellWidgetEnabled = formData.get("upsellWidgetEnabled") === "true";
+    const upsellWidgetDisplayMode = (formData.get("upsellWidgetDisplayMode") as string | null) ?? "block";
+    const upsellWidgetDisplayOn = (formData.get("upsellWidgetDisplayOn") as string | null) ?? "all";
+    const autoSelectBrowsedProduct = formData.get("autoSelectBrowsedProduct") === "true";
+    const bundleBannerDesktopUrlRaw = formData.get("bundleBannerDesktopUrl") as string | null;
+    const bundleBannerDesktopUrl = bundleBannerDesktopUrlRaw || null;
+    const bundleBannerMobileUrlRaw = formData.get("bundleBannerMobileUrl") as string | null;
+    const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
+    const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
+    const bundleLevelCss = bundleLevelCssRaw || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -581,6 +591,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         searchBarEnabled,
         textOverrides,
         textOverridesByLocale,
+        upsellWidgetEnabled,
+        upsellWidgetDisplayMode,
+        upsellWidgetDisplayOn,
+        autoSelectBrowsedProduct,
+        bundleBannerDesktopUrl,
+        bundleBannerMobileUrl,
+        bundleLevelCss,
         // Update steps if provided
         ...(stepsData && {
           steps: {
