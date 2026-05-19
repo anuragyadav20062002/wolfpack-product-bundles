@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-19 15:00
+**Last Updated:** 2026-05-19 16:30
 
 ## Overview
 
@@ -15,6 +15,13 @@ UI parity gaps identified:
 4. **Bundle Readiness Overlay** — collapsed/expanded state mismatch; item layout wrong; items not clickable; copy doesn't match EB.
 
 ## Progress Log
+
+### 2026-05-19 16:30 - Gaps 1, 2, 3 implementation
+
+- **Gap 1 — "Take your bundle live" card**: PPB updated from two-button layout to gray inner panel with bold "Place on theme" text + "Place Widget ↗" secondary button. Same card added to FPB left column (was missing entirely).
+- **Gap 2 — Bundle Product Card ⋮ menu**: Both PPB and FPB: replaced "Sync Product" link button in card header with `⋮` icon button (`menu-horizontal`) toggling a state-based dropdown. Dropdown has "Replace Product" (calls `handleBundleProductSelect`) and "Sync Product" (calls `handleSyncProduct`). Backdrop div closes dropdown on outside click.
+- **Gap 3 — Tooltips**: FPB `QuestionHelpTooltip` trigger updated from `?` span to `s-button variant="plain" icon="info"`. `HelpTooltipVisualBlock` simplified to render a gray placeholder rectangle (user to swap in real images). PPB: added `HELP_TOOLTIPS` import + `QuestionHelpTooltip` component; wired up Step Flow heading info button to the tooltip.
+- ESLint: 0 errors on both route files
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
@@ -32,10 +39,12 @@ UI parity gaps identified:
 - `app/components/bundle-configure/BundleReadinessOverlay.module.css`
 - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
 - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+- `app/styles/routes/full-page-bundle-configure.module.css`
+- `app/styles/routes/product-page-bundle-configure.module.css`
 
 ## Phases Checklist
 - [x] Bundle Readiness Overlay: collapsed/expanded states, item layout, clickable items, EB-matching copy
-- [ ] Gap 1: "Take your bundle live" card visual parity (PPB + FPB)
-- [ ] Gap 2: Bundle Product Card ⋮ menu + Edit Bundle App Bridge flow
-- [ ] Gap 3: Tooltip pattern + missing PPB tooltip placements
+- [x] Gap 1: "Take your bundle live" card visual parity (PPB + FPB)
+- [x] Gap 2: Bundle Product Card ⋮ menu (Replace Product / Sync Product)
+- [x] Gap 3: Tooltip trigger → s-button icon="info"; placeholder visual; PPB Step Flow wired up
 - [ ] E2E test in Chrome

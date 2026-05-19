@@ -911,3 +911,170 @@
 .addSectionButton:active {
   background: #edeeef;
 }
+
+/* ── Take your bundle live card ── */
+.bundleLivePanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #f6f6f7;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.bundleLivePlaceOnTheme {
+  font-size: 13px;
+  font-weight: 600;
+  color: #202223;
+}
+
+/* ── Bundle Product ⋮ menu ── */
+.productMenuWrapper {
+  position: relative;
+}
+
+.productMenuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6d7175;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.productMenuBtn:hover {
+  background: #f1f1f1;
+}
+
+.productMenuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.productMenuDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 150px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  z-index: 100;
+}
+
+.productMenuDropdownItem {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.productMenuDropdownItem:hover {
+  background: #f6f6f7;
+}
+
+/* ── Help Tooltips ── */
+.richHelp {
+  --rich-help-layer: 40;
+  --rich-help-active-layer: 1000;
+  --rich-help-card-layer: 1001;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  z-index: var(--rich-help-layer);
+}
+
+.richHelp:hover,
+.richHelp:focus-within {
+  z-index: var(--rich-help-active-layer);
+}
+
+.richHelpTrigger {
+  white-space: nowrap;
+}
+
+.richHelpCard {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  width: min(320px, calc(100vw - 48px));
+  padding: 18px;
+  transform: translate(-50%, 8px);
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.16);
+  color: #202223;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+  visibility: hidden;
+  z-index: var(--rich-help-card-layer);
+}
+
+.richHelp:hover .richHelpCard,
+.richHelp:focus-within .richHelpCard {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.richHelpCard::before {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: 1px solid #dfe3e8;
+  border-top: 1px solid #dfe3e8;
+  background: #ffffff;
+  content: "";
+}
+
+.richHelpImagePlaceholder {
+  display: block;
+  width: 100%;
+  height: 80px;
+  border-radius: 6px;
+  background: #f0f0f0;
+  margin: 4px 0 14px;
+}
+
+.richHelpTitle,
+.richHelpDescription {
+  display: block;
+}
+
+.richHelpTitle {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.richHelpDescription {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.35;
+}

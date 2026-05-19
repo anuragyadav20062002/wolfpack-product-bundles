@@ -21,6 +21,7 @@ import {
   DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
+import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
@@ -264,6 +265,25 @@ BundleProductCard.displayName = 'BundleProductCard';
 
 // BundleStatusSection imported from _shared/bundle-configure/BundleStatusSection
 
+function QuestionHelpTooltip({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
+  const tooltip = HELP_TOOLTIPS[tooltipKey];
+  return (
+    <span className={productPageBundleStyles.richHelp}>
+      <s-button
+        variant="plain"
+        icon="info"
+        accessibilityLabel={tooltip.title}
+        className={productPageBundleStyles.richHelpTrigger}
+      />
+      <span className={productPageBundleStyles.richHelpCard} role="tooltip">
+        <span className={productPageBundleStyles.richHelpImagePlaceholder} />
+        <span className={productPageBundleStyles.richHelpTitle}>{tooltip.title}</span>
+        <span className={productPageBundleStyles.richHelpDescription}>{tooltip.description}</span>
+      </span>
+    </span>
+  );
+}
+
 export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
   const bundle = loaderData.bundle as unknown as import("../../../hooks/useBundleConfigurationState").BundleData & {
@@ -435,6 +455,7 @@ export default function ConfigureBundleFlow() {
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
   const [readinessOpen, setReadinessOpen] = useState(false);
   const [hasPreview, setHasPreview] = useState(false);
+  const [productMenuOpen, setProductMenuOpen] = useState(false);
 
   useEffect(() => {
     setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
@@ -1171,13 +1192,37 @@ export default function ConfigureBundleFlow() {
                 <s-stack direction="block" gap="small">
                   <div className={productPageBundleStyles.leftCardHeader}>
                     <h3 className={productPageBundleStyles.leftCardTitle}>Bundle Product</h3>
-                    <button
-                      type="button"
-                      className={productPageBundleStyles.ebLinkButton}
-                      onClick={handleSyncProduct}
-                    >
-                      Sync Product
-                    </button>
+                    <div className={productPageBundleStyles.productMenuWrapper}>
+                      <button
+                        type="button"
+                        className={productPageBundleStyles.productMenuBtn}
+                        aria-label="Bundle product options"
+                        onClick={() => setProductMenuOpen((o) => !o)}
+                      >
+                        <s-icon type="menu-horizontal" />
+                      </button>
+                      {productMenuOpen && (
+                        <>
+                          <div className={productPageBundleStyles.productMenuBackdrop} onClick={() => setProductMenuOpen(false)} />
+                          <div className={productPageBundleStyles.productMenuDropdown}>
+                            <button
+                              type="button"
+                              className={productPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); void handleBundleProductSelect(); }}
+                            >
+                              Replace Product
+                            </button>
+                            <button
+                              type="button"
+                              className={productPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); handleSyncProduct(); }}
+                            >
+                              Sync Product
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <div className={productPageBundleStyles.bundleProductPanel}>
@@ -1284,19 +1329,12 @@ export default function ConfigureBundleFlow() {
               <s-section>
                 <s-stack direction="block" gap="small">
                   <h3 className={productPageBundleStyles.leftCardTitle}>Take your bundle live</h3>
-                  <s-stack direction="horizontal" gap="small">
-                    {themeEditorUrl && (
-                      <s-button
-                        variant="secondary"
-                        onClick={() => window.open(themeEditorUrl, "_blank")}
-                      >
-                        Place on theme
-                      </s-button>
-                    )}
-                    <s-button variant="primary" onClick={handlePlaceWidget}>
-                      Place Widget
+                  <div className={productPageBundleStyles.bundleLivePanel}>
+                    <span className={productPageBundleStyles.bundleLivePlaceOnTheme}>Place on theme</span>
+                    <s-button variant="secondary" onClick={handlePlaceWidget}>
+                      Place Widget ↗
                     </s-button>
-                  </s-stack>
+                  </div>
                 </s-stack>
               </s-section>
 
@@ -1312,7 +1350,7 @@ export default function ConfigureBundleFlow() {
                     <div className={productPageBundleStyles.stepFlowTitleRow}>
                       <span className={productPageBundleStyles.headingWithHelp}>
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>Step Flow</h3>
-                        <s-button variant="plain" icon="info" accessibilityLabel="Step flow info" />
+                        <QuestionHelpTooltip tooltipKey="stepFlow" />
                       </span>
                       <button
                         type="button"

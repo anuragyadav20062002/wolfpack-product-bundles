@@ -297,14 +297,15 @@ function QuestionHelpTooltip({
 
   return (
     <span className={fullPageBundleStyles.richHelp}>
-      <span
-        className={fullPageBundleStyles.questionHelpButton}
-        aria-hidden="true"
-      >
-        ?
-      </span>
+      <s-button
+        variant="plain"
+        icon="info"
+        accessibilityLabel={tooltip.title}
+        className={fullPageBundleStyles.richHelpTrigger}
+      />
       <span className={fullPageBundleStyles.richHelpCard} role="tooltip">
-        <HelpTooltipVisualBlock visual={tooltip.visual} title={tooltip.title} />
+        <span className={fullPageBundleStyles.richHelpImagePlaceholder} />
+        <span className={fullPageBundleStyles.richHelpTitle}>{tooltip.title}</span>
         <span className={fullPageBundleStyles.richHelpDescription}>{tooltip.description}</span>
       </span>
     </span>
@@ -312,42 +313,13 @@ function QuestionHelpTooltip({
 }
 
 function HelpTooltipVisualBlock({
-  visual,
   title,
 }: {
   visual: HelpTooltipVisual;
   title: string;
 }) {
-  const visualClass = {
-    "step-flow": fullPageBundleStyles.richHelpVisual_stepFlow,
-    category: fullPageBundleStyles.richHelpVisual_category,
-    rules: fullPageBundleStyles.richHelpVisual_rules,
-    quantity: fullPageBundleStyles.richHelpVisual_quantity,
-    progress: fullPageBundleStyles.richHelpVisual_progress,
-    messaging: fullPageBundleStyles.richHelpVisual_messaging,
-    loading: fullPageBundleStyles.richHelpVisual_loading,
-  }[visual];
-
-  if (visual === "category") {
-    return (
-      <span className={fullPageBundleStyles.richHelpCategoryVisual} role="img" aria-label={title}>
-        <span className={fullPageBundleStyles.richHelpCategoryTabActive}>Category 1</span>
-        <span className={fullPageBundleStyles.richHelpCategoryTab}>Category 2</span>
-        <span className={fullPageBundleStyles.richHelpCategoryTab}>Category 3</span>
-      </span>
-    );
-  }
-
   return (
-    <span className={`${fullPageBundleStyles.richHelpVisual} ${visualClass}`} role="img" aria-label={title}>
-      <span className={fullPageBundleStyles.richHelpVisualTrack}>
-        <span className={fullPageBundleStyles.richHelpVisualNode}>1</span>
-        <span className={fullPageBundleStyles.richHelpVisualLine} />
-        <span className={fullPageBundleStyles.richHelpVisualNode}>2</span>
-        <span className={fullPageBundleStyles.richHelpVisualLine} />
-        <span className={fullPageBundleStyles.richHelpVisualNode}>3</span>
-      </span>
-    </span>
+    <span className={fullPageBundleStyles.richHelpImagePlaceholder} role="img" aria-label={title} />
   );
 }
 
@@ -596,6 +568,7 @@ export default function ConfigureBundleFlow() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [readinessOpen, setReadinessOpen] = useState(false);
   const [hasPreview, setHasPreview] = useState(false);
+  const [productMenuOpen, setProductMenuOpen] = useState(false);
 
   useEffect(() => {
     setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
@@ -1523,13 +1496,37 @@ export default function ConfigureBundleFlow() {
                     <h3 className={fullPageBundleStyles.leftCardTitle}>
                       Bundle Product
                     </h3>
-                    <button
-                      type="button"
-                      className={fullPageBundleStyles.ebLinkButton}
-                      onClick={handleSyncProduct}
-                    >
-                      Sync Product
-                    </button>
+                    <div className={fullPageBundleStyles.productMenuWrapper}>
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.productMenuBtn}
+                        aria-label="Bundle product options"
+                        onClick={() => setProductMenuOpen((o) => !o)}
+                      >
+                        <s-icon type="menu-horizontal" />
+                      </button>
+                      {productMenuOpen && (
+                        <>
+                          <div className={fullPageBundleStyles.productMenuBackdrop} onClick={() => setProductMenuOpen(false)} />
+                          <div className={fullPageBundleStyles.productMenuDropdown}>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); void handleBundleProductSelect(); }}
+                            >
+                              Replace Product
+                            </button>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); handleSyncProduct(); }}
+                            >
+                              Sync Product
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <div className={fullPageBundleStyles.bundleProductPanel}>
@@ -1636,6 +1633,19 @@ export default function ConfigureBundleFlow() {
                           </div>
                         );
                       })}
+                  </div>
+                </s-stack>
+              </s-section>
+
+              {/* Take your bundle live card */}
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <h3 className={fullPageBundleStyles.leftCardTitle}>Take your bundle live</h3>
+                  <div className={fullPageBundleStyles.bundleLivePanel}>
+                    <span className={fullPageBundleStyles.bundleLivePlaceOnTheme}>Place on theme</span>
+                    <s-button variant="secondary" onClick={handlePlaceWidget}>
+                      Place Widget ↗
+                    </s-button>
                   </div>
                 </s-stack>
               </s-section>
