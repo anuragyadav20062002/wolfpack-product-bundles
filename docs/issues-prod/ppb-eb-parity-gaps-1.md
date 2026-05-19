@@ -1,10 +1,10 @@
 # Issue: PPB EB Parity Gaps — Bundle Visibility Nav + Free Gift Fields
 
 **Issue ID:** ppb-eb-parity-gaps-1
-**Status:** In Progress (Gaps 1–2 done)
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-19 12:00
+**Last Updated:** 2026-05-19 14:00
 
 ## Overview
 
@@ -30,20 +30,29 @@ Three parity gaps identified via Chrome DevTools EB audit:
 - Built widget bundles: `npm run build:widgets`
 - ESLint: 0 errors
 
+### 2026-05-19 14:00 - Gap 3: "Take your bundle live" left column card
+- Added `<s-section>` card at bottom of left column in route.tsx (after Bundle Setup Navigation Card)
+- Card contains: heading "Take your bundle live", "Place on theme" secondary button (conditional on `themeEditorUrl`), "Place Widget" primary button
+- "Place on theme" calls `window.open(themeEditorUrl, "_blank")` — matches EB behaviour
+- "Place Widget" calls existing `handlePlaceWidget` — same handler already wired to Bundle Visibility section
+- E2E verified in Chrome DevTools: a11y snapshot confirmed uid=33_79 heading + uid=33_80 "Place on theme" + uid=33_81 "Place Widget" present in DOM
+- Screenshot confirmed card rendered correctly in left column below "Bundle Settings"
+- ESLint: 0 errors
+
 ## Files Changed
-- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
-- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
-- `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts`
-- `app/services/bundles/metafield-sync/types.ts`
-- `app/services/bundles/metafield-sync/operations/bundle-product.server.ts`
-- `app/assets/bundle-widget-product-page.js`
-- `prisma/schema.prisma`
-- `prisma/migrations/20260519112943_ppb_addon_add_replace_text/migration.sql`
-- `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js`
-- `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`
+- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx` (Gaps 1, 2, 3)
+- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts` (Gap 2)
+- `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` (Gap 2)
+- `app/services/bundles/metafield-sync/types.ts` (Gap 2)
+- `app/services/bundles/metafield-sync/operations/bundle-product.server.ts` (Gap 2)
+- `app/assets/bundle-widget-product-page.js` (Gap 2)
+- `prisma/schema.prisma` (Gap 2)
+- `prisma/migrations/20260519112943_ppb_addon_add_replace_text/migration.sql` (Gap 2)
+- `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` (Gap 2)
+- `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` (Gap 2)
 
 ## Phases Checklist
 - [x] Gap 1: Bundle Visibility in nav + Pending badge + Place Widget button
 - [x] Gap 2: Free Gift "Add On" + "Replace" text fields
-- [ ] Gap 3: "Take your bundle live" left column card
-- [ ] E2E test in Chrome after each gap
+- [x] Gap 3: "Take your bundle live" left column card
+- [x] E2E test in Chrome after each gap

@@ -1241,6 +1241,26 @@ export default function ConfigureBundleFlow() {
                 </s-stack>
               </s-section>
 
+              {/* Take your bundle live card */}
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <h3 className={productPageBundleStyles.leftCardTitle}>Take your bundle live</h3>
+                  <s-stack direction="horizontal" gap="small">
+                    {themeEditorUrl && (
+                      <s-button
+                        variant="secondary"
+                        onClick={() => window.open(themeEditorUrl, "_blank")}
+                      >
+                        Place on theme
+                      </s-button>
+                    )}
+                    <s-button variant="primary" onClick={handlePlaceWidget}>
+                      Place Widget
+                    </s-button>
+                  </s-stack>
+                </s-stack>
+              </s-section>
+
             </s-stack>
           </div>
 
