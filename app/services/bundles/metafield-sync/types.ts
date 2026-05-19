@@ -109,6 +109,10 @@ export interface BundleUiStep {
   addonLabel?: string | null;
   /** Add-on step panel heading. */
   addonTitle?: string | null;
+  /** Button text when adding an add-on product (storefront CTA). */
+  addonAddText?: string | null;
+  /** Button text when replacing a selected add-on product (storefront CTA). */
+  addonReplaceText?: string | null;
   /** URL of uploaded icon for the add-on step tab. */
   addonIconUrl?: string | null;
   /** Show products at $0.00 in this step. */

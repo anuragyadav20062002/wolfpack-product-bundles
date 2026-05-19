@@ -333,6 +333,8 @@ export async function updateBundleProductMetafields(
       freeGiftName: step.freeGiftName || null,
       addonLabel: step.addonLabel ?? null,
       addonTitle: step.addonTitle ?? null,
+      addonAddText: step.addonAddText ?? null,
+      addonReplaceText: step.addonReplaceText ?? null,
       addonIconUrl: step.addonIconUrl ?? null,
       addonDisplayFree: step.addonDisplayFree !== false,
       addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,

@@ -1961,7 +1961,7 @@ class BundleWidgetProductPage {
             ` : ''}
 
             <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart')}
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add to Cart'))}
             </button>
           </div>
         </div>

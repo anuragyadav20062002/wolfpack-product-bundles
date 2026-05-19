@@ -180,6 +180,8 @@ model BundleStep {
   freeGiftName                String?
   addonLabel                  String?
   addonTitle                  String?
+  addonAddText                String?        // CTA button text when adding an add-on product (storefront)
+  addonReplaceText            String?        // CTA button text when replacing a selected add-on product (storefront)
   addonIconUrl                String?
   addonDisplayFree            Boolean        @default(true)
   addonTiers                  Json?

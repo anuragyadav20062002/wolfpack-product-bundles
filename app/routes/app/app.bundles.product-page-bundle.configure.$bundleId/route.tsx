@@ -3049,10 +3049,32 @@ export default function ConfigureBundleFlow() {
                             autoComplete="off"
                           />
                           <s-text-field
+                            label="Add On"
+                            value={step.addonAddText ?? ""}
+                            placeholder="Add to Cart"
+                            helpText="Button text on the product card when adding an add-on item"
+                            onInput={(e: Event) => {
+                              stepsState.updateStepField(step.id, "addonAddText", (e.target as HTMLInputElement).value || null);
+                              markAsDirty();
+                            }}
+                            autoComplete="off"
+                          />
+                          <s-text-field
                             label="Step Title"
                             value={step.addonTitle ?? ""}
                             onInput={(e: Event) => {
                               stepsState.updateStepField(step.id, "addonTitle", (e.target as HTMLInputElement).value);
+                              markAsDirty();
+                            }}
+                            autoComplete="off"
+                          />
+                          <s-text-field
+                            label="Replace"
+                            value={step.addonReplaceText ?? ""}
+                            placeholder="Selected ✓"
+                            helpText="Button text on the product card when an add-on item is already selected"
+                            onInput={(e: Event) => {
+                              stepsState.updateStepField(step.id, "addonReplaceText", (e.target as HTMLInputElement).value || null);
                               markAsDirty();
                             }}
                             autoComplete="off"

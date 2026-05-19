@@ -608,6 +608,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 freeGiftName: step.freeGiftName || null,
                 addonLabel: step.addonLabel ?? null,
                 addonTitle: step.addonTitle ?? null,
+                addonAddText: step.addonAddText ?? null,
+                addonReplaceText: step.addonReplaceText ?? null,
                 addonIconUrl: step.addonIconUrl ?? null,
                 addonDisplayFree: step.addonDisplayFree !== false,
                 addonTiers: Array.isArray(step.addonTiers) ? step.addonTiers : null,
