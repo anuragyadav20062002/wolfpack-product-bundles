@@ -434,6 +434,11 @@ export default function ConfigureBundleFlow() {
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
   const [readinessOpen, setReadinessOpen] = useState(false);
+  const [hasPreview, setHasPreview] = useState(false);
+
+  useEffect(() => {
+    setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
+  }, [bundle.id]);
 
   // Add-Ons icon picker state
   const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
@@ -814,14 +819,16 @@ export default function ConfigureBundleFlow() {
     const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
 
     return [
-      { key: "embed",          label: "App embed enabled",           description: "Required to display bundles on your storefront.",          points: 15, done: appEmbedEnabled },
-      { key: "products",       label: "Products added to a step",    description: "Add at least one product to a bundle step.",               points: 20, done: hasProducts },
-      { key: "discount",       label: "Discount configured",         description: "Set a discount to give customers a reason to bundle.",     points: 15, done: pricingState.discountEnabled },
-      { key: "widget",         label: "Widget placed on product page",description: "Place the bundle widget on your product page template.",   points: 25, done: widgetPlaced },
-      { key: "product_active", label: "Parent product active",       description: "Your parent product must be active to accept orders.",     points: 15, done: parentProductActive },
+      { key: "embed",         label: "App Embed Enabled",          description: "Needed for your bundle to show up on store",       points: 15, done: appEmbedEnabled },
+      { key: "products",      label: "Minimum 3 Products Added",   description: "Add more products to build a better bundle",       points: 20, done: hasProducts },
+      { key: "discount",      label: "Set Up Discount",            description: "Bundles with offers tend to sell better",          points: 15, done: pricingState.discountEnabled },
+      { key: "preview",       label: "Preview Bundle",             description: "Check your bundle looks and works right",          points: 10, done: hasPreview },
+      { key: "widget",        label: "Place Bundle Widget",        description: "Place the bundle widget on your product page",     points: 25, done: widgetPlaced },
+      { key: "product_active",label: "Set Parent Product to Active","description": "Unlisted bundles won't show in search",        points: 15, done: parentProductActive },
     ];
   }, [
     appEmbedEnabled,
+    hasPreview,
     loadedBundleProduct?.status,
     pricingState.discountEnabled,
     productStatus,
@@ -848,6 +855,38 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, shopify]);
 
+  const handleReadinessItemClick = useCallback((key: string) => {
+    setReadinessOpen(false);
+    switch (key) {
+      case "embed":
+        if (themeEditorUrl) window.open(themeEditorUrl, "_blank");
+        break;
+      case "products":
+        handleSectionChange("step_setup");
+        break;
+      case "discount":
+        handleSectionChange("discount_pricing");
+        break;
+      case "preview":
+        void handlePreviewBundle();
+        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+        setHasPreview(true);
+        break;
+      case "widget":
+        handleSectionChange("bundle_visibility");
+        break;
+      case "product_active": {
+        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
+        if (productId) {
+          const storeHandle = shop?.replace('.myshopify.com', '');
+          shopify.navigate(`https://admin.shopify.com/store/${storeHandle}/products/${productId}`);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle, bundleProduct, shop, shopify]);
 
   const handleAddNewStep = useCallback(() => {
     stepsState.addStep();
@@ -3545,9 +3584,9 @@ export default function ConfigureBundleFlow() {
 
       <BundleReadinessOverlay
         items={readinessItems}
-        bundleId={bundle.id}
         open={readinessOpen}
         onOpenChange={setReadinessOpen}
+        onItemClick={handleReadinessItemClick}
       />
 
       </div>

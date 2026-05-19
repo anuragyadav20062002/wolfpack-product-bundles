@@ -21,8 +21,8 @@
   align-items: flex-start;
 }
 
+/* Collapsed trigger — compact pill (gauge + chevron only) */
 .collapsed {
-  width: 265px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -41,6 +41,7 @@
   border-color: #ccc;
 }
 
+/* Expanded trigger — wide to accommodate score label text */
 .collapsedOpen {
   width: min(360px, calc(100vw - 40px));
 }
@@ -117,7 +118,7 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 10px;
-  max-height: 280px;
+  max-height: 380px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #e0e0e0 transparent;
@@ -125,7 +126,7 @@
 
 .panelItem {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   padding: 10px 12px;
   border-radius: 8px;
@@ -138,9 +139,24 @@
   background: #f1faf6;
 }
 
+.panelItemClickable {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.panelItemClickable:hover {
+  background: #f0f0f0;
+}
+
+.panelItemDone.panelItemClickable:hover {
+  background: #e0f5ec;
+}
+
 .itemIndicator {
   flex-shrink: 0;
-  margin-top: 1px;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
 }
 
 .itemContent {
@@ -148,12 +164,13 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .itemLabel {
   font-size: 13px;
-  font-weight: 600;
-  color: #303030;
+  font-weight: 700;
+  color: #202223;
   line-height: 1.3;
 }
 
@@ -164,19 +181,23 @@
 }
 
 .itemPoints {
-  font-size: 11px;
-  color: #aaa;
-  white-space: nowrap;
-  padding: 2px 6px;
-  background: #f0f0f0;
-  border-radius: 10px;
-  align-self: flex-start;
-  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6d7175;
+  margin-top: 1px;
 }
 
 .itemPointsDone {
   color: #008060;
-  background: #e3f5ef;
+}
+
+.itemChevron {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  align-self: center;
+  padding-left: 4px;
+  opacity: 0.6;
 }
 
 .statusNotReady {

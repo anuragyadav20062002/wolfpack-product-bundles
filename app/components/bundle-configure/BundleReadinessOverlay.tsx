@@ -7,16 +7,15 @@ export interface BundleReadinessItem {
   description?: string;
   points: number;
   done: boolean;
-  actionLabel?: string;
-  actionUrl?: string;
 }
 
 interface Props {
   items: BundleReadinessItem[];
-  bundleId: string;
+  bundleId?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideCollapsedTrigger?: boolean;
+  onItemClick?: (key: string) => void;
 }
 
 function scoreColor(score: number) {
@@ -25,33 +24,19 @@ function scoreColor(score: number) {
   return "#d82c0d";
 }
 
-export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hideCollapsedTrigger = false }: Props) {
+export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [hasPreview, setHasPreview] = useState(false);
-
-  useEffect(() => {
-    setHasPreview(!!localStorage.getItem(`wpb_preview_${bundleId}`));
-  }, [bundleId]);
 
   useEffect(() => {
     if (open !== undefined) setExpanded(open);
   }, [open]);
 
-  const previewItem: BundleReadinessItem = {
-    key: "previewed",
-    label: "Bundle previewed",
-    description: "Preview your bundle to see how it looks on the storefront.",
-    points: 10,
-    done: hasPreview,
-  };
-
-  const allItems = [...items, previewItem];
-  const score = allItems.reduce((sum, i) => sum + (i.done ? i.points : 0), 0);
+  const score = items.reduce((sum, i) => sum + (i.done ? i.points : 0), 0);
   const color = scoreColor(score);
 
   const radius = 22;
   const circumference = 2 * Math.PI * radius;
-  const arcLength = circumference * 0.75; // 270° visible span
+  const arcLength = circumference * 0.75;
   const progressLength = (score / 100) * arcLength;
 
   const toggle = useCallback(() => {
@@ -61,22 +46,18 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
     });
   }, [onOpenChange]);
 
-  const allDone = allItems.every((i) => i.done);
+  const allDone = items.every((i) => i.done);
 
-  if (hideCollapsedTrigger && !expanded) {
-    return null;
-  }
+  if (hideCollapsedTrigger && !expanded) return null;
 
   const donut = (
     <svg width="56" height="56" viewBox="0 0 56 56" className={styles.arc}>
-      {/* Gray C-gauge track (270°, gap at bottom) */}
       <circle
         cx="28" cy="28" r={radius}
         fill="none" stroke="#e8e8e8" strokeWidth="4.5"
         strokeDasharray={`${arcLength} ${circumference - arcLength}`}
         transform="rotate(135 28 28)"
       />
-      {/* Colored progress arc */}
       <circle
         cx="28" cy="28" r={radius}
         fill="none" stroke={color} strokeWidth="4.5"
@@ -94,88 +75,89 @@ export function BundleReadinessOverlay({ items, bundleId, open, onOpenChange, hi
   const chevron = (
     <svg
       className={`${styles.chevron} ${expanded ? styles.chevronExpanded : ""}`}
-      width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+      width="14" height="14" viewBox="0 0 14 14" fill="none"
     >
-      <path
-        d="M2 9L7 4L12 9"
-        stroke="#666"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <path d="M2 9L7 4L12 9" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 
   return (
     <>
-    {expanded && (
-      <div className={styles.dimOverlay} onClick={toggle} />
-    )}
-    <div className={styles.container}>
-      <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
-        <div className={styles.panelInner}>
-          <div className={styles.panel}>
-            <div className={styles.panelItems}>
-              {allItems.map((item) => (
-                <div
-                  key={item.key}
-                  className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""}`}
-                >
-                  <div className={styles.itemIndicator}>
-                    {item.done ? (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <circle cx="10" cy="10" r="10" fill="#008060" />
-                        <path
-                          d="M6 10.5l2.5 2.5L14 8"
-                          stroke="white"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          fill="none"
-                        />
-                      </svg>
-                    ) : (
-                      <svg width="20" height="20" viewBox="0 0 20 20">
-                        <circle cx="10" cy="10" r="9" fill="none" stroke="#c9cccf" strokeWidth="1.5" />
-                      </svg>
+      {expanded && <div className={styles.dimOverlay} onClick={toggle} />}
+      <div className={styles.container}>
+        <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
+          <div className={styles.panelInner}>
+            <div className={styles.panel}>
+              <div className={styles.panelItems}>
+                {items.map((item) => (
+                  <div
+                    key={item.key}
+                    className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""} ${onItemClick ? styles.panelItemClickable : ""}`}
+                    onClick={() => {
+                      if (onItemClick) {
+                        setExpanded(false);
+                        onOpenChange?.(false);
+                        onItemClick(item.key);
+                      }
+                    }}
+                  >
+                    <div className={styles.itemIndicator}>
+                      {item.done ? (
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                          <circle cx="10" cy="10" r="10" fill="#008060" />
+                          <path d="M6 10.5l2.5 2.5L14 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                        </svg>
+                      ) : (
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                          <circle cx="10" cy="10" r="9" fill="none" stroke="#c9cccf" strokeWidth="1.5" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className={styles.itemContent}>
+                      <span className={styles.itemLabel}>{item.label}</span>
+                      {item.description && (
+                        <span className={styles.itemDesc}>{item.description}</span>
+                      )}
+                      <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
+                        +{item.points} Points
+                      </span>
+                    </div>
+                    {onItemClick && (
+                      <div className={styles.itemChevron}>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M3 1.5L7 5L3 8.5" stroke="#8c8c8c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
                     )}
                   </div>
-                  <div className={styles.itemContent}>
-                    <span className={styles.itemLabel}>{item.label}</span>
-                    {item.description && (
-                      <span className={styles.itemDesc}>{item.description}</span>
-                    )}
-                  </div>
-                  <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
-                    +{item.points}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className={allDone ? styles.statusReady : styles.statusNotReady}>
-              {allDone ? "Your bundle is ready to sell!" : "Your bundle isn't ready to sell yet."}
+                ))}
+              </div>
+              <div className={allDone ? styles.statusReady : styles.statusNotReady}>
+                {allDone ? "Your bundle is ready to sell!" : "Your bundle isn't ready to sell yet."}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {(!hideCollapsedTrigger || expanded) && (
-        <div
-          data-tour-target="fpb-readiness-score"
-          className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
-          onClick={toggle}
-        >
-          {donut}
-          <div className={styles.scoreLabel}>
-            <span className={styles.scoreLabelTitle}>Readiness Score</span>
-            <span className={styles.scoreLabelSub}>
-              Complete all steps to maximise your bundle's success.
-            </span>
+        {(!hideCollapsedTrigger || expanded) && (
+          <div
+            data-tour-target="fpb-readiness-score"
+            className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
+            onClick={toggle}
+          >
+            {donut}
+            {expanded && (
+              <div className={styles.scoreLabel}>
+                <span className={styles.scoreLabelTitle}>Readiness Score</span>
+                <span className={styles.scoreLabelSub}>
+                  Complete all steps to maximise your bundle's success.
+                </span>
+              </div>
+            )}
+            {chevron}
           </div>
-          {chevron}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </>
   );
 }
