@@ -937,9 +937,50 @@ Shallow parity audits leave visual regressions that damage trust with merchants 
 
 The Shopify Admin embeds the app inside a cross-origin OOPIF (Out-of-Process IFrame). Chrome DevTools MCP cannot address elements inside the iframe by element uid because the OOPIF registers as a separate CDP target with its own page context — `contentDocument` is null and `contentWindow.document` throws a `SecurityError` from the outer page.
 
-### Workaround — Use `evaluate_script` with synthetic JS events
+### ⌨️ PRIMARY METHOD — Keyboard Tab Navigation (try this FIRST)
 
-You **can** dispatch synthetic click / pointer events from inside the iframe's own page context using the `evaluate_script` tool after switching to the correct CDP target.
+**For any cross-origin OOPIF iframe (including third-party competitor apps), always try keyboard Tab navigation BEFORE attempting evaluate_script or JS injection.** This works even when `contentDocument` is null and even when the iframe's inner page is not a registered CDP target.
+
+**Why Tab navigation works:** The CDP accessibility tree can traverse cross-origin iframes and expose their elements as uid nodes. Clicking an interactive uid (button, input, textbox) brings focus into the iframe. Once focused, `press_key` with Tab/Shift+Tab navigates through the iframe's focusable elements, and Enter/Space activates them.
+
+**Step-by-step:**
+
+1. **Take a snapshot** to find interactive elements inside the iframe:
+   ```
+   mcp__chrome-devtools__take_snapshot()
+   ```
+   Look for `button`, `textbox`, `checkbox`, `link` nodes inside the iframe's RootWebArea.
+
+2. **Click a safe interactive element** inside the iframe to bring focus in:
+   ```
+   mcp__chrome-devtools__click(uid: "<uid of a button or textbox inside the iframe>")
+   ```
+   Use a safe target (not one that navigates away or submits a form).
+
+3. **Tab through elements** to reach the target:
+   ```
+   mcp__chrome-devtools__press_key(key: "Tab")         # forward
+   mcp__chrome-devtools__press_key(key: "Shift+Tab")   # backward
+   ```
+
+4. **Activate the focused element:**
+   ```
+   mcp__chrome-devtools__press_key(key: "Enter")   # for buttons, links
+   mcp__chrome-devtools__press_key(key: "Space")   # for checkboxes, toggles
+   ```
+
+5. **Take a screenshot** to verify the result:
+   ```
+   mcp__chrome-devtools__take_screenshot()
+   ```
+
+**Important:** If the nav items you want to click are rendered as `StaticText` nodes (no ARIA role), they won't be in the Tab order. In that case, Tab to an element near the target and use arrow keys, or fall back to the CDP target method below.
+
+---
+
+### FALLBACK — Use `evaluate_script` with synthetic JS events
+
+Use this when the target element IS the app's own iframe (our embedded app, not a third-party OOPIF), AND the iframe registers as its own CDP target in `list_pages`.
 
 **Step-by-step:**
 
@@ -983,3 +1024,5 @@ You **can** dispatch synthetic click / pointer events from inside the iframe's o
 ### Key rule
 
 Always `select_page` to the **iframe target** before using `evaluate_script` or `click` — never try to reach iframe DOM from the outer Admin page context.
+
+For cross-origin third-party iframes where `evaluate_script` is blocked by CORS: **use Tab navigation (primary method above) — it bypasses the JS security boundary entirely.**

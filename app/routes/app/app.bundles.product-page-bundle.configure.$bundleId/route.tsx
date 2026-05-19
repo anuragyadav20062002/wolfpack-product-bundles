@@ -186,9 +186,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup",       label: "Step Setup",         iconType: "note"   },
-  { id: "discount_pricing", label: "Discount & Pricing", iconType: "filter" },
-  { id: "bundle_settings",  label: "Bundle Settings",    iconType: "edit"   },
+  { id: "step_setup",         label: "Step Setup",         iconType: "note"   },
+  { id: "discount_pricing",   label: "Discount & Pricing", iconType: "filter" },
+  { id: "bundle_visibility",  label: "Bundle Visibility",  iconType: "view"   },
+  { id: "bundle_settings",    label: "Bundle Settings",    iconType: "edit"   },
 ];
 
 const stepSetupChildItems = [
@@ -1196,6 +1197,9 @@ export default function ConfigureBundleFlow() {
                       let statusBadge: { label: string; tone?: string } | null = null;
                       if (item.id === "discount_pricing") {
                         statusBadge = pricingState.discountEnabled ? null : { label: "None" };
+                      }
+                      if (item.id === "bundle_visibility") {
+                        statusBadge = (!appEmbedEnabled || !upsellWidgetEnabled) ? { label: "Pending", tone: "warning" } : null;
                       }
                       return (
                         <div key={item.id}>
@@ -2527,6 +2531,23 @@ export default function ConfigureBundleFlow() {
                         </s-stack>
                       </s-stack>
                     )}
+
+                    <s-stack direction="horizontal" gap="small">
+                      {themeEditorUrl && (
+                        <s-button
+                          variant="secondary"
+                          onClick={() => window.open(themeEditorUrl, "_blank")}
+                        >
+                          Place on theme
+                        </s-button>
+                      )}
+                      <s-button
+                        variant="primary"
+                        onClick={handlePlaceWidget}
+                      >
+                        Place Widget
+                      </s-button>
+                    </s-stack>
                   </s-stack>
                 </s-section>
               </div>
