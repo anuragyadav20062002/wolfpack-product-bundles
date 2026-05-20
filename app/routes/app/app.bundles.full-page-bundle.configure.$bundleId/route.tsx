@@ -1645,12 +1645,12 @@ export default function ConfigureBundleFlow() {
                               </span>
                             </button>
                             {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons" || activeSection === "messages") && (
-                              <div className={fullPageBundleStyles.ebSubNav}>
+                              <div className={fullPageBundleStyles.subNav}>
                                 {stepSetupChildItems.map((child) => (
                                   <button
                                     key={child.id}
                                     type="button"
-                                    className={`${fullPageBundleStyles.ebSubNavItem} ${activeSection === child.id ? fullPageBundleStyles.ebSubNavItemActive : ""}`}
+                                    className={`${fullPageBundleStyles.subNavItem} ${activeSection === child.id ? fullPageBundleStyles.subNavItemActive : ""}`}
                                     onClick={() => {
                                       if (child.id === "free_gift_addons") handleSectionChange("free_gift_addons");
                                       if (child.id === "messages") handleSectionChange("messages");
@@ -1662,12 +1662,12 @@ export default function ConfigureBundleFlow() {
                               </div>
                             )}
                             {item.id === "bundle_visibility" && (activeSection === "bundle_visibility" || activeSection === "bundle_widget") && (
-                              <div className={fullPageBundleStyles.ebSubNav}>
+                              <div className={fullPageBundleStyles.subNav}>
                                 {bundleVisibilityChildItems.map((child) => (
                                   <button
                                     key={child.id}
                                     type="button"
-                                    className={`${fullPageBundleStyles.ebSubNavItem} ${activeSection === child.id ? fullPageBundleStyles.ebSubNavItemActive : ""}`}
+                                    className={`${fullPageBundleStyles.subNavItem} ${activeSection === child.id ? fullPageBundleStyles.subNavItemActive : ""}`}
                                     onClick={() => handleSectionChange(child.id)}
                                   >
                                     {child.label}
@@ -1698,7 +1698,7 @@ export default function ConfigureBundleFlow() {
                       </span>
                       <button
                         type="button"
-                        className={fullPageBundleStyles.ebLinkButton}
+                        className={fullPageBundleStyles.linkButton}
                         onClick={() => window.open("https://wolfpackapps.com", "_blank")}
                       >
                         How to setup?
@@ -1827,18 +1827,18 @@ export default function ConfigureBundleFlow() {
                               onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
                             >
                               <span
-                                className={fullPageBundleStyles.ebCategoryDrag}
+                                className={fullPageBundleStyles.categoryDrag}
                                 aria-hidden="true"
                                 draggable="true"
                                 onDragStart={(e: React.DragEvent) => { e.stopPropagation(); handleCatDragStart(e, step.id, catKey); }}
                                 onDragEnd={handleCatDragEnd}
                                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                               >⠿</span>
-                              <span className={fullPageBundleStyles.ebCategoryName}>
+                              <span className={fullPageBundleStyles.categoryName}>
                                 {cat.name || `Category ${catIndex + 1}`}
                               </span>
                               <div
-                                className={fullPageBundleStyles.ebCategoryActions}
+                                className={fullPageBundleStyles.categoryActions}
                                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                               >
                                 <s-button
@@ -2133,8 +2133,8 @@ export default function ConfigureBundleFlow() {
                       ) : (
                         <div className={fullPageBundleStyles.rulesList}>
                           {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
-                            <div key={rule.id} className={fullPageBundleStyles.ebRuleCard}>
-                              <div className={fullPageBundleStyles.ebRuleHeader}>
+                            <div key={rule.id} className={fullPageBundleStyles.ruleCard}>
+                              <div className={fullPageBundleStyles.ruleHeader}>
                                 <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                 <s-button
                                   variant="plain"
@@ -2144,7 +2144,7 @@ export default function ConfigureBundleFlow() {
                                   Remove
                                 </s-button>
                               </div>
-                              <div className={fullPageBundleStyles.ebRuleFields}>
+                              <div className={fullPageBundleStyles.ruleFields}>
                                 <s-select
                                   label="Type"
                                   value={rule.type}
@@ -2275,8 +2275,8 @@ export default function ConfigureBundleFlow() {
                 <div data-tour-target="fpb-free-gift-addons">
                   <s-stack direction="block" gap="base">
                     <div className={fullPageBundleStyles.card}>
-                      <div className={fullPageBundleStyles.ebPanelHeader}>
-                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Add-Ons and Gifting Step</h3>
+                      <div className={fullPageBundleStyles.panelHeader}>
+                        <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
                         <s-checkbox
                           accessibilityLabel="Enable add-ons and gifting step"
                           checked={step.isFreeGift || undefined}
@@ -2292,7 +2292,7 @@ export default function ConfigureBundleFlow() {
                           }}
                         />
                       </div>
-                      <div style={{ marginTop: 16 }} className={fullPageBundleStyles.ebMediaFieldGrid}>
+                      <div style={{ marginTop: 16 }} className={fullPageBundleStyles.mediaFieldGrid}>
                         <div className={fullPageBundleStyles.iconColumn}>
                           <div className={fullPageBundleStyles.iconBox}>
                             {step.addonIconUrl ? (
@@ -2351,10 +2351,10 @@ export default function ConfigureBundleFlow() {
                     </div>
 
                     <div className={fullPageBundleStyles.card}>
-                      <div className={fullPageBundleStyles.ebPanelHeader}>
+                      <div className={fullPageBundleStyles.panelHeader}>
                         <div>
-                          <h3 className={fullPageBundleStyles.ebPanelTitle}>Add-Ons with Bundles</h3>
-                          <p className={fullPageBundleStyles.ebPanelDescription}>
+                          <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons with Bundles</h3>
+                          <p className={fullPageBundleStyles.panelDescription}>
                             Enable customers to add extra items to their bundles at a discounted price, for free, or at full price.
                           </p>
                         </div>
@@ -2402,8 +2402,8 @@ export default function ConfigureBundleFlow() {
                           return (
                             <>
                               {addonTiers.map((tier, idx) => (
-                                <div key={idx} className={fullPageBundleStyles.ebRuleCard}>
-                                  <div className={fullPageBundleStyles.ebRuleHeader}>
+                                <div key={idx} className={fullPageBundleStyles.ruleCard}>
+                                  <div className={fullPageBundleStyles.ruleHeader}>
                                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
                                     <s-button
                                       variant="plain"
@@ -2443,8 +2443,8 @@ export default function ConfigureBundleFlow() {
                     </div>
 
                     <div className={fullPageBundleStyles.card}>
-                      <div className={fullPageBundleStyles.ebPanelHeader}>
-                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Footer Messaging</h3>
+                      <div className={fullPageBundleStyles.panelHeader}>
+                        <h3 className={fullPageBundleStyles.panelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
                           <s-button variant="plain" onClick={() => showPolarisModal(templateVariablesModalRef)}>
                             Show Variables
@@ -3656,10 +3656,10 @@ export default function ConfigureBundleFlow() {
               return (
                 <s-stack direction="block" gap="base">
                   <div className={fullPageBundleStyles.card}>
-                    <div className={fullPageBundleStyles.ebPanelHeader}>
+                    <div className={fullPageBundleStyles.panelHeader}>
                       <div>
-                        <h3 className={fullPageBundleStyles.ebPanelTitle}>Enable Messages</h3>
-                        <p className={fullPageBundleStyles.ebPanelDescription}>
+                        <h3 className={fullPageBundleStyles.panelTitle}>Enable Messages</h3>
+                        <p className={fullPageBundleStyles.panelDescription}>
                           Message will show up as a product at checkout
                         </p>
                       </div>
@@ -3670,15 +3670,15 @@ export default function ConfigureBundleFlow() {
                       />
                     </div>
 
-                    <div style={{ marginTop: 16 }} className={fullPageBundleStyles.ebMessagePreview}>
-                      <div className={fullPageBundleStyles.ebMessagePreviewIcon} aria-hidden="true">
+                    <div style={{ marginTop: 16 }} className={fullPageBundleStyles.messagePreview}>
+                      <div className={fullPageBundleStyles.messagePreviewIcon} aria-hidden="true">
                         <s-icon name="note" />
                       </div>
                       <div>
-                        <p className={fullPageBundleStyles.ebMessagePreviewTitle}>
+                        <p className={fullPageBundleStyles.messagePreviewTitle}>
                           {textOverrides.giftMessageProductTitle || "Message"}
                         </p>
-                        <p className={fullPageBundleStyles.ebMessageNote}>
+                        <p className={fullPageBundleStyles.messageNote}>
                           Add a message product so shoppers can include a note with the bundle.
                         </p>
                       </div>

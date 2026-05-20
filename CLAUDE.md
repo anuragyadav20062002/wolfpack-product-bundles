@@ -286,6 +286,7 @@ for the full scenario table and acceptance criteria.
 12. **NO hardcoded fallback UI copy strings** ❌ — do not invent default marketing copy (e.g. "Complete the look and get a gift free!") when a merchant-configured string is absent. If the merchant hasn't set a value, show nothing or use a neutral system message. Never fabricate storefront-visible copy on their behalf.
 13. **NO unnecessary API fallback chains** ❌ — when fetching a value from an API, use the single correct source per official docs. Do NOT chain multiple fallback sources (e.g. `apiA.field || apiB.field || 'default'`). If the correct source returns null/empty, surface that honestly — show nothing, a neutral placeholder, or a non-fabricated system message. Chaining fallbacks hides bugs and creates silent data quality issues.
 14. **NEVER commit Chrome investigation or verification screenshots** ❌ — screenshots captured through Chrome DevTools MCP are temporary evidence only. Keep them unstaged/uncommitted unless the user explicitly asks for a specific screenshot artifact to be versioned.
+15. **NO competitor references in code** ❌ — do not use competitor brand names (`eb`, `skai`, `skailama`, `easybundles`, or any other competitor) as CSS class name prefixes, JS/TS identifier prefixes, variable names, or code comments. Competitor names are allowed only in documentation files under `docs/` and `internal docs/`. When adding new identifiers, use neutral descriptive names (e.g. `ruleFields`, not `ebRuleFields`).
 
 ## 🧩 Polaris Web Components First Rule
 

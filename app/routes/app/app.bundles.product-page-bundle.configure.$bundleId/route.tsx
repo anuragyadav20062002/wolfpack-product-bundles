@@ -1305,12 +1305,12 @@ export default function ConfigureBundleFlow() {
                             </span>
                           </button>
                           {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons" || activeSection === "messages") && (
-                            <div className={productPageBundleStyles.ebSubNav}>
+                            <div className={productPageBundleStyles.subNav}>
                               {stepSetupChildItems.map((child) => (
                                 <button
                                   key={child.id}
                                   type="button"
-                                  className={`${productPageBundleStyles.ebSubNavItem} ${activeSection === child.id ? productPageBundleStyles.ebSubNavItemActive : ""}`}
+                                  className={`${productPageBundleStyles.subNavItem} ${activeSection === child.id ? productPageBundleStyles.subNavItemActive : ""}`}
                                   onClick={() => handleSectionChange(child.id)}
                                 >
                                   {child.label}
@@ -1354,7 +1354,7 @@ export default function ConfigureBundleFlow() {
                       </span>
                       <button
                         type="button"
-                        className={productPageBundleStyles.ebLinkButton}
+                        className={productPageBundleStyles.linkButton}
                         onClick={() => window.open("https://wolfpackapps.com", "_blank")}
                       >
                         How to setup?
@@ -1434,7 +1434,7 @@ export default function ConfigureBundleFlow() {
                                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Categories</h3>
                                     <button
                                       type="button"
-                                      className={productPageBundleStyles.ebLinkButton}
+                                      className={productPageBundleStyles.linkButton}
                                       onClick={() => window.open("https://wolfpackapps.com", "_blank")}
                                     >
                                       How to setup?
@@ -1466,18 +1466,18 @@ export default function ConfigureBundleFlow() {
                                           onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
                                         >
                                           <span
-                                            className={productPageBundleStyles.ebCategoryDrag}
+                                            className={productPageBundleStyles.categoryDrag}
                                             aria-hidden="true"
                                             draggable="true"
                                             onDragStart={(e: React.DragEvent) => { e.stopPropagation(); handleCatDragStart(e, step.id, catKey); }}
                                             onDragEnd={handleCatDragEnd}
                                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
                                           >⠿</span>
-                                          <span className={productPageBundleStyles.ebCategoryName}>
+                                          <span className={productPageBundleStyles.categoryName}>
                                             {cat.name || `Category ${catIndex + 1}`}
                                           </span>
                                           <div
-                                            className={productPageBundleStyles.ebCategoryActions}
+                                            className={productPageBundleStyles.categoryActions}
                                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
                                           >
                                             <s-button
@@ -1778,7 +1778,7 @@ export default function ConfigureBundleFlow() {
                                               Remove
                                             </s-button>
                                           </div>
-                                          <div className={productPageBundleStyles.ebRuleFields}>
+                                          <div className={productPageBundleStyles.ruleFields}>
                                             <s-select
                                               value={rule.type}
                                               label="Type"
@@ -3083,8 +3083,8 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="base">
                     {/* Card 1: Add-Ons and Gifting Step */}
                     <div className={productPageBundleStyles.card}>
-                      <div className={productPageBundleStyles.ebPanelHeader}>
-                        <h3 className={productPageBundleStyles.ebPanelTitle}>Add-Ons and Gifting Step</h3>
+                      <div className={productPageBundleStyles.panelHeader}>
+                        <h3 className={productPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
                         <s-checkbox
                           accessibilityLabel="Enable add-ons and gifting step"
                           checked={step.isFreeGift || undefined}
@@ -3100,7 +3100,7 @@ export default function ConfigureBundleFlow() {
                           }}
                         />
                       </div>
-                      <div style={{ marginTop: 16 }} className={productPageBundleStyles.ebMediaFieldGrid}>
+                      <div style={{ marginTop: 16 }} className={productPageBundleStyles.mediaFieldGrid}>
                         <div className={productPageBundleStyles.iconColumn}>
                           <div className={productPageBundleStyles.iconBox}>
                             {step.addonIconUrl ? (
@@ -3182,10 +3182,10 @@ export default function ConfigureBundleFlow() {
 
                     {/* Card 2: Add-Ons with Bundles */}
                     <div className={productPageBundleStyles.card}>
-                      <div className={productPageBundleStyles.ebPanelHeader}>
+                      <div className={productPageBundleStyles.panelHeader}>
                         <div>
-                          <h3 className={productPageBundleStyles.ebPanelTitle}>Add-Ons with Bundles</h3>
-                          <p className={productPageBundleStyles.ebPanelDescription}>
+                          <h3 className={productPageBundleStyles.panelTitle}>Add-Ons with Bundles</h3>
+                          <p className={productPageBundleStyles.panelDescription}>
                             Enable customers to add extra items to their bundles at a discounted price, for free, or at full price.
                           </p>
                         </div>
@@ -3233,8 +3233,8 @@ export default function ConfigureBundleFlow() {
                           return (
                             <>
                               {addonTiers.map((tier, idx) => (
-                                <div key={idx} className={productPageBundleStyles.ebRuleCard}>
-                                  <div className={productPageBundleStyles.ebRuleHeader}>
+                                <div key={idx} className={productPageBundleStyles.ruleCard}>
+                                  <div className={productPageBundleStyles.ruleHeader}>
                                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
                                     <s-button
                                       variant="plain"
@@ -3275,8 +3275,8 @@ export default function ConfigureBundleFlow() {
 
                     {/* Card 3: Footer Messaging */}
                     <div className={productPageBundleStyles.card}>
-                      <div className={productPageBundleStyles.ebPanelHeader}>
-                        <h3 className={productPageBundleStyles.ebPanelTitle}>Footer Messaging</h3>
+                      <div className={productPageBundleStyles.panelHeader}>
+                        <h3 className={productPageBundleStyles.panelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
                           <s-button variant="plain" onClick={() => showPolarisModal(templateVariablesModalRef)}>
                             Show Variables
@@ -3331,10 +3331,10 @@ export default function ConfigureBundleFlow() {
               return (
                 <s-stack direction="block" gap="base">
                   <div className={productPageBundleStyles.card}>
-                    <div className={productPageBundleStyles.ebPanelHeader}>
+                    <div className={productPageBundleStyles.panelHeader}>
                       <div>
-                        <h3 className={productPageBundleStyles.ebPanelTitle}>Enable Messages</h3>
-                        <p className={productPageBundleStyles.ebPanelDescription}>
+                        <h3 className={productPageBundleStyles.panelTitle}>Enable Messages</h3>
+                        <p className={productPageBundleStyles.panelDescription}>
                           Message will show up as a product at checkout
                         </p>
                       </div>
@@ -3345,15 +3345,15 @@ export default function ConfigureBundleFlow() {
                       />
                     </div>
 
-                    <div style={{ marginTop: 16 }} className={productPageBundleStyles.ebMessagePreview}>
-                      <div className={productPageBundleStyles.ebMessagePreviewIcon} aria-hidden="true">
+                    <div style={{ marginTop: 16 }} className={productPageBundleStyles.messagePreview}>
+                      <div className={productPageBundleStyles.messagePreviewIcon} aria-hidden="true">
                         <s-icon name="note" />
                       </div>
                       <div>
-                        <p className={productPageBundleStyles.ebMessagePreviewTitle}>
+                        <p className={productPageBundleStyles.messagePreviewTitle}>
                           {giftMessageProductTitle || "Message"}
                         </p>
-                        <p className={productPageBundleStyles.ebMessageNote}>
+                        <p className={productPageBundleStyles.messageNote}>
                           Add a message product so shoppers can include a note with the bundle.
                         </p>
                       </div>
