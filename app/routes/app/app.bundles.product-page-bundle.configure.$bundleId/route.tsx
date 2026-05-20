@@ -194,6 +194,11 @@ const bundleSetupItems = [
   { id: "bundle_settings",    label: "Bundle Settings",    iconType: "edit"   },
 ];
 
+const bundleVisibilityChildItems = [
+  { id: "bundle_widget", label: "Bundle Widget" },
+  { id: "bundle_embed",  label: "Bundle Embed"  },
+];
+
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
   <s-section>
@@ -1294,7 +1299,7 @@ export default function ConfigureBundleFlow() {
 
                   <div className={productPageBundleStyles.setupNavList}>
                     {bundleSetupItems.map((item) => {
-                      const isActive = activeSection === item.id;
+                      const isActive = activeSection === item.id || (item.id === "bundle_visibility" && (activeSection === "bundle_widget" || activeSection === "bundle_embed"));
                       let statusBadge: { label: string; tone?: string } | null = null;
                       if (item.id === "discount_pricing") {
                         statusBadge = pricingState.discountEnabled ? null : { label: "None" };
@@ -1321,6 +1326,20 @@ export default function ConfigureBundleFlow() {
                               )}
                             </span>
                           </button>
+                          {item.id === "bundle_visibility" && (activeSection === "bundle_visibility" || activeSection === "bundle_widget" || activeSection === "bundle_embed") && (
+                            <div className={productPageBundleStyles.subNav}>
+                              {bundleVisibilityChildItems.map((child) => (
+                                <button
+                                  key={child.id}
+                                  type="button"
+                                  className={`${productPageBundleStyles.subNavItem} ${activeSection === child.id ? productPageBundleStyles.subNavItemActive : ""}`}
+                                  onClick={() => handleSectionChange(child.id)}
+                                >
+                                  {child.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -2522,34 +2541,38 @@ export default function ConfigureBundleFlow() {
                 {/* Publishing Best Practices */}
                 <s-section heading="Publishing Best Practices">
                   <s-stack direction="vertical" gap="300">
-                    <s-text>Follow these steps to ensure your bundle widget appears correctly for customers.</s-text>
+                    <s-text>Pick a placement and follow the quick guide to make your bundle discoverable on your store.</s-text>
                     <s-grid columns="2" gap="300">
                       <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
                         <s-stack direction="vertical" gap="200">
                           <s-icon type="view" />
-                          <s-heading size="small">Enable App Embed</s-heading>
-                          <s-text size="small" tone="subdued">Turn on the wolfpack-product-bundles embed in your theme settings to activate the widget.</s-text>
+                          <s-heading size="small">Hero Banner</s-heading>
+                          <s-text size="small" tone="subdued">Add a button to your homepage hero to drive shoppers directly to your bundle.</s-text>
+                          <s-text size="small" tone="subdued">5 min setup</s-text>
+                        </s-stack>
+                      </s-box>
+                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                        <s-stack direction="vertical" gap="200">
+                          <s-icon type="menu-horizontal" />
+                          <s-heading size="small">Navigation Menu</s-heading>
+                          <s-text size="small" tone="subdued">Add your bundle as a nav link so shoppers can find it from anywhere on your store.</s-text>
+                          <s-text size="small" tone="subdued">5 min setup</s-text>
+                        </s-stack>
+                      </s-box>
+                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                        <s-stack direction="vertical" gap="200">
+                          <s-icon type="alert-triangle" />
+                          <s-heading size="small">Announcement Banner</s-heading>
+                          <s-text size="small" tone="subdued">Show your offer in the announcement bar so visitors see it instantly.</s-text>
+                          <s-text size="small" tone="subdued">5 min setup</s-text>
                         </s-stack>
                       </s-box>
                       <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
                         <s-stack direction="vertical" gap="200">
                           <s-icon type="product" />
-                          <s-heading size="small">Add to Product Page</s-heading>
-                          <s-text size="small" tone="subdued">Place the bundle widget block on your product page template using the theme editor.</s-text>
-                        </s-stack>
-                      </s-box>
-                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
-                        <s-stack direction="vertical" gap="200">
-                          <s-icon type="check" />
-                          <s-heading size="small">Test on Storefront</s-heading>
-                          <s-text size="small" tone="subdued">Visit your product page as a customer to confirm the bundle widget is visible and functional.</s-text>
-                        </s-stack>
-                      </s-box>
-                      <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
-                        <s-stack direction="vertical" gap="200">
-                          <s-icon type="globe" />
-                          <s-heading size="small">Go Live</s-heading>
-                          <s-text size="small" tone="subdued">Once tested, publish your theme to make the bundle available to all customers.</s-text>
+                          <s-heading size="small">Featured Product Card</s-heading>
+                          <s-text size="small" tone="subdued">Feature your bundle product on your homepage so shoppers find it right away.</s-text>
+                          <s-text size="small" tone="subdued">5 min setup</s-text>
                         </s-stack>
                       </s-box>
                     </s-grid>
@@ -2559,7 +2582,7 @@ export default function ConfigureBundleFlow() {
                 {/* Your Bundle Link */}
                 <s-section heading="Your Bundle Link">
                   <s-stack direction="vertical" gap="300">
-                    <s-text>Share or preview your bundle on the storefront.</s-text>
+                    <s-text>Use this link to place your bundle anywhere — theme components, ads, or social bios.</s-text>
                     {bundle.shopifyProductHandle && shop ? (
                       <s-stack direction="horizontal" gap="200" align-y="center">
                         <s-text>
@@ -2573,17 +2596,7 @@ export default function ConfigureBundleFlow() {
                             navigator.clipboard.writeText(url).catch(() => {});
                           }}
                         >
-                          Copy
-                        </s-button>
-                        <s-button
-                          variant="plain"
-                          icon="view"
-                          onClick={() => {
-                            const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
-                            window.open(url, "_blank");
-                          }}
-                        >
-                          Preview
+                          Copy Link
                         </s-button>
                       </s-stack>
                     ) : (
@@ -2592,73 +2605,234 @@ export default function ConfigureBundleFlow() {
                   </s-stack>
                 </s-section>
 
-                {/* Bundle Widget */}
-                <s-section heading="Bundle Widget">
-                  <s-stack direction="vertical" gap="400">
-                    <s-stack direction="horizontal" gap="300" align-y="center">
-                      <s-switch
-                        checked={upsellWidgetEnabled}
-                        onChange={(e: any) => setUpsellWidgetEnabled(e.target.checked)}
-                      />
-                      <s-stack direction="vertical" gap="100">
-                        <s-text>Enable bundle widget on product page</s-text>
-                        <s-text size="small" tone="subdued">When enabled, the bundle widget will appear on the associated product page.</s-text>
+                {/* Want more placement options? */}
+                <s-section heading="Want more placement options?">
+                  <s-grid columns="2" gap="300">
+                    <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                      <s-stack direction="vertical" gap="200">
+                        <s-heading size="small">Bundle Widget</s-heading>
+                        <s-text size="small" tone="subdued">Add a bundle button to specific product pages.</s-text>
+                        <s-button variant="secondary" onClick={() => handleSectionChange("bundle_widget")}>
+                          Set up Bundle Widget
+                        </s-button>
                       </s-stack>
-                    </s-stack>
+                    </s-box>
+                    <s-box padding="300" border-color="subdued" border-width="025" border-radius="200">
+                      <s-stack direction="vertical" gap="200">
+                        <s-heading size="small">Bundle Embed</s-heading>
+                        <s-text size="small" tone="subdued">Embed the full bundle builder directly on a product page.</s-text>
+                        <s-button variant="secondary" onClick={() => handleSectionChange("bundle_embed")}>
+                          Set up Bundle Embed
+                        </s-button>
+                      </s-stack>
+                    </s-box>
+                  </s-grid>
+                </s-section>
+              </div>
+            )}
 
-                    {upsellWidgetEnabled && (
-                      <s-stack direction="vertical" gap="300">
-                        <s-select
-                          label="Display Mode"
-                          value={upsellWidgetDisplayMode}
-                          onChange={(e: any) => setUpsellWidgetDisplayMode(e.target.value)}
-                        >
-                          <option value="block">Block — full width below product info</option>
-                          <option value="inline">Inline — embedded within product description</option>
-                          <option value="drawer">Drawer — slide-out panel</option>
-                        </s-select>
+            {activeSection === "bundle_widget" && (
+              <div data-tour-target="ppb-bundle-widget">
+                <s-stack direction="block" gap="base">
+                  <s-section heading="Product Page Bundle Upsell Widgets">
+                    <s-stack direction="vertical" gap="400">
+                      <s-stack direction="horizontal" gap="300" align-y="center">
+                        <s-switch
+                          checked={upsellWidgetEnabled}
+                          onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
+                        />
+                        <s-text>This will display an upsell block or button on the product pages of your choice.</s-text>
+                      </s-stack>
 
-                        <s-select
-                          label="Display On"
-                          value={upsellWidgetDisplayOn}
-                          onChange={(e: any) => setUpsellWidgetDisplayOn(e.target.value)}
-                        >
-                          <option value="all">All product pages</option>
-                          <option value="bundle_product">Bundle product page only</option>
-                          <option value="component_products">Component product pages</option>
-                        </s-select>
-
-                        <s-stack direction="horizontal" gap="300" align-y="center">
-                          <s-switch
-                            checked={autoSelectBrowsedProduct}
-                            onChange={(e: any) => setAutoSelectBrowsedProduct(e.target.checked)}
+                      <s-stack direction="vertical" gap="200">
+                        <s-text>Display type</s-text>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="upsellWidgetType"
+                            value="block"
+                            checked={upsellWidgetDisplayMode !== "button"}
+                            onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
                           />
-                          <s-stack direction="vertical" gap="100">
-                            <s-text>Auto-select browsed product</s-text>
-                            <s-text size="small" tone="subdued">Automatically pre-select the product the customer is currently viewing when the bundle loads.</s-text>
-                          </s-stack>
-                        </s-stack>
+                          <span style={{ fontSize: 14 }}>Offer Upsell Block</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="upsellWidgetType"
+                            value="button"
+                            checked={upsellWidgetDisplayMode === "button"}
+                            onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
+                          />
+                          <span style={{ fontSize: 14 }}>Offer Upsell Button</span>
+                        </label>
+                        <s-banner tone="info">Select if you want the upsell block or button to appear on product pages.</s-banner>
                       </s-stack>
-                    )}
 
-                    <s-stack direction="horizontal" gap="small">
-                      {themeEditorUrl && (
+                      <s-stack direction="vertical" gap="300">
+                        <s-heading size="small">Widget Settings</s-heading>
+                        <s-stack direction="horizontal" gap="small" align-y="center">
+                          <s-button variant="secondary" icon="globe" disabled>Multi language</s-button>
+                        </s-stack>
+                        <s-stack direction="vertical" gap="200">
+                          <s-text size="small" tone="subdued">Widget image</s-text>
+                          <s-button
+                            variant="secondary"
+                            icon="upload"
+                            onClick={async () => {
+                              try {
+                                const picked = await (shopify as any).resourcePicker({ type: "file", multiple: false });
+                                if (picked && picked.length > 0) {
+                                  setTextOverrides((prev) => ({ ...prev, widgetImageUrl: picked[0].url ?? "" }));
+                                  markAsDirty();
+                                }
+                              } catch (_) {}
+                            }}
+                          >
+                            {textOverrides.widgetImageUrl ? "Replace Image" : "Upload file"}
+                          </s-button>
+                          {textOverrides.widgetImageUrl && (
+                            <img
+                              src={textOverrides.widgetImageUrl}
+                              alt="Widget image"
+                              style={{ maxWidth: 120, borderRadius: 4, border: "1px solid #e1e3e5" }}
+                            />
+                          )}
+                        </s-stack>
+                        <s-text-field
+                          label="Widget Title"
+                          value={textOverrides.widgetTitle ?? "Bundle & Save"}
+                          onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, widgetTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                        <s-text-field
+                          label="Widget Description"
+                          value={textOverrides.widgetDescription ?? ""}
+                          onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, widgetDescription: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                        <s-text-field
+                          label="Widget Button Text"
+                          value={textOverrides.widgetButtonText ?? "Buy With Bundle"}
+                          onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, widgetButtonText: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                      </s-stack>
+
+                      <s-stack direction="vertical" gap="200">
+                        <s-text>Display Widget on</s-text>
+                        {[
+                          { value: "all_products",          label: "All products in bundle"  },
+                          { value: "specific_products",     label: "Specific products"        },
+                          { value: "specific_collections",  label: "Specific collections"     },
+                        ].map(({ value, label }) => (
+                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="widgetDisplayOn"
+                              value={value}
+                              checked={(textOverrides.widgetDisplayOn ?? "all_products") === value}
+                              onChange={() => { setTextOverrides((prev) => ({ ...prev, widgetDisplayOn: value })); markAsDirty(); }}
+                            />
+                            <span style={{ fontSize: 14 }}>{label}</span>
+                          </label>
+                        ))}
+                      </s-stack>
+
+                      <s-checkbox
+                        checked={autoSelectBrowsedProduct || undefined}
+                        onChange={(e: Event) => { setAutoSelectBrowsedProduct((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                      >
+                        Add browsed product to bundle
+                      </s-checkbox>
+
+                      <s-stack direction="vertical" gap="200">
+                        <s-heading size="small">Embed the Upsell Block at a custom location</s-heading>
+                        <s-text size="small" tone="subdued">By default, the upsell block is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.</s-text>
                         <s-button
                           variant="secondary"
-                          onClick={() => window.open(themeEditorUrl, "_blank")}
+                          onClick={handlePlaceWidget}
                         >
-                          Place on theme
+                          Embed Upsell Block
                         </s-button>
-                      )}
-                      <s-button
-                        variant="primary"
-                        onClick={handlePlaceWidget}
-                      >
-                        Place Widget
-                      </s-button>
+                      </s-stack>
                     </s-stack>
-                  </s-stack>
-                </s-section>
+                  </s-section>
+                </s-stack>
+              </div>
+            )}
+
+            {activeSection === "bundle_embed" && (
+              <div data-tour-target="ppb-bundle-embed">
+                <s-stack direction="block" gap="base">
+                  <s-section heading="Embed Bundle Builder on Product Pages">
+                    <s-stack direction="vertical" gap="400">
+                      <s-stack direction="horizontal" gap="300" align-y="center">
+                        <s-switch
+                          checked={textOverrides.bundleEmbedEnabled === "true"}
+                          onChange={(e: Event) => { setTextOverrides((prev) => ({ ...prev, bundleEmbedEnabled: (e.target as HTMLInputElement).checked ? "true" : "false" })); markAsDirty(); }}
+                        />
+                        <s-text>Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.</s-text>
+                      </s-stack>
+
+                      <s-stack direction="horizontal" gap="small" align-y="center">
+                        <s-button variant="secondary" icon="globe" disabled>Multi Language</s-button>
+                      </s-stack>
+
+                      <s-text-field
+                        label="Title"
+                        value={textOverrides.embedTitle ?? "Build Your Bundle & Save More"}
+                        onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                        autoComplete="off"
+                      />
+                      <s-text-field
+                        label="Sub Title"
+                        value={textOverrides.embedSubTitle ?? ""}
+                        onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedSubTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                        autoComplete="off"
+                      />
+
+                      <s-stack direction="vertical" gap="200">
+                        <s-text>Display Bundle on</s-text>
+                        {[
+                          { value: "all_products",          label: "All products in bundle"  },
+                          { value: "specific_products",     label: "Specific products"        },
+                          { value: "specific_collections",  label: "Specific collections"     },
+                        ].map(({ value, label }) => (
+                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="embedDisplayOn"
+                              value={value}
+                              checked={(textOverrides.embedDisplayOn ?? "all_products") === value}
+                              onChange={() => { setTextOverrides((prev) => ({ ...prev, embedDisplayOn: value })); markAsDirty(); }}
+                            />
+                            <span style={{ fontSize: 14 }}>{label}</span>
+                          </label>
+                        ))}
+                      </s-stack>
+
+                      <s-checkbox
+                        checked={textOverrides.embedAddBrowsedProduct === "true" || undefined}
+                        onChange={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedAddBrowsedProduct: (e.target as HTMLInputElement).checked ? "true" : "false" })); markAsDirty(); }}
+                      >
+                        Add browsed product to bundle
+                      </s-checkbox>
+
+                      <s-stack direction="vertical" gap="200">
+                        <s-heading size="small">Put the Bundle Builder at a custom location</s-heading>
+                        <s-text size="small" tone="subdued">Place app block on the theme.</s-text>
+                        {themeEditorUrl ? (
+                          <s-button variant="secondary" onClick={() => window.open(themeEditorUrl, "_blank")}>
+                            Place Block
+                          </s-button>
+                        ) : (
+                          <s-button variant="secondary" disabled>Place Block</s-button>
+                        )}
+                      </s-stack>
+                    </s-stack>
+                  </s-section>
+                </s-stack>
               </div>
             )}
 
@@ -2876,27 +3050,30 @@ export default function ConfigureBundleFlow() {
                             Edit Defaults
                           </s-button>
                         </s-stack>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Shows how much the customer is saving on the bundle in cart
-                        </p>
-                        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
-                          <input type="radio" name="cartDiscountDisplay" value="defaults" defaultChecked readOnly style={{ marginTop: 3 }} />
-                          <span>
-                            <span style={{ display: "block", fontSize: 14 }}>Use app defaults</span>
-                            <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>
-                              Uses the discount format and label configured in your app settings.
+                        <s-text size="small" tone="subdued">Shows how much the customer is saving on the bundle in cart</s-text>
+                        {[
+                          { value: "defaults", label: "Use app defaults",         description: "Uses the discount format and label configured in your app settings.", disabled: false },
+                          { value: "custom",   label: "Customize for this bundle", description: "Set a different discount format or label for this bundle only.",      disabled: true  },
+                        ].map(({ value, label, description, disabled }) => (
+                          <label
+                            key={value}
+                            style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? 0.65 : 1 }}
+                          >
+                            <input
+                              type="radio"
+                              name="cartDiscountDisplay"
+                              value={value}
+                              checked={(textOverrides.cartDiscountDisplay ?? "defaults") === value}
+                              disabled={disabled}
+                              onChange={() => { if (!disabled) { setTextOverrides((prev) => ({ ...prev, cartDiscountDisplay: value })); markAsDirty(); } }}
+                              style={{ marginTop: 3 }}
+                            />
+                            <span>
+                              <span style={{ display: "block", fontSize: 14 }}>{label}</span>
+                              <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>{description}</span>
                             </span>
-                          </span>
-                        </label>
-                        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "not-allowed", opacity: 0.65 }}>
-                          <input type="radio" name="cartDiscountDisplay" value="custom" disabled style={{ marginTop: 3 }} />
-                          <span>
-                            <span style={{ display: "block", fontSize: 14 }}>Customize for this bundle</span>
-                            <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>
-                              Set a different discount format or label for this bundle only.
-                            </span>
-                          </span>
-                        </label>
+                          </label>
+                        ))}
                       </s-stack>
                     </s-section>
 
