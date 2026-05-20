@@ -1,7 +1,7 @@
 # Issue: i18n for All Help Tooltips
 
 **Issue ID:** i18n-tooltips-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-20
 **Last Updated:** 2026-05-20
@@ -55,4 +55,4 @@ Move all hardcoded English tooltip strings (title + description) from `HELP_TOOL
 - [x] Update `QuestionHelpTooltip` in FPB route to use `useTranslation`
 - [x] Update `QuestionHelpTooltip` in PPB route to use `useTranslation`
 - [x] ESLint 0 errors
-- [ ] E2E verify in Chrome
+- [x] E2E verify in Chrome — tooltip headings and descriptions render from i18n keys; confirmed via visual inspection and a11y snapshot showing correct tooltip text

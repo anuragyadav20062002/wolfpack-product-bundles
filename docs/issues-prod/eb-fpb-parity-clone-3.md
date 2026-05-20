@@ -1,7 +1,7 @@
 # Issue: FPB/PPB Parity Fixes Round 3 — Auto Next & Pending Badge Tooltip
 
 **Issue ID:** eb-fpb-parity-clone-3
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-20
 **Last Updated:** 2026-05-20
@@ -43,4 +43,4 @@ Two targeted parity fixes based on Chrome DevTools E2E audit of EB:
 - [x] Conditionally render Auto Next checkbox in PPB route (ruleCount === 1)
 - [x] Add QuestionHelpTooltip to Pending badge in FPB nav
 - [x] ESLint 0 errors
-- [ ] E2E verify in Chrome
+- [x] E2E verify in Chrome — Auto Next checkbox confirmed present with 1 rule, absent with 2; Pending badge tooltip confirmed present and a11y snapshot shows correct description text
