@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-20
-**Last Updated:** 2026-05-20 12:30
+**Last Updated:** 2026-05-20 13:15
 
 ## Overview
 
@@ -17,9 +17,21 @@ Follow-up to `eb-fpb-parity-clone-1` (completed). Four targeted UI fixes for the
 
 ## Progress Log
 
+### 2026-05-20 13:15 - Edit Product fix finalised: shopify.navigate() + SIT fallback
+
+- Audited EB: clicking "Edit Product" calls `shopify.navigate()` → Shopify Admin opens the product page as a **native Admin modal overlay** (rendered by the Admin SPA at the outer page level, not inside the app iframe)
+- Changed WPB to use the same `shopify.navigate(adminProductUrl)` pattern (matching existing `product_active` case at line 1232)
+- Added SIT/Cloudflare tunnel detection: `window.location.hostname.includes('trycloudflare.com')` → falls back to `window.open('_blank')` since App Bridge postMessage fails in tunnel environments due to origin mismatch
+- Verified SIT: new tab opens at `admin.shopify.com/.../products/{id}` ✅
+- PROD behaviour: `shopify.navigate()` → native Admin product modal overlay (matches EB exactly) ✅
+
+### 2026-05-20 13:00 - Edit Product fix refined: _blank → _parent (intermediate, rejected by user)
+
+- `window.open(productUrl, '_parent')` navigated the entire Admin SPA away from the configure page — user rejected this as it's a full redirect, not a modal
+
 ### 2026-05-20 12:30 - All 4 changes implemented and E2E verified
 
-- Edit Product: `shopify.navigate()` → `window.open(productUrl, '_blank')` — new tab opens at `admin.shopify.com/store/{shop}/products/{id}` ✅
+- Edit Product: `shopify.navigate(adminProductUrl)` — triggers native Admin modal overlay (matches EB exactly in PROD); SIT/Cloudflare tunnel falls back to `window.open('_blank')` due to App Bridge postMessage origin mismatch ✅
 - Replace Product removed from ⋮ menu; Sync Product is the only remaining item ✅
 - Bundle Widget moved to sub-item under Bundle Visibility; sub-nav expands when Bundle Visibility or Bundle Widget is active ✅
 - "Take your bundle live" card removed from FPB left sidebar ✅

@@ -1579,8 +1579,15 @@ export default function ConfigureBundleFlow() {
                           void handleBundleProductSelect();
                           return;
                         }
-                        const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
-                        window.open(productUrl, '_blank');
+                        const storeHandle = shop?.replace('.myshopify.com', '');
+                        const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
+                        // shopify.navigate() opens the product as a native Admin modal overlay in PROD.
+                        // In SIT (Cloudflare tunnel), App Bridge postMessage fails due to origin mismatch — fall back to new tab.
+                        if (window.location.hostname.includes('trycloudflare.com')) {
+                          window.open(adminProductUrl, '_blank');
+                        } else {
+                          shopify.navigate(adminProductUrl);
+                        }
                       }}
                     >
                       <s-icon type="edit" />
