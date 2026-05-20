@@ -838,26 +838,23 @@
 }
 
 /* ── Pending badge inline info icon ──────────────────────────── */
-.pendingInfoIcon {
-  position: relative;
+.pendingBadge {
   display: inline-flex;
   align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #ffd79d;
+  color: #4a1504;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
   cursor: default;
-  line-height: 1;
-  color: #b08400;
-  z-index: 100;
-}
-
-.pendingInfoIcon:hover,
-.pendingInfoIcon:focus-within {
-  z-index: 9999;
+  user-select: none;
 }
 
 .pendingTooltipCard {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  left: auto;
   width: 200px;
   padding: 10px 12px;
   border: 1px solid #dfe3e8;
@@ -870,18 +867,8 @@
   line-height: 1.5;
   text-align: left;
   white-space: normal;
-  opacity: 0;
   pointer-events: none;
-  visibility: hidden;
-  transition: opacity 140ms ease, visibility 140ms ease;
   z-index: 9999;
-}
-
-.pendingInfoIcon:hover .pendingTooltipCard,
-.pendingInfoIcon:focus-within .pendingTooltipCard {
-  opacity: 1;
-  pointer-events: auto;
-  visibility: visible;
 }
 
 .pendingTooltipCard::before {

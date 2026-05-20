@@ -39,9 +39,14 @@ Six targeted fixes:
 - FPB + PPB: moved discard modal action buttons out of `slot=` into body flex row
 - ESLint: 0 errors
 
-### 2026-05-20 - InfoIcon badge + i18n fix (in progress)
+### 2026-05-20 - InfoIcon badge + i18n fix
 
-- FPB: moving InfoIcon inside the amber Pending badge span; hover trigger on badge; fixing tooltip overflow/clipping
+- FPB: InfoIcon now renders as a full amber badge ("Pending" text + info SVG + tooltip) replacing separate s-badge + icon
+- Tooltip uses `position: fixed` + `getBoundingClientRect()` to bypass parent overflow clipping entirely
+- Hover anywhere on the amber badge shows the tooltip; `onClick` stops propagation so clicking badge doesn't navigate
+- i18n: `t('tooltips.bundleVisibilityPending.description')` was already wired; key confirmed in en.json
+- CSS: replaced `.pendingInfoIcon` with `.pendingBadge` (amber badge styling); `.pendingTooltipCard` simplified to fixed-pos-compatible (no opacity/visibility transitions — React state controls visibility)
+- ESLint: 0 errors
 
 ## Phases Checklist
 
@@ -49,7 +54,7 @@ Six targeted fixes:
 - [x] FPB + PPB: rename InfoIcon with tooltipKey prop
 - [x] FPB + PPB: Step Setup card header — clone + s-switch only (FPB); clone only (PPB)
 - [x] FPB + PPB: discard modal buttons moved to body (no slots)
+- [x] InfoIcon inside amber badge; hover on badge opens tooltip; fixed-pos tooltip (no clipping)
+- [x] i18n translation key wired for tooltip content
 - [x] ESLint 0 errors
-- [ ] InfoIcon inside amber badge; hover on badge opens tooltip; no clipping
-- [ ] i18n translation key wired for tooltip content
 - [ ] E2E verify in Chrome

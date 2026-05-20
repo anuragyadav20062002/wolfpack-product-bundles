@@ -337,16 +337,44 @@ function HelpTooltipVisualBlock({
 function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   const { t } = useTranslation();
   const description = t(`tooltips.${tooltipKey}.description`);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; right: number } | null>(null);
+
+  const showTooltip = () => {
+    if (wrapperRef.current) {
+      const r = wrapperRef.current.getBoundingClientRect();
+      setTooltipPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    }
+  };
+  const hideTooltip = () => setTooltipPos(null);
+
   return (
-    <span className={fullPageBundleStyles.pendingInfoIcon} tabIndex={0} aria-label={description}>
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <span
+      ref={wrapperRef}
+      className={fullPageBundleStyles.pendingBadge}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+      tabIndex={0}
+      aria-label={`Pending — ${description}`}
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+    >
+      Pending
+      <svg width="11" height="11" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <circle cx="6.5" cy="6.5" r="5.75" stroke="currentColor" strokeWidth="1.5" />
         <line x1="6.5" y1="5.75" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         <circle cx="6.5" cy="4.25" r="0.75" fill="currentColor" />
       </svg>
-      <span className={fullPageBundleStyles.pendingTooltipCard} role="tooltip">
-        {description}
-      </span>
+      {tooltipPos && (
+        <span
+          className={fullPageBundleStyles.pendingTooltipCard}
+          style={{ position: 'fixed', top: tooltipPos.top, right: tooltipPos.right }}
+          role="tooltip"
+        >
+          {description}
+        </span>
+      )}
     </span>
   );
 }
@@ -1678,14 +1706,9 @@ export default function ConfigureBundleFlow() {
                               <span className={fullPageBundleStyles.setupNavLabel}>{item.label}</span>
                               <span className={fullPageBundleStyles.setupNavMeta}>
                                 {statusBadge && !isActive && (
-                                  <>
-                                    <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
-                                    {statusBadge.label === 'Pending' && (
-                                      <span onClick={(e) => e.stopPropagation()}>
-                                        <InfoIcon tooltipKey="bundleVisibilityPending" />
-                                      </span>
-                                    )}
-                                  </>
+                                  statusBadge.label === 'Pending'
+                                    ? <InfoIcon tooltipKey="bundleVisibilityPending" />
+                                    : <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
                                 )}
                               </span>
                             </button>
