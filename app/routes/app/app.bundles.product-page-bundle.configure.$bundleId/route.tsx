@@ -1095,11 +1095,7 @@ export default function ConfigureBundleFlow() {
   }, [isCollectionsModalOpen]);
 
   useEffect(() => {
-    if (showDiscardModal) {
-      (discardModalRef.current as any)?.show?.();
-    } else {
-      (discardModalRef.current as any)?.hide?.();
-    }
+    showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
   }, [showDiscardModal]);
 
   useEffect(() => {
@@ -1284,9 +1280,12 @@ export default function ConfigureBundleFlow() {
 
                   <div className={productPageBundleStyles.parentProductStatus}>
                     <span>Parent Product Status</span>
-                    <s-badge tone={String(productStatus).toLowerCase() === "active" ? "success" : "warning"}>
-                      {String(productStatus || "Unlisted").toLowerCase() === "active" ? "Active" : "Unlisted"}
-                    </s-badge>
+                    <s-stack direction="horizontal" gap="100">
+                      {productTitle && <s-badge tone="success">Info Complete</s-badge>}
+                      <s-badge tone={String(productStatus).toLowerCase() === "active" ? "success" : "warning"}>
+                        {String(productStatus || "Unlisted").toLowerCase() === "active" ? "Active" : "Unlisted"}
+                      </s-badge>
+                    </s-stack>
                   </div>
                 </s-stack>
               </s-section>
@@ -1305,7 +1304,7 @@ export default function ConfigureBundleFlow() {
                         statusBadge = pricingState.discountEnabled ? null : { label: "None" };
                       }
                       if (item.id === "bundle_visibility") {
-                        statusBadge = (!appEmbedEnabled || !upsellWidgetEnabled) ? { label: "Pending", tone: "warning" } : null;
+                        statusBadge = !appEmbedEnabled ? { label: "Pending", tone: "warning" } : null;
                       }
                       return (
                         <div key={item.id}>
@@ -2132,9 +2131,13 @@ export default function ConfigureBundleFlow() {
                       Discount &amp; Pricing
                     </h3>
                     <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                      Set up to 4 discount rules, applied from lowest to highest.
+                      Set up discount rules, applied from lowest to highest.
                     </p>
                   </s-stack>
+
+                  <s-banner tone="info" dismissible>
+                    Tip: Discounts are calculated based on the products in cart, make sure to add the &quot;Default Product&quot; quantity or amount while configuring discounts.
+                  </s-banner>
 
                   {/* Discount Enable Toggle */}
                   <s-checkbox
@@ -2427,6 +2430,13 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
                     </s-stack>
                   )}
+                </s-stack>
+              </s-section>
+
+              <s-section>
+                <s-stack direction="block" gap="small-100">
+                  <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Discount Display Options</h3>
+                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Choose how discounts are displayed</p>
                 </s-stack>
               </s-section>
 
