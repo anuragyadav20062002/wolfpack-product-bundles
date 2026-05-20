@@ -216,12 +216,15 @@ const bundleSetupItems = [
   { id: "discount_pricing",  label: "Discount & Pricing", iconType: "filter", fullPageOnly: false },
   { id: "bundle_visibility", label: "Bundle Visibility",  iconType: "view",   fullPageOnly: true  },
   { id: "bundle_settings",   label: "Bundle Settings",    iconType: "edit",   fullPageOnly: false },
-  { id: "bundle_widget",     label: "Bundle Widget",      iconType: "globe",  fullPageOnly: false },
 ];
 
 const stepSetupChildItems = [
   { id: "free_gift_addons", label: "Free Gift & Add Ons" },
   { id: "messages", label: "Messages" },
+];
+
+const bundleVisibilityChildItems = [
+  { id: "bundle_widget", label: "Bundle Widget" },
 ];
 
 const TEMPLATE_VARIABLES: [string, string][] = [
@@ -1540,13 +1543,6 @@ export default function ConfigureBundleFlow() {
                             <button
                               type="button"
                               className={fullPageBundleStyles.productMenuDropdownItem}
-                              onClick={() => { setProductMenuOpen(false); void handleBundleProductSelect(); }}
-                            >
-                              Replace Product
-                            </button>
-                            <button
-                              type="button"
-                              className={fullPageBundleStyles.productMenuDropdownItem}
                               onClick={() => { setProductMenuOpen(false); handleSyncProduct(); }}
                             >
                               Sync Product
@@ -1584,7 +1580,7 @@ export default function ConfigureBundleFlow() {
                           return;
                         }
                         const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
-                        shopify.navigate(productUrl);
+                        window.open(productUrl, '_blank');
                       }}
                     >
                       <s-icon type="edit" />
@@ -1614,7 +1610,7 @@ export default function ConfigureBundleFlow() {
                     {bundleSetupItems
                       .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
                       .map((item) => {
-                        const isActive = activeSection === item.id || (item.id === "step_setup" && (activeSection === "free_gift_addons" || activeSection === "messages"));
+                        const isActive = activeSection === item.id || (item.id === "step_setup" && (activeSection === "free_gift_addons" || activeSection === "messages")) || (item.id === "bundle_visibility" && activeSection === "bundle_widget");
                         let statusBadge: { label: string; tone?: string } | null = null;
                         if (item.id === 'discount_pricing') {
                           statusBadge = pricingState.discountEnabled ? null : { label: 'None' };
@@ -1658,22 +1654,23 @@ export default function ConfigureBundleFlow() {
                                 ))}
                               </div>
                             )}
+                            {item.id === "bundle_visibility" && (activeSection === "bundle_visibility" || activeSection === "bundle_widget") && (
+                              <div className={fullPageBundleStyles.ebSubNav}>
+                                {bundleVisibilityChildItems.map((child) => (
+                                  <button
+                                    key={child.id}
+                                    type="button"
+                                    className={`${fullPageBundleStyles.ebSubNavItem} ${activeSection === child.id ? fullPageBundleStyles.ebSubNavItemActive : ""}`}
+                                    onClick={() => handleSectionChange(child.id)}
+                                  >
+                                    {child.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
-                  </div>
-                </s-stack>
-              </s-section>
-
-              {/* Take your bundle live card */}
-              <s-section>
-                <s-stack direction="block" gap="small">
-                  <h3 className={fullPageBundleStyles.leftCardTitle}>Take your bundle live</h3>
-                  <div className={fullPageBundleStyles.bundleLivePanel}>
-                    <span className={fullPageBundleStyles.bundleLivePlaceOnTheme}>Place on theme</span>
-                    <s-button variant="secondary" onClick={handlePlaceWidget}>
-                      Place Widget ↗
-                    </s-button>
                   </div>
                 </s-stack>
               </s-section>
