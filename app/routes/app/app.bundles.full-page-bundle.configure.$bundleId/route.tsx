@@ -28,6 +28,7 @@ import {
   DISCOUNT_CONDITION_TYPE_OPTIONS,
   DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
+import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
@@ -271,22 +272,25 @@ function RichHelpTooltip({
   accessibilityLabel?: string;
   icon?: string;
 }) {
+  const { t } = useTranslation();
   const tooltip = HELP_TOOLTIPS[tooltipKey];
+  const title = t(`tooltips.${tooltipKey}.title`);
+  const description = t(`tooltips.${tooltipKey}.description`);
 
   return (
     <span className={fullPageBundleStyles.richHelp}>
       <s-button
         icon={icon}
         variant="tertiary"
-        accessibilityLabel={accessibilityLabel || tooltip.accessibilityLabel || label || tooltip.title}
+        accessibilityLabel={accessibilityLabel || tooltip.accessibilityLabel || label || title}
         className={fullPageBundleStyles.richHelpTrigger}
       >
         {label}
       </s-button>
       <span className={fullPageBundleStyles.richHelpCard} role="tooltip">
-        <HelpTooltipVisualBlock visual={tooltip.visual} title={tooltip.title} />
-        <span className={fullPageBundleStyles.richHelpTitle}>{tooltip.title}</span>
-        <span className={fullPageBundleStyles.richHelpDescription}>{tooltip.description}</span>
+        {tooltip.visual && <HelpTooltipVisualBlock visual={tooltip.visual} title={title} />}
+        <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>
+        <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
       </span>
     </span>
   );
@@ -297,20 +301,23 @@ function QuestionHelpTooltip({
 }: {
   tooltipKey: HelpTooltipKey;
 }) {
+  const { t } = useTranslation();
   const tooltip = HELP_TOOLTIPS[tooltipKey];
+  const title = t(`tooltips.${tooltipKey}.title`, '');
+  const description = t(`tooltips.${tooltipKey}.description`);
 
   return (
     <span className={fullPageBundleStyles.richHelp}>
       <s-button
         variant="plain"
         icon="info"
-        accessibilityLabel={tooltip.title}
+        accessibilityLabel={title || description}
         className={fullPageBundleStyles.richHelpTrigger}
       />
       <span className={fullPageBundleStyles.richHelpCard} role="tooltip">
-        <span className={fullPageBundleStyles.richHelpImagePlaceholder} />
-        <span className={fullPageBundleStyles.richHelpTitle}>{tooltip.title}</span>
-        <span className={fullPageBundleStyles.richHelpDescription}>{tooltip.description}</span>
+        {tooltip.visual && <span className={fullPageBundleStyles.richHelpImagePlaceholder} />}
+        {title && <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>}
+        <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
       </span>
     </span>
   );
@@ -1640,7 +1647,14 @@ export default function ConfigureBundleFlow() {
                               <span className={fullPageBundleStyles.setupNavLabel}>{item.label}</span>
                               <span className={fullPageBundleStyles.setupNavMeta}>
                                 {statusBadge && !isActive && (
-                                  <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
+                                  <>
+                                    <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
+                                    {statusBadge.label === 'Pending' && (
+                                      <span onClick={(e) => e.stopPropagation()}>
+                                        <QuestionHelpTooltip tooltipKey="bundleVisibilityPending" />
+                                      </span>
+                                    )}
+                                  </>
                                 )}
                               </span>
                             </button>
@@ -2174,13 +2188,15 @@ export default function ConfigureBundleFlow() {
                                   autoComplete="off"
                                 />
                               </div>
-                              <s-checkbox
-                                label="Auto Next When rule is met"
-                                checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
-                                onChange={(e: Event) => {
-                                  conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
-                                }}
-                              />
+                              {(conditionsState.stepConditions[step.id] || []).length === 1 && (
+                                <s-checkbox
+                                  label="Auto Next When rule is met"
+                                  checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                  onChange={(e: Event) => {
+                                    conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                  }}
+                                />
+                              )}
                             </div>
                           ))}
                         </div>

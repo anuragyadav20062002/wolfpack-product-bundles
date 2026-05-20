@@ -94,5 +94,38 @@
       "ja": "Japanese",
       "pt-BR": "Portuguese (BR)"
     }
+  },
+  "tooltips": {
+    "stepFlow": {
+      "title": "Step Flow",
+      "description": "Steps will render as navigation items on top of the bundle builder"
+    },
+    "category": {
+      "title": "Category",
+      "description": "Categories will appear as tabs inside each step"
+    },
+    "rulesConfiguration": {
+      "title": "Rules guide shopper selections",
+      "description": "Use step rules for one selection limit, or category rules when each category needs its own rule."
+    },
+    "bundleQuantityOptions": {
+      "title": "Bundle Quantity Options",
+      "description": "Show quantity-based discount rules as selectable bundle boxes. Each box can have its own label, subtext, and default rule."
+    },
+    "discountProgressBar": {
+      "title": "Progress Bar",
+      "description": "Show shoppers how close they are to the next discount. Simple uses one bar, while Step Based shows discount milestones."
+    },
+    "discountMessaging": {
+      "title": "Discount Messaging",
+      "description": "Customize the messages shown before a discount unlocks and after shoppers qualify."
+    },
+    "loadingAnimation": {
+      "title": "Storefront Loading Animation",
+      "description": "Shown while Wolfpack Bundles loads bundle content on the storefront."
+    },
+    "bundleVisibilityPending": {
+      "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
+    }
   }
 }

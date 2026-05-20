@@ -21,6 +21,7 @@ import {
   DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
+import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
@@ -266,19 +267,23 @@ BundleProductCard.displayName = 'BundleProductCard';
 // BundleStatusSection imported from _shared/bundle-configure/BundleStatusSection
 
 function QuestionHelpTooltip({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
+  const { t } = useTranslation();
   const tooltip = HELP_TOOLTIPS[tooltipKey];
+  const title = t(`tooltips.${tooltipKey}.title`, '');
+  const description = t(`tooltips.${tooltipKey}.description`);
+
   return (
     <span className={productPageBundleStyles.richHelp}>
       <s-button
         variant="plain"
         icon="info"
-        accessibilityLabel={tooltip.title}
+        accessibilityLabel={title || description}
         className={productPageBundleStyles.richHelpTrigger}
       />
       <span className={productPageBundleStyles.richHelpCard} role="tooltip">
-        <span className={productPageBundleStyles.richHelpImagePlaceholder} />
-        <span className={productPageBundleStyles.richHelpTitle}>{tooltip.title}</span>
-        <span className={productPageBundleStyles.richHelpDescription}>{tooltip.description}</span>
+        {tooltip.visual && <span className={productPageBundleStyles.richHelpImagePlaceholder} />}
+        {title && <span className={productPageBundleStyles.richHelpTitle}>{title}</span>}
+        <span className={productPageBundleStyles.richHelpDescription}>{description}</span>
       </span>
     </span>
   );
@@ -1808,13 +1813,15 @@ export default function ConfigureBundleFlow() {
                                               autoComplete="off"
                                             />
                                           </div>
-                                          <s-checkbox
-                                            label="Auto Next When rule is met"
-                                            checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
-                                            onChange={(e: Event) => {
-                                              conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
-                                            }}
-                                          />
+                                          {(conditionsState.stepConditions[step.id] || []).length === 1 && (
+                                            <s-checkbox
+                                              label="Auto Next When rule is met"
+                                              checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                              onChange={(e: Event) => {
+                                                conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                              }}
+                                            />
+                                          )}
                                         </div>
                                       ))}
                                     </div>
