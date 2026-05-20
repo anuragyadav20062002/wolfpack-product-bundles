@@ -1102,6 +1102,13 @@ export default function ConfigureBundleFlow() {
     }
   }, [showDiscardModal]);
 
+  useEffect(() => {
+    const modal = discardModalRef.current;
+    const handleDismiss = () => setShowDiscardModal(false);
+    modal?.addEventListener('dismiss', handleDismiss);
+    return () => modal?.removeEventListener('dismiss', handleDismiss);
+  }, []);
+
   return (
     <>
       <ui-title-bar title={`Configure: ${formState.bundleName}`}>
@@ -1421,6 +1428,12 @@ export default function ConfigureBundleFlow() {
                               onClick={() => deleteStep(step.id)}
                             />
                           )}
+                          <s-button
+                            variant="plain"
+                            icon="plus"
+                            accessibilityLabel="Add step"
+                            onClick={handleAddNewStep}
+                          />
                         </div>
                       </div>
                       <s-stack direction="block" gap="base">
@@ -3596,7 +3609,9 @@ export default function ConfigureBundleFlow() {
 
       {/* Discard Unsaved Changes Confirmation Modal */}
       <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
-        <p style={{ margin: 0, fontSize: 14 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        <div style={{ padding: '8px 0 20px' }}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        </div>
         <s-button
           slot="primaryAction"
           tone="critical"

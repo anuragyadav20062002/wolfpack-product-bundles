@@ -334,6 +334,23 @@ function HelpTooltipVisualBlock({
   );
 }
 
+function PendingInfoIcon() {
+  const { t } = useTranslation();
+  const description = t('tooltips.bundleVisibilityPending.description');
+  return (
+    <span className={fullPageBundleStyles.pendingInfoIcon} tabIndex={0} aria-label={description}>
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="6.5" cy="6.5" r="5.75" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="6.5" y1="5.75" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="6.5" cy="4.25" r="0.75" fill="currentColor" />
+      </svg>
+      <span className={fullPageBundleStyles.pendingTooltipCard} role="tooltip">
+        {description}
+      </span>
+    </span>
+  );
+}
+
 export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
   const bundle = loaderData.bundle as unknown as import("../../../hooks/useBundleConfigurationState").BundleData & {
@@ -631,6 +648,13 @@ export default function ConfigureBundleFlow() {
   useEffect(() => {
     showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
   }, [showDiscardModal]);
+
+  useEffect(() => {
+    const modal = discardModalRef.current;
+    const handleDismiss = () => setShowDiscardModal(false);
+    modal?.addEventListener('dismiss', handleDismiss);
+    return () => modal?.removeEventListener('dismiss', handleDismiss);
+  }, []);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -1657,7 +1681,7 @@ export default function ConfigureBundleFlow() {
                                     <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
                                     {statusBadge.label === 'Pending' && (
                                       <span onClick={(e) => e.stopPropagation()}>
-                                        <QuestionHelpTooltip tooltipKey="bundleVisibilityPending" />
+                                        <PendingInfoIcon />
                                       </span>
                                     )}
                                   </>
@@ -1777,6 +1801,12 @@ export default function ConfigureBundleFlow() {
                               onClick={() => deleteStep(step.id)}
                             />
                           )}
+                          <s-button
+                            variant="plain"
+                            icon="plus"
+                            accessibilityLabel="Add step"
+                            onClick={handleAddNewStep}
+                          />
                           <s-switch
                             accessibilityLabel="Enable step"
                             checked={step.enabled !== false || undefined}
@@ -3936,7 +3966,9 @@ export default function ConfigureBundleFlow() {
 
       {/* Discard Unsaved Changes Confirmation Modal */}
       <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
-        <p style={{ margin: 0, fontSize: 14 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        <div style={{ padding: '8px 0 20px' }}>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        </div>
         <s-button
           slot="primaryAction"
           tone="critical"

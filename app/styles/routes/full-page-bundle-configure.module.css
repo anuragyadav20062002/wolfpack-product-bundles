@@ -837,6 +837,66 @@
   line-height: 1.35;
 }
 
+/* ── Pending badge inline info icon ──────────────────────────── */
+.pendingInfoIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: default;
+  line-height: 1;
+  color: #b08400;
+  z-index: 100;
+}
+
+.pendingInfoIcon:hover,
+.pendingInfoIcon:focus-within {
+  z-index: 9999;
+}
+
+.pendingTooltipCard {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  width: 200px;
+  padding: 10px 12px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.14);
+  color: #202223;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 140ms ease, visibility 140ms ease;
+  z-index: 9999;
+}
+
+.pendingInfoIcon:hover .pendingTooltipCard,
+.pendingInfoIcon:focus-within .pendingTooltipCard {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.pendingTooltipCard::before {
+  position: absolute;
+  top: -6px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  border-left: 1px solid #dfe3e8;
+  border-top: 1px solid #dfe3e8;
+  background: #ffffff;
+  content: "";
+}
+
 /* ── Step Chip Navigation ─────────────────────────────────────── */
 .stepFlowCard {
   overflow: visible;
