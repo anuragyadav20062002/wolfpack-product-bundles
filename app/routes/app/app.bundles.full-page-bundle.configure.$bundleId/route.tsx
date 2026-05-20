@@ -605,6 +605,8 @@ export default function ConfigureBundleFlow() {
   const collectionsModalRef = useRef<HTMLElement>(null);
   const syncModalRef = useRef<HTMLElement>(null);
   const templateVariablesModalRef = useRef<HTMLElement>(null);
+  const discardModalRef = useRef<HTMLElement>(null);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   useEffect(() => {
     stepsTiersWarning.open ? showPolarisModal(stepsTiersModalRef) : hidePolarisModal(stepsTiersModalRef);
@@ -625,6 +627,10 @@ export default function ConfigureBundleFlow() {
   useEffect(() => {
     isSyncModalOpen ? showPolarisModal(syncModalRef) : hidePolarisModal(syncModalRef);
   }, [isSyncModalOpen]);
+
+  useEffect(() => {
+    showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
+  }, [showDiscardModal]);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -1433,7 +1439,7 @@ export default function ConfigureBundleFlow() {
         }}
         onReset={(e) => {
           e.preventDefault();
-          handleDiscard();
+          setShowDiscardModal(true);
         }}
       >
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
@@ -1452,7 +1458,7 @@ export default function ConfigureBundleFlow() {
           </button>
           <button
             type="button"
-            onClick={handleDiscard}
+            onClick={() => setShowDiscardModal(true)}
             disabled={fetcher.state !== "idle"}
           >
             Discard
@@ -3927,6 +3933,20 @@ export default function ConfigureBundleFlow() {
         onOpenChange={setReadinessOpen}
         onItemClick={handleReadinessItemClick}
       />
+
+      {/* Discard Unsaved Changes Confirmation Modal */}
+      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
+        <p style={{ margin: 0, fontSize: 14 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        <s-button
+          slot="primaryAction"
+          tone="critical"
+          variant="primary"
+          onClick={() => { handleDiscard(); setShowDiscardModal(false); }}
+        >
+          Discard Changes
+        </s-button>
+        <s-button slot="secondaryActions" onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
+      </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">

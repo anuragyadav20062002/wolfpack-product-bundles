@@ -1059,6 +1059,8 @@ export default function ConfigureBundleFlow() {
   const pageSelectionModalRef = useRef<HTMLElement>(null);
   const productsModalRef = useRef<HTMLElement>(null);
   const collectionsModalRef = useRef<HTMLElement>(null);
+  const discardModalRef = useRef<HTMLElement>(null);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   useEffect(() => {
     if (isSyncModalOpen) {
@@ -1092,6 +1094,14 @@ export default function ConfigureBundleFlow() {
     }
   }, [isCollectionsModalOpen]);
 
+  useEffect(() => {
+    if (showDiscardModal) {
+      (discardModalRef.current as any)?.show?.();
+    } else {
+      (discardModalRef.current as any)?.hide?.();
+    }
+  }, [showDiscardModal]);
+
   return (
     <>
       <ui-title-bar title={`Configure: ${formState.bundleName}`}>
@@ -1106,7 +1116,7 @@ export default function ConfigureBundleFlow() {
         }}
         onReset={(e) => {
           e.preventDefault();
-          handleDiscard();
+          setShowDiscardModal(true);
         }}
       >
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
@@ -1125,7 +1135,7 @@ export default function ConfigureBundleFlow() {
           </button>
           <button
             type="button"
-            onClick={handleDiscard}
+            onClick={() => setShowDiscardModal(true)}
             disabled={fetcher.state !== "idle"}
           >
             Discard
@@ -3582,6 +3592,20 @@ export default function ConfigureBundleFlow() {
           })()}
         </s-stack>
         <s-button slot="primaryAction" onClick={handleCloseCollectionsModal}>Close</s-button>
+      </s-modal>
+
+      {/* Discard Unsaved Changes Confirmation Modal */}
+      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
+        <p style={{ margin: 0, fontSize: 14 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        <s-button
+          slot="primaryAction"
+          tone="critical"
+          variant="primary"
+          onClick={() => { handleDiscard(); setShowDiscardModal(false); }}
+        >
+          Discard Changes
+        </s-button>
+        <s-button slot="secondaryActions" onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
