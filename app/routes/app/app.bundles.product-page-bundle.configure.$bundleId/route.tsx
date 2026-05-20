@@ -1778,7 +1778,7 @@ export default function ConfigureBundleFlow() {
                                               Remove
                                             </s-button>
                                           </div>
-                                          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+                                          <div className={productPageBundleStyles.ebRuleFields}>
                                             <s-select
                                               value={rule.type}
                                               label="Type"

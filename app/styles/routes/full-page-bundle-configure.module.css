@@ -1255,7 +1255,8 @@
 
 .ebRuleFields {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -1461,7 +1462,7 @@
   .categoryFilterRow { grid-template-columns: 1fr; }
   .stepConfigRow { grid-template-columns: 1fr; }
   .ebMediaFieldGrid { grid-template-columns: 1fr; }
-  .ebRuleFields { grid-template-columns: 1fr; }
+  .ebRuleFields { flex-direction: column; }
   .iconBox { width: 100%; }
   .ruleRow { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
   .templateVariableGrid { grid-template-columns: 1fr; }

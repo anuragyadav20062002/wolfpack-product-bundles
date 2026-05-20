@@ -659,6 +659,14 @@
   gap: 12px;
 }
 
+.ebRuleFields {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
 .ebMessagePreview {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) auto;
