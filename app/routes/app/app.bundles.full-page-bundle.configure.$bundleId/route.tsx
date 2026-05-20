@@ -334,9 +334,9 @@ function HelpTooltipVisualBlock({
   );
 }
 
-function PendingInfoIcon() {
+function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   const { t } = useTranslation();
-  const description = t('tooltips.bundleVisibilityPending.description');
+  const description = t(`tooltips.${tooltipKey}.description`);
   return (
     <span className={fullPageBundleStyles.pendingInfoIcon} tabIndex={0} aria-label={description}>
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -350,6 +350,7 @@ function PendingInfoIcon() {
     </span>
   );
 }
+
 
 export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
@@ -1681,7 +1682,7 @@ export default function ConfigureBundleFlow() {
                                     <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
                                     {statusBadge.label === 'Pending' && (
                                       <span onClick={(e) => e.stopPropagation()}>
-                                        <PendingInfoIcon />
+                                        <InfoIcon tooltipKey="bundleVisibilityPending" />
                                       </span>
                                     )}
                                   </>
@@ -1784,28 +1785,12 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.cardHeader}>
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Step Setup</h3>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          {shopLocales.length > 0 && (
-                            <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language" />
-                          )}
                           <s-button
                             variant="plain"
                             icon="duplicate"
-                            accessibilityLabel="Clone step"
+                            accessibilityLabel="Clone current step"
+                            title="Clone current step"
                             onClick={() => cloneStep(step.id)}
-                          />
-                          {stepsState.steps.length > 1 && (
-                            <s-button
-                              variant="plain"
-                              icon="delete"
-                              accessibilityLabel="Delete step"
-                              onClick={() => deleteStep(step.id)}
-                            />
-                          )}
-                          <s-button
-                            variant="plain"
-                            icon="plus"
-                            accessibilityLabel="Add step"
-                            onClick={handleAddNewStep}
                           />
                           <s-switch
                             accessibilityLabel="Enable step"
@@ -2141,14 +2126,10 @@ export default function ConfigureBundleFlow() {
                       {(() => {
                         const filters = ((step as any).filters as { label: string; collectionHandle: string }[] || []);
                         const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
-                        const activeRuleMode = ruleCount === 0 ? "none" : filters.length > 0 ? "category" : "step";
+                        const activeRuleMode = ruleCount === 0 ? "none" : "step";
                         const handleRuleModeChange = (nextMode: string) => {
                           if (nextMode === "none") {
                             conditionsState.clearStepConditions(step.id);
-                            return;
-                          }
-                          if (nextMode === "category" && (selectedCollections[step.id] || step.collections || []).length === 0) {
-                            shopify.toast.show("Add collections before using category rules.", { isError: true });
                             return;
                           }
                           if ((conditionsState.stepConditions[step.id] || []).length === 0) {
@@ -2161,7 +2142,6 @@ export default function ConfigureBundleFlow() {
                             {[
                               { label: "No rules", value: "none" },
                               { label: "Step rules", value: "step" },
-                              { label: "Category rules", value: "category" },
                             ].map(opt => (
                               <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
                                 <input
@@ -3969,15 +3949,10 @@ export default function ConfigureBundleFlow() {
         <div style={{ padding: '8px 0 20px' }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
         </div>
-        <s-button
-          slot="primaryAction"
-          tone="critical"
-          variant="primary"
-          onClick={() => { handleDiscard(); setShowDiscardModal(false); }}
-        >
-          Discard Changes
-        </s-button>
-        <s-button slot="secondaryActions" onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <s-button onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
+          <s-button tone="critical" variant="primary" onClick={() => { handleDiscard(); setShowDiscardModal(false); }}>Discard Changes</s-button>
+        </div>
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}

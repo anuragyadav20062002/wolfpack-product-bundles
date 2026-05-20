@@ -1413,28 +1413,13 @@ export default function ConfigureBundleFlow() {
                     <div className={productPageBundleStyles.card}>
                       <div className={productPageBundleStyles.cardHeader}>
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Step Setup</h3>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <s-button
-                            variant="plain"
-                            icon="duplicate"
-                            accessibilityLabel="Clone step"
-                            onClick={() => cloneStep(step.id)}
-                          />
-                          {stepsState.steps.length > 1 && (
-                            <s-button
-                              variant="plain"
-                              icon="delete"
-                              accessibilityLabel="Delete step"
-                              onClick={() => deleteStep(step.id)}
-                            />
-                          )}
-                          <s-button
-                            variant="plain"
-                            icon="plus"
-                            accessibilityLabel="Add step"
-                            onClick={handleAddNewStep}
-                          />
-                        </div>
+                        <s-button
+                          variant="plain"
+                          icon="duplicate"
+                          accessibilityLabel="Clone current step"
+                          title="Clone current step"
+                          onClick={() => cloneStep(step.id)}
+                        />
                       </div>
                       <s-stack direction="block" gap="base">
                         {/* Step Name */}
@@ -3612,15 +3597,10 @@ export default function ConfigureBundleFlow() {
         <div style={{ padding: '8px 0 20px' }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
         </div>
-        <s-button
-          slot="primaryAction"
-          tone="critical"
-          variant="primary"
-          onClick={() => { handleDiscard(); setShowDiscardModal(false); }}
-        >
-          Discard Changes
-        </s-button>
-        <s-button slot="secondaryActions" onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <s-button onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
+          <s-button tone="critical" variant="primary" onClick={() => { handleDiscard(); setShowDiscardModal(false); }}>Discard Changes</s-button>
+        </div>
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
