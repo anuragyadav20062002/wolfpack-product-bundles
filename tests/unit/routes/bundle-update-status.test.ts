@@ -95,9 +95,11 @@ describe("handleUpdateBundleStatus", () => {
     );
   });
 
-  it("maps 'unlisted' to ACTIVE Shopify status (Shopify has no UNLISTED status)", async () => {
+  it("maps 'unlisted' through ACTIVE then UNLISTED with visibility troubleshooting copy", async () => {
     getDb().bundle.update.mockResolvedValue({
       id: "b1",
+      name: "Test Bundle",
+      description: "<p>Merchant copy</p>",
       shopifyProductId: "gid://shopify/Product/42",
       steps: [],
       pricing: null,
@@ -107,7 +109,23 @@ describe("handleUpdateBundleStatus", () => {
     expect(admin.graphql).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({
-        variables: expect.objectContaining({ input: expect.objectContaining({ status: "ACTIVE" }) }),
+        variables: expect.objectContaining({
+          input: expect.objectContaining({
+            status: "ACTIVE",
+            descriptionHtml: expect.stringContaining("Category:</strong> Visibility"),
+          }),
+        }),
+      })
+    );
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          input: expect.objectContaining({
+            status: "UNLISTED",
+            descriptionHtml: expect.not.stringContaining("Merchant copy"),
+          }),
+        }),
       })
     );
   });

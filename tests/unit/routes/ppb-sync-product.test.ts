@@ -62,11 +62,17 @@ jest.mock("../../../app/services/theme-template.server", () => ({
   ThemeTemplateService: { ensureTemplates: jest.fn() },
 }));
 
+jest.mock("../../../app/services/shopify-publications.server", () => ({
+  publishProductToSalesChannels: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock("../../../app/lib/css-sanitizer", () => ({
   processCss: jest.fn((css: string) => ({ sanitizedCss: css, isValid: true, warnings: [], syntaxErrors: [] })),
 }));
 
 const getDb = () => require("../../../app/db.server").default;
+const getPublishProductToSalesChannels = () =>
+  require("../../../app/services/shopify-publications.server").publishProductToSalesChannels;
 
 const MOCK_SESSION = { shop: "test-shop.myshopify.com", accessToken: "tok" } as any;
 
@@ -199,6 +205,11 @@ describe("PPB handleSyncProduct", () => {
           shopifyProductHandle: "bundle-bundle-1",
         }),
       })
+    );
+    expect(getPublishProductToSalesChannels()).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/NEW",
+      "ppb-sync-product-create",
     );
   });
 

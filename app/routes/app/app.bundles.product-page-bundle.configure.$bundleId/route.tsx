@@ -194,11 +194,6 @@ const bundleSetupItems = [
   { id: "bundle_settings",    label: "Bundle Settings",    iconType: "edit"   },
 ];
 
-const stepSetupChildItems = [
-  { id: "free_gift_addons", label: "Free Gift & Add Ons" },
-  { id: "messages",         label: "Messages"            },
-];
-
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
   <s-section>
@@ -1299,7 +1294,7 @@ export default function ConfigureBundleFlow() {
 
                   <div className={productPageBundleStyles.setupNavList}>
                     {bundleSetupItems.map((item) => {
-                      const isActive = activeSection === item.id || (item.id === "step_setup" && (activeSection === "free_gift_addons" || activeSection === "messages"));
+                      const isActive = activeSection === item.id;
                       let statusBadge: { label: string; tone?: string } | null = null;
                       if (item.id === "discount_pricing") {
                         statusBadge = pricingState.discountEnabled ? null : { label: "None" };
@@ -1326,24 +1321,26 @@ export default function ConfigureBundleFlow() {
                               )}
                             </span>
                           </button>
-                          {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons" || activeSection === "messages") && (
-                            <div className={productPageBundleStyles.subNav}>
-                              {stepSetupChildItems.map((child) => (
-                                <button
-                                  key={child.id}
-                                  type="button"
-                                  className={`${productPageBundleStyles.subNavItem} ${activeSection === child.id ? productPageBundleStyles.subNavItemActive : ""}`}
-                                  onClick={() => handleSectionChange(child.id)}
-                                >
-                                  {child.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       );
                     })}
                   </div>
+                </s-stack>
+              </s-section>
+
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <button
+                    type="button"
+                    className={`${productPageBundleStyles.readinessButton} ${readinessClassName}`}
+                    onClick={() => setReadinessOpen(true)}
+                  >
+                    <span className={productPageBundleStyles.readinessScore}>{readinessScore}</span>
+                    <span className={productPageBundleStyles.readinessLabel}>Readiness Score</span>
+                  </button>
+                  <p className={productPageBundleStyles.leftCardSubtitle}>
+                    Complete all steps to maximise your bundle&apos;s success.
+                  </p>
                 </s-stack>
               </s-section>
 
@@ -2801,285 +2798,131 @@ export default function ConfigureBundleFlow() {
               </div>
             )}
 
-            {activeSection === "bundle_settings" && (
-              <div data-tour-target="ppb-bundle-status">
-              <s-stack direction="block" gap="base">
-                <div style={{ padding: "var(--s-space-400)", background: "#f6f6f7", borderRadius: 8 }}>
-                  <s-stack direction="inline" gap="small-100" style={{ alignItems: "center" }}>
-                    <s-icon name="image-alt-minor" />
-                    <s-stack direction="block">
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Settings</p>
-                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                        Control how this bundle behaves on the storefront.
-                      </p>
-                    </s-stack>
+            {activeSection === "bundle_settings" && (() => {
+              const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
+              const defaultStepCount = stepsState.steps.filter((step) => step.isDefault).length;
+
+              return (
+                <div data-tour-target="ppb-bundle-status">
+                  <s-stack direction="block" gap="base">
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
+                          {settingsStep && (
+                            <s-checkbox
+                              accessibilityLabel="Enable pre selected product for active step"
+                              checked={settingsStep.isDefault || undefined}
+                              onChange={(e: Event) => {
+                                stepsState.updateStepField(settingsStep.id, "isDefault", (e.target as HTMLInputElement).checked);
+                                markAsDirty();
+                              }}
+                            />
+                          )}
+                        </s-stack>
+                        <s-banner tone="info">
+                          Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
+                        </s-banner>
+                        <s-text-field
+                          label="Default products title"
+                          value={textOverrides.defaultProductsTitle ?? ""}
+                          onInput={(e: Event) => {
+                            setTextOverrides((prev) => ({ ...prev, defaultProductsTitle: (e.target as HTMLInputElement).value }));
+                            markAsDirty();
+                          }}
+                          autoComplete="off"
+                        />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Choose default products</p>
+                          <s-stack direction="inline" gap="small" alignItems="center">
+                            <s-button variant="primary" onClick={() => handleSectionChange("step_setup")}>
+                              Browse Products
+                            </s-button>
+                            <s-badge tone={defaultStepCount > 0 ? "success" : "info"}>
+                              {defaultStepCount > 0 ? `${defaultStepCount} configured` : "Not set"}
+                            </s-badge>
+                          </s-stack>
+                        </s-stack>
+                      </s-stack>
+                    </s-section>
+
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
+                          <s-switch
+                            accessibilityLabel="Enable quantity validation"
+                            checked={productSlotsEnabled || undefined}
+                            onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                          />
+                        </s-stack>
+                        <s-text-field
+                          label="Maximum allowed quantity per product"
+                          type="number"
+                          min="1"
+                          value={maxQtyPerProduct || "1"}
+                          disabled={!productSlotsEnabled}
+                          onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                      </s-stack>
+                    </s-section>
+
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Cart line item discount display</h3>
+                          <s-button variant="secondary" onClick={() => handleSectionChange("discount_pricing")}>
+                            Edit Defaults
+                          </s-button>
+                        </s-stack>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                          Shows how much the customer is saving on the bundle in cart
+                        </p>
+                        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                          <input type="radio" name="cartDiscountDisplay" value="defaults" defaultChecked readOnly style={{ marginTop: 3 }} />
+                          <span>
+                            <span style={{ display: "block", fontSize: 14 }}>Use app defaults</span>
+                            <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>
+                              Uses the discount format and label configured in your app settings.
+                            </span>
+                          </span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "not-allowed", opacity: 0.65 }}>
+                          <input type="radio" name="cartDiscountDisplay" value="custom" disabled style={{ marginTop: 3 }} />
+                          <span>
+                            <span style={{ display: "block", fontSize: 14 }}>Customize for this bundle</span>
+                            <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>
+                              Set a different discount format or label for this bundle only.
+                            </span>
+                          </span>
+                        </label>
+                      </s-stack>
+                    </s-section>
+
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Level CSS</h3>
+                        <textarea
+                          value={bundleLevelCss}
+                          placeholder="/* Add custom CSS for this bundle */"
+                          rows={6}
+                          style={{ width: "100%", fontFamily: "monospace", fontSize: 13, padding: "8px 10px", borderRadius: 6, border: "1px solid #c9cccf", resize: "vertical", boxSizing: "border-box" }}
+                          onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
+                        />
+                      </s-stack>
+                    </s-section>
+
+                    <s-section>
+                      <BundleStatusSection
+                        status={formState.bundleStatus}
+                        onChange={formState.setBundleStatus}
+                      />
+                    </s-section>
                   </s-stack>
                 </div>
-
-                <s-section>
-                  <s-stack direction="block" gap="base">
-                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Display</h3>
-                    <s-checkbox
-                      checked={showProductPrices || undefined}
-                      onChange={(e: Event) => { setShowProductPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      helpText="Display the price of each product on its card."
-                    >
-                      Show product prices
-                    </s-checkbox>
-                    <s-checkbox
-                      checked={showCompareAtPrices || undefined}
-                      onChange={(e: Event) => { setShowCompareAtPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      helpText="Show the original (strike-through) price next to the sale price."
-                    >
-                      Show compare-at prices
-                    </s-checkbox>
-                    <s-checkbox
-                      checked={allowQuantityChanges || undefined}
-                      onChange={(e: Event) => { setAllowQuantityChanges((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      helpText="Let customers adjust the quantity of individual products within the bundle."
-                    >
-                      Allow quantity changes
-                    </s-checkbox>
-                  </s-stack>
-                </s-section>
-
-                <s-section>
-                  <s-stack direction="block" gap="base">
-                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Cart behaviour</h3>
-                    <s-checkbox
-                      checked={cartRedirectToCheckout || undefined}
-                      onChange={(e: Event) => { setCartRedirectToCheckout((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      helpText="Takes customers directly to checkout instead of the cart page."
-                    >
-                      Redirect to checkout after adding to cart
-                    </s-checkbox>
-                  </s-stack>
-                </s-section>
-
-                <s-section>
-                  <s-stack direction="block" gap="base">
-                    <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Developer</h3>
-                    <s-checkbox
-                      checked={sdkMode || undefined}
-                      onChange={(e: Event) => { setSdkMode((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      helpText="Loads the Wolfpack Bundles headless SDK instead of the pre-built widget. Use when building a custom bundle UI."
-                    >
-                      Enable SDK mode
-                    </s-checkbox>
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 1: Pre-selected variant */}
-                <s-section heading="Pre-selected Variant">
-                  <s-stack direction="vertical" gap="300">
-                    <s-text tone="subdued">Optionally pre-select a specific variant when the bundle widget loads.</s-text>
-                    <s-text-field
-                      label="Variant ID"
-                      placeholder="gid://shopify/ProductVariant/123456"
-                      helpText="Paste the Shopify variant GID to pre-select it on load."
-                      value={preSelectedProductVariantId}
-                      onInput={(e: Event) => { setPreSelectedProductVariantId((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      autoComplete="off"
-                    />
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 2: Product quantity limits */}
-                <s-section heading="Product Quantity Limits">
-                  <s-stack direction="vertical" gap="300">
-                    <s-number-field
-                      label="Max quantity per product"
-                      helpText="Maximum number of times a single product can be added across all bundle steps. Leave blank for no limit."
-                      min={1}
-                      value={maxQtyPerProduct}
-                      onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
-                    />
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 3: Product slots */}
-                <s-section heading="Product Slots">
-                  <s-stack direction="vertical" gap="300">
-                    <s-stack direction="horizontal" gap="300" align-y="center">
-                      <s-switch
-                        checked={productSlotsEnabled}
-                        onChange={(e: any) => { setProductSlotsEnabled(e.target.checked); markAsDirty(); }}
-                      />
-                      <s-stack direction="vertical" gap="100">
-                        <s-text>Enable product slot indicators</s-text>
-                        <s-text size="small" tone="subdued">Show empty slot placeholders in the widget to visualise how many items remain to be selected.</s-text>
-                      </s-stack>
-                    </s-stack>
-                    {productSlotsEnabled && (
-                      <s-text-field
-                        label="Slot icon URL (optional)"
-                        placeholder="https://cdn.shopify.com/..."
-                        helpText="Custom icon shown in empty slots. Defaults to a generic placeholder if left blank."
-                        value={productSlotIconUrl}
-                        onInput={(e: Event) => { setProductSlotIconUrl((e.target as HTMLInputElement).value); markAsDirty(); }}
-                        autoComplete="off"
-                      />
-                    )}
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 4: Variant selector */}
-                <s-section heading="Variant Selector">
-                  <s-stack direction="vertical" gap="300">
-                    <s-stack direction="horizontal" gap="300" align-y="center">
-                      <s-switch
-                        checked={variantSelectorEnabled}
-                        onChange={(e: any) => { setVariantSelectorEnabled(e.target.checked); markAsDirty(); }}
-                      />
-                      <s-stack direction="vertical" gap="100">
-                        <s-text>Show variant selector on product cards</s-text>
-                        <s-text size="small" tone="subdued">Display size/colour dropdowns on each product card so customers can pick a variant before adding to the bundle.</s-text>
-                      </s-stack>
-                    </s-stack>
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 5: Add-to-bundle button */}
-                <s-section heading="Add to Bundle Button">
-                  <s-stack direction="vertical" gap="300">
-                    <s-checkbox
-                      checked={showTextOnAddButton || undefined}
-                      onChange={(e: Event) => { setShowTextOnAddButton((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      helpText="Show an 'Add' label inside the add-to-bundle button on product cards."
-                    >
-                      Show text on add button
-                    </s-checkbox>
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 6: Cart title & subtitle */}
-                <s-section heading="Cart Line Labels">
-                  <s-stack direction="vertical" gap="300">
-                    <s-text tone="subdued">Customise how the bundle appears in the cart line item.</s-text>
-                    <s-text-field
-                      label="Bundle cart title"
-                      placeholder="My Bundle"
-                      helpText="Overrides the bundle name shown in the cart line item."
-                      value={bundleCartTitle}
-                      onInput={(e: Event) => { setBundleCartTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      autoComplete="off"
-                    />
-                    <s-text-field
-                      label="Bundle cart subtitle"
-                      placeholder="Build your own"
-                      helpText="Secondary line shown beneath the cart title."
-                      value={bundleCartSubtitle}
-                      onInput={(e: Event) => { setBundleCartSubtitle((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      autoComplete="off"
-                    />
-                  </s-stack>
-                </s-section>
-
-                {/* FR-05 sub-section 7: Bundle banners */}
-                <s-section heading="Bundle Banners">
-                  <s-stack direction="vertical" gap="300">
-                    <s-text tone="subdued">Optional banner images shown at the top of the bundle widget.</s-text>
-                    <s-text-field
-                      label="Desktop banner URL"
-                      placeholder="https://cdn.shopify.com/..."
-                      helpText="Recommended: 1200×300 px. Shown on screens wider than 768 px."
-                      value={bundleBannerDesktopUrl}
-                      onInput={(e: Event) => { setBundleBannerDesktopUrl((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      autoComplete="off"
-                    />
-                    <s-text-field
-                      label="Mobile banner URL"
-                      placeholder="https://cdn.shopify.com/..."
-                      helpText="Recommended: 600×200 px. Shown on screens 768 px and narrower."
-                      value={bundleBannerMobileUrl}
-                      onInput={(e: Event) => { setBundleBannerMobileUrl((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      autoComplete="off"
-                    />
-                  </s-stack>
-                </s-section>
-
-                {/* Widget label text overrides */}
-                <s-section heading="Widget Labels">
-                  {(() => {
-                    const isEnglish = textOverridesLocale === "en";
-                    const currentOverrides: Record<string, string> = isEnglish
-                      ? textOverrides
-                      : (textOverridesByLocale[textOverridesLocale] ?? {});
-                    const setCurrentOverrides = (key: string, value: string) => {
-                      if (isEnglish) {
-                        setTextOverrides((prev) => ({ ...prev, [key]: value }));
-                      } else {
-                        setTextOverridesByLocale((prev) => ({
-                          ...prev,
-                          [textOverridesLocale]: { ...(prev[textOverridesLocale] ?? {}), [key]: value },
-                        }));
-                      }
-                      markAsDirty();
-                    };
-                    const localeOptions = [
-                      { label: "English (default)", value: "en" },
-                      ...shopLocales
-                        .filter((l: { locale: string; name: string; primary: boolean }) => l.locale !== "en")
-                        .map((l: { locale: string; name: string; primary: boolean }) => ({ label: l.name, value: l.locale })),
-                    ];
-                    const fields: { key: string; label: string; placeholder: string; helpText: string }[] = [
-                      { key: "addToCartButton", label: "Add Bundle to Cart button",   placeholder: "Add Bundle to Cart",             helpText: "Main CTA button when the bundle is complete." },
-                      { key: "nextButton",      label: "Next Step button",             placeholder: "Next",                           helpText: "Button to advance to the next step." },
-                      { key: "doneButton",      label: "Done button",                  placeholder: "Done",                           helpText: "Shown on the last step." },
-                      { key: "freeBadge",       label: "Free gift badge",              placeholder: "Free",                           helpText: "Badge shown on free-gift product cards." },
-                      { key: "includedBadge",   label: "Included badge",               placeholder: "Included",                       helpText: "Badge shown on already-included product cards." },
-                      { key: "completeSteps",   label: "Incomplete bundle message",    placeholder: "Complete All Steps to Continue", helpText: "Shown on the CTA when not all steps are complete." },
-                      { key: "addingToCart",    label: "Adding to cart message",       placeholder: "Adding to Cart...",              helpText: "Shown on the CTA while the cart request is in flight." },
-                    ];
-                    return (
-                      <s-stack direction="block" gap="small">
-                        <s-text tone="subdued">Customise the text shown to customers in the bundle widget.</s-text>
-                        {localeOptions.length > 1 && (
-                          <s-select
-                            label="Editing language"
-                            onChange={(e: Event) => setTextOverridesLocale((e.target as HTMLSelectElement).value)}
-                          >
-                            {localeOptions.map(opt => (
-                              <option key={opt.value} value={opt.value} selected={textOverridesLocale === opt.value || undefined}>{opt.label}</option>
-                            ))}
-                          </s-select>
-                        )}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                          {fields.map(({ key, label, placeholder, helpText }) => (
-                            <s-text-field
-                              key={key}
-                              label={label}
-                              value={currentOverrides[key] ?? ""}
-                              placeholder={placeholder}
-                              helpText={helpText}
-                              autoComplete="off"
-                              onInput={(e: Event) => setCurrentOverrides(key, (e.target as HTMLInputElement).value)}
-                            />
-                          ))}
-                        </div>
-                      </s-stack>
-                    );
-                  })()}
-                </s-section>
-
-                {/* FR-05 sub-section 8: Bundle-level CSS */}
-                <s-section heading="Custom CSS">
-                  <s-stack direction="vertical" gap="300">
-                    <s-text tone="subdued">Inject custom CSS scoped to this bundle widget. Sanitized on save.</s-text>
-                    <s-text-area
-                      label="Bundle-level CSS"
-                      placeholder=".wolfpack-bundle { background: #f9f9f9; }"
-                      helpText="CSS is sanitized on save. Use .wolfpack-bundle as the root selector."
-                      value={bundleLevelCss}
-                      onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
-                      autoComplete="off"
-                      rows={8}
-                    />
-                  </s-stack>
-                </s-section>
-              </s-stack>
-              </div>
-            )}
+              );
+            })()}
 
             {activeSection === "free_gift_addons" && (() => {
               const step = stepsState.steps[activeTabIndex] || stepsState.steps[0];
