@@ -2947,7 +2947,7 @@ export default function ConfigureBundleFlow() {
                           </div>
                           <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{title}</h4>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175", lineHeight: 1.35 }}>{description}</p>
-                          <s-button variant="secondary" onClick={() => window.open("https://help.wolfpackbundles.com/en/articles/bundle-visibility", "_blank")}>Quick Setup Guide</s-button>
+                          <s-button variant="secondary" onClick={() => window.open("https://wolfpackapps.com", "_blank")}>Quick Setup Guide</s-button>
                           <span className={fullPageBundleStyles.visibilitySetupTime}>5 min setup</span>
                         </div>
                       ))}
