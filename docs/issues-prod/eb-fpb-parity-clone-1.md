@@ -1,10 +1,10 @@
 # Issue: EB FPB Configure Parity Clone
 
 **Issue ID:** eb-fpb-parity-clone-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-19 18:00
+**Last Updated:** 2026-05-20 09:30
 
 ## Overview
 
@@ -21,6 +21,19 @@ Exploration reference: `docs/eb-fpb-exploration/EB_FPB_CONFIGURE_EXPLORATION.md`
 5. **Cart line item discount display radio** — Phase 1: "Use app defaults" radio + grayed "Customize" option; no persistence
 
 ## Progress Log
+
+### 2026-05-20 09:30 - E2E verification complete
+
+All 5 gaps verified in Chrome DevTools MCP against SIT embedded app (bundle `cmp15vmme0001v0rj5ilb9srg`):
+- Gap 1: "Bundle Widget" nav item present; section renders with toggle, Display Mode/On selects, auto-select checkbox, Place on theme + Place Widget buttons; toggle correctly shows/hides conditional controls
+- Gap 2: Bundle Banner section shows Desktop (1900×230) and Mobile (1100×500) FilePicker drop zones with "Upload image" buttons
+- Gap 3: Bundle Level CSS monospace textarea renders with `/* Add custom CSS for this bundle */` placeholder, accepts focus
+- Gap 4: "Quick Setup Guide" buttons open new tab (not modal); "Set up Bundle Widget" navigates to bundle_widget section in-app
+- Gap 5: "Cart line item discount display" radio group — "Use app defaults" selected (blue), "Customize for this bundle" grayed + "Coming soon" badge, "Edit Defaults" button present
+
+**Follow-up:** `help.wolfpackbundles.com` domain returns DNS_PROBE_FINISHED_NXDOMAIN — URL placeholder in line 2950 of route.tsx needs to be updated to the real docs URL when published.
+
+**Pre-existing SIT issue (unrelated):** SIT Prisma client is out of sync — `addonAddText` field missing from generated client. Save fails with unknown argument error. Not blocking this feature's E2E — all UI elements render correctly.
 
 ### 2026-05-19 18:00 - All 5 gaps implemented
 
@@ -50,4 +63,4 @@ Exploration reference: `docs/eb-fpb-exploration/EB_FPB_CONFIGURE_EXPLORATION.md`
 - [x] Gap 4: Quick Setup Guide buttons → external URL
 - [x] Gap 5: Cart line item radio (Phase 1)
 - [x] ESLint 0 errors on modified files
-- [ ] E2E test in Chrome
+- [x] E2E test in Chrome
