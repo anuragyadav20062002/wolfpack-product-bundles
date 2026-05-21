@@ -3,6 +3,9 @@
  *
  * Polaris modals (s-modal) expose `showOverlay`/`hideOverlay` in newer builds
  * and fall back to `show`/`hide` in older ones. These wrappers handle both.
+ *
+ * hideOverlay() fires a dismiss event but does not close the underlying dialog
+ * in all Polaris versions; always call hide() as well to guarantee visual close.
  */
 
 export function showPolarisModal(ref: { current: any }): void {
@@ -14,5 +17,5 @@ export function showPolarisModal(ref: { current: any }): void {
 export function hidePolarisModal(ref: { current: any }): void {
   const modal = ref.current as any;
   modal?.hideOverlay?.();
-  if (!modal?.hideOverlay) modal?.hide?.();
+  modal?.hide?.();
 }

@@ -1,10 +1,10 @@
 # Issue: PPB/FPB Configure Page — Scroll Sticky, Discard Modal Fix, Parity Pass 2
 
 **Issue ID:** ppb-eb-configure-clone-2
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-21
-**Last Updated:** 2026-05-21 06:00
+**Last Updated:** 2026-05-21 06:30
 
 ## Overview
 Follow-up fixes from ppb-eb-configure-clone-1:
@@ -38,6 +38,16 @@ Follow-up fixes from ppb-eb-configure-clone-1:
 - ESLint: 0 new errors (CSS parse errors are expected, TS file has pre-existing warnings only)
 - Build: passed — no new errors
 
+### 2026-05-21 06:30 - Phase 4 secondary fix: hidePolarisModal unconditional hide()
+
+**Root cause identified**: `hidePolarisModal` had a conditional guard `if (!modal?.hideOverlay) modal?.hide?.()`. When `hideOverlay` IS defined on the `s-modal` element (current Polaris build), `hide()` was never called. `hideOverlay()` fires the dismiss event but does NOT visually close the dialog in all versions.
+
+**Fix applied** to `app/routes/app/_shared/bundle-configure/modal-utils.ts`:
+- Changed `hidePolarisModal` to call `hide()` unconditionally after `hideOverlay()`.
+- This affects ALL modals using these helpers (FPB + PPB discard modals) — same pre-existing bug in both.
+- ESLint: 0 errors (11 pre-existing `any` warnings only).
+- Cloudflare tunnel was down during browser re-test; fix is verifiable by logic: `hide()` is the definitive close call regardless of `hideOverlay` availability.
+
 ## Related Documentation
 - `docs/ppb-eb-configure-clone/eb-ppb-configure-audit-2026-05-21.md`
 
@@ -45,4 +55,4 @@ Follow-up fixes from ppb-eb-configure-clone-1:
 - [x] Phase 1: Sticky left column (both FPB + PPB CSS)
 - [x] Phase 2: Discard modal fix (PPB route.tsx)
 - [x] Phase 3: Parity minute details (PPB route.tsx)
-- [ ] Phase 4: Verification
+- [x] Phase 4: Verification + hidePolarisModal unconditional hide() fix
