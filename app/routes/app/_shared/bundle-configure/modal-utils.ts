@@ -18,4 +18,9 @@ export function hidePolarisModal(ref: { current: any }): void {
   const modal = ref.current as any;
   modal?.hideOverlay?.();
   modal?.hide?.();
+  modal?.close?.();
+  if (modal) {
+    modal.open = false;
+    modal.removeAttribute?.("open");
+  }
 }

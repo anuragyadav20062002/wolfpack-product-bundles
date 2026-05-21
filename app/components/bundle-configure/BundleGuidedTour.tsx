@@ -12,6 +12,7 @@ interface SpotlightRect {
 interface Props {
   steps: TourStep[];
   shop: string;
+  enabled?: boolean;
   onComplete?: () => void;
   onDismiss?: () => void;
 }
@@ -19,7 +20,7 @@ interface Props {
 const TOOLTIP_WIDTH = 420;
 const SPOTLIGHT_PAD = 8;
 
-export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) {
+export function BundleGuidedTour({ steps, shop, enabled = true, onComplete, onDismiss }: Props) {
   const [visible, setVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null);
@@ -30,10 +31,11 @@ export function BundleGuidedTour({ steps, shop, onComplete, onDismiss }: Props) 
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!enabled) return;
     if (!localStorage.getItem(storageKey)) {
       setVisible(true);
     }
-  }, [storageKey]);
+  }, [enabled, storageKey]);
 
   useEffect(() => {
     if (!visible) return;

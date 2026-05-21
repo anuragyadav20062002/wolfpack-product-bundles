@@ -6,7 +6,32 @@ export interface AppEmbedCheckResult {
   themeId: string | null;
 }
 
-const WOLFPACK_APP_PREFIX = "shopify://apps/wolfpack-product-bundles/blocks/";
+interface AppEmbedCheckOptions {
+  blockHandles?: string[];
+}
+
+const WOLFPACK_APP_HANDLES = [
+  "wolfpack-product-bundles",
+  "wolfpack-product-bundles-4",
+  "wolfpack-product-bundles-sit",
+];
+
+function isWolfpackEmbedBlock(
+  key: string,
+  value: { disabled?: boolean; type?: string } | undefined,
+  blockHandles?: string[],
+) {
+  if (value?.disabled === true) return false;
+
+  const blockRef = `${key} ${value?.type ?? ""}`;
+  const matchesApp = WOLFPACK_APP_HANDLES.some((handle) =>
+    blockRef.includes(`shopify://apps/${handle}/blocks/`),
+  );
+  if (!matchesApp) return false;
+
+  if (!blockHandles?.length) return true;
+  return blockHandles.some((handle) => blockRef.includes(`/blocks/${handle}`));
+}
 
 /**
  * Checks whether any Wolfpack embed block is active in the merchant's current theme.
@@ -18,6 +43,7 @@ const WOLFPACK_APP_PREFIX = "shopify://apps/wolfpack-product-bundles/blocks/";
 export async function checkAppEmbedEnabled(
   admin: ShopifyAdmin,
   shopDomain: string,
+  options: AppEmbedCheckOptions = {},
 ): Promise<AppEmbedCheckResult> {
   try {
     const themeListResult = await admin.graphql(`
@@ -69,16 +95,15 @@ export async function checkAppEmbedEnabled(
     }
 
     const blocks = (parsed?.current as Record<string, unknown> | undefined)?.blocks as
-      | Record<string, { disabled?: boolean }>
+      | Record<string, { disabled?: boolean; type?: string }>
       | undefined;
 
     if (!blocks || typeof blocks !== "object") {
       return { enabled: false, themeId };
     }
 
-    const enabled = Object.entries(blocks).some(
-      ([key, value]) =>
-        key.startsWith(WOLFPACK_APP_PREFIX) && value?.disabled !== true,
+    const enabled = Object.entries(blocks).some(([key, value]) =>
+      isWolfpackEmbedBlock(key, value, options.blockHandles),
     );
 
     return { enabled, themeId };

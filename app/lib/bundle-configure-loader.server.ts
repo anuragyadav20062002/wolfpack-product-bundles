@@ -92,11 +92,14 @@ export async function fetchShopLocales(
 export async function fetchEmbedData(
   admin: any,
   shop: string,
-  apiKey: string
+  apiKey: string,
+  embedBlockHandle = "bundle-full-page-embed",
 ): Promise<{ appEmbedEnabled: boolean; themeEditorUrl: string | null }> {
-  const embedCheck = await checkAppEmbedEnabled(admin, shop);
+  const embedCheck = await checkAppEmbedEnabled(admin, shop, {
+    blockHandles: [embedBlockHandle],
+  });
   const themeEditorUrl = embedCheck.themeId
-    ? `https://${shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-full-page-embed`
+    ? `https://${shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2F${embedBlockHandle}`
     : null;
   return { appEmbedEnabled: embedCheck.enabled, themeEditorUrl };
 }

@@ -71,9 +71,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     previewHandle: bundle.bundleType === BundleType.PRODUCT_PAGE ? bundle.shopifyProductHandle : bundle.shopifyPageHandle
   }));
 
+  const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
   const embedCheck = await checkAppEmbedEnabled(admin, session.shop);
   const themeEditorUrl = embedCheck.themeId
-    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=63077bb0483a6ce08a2d6139b14d170b%2Fbundle-full-page-embed`
+    ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-full-page-embed`
     : null;
 
   let subscriptionInfo = null;

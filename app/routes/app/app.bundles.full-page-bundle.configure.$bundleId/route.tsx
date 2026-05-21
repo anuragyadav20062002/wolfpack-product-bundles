@@ -34,6 +34,10 @@ import { ERROR_MESSAGES } from "../../../constants/errors";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
 import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
+import {
+  MultiLanguageTextModal,
+  type MultiLanguageField,
+} from "../../../components/bundle-configure/MultiLanguageTextModal";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -128,7 +132,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
     }),
-    fetchEmbedData(admin, session.shop, apiKey),
+    fetchEmbedData(admin, session.shop, apiKey, "bundle-full-page-embed"),
   ]);
 
   return json({
@@ -276,9 +280,31 @@ function RichHelpTooltip({
   const tooltip = HELP_TOOLTIPS[tooltipKey];
   const title = t(`tooltips.${tooltipKey}.title`);
   const description = t(`tooltips.${tooltipKey}.description`);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
+
+  const showTooltip = () => {
+    if (!wrapperRef.current) return;
+    const width = Math.min(320, window.innerWidth - 32);
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, 16), window.innerWidth - width - 16);
+    setTooltipPos({
+      top: rect.bottom + 10,
+      left,
+      arrowLeft: rect.left + rect.width / 2 - left,
+    });
+  };
+  const hideTooltip = () => setTooltipPos(null);
 
   return (
-    <span className={fullPageBundleStyles.richHelp}>
+    <span
+      ref={wrapperRef}
+      className={fullPageBundleStyles.richHelp}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
       <s-button
         icon={icon}
         variant="tertiary"
@@ -287,7 +313,21 @@ function RichHelpTooltip({
       >
         {label}
       </s-button>
-      <span className={fullPageBundleStyles.richHelpCard} role="tooltip">
+      <span
+        className={`${fullPageBundleStyles.richHelpCard} ${fullPageBundleStyles.richHelpCardFloating}`}
+        role="tooltip"
+        style={tooltipPos ? {
+          position: "fixed",
+          top: tooltipPos.top,
+          left: tooltipPos.left,
+          width: Math.min(320, window.innerWidth - 32),
+          transform: "none",
+          opacity: 1,
+          visibility: "visible",
+          pointerEvents: "auto",
+          "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
+        } as React.CSSProperties : undefined}
+      >
         {tooltip.visual && <HelpTooltipVisualBlock visual={tooltip.visual} title={title} />}
         <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>
         <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
@@ -305,16 +345,52 @@ function QuestionHelpTooltip({
   const tooltip = HELP_TOOLTIPS[tooltipKey];
   const title = t(`tooltips.${tooltipKey}.title`, '');
   const description = t(`tooltips.${tooltipKey}.description`);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
+
+  const showTooltip = () => {
+    if (!wrapperRef.current) return;
+    const width = Math.min(320, window.innerWidth - 32);
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, 16), window.innerWidth - width - 16);
+    setTooltipPos({
+      top: rect.bottom + 10,
+      left,
+      arrowLeft: rect.left + rect.width / 2 - left,
+    });
+  };
+  const hideTooltip = () => setTooltipPos(null);
 
   return (
-    <span className={fullPageBundleStyles.richHelp}>
+    <span
+      ref={wrapperRef}
+      className={fullPageBundleStyles.richHelp}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
       <s-button
         variant="plain"
         icon="info"
         accessibilityLabel={title || description}
         className={fullPageBundleStyles.richHelpTrigger}
       />
-      <span className={fullPageBundleStyles.richHelpCard} role="tooltip">
+      <span
+        className={`${fullPageBundleStyles.richHelpCard} ${fullPageBundleStyles.richHelpCardFloating}`}
+        role="tooltip"
+        style={tooltipPos ? {
+          position: "fixed",
+          top: tooltipPos.top,
+          left: tooltipPos.left,
+          width: Math.min(320, window.innerWidth - 32),
+          transform: "none",
+          opacity: 1,
+          visibility: "visible",
+          pointerEvents: "auto",
+          "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
+        } as React.CSSProperties : undefined}
+      >
         {tooltip.visual && <span className={fullPageBundleStyles.richHelpImagePlaceholder} />}
         {title && <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>}
         <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
@@ -572,6 +648,9 @@ export default function ConfigureBundleFlow() {
   );
   // Which locale the merchant is currently editing in the Messages tab
   const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
+  const [multiLanguageFields, setMultiLanguageFields] = useState<MultiLanguageField[]>([]);
+  const [multiLanguageTitle, setMultiLanguageTitle] = useState("Multi Language");
+  const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
 
   // Multi-language discount messaging state
   const [discountMessagingMultiLanguageEnabled, setDiscountMessagingMultiLanguageEnabled] = useState<boolean>(
@@ -640,6 +719,24 @@ export default function ConfigureBundleFlow() {
   const [hasPreview, setHasPreview] = useState(false);
   const [productMenuOpen, setProductMenuOpen] = useState(false);
 
+  const openMultiLanguageModal = useCallback((title: string, fields: MultiLanguageField[]) => {
+    setMultiLanguageTitle(title);
+    setMultiLanguageFields(fields);
+    setTextOverridesLocale(shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en");
+    setIsMultiLanguageModalOpen(true);
+  }, [shopLocales]);
+
+  const updateLocalizedTextOverride = useCallback((locale: string, key: string, value: string) => {
+    setTextOverridesByLocale((prev) => ({
+      ...prev,
+      [locale]: {
+        ...(prev[locale] ?? {}),
+        [key]: value,
+      },
+    }));
+    markAsDirty();
+  }, [markAsDirty]);
+
   useEffect(() => {
     setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
   }, [bundle.id]);
@@ -683,6 +780,11 @@ export default function ConfigureBundleFlow() {
     const handleDismiss = () => setShowDiscardModal(false);
     modal?.addEventListener('dismiss', handleDismiss);
     return () => modal?.removeEventListener('dismiss', handleDismiss);
+  }, []);
+
+  const closeDiscardModal = useCallback(() => {
+    hidePolarisModal(discardModalRef);
+    setShowDiscardModal(false);
   }, []);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
@@ -1152,6 +1254,11 @@ export default function ConfigureBundleFlow() {
     setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
   }, [bundle.shopifyPageHandle, hookHandleDiscard]);
 
+  const handleConfirmDiscard = useCallback(() => {
+    closeDiscardModal();
+    handleDiscard();
+  }, [closeDiscardModal, handleDiscard]);
+
   const promptSaveBarBeforeNavigation = useCallback(() => {
     shopify.toast.show("Save or discard your changes before moving to another section.", {
       isError: true,
@@ -1600,7 +1707,7 @@ export default function ConfigureBundleFlow() {
                         aria-label="Bundle product options"
                         onClick={() => setProductMenuOpen((o) => !o)}
                       >
-                        <s-icon type="menu-horizontal" />
+                        <s-icon type="menu-vertical" />
                       </button>
                       {productMenuOpen && (
                         <>
@@ -1611,7 +1718,8 @@ export default function ConfigureBundleFlow() {
                               className={fullPageBundleStyles.productMenuDropdownItem}
                               onClick={() => { setProductMenuOpen(false); handleSyncProduct(); }}
                             >
-                              Sync Product
+                              <s-icon type="duplicate" />
+                              <span>Sync Product</span>
                             </button>
                           </div>
                         </>
@@ -1861,6 +1969,10 @@ export default function ConfigureBundleFlow() {
                         Add all product selections in this step to a single category or separate them into multiple categories for better segregation.
                       </p>
 
+                      {(((step.StepCategory as any[] | undefined) ?? []).length === 0) && (
+                        <div className={fullPageBundleStyles.emptyState}>No category defined yet</div>
+                      )}
+
                       {/* EB-style per-category accordion rows — collapsed by default */}
                       {((step.StepCategory as any[] | undefined) ?? []).map((cat: any, catIndex: number) => {
                         const catKey = `${step.id}__${cat.id ?? catIndex}`;
@@ -1882,7 +1994,14 @@ export default function ConfigureBundleFlow() {
                               className={fullPageBundleStyles.categoryAccordionHeader}
                               role="button"
                               aria-expanded={isOpen}
+                              tabIndex={0}
                               onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                              onKeyDown={(e: React.KeyboardEvent) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }));
+                                }
+                              }}
                             >
                               <span
                                 className={fullPageBundleStyles.categoryDrag}
@@ -2984,6 +3103,27 @@ export default function ConfigureBundleFlow() {
             {(activeSection === "images_gifs" || activeSection === "bundle_visibility") && (
               <div data-tour-target="fpb-design-settings">
               <s-stack direction="block" gap="base">
+                <s-section>
+                  <s-stack direction="inline" gap="base" alignItems="center">
+                    <s-icon name={appEmbedEnabled ? "check" : "alert-triangle"} />
+                    <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>App Embed Status</h3>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                        {appEmbedEnabled
+                          ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                          : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                      </p>
+                    </s-stack>
+                    <s-badge tone={appEmbedEnabled ? "success" : "warning"}>
+                      {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                    </s-badge>
+                    {!appEmbedEnabled && themeEditorUrl && (
+                      <s-button variant="secondary" onClick={() => window.open(themeEditorUrl, "_blank")}>
+                        Enable here
+                      </s-button>
+                    )}
+                  </s-stack>
+                </s-section>
 
                 <s-section>
                   <s-stack direction="block" gap="base">
@@ -3023,7 +3163,7 @@ export default function ConfigureBundleFlow() {
                         <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your Bundle Link</h3>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Use this link to place your bundle anywhere - theme components, emails, ads, or social bios.
+                            Use this link to place your bundle anywhere - theme components, ads, or social bios.
                           </p>
                         </s-stack>
                       </s-stack>
@@ -3333,7 +3473,6 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "bundle_settings" && (() => {
               const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
-              const defaultStepCount = stepsState.steps.filter((step) => step.isDefault).length;
 
               return (
                 <div data-tour-target="fpb-bundle-settings">
@@ -3356,11 +3495,9 @@ export default function ConfigureBundleFlow() {
                         <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                           Choose products that should be added to bundle by default.
                         </p>
-                        {defaultStepCount > 0 && (
-                          <s-banner tone="info">
-                            Tip: Discounts are calculated based in the products in cart, make sure to add the &quot;Default Product&quot; quantity or amount while configuring discounts.
-                          </s-banner>
-                        )}
+                        <s-banner tone="info">
+                          Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
+                        </s-banner>
                         <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                           These products will be added to the shopper's bundle automatically on the first step.
                         </p>
@@ -3387,9 +3524,9 @@ export default function ConfigureBundleFlow() {
                         {settingsStep && (
                           <s-stack direction="block" gap="small-400">
                             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Product Slots</h4>
-                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                              This feature displays empty slots on the storefront. Active step: {settingsStep.name || `Step ${activeTabIndex + 1}`}.
-                            </p>
+                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                            This feature displays empty slots on the storefront.
+                          </p>
                             <s-stack direction="inline" gap="small-100">
                               <s-text-field
                                 label="Min"
@@ -3468,16 +3605,27 @@ export default function ConfigureBundleFlow() {
                           title="Show Text on + Button"
                           description="Replaces the + icon with a text button and moves it below the price."
                         >
-                          <s-text-field
-                            label="Button text"
-                            value={textOverrides.addToCartButton ?? ""}
-                            placeholder="Add to Cart"
-                            autoComplete="off"
-                            onInput={(e: Event) => {
-                              setTextOverrides((prev) => ({ ...prev, addToCartButton: (e.target as HTMLInputElement).value }));
-                              markAsDirty();
-                            }}
-                          />
+                          <s-stack direction="inline" gap="small" alignItems="end">
+                            <s-text-field
+                              label="Button text"
+                              value={textOverrides.addToCartButton ?? ""}
+                              placeholder="Add to Cart"
+                              autoComplete="off"
+                              onInput={(e: Event) => {
+                                setTextOverrides((prev) => ({ ...prev, addToCartButton: (e.target as HTMLInputElement).value }));
+                                markAsDirty();
+                              }}
+                            />
+                            <s-button
+                              variant="secondary"
+                              icon="globe"
+                              onClick={() => openMultiLanguageModal("Add Button Text", [
+                                { key: "addToCartButton", label: "Button text", fallback: textOverrides.addToCartButton ?? "Add to Cart" },
+                              ])}
+                            >
+                              Multi Language
+                            </s-button>
+                          </s-stack>
                         </SettingsRow>
                       </s-stack>
                     </s-section>
@@ -3486,7 +3634,14 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Bundle Cart</h3>
-                          <s-button variant="secondary" onClick={() => handleSectionChange("messages")}>
+                          <s-button
+                            variant="secondary"
+                            icon="globe"
+                            onClick={() => openMultiLanguageModal("Bundle Cart", [
+                              { key: "yourBundle", label: "Bundle Cart Title", fallback: textOverrides.yourBundle ?? "Your Bundle" },
+                              { key: "reviewBundle", label: "Bundle Cart Subtitle", fallback: textOverrides.reviewBundle ?? "Review your bundle" },
+                            ])}
+                          >
                             Multi Language
                           </s-button>
                         </s-stack>
@@ -3520,19 +3675,25 @@ export default function ConfigureBundleFlow() {
                         <s-stack direction="block" gap="small-400">
                           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Cart line item discount display</p>
                           <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Shows how much the customer is saving on the bundle in cart.</p>
-                          <s-stack direction="vertical" gap="200">
-                            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                              <input type="radio" name="cartDiscountDisplay" value="defaults" defaultChecked readOnly style={{ margin: 0 }} />
-                              <span style={{ fontSize: 14 }}>Use app defaults</span>
+                          {[
+                            { value: "defaults", label: "Use app defaults", description: "Uses the discount format and label configured in your app settings." },
+                            { value: "custom", label: "Customize for this bundle", description: "Set a different discount format or label for this bundle only." },
+                          ].map(({ value, label, description }) => (
+                            <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                              <input
+                                type="radio"
+                                name="cartDiscountDisplay"
+                                value={value}
+                                checked={(textOverrides.cartDiscountDisplay ?? "defaults") === value}
+                                onChange={() => { setTextOverrides((prev) => ({ ...prev, cartDiscountDisplay: value })); markAsDirty(); }}
+                                style={{ marginTop: 3 }}
+                              />
+                              <span>
+                                <span style={{ display: "block", fontSize: 14 }}>{label}</span>
+                                <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>{description}</span>
+                              </span>
                             </label>
-                            <s-stack direction="inline" gap="small" align-y="center">
-                              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "not-allowed", opacity: 0.5 }}>
-                                <input type="radio" name="cartDiscountDisplay" value="custom" disabled style={{ margin: 0 }} />
-                                <span style={{ fontSize: 14 }}>Customize for this bundle</span>
-                              </label>
-                              <s-badge tone="info">Coming soon</s-badge>
-                            </s-stack>
-                          </s-stack>
+                          ))}
                           <s-button variant="secondary" onClick={() => handleSectionChange("discount_pricing")}>
                             Edit Defaults
                           </s-button>
@@ -3791,7 +3952,7 @@ export default function ConfigureBundleFlow() {
         </div>
 
       {/* Steps + Tiers Conflict Warning Modal */}
-      <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup">
+      <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup" onHide={() => setStepsTiersWarning({ open: false, onConfirm: null })}>
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14 }}>
             <strong>Wolfpack Bundles works best when the shopper flow and pricing flow match.</strong>
@@ -3812,7 +3973,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Page Selection Modal */}
-      <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront">
+      <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront" onHide={() => closePageSelectionModal()}>
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
             {bundle.bundleType === 'full_page'
@@ -3863,7 +4024,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Selected Products Modal */}
-      <s-modal ref={productsModalRef} heading="Selected products">
+      <s-modal ref={productsModalRef} heading="Selected products" onHide={handleCloseProductsModal}>
         {(() => {
           const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
           const selectedProducts = currentStep?.StepProduct || [];
@@ -3907,7 +4068,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Selected Collections Modal */}
-      <s-modal ref={collectionsModalRef} heading="Selected collections">
+      <s-modal ref={collectionsModalRef} heading="Selected collections" onHide={handleCloseCollectionsModal}>
         {(() => {
           const collections = selectedCollections[currentModalStepId] || [];
           return collections.length > 0 ? (
@@ -3967,19 +4128,31 @@ export default function ConfigureBundleFlow() {
         onItemClick={handleReadinessItemClick}
       />
 
+      <MultiLanguageTextModal
+        open={isMultiLanguageModalOpen}
+        title={multiLanguageTitle}
+        locales={shopLocales}
+        activeLocale={textOverridesLocale}
+        fields={multiLanguageFields}
+        valuesByLocale={textOverridesByLocale}
+        onActiveLocaleChange={setTextOverridesLocale}
+        onChange={updateLocalizedTextOverride}
+        onClose={() => setIsMultiLanguageModalOpen(false)}
+      />
+
       {/* Discard Unsaved Changes Confirmation Modal */}
-      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
+      <s-modal ref={discardModalRef} heading="Discard all unsaved changes" onHide={closeDiscardModal}>
         <div style={{ padding: '8px 0 20px' }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <s-button onClick={() => setShowDiscardModal(false)}>Continue Editing</s-button>
-          <s-button tone="critical" variant="primary" onClick={() => { handleDiscard(); setShowDiscardModal(false); }}>Discard Changes</s-button>
+          <s-button onClick={closeDiscardModal}>Continue Editing</s-button>
+          <s-button tone="critical" variant="primary" onClick={handleConfirmDiscard}>Discard Changes</s-button>
         </div>
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
-      <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">
+      <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?" onHide={() => setIsSyncModalOpen(false)}>
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14 }}>Syncing refreshes the Shopify data used by this Wolfpack Bundles configuration.</p>
           <ul style={{ margin: 0, paddingLeft: 20 }}>

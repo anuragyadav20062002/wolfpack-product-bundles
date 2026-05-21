@@ -300,6 +300,7 @@ const CUSTOM_FIELD_TYPE_OPTIONS = [
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { admin, session } = await requireAdminSession(request);
   const bundleId = params.bundleId!;
+  const showFirstLoadTour = new URL(request.url).searchParams.get("first_load") === "true";
 
   const bundle = await db.bundle.findUnique({
     where: { id: bundleId, shopId: session.shop },
@@ -334,7 +335,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const { checkAppEmbedEnabled } = await import(
       "../../../services/theme/app-embed-check.server"
     );
-    const result = await checkAppEmbedEnabled(admin, session.shop);
+    const embedBlockHandle =
+      bundle.bundleType === "product_page"
+        ? "bundle-product-page-embed"
+        : "bundle-full-page-embed";
+    const result = await checkAppEmbedEnabled(admin, session.shop, {
+      blockHandles: [embedBlockHandle],
+    });
     appEmbedEnabled = result.enabled;
   } catch {}
 
@@ -408,6 +415,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     shopLocales,
     shop: session.shop,
     fpbBundles,
+    showFirstLoadTour,
   });
 };
 
@@ -629,7 +637,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function WizardConfigureStep() {
-  const { bundle, readiness, shopLocales, shop, fpbBundles } =
+  const { bundle, readiness, shopLocales, shop, fpbBundles, showFirstLoadTour } =
     useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
@@ -2840,6 +2848,7 @@ export default function WizardConfigureStep() {
       <BundleGuidedTour
         steps={WIZARD_CONFIGURE_TOUR_STEPS}
         shop={shop}
+        enabled={showFirstLoadTour}
         onComplete={() => setReadinessOpen(true)}
         onDismiss={() => {}}
       />

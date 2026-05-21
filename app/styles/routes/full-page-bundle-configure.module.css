@@ -171,6 +171,10 @@
   min-width: 0;
 }
 
+.mainColumn .card {
+  padding: 20px 24px 24px 20px;
+}
+
 .leftCardHeader {
   display: flex;
   align-items: center;
@@ -398,75 +402,39 @@
 }
 
 .visibilityGuideGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  composes: visibilityGuideGrid from "./bundle-configure-shared.module.css";
 }
 
 .visibilityGuideCard {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid #e3e5e7;
-  border-radius: 8px;
-  background: #fff;
+  composes: visibilityGuideCard from "./bundle-configure-shared.module.css";
 }
 
 .visibilityGuideMedia {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 74px;
-  border-radius: 8px;
-  background: #f1f2f4;
-  color: #6b7280;
+  composes: visibilityGuideMedia from "./bundle-configure-shared.module.css";
 }
 
 .visibilitySetupTime {
-  color: #6d7175;
-  font-size: 12px;
+  composes: visibilitySetupTime from "./bundle-configure-shared.module.css";
 }
 
 .settingsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
-  border-top: 1px solid #edf0f2;
-}
-
-.settingsRow:first-of-type {
-  border-top: 0;
-  padding-top: 0;
+  composes: settingsRow from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowText {
-  flex: 1;
-  min-width: 0;
+  composes: settingsRowText from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 14px;
-  font-weight: 600;
+  composes: settingsRowTitle from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowDescription {
-  margin: 4px 0 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
+  composes: settingsRowDescription from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowControl {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 168px;
+  composes: settingsRowControl from "./bundle-configure-shared.module.css";
 }
 
 .settingsNestedFields {
@@ -536,15 +504,7 @@
 }
 
 .displayOptionRow {
-  position: relative;
-  overflow: visible;
-  padding: 12px 0;
-  border-top: 1px solid #edf0f2;
-}
-
-.displayOptionRow:first-child {
-  border-top: 0;
-  padding-top: 0;
+  composes: displayOptionRow from "./bundle-configure-shared.module.css";
 }
 
 .displayOptionRow .richHelp {
@@ -570,22 +530,15 @@
 }
 
 .displayOptionText {
-  flex: 1;
-  min-width: 0;
+  composes: displayOptionText from "./bundle-configure-shared.module.css";
 }
 
 .displayOptionTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 13px;
-  font-weight: 600;
+  composes: displayOptionTitle from "./bundle-configure-shared.module.css";
 }
 
 .displayOptionDescription {
-  margin: 3px 0 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
+  composes: displayOptionDescription from "./bundle-configure-shared.module.css";
 }
 
 .inlineHelpAction {
@@ -593,22 +546,11 @@
 }
 
 .nestedDisplayOptions {
-  margin-top: 10px;
-  padding: 12px;
-  border: 1px solid #edf0f2;
-  border-radius: 8px;
-  background: #fafbfb;
+  composes: nestedDisplayOptions from "./bundle-configure-shared.module.css";
 }
 
 .optionNote {
-  margin: 8px 0 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.optionNote strong {
-  color: #202223;
+  composes: optionNote from "./bundle-configure-shared.module.css";
 }
 
 .modeOptions {
@@ -707,6 +649,7 @@
   position: absolute;
   top: calc(100% + 10px);
   left: 50%;
+  --rich-help-arrow-left: 50%;
   width: min(320px, calc(100vw - 48px));
   padding: 18px;
   transform: translate(-50%, 8px);
@@ -734,7 +677,7 @@
 .richHelpCard::before {
   position: absolute;
   top: -6px;
-  left: 50%;
+  left: var(--rich-help-arrow-left);
   width: 12px;
   height: 12px;
   transform: translateX(-50%) rotate(45deg);
@@ -742,6 +685,13 @@
   border-top: 1px solid #dfe3e8;
   background: #ffffff;
   content: "";
+}
+
+.richHelpCardFloating::before,
+.displayOptionRow .richHelpCardFloating::before {
+  right: auto;
+  left: var(--rich-help-arrow-left);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .richHelpVisual {
@@ -844,49 +794,11 @@
 
 /* ── Pending badge inline info icon ──────────────────────────── */
 .pendingBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 6px;
-  border-radius: 10px;
-  background: #ffd79d;
-  color: #4a1504;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.4;
-  white-space: nowrap;
-  cursor: default;
-  user-select: none;
+  composes: pendingBadge from "./bundle-configure-shared.module.css";
 }
 
 .pendingTooltipCard {
-  width: 200px;
-  padding: 10px 12px;
-  border: 1px solid #dfe3e8;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.14);
-  color: #202223;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.5;
-  text-align: left;
-  white-space: normal;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-.pendingTooltipCard::before {
-  position: absolute;
-  top: -6px;
-  right: 10px;
-  width: 10px;
-  height: 10px;
-  transform: rotate(45deg);
-  border-left: 1px solid #dfe3e8;
-  border-top: 1px solid #dfe3e8;
-  background: #ffffff;
-  content: "";
+  composes: pendingTooltipCard from "./bundle-configure-shared.module.css";
 }
 
 /* ── Step Chip Navigation ─────────────────────────────────────── */
@@ -900,8 +812,8 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 12px 16px 16px;
-  margin: 12px -24px 0;
+  padding: 12px 24px 16px 20px;
+  margin: 12px -24px 0 -20px;
   border-top: 1px solid #ebecef;
 }
 
@@ -1018,64 +930,36 @@
 
 /* ── Card ─────────────────────────────────────────────────────── */
 .card {
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  padding: 24px;
-  margin-bottom: 16px;
+  composes: card from "./bundle-configure-shared.module.css";
 }
 
 .cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  composes: cardHeader from "./bundle-configure-shared.module.css";
 }
 
 /* ── Step Config Two-column ───────────────────────────────────── */
 .stepConfigRow {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 20px;
-  align-items: start;
+  composes: stepConfigRow from "./bundle-configure-shared.module.css";
 }
 
 .iconColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
+  composes: iconColumn from "./bundle-configure-shared.module.css";
 }
 
 .iconBox {
-  width: 140px;
-  height: 120px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #fafafa;
+  composes: iconBox from "./bundle-configure-shared.module.css";
 }
 
 .iconImg {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  composes: iconImg from "./bundle-configure-shared.module.css";
 }
 
 .iconPlaceholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #d1d5db;
+  composes: iconPlaceholder from "./bundle-configure-shared.module.css";
 }
 
 .fieldsColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  composes: fieldsColumn from "./bundle-configure-shared.module.css";
 }
 
 /* ── Tabs ─────────────────────────────────────────────────────── */
@@ -1169,69 +1053,32 @@
 }
 
 .categoryDrag {
-  display: grid;
-  place-items: center;
-  color: #6b7280;
-  font-size: 16px;
-  line-height: 1;
-  cursor: grab;
-  flex-shrink: 0;
+  composes: categoryDrag from "./bundle-configure-shared.module.css";
 }
 
 .categoryName {
-  overflow: hidden;
-  font-size: 13px;
-  font-weight: 600;
-  color: #202223;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  composes: categoryName from "./bundle-configure-shared.module.css";
 }
 
 .categoryActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  composes: categoryActions from "./bundle-configure-shared.module.css";
 }
 
 /* EB-style per-category accordion row */
 .categoryAccordion {
-  margin-bottom: 6px;
-  border: 1px solid #dfe3e8;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06);
-  overflow: hidden;
+  composes: categoryAccordion from "./bundle-configure-shared.module.css";
 }
 
 .categoryAccordionHeader {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px 6px 10px;
-  min-height: 40px;
-  background: #ffffff;
-  cursor: pointer;
-  user-select: none;
-}
-
-.categoryAccordionHeader:hover {
-  background: #f9fafb;
-}
-
-.categoryAccordionHeader[aria-expanded="true"] {
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  composes: categoryAccordionHeader from "./bundle-configure-shared.module.css";
 }
 
 .categoryAccordionBody {
-  padding: 14px 14px 8px;
-  background: #ffffff;
+  composes: categoryAccordionBody from "./bundle-configure-shared.module.css";
 }
 
 .categoryDragOver {
-  border: 2px solid #458fff;
-  box-shadow: 0 0 0 3px rgba(69, 143, 255, 0.12);
+  composes: categoryDragOver from "./bundle-configure-shared.module.css";
 }
 
 .categoryChevron {
@@ -1263,53 +1110,19 @@
 }
 
 .categoryNameInput {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid #c9cccf;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #202223;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.categoryNameInput:hover {
-  border-color: #919eab;
-}
-
-.categoryNameInput:focus {
-  border-color: #458fff;
-  box-shadow: 0 0 0 2px rgba(69, 143, 255, 0.15);
+  composes: categoryNameInput from "./bundle-configure-shared.module.css";
 }
 
 .ruleCard {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #ffffff;
+  composes: ruleCard from "./bundle-configure-shared.module.css";
 }
 
 .ruleHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  composes: ruleHeader from "./bundle-configure-shared.module.css";
 }
 
 .ruleFields {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 8px;
+  composes: ruleFields from "./bundle-configure-shared.module.css";
 }
 
 .ruleValueInput {
@@ -1344,87 +1157,45 @@
 }
 
 .panelHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  composes: panelHeader from "./bundle-configure-shared.module.css";
 }
 
 .panelTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 16px;
-  font-weight: 650;
-  line-height: 1.3;
+  composes: panelTitle from "./bundle-configure-shared.module.css";
 }
 
 .panelDescription {
-  margin: 6px 0 0;
-  color: #6d7175;
-  font-size: 13px;
-  line-height: 1.35;
+  composes: panelDescription from "./bundle-configure-shared.module.css";
 }
 
 .mediaFieldGrid {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
+  composes: mediaFieldGrid from "./bundle-configure-shared.module.css";
 }
 
 .messagePreview {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafbfb;
+  composes: messagePreview from "./bundle-configure-shared.module.css";
 }
 
 .messagePreviewIcon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  background: #f1f2f4;
-  color: #6d7175;
-  font-size: 24px;
+  composes: messagePreviewIcon from "./bundle-configure-shared.module.css";
 }
 
 .messagePreviewTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 14px;
-  font-weight: 650;
+  composes: messagePreviewTitle from "./bundle-configure-shared.module.css";
 }
 
 .messageNote {
-  margin: 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
+  composes: messageNote from "./bundle-configure-shared.module.css";
 }
 
 /* ── Empty State ──────────────────────────────────────────────── */
 .emptyState {
-  border: 1.5px dashed #d1d5db;
-  border-radius: 8px;
-  padding: 28px 20px;
-  text-align: center;
-  color: #9ca3af;
-  font-size: 14px;
-  margin-bottom: 12px;
+  composes: emptyState from "./bundle-configure-shared.module.css";
 }
 
 /* ── Rules List ───────────────────────────────────────────────── */
 .rulesList {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
+  composes: rulesList from "./bundle-configure-shared.module.css";
 }
 
 .ruleRow {
@@ -1590,7 +1361,9 @@
 }
 
 .productMenuDropdownItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 7px 10px;
   border: none;

@@ -57,23 +57,23 @@ export const PPB_TOUR_STEPS: TourStep[] = [
 
 export const WIZARD_CONFIGURE_TOUR_STEPS: TourStep[] = [
   {
-    title: "Configure Your Step",
-    body: "Set a name and icon for this bundle step. The step name appears in the widget navigation.",
-    targetSection: "wizard-step-config",
+    title: "Enable App Embed",
+    body: "The theme app extension must be enabled before any bundle can render on the storefront.",
+    targetSection: "fpb-readiness-score",
   },
   {
     title: "Add Products",
-    body: "Select the products customers can choose from in this step. Browse by product or collection.",
+    body: "Add at least one product or collection to a step so shoppers have something to select.",
     targetSection: "wizard-select-product",
   },
   {
-    title: "Set Rules",
-    body: "Define conditions like minimum quantity to control how customers make their selection.",
-    targetSection: "wizard-rules",
+    title: "Place The Bundle",
+    body: "Place the bundle on a storefront page or product page so shoppers can find it.",
+    targetSection: "wizard-bundle-status",
   },
   {
-    title: "Bundle Status",
-    body: "Set your bundle to Active when you're ready for customers to see it, or keep it as Draft while configuring.",
+    title: "Set Active",
+    body: "Set the bundle and its parent product to Active when the minimum setup is complete.",
     targetSection: "wizard-bundle-status",
   },
 ];

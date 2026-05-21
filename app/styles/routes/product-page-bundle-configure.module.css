@@ -158,6 +158,10 @@
   min-width: 0;
 }
 
+.mainColumn .card {
+  padding: 20px 24px 24px 20px;
+}
+
 .leftCardHeader {
   display: flex;
   align-items: center;
@@ -370,23 +374,17 @@
 
 /* ── Step Flow card ──────────────────────────────────────────── */
 .card {
-  padding: 16px;
-  margin-bottom: 16px;
-  border: 1px solid #e3e5e7;
-  border-radius: 8px;
-  background: #fff;
+  composes: card from "./bundle-configure-shared.module.css";
 }
 
 .cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  composes: cardHeader from "./bundle-configure-shared.module.css";
 }
 
 .stepFlowCard {
+  overflow: visible;
   margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .stepFlowTitleRow {
@@ -410,63 +408,64 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 16px;
+  padding: 12px 24px 16px 20px;
+  margin: 12px -24px 0 -20px;
+  border-top: 1px solid #ebecef;
 }
 
-.stepChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: transparent;
-  color: #202223;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.stepChip:hover {
-  border-color: #9ca3af;
-  background: #f6f6f7;
-}
-
+.stepChip,
 .stepChipActive {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid #202223;
+  gap: 8px;
+  min-height: 38px;
+  max-width: 220px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  background: #202223;
-  color: white;
+  background: #ffffff;
+  color: #202223;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.stepChip:hover,
+.stepChipActive:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.08);
+}
+
+.stepChipActive {
+  border-color: #b8b8b8;
+  background: #f7f7f7;
+  box-shadow: inset 0 0 0 1px #d7d7d7;
 }
 
 .stepChipNumber {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 11px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e3e3e3;
+  color: #202223;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .stepChipActive .stepChipNumber {
-  background: rgba(255, 255, 255, 0.25);
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #c9cccf;
 }
 
 .stepChipLabel {
-  max-width: 120px;
   overflow: hidden;
+  min-width: 0;
+  max-width: 140px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -478,27 +477,26 @@
   line-height: 1;
 }
 
-.stepChipActive .stepChipChevron {
-  color: rgba(255, 255, 255, 0.7);
-}
-
 .addStepBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
-  border: 0;
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid #1f2937;
   border-radius: 8px;
-  background: #202223;
+  background: #2f2f31;
   color: white;
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .addStepBtn:hover {
-  background: #303233;
+  border-color: #111827;
+  background: #1f1f21;
 }
 
 /* ── Slide animations ────────────────────────────────────────── */
@@ -546,166 +544,140 @@
 
 /* ── Settings rows ───────────────────────────────────────────── */
 .settingsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 0;
-  border-top: 1px solid #edf0f2;
-}
-
-.settingsRow:first-of-type {
-  border-top: 0;
-  padding-top: 0;
+  composes: settingsRow from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowText {
-  flex: 1;
-  min-width: 0;
+  composes: settingsRowText from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 14px;
-  font-weight: 600;
+  composes: settingsRowTitle from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowDescription {
-  margin: 4px 0 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
+  composes: settingsRowDescription from "./bundle-configure-shared.module.css";
 }
 
 .settingsRowControl {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 168px;
+  composes: settingsRowControl from "./bundle-configure-shared.module.css";
 }
 
 /* ── Add-Ons / Messages panel styles ────────────────────────── */
 .panelHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  composes: panelHeader from "./bundle-configure-shared.module.css";
 }
 
 .panelTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 16px;
-  font-weight: 650;
-  line-height: 1.3;
+  composes: panelTitle from "./bundle-configure-shared.module.css";
 }
 
 .panelDescription {
-  margin: 6px 0 0;
-  color: #6d7175;
-  font-size: 13px;
-  line-height: 1.35;
+  composes: panelDescription from "./bundle-configure-shared.module.css";
 }
 
 .mediaFieldGrid {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
+  composes: mediaFieldGrid from "./bundle-configure-shared.module.css";
+}
+
+.stepConfigRow {
+  composes: stepConfigRow from "./bundle-configure-shared.module.css";
 }
 
 .iconColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
+  composes: iconColumn from "./bundle-configure-shared.module.css";
 }
 
 .iconBox {
-  width: 140px;
-  height: 120px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: #fafafa;
+  composes: iconBox from "./bundle-configure-shared.module.css";
 }
 
 .iconImg {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  composes: iconImg from "./bundle-configure-shared.module.css";
 }
 
 .iconPlaceholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #d1d5db;
+  composes: iconPlaceholder from "./bundle-configure-shared.module.css";
+}
+
+.fieldsColumn {
+  composes: fieldsColumn from "./bundle-configure-shared.module.css";
 }
 
 .ruleCard {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #ffffff;
+  composes: ruleCard from "./bundle-configure-shared.module.css";
 }
 
 .ruleHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  composes: ruleHeader from "./bundle-configure-shared.module.css";
 }
 
 .ruleFields {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 8px;
-  margin-bottom: 10px;
+  composes: ruleFields from "./bundle-configure-shared.module.css";
+}
+
+.rulesList {
+  composes: rulesList from "./bundle-configure-shared.module.css";
+}
+
+.emptyState {
+  composes: emptyState from "./bundle-configure-shared.module.css";
+}
+
+.visibilityGuideGrid {
+  composes: visibilityGuideGrid from "./bundle-configure-shared.module.css";
+}
+
+.visibilityGuideCard {
+  composes: visibilityGuideCard from "./bundle-configure-shared.module.css";
+}
+
+.visibilityGuideMedia {
+  composes: visibilityGuideMedia from "./bundle-configure-shared.module.css";
+}
+
+.visibilitySetupTime {
+  composes: visibilitySetupTime from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionRow {
+  composes: displayOptionRow from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionText {
+  composes: displayOptionText from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionTitle {
+  composes: displayOptionTitle from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionDescription {
+  composes: displayOptionDescription from "./bundle-configure-shared.module.css";
+}
+
+.nestedDisplayOptions {
+  composes: nestedDisplayOptions from "./bundle-configure-shared.module.css";
+}
+
+.optionNote {
+  composes: optionNote from "./bundle-configure-shared.module.css";
 }
 
 .messagePreview {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafbfb;
+  composes: messagePreview from "./bundle-configure-shared.module.css";
 }
 
 .messagePreviewIcon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  background: #f1f2f4;
-  color: #6d7175;
-  font-size: 24px;
+  composes: messagePreviewIcon from "./bundle-configure-shared.module.css";
 }
 
 .messagePreviewTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 14px;
-  font-weight: 650;
+  composes: messagePreviewTitle from "./bundle-configure-shared.module.css";
 }
 
 .messageNote {
-  margin: 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
+  composes: messageNote from "./bundle-configure-shared.module.css";
 }
 
 .templateVariableGrid {
@@ -722,67 +694,31 @@
 
 /* ── Category Accordion (multi-category system — EB parity) ──── */
 .categoryDrag {
-  display: grid;
-  place-items: center;
-  color: #6b7280;
-  font-size: 16px;
-  line-height: 1;
-  cursor: grab;
-  flex-shrink: 0;
+  composes: categoryDrag from "./bundle-configure-shared.module.css";
 }
 
 .categoryName {
-  overflow: hidden;
-  font-size: 13px;
-  font-weight: 600;
-  color: #202223;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  composes: categoryName from "./bundle-configure-shared.module.css";
 }
 
 .categoryActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
+  composes: categoryActions from "./bundle-configure-shared.module.css";
 }
 
 .categoryAccordion {
-  margin-bottom: 6px;
-  border: 1px solid #dfe3e8;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06);
-  overflow: hidden;
+  composes: categoryAccordion from "./bundle-configure-shared.module.css";
 }
 
 .categoryAccordionHeader {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px 6px 10px;
-  min-height: 40px;
-  background: #ffffff;
-  cursor: pointer;
-  user-select: none;
-}
-
-.categoryAccordionHeader:hover {
-  background: #f9fafb;
-}
-
-.categoryAccordionHeader[aria-expanded="true"] {
-  border-bottom: 1px solid #e5e7eb;
+  composes: categoryAccordionHeader from "./bundle-configure-shared.module.css";
 }
 
 .categoryAccordionBody {
-  padding: 14px 14px 8px;
-  background: #ffffff;
+  composes: categoryAccordionBody from "./bundle-configure-shared.module.css";
 }
 
 .categoryDragOver {
-  border: 2px solid #458fff;
-  box-shadow: 0 0 0 3px rgba(69, 143, 255, 0.12);
+  composes: categoryDragOver from "./bundle-configure-shared.module.css";
 }
 
 .categoryChevron {
@@ -814,20 +750,7 @@
 }
 
 .categoryNameInput {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid #c9cccf;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #202223;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  outline: none;
-  box-sizing: border-box;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  composes: categoryNameInput from "./bundle-configure-shared.module.css";
 }
 
 .tabRow {
@@ -986,7 +909,9 @@
 }
 
 .productMenuDropdownItem {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 7px 10px;
   border: none;
@@ -1029,6 +954,7 @@
   position: absolute;
   top: calc(100% + 10px);
   left: 50%;
+  --rich-help-arrow-left: 50%;
   width: min(320px, calc(100vw - 48px));
   padding: 18px;
   transform: translate(-50%, 8px);
@@ -1056,7 +982,7 @@
 .richHelpCard::before {
   position: absolute;
   top: -6px;
-  left: 50%;
+  left: var(--rich-help-arrow-left);
   width: 12px;
   height: 12px;
   transform: translateX(-50%) rotate(45deg);
@@ -1064,6 +990,12 @@
   border-top: 1px solid #dfe3e8;
   background: #ffffff;
   content: "";
+}
+
+.richHelpCardFloating::before {
+  right: auto;
+  left: var(--rich-help-arrow-left);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .richHelpImagePlaceholder {
@@ -1090,4 +1022,13 @@
   color: #4b5563;
   font-size: 13px;
   line-height: 1.35;
+}
+
+/* ── Pending badge inline info icon ──────────────────────────── */
+.pendingBadge {
+  composes: pendingBadge from "./bundle-configure-shared.module.css";
+}
+
+.pendingTooltipCard {
+  composes: pendingTooltipCard from "./bundle-configure-shared.module.css";
 }
