@@ -686,6 +686,19 @@ export default function WizardConfigureStep() {
 
   const statusSelectRef = useRef<any>(null);
   const localeSelectRef = useRef<any>(null);
+  const localeModalRef = useRef<any>(null);
+
+  useEffect(() => {
+    const modal = localeModalRef.current;
+    if (!modal) return;
+    const handler = () => setLocaleModalOpen(false);
+    modal.addEventListener("dismiss", handler);
+    modal.addEventListener("hide", handler);
+    return () => {
+      modal.removeEventListener("dismiss", handler);
+      modal.removeEventListener("hide", handler);
+    };
+  }, []);
 
   // ── Step 03 Pricing state ─────────────────────────────────────
   const pricing = useBundlePricing({
@@ -2473,9 +2486,9 @@ export default function WizardConfigureStep() {
 
       {/* Multi-Language Modal */}
       <s-modal
+        ref={localeModalRef}
         open={localeModalOpen || undefined}
         label="Multi Language"
-        onHide={() => setLocaleModalOpen(false)}
         suppressHydrationWarning
       >
         <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>

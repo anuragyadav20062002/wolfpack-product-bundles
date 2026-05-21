@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-21
-**Last Updated:** 2026-05-21 19:40
+**Last Updated:** 2026-05-21 21:30
 
 ## Overview
 Audit and wire the FPB and PPB configure/edit pages against the EB reference, focusing on multilingual controls, PPB placement/visibility, shared FPB styling, right-panel spacing, theme app extension detection, Bundle Settings parity, control wiring, and first-load guided tour readiness requirements.
@@ -95,6 +95,22 @@ Audit and wire the FPB and PPB configure/edit pages against the EB reference, fo
   - Attempted to reload the embedded WPB Admin configure page for live modal verification after the rebuild.
   - Chrome produced a `beforeunload` dialog and the DevTools dialog-handling call was rejected by the runtime usage-limit guard, so live post-patch verification could not be completed without risking a bypass.
 
+### 2026-05-21 21:30 - Root-cause modal fix: showPolarisModal + native dismiss wiring
+
+- Root causes identified and fixed (all three together):
+  1. **`showPolarisModal` had conditional guard bug** — `show()` was never called when `showOverlay` existed on `s-modal`, so modals never opened. Fixed to call `show()` unconditionally (same fix applied to `hide()` in ppb-eb-configure-clone-2).
+  2. **`onHide` JSX prop silently dropped by React 18** — React 18 does not wire custom event listeners for web component events when passed as JSX props. All `onHide` props on `s-modal` elements were no-ops, causing SSR hydration mismatch warnings and no-op close handlers.
+  3. **Native dismiss not syncing React state** — When user pressed Escape or backdrop, `s-modal` closed visually but React state stayed `true`, causing `useEffect` to immediately re-open it.
+- Fix implemented:
+  - `app/routes/app/_shared/bundle-configure/modal-utils.ts`: Fixed `showPolarisModal` to call `show()` unconditionally. Added `useModalHideListener(ref, onHide)` hook that attaches `addEventListener("dismiss", ...)` and `addEventListener("hide", ...)` with a stable `handlerRef` to avoid re-attachment on every render.
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`: Added `useModalHideListener` import. Replaced old `discardModal addEventListener` useEffect with 5 `useModalHideListener` calls (sync, pageSelection, products, collections, discard). Removed all 5 `onHide` props from `s-modal` JSX.
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`: Same pattern. 6 `useModalHideListener` calls placed after `handleCloseProductsModal`/`handleCloseCollectionsModal` declarations to avoid temporal dead zone. Removed all 6 `onHide` props from `s-modal` JSX.
+  - `app/routes/app/app.dashboard/route.tsx`: Fixed `showOverlay`/`hideOverlay` calls to also call `show()`/`hide()` unconditionally. Added inline `useEffect` dismiss listener. Removed `onHide` from delete modal JSX.
+  - `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`: Added `localeModalRef`, inline `useEffect` dismiss listener. Removed `onHide` from locale modal JSX.
+- Verification:
+  - `npx eslint --max-warnings 9999 ...` passed with 0 errors.
+  - `npm run build` passed with 0 errors.
+
 ## Related Documentation
 - `docs/ppb-eb-configure-clone/eb-ppb-configure-audit-2026-05-21.md`
 - `docs/eb-fpb-exploration/EB_FPB_CONFIGURE_EXPLORATION.md`
@@ -113,3 +129,4 @@ Audit and wire the FPB and PPB configure/edit pages against the EB reference, fo
 - [x] Phase 10: EB modal reverse engineering and modal fixes
 - [x] Phase 11: PPB/FPB Bundle Settings parity rerun
 - [x] Phase 12: Category empty state and ellipsis icon parity
+- [x] Phase 13: Root-cause modal fix — showPolarisModal bug + useModalHideListener (all routes)

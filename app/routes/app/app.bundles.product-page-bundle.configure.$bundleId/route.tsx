@@ -61,6 +61,7 @@ import {
 import {
   showPolarisModal,
   hidePolarisModal,
+  useModalHideListener,
 } from "../_shared/bundle-configure/modal-utils";
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
@@ -1188,12 +1189,11 @@ export default function ConfigureBundleFlow() {
     showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
   }, [showDiscardModal]);
 
-  useEffect(() => {
-    const modal = discardModalRef.current;
-    const handleDismiss = () => setShowDiscardModal(false);
-    modal?.addEventListener('dismiss', handleDismiss);
-    return () => modal?.removeEventListener('dismiss', handleDismiss);
-  }, []);
+  useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
+  useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
+  useModalHideListener(productsModalRef, handleCloseProductsModal);
+  useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
+  useModalHideListener(discardModalRef, () => setShowDiscardModal(false));
 
   const closeDiscardModal = useCallback(() => {
     hidePolarisModal(discardModalRef);
@@ -3505,7 +3505,7 @@ export default function ConfigureBundleFlow() {
         </div>
 
       {/* Page Selection Modal */}
-      <s-modal ref={pageSelectionModalRef} heading="Place Widget" onHide={closePageSelectionModal}>
+      <s-modal ref={pageSelectionModalRef} heading="Place Widget">
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
             Select a template to open the theme editor with widget placement.
@@ -3564,7 +3564,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Selected Products Modal */}
-      <s-modal ref={productsModalRef} heading="Selected Products" onHide={handleCloseProductsModal}>
+      <s-modal ref={productsModalRef} heading="Selected Products">
         <s-stack direction="block" gap="base">
           {(() => {
             const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
@@ -3629,7 +3629,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Selected Collections Modal */}
-      <s-modal ref={collectionsModalRef} heading="Selected Collections" onHide={handleCloseCollectionsModal}>
+      <s-modal ref={collectionsModalRef} heading="Selected Collections">
         <s-stack direction="block" gap="base">
           {(() => {
             const collections = selectedCollections[currentModalStepId] || [];
@@ -3674,7 +3674,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Discard Unsaved Changes Confirmation Modal */}
-      <s-modal ref={discardModalRef} heading="Discard all unsaved changes" onHide={closeDiscardModal}>
+      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
         <div style={{ padding: '8px 0 20px' }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
         </div>
@@ -3685,7 +3685,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
-      <s-modal ref={syncModalRef} heading="Sync Bundle?" onHide={() => setIsSyncModalOpen(false)}>
+      <s-modal ref={syncModalRef} heading="Sync Bundle?">
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14 }}>
             This will delete and re-create all Shopify data for this bundle:

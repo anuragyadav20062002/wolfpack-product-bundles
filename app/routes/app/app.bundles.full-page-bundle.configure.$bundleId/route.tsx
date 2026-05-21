@@ -71,6 +71,7 @@ import {
 import {
   showPolarisModal,
   hidePolarisModal,
+  useModalHideListener,
 } from "../_shared/bundle-configure/modal-utils";
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
@@ -775,13 +776,6 @@ export default function ConfigureBundleFlow() {
     showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
   }, [showDiscardModal]);
 
-  useEffect(() => {
-    const modal = discardModalRef.current;
-    const handleDismiss = () => setShowDiscardModal(false);
-    modal?.addEventListener('dismiss', handleDismiss);
-    return () => modal?.removeEventListener('dismiss', handleDismiss);
-  }, []);
-
   const closeDiscardModal = useCallback(() => {
     hidePolarisModal(discardModalRef);
     setShowDiscardModal(false);
@@ -1424,6 +1418,12 @@ export default function ConfigureBundleFlow() {
     setCurrentModalStepId('');
   }, []);
 
+  useModalHideListener(stepsTiersModalRef, () => setStepsTiersWarning({ open: false, onConfirm: null }));
+  useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
+  useModalHideListener(productsModalRef, handleCloseProductsModal);
+  useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
+  useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
+  useModalHideListener(discardModalRef, () => setShowDiscardModal(false));
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
@@ -3952,7 +3952,7 @@ export default function ConfigureBundleFlow() {
         </div>
 
       {/* Steps + Tiers Conflict Warning Modal */}
-      <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup" onHide={() => setStepsTiersWarning({ open: false, onConfirm: null })}>
+      <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup">
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14 }}>
             <strong>Wolfpack Bundles works best when the shopper flow and pricing flow match.</strong>
@@ -3973,7 +3973,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Page Selection Modal */}
-      <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront" onHide={() => closePageSelectionModal()}>
+      <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront">
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
             {bundle.bundleType === 'full_page'
@@ -4024,7 +4024,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Selected Products Modal */}
-      <s-modal ref={productsModalRef} heading="Selected products" onHide={handleCloseProductsModal}>
+      <s-modal ref={productsModalRef} heading="Selected products">
         {(() => {
           const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
           const selectedProducts = currentStep?.StepProduct || [];
@@ -4068,7 +4068,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Selected Collections Modal */}
-      <s-modal ref={collectionsModalRef} heading="Selected collections" onHide={handleCloseCollectionsModal}>
+      <s-modal ref={collectionsModalRef} heading="Selected collections">
         {(() => {
           const collections = selectedCollections[currentModalStepId] || [];
           return collections.length > 0 ? (
@@ -4141,7 +4141,7 @@ export default function ConfigureBundleFlow() {
       />
 
       {/* Discard Unsaved Changes Confirmation Modal */}
-      <s-modal ref={discardModalRef} heading="Discard all unsaved changes" onHide={closeDiscardModal}>
+      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
         <div style={{ padding: '8px 0 20px' }}>
           <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
         </div>
@@ -4152,7 +4152,7 @@ export default function ConfigureBundleFlow() {
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
-      <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?" onHide={() => setIsSyncModalOpen(false)}>
+      <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">
         <s-stack direction="block" gap="small">
           <p style={{ margin: 0, fontSize: 14 }}>Syncing refreshes the Shopify data used by this Wolfpack Bundles configuration.</p>
           <ul style={{ margin: 0, paddingLeft: 20 }}>

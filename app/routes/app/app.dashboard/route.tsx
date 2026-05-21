@@ -276,6 +276,7 @@ export default function Dashboard() {
   const handleDeleteBundle = useCallback((bundleId: string) => {
     openDeleteModal(bundleId);
     deleteModalRef.current?.showOverlay?.();
+    deleteModalRef.current?.show?.();
   }, [openDeleteModal]);
 
   const handleConfirmDelete = useCallback(() => {
@@ -287,12 +288,26 @@ export default function Dashboard() {
       fetcher.submit(formData, { method: "post" });
       closeDeleteModal();
       deleteModalRef.current?.hideOverlay?.();
+      deleteModalRef.current?.hide?.();
     }
   }, [bundleToDelete, fetcher, closeDeleteModal]);
 
   const handleCancelDelete = useCallback(() => {
     closeDeleteModal();
     deleteModalRef.current?.hideOverlay?.();
+    deleteModalRef.current?.hide?.();
+  }, [closeDeleteModal]);
+
+  useEffect(() => {
+    const modal = deleteModalRef.current;
+    if (!modal) return;
+    const handler = () => closeDeleteModal();
+    modal.addEventListener("dismiss", handler);
+    modal.addEventListener("hide", handler);
+    return () => {
+      modal.removeEventListener("dismiss", handler);
+      modal.removeEventListener("hide", handler);
+    };
   }, [closeDeleteModal]);
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
@@ -445,7 +460,6 @@ export default function Dashboard() {
         ref={deleteModalRef}
         id="delete-bundle-modal"
         heading={t("dashboard.deleteModal.heading")}
-        onHide={handleCancelDelete}
       >
         <s-button slot="primaryAction" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
         <s-button slot="secondaryActions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
