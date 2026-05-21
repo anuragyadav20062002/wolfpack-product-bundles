@@ -777,7 +777,6 @@ export default function ConfigureBundleFlow() {
   }, [showDiscardModal]);
 
   const closeDiscardModal = useCallback(() => {
-    hidePolarisModal(discardModalRef);
     setShowDiscardModal(false);
   }, []);
 
@@ -4142,13 +4141,9 @@ export default function ConfigureBundleFlow() {
 
       {/* Discard Unsaved Changes Confirmation Modal */}
       <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
-        <div style={{ padding: '8px 0 20px' }}>
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <s-button onClick={closeDiscardModal}>Continue Editing</s-button>
-          <s-button tone="critical" variant="primary" onClick={handleConfirmDiscard}>Discard Changes</s-button>
-        </div>
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
+        <s-button slot="primaryAction" tone="critical" variant="primary" onClick={handleConfirmDiscard}>Discard Changes</s-button>
+        <s-button slot="secondaryActions" onClick={closeDiscardModal}>Continue Editing</s-button>
       </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}

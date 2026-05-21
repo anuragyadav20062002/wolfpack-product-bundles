@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-21
-**Last Updated:** 2026-05-21 21:30
+**Last Updated:** 2026-05-21 22:00
 
 ## Overview
 Audit and wire the FPB and PPB configure/edit pages against the EB reference, focusing on multilingual controls, PPB placement/visibility, shared FPB styling, right-panel spacing, theme app extension detection, Bundle Settings parity, control wiring, and first-load guided tour readiness requirements.
@@ -111,6 +111,22 @@ Audit and wire the FPB and PPB configure/edit pages against the EB reference, fo
   - `npx eslint --max-warnings 9999 ...` passed with 0 errors.
   - `npm run build` passed with 0 errors.
 
+### 2026-05-21 22:00 - Discard modal proper Polaris slot fix (PPB + FPB)
+
+- User reported discard modal buttons not closing the modal despite discard logic executing behind it.
+- Root causes (two):
+  1. `closeDiscardModal` in both PPB and FPB called `hidePolarisModal` directly in the click handler — the correct pattern (all working modals) is state-only in click handlers, letting the `useEffect` drive the imperative close.
+  2. Modal buttons were wrapped in `<div>` elements in the body slot — Polaris `s-modal` requires `slot="primaryAction"` and `slot="secondaryActions"` directly on `s-button` elements to wire native close behavior.
+- Fix applied to PPB and FPB:
+  - `closeDiscardModal` changed to state-only (`setShowDiscardModal(false)` only, `hidePolarisModal` call removed).
+  - Discard modal JSX updated: `<div>` wrappers removed, `slot="primaryAction"` on Discard Changes button, `slot="secondaryActions"` on Continue Editing button.
+- Files modified:
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+- Verification:
+  - `npx eslint --max-warnings 9999 ...` passed with 0 errors.
+  - `npm run build` passed with 0 errors.
+
 ## Related Documentation
 - `docs/ppb-eb-configure-clone/eb-ppb-configure-audit-2026-05-21.md`
 - `docs/eb-fpb-exploration/EB_FPB_CONFIGURE_EXPLORATION.md`
@@ -130,3 +146,4 @@ Audit and wire the FPB and PPB configure/edit pages against the EB reference, fo
 - [x] Phase 11: PPB/FPB Bundle Settings parity rerun
 - [x] Phase 12: Category empty state and ellipsis icon parity
 - [x] Phase 13: Root-cause modal fix — showPolarisModal bug + useModalHideListener (all routes)
+- [x] Phase 14: Discard modal proper Polaris slot fix (PPB + FPB)
