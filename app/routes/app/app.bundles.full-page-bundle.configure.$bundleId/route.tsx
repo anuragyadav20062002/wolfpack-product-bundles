@@ -38,6 +38,7 @@ import {
   MultiLanguageTextModal,
   type MultiLanguageField,
 } from "../../../components/bundle-configure/MultiLanguageTextModal";
+import { DiscardChangesModal } from "../../../components/bundle-configure/DiscardChangesModal";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -749,7 +750,6 @@ export default function ConfigureBundleFlow() {
   const collectionsModalRef = useRef<HTMLElement>(null);
   const syncModalRef = useRef<HTMLElement>(null);
   const templateVariablesModalRef = useRef<HTMLElement>(null);
-  const discardModalRef = useRef<HTMLElement>(null);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   useEffect(() => {
@@ -771,10 +771,6 @@ export default function ConfigureBundleFlow() {
   useEffect(() => {
     isSyncModalOpen ? showPolarisModal(syncModalRef) : hidePolarisModal(syncModalRef);
   }, [isSyncModalOpen]);
-
-  useEffect(() => {
-    showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
-  }, [showDiscardModal]);
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -1422,7 +1418,6 @@ export default function ConfigureBundleFlow() {
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
-  useModalHideListener(discardModalRef, () => setShowDiscardModal(false));
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
@@ -4139,12 +4134,11 @@ export default function ConfigureBundleFlow() {
         onClose={() => setIsMultiLanguageModalOpen(false)}
       />
 
-      {/* Discard Unsaved Changes Confirmation Modal */}
-      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
-        <s-button slot="primaryAction" tone="critical" variant="primary" onClick={handleConfirmDiscard}>Discard Changes</s-button>
-        <s-button slot="secondaryActions" onClick={closeDiscardModal}>Continue Editing</s-button>
-      </s-modal>
+      <DiscardChangesModal
+        open={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onContinue={closeDiscardModal}
+      />
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">

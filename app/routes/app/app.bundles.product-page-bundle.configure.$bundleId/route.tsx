@@ -53,6 +53,7 @@ import {
   MultiLanguageTextModal,
   type MultiLanguageField,
 } from "../../../components/bundle-configure/MultiLanguageTextModal";
+import { DiscardChangesModal } from "../../../components/bundle-configure/DiscardChangesModal";
 import {
   fetchBundleProduct,
   fetchShopLocales,
@@ -1166,7 +1167,6 @@ export default function ConfigureBundleFlow() {
   const pageSelectionModalRef = useRef<HTMLElement>(null);
   const productsModalRef = useRef<HTMLElement>(null);
   const collectionsModalRef = useRef<HTMLElement>(null);
-  const discardModalRef = useRef<HTMLElement>(null);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   useEffect(() => {
@@ -1185,15 +1185,10 @@ export default function ConfigureBundleFlow() {
     isCollectionsModalOpen ? showPolarisModal(collectionsModalRef) : hidePolarisModal(collectionsModalRef);
   }, [isCollectionsModalOpen]);
 
-  useEffect(() => {
-    showDiscardModal ? showPolarisModal(discardModalRef) : hidePolarisModal(discardModalRef);
-  }, [showDiscardModal]);
-
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
-  useModalHideListener(discardModalRef, () => setShowDiscardModal(false));
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -3672,12 +3667,11 @@ export default function ConfigureBundleFlow() {
         <s-button slot="primaryAction" onClick={handleCloseCollectionsModal}>Close</s-button>
       </s-modal>
 
-      {/* Discard Unsaved Changes Confirmation Modal */}
-      <s-modal ref={discardModalRef} heading="Discard all unsaved changes">
-        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>If you discard changes, you'll delete any edits you made since you last saved.</p>
-        <s-button slot="primaryAction" tone="critical" variant="primary" onClick={handleConfirmDiscard}>Discard Changes</s-button>
-        <s-button slot="secondaryActions" onClick={closeDiscardModal}>Continue Editing</s-button>
-      </s-modal>
+      <DiscardChangesModal
+        open={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onContinue={closeDiscardModal}
+      />
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Bundle?">

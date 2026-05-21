@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { LocalAppModal } from "./LocalAppModal";
 
 interface ShopLocale {
   locale: string;
@@ -77,7 +79,6 @@ export function MultiLanguageTextModal({
   onChange,
   onClose,
 }: MultiLanguageTextModalProps) {
-  const modalRef = useRef<HTMLElement>(null);
   const [draftByLocale, setDraftByLocale] = useState<Record<string, Record<string, string>>>({});
 
   const visibleLocales = useMemo(() => {
@@ -95,13 +96,6 @@ export function MultiLanguageTextModal({
     if (!open) return;
     setDraftByLocale(valuesByLocale);
   }, [open, valuesByLocale]);
-
-  useEffect(() => {
-    if (!open) return;
-    const modal = modalRef.current as any;
-    modal?.showOverlay?.();
-    if (!modal?.showOverlay) modal?.show?.();
-  }, [open]);
 
   if (!open) return null;
 
@@ -130,12 +124,14 @@ export function MultiLanguageTextModal({
   };
 
   return (
-    <s-modal
-      ref={modalRef}
-      heading="Customize Text for Multiple Languages"
-      size="base"
-      onHide={onClose}
-      suppressHydrationWarning
+    <LocalAppModal
+      title="Customize Text for Multiple Languages"
+      onClose={onClose}
+      primaryAction={(
+        <s-button variant="primary" onClick={saveAndClose}>
+          Save and close
+        </s-button>
+      )}
     >
       <s-stack direction="block" gap="base">
         <s-select
@@ -169,7 +165,6 @@ export function MultiLanguageTextModal({
           )
         ))}
       </s-stack>
-      <s-button slot="primaryAction" variant="primary" onClick={saveAndClose}>Save and close</s-button>
-    </s-modal>
+    </LocalAppModal>
   );
 }

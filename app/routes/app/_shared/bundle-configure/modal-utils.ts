@@ -1,8 +1,9 @@
 /**
  * Shared imperative helpers for Polaris web component modals.
  *
- * showOverlay()/hideOverlay() fire events but do not reliably open/close the
- * dialog in all Polaris versions; always call show()/hide() unconditionally.
+ * Polaris s-modal in the embedded Admin iframe opens through showOverlay().
+ * Always pair that with hideOverlay() before React unmounts the modal so the
+ * Shopify Admin chrome is not left dimmed/inert.
  *
  * React 18 does not wire custom event listeners for web component custom events
  * when passed as JSX props (e.g. onHide). Use useModalHideListener to attach

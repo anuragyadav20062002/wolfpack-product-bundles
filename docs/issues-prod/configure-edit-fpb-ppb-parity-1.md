@@ -11,6 +11,54 @@ Audit and wire the FPB and PPB configure/edit pages against the EB reference, fo
 
 ## Progress Log
 
+### 2026-05-21 23:36 - Starting discard modal hydration/close fix
+- Investigating PPB/FPB discard modal close behavior and `s-modal` hydration warnings.
+- Focus areas:
+  - Remove SSR-unsafe `onHide`/custom-event JSX props from `s-modal`.
+  - Verify discard confirm/continue handlers close the modal through the imperative Polaris modal helper.
+  - Remove temporary discard modal test controls before validation.
+- Next: patch PPB, FPB, and shared modal code, then rebuild/lint and run browser verification if the embedded Admin page is controllable.
+
+### 2026-05-21 23:58 - Fixed app-owned modal overlay cleanup
+- Root cause:
+  - Passing `onHide` to `s-modal` created a React hydration mismatch because web component custom events are not SSR-safe JSX props.
+  - Removing `showOverlay()` entirely made this Polaris build stop opening app-owned modals.
+  - The actual stuck Shopify chrome issue was that modal close paths could unmount React before `hideOverlay()` ran, leaving Admin chrome dimmed/inert.
+- Changes:
+  - Added a shared `DiscardChangesModal` component for PPB and FPB that mounts only while open, calls the Polaris modal helper on mount, and calls `hidePolarisModal()` before every close/unmount path.
+  - Removed the temporary PPB discard test button.
+  - Removed `discardModalRef` route-level effects/listeners from PPB and FPB.
+  - Removed `onHide` from the Multi Language modal and replaced it with native `dismiss`/`hide` listeners plus explicit `hidePolarisModal()` cleanup on Save and close.
+  - Kept `showOverlay()` in the shared modal helper because this app's Polaris modal implementation requires it to open, but now every app-owned modal cleanup path pairs it with `hideOverlay()`.
+- Verification:
+  - `npx eslint --max-warnings 9999 app/routes/app/_shared/bundle-configure/modal-utils.ts app/components/bundle-configure/DiscardChangesModal.tsx app/components/bundle-configure/MultiLanguageTextModal.tsx` passed with warnings only.
+  - `npm run build` passed.
+  - Graphify code graph rebuilt.
+  - Browser verified PPB Multi Language modal opens and `Save and close` closes it.
+  - Browser verified Shopify top search/nav remains reachable after modal close.
+  - Browser console no longer shows the `Prop onHide did not match` hydration warning; remaining warnings are existing Polaris/accessibility warnings plus the known Cloudflare/App Bridge postMessage warning.
+
+### 2026-05-21 23:58 - Reopened modal overlay visual verification
+- User asked for screenshot verification and correctly pointed out that Shopify chrome still appears dimmed after app-owned modal close.
+- Screenshot confirmed:
+  - App iframe remains visually active.
+  - Shopify nav, breadcrumbs, and top chrome remain dimmed.
+- New direction:
+  - Stop using `s-modal` for app-owned discard and Multi Language dialogs because `showOverlay()` creates a host/Admin overlay that is not reliably cleared in this embedded iframe.
+  - Replace those with iframe-local React dialogs so Shopify chrome is not dimmed by app-owned modals.
+
+### 2026-05-22 00:01 - Replaced affected app-owned modals with iframe-local dialogs
+- Changes:
+  - Added `LocalAppModal`, a React-controlled iframe-local dialog/overlay.
+  - Replaced `s-modal` usage in `MultiLanguageTextModal` with `LocalAppModal`.
+  - Replaced `s-modal` usage in `DiscardChangesModal` with `LocalAppModal`.
+  - The affected modals no longer call `showOverlay()` or create a Shopify Admin host overlay.
+- Verification:
+  - `npx eslint --max-warnings 9999 app/components/bundle-configure/LocalAppModal.tsx app/components/bundle-configure/DiscardChangesModal.tsx app/components/bundle-configure/MultiLanguageTextModal.tsx` passed with warnings only.
+  - `npm run build` passed.
+  - Graphify code graph rebuilt.
+  - Browser screenshot after closing the PPB Multi Language modal confirms Shopify nav, breadcrumbs, and top chrome are no longer dimmed.
+
 ### 2026-05-21 18:20 - Started parity and wiring pass
 - Created test bundles through the live embedded Admin create workflow:
   - FPB: `Codex FPB 2026-05-21` (`cmpfhj2m10000v0t038osl42y`)
