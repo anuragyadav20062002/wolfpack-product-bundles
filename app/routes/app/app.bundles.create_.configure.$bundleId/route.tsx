@@ -1337,7 +1337,12 @@ export default function WizardConfigureStep() {
 
   // ── Readiness ──────────────────────────────────────────────────
   const hasProducts = steps.some(
-    (s) => s.products.length > 0 || s.collections.length > 0
+    (s) =>
+      s.products.length > 0 ||
+      s.collections.length > 0 ||
+      s.StepCategory.some(
+        (cat) => cat.products.length > 0 || cat.collections.length > 0
+      )
   );
   const readinessItems: BundleReadinessItem[] = [
     { key: "embed", label: "App embed enabled", description: "Required to display bundles on your storefront.", points: 15, done: readiness.appEmbedEnabled },

@@ -68,12 +68,12 @@ export const WIZARD_CONFIGURE_TOUR_STEPS: TourStep[] = [
   },
   {
     title: "Place The Bundle",
-    body: "Place the bundle on a storefront page or product page so shoppers can find it.",
+    body: "Save the bundle to write the storefront configuration, then place it on its storefront surface.",
     targetSection: "wizard-bundle-status",
   },
   {
     title: "Set Active",
-    body: "Set the bundle and its parent product to Active when the minimum setup is complete.",
+    body: "Set the bundle to Active so the storefront can render it for shoppers.",
     targetSection: "wizard-bundle-status",
   },
 ];

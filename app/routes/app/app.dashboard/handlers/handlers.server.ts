@@ -459,6 +459,12 @@ export async function handleCreateBundle(
     // Publish to all available sales channels
     await publishToSalesChannels(admin, shopifyProductId, 'create-bundle');
 
+    const shopRecord = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+      select: { firstCreateTourEligible: true },
+    });
+    const showFirstLoadTour = shopRecord?.firstCreateTourEligible === true;
+
     // Check if this is the first bundle (for auto-placement)
     const existingBundleCount = await db.bundle.count({
       where: {
@@ -483,6 +489,13 @@ export async function handleCreateBundle(
         shopifyProductHandle: shopifyProductHandle || null,
       },
     });
+
+    if (showFirstLoadTour) {
+      await db.shop.update({
+        where: { shopDomain: session.shop },
+        data: { firstCreateTourEligible: false },
+      });
+    }
 
     // Check widget installation status for product bundles (production mode)
     let widgetCheckResult = null;
@@ -519,6 +532,7 @@ export async function handleCreateBundle(
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
       redirectTo: redirectUrl,
+      showFirstLoadTour,
       widgetStatus: widgetCheckResult ? {
         checked: true,
         widgetInstalled: widgetCheckResult.widgetInstalled,

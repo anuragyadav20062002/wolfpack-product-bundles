@@ -49,13 +49,14 @@ beforeEach(() => {
 });
 
 describe("app.bundles.create action", () => {
-  it("redirects to configure page on successful bundle creation", async () => {
+  it("redirects to first-load configure page for a newly installed shop", async () => {
     mockHandleCreateBundle.mockResolvedValue({
       json: () => ({
         success: true,
         bundleId: "bundle-abc",
         bundleProductId: "gid://shopify/Product/1",
         redirectTo: "/app/bundles/create/configure/bundle-abc",
+        showFirstLoadTour: true,
         widgetStatus: { checked: false },
       }),
       status: 200,
@@ -70,7 +71,33 @@ describe("app.bundles.create action", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      "/app/bundles/create/configure/bundle-abc"
+      "/app/bundles/create/configure/bundle-abc?first_load=true"
+    );
+  });
+
+  it("redirects without first_load for shops that are not first-install eligible", async () => {
+    mockHandleCreateBundle.mockResolvedValue({
+      json: () => ({
+        success: true,
+        bundleId: "bundle-def",
+        bundleProductId: "gid://shopify/Product/2",
+        redirectTo: "/app/bundles/create/configure/bundle-def",
+        showFirstLoadTour: false,
+        widgetStatus: { checked: false },
+      }),
+      status: 200,
+    } as any);
+
+    const request = makeRequest({
+      bundleName: "Existing Shop Bundle",
+      bundleType: "product_page",
+    });
+
+    const response = await action({ request, params: {}, context: {} } as any);
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe(
+      "/app/bundles/create/configure/bundle-def"
     );
   });
 
@@ -114,6 +141,7 @@ describe("app.bundles.create action", () => {
         bundleId: "bundle-xyz",
         bundleProductId: "gid://shopify/Product/2",
         redirectTo: "/app/bundles/create/configure/bundle-xyz",
+        showFirstLoadTour: false,
         widgetStatus: { checked: false },
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
