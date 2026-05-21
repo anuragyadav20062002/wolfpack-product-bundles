@@ -1,0 +1,131 @@
+{
+  "dashboard": {
+    "title": "Dashboard: Wolfpack Bundle Builder",
+    "subtitle": "Acesse seus bundles, suporte ao cliente e muito mais.",
+    "header": {
+      "syncCollections": "Sincronizar coleções",
+      "createBundle": "Criar bundle",
+      "changelog": "Registro de alterações"
+    },
+    "support": {
+      "heading": "Precisa de ajuda? Fale com Parth, o fundador!",
+      "body": "Obtenha suporte para configuração de bundles, estilização personalizada e problemas técnicos.",
+      "onlineNow": "ONLINE AGORA",
+      "availability": "Seg–Sex • Resposta em 1 hora",
+      "cta": "Conversar com Parth",
+      "imageAlt": "Parth, fundador",
+      "imageLoading": "Carregando foto de perfil de Parth"
+    },
+    "appEmbeds": {
+      "heading": "Incorporações de aplicativo",
+      "instruction": "Clique em Loja online → Editar tema → Ative o botão e salve"
+    },
+    "filters": {
+      "status": "Status",
+      "bundleType": "Tipo de bundle",
+      "byStatus": "Filtrar por status",
+      "byType": "Filtrar por tipo",
+      "all": "Todos"
+    },
+    "status": {
+      "active": "Ativo",
+      "draft": "Rascunho",
+      "unlisted": "Não listado"
+    },
+    "bundleType": {
+      "product_page": "Página de produto",
+      "full_page": "Página completa"
+    },
+    "search": {
+      "label": "Pesquisar bundles",
+      "placeholder": "Pesquisar...."
+    },
+    "table": {
+      "bundleName": "Nome do bundle",
+      "status": "Status",
+      "type": "Tipo",
+      "actions": "Ações"
+    },
+    "emptyState": {
+      "title": "Nenhum bundle ainda",
+      "body": "Você ainda não criou nenhum bundle para sua loja. Comece agora e aumente suas vendas agrupando seus melhores produtos."
+    },
+    "noResults": "Nenhum bundle corresponde aos filtros atuais",
+    "pagination": {
+      "page": "Página {{current}} de {{total}}",
+      "perPageLabel": "Bundles por página",
+      "per10": "10 por página",
+      "per20": "20 por página",
+      "per50": "50 por página",
+      "prev": "Página anterior",
+      "next": "Próxima página"
+    },
+    "actions": {
+      "moreActions": "Mais ações",
+      "editBundle": "Editar bundle",
+      "previewBundle": "Visualizar na loja",
+      "previewUnavailable": "Salve o bundle para visualizar",
+      "cloneBundle": "Clonar bundle",
+      "deleteBundle": "Excluir bundle",
+      "confirmClone": "Tem certeza de que deseja clonar este bundle?",
+      "cloneSuccess": "Bundle clonado com sucesso",
+      "deleteSuccess": "Bundle excluído",
+      "themeEditorUnavailable": "O link do editor de tema não está disponível para esta loja."
+    },
+    "deleteModal": {
+      "heading": "Excluir bundle?",
+      "delete": "Excluir",
+      "cancel": "Cancelar",
+      "body": "Esta ação não pode ser desfeita. Toda a configuração do bundle, etapas e regras de desconto serão excluídas permanentemente."
+    },
+    "resources": {
+      "bundleInspiration": "Inspiração de bundle",
+      "support": "Suporte",
+      "exploreUpdate": "Explorar atualizações",
+      "sdkDocumentation": "Documentação do SDK",
+      "bundleGallery": "Galeria de bundles"
+    },
+    "language": {
+      "label": "Idioma",
+      "en": "English",
+      "fr": "Français",
+      "de": "Deutsch",
+      "es": "Español",
+      "ja": "日本語",
+      "pt-BR": "Português (BR)"
+    }
+  },
+  "tooltips": {
+    "stepFlow": {
+      "title": "Step Flow",
+      "description": "Steps will render as navigation items on top of the bundle builder"
+    },
+    "category": {
+      "title": "Category",
+      "description": "Categories will appear as tabs inside each step"
+    },
+    "rulesConfiguration": {
+      "title": "Rules guide shopper selections",
+      "description": "Use step rules for one selection limit, or category rules when each category needs its own rule."
+    },
+    "bundleQuantityOptions": {
+      "title": "Bundle Quantity Options",
+      "description": "Show quantity-based discount rules as selectable bundle boxes. Each box can have its own label, subtext, and default rule."
+    },
+    "discountProgressBar": {
+      "title": "Progress Bar",
+      "description": "Show shoppers how close they are to the next discount. Simple uses one bar, while Step Based shows discount milestones."
+    },
+    "discountMessaging": {
+      "title": "Discount Messaging",
+      "description": "Customize the messages shown before a discount unlocks and after shoppers qualify."
+    },
+    "loadingAnimation": {
+      "title": "Storefront Loading Animation",
+      "description": "Shown while Wolfpack Bundles loads bundle content on the storefront."
+    },
+    "bundleVisibilityPending": {
+      "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
+    }
+  }
+}

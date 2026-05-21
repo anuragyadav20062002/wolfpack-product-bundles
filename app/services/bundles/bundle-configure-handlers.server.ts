@@ -15,6 +15,7 @@ import db from "../../db.server";
 import { ThemeTemplateService } from "../theme-template.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../constants/bundle";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
+import { buildBundleProductDescriptionHtml } from "../../lib/bundle-product-description.server";
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -99,6 +100,11 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
       // "archived" → Shopify "ARCHIVED"
       // Other statuses map directly via toUpperCase()
       const shopifyStatus = status === "unlisted" ? "ACTIVE" : status.toUpperCase();
+      const descriptionHtml = buildBundleProductDescriptionHtml({
+        bundleName: updatedBundle.name,
+        customDescription: updatedBundle.description,
+        status,
+      });
       AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
       const UPDATE_PRODUCT_STATUS = `
@@ -120,7 +126,8 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
         variables: {
           input: {
             id: updatedBundle.shopifyProductId,
-            status: shopifyStatus
+            status: shopifyStatus,
+            descriptionHtml,
           }
         }
       });
@@ -147,7 +154,8 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
           variables: {
             input: {
               id: updatedBundle.shopifyProductId,
-              status: "UNLISTED"
+              status: "UNLISTED",
+              descriptionHtml,
             }
           }
         });

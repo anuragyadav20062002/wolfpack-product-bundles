@@ -20,7 +20,8 @@
 export enum DiscountMethod {
   PERCENTAGE_OFF = 'percentage_off',        // e.g., 20% off
   FIXED_AMOUNT_OFF = 'fixed_amount_off',    // e.g., ₹100 off
-  FIXED_BUNDLE_PRICE = 'fixed_bundle_price' // e.g., Bundle for ₹500
+  FIXED_BUNDLE_PRICE = 'fixed_bundle_price', // e.g., Bundle for ₹500
+  BUY_X_GET_Y = 'buy_x_get_y'             // e.g., Buy 2 get 1 free
 }
 
 /**
@@ -83,6 +84,10 @@ export interface PricingRule {
   condition: PricingRuleCondition;
   discount: PricingRuleDiscount;
   display?: PricingRuleDisplay; // Optional UI customization
+  // Buy X Get Y fields (only present when discount.method === BUY_X_GET_Y)
+  buyStepId?: string;           // Step ID to count "buy" items from
+  getStepId?: string;           // Step ID to apply discount on
+  getQty?: number;              // How many "get" items receive the discount
 }
 
 /**
@@ -90,6 +95,32 @@ export interface PricingRule {
  */
 export interface PricingDisplay {
   showFooter: boolean;          // Show discount footer messaging in widget
+  showDiscountProgressBar: boolean; // Show visual fill-bar progress toward next discount tier
+}
+
+export type PricingProgressBarType = 'simple' | 'step_based';
+
+export interface BundleQuantityOptionDisplay {
+  label: string;
+  subtext: string;
+}
+
+export interface BundleQuantityOptionsDisplay {
+  enabled: boolean;
+  defaultRuleId: string | null;
+  optionsByRuleId: Record<string, BundleQuantityOptionDisplay>;
+}
+
+export interface PricingProgressBarDisplayOptions {
+  enabled: boolean;
+  type: PricingProgressBarType;
+  progressText: string;
+  successText: string;
+}
+
+export interface PricingDisplayOptions {
+  bundleQuantityOptions: BundleQuantityOptionsDisplay;
+  progressBar: PricingProgressBarDisplayOptions;
 }
 
 /**
@@ -210,6 +241,10 @@ export function validatePricingConfiguration(config: any): config is PricingConf
     return false;
   }
 
+  if (typeof config.display.showDiscountProgressBar !== 'boolean') {
+    return false;
+  }
+
   // Check messages
   if (!config.messages || typeof config.messages !== 'object') {
     return false;
@@ -234,6 +269,7 @@ export function createEmptyPricingConfig(): PricingConfiguration {
     rules: [],
     display: {
       showFooter: true,
+      showDiscountProgressBar: false,
     },
     messages: {
       progress: "Add {conditionText} to get {discountText}",
@@ -283,7 +319,8 @@ export function getDiscountMethodText(method: DiscountMethod): string {
   const methodMap: Record<DiscountMethod, string> = {
     [DiscountMethod.PERCENTAGE_OFF]: 'Percentage Off',
     [DiscountMethod.FIXED_AMOUNT_OFF]: 'Fixed Amount Off',
-    [DiscountMethod.FIXED_BUNDLE_PRICE]: 'Fixed Bundle Price'
+    [DiscountMethod.FIXED_BUNDLE_PRICE]: 'Fixed Bundle Price',
+    [DiscountMethod.BUY_X_GET_Y]: 'Buy X, Get Y'
   };
 
   return methodMap[method] || method;

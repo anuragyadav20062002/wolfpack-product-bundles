@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.7.0
- * Built   : 2026-04-27
+ * Version : 2.9.0
+ * Built   : 2026-05-19
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.7.0';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.0';
 (function() {
   'use strict';
 
@@ -827,6 +827,11 @@ class TemplateManager {
       conditionText: conditionData.conditionText,
 
       discountText: discountData.discountText,
+      discountConditionDiff: conditionType === 'amount' ? conditionData.amountNeeded : conditionData.itemsNeeded,
+      discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
+      discountValue: discountData.discountValue,
+      discountValueUnit: discountData.discountValueUnit,
+      discountedItems: conditionType === 'quantity' ? targetValue.toString() : '0',
 
       alreadyQualified: conditionData.alreadyQualified || false,
 
@@ -964,7 +969,9 @@ class TemplateManager {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
         const percentage = Math.round(safeValue);
         return {
-          discountText: `${percentage}% off`
+          discountText: `${percentage}% off`,
+          discountValue: String(percentage),
+          discountValueUnit: '% off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -977,7 +984,9 @@ class TemplateManager {
         );
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${amountOff} off`
+          discountText: `${currencyInfo.display.symbol}${amountOff} off`,
+          discountValue: `${currencyInfo.display.symbol}${amountOff}`,
+          discountValueUnit: ' off'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -990,12 +999,16 @@ class TemplateManager {
         );
         const bundlePrice = (convertedPrice / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${bundlePrice}`
+          discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValueUnit: ''
         };
 
       default:
         return {
-          discountText: 'discount'
+          discountText: 'discount',
+          discountValue: String(safeValue),
+          discountValueUnit: ''
         };
     }
   }
@@ -1007,6 +1020,11 @@ class TemplateManager {
       itemsNeeded: '0',
       conditionText: '0 items',
       discountText: 'No discount',
+      discountConditionDiff: '0',
+      discountUnit: '',
+      discountValue: '0',
+      discountValueUnit: '',
+      discountedItems: '0',
 
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),
       currentQuantity: totalQuantity.toString(),
@@ -1871,6 +1889,7 @@ class BundleWidgetProductPage {
 
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
     this._stepFetchFailed = {};
+    this.giftMessageState = { message: '', from: '', to: '' };
 
     this.selectedBundle.steps.forEach((step, i) => {
       if (step.isDefault && step.defaultVariantId) {
@@ -1969,6 +1988,8 @@ class BundleWidgetProductPage {
 
     this.elements = {
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
+      qtyPillsEl: this.container.querySelector('.bw-qty-pills') || this._createQtyPillsEl(),
+      giftMessageEl: this.container.querySelector('.bw-gift-message') || this._createGiftMessageEl(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
       modal: modalEl,
@@ -1978,9 +1999,32 @@ class BundleWidgetProductPage {
     if (!this.container.querySelector('.bundle-steps')) {
       this.container.appendChild(this.elements.stepsContainer);
     }
+    if (!this.container.querySelector('.bw-qty-pills')) {
+      this.container.appendChild(this.elements.qtyPillsEl);
+    }
+    if (!this.container.querySelector('.bw-gift-message')) {
+      this.container.appendChild(this.elements.giftMessageEl);
+    }
+    if (!this.container.querySelector('.bundle-footer-messaging')) {
+      this.container.appendChild(this.elements.footer);
+    }
     if (!this.container.querySelector('.add-bundle-to-cart')) {
       this.container.appendChild(this.elements.addToCartButton);
     }
+  }
+
+  _createQtyPillsEl() {
+    const el = document.createElement('div');
+    el.className = 'bw-qty-pills';
+    el.style.display = 'none';
+    return el;
+  }
+
+  _createGiftMessageEl() {
+    const el = document.createElement('div');
+    el.className = 'bw-gift-message';
+    el.style.display = 'none';
+    return el;
   }
 
   _createBottomSheetOverlay() {
@@ -2066,7 +2110,6 @@ class BundleWidgetProductPage {
   }
 
   createFooter() {
-
     const footer = document.createElement('div');
     footer.className = 'bundle-footer-messaging';
     footer.style.display = 'none';
@@ -2114,6 +2157,8 @@ class BundleWidgetProductPage {
 
   renderUI() {
     this.renderSteps();
+    this.renderQuantityOptionPills();
+    this.renderGiftMessageUI();
     this.renderFooter();
     this.updateAddToCartButton();
   }
@@ -2137,8 +2182,24 @@ class BundleWidgetProductPage {
     }
   }
 
+  _createStepBannerImage(step) {
+    if (!step?.bannerImageUrl) return null;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'step-banner-image';
+    const img = document.createElement('img');
+    img.src = step.bannerImageUrl;
+    img.alt = step.name || '';
+    img.style.cssText = 'width:100%;display:block;';
+    wrapper.appendChild(img);
+    return wrapper;
+  }
+
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
+
+      const banner = this._createStepBannerImage(step);
+      if (banner) this.elements.stepsContainer.appendChild(banner);
+
       if (step.isDefault) {
 
         const product = this._getDefaultStepProduct(stepIndex);
@@ -2474,7 +2535,7 @@ class BundleWidgetProductPage {
 
     const label = document.createElement('p');
     label.className = 'step-name bw-slot-card__label';
-    label.textContent = `Free ${step.name || `Step ${stepIndex + 1}`}`;
+    label.textContent = step.addonLabel || `Free ${step.name || `Step ${stepIndex + 1}`}`;
     stepBox.appendChild(label);
 
     stepBox.appendChild(this._createRibbonSvg());
@@ -2554,13 +2615,225 @@ class BundleWidgetProductPage {
   }
 
   renderFooter() {
+    const el = this.elements.footer;
+    if (!el) return;
+    el.innerHTML = '';
 
-    return;
+    const displayOptions = this.selectedBundle?.messaging?.displayOptions;
+    const pbConfig = displayOptions?.progressBar;
+    if (!pbConfig?.enabled) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const rules = this.selectedBundle?.pricing?.rules || [];
+    if (rules.length === 0 || !this.selectedBundle?.pricing?.enabled) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+
+    const rule = rules[0];
+    const condition = rule?.condition;
+    const conditionValue = parseFloat(condition?.value) || 0;
+    const conditionType = condition?.type || 'quantity';
+    const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
+    const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
+    const met = progress >= 1;
+
+    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity);
+    const discountText = discountInfo.hasDiscount
+      ? (this.selectedBundle.pricing.method === 'percentage_off'
+          ? `${rule.discount?.value || 0}% off`
+          : CurrencyManager.convertAndFormat(discountInfo.savings, CurrencyManager.getCurrencyInfo()))
+      : '';
+
+    const template = met
+      ? (pbConfig.successText || this.selectedBundle.messaging?.successTemplate || 'You got {discountText}!')
+      : (pbConfig.progressText || this.selectedBundle.messaging?.progressTemplate || 'Add {conditionText} more to get {discountText}');
+
+    const diff = Math.max(0, conditionValue - current);
+    const conditionText = conditionType === 'quantity'
+      ? `${Math.ceil(diff)} item${Math.ceil(diff) !== 1 ? 's' : ''}`
+      : CurrencyManager.convertAndFormat(diff * 100, CurrencyManager.getCurrencyInfo());
+
+    const message = template
+      .replace(/{discountText}/g, discountText)
+      .replace(/{conditionText}/g, conditionText)
+      .replace(/{amountNeeded}/g, conditionText)
+      .replace(/{itemsNeeded}/g, `${Math.ceil(diff)}`)
+      .replace(/{progressPercentage}/g, `${Math.round(progress * 100)}`);
+
+    const primary = getComputedStyle(document.documentElement).getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+    el.style.display = '';
+    el.style.cssText = 'margin: 10px 0; padding: 10px 0;';
+
+    const msgEl = document.createElement('p');
+    msgEl.textContent = message;
+    msgEl.style.cssText = `font-size:13px;text-align:center;margin:0 0 8px;color:${met ? primary : '#1a1a1a'};font-weight:${met ? '600' : '400'};`;
+    el.appendChild(msgEl);
+
+    const track = document.createElement('div');
+    track.style.cssText = 'height:6px;background:#e1e3e5;border-radius:3px;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.style.cssText = `height:100%;width:${Math.round(progress * 100)}%;background:${primary};border-radius:3px;transition:width 0.3s ease;`;
+    track.appendChild(fill);
+    el.appendChild(track);
   }
 
   updateFooterMessaging() {
+    this.renderFooter();
+  }
 
-    return;
+  renderQuantityOptionPills() {
+    const el = this.elements.qtyPillsEl;
+    if (!el) return;
+    el.innerHTML = '';
+
+    const displayOptions = this.selectedBundle?.messaging?.displayOptions;
+    const qtyOpts = displayOptions?.bundleQuantityOptions;
+    const rules = this.selectedBundle?.pricing?.rules || [];
+
+    if (!qtyOpts?.enabled || rules.length === 0) {
+      el.style.display = 'none';
+      return;
+    }
+
+    el.style.display = 'flex';
+    el.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;';
+
+    const primary = getComputedStyle(document.documentElement).getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+    const defaultIndex = qtyOpts.defaultRuleIndex ?? 0;
+
+    rules.forEach((rule, index) => {
+      const label = qtyOpts.labels?.[index] || `Option ${index + 1}`;
+      const subtext = qtyOpts.subtexts?.[index] || '';
+      const isActive = index === defaultIndex;
+
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'bw-qty-pill' + (isActive ? ' bw-qty-pill--active' : '');
+      pill.style.cssText = `
+        padding:8px 16px;border-radius:24px;cursor:pointer;transition:all 0.15s;
+        display:flex;flex-direction:column;align-items:center;line-height:1.2;
+        border:2px solid ${isActive ? primary : '#e1e3e5'};
+        background:${isActive ? primary : 'white'};
+        color:${isActive ? 'white' : '#1a1a1a'};
+        font-size:14px;font-weight:600;
+      `;
+
+      const labelEl = document.createElement('span');
+      labelEl.textContent = label;
+      pill.appendChild(labelEl);
+
+      if (subtext) {
+        const subtextEl = document.createElement('span');
+        subtextEl.textContent = subtext;
+        subtextEl.style.cssText = 'font-size:11px;font-weight:400;opacity:0.8;';
+        pill.appendChild(subtextEl);
+      }
+
+      pill.addEventListener('click', () => {
+        el.querySelectorAll('.bw-qty-pill').forEach(p => {
+          p.style.border = '2px solid #e1e3e5';
+          p.style.background = 'white';
+          p.style.color = '#1a1a1a';
+          p.classList.remove('bw-qty-pill--active');
+        });
+        pill.style.border = `2px solid ${primary}`;
+        pill.style.background = primary;
+        pill.style.color = 'white';
+        pill.classList.add('bw-qty-pill--active');
+
+        this.renderFooter();
+        this.updateAddToCartButton();
+      });
+
+      el.appendChild(pill);
+    });
+  }
+
+  renderGiftMessageUI() {
+    const el = this.elements.giftMessageEl;
+    if (!el) return;
+    el.innerHTML = '';
+
+    const bundle = this.selectedBundle;
+    if (!bundle?.giftMessagesEnabled || !bundle?.giftMessageProductId) {
+      el.style.display = 'none';
+      return;
+    }
+
+    el.style.display = 'block';
+    el.style.cssText = 'display:block;margin:14px 0;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e1e3e5;';
+
+    const heading = document.createElement('p');
+    heading.textContent = bundle.giftMessageProductTitle || 'Gift Message';
+    heading.style.cssText = 'font-size:14px;font-weight:600;margin:0 0 12px;color:#1a1a1a;';
+    el.appendChild(heading);
+
+    if (bundle.giftMessageEnableSenderRecipient) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+
+      const fromInput = document.createElement('input');
+      fromInput.type = 'text';
+      fromInput.placeholder = 'From';
+      fromInput.value = this.giftMessageState.from;
+      fromInput.style.cssText = 'flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;';
+      fromInput.addEventListener('input', () => {
+        this.giftMessageState.from = fromInput.value;
+        this.updateAddToCartButton();
+      });
+
+      const toInput = document.createElement('input');
+      toInput.type = 'text';
+      toInput.placeholder = 'To';
+      toInput.value = this.giftMessageState.to;
+      toInput.style.cssText = 'flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;';
+      toInput.addEventListener('input', () => {
+        this.giftMessageState.to = toInput.value;
+        this.updateAddToCartButton();
+      });
+
+      row.appendChild(fromInput);
+      row.appendChild(toInput);
+      el.appendChild(row);
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.placeholder = 'Write your gift message here…';
+    textarea.value = this.giftMessageState.message;
+    textarea.rows = 3;
+    textarea.style.cssText = 'width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;';
+
+    if (bundle.giftMessageEnableLimit && bundle.giftMessageCharLimit) {
+      textarea.maxLength = bundle.giftMessageCharLimit;
+
+      const counter = document.createElement('p');
+      counter.style.cssText = 'font-size:11px;color:#6d7175;text-align:right;margin:4px 0 0;';
+      counter.textContent = `0 / ${bundle.giftMessageCharLimit}`;
+
+      textarea.addEventListener('input', () => {
+        this.giftMessageState.message = textarea.value;
+        counter.textContent = `${textarea.value.length} / ${bundle.giftMessageCharLimit}`;
+        this.updateAddToCartButton();
+      });
+
+      el.appendChild(textarea);
+      el.appendChild(counter);
+    } else {
+      textarea.addEventListener('input', () => {
+        this.giftMessageState.message = textarea.value;
+        this.updateAddToCartButton();
+      });
+      el.appendChild(textarea);
+    }
   }
 
   updateAddToCartButton() {
@@ -2589,9 +2862,16 @@ class BundleWidgetProductPage {
       return sum + Object.values(stepSelections || {}).reduce((s, qty) => s + qty, 0);
     }, 0);
 
-    if (paidTotalQuantity === 0 || !allStepsValid) {
+    const giftMandatoryBlocking = this.selectedBundle?.giftMessagesEnabled &&
+      this.selectedBundle?.giftMessageMandatory &&
+      this.selectedBundle?.giftMessageProductId &&
+      (!this.giftMessageState?.message || this.giftMessageState.message.trim() === '');
+
+    if (paidTotalQuantity === 0 || !allStepsValid || giftMandatoryBlocking) {
       if (paidTotalQuantity === 0) {
         button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
+      } else if (giftMandatoryBlocking) {
+        button.textContent = 'Add a gift message to continue';
       } else {
 
         button.textContent = this._resolveText('completeSteps', 'Complete All Steps to Continue');
@@ -2913,7 +3193,7 @@ class BundleWidgetProductPage {
       const tabButton = document.createElement('button');
       const freeGiftClass = isFreeGift ? ' bw-free-gift-tab' : '';
       tabButton.className = `bundle-header-tab${freeGiftClass} ${isActive ? 'active' : ''} ${(!isAccessible || !freeGiftAccessible) ? 'locked' : ''}`;
-      tabButton.textContent = step.name || `Step ${index + 1}`;
+      tabButton.textContent = (step.isFreeGift && step.addonLabel) ? step.addonLabel : (step.name || `Step ${index + 1}`);
       tabButton.dataset.stepIndex = index.toString();
 
       tabButton.addEventListener('click', async () => {
@@ -3071,7 +3351,7 @@ class BundleWidgetProductPage {
             ` : ''}
 
             <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? 'Selected ✓' : 'Add to Cart')}
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add to Cart'))}
             </button>
           </div>
         </div>
@@ -3733,6 +4013,23 @@ class BundleWidgetProductPage {
     if (unavailableProducts.length > 0) {
       const productList = unavailableProducts.join(', ');
       throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
+    }
+
+    const bundle = this.selectedBundle;
+    if (bundle?.giftMessagesEnabled && bundle?.giftMessageProductId && this.giftMessageState?.message?.trim()) {
+      const giftVariantIdRaw = bundle.giftMessageProductId;
+      const giftVariantId = parseInt(this.extractId(giftVariantIdRaw));
+      if (giftVariantId) {
+        const giftProperties = {
+          '_bundle_id': bundleInstanceId,
+          '_gift_message': this.giftMessageState.message.trim(),
+        };
+        if (bundle.giftMessageEnableSenderRecipient) {
+          if (this.giftMessageState.from?.trim()) giftProperties['_gift_from'] = this.giftMessageState.from.trim();
+          if (this.giftMessageState.to?.trim()) giftProperties['_gift_to'] = this.giftMessageState.to.trim();
+        }
+        cartItems.push({ id: giftVariantId, quantity: 1, properties: giftProperties });
+      }
     }
 
     return cartItems;

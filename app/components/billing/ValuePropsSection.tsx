@@ -1,19 +1,5 @@
-/**
- * Value Props Section Component
- *
- * Displays the "Why Upgrade" value propositions for Free plan users.
- */
-
-import {
-  Card,
-  Text,
-  BlockStack,
-  InlineStack,
-  Icon,
-  useBreakpoints,
-} from "@shopify/polaris";
-import { StarFilledIcon } from "@shopify/polaris-icons";
 import { VALUE_PROPS, type ValueProp } from "../../constants/pricing-data";
+import valuePropStyles from "../../styles/billing/value-props.module.css";
 
 export interface ValuePropsSectionProps {
   valueProps?: ValueProp[];
@@ -22,43 +8,35 @@ export interface ValuePropsSectionProps {
 export function ValuePropsSection({
   valueProps = VALUE_PROPS,
 }: ValuePropsSectionProps) {
-  const { mdDown } = useBreakpoints();
-
   return (
-    <Card>
-      <BlockStack gap="400">
-        <InlineStack gap="200" blockAlign="center">
-          <div style={{ color: '#ffc453' }}>
-            <Icon source={StarFilledIcon} />
+    <s-section>
+      <s-stack direction="block" gap="base">
+        <s-stack direction="inline" alignItems="center" gap="small-100">
+          <div style={{ color: "#ffc453" }}>
+            <s-icon name="star-filled" />
           </div>
-          <Text as="h3" variant="headingMd">
-            Why Upgrade to Grow?
-          </Text>
-        </InlineStack>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: mdDown ? '1fr' : 'repeat(3, 1fr)',
-          gap: '1rem'
-        }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Why Upgrade to Grow?</h3>
+        </s-stack>
+        <div className={valuePropStyles.grid}>
           {valueProps.map((prop, index) => (
             <div
               key={index}
               style={{
-                padding: '1rem',
-                backgroundColor: '#f6f6f7',
-                borderRadius: '8px',
-                textAlign: 'center',
+                padding: "1rem",
+                backgroundColor: "#f6f6f7",
+                borderRadius: "8px",
+                textAlign: "center",
               }}
             >
-              <BlockStack gap="200" align="center">
-                <Text as="span" variant="heading2xl">{prop.icon}</Text>
-                <Text as="h4" variant="headingSm">{prop.title}</Text>
-                <Text as="p" variant="bodySm" tone="subdued">{prop.description}</Text>
-              </BlockStack>
+              <s-stack direction="block" gap="small-100">
+                <span style={{ fontSize: 28 }}>{prop.icon}</span>
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{prop.title}</h4>
+                <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>{prop.description}</p>
+              </s-stack>
             </div>
           ))}
         </div>
-      </BlockStack>
-    </Card>
+      </s-stack>
+    </s-section>
   );
 }

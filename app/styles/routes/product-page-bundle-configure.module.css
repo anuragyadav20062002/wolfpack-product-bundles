@@ -8,32 +8,6 @@
   border-radius: 8px;
 }
 
-/* Step card base styles */
-.stepCard {
-  cursor: grab;
-  transition: all 0.2s ease;
-  border-radius: 8px;
-  position: relative;
-  border: 2px solid transparent;
-  z-index: 1;
-}
-
-/* Step card when dragging */
-.stepCardDragging {
-  cursor: grabbing;
-  opacity: 0.6;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
-}
-
-/* Step card when drag over */
-.stepCardDragOver {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(33, 150, 243, 0.3);
-  border: 2px dashed rgba(33, 150, 243, 0.5);
-  background: rgba(33, 150, 243, 0.05);
-}
-
 /* Help section summary */
 .helpSummary {
   cursor: pointer;
@@ -62,4 +36,999 @@
   padding-top: 8px;
   font-size: 12px;
   color: #6c757d;
+}
+
+/* ── Edit App Canvas ─────────────────────────────────────────── */
+.editCanvas {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0 0 88px;
+}
+
+.canvasHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 18px 0 16px;
+}
+
+.canvasTitleGroup {
+  min-width: 0;
+}
+
+.canvasTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.canvasBackButton {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.canvasBackButton:hover {
+  color: #000000;
+}
+
+.canvasTitle {
+  margin: 0;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.canvasActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.readinessButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #202223;
+  font: inherit;
+  cursor: pointer;
+}
+
+.readinessButtonLow {
+  background: #fff1f1;
+  border-color: #ffd6d6;
+}
+
+.readinessButtonMedium {
+  background: #eef5ff;
+  border-color: #cfe2ff;
+}
+
+.readinessButtonHigh {
+  background: #eaf7f0;
+  border-color: #b7ead2;
+}
+
+.readinessScore {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.readinessLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.editGrid {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.leftColumn {
+  flex: 0 0 274px;
+  min-width: 274px;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+  align-self: flex-start;
+}
+
+.mainColumn {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mainColumn .card {
+  padding: 20px 24px 24px 20px;
+}
+
+.leftCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #005bd3;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.linkButton:hover,
+.linkButton:focus-visible {
+  color: #003a8c;
+  text-decoration: underline;
+}
+
+.leftCardTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.leftCardSubtitle {
+  margin: -2px 0 8px;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.bundleProductPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px;
+  border: 1px solid #e1e3e5;
+  border-radius: 7px;
+  background: #f6f6f7;
+}
+
+.bundleProductSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+.bundleProductIconTile {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d8dbdf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #6d7175;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bundleProductIconImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.bundleProductName {
+  overflow: hidden;
+  min-width: 0;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bundleProductEditButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 28px;
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.bundleProductEditButton:hover {
+  border-color: #9ca3af;
+  background: #fafafa;
+}
+
+.parentProductStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ── Sidebar Navigation ──────────────────────────────────────── */
+.setupNavList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.setupNavItem {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.setupNavItem:hover {
+  background: #f1f2f4;
+}
+
+.setupNavItemActive {
+  background: #e3e3e3;
+}
+
+.setupNavIcon {
+  color: #6d7175;
+  font-size: 12px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.setupNavLabel {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setupNavMeta {
+  min-width: 0;
+}
+
+.subNav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 6px 28px;
+  padding-left: 12px;
+  border-left: 1px solid #d8dbdf;
+}
+
+.subNavItem {
+  width: 100%;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: #4b5563;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.subNavItem:hover {
+  color: #202223;
+}
+
+.subNavItemActive {
+  color: #202223;
+  font-weight: 600;
+}
+
+/* ── Step Flow card ──────────────────────────────────────────── */
+.card {
+  composes: card from "./bundle-configure-shared.module.css";
+}
+
+.cardHeader {
+  composes: cardHeader from "./bundle-configure-shared.module.css";
+}
+
+.stepFlowCard {
+  overflow: visible;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.stepFlowTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headingWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Step Chip Navigation ────────────────────────────────────── */
+.stepNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 24px 16px 20px;
+  margin: 12px -24px 0 -20px;
+  border-top: 1px solid #ebecef;
+}
+
+.stepChip,
+.stepChipActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  max-width: 220px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.stepChip:hover,
+.stepChipActive:hover {
+  border-color: #9ca3af;
+  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.08);
+}
+
+.stepChipActive {
+  border-color: #b8b8b8;
+  background: #f7f7f7;
+  box-shadow: inset 0 0 0 1px #d7d7d7;
+}
+
+.stepChipNumber {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e3e3e3;
+  color: #202223;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stepChipActive .stepChipNumber {
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #c9cccf;
+}
+
+.stepChipLabel {
+  overflow: hidden;
+  min-width: 0;
+  max-width: 140px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepChipChevron {
+  flex: 0 0 auto;
+  color: #6d7175;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.addStepBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  background: #2f2f31;
+  color: white;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.addStepBtn:hover {
+  border-color: #111827;
+  background: #1f1f21;
+}
+
+/* ── Slide animations ────────────────────────────────────────── */
+@keyframes slideInFromRight {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-40px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+.slideForward {
+  animation: slideInFromRight 0.2s ease;
+}
+
+.slideBackward {
+  animation: slideInFromLeft 0.2s ease;
+}
+
+/* ── Step card styles (kept for drag handle in step content) ─── */
+.stepCard {
+  cursor: grab;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  position: relative;
+  border: 2px solid transparent;
+  z-index: 1;
+}
+
+.stepCardDragging {
+  cursor: grabbing;
+  opacity: 0.6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.stepCardDragOver {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(33, 150, 243, 0.3);
+  border: 2px dashed rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.05);
+}
+
+/* ── Settings rows ───────────────────────────────────────────── */
+.settingsRow {
+  composes: settingsRow from "./bundle-configure-shared.module.css";
+}
+
+.settingsRowText {
+  composes: settingsRowText from "./bundle-configure-shared.module.css";
+}
+
+.settingsRowTitle {
+  composes: settingsRowTitle from "./bundle-configure-shared.module.css";
+}
+
+.settingsRowDescription {
+  composes: settingsRowDescription from "./bundle-configure-shared.module.css";
+}
+
+.settingsRowControl {
+  composes: settingsRowControl from "./bundle-configure-shared.module.css";
+}
+
+/* ── Add-Ons / Messages panel styles ────────────────────────── */
+.panelHeader {
+  composes: panelHeader from "./bundle-configure-shared.module.css";
+}
+
+.panelTitle {
+  composes: panelTitle from "./bundle-configure-shared.module.css";
+}
+
+.panelDescription {
+  composes: panelDescription from "./bundle-configure-shared.module.css";
+}
+
+.mediaFieldGrid {
+  composes: mediaFieldGrid from "./bundle-configure-shared.module.css";
+}
+
+.stepConfigRow {
+  composes: stepConfigRow from "./bundle-configure-shared.module.css";
+}
+
+.iconColumn {
+  composes: iconColumn from "./bundle-configure-shared.module.css";
+}
+
+.iconBox {
+  composes: iconBox from "./bundle-configure-shared.module.css";
+}
+
+.iconImg {
+  composes: iconImg from "./bundle-configure-shared.module.css";
+}
+
+.iconPlaceholder {
+  composes: iconPlaceholder from "./bundle-configure-shared.module.css";
+}
+
+.fieldsColumn {
+  composes: fieldsColumn from "./bundle-configure-shared.module.css";
+}
+
+.ruleCard {
+  composes: ruleCard from "./bundle-configure-shared.module.css";
+}
+
+.ruleHeader {
+  composes: ruleHeader from "./bundle-configure-shared.module.css";
+}
+
+.ruleFields {
+  composes: ruleFields from "./bundle-configure-shared.module.css";
+}
+
+.rulesList {
+  composes: rulesList from "./bundle-configure-shared.module.css";
+}
+
+.emptyState {
+  composes: emptyState from "./bundle-configure-shared.module.css";
+}
+
+.visibilityGuideGrid {
+  composes: visibilityGuideGrid from "./bundle-configure-shared.module.css";
+}
+
+.visibilityGuideCard {
+  composes: visibilityGuideCard from "./bundle-configure-shared.module.css";
+}
+
+.visibilityGuideMedia {
+  composes: visibilityGuideMedia from "./bundle-configure-shared.module.css";
+}
+
+.visibilitySetupTime {
+  composes: visibilitySetupTime from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionRow {
+  composes: displayOptionRow from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionText {
+  composes: displayOptionText from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionTitle {
+  composes: displayOptionTitle from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionDescription {
+  composes: displayOptionDescription from "./bundle-configure-shared.module.css";
+}
+
+.nestedDisplayOptions {
+  composes: nestedDisplayOptions from "./bundle-configure-shared.module.css";
+}
+
+.optionNote {
+  composes: optionNote from "./bundle-configure-shared.module.css";
+}
+
+.messagePreview {
+  composes: messagePreview from "./bundle-configure-shared.module.css";
+}
+
+.messagePreviewIcon {
+  composes: messagePreviewIcon from "./bundle-configure-shared.module.css";
+}
+
+.messagePreviewTitle {
+  composes: messagePreviewTitle from "./bundle-configure-shared.module.css";
+}
+
+.messageNote {
+  composes: messageNote from "./bundle-configure-shared.module.css";
+}
+
+.templateVariableGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.templateVariableItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+/* ── Category Accordion (multi-category system — EB parity) ──── */
+.categoryDrag {
+  composes: categoryDrag from "./bundle-configure-shared.module.css";
+}
+
+.categoryName {
+  composes: categoryName from "./bundle-configure-shared.module.css";
+}
+
+.categoryActions {
+  composes: categoryActions from "./bundle-configure-shared.module.css";
+}
+
+.categoryAccordion {
+  composes: categoryAccordion from "./bundle-configure-shared.module.css";
+}
+
+.categoryAccordionHeader {
+  composes: categoryAccordionHeader from "./bundle-configure-shared.module.css";
+}
+
+.categoryAccordionBody {
+  composes: categoryAccordionBody from "./bundle-configure-shared.module.css";
+}
+
+.categoryDragOver {
+  composes: categoryDragOver from "./bundle-configure-shared.module.css";
+}
+
+.categoryChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.categoryChevron:hover {
+  background: #f1f2f4;
+  color: #202223;
+}
+
+.catNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.categoryNameInput {
+  composes: categoryNameInput from "./bundle-configure-shared.module.css";
+}
+
+.tabRow {
+  display: flex;
+  border-bottom: 1.5px solid #e5e7eb;
+  margin-bottom: 16px;
+  gap: 0;
+}
+
+.tab {
+  padding: 10px 0;
+  margin-right: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+.tab:hover { color: #374151; }
+
+.tabActive {
+  padding: 10px 0;
+  margin-right: 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+  border-bottom: 2px solid #1a1a1a;
+  margin-bottom: -1.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #1a1a1a;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.productActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.addSectionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid #c9cccf;
+  border-radius: 8px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  margin-top: 8px;
+}
+
+.addSectionButton:hover {
+  background: #f6f6f7;
+  border-color: #8c9196;
+}
+
+.addSectionButton:active {
+  background: #edeeef;
+}
+
+/* ── Take your bundle live card ── */
+.bundleLivePanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #f6f6f7;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.bundleLivePlaceOnTheme {
+  font-size: 13px;
+  font-weight: 600;
+  color: #202223;
+}
+
+/* ── Bundle Product ⋮ menu ── */
+.productMenuWrapper {
+  position: relative;
+}
+
+.productMenuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6d7175;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.productMenuBtn:hover {
+  background: #f1f1f1;
+}
+
+.productMenuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+.productMenuDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 150px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 4px;
+  z-index: 100;
+}
+
+.productMenuDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.productMenuDropdownItem:hover {
+  background: #f6f6f7;
+}
+
+/* ── Help Tooltips ── */
+.richHelp {
+  --rich-help-layer: 40;
+  --rich-help-active-layer: 1000;
+  --rich-help-card-layer: 1001;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  z-index: var(--rich-help-layer);
+}
+
+.richHelp:hover,
+.richHelp:focus-within {
+  z-index: var(--rich-help-active-layer);
+}
+
+.richHelpTrigger {
+  white-space: nowrap;
+}
+
+.richHelpCard {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  --rich-help-arrow-left: 50%;
+  width: min(320px, calc(100vw - 48px));
+  padding: 18px;
+  transform: translate(-50%, 8px);
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(31, 41, 55, 0.16);
+  color: #202223;
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  transition: opacity 140ms ease, transform 140ms ease, visibility 140ms ease;
+  visibility: hidden;
+  z-index: var(--rich-help-card-layer);
+}
+
+.richHelp:hover .richHelpCard,
+.richHelp:focus-within .richHelpCard {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+  visibility: visible;
+}
+
+.richHelpCard::before {
+  position: absolute;
+  top: -6px;
+  left: var(--rich-help-arrow-left);
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: 1px solid #dfe3e8;
+  border-top: 1px solid #dfe3e8;
+  background: #ffffff;
+  content: "";
+}
+
+.richHelpCardFloating::before {
+  right: auto;
+  left: var(--rich-help-arrow-left);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.richHelpImagePlaceholder {
+  display: block;
+  width: 100%;
+  height: 80px;
+  border-radius: 6px;
+  background: #f0f0f0;
+  margin: 4px 0 14px;
+}
+
+.richHelpTitle,
+.richHelpDescription {
+  display: block;
+}
+
+.richHelpTitle {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.richHelpDescription {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ── Pending badge inline info icon ──────────────────────────── */
+.pendingBadge {
+  composes: pendingBadge from "./bundle-configure-shared.module.css";
+}
+
+.pendingTooltipCard {
+  composes: pendingTooltipCard from "./bundle-configure-shared.module.css";
 }

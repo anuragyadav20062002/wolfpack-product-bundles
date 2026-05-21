@@ -58,6 +58,7 @@ export const BUNDLE_TYPE_OPTIONS = [
 export const STEP_CONDITION_TYPE_OPTIONS = [
   { label: "Quantity", value: "quantity" },
   { label: "Amount", value: "amount" },
+  { label: "Weight", value: "weight" },
 ] as const;
 
 /** Operator options for step condition rules */
@@ -78,6 +79,7 @@ export const DISCOUNT_METHOD_OPTIONS = [
   { label: "Percentage Off", value: DiscountMethod.PERCENTAGE_OFF },
   { label: "Fixed Amount Off", value: DiscountMethod.FIXED_AMOUNT_OFF },
   { label: "Fixed Bundle Price", value: DiscountMethod.FIXED_BUNDLE_PRICE },
+  { label: "Buy X Get Y (Free Gift Step)", value: DiscountMethod.BUY_X_GET_Y },
 ] as const;
 
 /** Condition type options for discount rules */

@@ -511,9 +511,8 @@ export async function handleCreateBundle(
       });
     }
 
-    // Build redirect URL based on bundle type
-    const routeBase = bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-    const redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
+    // Build redirect URL — go to Step 02 of the wizard
+    const redirectUrl = `/app/bundles/create/configure/${newBundle.id}`;
 
     return json({
       success: true,

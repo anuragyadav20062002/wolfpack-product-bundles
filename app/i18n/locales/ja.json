@@ -1,0 +1,131 @@
+{
+  "dashboard": {
+    "title": "Dashboard: Wolfpack Bundle Builder",
+    "subtitle": "バンドル、カスタマーサポートなどにアクセスできます。",
+    "header": {
+      "syncCollections": "コレクションを同期",
+      "createBundle": "バンドルを作成",
+      "changelog": "変更履歴"
+    },
+    "support": {
+      "heading": "サポートが必要ですか？創業者のParthにお話しください！",
+      "body": "バンドルの設定、カスタムスタイル、技術的な問題についてサポートを受けられます。",
+      "onlineNow": "オンライン中",
+      "availability": "月〜金 • 1時間以内に返信",
+      "cta": "Parthとチャット",
+      "imageAlt": "Parth、創業者",
+      "imageLoading": "Parthのプロフィール写真を読み込み中"
+    },
+    "appEmbeds": {
+      "heading": "アプリの埋め込み",
+      "instruction": "オンラインストア → テーマを編集 → トグルを有効にして保存"
+    },
+    "filters": {
+      "status": "ステータス",
+      "bundleType": "バンドルタイプ",
+      "byStatus": "ステータスでフィルター",
+      "byType": "タイプでフィルター",
+      "all": "すべて"
+    },
+    "status": {
+      "active": "有効",
+      "draft": "下書き",
+      "unlisted": "非公開"
+    },
+    "bundleType": {
+      "product_page": "商品ページ",
+      "full_page": "フルページ"
+    },
+    "search": {
+      "label": "バンドルを検索",
+      "placeholder": "検索...."
+    },
+    "table": {
+      "bundleName": "バンドル名",
+      "status": "ステータス",
+      "type": "タイプ",
+      "actions": "操作"
+    },
+    "emptyState": {
+      "title": "まだバンドルがありません",
+      "body": "ストアにバンドルをまだ作成していません。今すぐ始めて、最高の商品をグループ化して売上を伸ばしましょう。"
+    },
+    "noResults": "現在のフィルターに一致するバンドルがありません",
+    "pagination": {
+      "page": "{{current}} / {{total}} ページ",
+      "perPageLabel": "ページあたりのバンドル数",
+      "per10": "10件/ページ",
+      "per20": "20件/ページ",
+      "per50": "50件/ページ",
+      "prev": "前のページ",
+      "next": "次のページ"
+    },
+    "actions": {
+      "moreActions": "その他の操作",
+      "editBundle": "バンドルを編集",
+      "previewBundle": "ストアでプレビュー",
+      "previewUnavailable": "プレビューするにはバンドルを保存してください",
+      "cloneBundle": "バンドルを複製",
+      "deleteBundle": "バンドルを削除",
+      "confirmClone": "このバンドルを複製してよろしいですか？",
+      "cloneSuccess": "バンドルが複製されました",
+      "deleteSuccess": "バンドルが削除されました",
+      "themeEditorUnavailable": "このストアではテーマエディターのリンクを利用できません。"
+    },
+    "deleteModal": {
+      "heading": "バンドルを削除しますか？",
+      "delete": "削除",
+      "cancel": "キャンセル",
+      "body": "この操作は取り消せません。バンドルの設定、ステップ、割引ルールがすべて完全に削除されます。"
+    },
+    "resources": {
+      "bundleInspiration": "バンドルのインスピレーション",
+      "support": "サポート",
+      "exploreUpdate": "アップデートを見る",
+      "sdkDocumentation": "SDKドキュメント",
+      "bundleGallery": "バンドルギャラリー"
+    },
+    "language": {
+      "label": "言語",
+      "en": "English",
+      "fr": "Français",
+      "de": "Deutsch",
+      "es": "Español",
+      "ja": "日本語",
+      "pt-BR": "Português (BR)"
+    }
+  },
+  "tooltips": {
+    "stepFlow": {
+      "title": "Step Flow",
+      "description": "Steps will render as navigation items on top of the bundle builder"
+    },
+    "category": {
+      "title": "Category",
+      "description": "Categories will appear as tabs inside each step"
+    },
+    "rulesConfiguration": {
+      "title": "Rules guide shopper selections",
+      "description": "Use step rules for one selection limit, or category rules when each category needs its own rule."
+    },
+    "bundleQuantityOptions": {
+      "title": "Bundle Quantity Options",
+      "description": "Show quantity-based discount rules as selectable bundle boxes. Each box can have its own label, subtext, and default rule."
+    },
+    "discountProgressBar": {
+      "title": "Progress Bar",
+      "description": "Show shoppers how close they are to the next discount. Simple uses one bar, while Step Based shows discount milestones."
+    },
+    "discountMessaging": {
+      "title": "Discount Messaging",
+      "description": "Customize the messages shown before a discount unlocks and after shoppers qualify."
+    },
+    "loadingAnimation": {
+      "title": "Storefront Loading Animation",
+      "description": "Shown while Wolfpack Bundles loads bundle content on the storefront."
+    },
+    "bundleVisibilityPending": {
+      "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
+    }
+  }
+}

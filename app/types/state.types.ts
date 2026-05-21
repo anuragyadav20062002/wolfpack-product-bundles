@@ -558,6 +558,7 @@ export interface PricingSettings {
   method: string;
   rules: PricingRule[];
   showFooter: boolean;
+  showDiscountProgressBar: boolean;
 }
 
 /**

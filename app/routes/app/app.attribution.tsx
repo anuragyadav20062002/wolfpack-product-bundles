@@ -7,7 +7,6 @@
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher } from "@remix-run/react";
-import { Badge, Banner, BlockStack, Button, DatePicker, InlineGrid, InlineStack, Page, Popover, Text, Tooltip } from "@shopify/polaris";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import { getPixelStatus, activateUtmPixel, deactivateUtmPixel } from "../../services/pixel-activation.server";
@@ -22,7 +21,7 @@ import {
   type LeaderboardRow,
 } from "../../lib/analytics";
 import db from "../../db.server";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   AreaChart,
   Area,
@@ -78,8 +77,6 @@ function chartXFormatter(dateKey: string) {
   return formatDateKey(dateKey);
 }
 
-// ─── Loader ──────────────────────────────────────────────────
-
 // ─── Action ──────────────────────────────────────────────────
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -118,7 +115,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }),
     ]);
 
-    // Bundle name lookup
     const bundleIds = [...new Set([
       ...attributions.filter(a => a.bundleId).map(a => a.bundleId!),
       ...viewEvents.filter(v => v.bundleId).map(v => v.bundleId!),
@@ -128,7 +124,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       : [];
     const nameMap = Object.fromEntries(bundles.map(b => [b.id, b.name]));
 
-    // Build CSV rows
     const escape = (v: string | null | undefined) =>
       v == null ? "" : `"${String(v).replace(/"/g, '""')}"`;
 
@@ -213,7 +208,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const url = new URL(request.url);
 
-  // Date range derivation — custom (?from&to) takes priority over preset (?days)
   const fromParam = url.searchParams.get("from");
   const toParam   = url.searchParams.get("to");
 
@@ -237,7 +231,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     since.setHours(0, 0, 0, 0);
   }
 
-  // Previous period — same length, immediately before current
   const prevSince = new Date(since);
   prevSince.setDate(prevSince.getDate() - days);
   const prevUntil = new Date(since);
@@ -245,7 +238,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const prevFromStr = prevSince.toISOString().split("T")[0];
   const prevToStr   = prevUntil.toISOString().split("T")[0];
 
-  // Pixel status — read live from Shopify API; non-blocking (errors default to inactive)
   const pixelStatus = await getPixelStatus(admin);
 
   const [currentAttributions, previousAttributions, viewEvents, prevViewEvents] = await Promise.all([
@@ -266,7 +258,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }),
   ]);
 
-  // Bundle name lookup
   const bundleIds = [...new Set(
     currentAttributions.filter(a => a.bundleId).map(a => a.bundleId!)
   )];
@@ -279,20 +270,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const bundleNameMap = Object.fromEntries(bundles.map(b => [b.id, b.name]));
   const bundleStatusMap = Object.fromEntries(bundles.map(b => [b.id, b.status]));
 
-  // ── Current period summaries ──────────────────────────────
-
   const totalRevenue = currentAttributions.reduce((s, a) => s + a.revenue, 0);
   const totalOrders = currentAttributions.length;
   const bundleOrders = currentAttributions.filter(a => a.bundleId).length;
   const aov = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
 
-  // ── Previous period summaries ─────────────────────────────
-
   const prevTotalRevenue = previousAttributions.reduce((s, a) => s + a.revenue, 0);
   const prevTotalOrders = previousAttributions.length;
   const prevAov = prevTotalOrders > 0 ? Math.round(prevTotalRevenue / prevTotalOrders) : 0;
-
-  // ── By platform ───────────────────────────────────────────
 
   const byPlatformMap: Record<string, { revenue: number; orders: number }> = {};
   for (const a of currentAttributions) {
@@ -305,8 +290,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .map(([source, d]) => ({ source, ...d }))
     .sort((a, b) => b.revenue - a.revenue);
 
-  // ── By medium ─────────────────────────────────────────────
-
   const byMediumMap: Record<string, { revenue: number; orders: number }> = {};
   for (const a of currentAttributions) {
     const med = a.utmMedium || "unknown";
@@ -317,8 +300,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const byMedium = Object.entries(byMediumMap)
     .map(([medium, d]) => ({ medium, ...d }))
     .sort((a, b) => b.revenue - a.revenue);
-
-  // ── By campaign ───────────────────────────────────────────
 
   const byCampaignMap: Record<string, { revenue: number; orders: number; source: string }> = {};
   for (const a of currentAttributions) {
@@ -332,8 +313,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const byCampaign = Object.entries(byCampaignMap)
     .map(([campaign, d]) => ({ campaign, ...d }))
     .sort((a, b) => b.revenue - a.revenue);
-
-  // ── By bundle ─────────────────────────────────────────────
 
   const byBundleMap: Record<string, { name: string; revenue: number; orders: number }> = {};
   for (const a of currentAttributions) {
@@ -350,8 +329,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
   const byBundle = Object.values(byBundleMap).sort((a, b) => b.revenue - a.revenue);
 
-  // ── By landing page (top 10, query string stripped) ───────
-
   const byLandingMap: Record<string, { revenue: number; orders: number }> = {};
   for (const a of currentAttributions) {
     if (!a.landingPage) continue;
@@ -365,8 +342,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .sort((a, b) => b.revenue - a.revenue)
     .slice(0, 10);
 
-  // ── Time series — daily bins ───────────────────────────────
-
   const timeSeriesMap: Record<string, { revenue: number; orders: number }> = {};
   for (const a of currentAttributions) {
     const dateKey = new Date(a.createdAt).toISOString().split("T")[0];
@@ -375,7 +350,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     timeSeriesMap[dateKey].orders += 1;
   }
 
-  // Fill every day in the window so the chart has a continuous X axis
   const timeSeries: Array<{ date: string; revenue: number; orders: number }> = [];
   const cursor = new Date(since);
   const today = new Date();
@@ -388,8 +362,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
     cursor.setDate(cursor.getDate() + 1);
   }
-
-  // ── Bundle Revenue section — new additive aggregations ───────
 
   const attrRows: OrderAttributionRow[] = currentAttributions.map(a => ({
     bundleId: a.bundleId,
@@ -412,18 +384,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const bundleLeaderboard = buildBundleLeaderboard(attrRows, bundleNameMap, bundleStatusMap, 10);
   const bundleRevenueTrend = buildBundleTrendSeries(attrRows, since, days, until);
 
-  // ── Bundle view counts ─────────────────────────────────────
   const totalViews = viewEvents.length;
   const prevTotalViews = prevViewEvents.length;
 
-  // Views per bundle (current period), sorted by views desc
   const viewsByBundleMap: Record<string, number> = {};
   for (const v of viewEvents) {
     if (v.bundleId) {
       viewsByBundleMap[v.bundleId] = (viewsByBundleMap[v.bundleId] ?? 0) + 1;
     }
   }
-  // Also include bundle names from view-only bundles not in attributions
   const viewOnlyBundleIds = Object.keys(viewsByBundleMap).filter(id => !(id in bundleNameMap));
   const viewOnlyBundles = viewOnlyBundleIds.length > 0
     ? await db.bundle.findMany({
@@ -462,8 +431,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   });
 };
 
-// ─── Component ───────────────────────────────────────────────
-
 // ─── Pixel Status Card ────────────────────────────────────────
 
 function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
@@ -471,7 +438,6 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
   const fetcher = useFetcher<typeof action>();
   const isSubmitting = fetcher.state !== "idle";
 
-  // Track live pixel state — seed from loader, update from action response
   const [active, setActive] = useState(pixelActive);
 
   useEffect(() => {
@@ -504,7 +470,6 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
         boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
       }}
     >
-      {/* Status strip */}
       <div
         style={{
           height: 4,
@@ -515,10 +480,9 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
       />
 
       <div style={{ padding: "20px 24px" }}>
-        <InlineStack align="space-between" blockAlign="center" wrap={false} gap="400">
-          <BlockStack gap="200">
-            <InlineStack gap="300" blockAlign="center">
-              {/* Status indicator dot */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "nowrap" }}>
+          <s-stack direction="block" gap="small-100">
+            <s-stack direction="inline" alignItems="center" gap="small">
               <span
                 style={{
                   display: "inline-block",
@@ -530,49 +494,47 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
                   flexShrink: 0,
                 }}
               />
-              <Text as="h2" variant="headingMd">UTM Pixel Tracking</Text>
-              <Badge tone={active ? "success" : "new"}>{active ? "Active" : "Not active"}</Badge>
-            </InlineStack>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>UTM Pixel Tracking</h2>
+              <s-badge tone={active ? "success" : "new"}>{active ? "Active" : "Not active"}</s-badge>
+            </s-stack>
             {active ? (
-              <Text as="p" variant="bodyMd" tone="subdued">
+              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                 UTM parameters are being captured and attributed to orders at checkout. Your ad spend is being tracked.
-              </Text>
+              </p>
             ) : (
-              <BlockStack gap="300">
-                <Text as="p" variant="bodyMd" tone="subdued">
+              <s-stack direction="block" gap="small">
+                <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                   Enable tracking to start attributing orders to your ad campaigns. Three steps:
-                </Text>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm">
+                </p>
+                <s-stack direction="block" gap="small-400">
+                  <p style={{ margin: 0, fontSize: 13 }}>
                     <strong>1. Enable pixel</strong> — click the button to install the tracking pixel on your store.
-                  </Text>
-                  <Text as="p" variant="bodySm">
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13 }}>
                     <strong>2. Tag your ad links</strong> — add UTM parameters to any ad URLs, e.g.{" "}
                     <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
                       ?utm_source=facebook&amp;utm_campaign=bundles
                     </code>
-                  </Text>
-                  <Text as="p" variant="bodySm">
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13 }}>
                     <strong>3. Watch orders appear</strong> — attributed orders will show up here within minutes of a purchase.
-                  </Text>
-                </BlockStack>
-              </BlockStack>
+                  </p>
+                </s-stack>
+              </s-stack>
             )}
-          </BlockStack>
+          </s-stack>
 
           <div style={{ flexShrink: 0 }}>
-            <Button
+            <s-button
               onClick={handleToggle}
-              loading={isSubmitting}
-              disabled={isSubmitting}
-              tone={active ? "critical" : undefined}
+              loading={isSubmitting || undefined}
+              disabled={isSubmitting || undefined}
               variant={active ? "secondary" : "primary"}
-              size="large"
             >
               {active ? "Disable tracking" : "Enable tracking"}
-            </Button>
+            </s-button>
           </div>
-        </InlineStack>
+        </div>
       </div>
     </div>
   );
@@ -586,7 +548,6 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
   const aovDelta = s.bundleAOV !== null && s.prevBundleAOV !== null
     ? formatDelta(s.bundleAOV, s.prevBundleAOV)
     : null;
-  // Percentage-point delta — straight difference, not relative change
   const pctPpDiff = s.bundleRevenuePercent - s.prevBundleRevenuePercent;
   const pctDelta = s.prevBundleRevenuePercent === 0
     ? null
@@ -602,16 +563,17 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
   }
 
   return (
-    <InlineGrid columns={{ xs: 2, md: 4 }} gap="400">
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}
+      className={styles.bundleKpiGrid}>
       <div className={styles.bundleKpiCard}>
         <span className={styles.bundleKpiLabel}>Bundle Revenue</span>
         <span className={styles.bundleKpiValue}>
           {s.totalBundleRevenue > 0 ? formatRevenue(s.totalBundleRevenue) : "$0"}
         </span>
         {compare && (revDelta.label !== "—" ? (
-          <Badge tone={deltaTone(revDelta.direction)}>{`${revDelta.label} vs prev`}</Badge>
+          <s-badge tone={deltaTone(revDelta.direction)}>{`${revDelta.label} vs prev`}</s-badge>
         ) : (
-          <Badge tone="new">{"— no prior data"}</Badge>
+          <s-badge tone="new">{"— no prior data"}</s-badge>
         ))}
       </div>
 
@@ -619,9 +581,9 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
         <span className={styles.bundleKpiLabel}>Bundle Orders</span>
         <span className={styles.bundleKpiValue}>{s.totalBundleOrders}</span>
         {compare && (ordDelta.label !== "—" ? (
-          <Badge tone={deltaTone(ordDelta.direction)}>{`${ordDelta.label} vs prev`}</Badge>
+          <s-badge tone={deltaTone(ordDelta.direction)}>{`${ordDelta.label} vs prev`}</s-badge>
         ) : (
-          <Badge tone="new">{"— no prior data"}</Badge>
+          <s-badge tone="new">{"— no prior data"}</s-badge>
         ))}
       </div>
 
@@ -631,9 +593,9 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
           {s.bundleAOV !== null ? formatRevenue(s.bundleAOV) : "—"}
         </span>
         {compare && (aovDelta && aovDelta.label !== "—" ? (
-          <Badge tone={deltaTone(aovDelta.direction)}>{`${aovDelta.label} vs prev`}</Badge>
+          <s-badge tone={deltaTone(aovDelta.direction)}>{`${aovDelta.label} vs prev`}</s-badge>
         ) : (
-          <Badge tone="new">{"— no prior data"}</Badge>
+          <s-badge tone="new">{"— no prior data"}</s-badge>
         ))}
       </div>
 
@@ -643,12 +605,12 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
           {s.bundleRevenuePercent > 0 ? s.bundleRevenuePercent.toFixed(1) + "%" : "0%"}
         </span>
         {compare && (pctDelta ? (
-          <Badge tone={deltaTone(pctDelta.direction)}>{`${pctDelta.label} vs prev`}</Badge>
+          <s-badge tone={deltaTone(pctDelta.direction)}>{`${pctDelta.label} vs prev`}</s-badge>
         ) : (
-          <Badge tone="new">{"— no prior data"}</Badge>
+          <s-badge tone="new">{"— no prior data"}</s-badge>
         ))}
       </div>
-    </InlineGrid>
+    </div>
   );
 }
 
@@ -780,30 +742,28 @@ function BundleLeaderboardCard({ leaderboard }: { leaderboard: LeaderboardRow[] 
         </div>
         {leaderboard.length === 0 && (
           <div className={styles.emptyWrapper}>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              No bundle orders in this period.
-            </Text>
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No bundle orders in this period.</p>
           </div>
         )}
         {leaderboard.map((row) => {
           const isLong = row.bundleName.length > 40;
           const nameCell = isLong ? (
-            <Tooltip content={row.bundleName}>
+            <s-tooltip content={row.bundleName}>
               <span className={`${styles.dataCell} ${styles.primary} ${styles.truncate}`}>
                 {row.bundleName}
                 {row.bundleStatus === "archived" && (
                   <span style={{ marginLeft: 6 }}>
-                    <Badge tone="attention">Archived</Badge>
+                    <s-badge tone="attention">Archived</s-badge>
                   </span>
                 )}
               </span>
-            </Tooltip>
+            </s-tooltip>
           ) : (
             <span className={`${styles.dataCell} ${styles.primary}`}>
               {row.bundleName}
               {row.bundleStatus === "archived" && (
                 <span style={{ marginLeft: 6 }}>
-                  <Badge tone="attention">Archived</Badge>
+                  <s-badge tone="attention">Archived</s-badge>
                 </span>
               )}
             </span>
@@ -839,7 +799,6 @@ function formatRangeLabel(days: number, from?: string, to?: string): string {
     const end   = new Date(to   + "T00:00:00Z");
     const startStr = formatDateLabel(start);
     const endStr   = formatDateLabel(end);
-    // Strip year from start if same year
     if (start.getUTCFullYear() === end.getUTCFullYear()) {
       const startNoYear = start.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
       return `${startNoYear} – ${endStr}`;
@@ -856,17 +815,27 @@ interface DateRangeSelectorProps {
 }
 
 function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
-  const [popoverActive, setPopoverActive] = useState(false);
-  const today = new Date();
-  const [{ month, year }, setCalendar] = useState({
-    month: today.getMonth(),
-    year: today.getFullYear(),
-  });
-  const [selectedRange, setSelectedRange] = useState<{ start: Date; end: Date } | undefined>(undefined);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [fromDate, setFromDate] = useState(from || "");
+  const [toDate, setToDate] = useState(to || "");
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const triggerLabel = formatRangeLabel(days, from, to);
+  const today = new Date().toISOString().split("T")[0];
 
-  function navigate(daysN?: number, fromStr?: string, toStr?: string) {
+  // Close on outside click
+  useEffect(() => {
+    if (!popoverOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setPopoverOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [popoverOpen]);
+
+  function navigateTo(daysN?: number, fromStr?: string, toStr?: string) {
     const url = new URL(window.location.href);
     url.searchParams.delete("days");
     url.searchParams.delete("from");
@@ -881,67 +850,99 @@ function DateRangeSelector({ days, from, to }: DateRangeSelectorProps) {
   }
 
   function handleApply() {
-    if (!selectedRange) return;
-    const fmt = (d: Date) => d.toISOString().slice(0, 10);
-    navigate(undefined, fmt(selectedRange.start), fmt(selectedRange.end));
+    if (!fromDate || !toDate) return;
+    navigateTo(undefined, fromDate, toDate);
   }
 
-  const activator = (
-    <Button disclosure onClick={() => setPopoverActive((v) => !v)}>
-      {triggerLabel}
-    </Button>
-  );
-
   return (
-    <Popover
-      active={popoverActive}
-      activator={activator}
-      onClose={() => setPopoverActive(false)}
-      preferredPosition="below"
-      sectioned
-    >
-      <div className={styles.dateRangePopover}>
-        {/* Preset chips */}
-        <div className={styles.presetChips}>
-          {([7, 30, 90] as const).map((d) => (
-            <button
-              key={d}
-              className={`${styles.presetChip}${!from && days === d ? ` ${styles.presetChipActive}` : ""}`}
-              onClick={() => navigate(d)}
+    <div ref={containerRef} style={{ position: "relative" }}>
+      <s-button onClick={() => setPopoverOpen((v) => !v)}>
+        {triggerLabel}
+      </s-button>
+
+      {popoverOpen && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 8px)",
+            zIndex: 100,
+            background: "#fff",
+            border: "1px solid #e1e3e5",
+            borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            padding: 16,
+            minWidth: 260,
+          }}
+        >
+          {/* Preset chips */}
+          <div className={styles.presetChips}>
+            {([7, 30, 90] as const).map((d) => (
+              <button
+                key={d}
+                className={`${styles.presetChip}${!from && days === d ? ` ${styles.presetChipActive}` : ""}`}
+                onClick={() => navigateTo(d)}
+              >
+                Last {d} days
+              </button>
+            ))}
+          </div>
+
+          {/* Native date range inputs */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "#6d7175", marginBottom: 4 }}>From</label>
+              <input
+                type="date"
+                value={fromDate}
+                max={toDate || today}
+                onChange={(e) => setFromDate(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "6px 8px",
+                  borderRadius: 6,
+                  border: "1px solid #ced4da",
+                  fontSize: 13,
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, color: "#6d7175", marginBottom: 4 }}>To</label>
+              <input
+                type="date"
+                value={toDate}
+                min={fromDate}
+                max={today}
+                onChange={(e) => setToDate(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "6px 8px",
+                  borderRadius: 6,
+                  border: "1px solid #ced4da",
+                  fontSize: 13,
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </div>
+
+          <div className={styles.calendarApplyRow}>
+            <s-button
+              variant="primary"
+              disabled={(!fromDate || !toDate) || undefined}
+              onClick={handleApply}
             >
-              Last {d} days
-            </button>
-          ))}
+              Apply
+            </s-button>
+          </div>
         </div>
-
-        {/* Calendar */}
-        <DatePicker
-          month={month}
-          year={year}
-          allowRange
-          multiMonth
-          disableDatesAfter={today}
-          selected={selectedRange}
-          onChange={({ start, end }) => setSelectedRange({ start, end })}
-          onMonthChange={(m, y) => setCalendar({ month: m, year: y })}
-        />
-
-        {/* Apply */}
-        <div className={styles.calendarApplyRow}>
-          <Button
-            variant="primary"
-            disabled={!selectedRange}
-            onClick={handleApply}
-          >
-            Apply
-          </Button>
-        </div>
-      </div>
-    </Popover>
+      )}
+    </div>
   );
 }
 
-// ─── Component ───────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────
 
 export default function AttributionDashboard() {
   const {
@@ -952,7 +953,6 @@ export default function AttributionDashboard() {
     views,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  // Recharts uses ResizeObserver — only render on client to avoid SSR mismatch
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
 
@@ -979,450 +979,446 @@ export default function AttributionDashboard() {
     return [value as number, "Orders"];
   }, []);
 
-  // Show ~6-8 evenly spaced ticks depending on timeframe
   const xAxisInterval = useMemo(() => {
     const count = timeSeries.length;
-    if (count <= 8) return 0;          // ≤8 points: every day
-    if (count <= 31) return 4;         // 30-day window: every 5th day
-    return Math.floor(count / 8);      // 90-day window: ~every 11 days
+    if (count <= 8) return 0;
+    if (count <= 31) return 4;
+    return Math.floor(count / 8);
   }, [timeSeries.length]);
 
   const hasNoData = summary.totalOrders === 0 && summary.prevTotalOrders === 0;
 
   return (
-    <Page
-      title="Analytics"
-      subtitle="Bundle revenue & UTM attribution"
-      backAction={{ content: "Dashboard", onAction: () => navigate("/app/dashboard") }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <>
+      <ui-title-bar title="Analytics">
+        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+          Dashboard
+        </button>
+      </ui-title-bar>
 
-        {/* Why are values nil? — shown at very top when there's no data */}
-        {hasNoData && (
-          <Banner
-            title={pixelActive ? "No data for this period" : "UTM tracking is not enabled"}
-            tone={pixelActive ? "info" : "warning"}
-          >
-            {pixelActive ? (
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd">
-                  Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
-                </Text>
-                <Text as="p" variant="bodyMd">
-                  Make sure your ad links include UTM parameters — e.g.{" "}
-                  <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
-                    ?utm_source=facebook&utm_campaign=bundles
-                  </code>
-                </Text>
-              </BlockStack>
-            ) : (
-              <BlockStack gap="200">
-                <Text as="p" variant="bodyMd">
-                  Enable tracking below to start capturing UTM parameters from visitor sessions. Once active, orders from tagged ad links will be attributed and shown here.
-                </Text>
-              </BlockStack>
-            )}
-          </Banner>
-        )}
+      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-        {/* Pixel tracking toggle */}
-        <PixelStatusCard pixelActive={pixelActive} />
-
-        {/* Date range selector + Compare toggle + Export */}
-        <div className={styles.headerRow}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {compare && comparePeriodLabel && (
-              <span className={styles.comparePill}>
-                vs {comparePeriodLabel}
-              </span>
-            )}
-          </div>
-          <InlineStack gap="200" blockAlign="center">
-            <form method="post" style={{ display: "inline" }}>
-              <input type="hidden" name="intent" value="export" />
-              {from && to ? (
-                <>
-                  <input type="hidden" name="from" value={from} />
-                  <input type="hidden" name="to" value={to} />
-                </>
-              ) : (
-                <input type="hidden" name="days" value={String(days)} />
-              )}
-              <Button submit size="slim" variant="secondary">Export CSV</Button>
-            </form>
-            <button
-              className={`${styles.compareToggle}${compare ? ` ${styles.compareToggleActive}` : ""}`}
-              onClick={() => setCompare(v => !v)}
-              type="button"
+          {/* No data banner */}
+          {hasNoData && (
+            <s-banner
+              heading={pixelActive ? "No data for this period" : "UTM tracking is not enabled"}
+              tone={pixelActive ? "info" : "warning"}
             >
-              Compare
-            </button>
-            <div className={styles.datePickerWrap}>
-              <DateRangeSelector days={days} from={from} to={to} />
+              {pixelActive ? (
+                <s-stack direction="block" gap="small-100">
+                  <p style={{ margin: 0, fontSize: 14 }}>
+                    Tracking is active but no attributed orders were recorded yet. Values will populate once customers arrive via UTM-tagged links and complete a purchase.
+                  </p>
+                  <p style={{ margin: 0, fontSize: 14 }}>
+                    Make sure your ad links include UTM parameters — e.g.{" "}
+                    <code style={{ background: "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3, fontSize: 12 }}>
+                      ?utm_source=facebook&utm_campaign=bundles
+                    </code>
+                  </p>
+                </s-stack>
+              ) : (
+                <p style={{ margin: 0, fontSize: 14 }}>
+                  Enable tracking below to start capturing UTM parameters from visitor sessions. Once active, orders from tagged ad links will be attributed and shown here.
+                </p>
+              )}
+            </s-banner>
+          )}
+
+          {/* Pixel tracking toggle */}
+          <PixelStatusCard pixelActive={pixelActive} />
+
+          {/* Date range selector + Compare toggle + Export */}
+          <div className={styles.headerRow}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {compare && comparePeriodLabel && (
+                <span className={styles.comparePill}>
+                  vs {comparePeriodLabel}
+                </span>
+              )}
             </div>
-          </InlineStack>
-        </div>
-
-        {/* ── Bundle Views Section ───────────────────────────── */}
-        <div className={styles.bundleSection}>
-          <Text as="h2" variant="headingMd">Bundle Views</Text>
-        </div>
-
-        <div className={styles.statsGrid}>
-          <div className={`${styles.statCard} ${styles.accent1}`}>
-            <span className={styles.statLabel}>Total Views</span>
-            <span className={styles.statValue}>{views.totalViews.toLocaleString()}</span>
-            {compare && views.prevTotalViews > 0 && (
-              <span className={
-                views.totalViews >= views.prevTotalViews ? styles.growthPos : styles.growthNeg
-              }>
-                {formatGrowth(views.totalViews, views.prevTotalViews)} vs prev period
-              </span>
-            )}
-            <span className={styles.statSub}>widget renders in selected period</span>
+            <s-stack direction="inline" alignItems="center" gap="small-100">
+              <form method="post" style={{ display: "inline" }}>
+                <input type="hidden" name="intent" value="export" />
+                {from && to ? (
+                  <>
+                    <input type="hidden" name="from" value={from} />
+                    <input type="hidden" name="to" value={to} />
+                  </>
+                ) : (
+                  <input type="hidden" name="days" value={String(days)} />
+                )}
+                <s-button variant="secondary">Export CSV</s-button>
+              </form>
+              <button
+                className={`${styles.compareToggle}${compare ? ` ${styles.compareToggleActive}` : ""}`}
+                onClick={() => setCompare(v => !v)}
+                type="button"
+              >
+                Compare
+              </button>
+              <div className={styles.datePickerWrap}>
+                <DateRangeSelector days={days} from={from} to={to} />
+              </div>
+            </s-stack>
           </div>
-        </div>
 
-        {views.viewsByBundle.length > 0 && (
-          <div style={{ background: "#fff", border: "1px solid #e3e3e3", borderRadius: 8, padding: "16px 20px" }}>
-            <BlockStack gap="300">
-              <Text as="h3" variant="headingSm">Views by Bundle</Text>
-              <div>
-                {views.viewsByBundle.map((row, i) => {
-                  const maxViews = views.viewsByBundle[0]?.views || 1;
-                  const pct = Math.round((row.views / maxViews) * 100);
-                  return (
-                    <div key={row.bundleId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                      <div style={{ width: 20, color: "#6d7175", fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                          <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
-                          <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{row.views.toLocaleString()}</span>
-                        </div>
-                        <div style={{ height: 6, background: "#e3e3e3", borderRadius: 3, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${pct}%`, background: "#005bd3", borderRadius: 3, transition: "width 0.4s ease" }} />
+          {/* Bundle Views Section */}
+          <div className={styles.bundleSection}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Views</h2>
+          </div>
+
+          <div className={styles.statsGrid}>
+            <div className={`${styles.statCard} ${styles.accent1}`}>
+              <span className={styles.statLabel}>Total Views</span>
+              <span className={styles.statValue}>{views.totalViews.toLocaleString()}</span>
+              {compare && views.prevTotalViews > 0 && (
+                <span className={
+                  views.totalViews >= views.prevTotalViews ? styles.growthPos : styles.growthNeg
+                }>
+                  {formatGrowth(views.totalViews, views.prevTotalViews)} vs prev period
+                </span>
+              )}
+              <span className={styles.statSub}>widget renders in selected period</span>
+            </div>
+          </div>
+
+          {views.viewsByBundle.length > 0 && (
+            <div style={{ background: "#fff", border: "1px solid #e3e3e3", borderRadius: 8, padding: "16px 20px" }}>
+              <s-stack direction="block" gap="small">
+                <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Views by Bundle</h3>
+                <div>
+                  {views.viewsByBundle.map((row, i) => {
+                    const maxViews = views.viewsByBundle[0]?.views || 1;
+                    const pct = Math.round((row.views / maxViews) * 100);
+                    return (
+                      <div key={row.bundleId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                        <div style={{ width: 20, color: "#6d7175", fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                            <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{row.views.toLocaleString()}</span>
+                          </div>
+                          <div style={{ height: 6, background: "#e3e3e3", borderRadius: 3, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct}%`, background: "#005bd3", borderRadius: 3, transition: "width 0.4s ease" }} />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              </s-stack>
+            </div>
+          )}
+
+          {/* Bundle Revenue Section */}
+          <div className={styles.bundleSection}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Revenue</h2>
+          </div>
+
+          <BundleKpiRow summary={bundleRevenueSummary} compare={compare} />
+
+          <div className={styles.bundleSplitRow}>
+            <BundleTrendChart trend={bundleRevenueTrend} days={days} isClient={isClient} />
+            <BundleLeaderboardCard leaderboard={bundleLeaderboard} />
+          </div>
+
+          {/* Section divider: UTM Attribution */}
+          <div className={styles.sectionDivider}>
+            <span className={styles.sectionDividerLabel}>UTM Attribution</span>
+          </div>
+
+          {/* Metric cards */}
+          <div className={styles.statsGrid}>
+            <div className={`${styles.statCard} ${styles.accent1}`}>
+              <span className={styles.statLabel}>Total Ad Revenue</span>
+              <span className={styles.statValue}>{formatRevenue(summary.totalRevenue)}</span>
+              {compare && revenueGrowth && (
+                <span className={
+                  isPositiveGrowth(summary.totalRevenue, summary.prevTotalRevenue)
+                    ? styles.growthPos : styles.growthNeg
+                }>
+                  {revenueGrowth} vs prev period
+                </span>
+              )}
+              <span className={styles.statSub}>
+                {summary.totalRevenue > 0 ? "from attributed orders" : "no attributed orders yet"}
+              </span>
+            </div>
+
+            <div className={`${styles.statCard} ${styles.accent2}`}>
+              <span className={styles.statLabel}>Attributed Orders</span>
+              <span className={styles.statValue}>{summary.totalOrders}</span>
+              {compare && ordersGrowth && (
+                <span className={
+                  isPositiveGrowth(summary.totalOrders, summary.prevTotalOrders)
+                    ? styles.growthPos : styles.growthNeg
+                }>
+                  {ordersGrowth} vs prev period
+                </span>
+              )}
+              <span className={styles.statSub}>
+                {summary.totalOrders > 0 ? "orders with UTM data" : "no UTM-tagged orders yet"}
+              </span>
+            </div>
+
+            <div className={`${styles.statCard} ${styles.accent3}`}>
+              <span className={styles.statLabel}>Avg. Order Value</span>
+              <span className={styles.statValue}>{formatRevenue(summary.aov)}</span>
+              {compare && aovGrowth && (
+                <span className={
+                  isPositiveGrowth(summary.aov, summary.prevAov)
+                    ? styles.growthPos : styles.growthNeg
+                }>
+                  {aovGrowth} vs prev period
+                </span>
+              )}
+              <span className={styles.statSub}>
+                {summary.totalOrders > 0
+                  ? `${Math.round((summary.bundleOrders / summary.totalOrders) * 100)}% bundle orders`
+                  : "—"}
+              </span>
+            </div>
+          </div>
+
+          {/* Revenue Trend — area chart (client-only) */}
+          {isClient && timeSeries.length > 1 && (
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Revenue Trend</span>
+                <span className={styles.sectionCount}>daily</span>
               </div>
-            </BlockStack>
-          </div>
-        )}
+              <div style={{ padding: "20px 16px 16px" }}>
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart
+                    data={timeSeries}
+                    margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#5c6ac4" stopOpacity={0.18} />
+                        <stop offset="95%" stopColor="#5c6ac4" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f2f3" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={chartXFormatter}
+                      tick={{ fontSize: 11, fill: "#8c9196" }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={xAxisInterval}
+                    />
+                    <YAxis
+                      tickFormatter={formatRevenueShort}
+                      tick={{ fontSize: 11, fill: "#8c9196" }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={56}
+                    />
+                    <RechartsTooltip
+                      formatter={chartTooltipFormatter}
+                      contentStyle={{
+                        border: "1px solid #e1e3e5",
+                        borderRadius: 8,
+                        fontSize: 13,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                      }}
+                      labelFormatter={(label) => formatDateKey(label as string)}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#5c6ac4"
+                      strokeWidth={2}
+                      fill="url(#revGrad)"
+                      dot={false}
+                      activeDot={{ r: 4, fill: "#5c6ac4" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
-        {/* ── Bundle Revenue Section ─────────────────────────── */}
-        <div className={styles.bundleSection}>
-          <Text as="h2" variant="headingMd">Bundle Revenue</Text>
-        </div>
-
-        <BundleKpiRow summary={bundleRevenueSummary} compare={compare} />
-
-        <div className={styles.bundleSplitRow}>
-          <BundleTrendChart trend={bundleRevenueTrend} days={days} isClient={isClient} />
-          <BundleLeaderboardCard leaderboard={bundleLeaderboard} />
-        </div>
-
-        {/* ── Section divider: UTM Attribution ──────────────── */}
-        <div className={styles.sectionDivider}>
-          <span className={styles.sectionDividerLabel}>UTM Attribution</span>
-        </div>
-
-        {/* Metric cards */}
-        <div className={styles.statsGrid}>
-
-          {/* Total Revenue */}
-          <div className={`${styles.statCard} ${styles.accent1}`}>
-            <span className={styles.statLabel}>Total Ad Revenue</span>
-            <span className={styles.statValue}>{formatRevenue(summary.totalRevenue)}</span>
-            {compare && revenueGrowth && (
-              <span className={
-                isPositiveGrowth(summary.totalRevenue, summary.prevTotalRevenue)
-                  ? styles.growthPos : styles.growthNeg
-              }>
-                {revenueGrowth} vs prev period
-              </span>
-            )}
-            <span className={styles.statSub}>
-              {summary.totalRevenue > 0 ? "from attributed orders" : "no attributed orders yet"}
-            </span>
-          </div>
-
-          {/* Attributed Orders */}
-          <div className={`${styles.statCard} ${styles.accent2}`}>
-            <span className={styles.statLabel}>Attributed Orders</span>
-            <span className={styles.statValue}>{summary.totalOrders}</span>
-            {compare && ordersGrowth && (
-              <span className={
-                isPositiveGrowth(summary.totalOrders, summary.prevTotalOrders)
-                  ? styles.growthPos : styles.growthNeg
-              }>
-                {ordersGrowth} vs prev period
-              </span>
-            )}
-            <span className={styles.statSub}>
-              {summary.totalOrders > 0 ? "orders with UTM data" : "no UTM-tagged orders yet"}
-            </span>
-          </div>
-
-          {/* Average Order Value */}
-          <div className={`${styles.statCard} ${styles.accent3}`}>
-            <span className={styles.statLabel}>Avg. Order Value</span>
-            <span className={styles.statValue}>{formatRevenue(summary.aov)}</span>
-            {compare && aovGrowth && (
-              <span className={
-                isPositiveGrowth(summary.aov, summary.prevAov)
-                  ? styles.growthPos : styles.growthNeg
-              }>
-                {aovGrowth} vs prev period
-              </span>
-            )}
-            <span className={styles.statSub}>
-              {summary.totalOrders > 0
-                ? `${Math.round((summary.bundleOrders / summary.totalOrders) * 100)}% bundle orders`
-                : "—"}
-            </span>
-          </div>
-
-        </div>
-
-        {/* Revenue Trend — area chart (client-only) */}
-        {isClient && timeSeries.length > 1 && (
+          {/* Revenue by Platform */}
           <div className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Revenue Trend</span>
-              <span className={styles.sectionCount}>daily</span>
+              <span className={styles.sectionTitle}>Revenue by Platform</span>
+              <span className={styles.sectionCount}>
+                {byPlatform.length} source{byPlatform.length !== 1 ? "s" : ""}
+              </span>
             </div>
-            <div style={{ padding: "20px 16px 16px" }}>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart
-                  data={timeSeries}
-                  margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#5c6ac4" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="#5c6ac4" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f2f3" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={chartXFormatter}
-                    tick={{ fontSize: 11, fill: "#8c9196" }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={xAxisInterval}
-                  />
-                  <YAxis
-                    tickFormatter={formatRevenueShort}
-                    tick={{ fontSize: 11, fill: "#8c9196" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={56}
-                  />
-                  <RechartsTooltip
-                    formatter={chartTooltipFormatter}
-                    contentStyle={{
-                      border: "1px solid #e1e3e5",
-                      borderRadius: 8,
-                      fontSize: 13,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    }}
-                    labelFormatter={(label) => formatDateKey(label as string)}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#5c6ac4"
-                    strokeWidth={2}
-                    fill="url(#revGrad)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#5c6ac4" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Revenue by Platform */}
-        <div className={styles.sectionCard}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>Revenue by Platform</span>
-            <span className={styles.sectionCount}>
-              {byPlatform.length} source{byPlatform.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className={styles.platformTable}>
-            <div className={`${styles.platformRow} ${styles.tableHead}`}>
-              <span className={styles.colLabel}>Platform</span>
-              <span className={styles.colLabel}>Orders</span>
-              <span className={styles.colLabel} style={{ minWidth: 100 }}>Revenue</span>
-              <span className={styles.colLabel} style={{ minWidth: 120 }}>&nbsp;</span>
-            </div>
-            {byPlatform.length === 0 && (
-              <div style={{ padding: "24px", textAlign: "center", color: "#8c9196", fontSize: 13 }}>
-                No platform data yet — will appear once attributed orders come in.
+            <div className={styles.platformTable}>
+              <div className={`${styles.platformRow} ${styles.tableHead}`}>
+                <span className={styles.colLabel}>Platform</span>
+                <span className={styles.colLabel}>Orders</span>
+                <span className={styles.colLabel} style={{ minWidth: 100 }}>Revenue</span>
+                <span className={styles.colLabel} style={{ minWidth: 120 }}>&nbsp;</span>
               </div>
-            )}
-            {byPlatform.map((p, i) => (
-              <div key={p.source} className={styles.platformRow}>
-                <div className={styles.platformName}>
-                  <span className={`${styles.platformDot} ${platformDotClass(i)}`} />
-                  <span className={styles.platformLabel}>{p.source}</span>
+              {byPlatform.length === 0 && (
+                <div style={{ padding: "24px", textAlign: "center", color: "#8c9196", fontSize: 13 }}>
+                  No platform data yet — will appear once attributed orders come in.
                 </div>
-                <span className={styles.colLabel}>{p.orders}</span>
-                <span className={styles.colLabel} style={{ fontWeight: 600, color: "#202223" }}>
-                  {formatRevenue(p.revenue)}
-                </span>
-                <div className={styles.revenueBar}>
-                  <div className={styles.barTrack}>
-                    <div
-                      className={styles.barFill}
-                      style={{
-                        width: `${Math.round((p.revenue / maxPlatformRevenue) * 100)}%`,
-                        background: i === 0
-                          ? "linear-gradient(90deg,#5c6ac4,#9c6ade)"
-                          : i === 1
-                            ? "linear-gradient(90deg,#00848e,#00a0ac)"
-                            : i === 2
-                              ? "linear-gradient(90deg,#f49342,#f26419)"
-                              : "#c4cdd0",
-                      }}
-                    />
+              )}
+              {byPlatform.map((p, i) => (
+                <div key={p.source} className={styles.platformRow}>
+                  <div className={styles.platformName}>
+                    <span className={`${styles.platformDot} ${platformDotClass(i)}`} />
+                    <span className={styles.platformLabel}>{p.source}</span>
+                  </div>
+                  <span className={styles.colLabel}>{p.orders}</span>
+                  <span className={styles.colLabel} style={{ fontWeight: 600, color: "#202223" }}>
+                    {formatRevenue(p.revenue)}
+                  </span>
+                  <div className={styles.revenueBar}>
+                    <div className={styles.barTrack}>
+                      <div
+                        className={styles.barFill}
+                        style={{
+                          width: `${Math.round((p.revenue / maxPlatformRevenue) * 100)}%`,
+                          background: i === 0
+                            ? "linear-gradient(90deg,#5c6ac4,#9c6ade)"
+                            : i === 1
+                              ? "linear-gradient(90deg,#00848e,#00a0ac)"
+                              : i === 2
+                                ? "linear-gradient(90deg,#f49342,#f26419)"
+                                : "#c4cdd0",
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {/* Revenue by Channel (UTM medium) */}
+          {byMedium.length > 0 && (
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Revenue by Channel</span>
+                <span className={styles.sectionCount}>
+                  {byMedium.length} channel{byMedium.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className={styles.dataTable}>
+                <div className={`${styles.dataRow} ${styles.mediumRow} ${styles.headRow}`}>
+                  <span className={styles.dataCell}>Medium</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>AOV</span>
+                </div>
+                {byMedium.map((m) => (
+                  <div key={m.medium} className={`${styles.dataRow} ${styles.mediumRow}`}>
+                    <span className={`${styles.dataCell} ${styles.primary}`}>
+                      <span className={styles.mediumTag}>{m.medium}</span>
+                    </span>
+                    <span className={`${styles.dataCell} ${styles.right}`}>{m.orders}</span>
+                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
+                      {formatRevenue(m.revenue)}
+                    </span>
+                    <span className={`${styles.dataCell} ${styles.right}`} style={{ color: "#6d7175" }}>
+                      {m.orders > 0 ? formatRevenue(Math.round(m.revenue / m.orders)) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Revenue by Campaign */}
+          {byCampaign.length > 0 && (
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Revenue by Campaign</span>
+                <span className={styles.sectionCount}>
+                  {byCampaign.length} campaign{byCampaign.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className={styles.dataTable}>
+                <div className={`${styles.dataRow} ${styles.campaignRow} ${styles.headRow}`}>
+                  <span className={styles.dataCell}>Campaign</span>
+                  <span className={styles.dataCell}>Source</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
+                </div>
+                {byCampaign.map((c) => (
+                  <div key={c.campaign} className={`${styles.dataRow} ${styles.campaignRow}`}>
+                    <span className={`${styles.dataCell} ${styles.primary}`}>{c.campaign}</span>
+                    <span className={styles.dataCell}>
+                      <span className={styles.sourceTag}>{c.source}</span>
+                    </span>
+                    <span className={`${styles.dataCell} ${styles.right}`}>{c.orders}</span>
+                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
+                      {formatRevenue(c.revenue)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Bundles by Ad Revenue */}
+          {byBundle.length > 0 && (
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Top Bundles by Ad Revenue</span>
+                <span className={styles.sectionCount}>
+                  {byBundle.length} bundle{byBundle.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className={styles.dataTable}>
+                <div className={`${styles.dataRow} ${styles.bundleRow} ${styles.headRow}`}>
+                  <span className={styles.dataCell}>Bundle</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
+                </div>
+                {byBundle.map((b) => (
+                  <div key={b.name} className={`${styles.dataRow} ${styles.bundleRow}`}>
+                    <span className={`${styles.dataCell} ${styles.primary}`}>{b.name}</span>
+                    <span className={`${styles.dataCell} ${styles.right}`}>{b.orders}</span>
+                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
+                      {formatRevenue(b.revenue)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Landing Pages */}
+          {byLandingPage.length > 0 && (
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Top Landing Pages</span>
+                <span className={styles.sectionCount}>
+                  {byLandingPage.length} page{byLandingPage.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className={styles.dataTable}>
+                <div className={`${styles.dataRow} ${styles.landingRow} ${styles.headRow}`}>
+                  <span className={styles.dataCell}>Page</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
+                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
+                </div>
+                {byLandingPage.map((lp) => (
+                  <div key={lp.page} className={`${styles.dataRow} ${styles.landingRow}`}>
+                    <span className={`${styles.dataCell} ${styles.primary} ${styles.pageUrl}`}>
+                      {lp.page}
+                    </span>
+                    <span className={`${styles.dataCell} ${styles.right}`}>{lp.orders}</span>
+                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
+                      {formatRevenue(lp.revenue)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
-
-        {/* Revenue by Channel (UTM medium) */}
-        {byMedium.length > 0 && (
-          <div className={styles.sectionCard}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Revenue by Channel</span>
-              <span className={styles.sectionCount}>
-                {byMedium.length} channel{byMedium.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className={styles.dataTable}>
-              <div className={`${styles.dataRow} ${styles.mediumRow} ${styles.headRow}`}>
-                <span className={styles.dataCell}>Medium</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>AOV</span>
-              </div>
-              {byMedium.map((m) => (
-                <div key={m.medium} className={`${styles.dataRow} ${styles.mediumRow}`}>
-                  <span className={`${styles.dataCell} ${styles.primary}`}>
-                    <span className={styles.mediumTag}>{m.medium}</span>
-                  </span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>{m.orders}</span>
-                  <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                    {formatRevenue(m.revenue)}
-                  </span>
-                  <span className={`${styles.dataCell} ${styles.right}`} style={{ color: "#6d7175" }}>
-                    {m.orders > 0 ? formatRevenue(Math.round(m.revenue / m.orders)) : "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Revenue by Campaign */}
-        {byCampaign.length > 0 && (
-          <div className={styles.sectionCard}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Revenue by Campaign</span>
-              <span className={styles.sectionCount}>
-                {byCampaign.length} campaign{byCampaign.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className={styles.dataTable}>
-              <div className={`${styles.dataRow} ${styles.campaignRow} ${styles.headRow}`}>
-                <span className={styles.dataCell}>Campaign</span>
-                <span className={styles.dataCell}>Source</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-              </div>
-              {byCampaign.map((c) => (
-                <div key={c.campaign} className={`${styles.dataRow} ${styles.campaignRow}`}>
-                  <span className={`${styles.dataCell} ${styles.primary}`}>{c.campaign}</span>
-                  <span className={styles.dataCell}>
-                    <span className={styles.sourceTag}>{c.source}</span>
-                  </span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>{c.orders}</span>
-                  <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                    {formatRevenue(c.revenue)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Top Bundles by Ad Revenue */}
-        {byBundle.length > 0 && (
-          <div className={styles.sectionCard}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Top Bundles by Ad Revenue</span>
-              <span className={styles.sectionCount}>
-                {byBundle.length} bundle{byBundle.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className={styles.dataTable}>
-              <div className={`${styles.dataRow} ${styles.bundleRow} ${styles.headRow}`}>
-                <span className={styles.dataCell}>Bundle</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-              </div>
-              {byBundle.map((b) => (
-                <div key={b.name} className={`${styles.dataRow} ${styles.bundleRow}`}>
-                  <span className={`${styles.dataCell} ${styles.primary}`}>{b.name}</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>{b.orders}</span>
-                  <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                    {formatRevenue(b.revenue)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Top Landing Pages */}
-        {byLandingPage.length > 0 && (
-          <div className={styles.sectionCard}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Top Landing Pages</span>
-              <span className={styles.sectionCount}>
-                {byLandingPage.length} page{byLandingPage.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className={styles.dataTable}>
-              <div className={`${styles.dataRow} ${styles.landingRow} ${styles.headRow}`}>
-                <span className={styles.dataCell}>Page</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-              </div>
-              {byLandingPage.map((lp) => (
-                <div key={lp.page} className={`${styles.dataRow} ${styles.landingRow}`}>
-                  <span className={`${styles.dataCell} ${styles.primary} ${styles.pageUrl}`}>
-                    {lp.page}
-                  </span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>{lp.orders}</span>
-                  <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                    {formatRevenue(lp.revenue)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
       </div>
-    </Page>
+    </>
   );
 }

@@ -48,3 +48,37 @@ describe('TemplateManager.calculateConditionData', () => {
   });
 });
 
+describe('TemplateManager EB-style variables', () => {
+  const currencyInfo = {
+    calculation: { code: 'USD', symbol: '$', format: '${{amount}}' },
+    display: { code: 'USD', symbol: '$', format: '${{amount}}', rate: 1 },
+  };
+
+  it('exposes Easy Bundles-compatible aliases for quantity percentage discounts', () => {
+    const variables = TemplateManager.createDiscountVariables(
+      {
+        name: 'Test Bundle',
+        pricing: {
+          rules: [{
+            id: 'rule-1',
+            condition: { type: 'quantity', operator: 'gte', value: 3 },
+            discount: { method: 'percentage_off', value: 15 },
+          }],
+        },
+      },
+      10000,
+      1,
+      { hasDiscount: false, applicableRule: null, finalPrice: 10000, discountAmount: 0, discountPercentage: 0, qualifiesForDiscount: false },
+      currencyInfo,
+    );
+
+    expect(variables.discountConditionDiff).toBe('2');
+    expect(variables.discountUnit).toBe('');
+    expect(variables.discountValue).toBe('15');
+    expect(variables.discountValueUnit).toBe('% off');
+    expect(TemplateManager.replaceVariables(
+      'Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!',
+      variables,
+    )).toBe('Add 2 product(s) to save 15% off!');
+  });
+});

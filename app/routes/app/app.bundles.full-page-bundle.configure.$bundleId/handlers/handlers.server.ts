@@ -158,11 +158,13 @@ function buildFullPageBundlePricing(pricing: any) {
     }),
     display: {
       showFooter: pricing.showFooter !== false,
+      showDiscountProgressBar: pricing.showProgressBar === true,
     },
     messages: {
       progress: firstRuleMessage?.discountText || DEFAULT_PROGRESS_MESSAGE,
       qualified: firstRuleMessage?.successMessage || DEFAULT_SUCCESS_MESSAGE,
       showDiscountMessaging: parsedMessages.showDiscountMessaging || false,
+      displayOptions: parsedMessages.displayOptions || null,
     },
   };
 }
@@ -184,6 +186,44 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       }))
       .filter((product: { productId: string | null }) => Boolean(product.productId));
 
+    // Collect per-category data from StepCategory (new relational model)
+    const stepCategories = Array.isArray(step.StepCategory) ? step.StepCategory : [];
+    const categoriesForMetafield = stepCategories.map((cat: any) => ({
+      name: cat.name || '',
+      products: Array.isArray(cat.products)
+        ? cat.products.map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null }))
+        : [],
+      collections: Array.isArray(cat.collections)
+        ? cat.collections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' }))
+        : [],
+    }));
+
+    // Flatten category products into step.products (backward compat — widget reads step.products)
+    const existingProductIds = new Set(stepProducts.map((p: any) => p.productId));
+    const flatCategoryProducts = stepCategories
+      .flatMap((cat: any) => (Array.isArray(cat.products) ? cat.products : []))
+      .filter((p: any) => p.id && !existingProductIds.has(p.id))
+      .reduce((acc: any[], p: any) => {
+        if (!acc.some((x: any) => x.id === p.id)) acc.push(p);
+        return acc;
+      }, []);
+
+    // Flatten category collections into step.collections (backward compat)
+    const legacyCollections: any[] = Array.isArray(step.collections) ? step.collections : [];
+    const existingCollectionIds = new Set(legacyCollections.map((c: any) => c.id));
+    const flatCategoryCollections = stepCategories
+      .flatMap((cat: any) => (Array.isArray(cat.collections) ? cat.collections : []))
+      .filter((c: any) => c.id && !existingCollectionIds.has(c.id))
+      .reduce((acc: any[], c: any) => {
+        if (!acc.some((x: any) => x.id === c.id)) acc.push(c);
+        return acc;
+      }, []);
+
+    const allCollections = [
+      ...legacyCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
+      ...flatCategoryCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
+    ];
+
     return {
       id: step.id,
       name: step.name || `Step ${index + 1}`,
@@ -197,18 +237,16 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       conditionOperator2: step.conditionOperator2 ?? null,
       conditionValue2: step.conditionValue2 ?? null,
       StepProduct: stepProducts,
-      products: stepProducts.map((product: any) => ({
-        id: product.productId,
-        title: product.title,
-        imageUrl: product.imageUrl,
-      })),
-      collections: Array.isArray(step.collections)
-        ? step.collections.map((collection: any) => ({
-            id: collection.id,
-            handle: collection.handle,
-            title: collection.title || "Collection",
-          }))
-        : [],
+      products: [
+        ...stepProducts.map((product: any) => ({
+          id: product.productId,
+          title: product.title,
+          imageUrl: product.imageUrl,
+        })),
+        ...flatCategoryProducts.map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null })),
+      ],
+      collections: allCollections,
+      ...(categoriesForMetafield.length > 0 ? { categories: categoriesForMetafield } : {}),
     };
   });
 }
@@ -318,7 +356,9 @@ function buildFpbBaseConfig(
     collections: (step.collections || []).map((collection: any) => ({
       id: collection.id,
       title: collection.title || 'Collection',
+      handle: collection.handle || null,
     })),
+    filters: Array.isArray(step.filters) ? step.filters : null,
   }));
 
   const firstRuleId = discountData.discountRules?.[0]?.id;
@@ -342,12 +382,17 @@ function buildFpbBaseConfig(
         condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
         discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
       })),
-      display: { showFooter: discountData.showFooter !== false },
+      display: {
+        showFooter: discountData.showFooter !== false,
+        showDiscountProgressBar: discountData.showDiscountProgressBar === true,
+      },
       messages: {
         progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
         qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
         showDiscountMessaging: discountData.discountMessagingEnabled || false,
         showInCart: true,
+        displayOptions: discountData.pricingDisplayOptions || null,
+        ruleMessagesByLocale: discountData.ruleMessagesByLocale || null,
       },
     },
     bundleParentVariantId: bundleParentVariantId,
@@ -391,6 +436,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const loadingGif = loadingGifRaw || null;
     const tierConfigRaw = formData.get("tierConfigData") as string | null;
     const tierConfigParsed = tierConfigRaw ? JSON.parse(tierConfigRaw) : null;
+    const searchBarEnabled = formData.get("searchBarEnabled") === "true";
     const showStepTimelineRaw = formData.get("showStepTimeline") as string | null;
     // Parse: "true" → true, "false" → false, null/missing → null
     const showStepTimelineParsed: boolean | null =
@@ -406,6 +452,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
     const textOverrides = textOverridesRaw ? JSON.parse(textOverridesRaw) : null;
     const textOverridesByLocale = textOverridesByLocaleRaw ? JSON.parse(textOverridesByLocaleRaw) : null;
+    const upsellWidgetEnabled = formData.get("upsellWidgetEnabled") === "true";
+    const upsellWidgetDisplayMode = (formData.get("upsellWidgetDisplayMode") as string | null) ?? "block";
+    const upsellWidgetDisplayOn = (formData.get("upsellWidgetDisplayOn") as string | null) ?? "all";
+    const autoSelectBrowsedProduct = formData.get("autoSelectBrowsedProduct") === "true";
+    const bundleBannerDesktopUrlRaw = formData.get("bundleBannerDesktopUrl") as string | null;
+    const bundleBannerDesktopUrl = bundleBannerDesktopUrlRaw || null;
+    const bundleBannerMobileUrlRaw = formData.get("bundleBannerMobileUrl") as string | null;
+    const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
+    const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
+    const bundleLevelCss = bundleLevelCssRaw || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -532,8 +588,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         showCompareAtPrices,
         cartRedirectToCheckout,
         allowQuantityChanges,
+        searchBarEnabled,
         textOverrides,
         textOverridesByLocale,
+        upsellWidgetEnabled,
+        upsellWidgetDisplayMode,
+        upsellWidgetDisplayOn,
+        autoSelectBrowsedProduct,
+        bundleBannerDesktopUrl,
+        bundleBannerMobileUrl,
+        bundleLevelCss,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -561,14 +625,21 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 freeGiftName: step.freeGiftName || null,
                 addonLabel: step.addonLabel ?? null,
                 addonTitle: step.addonTitle ?? null,
+                addonAddText: step.addonAddText ?? null,
+                addonReplaceText: step.addonReplaceText ?? null,
                 addonIconUrl: step.addonIconUrl ?? null,
                 addonDisplayFree: step.addonDisplayFree !== false,
+                addonTiers: Array.isArray(step.addonTiers) ? step.addonTiers : null,
                 addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,
                 isDefault: step.isDefault === true,
                 defaultVariantId: step.defaultVariantId || null,
                 // Step image fields
                 imageUrl: step.imageUrl ?? null,
                 bannerImageUrl: step.bannerImageUrl ?? null,
+                timelineIconUrl: step.timelineIconUrl ?? null,
+                pageTitle: step.pageTitle ?? null,
+                // Category filter tabs configured by merchant
+                filters: Array.isArray(step.filters) ? step.filters : null,
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,
@@ -589,6 +660,15 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                       position: productIndex + 1
                     };
                   })
+                },
+                // Create StepCategory records for merchant-defined categories
+                StepCategory: {
+                  create: Array.isArray(step.StepCategory) ? step.StepCategory.map((cat: any, catIndex: number) => ({
+                    name: cat.name || '',
+                    sortOrder: cat.sortOrder ?? catIndex,
+                    products: Array.isArray(cat.products) ? cat.products : null,
+                    collections: Array.isArray(cat.collections) ? cat.collections : null,
+                  })) : []
                 }
               };
             })
@@ -603,22 +683,28 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
+                showProgressBar: discountData.showDiscountProgressBar === true,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
-                }
+                  ruleMessages: discountData.ruleMessages || {},
+                  displayOptions: discountData.pricingDisplayOptions || null
+                },
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               },
               update: {
                 enabled: discountData.discountEnabled,
                 method: mapDiscountMethod(discountData.discountType),
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
+                showProgressBar: discountData.showDiscountProgressBar === true,
                 messages: {
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
-                }
+                  ruleMessages: discountData.ruleMessages || {},
+                  displayOptions: discountData.pricingDisplayOptions || null
+                },
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               }
             }
           }
@@ -627,7 +713,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       include: {
         steps: {
           include: {
-            StepProduct: true  // Include StepProduct for component metafield updates
+            StepProduct: true,
+            StepCategory: { orderBy: { sortOrder: 'asc' } }
           }
         },
         pricing: true
@@ -667,7 +754,11 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       const hasProducts = fullBundleConfig.steps.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
         (step.products && step.products.length > 0) ||
-        (Array.isArray(step.collections) && step.collections.length > 0)
+        (Array.isArray(step.collections) && step.collections.length > 0) ||
+        (Array.isArray(step.StepCategory) && step.StepCategory.some((cat: any) =>
+          (Array.isArray(cat.products) && cat.products.length > 0) ||
+          (Array.isArray(cat.collections) && cat.collections.length > 0)
+        ))
       );
 
       if (!hasProducts) {
@@ -1045,7 +1136,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });
@@ -1333,7 +1424,7 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });
@@ -1514,7 +1605,7 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });
@@ -1606,7 +1697,7 @@ export async function handleRenamePageSlug(
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: { include: { StepProduct: true, StepCategory: { orderBy: { sortOrder: 'asc' } } }, orderBy: { position: 'asc' } },
         pricing: true,
       },
     });

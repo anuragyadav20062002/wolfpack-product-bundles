@@ -26,6 +26,9 @@ export function mapDiscountMethod(discountType: DiscountMethod | string): string
     case DiscountMethod.PERCENTAGE_OFF:
     case 'percentage_off':
       return 'percentage_off';
+    case DiscountMethod.BUY_X_GET_Y:
+    case 'buy_x_get_y':
+      return 'buy_x_get_y';
     default:
       return 'percentage_off'; // Default to percentage_off
   }

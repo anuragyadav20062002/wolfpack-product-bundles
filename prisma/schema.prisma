@@ -41,6 +41,7 @@ enum DiscountMethodType {
   percentage_off
   fixed_bundle_price
   free_shipping
+  buy_x_get_y
 }
 
 enum DiscountImplementationType {
@@ -106,9 +107,37 @@ model Bundle {
   showCompareAtPrices    Boolean @default(false) // Show compare-at (strike-through) prices
   cartRedirectToCheckout Boolean @default(false) // Redirect to checkout instead of cart after add
   allowQuantityChanges   Boolean @default(true)  // Allow customers to change per-product quantity
+  sdkMode                Boolean @default(false) // Load headless SDK instead of pre-built widget (product-page bundles only)
+  searchBarEnabled       Boolean @default(false) // Show search bar in the bundle widget (all bundle types)
   // Per-bundle text overrides
   textOverrides          Json?   // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
   textOverridesByLocale  Json?   // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }
+  // Gift Messages (FR-02)
+  giftMessagesEnabled              Boolean  @default(false)
+  giftMessageProductId             String?
+  giftMessageProductTitle          String?
+  giftMessageEnableSenderRecipient Boolean  @default(false)
+  giftMessageMandatory             Boolean  @default(false)
+  giftMessageEnableLimit           Boolean  @default(false)
+  giftMessageCharLimit             Int?
+  giftMessageSendEmail             Boolean  @default(false)
+  // Bundle Visibility — Bundle Widget (FR-04)
+  upsellWidgetEnabled              Boolean  @default(false)
+  upsellWidgetDisplayMode          String?
+  upsellWidgetDisplayOn            String?
+  autoSelectBrowsedProduct         Boolean  @default(false)
+  // Bundle Settings (FR-05)
+  preSelectedProductVariantId      String?
+  maxQtyPerProduct                 Int?
+  productSlotsEnabled              Boolean  @default(false)
+  productSlotIconUrl               String?
+  variantSelectorEnabled           Boolean  @default(true)
+  showTextOnAddButton              Boolean  @default(false)
+  bundleCartTitle                  String?
+  bundleCartSubtitle               String?
+  bundleBannerDesktopUrl           String?
+  bundleBannerMobileUrl            String?
+  bundleLevelCss                   String?
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
@@ -119,6 +148,7 @@ model Bundle {
   steps            BundleStep[]
   pricing          BundlePricing?
   analytics        BundleAnalytics[]
+  customFields     BundleCustomField[]
 
   @@index([shopId])
   @@index([status])
@@ -131,43 +161,64 @@ model Bundle {
 }
 
 model BundleStep {
-  id                          String        @id @default(uuid())
+  id                          String         @id @default(uuid())
   name                        String
-  icon                        String?       @default("box")
-  position                    Int           @default(0)
-  minQuantity                 Int           @default(1)
-  maxQuantity                 Int           @default(1)
-  enabled                     Boolean       @default(true)
+  icon                        String?        @default("box")
+  position                    Int            @default(0)
+  minQuantity                 Int            @default(1)
+  maxQuantity                 Int            @default(1)
+  enabled                     Boolean        @default(true)
   collections                 Json?
   products                    Json?
-  displayVariantsAsIndividual Boolean       @default(false)
+  displayVariantsAsIndividual Boolean        @default(false)
   conditionType               String?
   conditionOperator           String?
   conditionValue              Int?
   conditionOperator2          String?
   conditionValue2             Int?
-  isFreeGift                  Boolean       @default(false)
+  isFreeGift                  Boolean        @default(false)
   freeGiftName                String?
   addonLabel                  String?
   addonTitle                  String?
+  addonAddText                String?        // CTA button text when adding an add-on product (storefront)
+  addonReplaceText            String?        // CTA button text when replacing a selected add-on product (storefront)
   addonIconUrl                String?
-  addonDisplayFree            Boolean       @default(true)
-  addonUnlockAfterCompletion  Boolean       @default(true)
-  isDefault                   Boolean       @default(false)
+  addonDisplayFree            Boolean        @default(true)
+  addonTiers                  Json?
+  addonUnlockAfterCompletion  Boolean        @default(true)
+  isDefault                   Boolean        @default(false)
   defaultVariantId            String?
   imageUrl                    String?
   bannerImageUrl              String?
-  timelineIconUrl             String?   // User-uploadable icon for step timeline (separate from bannerImageUrl)
-  primaryVariantOption        String?   // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
+  timelineIconUrl             String?        // User-uploadable icon for step timeline (separate from bannerImageUrl)
+  pageTitle                   String?        // Page header title shown after the nav bar (full-page bundles)
+  filters                     Json?          // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
+  primaryVariantOption        String?        // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
   bundleId                    String
-  bundle                      Bundle        @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  bundle                      Bundle         @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
+  StepCategory                StepCategory[]
+  createdAt                   DateTime       @default(now())
+  updatedAt                   DateTime       @updatedAt
 
   @@index([bundleId])
   @@index([bundleId, position])
   @@index([bundleId, enabled])
+}
+
+model StepCategory {
+  id          String     @id @default(cuid())
+  stepId      String
+  step        BundleStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  name        String     @default("")
+  sortOrder   Int        @default(0)
+  products    Json?      // [{id, title, imageUrl, variants, minQuantity, maxQuantity, position}]
+  collections Json?      // [{id, handle, title}]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([stepId])
+  @@index([stepId, sortOrder])
 }
 
 model StepProduct {
@@ -191,18 +242,37 @@ model StepProduct {
 }
 
 model BundlePricing {
-  id             String             @id @default(uuid())
-  bundleId       String             @unique
-  bundle         Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  enabled        Boolean            @default(false)
-  method         DiscountMethodType @default(percentage_off)
-  rules          Json? // Stores array of standardized pricing rules with nested condition/discount structure
-  showFooter     Boolean            @default(true)
-  messages       Json? // Stores progress and qualified messages with showInCart flag
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id                     String             @id @default(uuid())
+  bundleId               String             @unique
+  bundle                 Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  enabled                Boolean            @default(false)
+  method                 DiscountMethodType @default(percentage_off)
+  rules                  Json? // Stores array of standardized pricing rules with nested condition/discount structure
+  showFooter             Boolean            @default(true)
+  showProgressBar        Boolean            @default(false)
+  messages               Json? // Stores progress and qualified messages with showInCart flag
+  ruleMessagesByLocale   Json? // Stores per-locale rule messages: Record<locale, Record<ruleId, {discountText, successMessage}>>
+  displayOptions         Json? // BundleQuantityOptionsDisplay + PricingProgressBarDisplayOptions (FR-03)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   @@index([bundleId])
+}
+
+model BundleCustomField {
+  id        String   @id @default(cuid())
+  bundleId  String
+  bundle    Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  label     String
+  fieldType String   @default("text") // text, select, checkbox, number
+  required  Boolean  @default(false)
+  position  Int      @default(0)
+  options   Json?    // For select fields: ["Option A", "Option B"]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bundleId])
+  @@index([bundleId, position])
 }
 
 model BundleAnalytics {
