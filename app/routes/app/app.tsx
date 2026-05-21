@@ -9,20 +9,26 @@ import { I18nextProvider } from "react-i18next";
 import { useEffect } from "react";
 import { i18n, isSupportedLocale } from "../../i18n/config";
 import { getPolarisLocale } from "../../i18n/polaris-locales.server";
+import { MantleTracker } from "../../components/MantleTracker";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const url = new URL(request.url);
   const rawLocale = url.searchParams.get("locale") ?? "en";
   const locale = isSupportedLocale(rawLocale) ? rawLocale : "en";
   const polarisTranslations = getPolarisLocale(locale);
-  return { apiKey: process.env.SHOPIFY_API_KEY || "", locale, polarisTranslations };
+  return {
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    locale,
+    polarisTranslations,
+    shop: session.shop,
+  };
 };
 
 export default function App() {
-  const { apiKey, polarisTranslations } = useLoaderData<typeof loader>();
+  const { apiKey, polarisTranslations, shop } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -42,6 +48,7 @@ export default function App() {
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
       <I18nextProvider i18n={i18n}>
+        <MantleTracker customerId={shop} />
         {/* polaris.js deferred so App Bridge (injected above by AppProvider) initialises first */}
         <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
         <ui-nav-menu>
