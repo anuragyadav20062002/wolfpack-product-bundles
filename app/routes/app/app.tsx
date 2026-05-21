@@ -6,6 +6,7 @@ import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import { authenticate } from "../../shopify.server";
 import { ErrorPage } from "../../components/ErrorPage";
+import { MantleTracker } from "../../components/MantleTracker";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -17,15 +18,19 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 // redirects — Remix runs layout and child loaders in parallel, and a child
 // redirect short-circuits Promise.all before the layout's token exchange completes.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  const { session } = await authenticate.admin(request);
+  return {
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    shop: session.shop,
+  };
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, shop } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
+      <MantleTracker customerId={shop} />
       <NavMenu>
         <a href="/app/dashboard" rel="home">
           Dashboard
