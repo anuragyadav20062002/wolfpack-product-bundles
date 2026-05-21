@@ -19,16 +19,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const rawLocale = url.searchParams.get("locale") ?? "en";
   const locale = isSupportedLocale(rawLocale) ? rawLocale : "en";
   const polarisTranslations = getPolarisLocale(locale);
+  const mantleAppToken = process.env.MANTLE_APP_TOKEN || "";
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     locale,
     polarisTranslations,
     shop: session.shop,
+    mantleAppToken,
   };
 };
 
 export default function App() {
-  const { apiKey, polarisTranslations, shop } = useLoaderData<typeof loader>();
+  const { apiKey, polarisTranslations, shop, mantleAppToken } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -48,7 +50,9 @@ export default function App() {
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
       <I18nextProvider i18n={i18n}>
-        <MantleTracker customerId={shop} />
+        {mantleAppToken ? (
+          <MantleTracker appToken={mantleAppToken} customerId={shop} />
+        ) : null}
         {/* polaris.js deferred so App Bridge (injected above by AppProvider) initialises first */}
         <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
         <ui-nav-menu>
