@@ -683,7 +683,7 @@ export default function ConfigureBundleFlow() {
 
   // Bundle Widget state (Gap 1)
   const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>((bundle as any).upsellWidgetEnabled ?? false);
-  const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "block");
+  const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
   const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>((bundle as any).upsellWidgetDisplayOn ?? "all");
   const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>((bundle as any).autoSelectBrowsedProduct ?? false);
 
@@ -1907,16 +1907,9 @@ export default function ConfigureBundleFlow() {
                   >
                     {/* ── EB-style Step Setup card ── */}
                     <div className={fullPageBundleStyles.card}>
-                      <div className={fullPageBundleStyles.cardHeader}>
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Step Setup</h3>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <s-button
-                            variant="plain"
-                            icon="duplicate"
-                            accessibilityLabel="Clone current step"
-                            title="Clone current step"
-                            onClick={() => cloneStep(step.id)}
-                          />
+                      <div className={fullPageBundleStyles.stepSetupHeader}>
+                        <div className={fullPageBundleStyles.stepSetupTitleGroup}>
+                          <h3 className={fullPageBundleStyles.stepSetupTitle}>Step Setup</h3>
                           <s-switch
                             accessibilityLabel="Enable step"
                             checked={step.enabled !== false || undefined}
@@ -1926,8 +1919,32 @@ export default function ConfigureBundleFlow() {
                             }}
                           />
                         </div>
+                        <div className={fullPageBundleStyles.stepSetupActions}>
+                          <s-button
+                            variant="plain"
+                            icon="duplicate"
+                            accessibilityLabel="Clone current step"
+                            title="Clone current step"
+                            onClick={() => cloneStep(step.id)}
+                          />
+                          <s-button
+                            variant="plain"
+                            icon="globe"
+                            accessibilityLabel="Multiple language"
+                            title="Multiple language"
+                            disabled={shopLocales.length === 0}
+                          />
+                          <s-button
+                            variant="plain"
+                            icon="delete"
+                            tone="critical"
+                            accessibilityLabel="Delete current step"
+                            title="Delete current step"
+                            onClick={() => deleteStep(step.id)}
+                          />
+                        </div>
                       </div>
-                      <p style={{ margin: "0 0 12px", fontSize: 13, color: "#6d7175" }}>
+                      <p className={fullPageBundleStyles.stepSetupDescription}>
                         Edit your step name (Only visible if more than one step is present)
                       </p>
                       <s-stack direction="block" gap="small">
@@ -2073,6 +2090,21 @@ export default function ConfigureBundleFlow() {
                                     }}
                                   />
                                   <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language">Multi Language</s-button>
+                                </div>
+                                <div style={{ marginBottom: 10 }}>
+                                  <s-text-field
+                                    label="Category Title"
+                                    placeholder="Visible title on storefront"
+                                    value={(cat as any).title ?? ""}
+                                    onInput={(e: Event) => {
+                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                        i === catIndex ? { ...c, title: (e.target as HTMLInputElement).value } : c
+                                      );
+                                      stepsState.updateStepField(step.id, "StepCategory", updated);
+                                      markAsDirty();
+                                    }}
+                                    autoComplete="off"
+                                  />
                                 </div>
                                 <div className={fullPageBundleStyles.tabRow}>
                                   <button
@@ -3783,68 +3815,90 @@ export default function ConfigureBundleFlow() {
             {activeSection === "bundle_widget" && (
               <div data-tour-target="fpb-bundle-widget">
                 <s-stack direction="block" gap="base">
-                  <s-section heading="Bundle Widget">
+                  <s-section heading="Product Page Bundle Upsell Widgets">
                     <s-stack direction="vertical" gap="400">
                       <s-stack direction="horizontal" gap="300" align-y="center">
                         <s-switch
                           checked={upsellWidgetEnabled}
                           onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
                         />
-                        <s-stack direction="vertical" gap="100">
-                          <s-text>Enable bundle widget on product page</s-text>
-                          <s-text size="small" tone="subdued">When enabled, the bundle widget will appear on the associated product page.</s-text>
-                        </s-stack>
+                        <s-text>This will display an upsell block or button on the product pages of your choice.</s-text>
                       </s-stack>
 
-                      {upsellWidgetEnabled && (
-                        <s-stack direction="vertical" gap="300">
-                          <s-select
-                            label="Display Mode"
-                            value={upsellWidgetDisplayMode}
-                            onChange={(e: any) => { setUpsellWidgetDisplayMode(e.target.value); markAsDirty(); }}
-                          >
-                            <option value="block">Block — full width below product info</option>
-                            <option value="inline">Inline — embedded within product description</option>
-                            <option value="drawer">Drawer — slide-out panel</option>
-                          </s-select>
+                      <div className={fullPageBundleStyles.widgetPreviewMedia}>
+                        <span className={fullPageBundleStyles.widgetPreviewButton}>
+                          {textOverrides.widgetButtonText || "Save More With Bundle"}
+                        </span>
+                      </div>
 
-                          <s-select
-                            label="Display On"
-                            value={upsellWidgetDisplayOn}
-                            onChange={(e: any) => { setUpsellWidgetDisplayOn(e.target.value); markAsDirty(); }}
-                          >
-                            <option value="all">All product pages</option>
-                            <option value="bundle_product">Bundle product page only</option>
-                            <option value="component_products">Component product pages</option>
-                          </s-select>
+                      <s-stack direction="vertical" gap="200">
+                        <s-text>Display type</s-text>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="fpbUpsellWidgetType"
+                            value="block"
+                            checked={upsellWidgetDisplayMode !== "button"}
+                            onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
+                          />
+                          <span style={{ fontSize: 14 }}>Offer Upsell Block</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                          <input
+                            type="radio"
+                            name="fpbUpsellWidgetType"
+                            value="button"
+                            checked={upsellWidgetDisplayMode === "button"}
+                            onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
+                          />
+                          <span style={{ fontSize: 14 }}>Offer Upsell Button</span>
+                        </label>
+                        <s-banner tone="info">Select if you want the upsell block or button to appear on product pages.</s-banner>
+                      </s-stack>
 
-                          <s-stack direction="horizontal" gap="300" align-y="center">
-                            <s-switch
-                              checked={autoSelectBrowsedProduct}
-                              onChange={(e: any) => { setAutoSelectBrowsedProduct(e.target.checked); markAsDirty(); }}
+                      <s-stack direction="vertical" gap="300">
+                        <s-heading size="small">Widget Settings</s-heading>
+                        <s-button variant="secondary" icon="globe" disabled>Multi Language</s-button>
+                        <s-text-field
+                          label="Button Text"
+                          placeholder="Save More With Bundle"
+                          value={textOverrides.widgetButtonText ?? ""}
+                          onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, widgetButtonText: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                      </s-stack>
+
+                      <s-stack direction="vertical" gap="200">
+                        <s-text>Display Widget on</s-text>
+                        {[
+                          { value: "all",                   label: "All products in bundle"  },
+                          { value: "specific_products",     label: "Specific products"        },
+                          { value: "specific_collections",  label: "Specific collections"     },
+                        ].map(({ value, label }) => (
+                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="fpbWidgetDisplayOn"
+                              value={value}
+                              checked={upsellWidgetDisplayOn === value}
+                              onChange={() => { setUpsellWidgetDisplayOn(value); markAsDirty(); }}
                             />
-                            <s-stack direction="vertical" gap="100">
-                              <s-text>Auto-select browsed product</s-text>
-                              <s-text size="small" tone="subdued">Automatically pre-select the product the customer is currently viewing when the bundle loads.</s-text>
-                            </s-stack>
-                          </s-stack>
-                        </s-stack>
-                      )}
+                            <span style={{ fontSize: 14 }}>{label}</span>
+                          </label>
+                        ))}
+                      </s-stack>
 
-                      <s-stack direction="horizontal" gap="small">
-                        {themeEditorUrl && (
-                          <s-button
-                            variant="secondary"
-                            onClick={() => window.open(themeEditorUrl, "_blank")}
-                          >
-                            Place on theme
-                          </s-button>
-                        )}
-                        <s-button
-                          variant="primary"
-                          onClick={handlePlaceWidget}
-                        >
-                          Place Widget
+                      <s-checkbox
+                        label="Add browsed product to bundle"
+                        checked={autoSelectBrowsedProduct || undefined}
+                        onChange={(e: Event) => { setAutoSelectBrowsedProduct((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                      />
+
+                      <s-stack direction="vertical" gap="200">
+                        <s-heading size="small">Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</s-heading>
+                        <s-text size="small" tone="subdued">By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.</s-text>
+                        <s-button variant="secondary" onClick={handlePlaceWidget}>
+                          Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
                         </s-button>
                       </s-stack>
                     </s-stack>

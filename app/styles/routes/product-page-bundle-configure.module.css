@@ -381,6 +381,26 @@
   composes: cardHeader from "./bundle-configure-shared.module.css";
 }
 
+.stepSetupHeader {
+  composes: stepSetupHeader from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupTitleGroup {
+  composes: stepSetupTitleGroup from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupActions {
+  composes: stepSetupActions from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupTitle {
+  composes: stepSetupTitle from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupDescription {
+  composes: stepSetupDescription from "./bundle-configure-shared.module.css";
+}
+
 .stepFlowCard {
   overflow: visible;
   margin-bottom: 0;
@@ -636,6 +656,14 @@
   composes: visibilityGuideMedia from "./bundle-configure-shared.module.css";
 }
 
+.widgetPreviewMedia {
+  composes: widgetPreviewMedia from "./bundle-configure-shared.module.css";
+}
+
+.widgetPreviewButton {
+  composes: widgetPreviewButton from "./bundle-configure-shared.module.css";
+}
+
 .visibilitySetupTime {
   composes: visibilitySetupTime from "./bundle-configure-shared.module.css";
 }
@@ -818,6 +846,12 @@
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 4px;
+}
+
+.stepSetupDivider {
+  height: 1px;
+  margin: 14px 0;
+  background: #e3e3e3;
 }
 
 .addSectionButton {

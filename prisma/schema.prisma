@@ -525,6 +525,7 @@ model Shop {
   email                 String?        // Store contact email
   installedAt           DateTime       @default(now())
   uninstalledAt         DateTime?      // Track when app was uninstalled
+  firstCreateTourEligible Boolean      @default(false) // True only for newly installed shops until their first create flow
   subscriptions         Subscription[] // Subscription history
   currentSubscriptionId String?        // Current active subscription
   createdAt             DateTime       @default(now())

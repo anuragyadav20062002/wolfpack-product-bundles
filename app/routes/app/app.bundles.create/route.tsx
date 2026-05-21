@@ -17,7 +17,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const result = await handleCreateBundle(admin, session, formData);
   const data = await result.json();
   if (data.success && data.redirectTo) {
-    return redirect(data.redirectTo);
+    if (!data.showFirstLoadTour) {
+      return redirect(data.redirectTo);
+    }
+    const separator = String(data.redirectTo).includes("?") ? "&" : "?";
+    return redirect(`${data.redirectTo}${separator}first_load=true`);
   }
   return json(data, { status: result.status });
 };

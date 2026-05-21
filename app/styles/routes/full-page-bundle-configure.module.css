@@ -409,8 +409,36 @@
   composes: visibilityGuideCard from "./bundle-configure-shared.module.css";
 }
 
+.stepSetupHeader {
+  composes: stepSetupHeader from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupTitleGroup {
+  composes: stepSetupTitleGroup from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupActions {
+  composes: stepSetupActions from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupTitle {
+  composes: stepSetupTitle from "./bundle-configure-shared.module.css";
+}
+
+.stepSetupDescription {
+  composes: stepSetupDescription from "./bundle-configure-shared.module.css";
+}
+
 .visibilityGuideMedia {
   composes: visibilityGuideMedia from "./bundle-configure-shared.module.css";
+}
+
+.widgetPreviewMedia {
+  composes: widgetPreviewMedia from "./bundle-configure-shared.module.css";
+}
+
+.widgetPreviewButton {
+  composes: widgetPreviewButton from "./bundle-configure-shared.module.css";
 }
 
 .visibilitySetupTime {

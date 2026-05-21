@@ -363,7 +363,20 @@ export function useSharedBundleHandlers(params: SharedBundleHandlersParams) {
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", catKey);
     const accordion = (e.currentTarget as HTMLElement).closest('[data-cat-key]') as HTMLElement | null;
-    if (accordion) accordion.style.opacity = "0.5";
+    if (accordion) {
+      accordion.style.opacity = "0.5";
+      const dragImage = accordion.cloneNode(true) as HTMLElement;
+      dragImage.style.position = "fixed";
+      dragImage.style.top = "-1000px";
+      dragImage.style.left = "-1000px";
+      dragImage.style.width = `${accordion.offsetWidth}px`;
+      dragImage.style.pointerEvents = "none";
+      dragImage.style.opacity = "0.92";
+      dragImage.style.boxShadow = "0 12px 28px rgba(31, 41, 55, 0.22)";
+      document.body.appendChild(dragImage);
+      e.dataTransfer.setDragImage(dragImage, 24, 20);
+      window.setTimeout(() => dragImage.remove(), 0);
+    }
   }, []);
 
   const handleCatDragEnd = useCallback((e: React.DragEvent) => {
@@ -385,7 +398,11 @@ export function useSharedBundleHandlers(params: SharedBundleHandlersParams) {
     const srcIdx = cats.findIndex((_: any, i: number) => `${stepId}__${cats[i].id ?? i}` === srcKey);
     const dstIdx = cats.findIndex((_: any, i: number) => `${stepId}__${cats[i].id ?? i}` === dropCatKey);
     if (srcIdx === -1 || dstIdx === -1 || srcIdx === dstIdx) return;
-    const reordered = [...cats];
+    const reordered = cats.map((cat: any, index: number) => {
+      const name = typeof cat.name === "string" ? cat.name.trim() : "";
+      if (name.length > 0) return cat;
+      return { ...cat, name: `Category ${index + 1}` };
+    });
     const [moved] = reordered.splice(srcIdx, 1);
     reordered.splice(dstIdx, 0, moved);
     stepsState.updateStepField(stepId, "StepCategory", reordered.map((c: any, i: number) => ({ ...c, sortOrder: i })));
