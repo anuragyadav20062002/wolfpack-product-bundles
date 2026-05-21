@@ -19,18 +19,22 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 // redirect short-circuits Promise.all before the layout's token exchange completes.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  const mantleAppToken = process.env.MANTLE_APP_TOKEN || "";
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     shop: session.shop,
+    mantleAppToken,
   };
 };
 
 export default function App() {
-  const { apiKey, shop } = useLoaderData<typeof loader>();
+  const { apiKey, shop, mantleAppToken } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <MantleTracker customerId={shop} />
+      {mantleAppToken ? (
+        <MantleTracker appToken={mantleAppToken} customerId={shop} />
+      ) : null}
       <NavMenu>
         <a href="/app/dashboard" rel="home">
           Dashboard

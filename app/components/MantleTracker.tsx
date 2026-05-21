@@ -1,12 +1,11 @@
 type MantleTrackerProps = {
+  appToken: string;
   customerId: string;
 };
 
-const MANTLE_APP_TOKEN = "162b02eb86751becaa2ff21b2757dd1f";
-
-export function MantleTracker({ customerId }: MantleTrackerProps) {
+export function MantleTracker({ appToken, customerId }: MantleTrackerProps) {
   const mantleConfig = JSON.stringify({
-    appToken: MANTLE_APP_TOKEN,
+    appToken,
     customerId,
   });
 
