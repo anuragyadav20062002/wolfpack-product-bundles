@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-22 20:30
+**Last Updated:** 2026-05-22 22:15
 
 ## Overview
 
@@ -39,6 +39,16 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` with the new serialized shapes and removed the stale blocker language for PPB conditions, discounts, and defaults.
 - Remaining limits: did not add a second step, did not complete box/sidebar/footer/cart settings, and did not change PPB variant-display toggle values.
 
+### 2026-05-22 22:15 - Completed Phase 3 — collection pagination and multi-step navigation
+
+- Confirmed collection pagination architecture: no cursor-based `collection { products(first: N, after: cursor) }` queries. All IDs pre-fetched; products hydrated in batches of 24 via `nodes(ids: [...])`. Client state in `gbbAddProductsPage.state.dataForInfiniteScroll.allProductsData`, `fetchCountPerBatch: 24`, `fetchBatchStartIndex` tracks position.
+- Captured Load More batch evidence: 29-product collection split across 2+9 parallel `nodes()` calls (not cursor-driven).
+- Captured FPB multi-step navigation DOM in full: `gbbNavigationItemsContainer`, `gbbNavigationItem#addProductsPageN`, `gbbNavigationStepImgContainerActive` active indicator, `gbbtickMark` completed-step checkmark, `gbbStepsProgressBarFilled` fill width.
+- Captured JS state transition: `currentPageId` `addProductsPage1` → `addProductsPage2`, `isLastPage` `false` → `true`.
+- Captured footer transition: single "Next" (`gbbFooterNextButton`) on intermediate steps → Back + "Add To Cart" (same `gbbFooterNextButton` class) on last step.
+- URL confirms full page navigation between steps: `?page=addProductsPage1` → `?page=addProductsPage2`.
+- Deleted temp files. Updated research doc with Phase 3 section.
+
 ### 2026-05-22 20:30 - Completed Phase 2 storefront investigation
 
 - Captured complete `window.easybundles_ext_data` structure (6 top-level keys: `userData`, `languageData`, `pageCustomizationData`, `bundleLinkData`, `bundleUpsellData`, `mixAndMatchData`).
@@ -70,3 +80,5 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - [x] Phase 8: Capture FPB JS runtime state and cart add payload
 - [x] Phase 9: Capture PPB JS runtime state and cart add payload
 - [x] Phase 10: Document FPB vs PPB cart add comparison and `bundle_details` metafield pattern
+- [x] Phase 11: Capture collection pagination architecture (no cursor queries — `nodes(ids:[])` batches)
+- [x] Phase 12: Capture multi-step navigation DOM, JS state transitions, and footer changes

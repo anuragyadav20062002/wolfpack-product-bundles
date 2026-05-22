@@ -778,14 +778,125 @@ Both bundle types:
 
 ---
 
+## Phase 3 — Multi-step Navigation and Collection Pagination
+
+### Multi-step Navigation DOM Architecture
+
+The FPB step navigator lives inside `.gbbNavigationItemsContainer`. Each step renders as a `gbbNavigationItem` div with the `id` attribute set to the step's page ID (e.g., `addProductsPage1`).
+
+**Step 1 active (initial load):**
+
+```html
+<div class="gbbNavigationItemsContainer">
+
+  <!-- Active step -->
+  <div class="gbbNavigationItem" id="addProductsPage1">
+    <div class="gbbNavigationStepImgContainer gbbNavigationStepImgContainerActive"
+         style="border: 4px solid rgb(0, 0, 0);">
+      <img class="gbbNavigationImage" src="...Deafult+Image.png">
+    </div>
+    <div class="gbbNavigationTitleContainer">
+      <p class="gbbNavigationTitle">Step 1 - Jewelry Picks</p>
+    </div>
+  </div>
+
+  <!-- Upcoming step -->
+  <div class="gbbNavigationItem" id="addProductsPage2">
+    <div class="gbbNavigationStepImgContainer">
+      <!-- No Active class, no border -->
+      <img class="gbbNavigationImage" src="...">
+    </div>
+    <div class="gbbNavigationTitleContainer">
+      <p class="gbbNavigationTitle">Multiple Categories</p>
+    </div>
+  </div>
+
+  <!-- Progress bar line between step icons -->
+  <div class="gbbStepsProgressBarContainer" style="width: 425px; left: 212px;">
+    <div class="gbbStepsProgressBar" style="background: rgb(204, 204, 204);">
+      <div class="gbbStepsProgressBarFilled"
+           style="background: rgb(30, 30, 30); width: 0px;">
+      </div>
+    </div>
+  </div>
+
+</div>
+```
+
+**After advancing to Step 2:**
+
+- URL changes: `?page=addProductsPage1` → `?page=addProductsPage2` (full page navigation, not SPA state swap)
+- Step 1 nav icon: `gbbNavigationStepImgContainerActive` class is removed; icon container gets `background-color: rgb(0, 0, 0)` (filled black) and a `gbbtickMark` SVG checkmark replaces the step image
+- Step 2 nav icon: gains `gbbNavigationStepImgContainerActive` class and `border: 4px solid rgb(0, 0, 0)`
+- Progress bar fill: `width: 0px` → `width: 429.695px` (the full span between step 1 and step 2 icons)
+
+Step 1 completed DOM (inside `#addProductsPage1`):
+```html
+<div class="gbbNavigationStepImgContainer"
+     style="background-color: rgb(0, 0, 0);">
+  <div class="gbbtickMark">
+    <svg><!-- checkmark path --></svg>
+  </div>
+</div>
+```
+
+### JS State Changes (Step 1 → Step 2)
+
+`window.gbb.state` before and after clicking "Next":
+
+| Field | Step 1 | Step 2 |
+|---|---|---|
+| `currentPageId` | `"addProductsPage1"` | `"addProductsPage2"` |
+| `isLastPage` | `false` | `true` |
+| `navigationItems[0].isActive` | `true` | `false` |
+| `navigationItems[1].isActive` | `false` | `true` |
+
+### Footer Transitions
+
+| Step position | Footer contents |
+|---|---|
+| Intermediate step | `gbbFooterNextButton` with text "Next" |
+| Last step (`isLastPage: true`) | `gbbFooterBackButton` (back arrow) + `gbbFooterNextButton` with text "Add To Cart" |
+
+EB reuses the `gbbFooterNextButton` class for both step navigation and the final Add To Cart action. The distinction is purely text content + `isLastPage` JS state.
+
+The back button (`gbbFooterBackButton`) appears only on Step 2+. On Step 1 the footer shows only the "Next" button.
+
+---
+
+### Collection Pagination Architecture
+
+EB does **not** use cursor-based `collection { products(first: N, after: cursor) }` Storefront API queries for pagination.
+
+**Actual pattern:**
+
+1. All collection product IDs are pre-fetched into the widget's internal state on category first render
+2. Products are hydrated from Storefront API in batches of 24 via `nodes(ids: [...])` — the same query shape used for direct product hydration
+3. The client tracks the full product list in `gbbAddProductsPage.state.dataForInfiniteScroll.allProductsData` (array; accumulates across batches)
+4. `gbbAddProductsPage.state.fetchCountPerBatch` = `24` (batch size constant)
+5. `gbbAddProductsPage.state.fetchBatchStartIndex` advances by 24 after each "Load More" click
+6. The "Load More" button has class `gbbLoadMoreProductsButton`. Clicking it calls `fetchNextProductsBatch()`, which takes the next batch of IDs from the pre-known list and fires new `nodes(ids: [...])` calls
+
+**Observed for `Automated Collection` (29 products):**
+
+| Event | Storefront API call | IDs fetched |
+|---|---|---:|
+| Category tab activated (initial) | `nodes(ids: [2 direct product IDs])` | 2 |
+| Load More click — batch 1 | `nodes(ids: [18 product IDs])` | 18 |
+| Load More click — batch 2 (parallel) | `nodes(ids: [9 product IDs])` | 9 |
+
+When the remaining batch is smaller than 24, EB may split it across multiple parallel `nodes()` calls (observed: 18 + 9 = 27, not a clean 24+5). The split point appears to be an internal chunk limit, not a Shopify API constraint.
+
+No cursor variables (`after: $cursor`), no `pageInfo { hasNextPage endCursor }`, and no `collection(handle: ...)` query were observed in any network call during pagination.
+
+---
+
 ## Gaps And Blockers
 
-The a11y/keyboard follow-up closed the earlier PPB blockers for quantity/amount step rules, discount rules, and default/preselected products. Phase 2 closed storefront globals, cart add payloads, and JS runtime state. Remaining limits:
+Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination architecture. Remaining limits:
 
-- Multiple-step storefront navigation: `productsData2` exists in the FPB admin payload but the storefront only rendered one nav item (`isLastPage: true`). The step transition DOM and JS state change were not captured.
 - Alternative template IDs: only `FBP_SIDE_FOOTER` + `CLASSIC` (FPB) and `PDP_INPAGE` + `CASCADE` (PPB) were observed. Other layout/preset enum values were not enumerated.
-- Collection pagination beyond 24: confirmed the limit (29 products in test collection), but the "Load More" click and its Storefront API cursor query were not executed.
 - `displayVariantsAsIndividualProducts: true` DOM rendering: both test products have only one variant, so no visual difference was observable. A multi-variant product would be needed to observe individual variant cards or swatches.
 - Screenshots were not committed, per repo rule. Browser snapshots and network evidence were inspected live through Chrome DevTools.
 
-These remaining limits do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, and both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern.
+These remaining limits do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
