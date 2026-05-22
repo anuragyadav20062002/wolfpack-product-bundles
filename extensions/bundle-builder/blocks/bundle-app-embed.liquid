@@ -1,0 +1,23 @@
+{% comment %}
+  Wolfpack Bundle — Single App Embed
+  ==================================
+  Global activation surface used by the app to confirm the theme is connected.
+  Widget rendering is handled by explicit app blocks and app-proxy pages.
+{% endcomment %}
+
+<script>
+  window.__WOLFPACK_BUNDLE_EMBED_ACTIVE__ = true;
+</script>
+
+{% schema %}
+{
+  "name": "Wolfpack Bundle",
+  "target": "body",
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Activates Wolfpack bundle storefront features. Bundle placement is controlled from the Wolfpack app."
+    }
+  ]
+}
+{% endschema %}

@@ -1312,11 +1312,11 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
     syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
 
-    // Return embed activation link — merchant needs to activate the bundle-full-page-embed
-    // embed block once in Theme Settings > App Embeds. After that all bundle pages work.
+    // Return embed activation link — merchant needs to activate the single app embed
+    // once in Theme Settings > App Embeds. After that all bundle surfaces can render.
     const shopDomain = session.shop.replace('.myshopify.com', '');
     const widgetInstallationLink = apiKey
-      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`
+      ? `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`
       : undefined;
 
     return json({

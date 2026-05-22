@@ -2,8 +2,9 @@
   Wolfpack Full-Page Bundle — Section Block (target: section)
   ============================================================
   This block is added directly to the page template in the theme customizer.
-  It renders the bundle widget INSIDE <main> (before the footer), unlike the
-  body-embed variant (bundle-full-page-embed.liquid) which renders after the footer.
+  It renders the bundle widget inside a theme section. The single app embed is
+  only the global activation surface; widget placement is handled by app blocks
+  and the full-page app-proxy route.
 
   Bundle ID resolution (priority order):
   1. page.metafields.custom.bundle_id  — set by app when "Place Widget Now" is used

@@ -1,31 +1,26 @@
 # Claude Code Development Guidelines
 
+## Core Operating Principles
+
+1. **Ask, do not assume.** If something is unclear, ask before writing a single line. No silent guesses about intent, architecture, or requirements.
+2. **Simplest solution first.** Implement the simplest thing that could work. No abstractions or flexibility you did not explicitly request.
+3. **Do not touch unrelated code.** If a file or function is not part of the current task, do not modify it even if you think it could be improved.
+4. **Flag uncertainty explicitly.** If you are not confident about an approach or technical detail, say so before proceeding. Confidence without certainty causes damage.
+
+---
+
 ## 📋 Issue Tracking System
 
-### Mandatory Process for ALL Changes
+**BEFORE making ANY code changes, commits, or file modifications:**
 
-**BEFORE making ANY code changes, commits, or file modifications related to fixing bugs:**
-
-1. **Create or Update Issue File**
-   - Location: `docs/issues-prod/{issueName}-{number}.md`
-   - Example: `docs/issues-prod/full-page-design-improvements-1.md`
-   - Format: See template in `docs/issues-prod/`
-
-2. **Log Progress**
-   - Date and time of change
-   - What was changed
-   - Why it was changed
-   - What's next
-
-3. **Reference in Commit Messages**
-   - Format: `[{issueName}-{number}] type: description`
-   - Example: `[full-page-design-improvements-1] fix: Product cards now maintain fixed dimensions`
+1. **Create or Update Issue File** — `docs/issues-prod/{issueName}-{number}.md`
+2. **Log Progress** — date/time, what changed, why, what's next
+3. **Reference in Commit Messages** — `[{issueName}-{number}] type: description`
 
 ### Issue File Structure
 
 ```markdown
 # Issue: [Title]
-
 **Issue ID:** {issueName}-{number}
 **Status:** [In Progress | Completed | Blocked]
 **Priority:** [🔴 High | 🟡 Medium | 🟢 Low]
@@ -33,736 +28,312 @@
 **Last Updated:** YYYY-MM-DD HH:MM
 
 ## Overview
-Brief description of the issue/feature.
-
 ## Progress Log
-
 ### YYYY-MM-DD HH:MM - [Action]
-- What was done
-- Files changed
-- Next steps
+- What was done / Files changed / Next steps
 
 ## Related Documentation
-- Links to relevant docs
-
 ## Phases Checklist
 - [ ] Phase 1
-- [ ] Phase 2
 ```
 
-### Git Commit Message Format
+### Commit Format
 
-```bash
-# Format
+```
 [issue-id] type: description
 
-# Types:
-# - feat: New feature
-# - fix: Bug fix
-# - refactor: Code refactoring
-# - docs: Documentation changes
-# - style: CSS/styling changes
-# - chore: Maintenance tasks
-# - test: Testing updates
-
-# Examples
-[full-page-design-improvements-1] fix: Product cards maintain fixed dimensions
-[full-page-design-improvements-1] feat: Add product variant modal component
-[full-page-design-improvements-1] docs: Update DCP integration guide
-[full-page-design-improvements-1] refactor: Remove hardcoded font families
-[full-page-design-improvements-1] style: Update product card shadows and borders
-[full-page-design-improvements-1] chore: Set up issue tracking system
+# Types: feat | fix | refactor | docs | style | chore | test
+# Example: [full-page-design-improvements-1] fix: Product cards maintain fixed dimensions
 ```
 
 ### Workflow
 
-#### 1. Before Starting Work:
-```bash
-# Open or create issue file
-vim docs/issues-prod/{issue-name}-{number}.md
+1. **Before work:** Create/open issue file, add Progress Log entry for what you're about to do.
+2. **Before commit:** Update issue file with completed work, update "Last Updated" timestamp.
+3. **Commit:** Stage issue file alongside code changes. Use `[issue-id] type: msg` format.
 
-# Add entry to Progress Log:
-### YYYY-MM-DD HH:MM - Starting [Phase/Task Name]
-- What I'm about to implement
-- Files I'll modify
-- Expected outcome
-```
-
-#### 2. During Development:
-```bash
-# Make your code changes
-# Keep issue file open in editor
-# Update Progress Log as you work
-```
-
-#### 3. Before Commit:
-```bash
-# Update issue file with:
-### YYYY-MM-DD HH:MM - Completed [Phase/Task Name]
-- ✅ What was accomplished
-- Files modified: file1.css, file2.js
-- Changes made: Brief description
-- Next: What to do next
-
-# Update "Last Updated" timestamp at top
-# Mark completed checklist items with [x]
-
-# Stage all changes including issue file
-git add .
-git add docs/issues-prod/full-page-design-improvements-1.md
-
-# Commit with proper format
-git commit -m "[full-page-design-improvements-1] type: your message"
-```
-
-#### 4. After Commit:
-```bash
-# Verify issue file is up to date
-# Verify commit message follows format
-# Push to remote if ready
-git push origin STAGING
-```
+---
 
 ## 🚀 Feature Pipeline — Mandatory for New Features
 
-### When to invoke the `feature-pipeline` skill
+**BEFORE writing any code for a new feature**, invoke the `feature-pipeline` skill.
 
-**BEFORE writing any code for a new feature or capability**, you MUST invoke the
-`feature-pipeline` skill. This applies whenever the user gives a high-level requirement,
-capability request, or "I want to add X" instruction.
-
-The pipeline runs four sequential stages:
-1. **BR** — Research + Business Requirement document
+Stages (must run in order):
+1. **BR** — Research + Business Requirement
 2. **PO** — Product Owner Requirements + acceptance criteria
-3. **Architect** — Architecture Decision Record + file-by-file plan
-4. **SDE** — Implementation (actual code)
+3. **Architect** — ADR + file-by-file plan
+4. **SDE** — Implementation
 
-**The SDE stage (code writing) must NOT begin until stages BR → PO → Architect are complete
-and the architecture document exists.**
+**SDE must NOT begin until BR → PO → Architect are complete.**
 
-### When NOT to invoke `feature-pipeline`
+Skip pipeline for: bug fixes, debugging, single-file refactors, typos, config values, docs-only.
 
-Do NOT use `feature-pipeline` for:
-- Bug fixes or error corrections
-- Debugging sessions
-- Small isolated fixes (typos, config values, single-line corrections)
-- Refactors explicitly scoped to a single file or function
-- Documentation-only changes
-
-**Decision rule:** If the user says "fix", "debug", "it's broken", or points at a specific
-error — skip the pipeline. If the user says "add", "build", "implement", "I want", "we need",
-or describes a new capability — the pipeline is mandatory.
-
-### Enforcement
-
-```
-❌ NO code changes for new features without completing BR → PO → Architect stages first
-❌ NO skipping stages — all four must run in order
-✅ Each stage produces a document in docs/{feature-name}/
-✅ SDE stage creates the issue file per the Issue Tracking System below
-```
+**Decision rule:** "fix/debug/broken" → skip. "add/build/implement/I want/we need" → pipeline mandatory.
 
 ---
 
 ## 🧪 Test-Driven Development (TDD)
 
-### Always prefer TDD
+Write tests **before** implementation. Cycle: Red → Green → Refactor.
 
-For all new code — helpers, services, route handlers, utilities — write tests **before** the
-implementation. The cycle is: Red → Green → Refactor.
-
-```
-1. Write a failing test that describes the expected behaviour
-2. Run tests — confirm they fail (Red)
-3. Write the minimum implementation to make tests pass (Green)
-4. Refactor if needed — tests must still pass
-5. Repeat for the next behaviour
-```
-
-### Test file location and naming
-
+### Test file locations
 ```
 tests/
 ├── unit/
-│   ├── lib/          ← helpers, utilities (e.g. auth-guards, css-sanitizer)
+│   ├── lib/          ← helpers, utilities
 │   ├── services/     ← server services
 │   ├── routes/       ← route action/loader functions
 │   └── extensions/   ← cart transform, checkout UI
-├── integration/      ← multi-layer flows (DB + service + route)
+├── integration/      ← multi-layer flows
 └── e2e/              ← full request lifecycle
 ```
-
 File naming: `{module-name}.test.ts`
 
 ### What must be tested
-
 - Every exported function in `app/lib/`
 - Every auth guard path (authorized, unauthorized, missing env var)
 - Every route `action` and `loader` — happy path + error cases
-- Any function containing conditional branching or security logic
-
-### Running tests
+- Any function with conditional branching or security logic
 
 ```bash
-npm test              # all tests
-npm run test:unit     # unit only
-npm run test:watch    # watch mode during development
-npm run test:coverage # coverage report
+npm test | npm run test:unit | npm run test:watch | npm run test:coverage
 ```
 
-### TDD does NOT apply to
-
-- One-line config changes
-- CSS/style-only changes
-- Documentation changes
-- Route annotation comments (`// auth: public`)
+TDD does NOT apply to: one-line config changes, CSS-only changes, docs changes, route annotation comments.
 
 ### Test Spec Files — Mandatory in TDD Sessions
 
-**Whenever working in a TDD environment, always create a test spec file** alongside the
-test and implementation. Test specs are human-readable documentation of _what_ is being
-tested and _why_ — they are the source of truth referenced in commits and PRs.
-
-**Location:** `test-spec/{module-name}.spec.md`
-
-**Format:**
+Create `test-spec/{module-name}.spec.md` alongside every TDD session.
 
 ```markdown
 # Test Spec: {Module / Feature Name}
-
-**Spec ID:** {module-name}
-**Issue:** [{issue-id}]
-**Created:** YYYY-MM-DD
+**Spec ID:** {module-name}  **Issue:** [{issue-id}]  **Created:** YYYY-MM-DD
 
 ## Purpose
-One paragraph describing what this module does and why it needs tests.
-
 ## Test Cases
-
 ### {TestSuiteName}
-
 | # | Scenario | Input | Expected Output | Notes |
-|---|----------|-------|-----------------|-------|
-| 1 | Happy path | ... | ... | |
-| 2 | Edge case | ... | ... | |
-| 3 | Error path | ... | ... | |
-
 ## Acceptance Criteria
 - [ ] All listed test cases pass
-- [ ] Coverage target met (if applicable)
 ```
 
-**Referencing in commits and PRs:**
-
-```bash
-# Commit message
-[issue-id] test: add unit tests for {module}
-
-Spec: test-spec/{module-name}.spec.md
-```
-
-```markdown
-## Test Spec
-See [`test-spec/{module-name}.spec.md`](../../test-spec/{module-name}.spec.md)
-for the full scenario table and acceptance criteria.
-```
+Reference in commit: `[issue-id] test: add unit tests for {module}\nSpec: test-spec/{module-name}.spec.md`
 
 ---
 
 ## 🚫 Strict Rules
 
-1. **NO commits without updating issue file first** ❌
-2. **NO commits without proper [issue-id] prefix** ❌
-3. **ALL changes must be logged in progress log** ✅
-4. **Update issue file BEFORE and AFTER each commit** ✅
-5. **Every commit must reference the issue ID** ✅
-6. **NO code for new features without completing the feature-pipeline first** ❌
-7. **NEVER run `shopify app deploy` or any deploy command autonomously** — use `npm run deploy:prod` / `npm run deploy:sit` and always wait for user confirmation ❌
-8. **Write tests BEFORE implementation for all new code** ✅
-9. **Run linter on modified files BEFORE every commit** ✅ — see Lint Before Commit below
-10. **NO backwards-compatibility shims or migration hacks** ❌ — see No Backwards Compatibility Rule below
-11. **ALWAYS ask about DCP customizability for storefront changes** — if a storefront change is not explicitly specified as DCP-customizable, ask the user whether DCP support should be bundled with it before implementing ✅ — see DCP Customizability Rule below
-12. **CREATE a test spec file in `test-spec/` for every TDD session** ✅ — spec acts as test documentation and must be referenced in the commit message and PR description — see Test Spec Files above
-12. **NO hardcoded fallback UI copy strings** ❌ — do not invent default marketing copy (e.g. "Complete the look and get a gift free!") when a merchant-configured string is absent. If the merchant hasn't set a value, show nothing or use a neutral system message. Never fabricate storefront-visible copy on their behalf.
-13. **NO unnecessary API fallback chains** ❌ — when fetching a value from an API, use the single correct source per official docs. Do NOT chain multiple fallback sources (e.g. `apiA.field || apiB.field || 'default'`). If the correct source returns null/empty, surface that honestly — show nothing, a neutral placeholder, or a non-fabricated system message. Chaining fallbacks hides bugs and creates silent data quality issues.
-14. **NEVER commit Chrome investigation or verification screenshots** ❌ — screenshots captured through Chrome DevTools MCP are temporary evidence only. Keep them unstaged/uncommitted unless the user explicitly asks for a specific screenshot artifact to be versioned.
-15. **NO competitor references in code** ❌ — do not use competitor brand names (`eb`, `skai`, `skailama`, `easybundles`, or any other competitor) as CSS class name prefixes, JS/TS identifier prefixes, variable names, or code comments. Competitor names are allowed only in documentation files under `docs/` and `internal docs/`. When adding new identifiers, use neutral descriptive names (e.g. `ruleFields`, not `ebRuleFields`).
+1. ❌ NO commits without updating issue file first
+2. ❌ NO commits without proper `[issue-id]` prefix
+3. ✅ ALL changes must be logged in progress log
+4. ✅ Update issue file BEFORE and AFTER each commit
+5. ❌ NO code for new features without completing feature-pipeline first
+6. ❌ NEVER run `shopify app deploy` autonomously — see Shopify Deploy Rule
+7. ✅ Write tests BEFORE implementation for all new code
+8. ✅ Run linter on modified files BEFORE every commit — see Lint Before Commit
+9. ❌ NO backwards-compatibility shims or migration hacks — see No Backwards Compatibility Rule
+10. ✅ ALWAYS ask about DCP customizability for storefront changes before implementing
+11. ✅ CREATE a test spec file in `test-spec/` for every TDD session
+12. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
+13. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
+14. ❌ NEVER commit Chrome DevTools investigation screenshots
+15. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
+
+---
 
 ## 🧩 Polaris Web Components First Rule
 
-### ALWAYS use Polaris web components for Admin-embedded app UI
+Use Polaris web components (`s-*`) for **all** Admin-embedded app UI. Fall back to custom HTML only when no Polaris component exists.
 
-When building or modifying any Admin-embedded app page, use Polaris web components (`s-*`) for **all** UI elements where a suitable component exists. Only fall back to custom HTML + CSS when **no** Polaris component covers the use case.
+**Components (polaris-app-home surface):**
+- Actions: `s-button`, `s-button-group`, `s-link`, `s-menu`
+- Forms: `s-checkbox`, `s-select`, `s-text-field`, `s-text-area`, `s-switch`, `s-number-field`, `s-search-field`, `s-drop-zone`
+- Feedback: `s-badge`, `s-banner`, `s-spinner`
+- Layout: `s-box`, `s-stack`, `s-grid`, `s-section`, `s-divider`
+- Typography: `s-heading`, `s-text`, `s-paragraph`
+- Media: `s-icon`, `s-thumbnail`, `s-image`, `s-avatar`
+- Overlays: `s-modal`, `s-popover`
+- Interactive: `s-clickable`, `s-clickable-chip`, `s-chip`
 
-**Available components (polaris-app-home surface):**
-- **Actions:** `s-button`, `s-button-group`, `s-link`, `s-menu`
-- **Forms:** `s-checkbox`, `s-select`, `s-text-field`, `s-text-area`, `s-switch`, `s-number-field`, `s-search-field`, `s-drop-zone`
-- **Feedback:** `s-badge`, `s-banner`, `s-spinner`
-- **Layout:** `s-box`, `s-stack`, `s-grid`, `s-section`, `s-divider`
-- **Typography:** `s-heading`, `s-text`, `s-paragraph`
-- **Media:** `s-icon`, `s-thumbnail`, `s-image`, `s-avatar`
-- **Overlays:** `s-modal`, `s-popover`
-- **Interactive:** `s-clickable`, `s-clickable-chip`, `s-chip`
+**Icon names:** `plus`, `delete`, `view`, `upload`, `globe`, `search`, `filter`, `edit`, `info`, `check`, `x`, `duplicate`, `menu-horizontal`, `alert-triangle`, `clock`, `note`, `product`, `arrow-left`, `arrow-right`
 
-**Icon names for `s-icon type=""` / `s-button icon=""`:**
-`plus`, `delete`, `view`, `upload`, `globe`, `search`, `filter`, `edit`, `info`,
-`check`, `x`, `duplicate`, `menu-horizontal`, `alert-triangle`, `clock`,
-`note`, `product`, `arrow-left`, `arrow-right`
+**Acceptable custom HTML exceptions:** tab navigation, step chip/pill patterns, keyframe animations, fixed-position overlays, complex grids not achievable with `s-grid`.
 
-**Legitimate "no Polaris component" exceptions (custom HTML is acceptable):**
-- Tab navigation (no `s-tabs` in app-home surface)
-- Step chip / pill navigation patterns
-- Custom slide/keyframe animations
-- Fixed-position overlays (e.g. BundleReadinessOverlay, BundleGuidedTour)
-- Complex grid layouts not achievable with `s-grid`
-
-**How to check if a component exists:**
-```bash
-# Use the Shopify dev MCP
-mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-home")
-mcp__shopify-dev-mcp__search_docs_chunks(prompt: "component name usage examples")
-```
+Check availability: `mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-home")`
 
 ---
 
 ## 🎨 DCP Customizability Rule
 
-### Always ask about DCP before implementing storefront changes
-
-Any storefront-visible change (new UI element, new style, new behaviour) may need a merchant-facing DCP control. The rule is:
-
-- If the user **explicitly says** a storefront change should be DCP-customizable — implement the DCP control as part of the same issue/commit.
-- If the user **does not mention** DCP for a storefront change — **ask first**: "Should this also have a DCP control so merchants can customize it?"
-- Do NOT assume "no DCP needed" and do NOT add DCP controls speculatively without asking.
-
-**Why:** Storefront changes without DCP controls lock merchants into a single appearance. Adding DCP controls after the fact requires a second pass and a second migration. Asking upfront keeps the feature complete in one pass.
+Any storefront-visible change may need a merchant-facing DCP control:
+- User **explicitly says** DCP-customizable → implement DCP control in same issue/commit.
+- User **does not mention** DCP → **ask first**: "Should this also have a DCP control?"
+- Do NOT assume no DCP needed. Do NOT add DCP controls speculatively.
 
 ---
 
 ## 🔄 No Backwards Compatibility Rule
 
-### NEVER add backwards-compatibility code or migration hacks
+**NEVER add backwards-compatibility code.** The app has a "Sync Bundle" feature — merchants re-sync to pick up new defaults.
 
-This app has a **"Sync Bundle"** feature on all bundle configure pages. When new settings are added or the widget version increments, merchants can always re-sync an existing bundle to pick up the latest defaults. An in-app info banner or notice can be shown to prompt a sync when needed.
+**Banned patterns:**
+- Fallback shims reading old JSON blob fields when new direct columns exist
+- Deprecated field mappings in `extractGeneralSettings` / `buildSettingsData`
+- Version-detection code that adjusts behavior for old data
+- `if (legacyField) use(legacyField) else use(newField)` patterns
 
-**Because of this, you MUST NOT:**
-- Add fallback shims that read old JSON blob fields when new direct columns exist
-- Keep deprecated field mappings in `extractGeneralSettings` / `buildSettingsData` "just in case"
-- Write code that detects app version and adjusts behavior for old data
-- Add any `if (legacyField) use(legacyField) else use(newField)` patterns
-
-**Instead:**
-- Add new fields as direct Prisma columns with sensible defaults
-- Update the CSS generator, mergeSettings, and handlers to read the new field directly
-- If old data is in a JSON blob and needs to move to a direct column, drop the JSON blob key and let the direct column default take over — merchants re-sync to restore custom values
-- When a breaking change is released, bump `WIDGET_VERSION` and show a sync prompt banner
-
-**Why:** Backwards-compat code accumulates silently, creates hidden bugs when old and new paths diverge, and makes the codebase harder to reason about. The sync mechanism is the correct fix path for merchants with stale data.
-
-## 🔍 Lint Before Commit Rule
-
-### MANDATORY: Run ESLint on modified files before every commit
-
-Before staging and committing any code changes, run ESLint on the files you modified to catch errors introduced by the change.
-
-```bash
-# Lint only the files you changed (fast — avoids scanning the whole project)
-npx eslint --max-warnings 9999 <file1> <file2> ...
-
-# Or lint the full project if many files changed
-npm run lint -- --max-warnings 9999
-```
-
-**The commit MUST produce zero ESLint errors.** Warnings are acceptable (pre-existing issues are tracked as warnings, not errors).
-
-**Why `--max-warnings 9999`:** The project has ~6500 pre-existing warnings (widespread `any` usage, nullish coalescing suggestions). Without this flag, ESLint exits non-zero on any warning, which would block the lint check entirely.
-
-**When to fix vs. warn:**
-- **New code you wrote** that triggers an error → fix it
-- **Pre-existing warnings** in files you touched but didn't author → leave as-is (they're tracked as `warn`, not `error`)
+**Correct approach:** Add new Prisma columns with sensible defaults. Drop old JSON blob keys. Bump `WIDGET_VERSION` and show a sync prompt banner for breaking changes.
 
 ---
 
-## 🗺️ App Navigation Map — Keep It Updated
+## 🔍 Lint Before Commit Rule
 
-### MANDATORY: Update `docs/app-nav-map/APP_NAVIGATION_MAP.md` for every navigation change
-
-The file `docs/app-nav-map/APP_NAVIGATION_MAP.md` is the canonical map of every page,
-modal, sidebar section, tab, and user flow in the app. It also contains a screenshots
-index for Chrome DevTools–assisted UI work.
-
-**You MUST update this document whenever you:**
-- Add a new route or page
-- Add, rename, or remove a modal
-- Add a new tab to an existing page
-- Add a new sidebar section to the DCP navigation
-- Add or change a user flow (auth, billing, bundle setup, etc.)
-- Add new API routes that are relevant to debugging
-
-**Why this matters:** The document is used as a reference when navigating the live app
-with Chrome DevTools MCP. An out-of-date map leads to navigating to wrong URLs or
-missing UI components during debugging and feature work.
-
-```
-docs/app-nav-map/
-├── APP_NAVIGATION_MAP.md   ← THE MAP (keep updated)
-└── screenshots/            ← Live screenshots from Chrome DevTools
+```bash
+npx eslint --max-warnings 9999 <file1> <file2> ...
+# or full project:
+npm run lint -- --max-warnings 9999
 ```
 
-**Enforcement:** This is as mandatory as the issue tracking rule. No PR or commit that
-adds/changes navigation should be merged without a corresponding update to this map.
+Zero ESLint errors required. Warnings acceptable (pre-existing ~6500 warnings in project). Fix new errors you introduced; leave pre-existing warnings.
+
+---
+
+## 🗺️ App Navigation Map
+
+**MANDATORY:** Update `docs/app-nav-map/APP_NAVIGATION_MAP.md` whenever you:
+- Add/rename/remove a route, page, modal, or tab
+- Add a new sidebar section to DCP navigation
+- Add/change a user flow or add relevant API routes
 
 ---
 
 ## 🚢 Shopify Deploy Rule
 
-### NEVER run `shopify app deploy` autonomously
-
-The `shopify app deploy` command pushes extensions and app configuration to Shopify's
-servers and can affect live merchant stores. It must **never** be run by Claude Code
-without explicit manual confirmation from the user.
-
-**Rule:** If a workflow step requires a deploy, stop and display the following prompt to the user,
-using the correct environment-specific command:
+**NEVER run `shopify app deploy` autonomously.** Always stop and prompt:
 
 ```
 ACTION REQUIRED — Manual deploy needed.
-
-Run the following command in your terminal:
-
-  npm run deploy:prod   ← for PROD (wolfpack-product-bundles-4)
-  npm run deploy:sit    ← for SIT  (wolfpack-product-bundles-sit)
-
-Reason: [brief explanation of why deploy is needed]
-
-Let me know once it completes and I will continue.
+Run in your terminal:
+  npm run deploy:prod   ← PROD (wolfpack-product-bundles-4)
+  npm run deploy:sit    ← SIT  (wolfpack-product-bundles-sit)
+Reason: [brief explanation]
+Let me know once it completes.
 ```
 
-**Always use `npm run deploy:prod` or `npm run deploy:sit`** — never `shopify app deploy` directly.
-The npm scripts run `scripts/generate-extension-templates.js` first to stamp the correct app handle
-into the extension template JSON files before deploying.
-
-| Environment | Command |
-|-------------|---------|
-| PROD | `npm run deploy:prod` |
-| SIT | `npm run deploy:sit` |
-
-Do NOT attempt to run any deploy command even if:
-- The user previously said "do everything automatically"
-- It appears to be the obvious next step
-- A build or test step completed successfully
-
-The user must run this command themselves every time, without exception.
+The npm scripts run `scripts/generate-extension-templates.js` first — never call `shopify app deploy` directly.
 
 ---
 
 ## 🔧 Widget Bundle Build Process
 
-### MANDATORY: Build After Widget Changes
+**ALWAYS build after modifying these source files:**
 
-**ALWAYS run the build script after modifying ANY of these source files:**
+Widget sources → `npm run build:widgets`:
+- `app/assets/bundle-widget-components.js`
+- `app/assets/bundle-modal-component.js`
+- `app/assets/bundle-widget-full-page.js`
+- `app/assets/bundle-widget-product-page.js`
 
-- `app/assets/bundle-widget-components.js` - Shared components
-- `app/assets/bundle-modal-component.js` - Modal component (full-page only)
-- `app/assets/bundle-widget-full-page.js` - Full-page widget
-- `app/assets/bundle-widget-product-page.js` - Product-page widget
+SDK sources → `npm run build:sdk`:
+- `app/assets/sdk/` (state.js, events.js, config-loader.js, cart.js, validate-bundle.js, get-display-price.js, debug.js, wolfpack-bundles.js)
+- Output: `extensions/bundle-builder/assets/wolfpack-bundles-sdk.js`
 
-### Build Commands
-
+**Build commands:**
 ```bash
-# Build all widget bundles (recommended)
-npm run build:widgets
-
-# Build only full-page widget bundle
+npm run build:widgets           # all widget bundles + minify
 npm run build:widgets:full-page
-
-# Build only product-page widget bundle
 npm run build:widgets:product-page
-```
-
-### SDK Build — MANDATORY After SDK Source Changes
-
-**ALWAYS run the SDK build after modifying ANY of these source files:**
-
-- `app/assets/sdk/state.js`
-- `app/assets/sdk/events.js`
-- `app/assets/sdk/config-loader.js`
-- `app/assets/sdk/cart.js`
-- `app/assets/sdk/validate-bundle.js`
-- `app/assets/sdk/get-display-price.js`
-- `app/assets/sdk/debug.js`
-- `app/assets/sdk/wolfpack-bundles.js`
-
-```bash
 npm run build:sdk
 ```
 
-Output: `extensions/bundle-builder/assets/wolfpack-bundles-sdk.js`
-
-**Forgetting to build = SDK changes won't appear in the storefront!**
-
-### Output Files
-
-The build script generates bundled files in the extension assets folder:
-
-```
-extensions/bundle-builder/assets/
-├── bundle-widget-full-page-bundled.js    # Full-page widget bundle
-└── bundle-widget-product-page-bundled.js # Product-page widget bundle
-```
-
-### Why This Matters
-
-- Source files use ES modules (`import`/`export`) for development
-- Shopify theme extensions require bundled, standalone JS files
-- The build script combines components + widget code into single IIFEs
-- **Forgetting to build = changes won't appear in the storefront!**
-
-### Workflow Integration
-
-```bash
-# After making widget JS changes:
-1. Edit source files in app/assets/
-2. Increment WIDGET_VERSION in scripts/build-widget-bundles.js  ← SEE VERSION RULE BELOW
-3. Run: npm run build:widgets        # builds bundles AND minifies JS in one step
-4. Test changes in storefront
-5. Commit BOTH source files AND bundled (minified) files
-
-# After making CSS-only changes:
-1. Edit the relevant raw CSS source in app/assets/widgets/*-css/
-2. Run: npm run minify:assets css    # writes minified CSS to the extension asset
-3. Commit BOTH the raw source CSS and generated minified extension CSS
-```
+**Forgetting to build = changes won't appear in the storefront.**
 
 ---
 
 ## 🗜️ Asset Minification
 
-### MANDATORY: Edit raw widget CSS source, then commit generated minified output
+Always edit raw source CSS files, then run minifier:
 
-For widget CSS, always modify the raw unminified source file:
-
+Raw sources:
 - `app/assets/widgets/full-page-css/bundle-widget-full-page.css`
 - `app/assets/widgets/product-page-css/bundle-widget.css`
 
-Then run `npm run minify:assets css`. The build/minify script writes the deploy-ready
-minified output to:
-
+Minified output (deploy target):
 - `extensions/bundle-builder/assets/bundle-widget-full-page.css`
 - `extensions/bundle-builder/assets/bundle-widget.css`
 
-The API and storefront must call the minified extension asset only. Do not point API
-preview code, Liquid, or storefront code at the raw source CSS file.
+| Change type | Command |
+|---|---|
+| JS bundle changes | `npm run build:widgets` |
+| CSS-only changes | `npm run minify:assets css` |
+| Both CSS and JS | `npm run build:widgets && npm run minify:assets css` |
+| All assets | `npm run minify:assets` |
 
-Other CSS targets that do not yet have a raw source file are still minified in place.
-
-**When to run the minifier:**
-
-| Change type                          | Command                        |
-|--------------------------------------|--------------------------------|
-| JS bundle changes (widget source)    | `npm run build:widgets`        |
-| CSS-only changes                     | `npm run minify:assets css`    |
-| Both CSS and JS changed              | `npm run build:widgets && npm run minify:assets css` |
-| All assets (CSS + JS)                | `npm run minify:assets`        |
-
-**What gets minified:**
-
-CSS files:
-- `app/assets/widgets/full-page-css/bundle-widget-full-page.css` → `extensions/bundle-builder/assets/bundle-widget-full-page.css`
-- `app/assets/widgets/product-page-css/bundle-widget.css` → `extensions/bundle-builder/assets/bundle-widget.css`
-- `modal-discount-bar.css`
-
-JS files (in `extensions/bundle-builder/assets/`):
-- `bundle-widget-full-page-bundled.js`
-- `bundle-widget-product-page-bundled.js`
-
-**CSS minification** removes all block comments, collapses whitespace, strips spaces
-around `:`, `{`, `}`, `,`, `;`, removes empty rules, and strips trailing semicolons
-before `}`.
-
-**JS minification** is conservative (no AST, no renaming):
-- Preserves `/*!` licence/banner headers
-- Removes all other block comments and `//` single-line comments
-- Collapses 3+ consecutive blank lines to one
-- Trims trailing whitespace per line
-
-The script exits non-zero and prints an error if any CSS file exceeds Shopify's
-**100,000 B** app-block asset limit after minification.
+Script exits non-zero if any CSS file exceeds Shopify's **100,000 B** app-block asset limit.
 
 ---
 
 ## 🔢 Widget Version Rule
 
-### MANDATORY: Increment `WIDGET_VERSION` before every widget deploy
+Increment `WIDGET_VERSION` in `scripts/build-widget-bundles.js` before every widget deploy.
 
-`WIDGET_VERSION` lives at the top of `scripts/build-widget-bundles.js`.
-It is embedded in every bundled JS file as `window.__BUNDLE_WIDGET_VERSION__`.
+| Change type | Version bump |
+|---|---|
+| Bug fix | PATCH x.y.Z |
+| New feature (backwards-compatible) | MINOR x.Y.z |
+| Breaking change / redesign | MAJOR X.y.z |
 
-**When to increment (semantic versioning):**
+**Steps before every widget deploy:**
+1. Increment `WIDGET_VERSION`
+2. `npm run build:widgets`
+3. `npm run minify:assets css`
+4. Commit source + bundled files
+5. Run `npm run deploy:prod` or `npm run deploy:sit`
+6. Wait 2–10 min for Shopify CDN cache propagation
 
-| Change type                                  | Version bump |
-|----------------------------------------------|--------------|
-| Bug fix (broken behaviour, logic error)      | PATCH x.y.Z  |
-| New storefront feature (backwards-compatible)| MINOR x.Y.z  |
-| Breaking change / widget redesign            | MAJOR X.y.z  |
+Verify live version: `console.log(window.__BUNDLE_WIDGET_VERSION__)` in DevTools console.
 
-**Mandatory steps before every widget deploy:**
-
-```
-1. Open scripts/build-widget-bundles.js
-2. Increment WIDGET_VERSION (e.g. '1.0.0' → '1.0.1')
-3. Run: npm run build:widgets        # builds JS bundles AND minifies them automatically
-4. Run: npm run minify:assets css    # minify CSS files (script exits non-zero if any
-                                     # file exceeds Shopify's 100,000 B limit)
-5. Commit source + bundled (minified) files
-6. Run: npm run deploy:prod  OR  npm run deploy:sit  (per the Shopify Deploy Rule above)
-7. Wait 2-10 min for Shopify CDN cache to propagate — this is expected
-```
-
-**How Shopify CDN cache-busting works (why this matters):**
-
-Shopify serves extension JS from its CDN. The `asset_url` Liquid filter appends a
-`?v=HASH` parameter automatically. This hash only changes when you run
-`shopify app deploy` — it is tied to the app-version snapshot, NOT the file content.
-Custom query parameters (e.g. `?timestamp=`) are NOT on the CDN allowlist and will NOT
-bust the cache.
-
-Summary: **build → increment version → deploy → wait ~5 min → verify.**
-
-**Verify the live version** in browser DevTools on any storefront page with the widget:
-
-```javascript
-// Paste in DevTools console:
-console.log(window.__BUNDLE_WIDGET_VERSION__)
-```
-
-Expected output: the version string you set before the last deploy (e.g. `"1.0.1"`).
-
-## 📁 File Structure
-
-```
-docs/
-├── issues-prod/
-│   ├── full-page-design-improvements-1.md    # Current issue
-│   ├── {future-issue}-2.md                   # Future issues
-│   └── ...
-├── FULL_PAGE_DESIGN_GAP_ANALYSIS.md          # Analysis docs
-├── FULL_PAGE_IMPLEMENTATION_PLAN_2026.md     # Implementation docs
-└── ...
-
-CLAUDE.md                                      # This file (root)
-.claude/
-└── plans/
-    └── graceful-marinating-wozniak.md         # Current plan
-```
-
-## 🎯 Example Issue File
-
-See `docs/issues-prod/full-page-design-improvements-1.md` for the current active issue.
-
-## 📝 Example Commit History
-
-```bash
-[full-page-design-improvements-1] chore: Set up issue tracking system
-[full-page-design-improvements-1] fix: Product cards maintain fixed dimensions via CSS grid
-[full-page-design-improvements-1] feat: Add spacing controls to Theme Editor
-[full-page-design-improvements-1] refactor: Remove hardcoded fonts, use inheritance
-[full-page-design-improvements-1] feat: Create product variant modal component
-[full-page-design-improvements-1] style: Update product card styling with shadows
-[full-page-design-improvements-1] feat: Integrate modal and spacing with DCP
-[full-page-design-improvements-1] docs: Update merchant guide for new features
-```
-
-## ✅ Benefits
-
-- **Traceability:** Every change is documented
-- **Context:** Understand why changes were made
-- **Progress:** Clear visibility of what's done
-- **Collaboration:** Easy for team members to follow along
-- **Debugging:** Quick reference for when issues arise
-- **History:** Complete audit trail of development
-
-## 🔍 Finding Issues
-
-### List All Issues:
-```bash
-ls -la docs/issues-prod/
-```
-
-### View Current Issue:
-```bash
-cat docs/issues-prod/full-page-design-improvements-1.md
-```
-
-### Search Commits by Issue:
-```bash
-git log --grep="full-page-design-improvements-1"
-```
-
----
-
-**Enforce this pattern throughout ALL changes in this project from now on.**
-**No exceptions.** ✅
+Shopify CDN cache-busting: the `?v=HASH` param on `asset_url` only changes on `shopify app deploy`. Custom query params are NOT on the CDN allowlist.
 
 ---
 
 ## 🚨 Do Not Touch — Bundle Config Loading (FPB Widget)
 
-### NEVER modify the bundle config loading priority order in `bundle-widget-full-page.js`
+**NEVER modify the bundle config loading priority order in `bundle-widget-full-page.js`.**
 
-The FPB widget uses a two-stage load strategy to avoid proxy failures and cold-start timeouts:
-
-1. **Stage 1 — Metafield cache (primary):** The Liquid block writes the bundle config as a JSON string into the `data-bundle-config` attribute on the widget container. The widget reads this on init for instant, zero-network first paint. The metafield (`page.metafields.custom.bundle_config`) is written by the app when the merchant clicks "Place Widget Now" or "Sync Bundle".
-
-2. **Stage 2 — Proxy API fallback:** If the metafield cache is absent, empty, or malformed JSON, the widget falls back to `GET /apps/product-bundles/api/bundle/{id}.json`. This path includes a single retry after 3 s for `503`/`504` responses to survive Render server cold-starts.
-
-**Why this matters:** Before this fix, widgets on pages without a warm server would silently fail to load — the proxy call timed out and there was no fallback. The metafield cache eliminates the round-trip entirely for the common case; the retry handles the cold-start edge case.
+Two-stage load strategy:
+1. **Stage 1 — Metafield cache (primary):** Liquid block writes config into `data-bundle-config` attribute. Widget reads on init — zero network, instant first paint.
+2. **Stage 2 — Proxy API fallback:** If metafield absent/empty/malformed, falls back to `GET /apps/product-bundles/api/bundle/{id}.json` with single retry after 3s for `503`/`504` (Render cold-starts).
 
 **Rules:**
-- ❌ Do NOT remove or reorder the `data-bundle-config` check — it must always run before the proxy fetch.
-- ❌ Do NOT remove the `503`/`504` retry logic — Render cold-starts are real and ~3–10 s long.
-- ❌ Do NOT add a third loading source between Stage 1 and Stage 2 without understanding the full proxy auth flow.
-- ✅ The metafield is populated by `bundle-config-metafield.server.ts` — if bundle config structure changes, update both the server writer AND the widget parser together.
+- ❌ Do NOT remove or reorder the `data-bundle-config` check — must run before proxy fetch
+- ❌ Do NOT remove `503`/`504` retry logic — Render cold-starts are 3–10s
+- ❌ Do NOT add a third source between Stage 1 and Stage 2
+- ✅ If bundle config structure changes, update server writer AND widget parser together
 
 **Relevant files:**
-- Widget reader: `app/assets/bundle-widget-full-page.js` — `loadBundleConfig()` (~line 325)
-- Liquid injector: `extensions/bundle-builder/blocks/bundle-full-page.liquid` — `data-bundle-config="{{ page.metafields.custom.bundle_config | escape }}"`
-- Server writer: `app/services/bundles/metafield-sync/` — `bundle-config-metafield.server.ts`
-
----
-
-**Enforce this pattern throughout ALL changes in this project from now on.**
-**No exceptions.** ✅
+- Widget: `app/assets/bundle-widget-full-page.js` — `loadBundleConfig()` (~line 325)
+- Liquid: `extensions/bundle-builder/blocks/bundle-full-page.liquid` — `data-bundle-config`
+- Server: `app/services/bundles/metafield-sync/bundle-config-metafield.server.ts`
 
 ---
 
 ## 🔐 Test Store Access
 
-**Default storefront password for all locked test stores: `1`**
-
-- Test store: `wolfpack-store-test-1.myshopify.com`
-- Use this password when Chrome DevTools MCP or any browser automation tool
-  hits the Shopify storefront password gate.
+- Store: `wolfpack-store-test-1.myshopify.com`
+- Default storefront password: `1`
 
 ## 🧭 Chrome DevTools App Verification
 
-When verifying the embedded app with Chrome DevTools MCP, always access app pages through
-the Shopify Admin embedded URL, for example:
-
+Access embedded app via Shopify Admin URL:
 ```
 https://admin.shopify.com/store/wolfpack-store-test-1/apps/wolfpack-product-bundles-sit/app/...
 ```
-
-Do **not** navigate directly to the Cloudflare tunnel app URL. Direct tunnel URLs such as
-`https://<tunnel>.trycloudflare.com/app/...` do not preserve the Shopify embedded app
-context and commonly redirect to `/auth/login`, so they are not valid for live Admin UI
-verification.
+Do NOT use Cloudflare tunnel URLs directly — they redirect to `/auth/login`.
 
 ---
 
 ## 🐙 GitHub Tasks — Always Use `gh` CLI
-
-**ALWAYS use the `gh` CLI for ALL GitHub-related tasks.** Never use raw `git` commands for remote operations when `gh` provides a dedicated command.
 
 | Task | Command |
 |---|---|
@@ -771,48 +342,35 @@ verification.
 | Merge PR | `gh pr merge` |
 | Create issue | `gh issue create` |
 | View issues | `gh issue list` / `gh issue view` |
-| Check CI status | `gh run list` / `gh run view` |
-| View remote branches | `gh api repos/{owner}/{repo}/branches` |
-| Get commit SHA | `gh api repos/{owner}/{repo}/commits/{ref}` |
-| Comment on PR/issue | `gh pr comment` / `gh issue comment` |
-
-**Why:** `gh` handles auth, pagination, and JSON output correctly. Raw `git fetch`/`git push` to remote may fail without SSH keys configured in the session.
+| Check CI | `gh run list` / `gh run view` |
+| Remote branches | `gh api repos/{owner}/{repo}/branches` |
+| Commit SHA | `gh api repos/{owner}/{repo}/commits/{ref}` |
+| Comment | `gh pr comment` / `gh issue comment` |
 
 ---
 
-**Last Updated:** 2026-04-19
-**Author:** Aditya Awasthi
-
 ## graphify
 
-This project has a graphify knowledge graph at graphify-out/ and an audited internal docs vault at `internal docs/`.
+Knowledge graph at `graphify-out/`, internal docs vault at `internal docs/`.
 
 ### Mandatory Search Order
 
-**ALWAYS follow this order when looking up architecture, APIs, or codebase behaviour:**
+1. **`internal docs/`** — start here for Cart Transform, Pricing, DB schema, Shopify API limits, widget architecture, deployment.
+2. **`graphify-out/GRAPH_REPORT.md`** — god nodes and community structure.
+3. **`graphify-out/wiki/`** — node-level detail.
+4. **Raw source files** — ONLY when vault and graph don't cover the detail.
 
-1. **`internal docs/`** — audited, human-curated vault. Start here for any topic that may be covered (Cart Transform, Pricing, DB schema, Shopify API limits, widget architecture, deployment).
-2. **`graphify-out/GRAPH_REPORT.md`** — god nodes and community structure for codebase topology questions.
-3. **`graphify-out/wiki/`** — if `index.md` exists, navigate it for node-level detail.
-4. **Raw source files** — ONLY when the user explicitly asks you to read raw files, OR when the vault and graph do not cover the specific detail you need.
-
-❌ Do NOT open raw `.ts` / `.js` / `.liquid` / `.prisma` files speculatively — consult the vault and graph first.
-✅ The vault is the fastest and most reliable source for cross-cutting questions (API behaviour, gotchas, build rules, pricing units, etc.).
+❌ Do NOT open raw `.ts`/`.js`/`.liquid`/`.prisma` files speculatively.
 
 ### Keeping the Vault Current
 
-**When you encounter something useful that is NOT in `internal docs/`:**
-- If it's a fact about Shopify API behaviour, a gotcha, a data model detail, a build rule, or a cross-cutting concern → **write or update the relevant note in `internal docs/`** before the conversation ends.
-- If it's a specific bug fix or implementation detail that belongs in the code or git history, do NOT add it to the vault.
-- After writing to the vault, add/update the link in `internal docs/index.md`.
+If you learn something about Shopify API behaviour, gotchas, data model details, or build rules that's NOT in `internal docs/` → write/update the note and add link in `internal docs/index.md`.
 
 ### Graph-Assisted Debugging & RCA
 
-**When debugging a bug or doing Root Cause Analysis (RCA), ALWAYS:**
-
-1. Use `graphify-out/GRAPH_REPORT.md` to identify which community the affected node belongs to.
-2. Run `graphify path "NodeA" "NodeB"` (or query the graph) to trace the relationship chain between the broken component and its dependencies/consumers.
-3. Check the **Surprising Connections** and **Hyperedges** sections in `GRAPH_REPORT.md` — cross-cutting relationships that aren't obvious from reading the code directly are often the root cause.
+1. Find affected node's community in `GRAPH_REPORT.md`.
+2. Run `graphify path "NodeA" "NodeB"` to trace relationship chains.
+3. Check **Surprising Connections** and **Hyperedges** sections.
 
 ```bash
 /Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/graphify path "ComponentA" "ComponentB"
@@ -821,214 +379,94 @@ This project has a graphify knowledge graph at graphify-out/ and an audited inte
 
 ### Impact Analysis — Mandatory Before Every Change
 
-**Before building a new feature OR fixing a defect**, perform an impact analysis using the graph:
+1. Identify god nodes in `GRAPH_REPORT.md` — changes touching these require extra care.
+2. Find all nodes depending on what you're changing.
+3. Document blast radius in **commit message body** and **PR description**:
 
-1. Identify the god nodes (`GRAPH_REPORT.md` → God Nodes section) — any change touching these requires extra care.
-2. Use the graph to find all nodes that depend on the file/function you're changing.
-3. Document the blast radius: which communities are affected, which tests cover them.
-
-**Impact analysis must appear in:**
-- **Commit message body** (after the first line): list affected communities / god nodes touched
-- **PR description** (in a dedicated "Impact Analysis" section): list affected components, downstream risks, and which tests validate the change
-
-**Commit format with impact analysis:**
 ```
 [issue-id] type: short description
 
-Impact: touches <CommunityName> community, depends on <GodNode>
+Impact: touches <CommunityName>, depends on <GodNode>
 Affected: <file1>, <file2>
 Tested by: <test-file(s)>
 ```
 
-**PR template addition:**
+PR Impact Analysis section:
 ```markdown
 ## Impact Analysis
-- **Communities touched**: [list from GRAPH_REPORT.md]
-- **God nodes affected**: [BundleWidgetFullPage / AppStateService / etc.]
+- **Communities touched**: [list]
+- **God nodes affected**: [list]
 - **Downstream risk**: [what could break]
-- **Test coverage**: [which test files validate this]
+- **Test coverage**: [test files]
 ```
 
 ### Keeping the Graph Current
 
-After modifying code files in this session, run:
+After modifying code files, run:
 ```bash
 python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
 ```
 
 ---
 
-## 📱 Storefront UI Audit Rule — Desktop + Mobile
+## 📱 Storefront UI Audit — Desktop + Mobile
 
-### MANDATORY: Test both desktop and mobile views when auditing storefront UI
+When auditing storefront UI, test **both viewports**:
+1. Desktop screenshot (1280×800+)
+2. Mobile screenshot (emulate iPhone 14, 390×844)
+3. Report findings for both
 
-When asked to audit, review, or verify storefront UI, you MUST test on **both desktop and mobile viewports** using Chrome DevTools MCP.
-
-**Workflow:**
-
-1. **Desktop audit first** — take screenshots at default desktop viewport (1280×800 or wider).
-2. **Mobile audit second** — use Chrome DevTools MCP `emulate` tool to switch to a mobile device (e.g. iPhone 12/14, 390×844) and take screenshots of the same pages/components.
-3. **Compare and report** — note any layout issues, overflow, truncation, spacing problems, or broken interactions that appear only on one viewport.
-
-**Required for:**
-- Any "audit the storefront", "check the UI", "how does it look" request
-- Post-deploy visual verification
-- Bug reports related to storefront appearance
-
-**Chrome DevTools MCP commands:**
-```
-1. Navigate to the storefront page
-2. Take desktop screenshot
-3. Emulate mobile device (e.g. iPhone 14)
-4. Take mobile screenshot
-5. Report findings for both viewports
-```
-
-**Why:** Many storefront bugs are mobile-only (overflow, tap targets, font scaling, modal sizing). A desktop-only audit misses ~60% of merchant customer traffic. Always test both.
+Required for: "audit the storefront", "check the UI", post-deploy verification, appearance bug reports.
 
 ---
 
-## 🔬 Competitor Parity Audit Rule — Pixel-Perfect Deep Dive
+## 🔬 Competitor Parity Audit Rule
 
-### MANDATORY: Perform deep, pixel-accurate parity analysis for all competitor comparisons
+For any "parity", "compare", "match competitor" request — conduct a full audit before writing code.
 
-Whenever the user asks for a **comparison**, **comparative study**, or to **implement parity** with a competitor (e.g. EB, GiftBox, another Shopify app), you MUST conduct a thorough, methodical audit before writing any code. "Close enough" is not acceptable.
+**Parity means:** pixel-level placement, visual hierarchy, spacing (measured via `getComputedStyle`), UX interactions, edge cases.
 
-### What "parity" means
+**Audit workflow:**
+1. Open competitor in Chrome DevTools MCP, take full-page screenshot
+2. Use `take_snapshot` for DOM structure, `evaluate_script` for computed styles
+3. Interact (click, hover, toggle) and screenshot each state
+4. If CORS blocks `evaluate_script` — use `take_snapshot` + keyboard interactions
+5. Document every gap (placement, size, color, spacing, behavior)
+6. Implement only after audit is complete
 
-Parity is not just "same features". It means:
-
-- **Pixel-level placement** — exact position of every element relative to its container and siblings
-- **Visual hierarchy** — font sizes, weights, colors, and which elements draw the eye first
-- **Spacing** — padding and margin between every element, inside and outside every card/section
-- **UX & interaction** — how toggling, expanding, clicking, hovering, and scrolling behave; what animations run; what feedback the user gets
-- **Edge cases** — empty states, disabled states, error states, long text overflow
-
-### Audit workflow
-
-1. **Open the competitor app in Chrome DevTools MCP** — navigate to the exact equivalent page/section.
-2. **Take a full-page screenshot** of the competitor's UI at desktop viewport.
-3. **Inspect specific elements** — use `take_snapshot` (a11y tree) to understand the DOM structure, then `evaluate_script` to read computed styles (`getComputedStyle`) for spacing, font, color values you can't read visually.
-4. **Interact with the UI** — click toggles, open modals, hover items, trigger animations. Screenshot each state.
-5. **If `evaluate_script` is blocked by CORS** — use `take_snapshot` for DOM structure, `hover` to trigger hover states, `click`/`press_key` for interactions, and take screenshots at each state to document behavior without JS access.
-6. **Document every gap** — list each element present in competitor that differs from WPB (placement, size, color, spacing, label, behavior). No gap is too small to note.
-7. **Implement** — only after the audit is complete and gaps are documented.
-
-### Required for
-
-Any user message containing the words: "parity", "compare", "comparison", "comparative study", "match EB", "match competitor", "same as EB", "copy from EB", "should look like X".
-
-### Strictness
-
-- ❌ Do NOT estimate spacing — measure it via `getComputedStyle` or the a11y snapshot bounding boxes.
-- ❌ Do NOT skip mobile viewport when the competitor has a responsive layout.
-- ❌ Do NOT implement partial parity and call it done — every identified gap must be addressed or explicitly deferred with a reason.
-- ✅ Take screenshots before AND after implementing each gap so the diff is visible.
-- ✅ Re-open the competitor UI after implementation and screenshot side-by-side to confirm closure.
-
-### Why
-
-Shallow parity audits leave visual regressions that damage trust with merchants who compare WPB directly against competitors. Pixel-perfect execution is a differentiator. Taking 10 extra minutes to audit correctly saves hours of back-and-forth fix cycles.
+❌ Do NOT estimate spacing — measure it. ❌ Do NOT skip mobile. ❌ Do NOT implement partial parity.
 
 ---
 
-## 🖱️ Chrome DevTools — Clicking Inside the Shopify Admin Iframe
+## 🖱️ Chrome DevTools — Shopify Admin Iframe Interaction
 
-### Problem
+The Shopify Admin embeds the app in a cross-origin OOPIF — `contentDocument` is null from the outer page.
 
-The Shopify Admin embeds the app inside a cross-origin OOPIF (Out-of-Process IFrame). Chrome DevTools MCP cannot address elements inside the iframe by element uid because the OOPIF registers as a separate CDP target with its own page context — `contentDocument` is null and `contentWindow.document` throws a `SecurityError` from the outer page.
+### PRIMARY METHOD — Keyboard Tab Navigation
 
-### ⌨️ PRIMARY METHOD — Keyboard Tab Navigation (try this FIRST)
+Try Tab navigation BEFORE `evaluate_script`. The CDP accessibility tree traverses cross-origin iframes.
 
-**For any cross-origin OOPIF iframe (including third-party competitor apps), always try keyboard Tab navigation BEFORE attempting evaluate_script or JS injection.** This works even when `contentDocument` is null and even when the iframe's inner page is not a registered CDP target.
+1. `take_snapshot()` — find interactive elements (button, textbox, checkbox) inside iframe
+2. `click(uid: "...")` — click a safe interactive element to bring focus into iframe
+3. `press_key(key: "Tab")` / `press_key(key: "Shift+Tab")` — navigate to target
+4. `press_key(key: "Enter")` (buttons/links) or `press_key(key: "Space")` (checkboxes/toggles) — activate
+5. `take_screenshot()` — verify result
 
-**Why Tab navigation works:** The CDP accessibility tree can traverse cross-origin iframes and expose their elements as uid nodes. Clicking an interactive uid (button, input, textbox) brings focus into the iframe. Once focused, `press_key` with Tab/Shift+Tab navigates through the iframe's focusable elements, and Enter/Space activates them.
+If nav items are `StaticText` nodes (no ARIA role), use arrow keys or fall back to CDP target method.
 
-**Interaction rule for CORS/OOPIF iframes:**
-- For direct button, radio, checkbox, and toggle interactions, prefer the accessibility-tree `uid` from `take_snapshot` and use `click(uid: "...")`.
-- For filling form fields, or when you need to move focus to a specific interactable control before typing, use keyboard Tab/Shift+Tab navigation, then type with `type_text` or activate with Enter/Space.
-- After every uid click or keyboard sequence, take a fresh snapshot before deciding whether the interaction worked.
+### FALLBACK — `evaluate_script` via CDP target
 
-**Step-by-step:**
+Use when the app's own iframe registers as a separate CDP target in `list_pages`.
 
-1. **Take a snapshot** to find interactive elements inside the iframe:
-   ```
-   mcp__chrome-devtools__take_snapshot()
-   ```
-   Look for `button`, `textbox`, `checkbox`, `link` nodes inside the iframe's RootWebArea.
+1. `list_pages()` — find iframe's pageId
+2. `select_page(pageId: "...")` — switch to iframe target
+3. `evaluate_script(script: "document.querySelector('...').click()")` — interact
+4. `take_screenshot()` — verify
+5. `select_page(pageId: "<admin-page-id>")` — switch back
 
-2. **Click a safe interactive element** inside the iframe to bring focus in:
-   ```
-   mcp__chrome-devtools__click(uid: "<uid of a button or textbox inside the iframe>")
-   ```
-   Use a safe target (not one that navigates away or submits a form).
-
-3. **Tab through elements** to reach the target:
-   ```
-   mcp__chrome-devtools__press_key(key: "Tab")         # forward
-   mcp__chrome-devtools__press_key(key: "Shift+Tab")   # backward
-   ```
-
-4. **Activate the focused element:**
-   ```
-   mcp__chrome-devtools__press_key(key: "Enter")   # for buttons, links
-   mcp__chrome-devtools__press_key(key: "Space")   # for checkboxes, toggles
-   ```
-
-5. **Take a screenshot** to verify the result:
-   ```
-   mcp__chrome-devtools__take_screenshot()
-   ```
-
-**Important:** If the nav items you want to click are rendered as `StaticText` nodes (no ARIA role), they won't be in the Tab order. In that case, Tab to an element near the target and use arrow keys, or fall back to the CDP target method below.
+Always `select_page` to the **iframe target** before `evaluate_script`. For third-party CORS-blocked iframes, use Tab navigation instead.
 
 ---
 
-### FALLBACK — Use `evaluate_script` with synthetic JS events
-
-Use this when the target element IS the app's own iframe (our embedded app, not a third-party OOPIF), AND the iframe registers as its own CDP target in `list_pages`.
-
-**Step-by-step:**
-
-1. **List all open pages** to find the iframe's target:
-   ```
-   mcp__chrome-devtools__list_pages()
-   ```
-   The embedded app page appears as a separate target (URL matches the tunnel or `admin.shopify.com/...`). Note its `pageId`.
-
-2. **Switch to the iframe's page target:**
-   ```
-   mcp__chrome-devtools__select_page(pageId: "<iframe-page-id>")
-   ```
-
-3. **Dispatch a JS click on any element by selector:**
-   ```
-   mcp__chrome-devtools__evaluate_script(script: `
-     document.querySelector('<CSS selector>').click();
-   `)
-   ```
-   Or, for elements that need pointer events:
-   ```
-   mcp__chrome-devtools__evaluate_script(script: `
-     const el = document.querySelector('<CSS selector>');
-     el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-     el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
-     el.click();
-   `)
-   ```
-
-4. **Take a screenshot** to verify the result:
-   ```
-   mcp__chrome-devtools__take_screenshot()
-   ```
-
-5. **Switch back to the outer Admin page** when done:
-   ```
-   mcp__chrome-devtools__select_page(pageId: "<admin-page-id>")
-   ```
-
-### Key rule
-
-Always `select_page` to the **iframe target** before using `evaluate_script` or `click` — never try to reach iframe DOM from the outer Admin page context.
-
-For cross-origin third-party iframes where `evaluate_script` is blocked by CORS: **use Tab navigation (primary method above) — it bypasses the JS security boundary entirely.**
+**Last Updated:** 2026-05-22
+**Author:** Aditya Awasthi

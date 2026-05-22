@@ -52,9 +52,8 @@ export async function createFullPageBundle(
     });
 
     // Pages use the default page.json template — no custom templateSuffix.
-    // The app embed block (bundle-full-page-embed.liquid) renders on all page templates
-    // and detects bundles via the bundle_id metafield. Custom template suffixes caused
-    // stale block references when the app migrated from section blocks to app embeds.
+    // Full-page bundle links now resolve through the app proxy route. The Shopify page
+    // is still maintained for existing sync workflows and optional manual block placement.
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
     const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
@@ -219,11 +218,11 @@ export async function createFullPageBundle(
     }
 
     const shopDomain = shop.replace('.myshopify.com', '');
-    const pageUrl = `https://${shopDomain}.myshopify.com/pages/${pageHandle}`;
+    const pageUrl = `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundleId}`;
 
     // Return embed activation deep link — directs merchant to Theme Settings > App Embeds
-    // to activate the bundle-full-page-embed block (one-time per store, not per page).
-    const widgetInstallationLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-full-page-embed`;
+    // to activate the single app embed (one-time per store).
+    const widgetInstallationLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
 
     AppLogger.info('Full-page bundle created successfully', {
       component: 'WidgetFullPageBundle',

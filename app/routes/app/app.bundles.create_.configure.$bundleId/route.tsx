@@ -335,12 +335,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const { checkAppEmbedEnabled } = await import(
       "../../../services/theme/app-embed-check.server"
     );
-    const embedBlockHandle =
-      bundle.bundleType === "product_page"
-        ? "bundle-product-page-embed"
-        : "bundle-full-page-embed";
     const result = await checkAppEmbedEnabled(admin, session.shop, {
-      blockHandles: [embedBlockHandle],
+      blockHandles: ["bundle-app-embed"],
     });
     appEmbedEnabled = result.enabled;
   } catch {}

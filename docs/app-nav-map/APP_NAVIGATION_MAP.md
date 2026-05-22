@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-05-22
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -60,6 +60,10 @@ Dashboard
 │
 └── Banner: Proxy health check / upgrade prompts (conditional)
 ```
+
+Dashboard preview behavior:
+- Product-page bundle preview opens `/products/{shopifyProductHandle}`.
+- Full-page bundle preview opens `/apps/product-bundles/wpb/{bundleId}`.
 
 #### "Create Bundle" Button
 Navigates to: `/app/bundles/create` (full-page wizard — modal removed)

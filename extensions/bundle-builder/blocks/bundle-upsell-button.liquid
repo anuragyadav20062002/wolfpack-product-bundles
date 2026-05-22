@@ -1,0 +1,47 @@
+{% assign bundle_id = block.settings.bundle_id %}
+{% assign target_url = block.settings.target_url %}
+
+{% if target_url == blank and bundle_id != blank %}
+  {% assign target_url = '/apps/product-bundles/wpb/' | append: bundle_id %}
+{% endif %}
+
+{% if target_url != blank or request.design_mode %}
+  <a
+    {{ block.shopify_attributes }}
+    class="wolfpack-bundle-upsell-button"
+    {% if target_url != blank %}href="{{ target_url }}"{% endif %}
+  >
+    {{ block.settings.button_label }}
+  </a>
+{% endif %}
+
+<style>
+  .wolfpack-bundle-upsell-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: var(--bundle-upsell-button-radius, 6px);
+    background: var(--bundle-upsell-button-bg, #111);
+    color: var(--bundle-upsell-button-text, #fff);
+    text-decoration: none;
+    font-weight: 600;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Bundle Upsell Button",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    { "type": "text", "id": "bundle_id", "label": "Full-page bundle ID" },
+    { "type": "url", "id": "target_url", "label": "Custom target URL" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "View Bundle" }
+  ]
+}
+{% endschema %}

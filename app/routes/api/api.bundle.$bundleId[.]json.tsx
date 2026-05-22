@@ -1,38 +1,11 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunction } from "@remix-run/node";
-import { createHmac } from "node:crypto";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { BundleStatus } from "../../constants/bundle";
 import { ERROR_MESSAGES } from "../../constants/errors";
 import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
-
-/**
- * Verify the Shopify App Proxy HMAC signature.
- *
- * Shopify adds shop, path_prefix, timestamp, signature to every proxied request.
- * Verifying the signature proves the request came through the Shopify proxy,
- * not a direct call to our server with a forged ?shop= param.
- *
- * Returns the verified shop domain, or null if verification fails.
- */
-function verifyAppProxyRequest(url: URL): string | null {
-  const apiSecret = process.env.SHOPIFY_API_SECRET;
-  const shop = url.searchParams.get("shop");
-  const signature = url.searchParams.get("signature");
-
-  if (!apiSecret || !shop || !signature) return null;
-
-  // Build the message: all params except 'signature', sorted alphabetically
-  const message = [...url.searchParams.entries()]
-    .filter(([key]) => key !== "signature")
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}=${v}`)
-    .join("&");
-
-  const expected = createHmac("sha256", apiSecret).update(message).digest("hex");
-  return expected === signature ? shop : null;
-}
+import { verifyAppProxyRequest } from "../../lib/app-proxy.server";
 
 /**
  * Public API endpoint to fetch a single bundle by ID

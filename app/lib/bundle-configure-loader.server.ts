@@ -93,7 +93,7 @@ export async function fetchEmbedData(
   admin: any,
   shop: string,
   apiKey: string,
-  embedBlockHandle = "bundle-full-page-embed",
+  embedBlockHandle = "bundle-app-embed",
 ): Promise<{ appEmbedEnabled: boolean; themeEditorUrl: string | null }> {
   const embedCheck = await checkAppEmbedEnabled(admin, shop, {
     blockHandles: [embedBlockHandle],

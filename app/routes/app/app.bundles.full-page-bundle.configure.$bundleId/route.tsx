@@ -134,7 +134,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
     }),
-    fetchEmbedData(admin, session.shop, apiKey, "bundle-full-page-embed"),
+    fetchEmbedData(admin, session.shop, apiKey, "bundle-app-embed"),
   ]);
 
   return json({
@@ -573,8 +573,8 @@ export default function ConfigureBundleFlow() {
   const normalizedPageSlug = useMemo(() => slugify(pageSlug), [pageSlug]);
   const pageSlugError = useMemo(() => validateSlug(pageSlug), [pageSlug]);
   const pageUrlPreview = useMemo(
-    () => `https://${shopDomain}.myshopify.com/pages/${pageSlug}`,
-    [shopDomain, pageSlug]
+    () => `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`,
+    [shopDomain, bundle.id]
   );
 
   useEffect(() => {
@@ -1285,12 +1285,11 @@ export default function ConfigureBundleFlow() {
         return;
       }
 
-      // Construct page URL
       const shopDomain = shop.includes('.myshopify.com')
         ? shop.replace('.myshopify.com', '')
         : shop.split('.')[0];
 
-      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+      const pageUrl = `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
 
 
       open(pageUrl, '_blank');
@@ -1506,7 +1505,8 @@ export default function ConfigureBundleFlow() {
 
     // Build theme editor deep link (used as fallback for non-page templates and on error)
     const buildThemeEditorUrl = () => {
-      const appBlockId = `${apiKey}/${blockHandle}`;
+      const placementBlockHandle = upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block";
+      const appBlockId = `${apiKey}/${placementBlockHandle}`;
       const templateParam = template.isPage ? 'page' : template.handle;
       const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
       return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
@@ -1577,7 +1577,7 @@ export default function ConfigureBundleFlow() {
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id, apiKey, blockHandle]);
+  }, [shop, shopify, bundle.id, apiKey, upsellWidgetDisplayMode]);
 
   return (
     <>
@@ -3212,7 +3212,7 @@ export default function ConfigureBundleFlow() {
                         {bundle.shopifyPageHandle && (
                           <s-button
                             variant="plain"
-                            onClick={() => window.open(`https://${shopDomain}.myshopify.com/pages/${originalPageSlugRef.current}`, '_blank')}
+                            onClick={() => window.open(pageUrlPreview, '_blank')}
                           >
                             View on Storefront
                           </s-button>

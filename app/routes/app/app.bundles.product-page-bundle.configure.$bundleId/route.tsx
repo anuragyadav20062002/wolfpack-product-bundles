@@ -125,7 +125,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       ? fetchBundleProduct(admin, bundle.shopifyProductId, bundleId)
       : Promise.resolve(null),
     fetchShopLocales(admin),
-    fetchEmbedData(admin, session.shop, apiKey, "bundle-product-page-embed"),
+    fetchEmbedData(admin, session.shop, apiKey, "bundle-app-embed"),
   ]);
 
   return json({
@@ -837,7 +837,7 @@ export default function ConfigureBundleFlow() {
   }, [fetcher.data, fetcher.state]);
 
   const handleAddToStorefront = useCallback(() => {
-    const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-product-page-embed`;
+    const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
     open(embedLink, '_blank');
     shopify.toast.show(
       "Activate the Wolfpack Bundle embed in Theme Settings to go live.",
@@ -1123,7 +1123,10 @@ export default function ConfigureBundleFlow() {
         return;
       }
 
-      const appBlockId = `${apiKey}/${blockHandle}`;
+      const placementBlockHandle = activeSection === "bundle_widget"
+        ? (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block")
+        : blockHandle;
+      const appBlockId = `${apiKey}/${placementBlockHandle}`;
 
 
       // Generate deep link following Shopify's official documentation with bundle ID
@@ -1160,7 +1163,7 @@ export default function ConfigureBundleFlow() {
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id]);
+  }, [activeSection, blockHandle, shop, shopify, bundle.id, upsellWidgetDisplayMode, apiKey]);
 
   // Sync Bundle modal ref
   const syncModalRef = useRef<HTMLElement>(null);
@@ -2817,13 +2820,9 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="vertical" gap="200">
                         <s-heading size="small">Put the Bundle Builder at a custom location</s-heading>
                         <s-text size="small" tone="subdued">Place app block on the theme.</s-text>
-                        {themeEditorUrl ? (
-                          <s-button variant="secondary" onClick={() => window.open(themeEditorUrl, "_blank")}>
-                            Place Block
-                          </s-button>
-                        ) : (
-                          <s-button variant="secondary" disabled>Place Block</s-button>
-                        )}
+                        <s-button variant="secondary" onClick={handlePlaceWidget}>
+                          Place Block
+                        </s-button>
                       </s-stack>
                     </s-stack>
                   </s-section>
