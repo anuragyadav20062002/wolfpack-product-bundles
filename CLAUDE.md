@@ -434,7 +434,7 @@ For any "parity", "compare", "match competitor" request — conduct a full audit
 5. Document every gap (placement, size, color, spacing, behavior)
 6. Implement only after audit is complete
 
-❌ Do NOT estimate spacing — measure it. ❌ Do NOT skip mobile. ❌ Do NOT implement partial parity.
+❌ Do NOT estimate spacing — measure it. ❌ Do NOT skip mobile for storefront parity. ❌ Do NOT implement partial parity.
 
 ---
 
