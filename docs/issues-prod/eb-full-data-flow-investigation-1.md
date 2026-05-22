@@ -1,16 +1,28 @@
 # Issue: EB Full Data Flow Investigation
 
 **Issue ID:** eb-full-data-flow-investigation-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 00:45
+**Last Updated:** 2026-05-23 19:00
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 19:00 - Completed Phase 16 — FPB non-classic preset ID investigation (inference)
+
+- Opened the "Select template" overlay on Bundle Box (`bundleId: 1`) in the EB admin.
+- Confirmed overlay shows 4 FPB templates: Standard Design, Classic Design (currently selected), Compact Design, Horizontal Design.
+- Attempted to observe the template save request via CDP network panel using multiple interaction paths: Select → Next, Select → Next → Preview bundle, keyboard navigation. All paths produced only `modifyBundleFields` calls carrying UI counter resets (`previewTemplateSelectionModalCnt`, `previewBundleModalCnt`) — no `bundleDesignPresetId` value in any observed request body.
+- Verified Bundle Box storefront after each attempt: `bundleDesignPresetId` remained `CLASSIC` in `window.gbb.settings.stepsConfigurationData`, confirming no save occurred through the observable path.
+- Checked EB widget JS (`easy-bundle-full-page-min.js`) for preset ID constants — widget does not use `bundleDesignPresetId` at all (admin-only field).
+- Attempted WebFetch of EB admin Next.js chunks — blocked (404 / SPA with dynamic chunk names).
+- **Conclusion:** Preset IDs for non-classic templates inferred from CDN image filename pattern (`landing-page-template-{name}-design.avif` → uppercase `{NAME}`): Standard → `STANDARD`, Compact → `COMPACT`, Horizontal → `HORIZONTAL`. This matches the confirmed `CLASSIC` convention. `bundleDesignTemplate` for non-classic designs remains unknown.
+- Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` Phase 4 FPB template table with inferred values + explanation. Updated Gaps section to reflect investigation outcome.
+- Phase 16 marked complete (inference). Investigation is now fully closed.
 
 ### 2026-05-22 17:22 - Started EB data-flow investigation
 - Reviewed repo instructions, existing EB competitor docs, internal widget/database docs, graph report, and prior parity memory.
@@ -97,4 +109,4 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - [x] Phase 13: Enumerate all 4 PPB templates (`bundleDesignTemplate` + `templateId` pairs)
 - [x] Phase 14: Discover and document FPB two-field template system (`bundleDesignTemplate` + `bundleDesignPresetId`)
 - [x] Phase 15: Capture `displayVariantsAsIndividualProducts: true` DOM structure with multi-variant products
-- [ ] Phase 16: Confirm FPB non-classic preset IDs (STANDARD/COMPACT/HORIZONTAL) — requires a store bundle using those templates
+- [x] Phase 16: Confirm FPB non-classic preset IDs — inferred as STANDARD/COMPACT/HORIZONTAL from naming convention; network confirmation blocked by overlay OOPIF architecture

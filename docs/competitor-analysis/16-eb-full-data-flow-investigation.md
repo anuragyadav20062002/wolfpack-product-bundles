@@ -895,8 +895,7 @@ No cursor variables (`after: $cursor`), no `pageInfo { hasNextPage endCursor }`,
 
 Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination architecture. Phase 4 closed template enumeration and variant display DOM rendering. Remaining limits:
 
-- **FPB non-classic preset IDs**: `bundleDesignPresetId` values for Standard Design, Compact Design, and Horizontal Design are unconfirmed. Both test FPB bundles use `CLASSIC`. The naming convention suggests `"STANDARD"`, `"COMPACT"`, `"HORIZONTAL"` but this cannot be confirmed without a bundle created with those templates.
-- **FPB template save request**: The `modifyBundleFields` call observed when clicking "Next" in the template overlay only resets a UI counter — the actual template value persistence fires from a mechanism outside the main CDP network context and was not captured across multiple attempts.
+- **FPB non-classic preset IDs** (Phase 16 — investigated, inference only): `bundleDesignPresetId` values for Standard Design, Compact Design, and Horizontal Design are inferred as `STANDARD`, `COMPACT`, `HORIZONTAL` from the confirmed `CLASSIC` naming pattern and CDN image filenames. Network confirmation is blocked — the template save fires from within the App Bridge overlay OOPIF and is not captured in the admin.shopify.com CDP network panel regardless of the interaction path used (Select → Next, Select → Next → Preview bundle all attempted). `bundleDesignTemplate` for non-classic designs remains unknown.
 - Screenshots were not committed, per repo rule. Browser snapshots and network evidence were inspected live through Chrome DevTools.
 
 These remaining limits do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
@@ -938,16 +937,18 @@ FPB uses two separate fields to identify a template, not one:
 | `bundleDesignTemplate` | `stepsConfigurationData.bundleDesignTemplate` | High-level layout class selector |
 | `bundleDesignPresetId` | `stepsConfigurationData.bundleDesignPresetId` | Fine-grained preset variant within that layout |
 
-**Confirmed values** (from `getPageRelavantDataOnly` API response + live storefront `gbb.settings.stepsConfigurationData`):
+**Confirmed + inferred values** (Classic confirmed from `getPageRelavantDataOnly` API response + live storefront `gbb.settings.stepsConfigurationData`; non-classic `bundleDesignPresetId` values inferred from UI display names and image filenames):
 
 | Display Name | `bundleDesignTemplate` | `bundleDesignPresetId` |
 |---|---|---|
-| Classic Design | `FBP_SIDE_FOOTER` | `CLASSIC` |
-| Standard Design | unconfirmed | unconfirmed |
-| Compact Design | unconfirmed | unconfirmed |
-| Horizontal Design | unconfirmed | unconfirmed |
+| Classic Design | `FBP_SIDE_FOOTER` | `CLASSIC` ✅ confirmed |
+| Standard Design | unconfirmed | `STANDARD` (inferred) |
+| Compact Design | unconfirmed | `COMPACT` (inferred) |
+| Horizontal Design | unconfirmed | `HORIZONTAL` (inferred) |
 
-Both test FPB bundles (`bundleId: 1` and `bundleId: 2`) use `FBP_SIDE_FOOTER` / `CLASSIC`. No bundle using a non-classic FPB preset is present in the store, so the remaining three preset IDs could not be enumerated.
+**Inference basis:** The EB admin overlay CDN image filenames follow the pattern `landing-page-template-{lowercase-display-name}-design.avif`. The confirmed case (`landing-page-template-classic-design.avif` → `CLASSIC`) shows a direct uppercase mapping. The remaining images are `landing-page-template-standard-design.avif`, `landing-page-template-compact-design.avif`, and `landing-page-template-horizontal-design.avif`, implying `STANDARD`, `COMPACT`, and `HORIZONTAL` respectively. The `bundleDesignTemplate` layout class for non-classic designs is unknown; they may use `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` or `FBP_SIDE_FOOTER` with a different preset.
+
+**Network confirmation blocked:** The template save fires from within the Shopify App Bridge overlay OOPIF to `prod.backend.giftbox.giftkart.app` through a path not captured in the admin.shopify.com CDP network panel. `modifyBundleFields` (the only observable backend call from the overlay) carries only UI counter resets (`previewTemplateSelectionModalCnt`, `previewBundleModalCnt`), not the template value. Multiple interaction paths were attempted (Select → Next, Select → Next → Preview bundle, keyboard navigation) with the same result.
 
 **FPB widget `DESIGN_TEMPLATE_CONFIGS` constant** (from `easy-bundle-full-page-min.js`):
 
