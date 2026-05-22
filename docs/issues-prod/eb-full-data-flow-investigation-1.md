@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-22 22:15
+**Last Updated:** 2026-05-23 00:45
 
 ## Overview
 
@@ -38,6 +38,18 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - Captured `mixAndMatch/update` payloads showing populated `productsData1.conditions`, `discountConfiguration`, `metafieldData.discount`, and `defaultProductsData`.
 - Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` with the new serialized shapes and removed the stale blocker language for PPB conditions, discounts, and defaults.
 - Remaining limits: did not add a second step, did not complete box/sidebar/footer/cart settings, and did not change PPB variant-display toggle values.
+
+### 2026-05-23 00:45 - Completed Phase 4 — template enumeration and variant display DOM
+
+- Enumerated all 4 PPB templates via `mixAndMatch/update` interception: `PDP_INPAGE`/`CASCADE` (Product List), `PDP_INPAGE`/`COGNIVE` (Product Grid), `PDP_MODAL`/`MODAL` (Horizontal Slots), `PDP_MODAL`/`SIMPLIFIED` (Vertical Slots).
+- Discovered FPB uses a two-field template system: `bundleDesignTemplate` + `bundleDesignPresetId`.
+- Confirmed Classic Design: `bundleDesignTemplate: "FBP_SIDE_FOOTER"`, `bundleDesignPresetId: "CLASSIC"` (confirmed on both bundleId=1 Bundle Box and bundleId=2 WPB Research Landing Bundle via API response + storefront `gbb.settings.stepsConfigurationData`).
+- Extracted `DESIGN_TEMPLATE_CONFIGS` constant from `easy-bundle-full-page-min.js`: `FBP_SIDE_FOOTER → gbbMinimilisticLayout`, `BUILD_FROM_SCRATCH_NEWPRODUCTCARD → gbbProductsCardLayoutV2`.
+- Documented FPB DOM rendering: `body[gbb-bundle-design-preset-id]`, `.gbbPageBody[data-template-id]`, CSS classes.
+- Confirmed FPB template save fires outside CDP observable context (multiple attempts); `modifyBundleFields` only resets UI counter.
+- Captured `displayVariantsAsIndividualProducts: true` DOM: Category 2 of WPB Research PPB has multi-variant products (Yellow Sofa 3 variants, 18k Pedal Ring 6 sizes). Each variant renders as its own `gbbMixCascadeProductWrapper` with `gbbMixCascadeCurrentVariantTitle` subtitle and unique `data-current-selected-variant-id`. Parent product ID repeated across all variant cards.
+- Deleted 3 temp network files. Updated research doc with Phase 4 section.
+- Remaining gap: FPB non-classic preset IDs (STANDARD/COMPACT/HORIZONTAL unconfirmed — no bundle in store uses them).
 
 ### 2026-05-22 22:15 - Completed Phase 3 — collection pagination and multi-step navigation
 
@@ -82,3 +94,7 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - [x] Phase 10: Document FPB vs PPB cart add comparison and `bundle_details` metafield pattern
 - [x] Phase 11: Capture collection pagination architecture (no cursor queries — `nodes(ids:[])` batches)
 - [x] Phase 12: Capture multi-step navigation DOM, JS state transitions, and footer changes
+- [x] Phase 13: Enumerate all 4 PPB templates (`bundleDesignTemplate` + `templateId` pairs)
+- [x] Phase 14: Discover and document FPB two-field template system (`bundleDesignTemplate` + `bundleDesignPresetId`)
+- [x] Phase 15: Capture `displayVariantsAsIndividualProducts: true` DOM structure with multi-variant products
+- [ ] Phase 16: Confirm FPB non-classic preset IDs (STANDARD/COMPACT/HORIZONTAL) — requires a store bundle using those templates

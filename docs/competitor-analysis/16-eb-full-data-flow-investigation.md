@@ -893,10 +893,165 @@ No cursor variables (`after: $cursor`), no `pageInfo { hasNextPage endCursor }`,
 
 ## Gaps And Blockers
 
-Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination architecture. Remaining limits:
+Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination architecture. Phase 4 closed template enumeration and variant display DOM rendering. Remaining limits:
 
-- Alternative template IDs: only `FBP_SIDE_FOOTER` + `CLASSIC` (FPB) and `PDP_INPAGE` + `CASCADE` (PPB) were observed. Other layout/preset enum values were not enumerated.
-- `displayVariantsAsIndividualProducts: true` DOM rendering: both test products have only one variant, so no visual difference was observable. A multi-variant product would be needed to observe individual variant cards or swatches.
+- **FPB non-classic preset IDs**: `bundleDesignPresetId` values for Standard Design, Compact Design, and Horizontal Design are unconfirmed. Both test FPB bundles use `CLASSIC`. The naming convention suggests `"STANDARD"`, `"COMPACT"`, `"HORIZONTAL"` but this cannot be confirmed without a bundle created with those templates.
+- **FPB template save request**: The `modifyBundleFields` call observed when clicking "Next" in the template overlay only resets a UI counter — the actual template value persistence fires from a mechanism outside the main CDP network context and was not captured across multiple attempts.
 - Screenshots were not committed, per repo rule. Browser snapshots and network evidence were inspected live through Chrome DevTools.
 
 These remaining limits do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
+
+---
+
+## Phase 4 — Template Enumeration and Variant Display DOM
+
+### PPB Template Table (Complete)
+
+All 4 PPB templates enumerated via `POST /api/mixAndMatch/update` interception on `WPB Research Product Page Bundle 2026-05-22` (offerId: `MIX-894502`). The two-field shape:
+
+```json
+{
+  "bundleDesignTemplate": "PDP_INPAGE | PDP_MODAL",
+  "bundleDesignTemplateData": {
+    "templateId": "CASCADE | MODAL | COGNIVE | SIMPLIFIED"
+  }
+}
+```
+
+| Display Name | `bundleDesignTemplate` | `templateId` |
+|---|---|---|
+| Product List | `PDP_INPAGE` | `CASCADE` |
+| Product Grid | `PDP_INPAGE` | `COGNIVE` |
+| Horizontal Slots | `PDP_MODAL` | `MODAL` |
+| Vertical Slots | `PDP_MODAL` | `SIMPLIFIED` |
+
+The outer `bundleDesignTemplate` controls the modal/inline distinction. The `templateId` inside `bundleDesignTemplateData` selects the card layout preset within that mode. PPB has no separate `bundleDesignPresetId` field.
+
+---
+
+### FPB Template Architecture (Two-Field System)
+
+FPB uses two separate fields to identify a template, not one:
+
+| Field | Location | Role |
+|---|---|---|
+| `bundleDesignTemplate` | `stepsConfigurationData.bundleDesignTemplate` | High-level layout class selector |
+| `bundleDesignPresetId` | `stepsConfigurationData.bundleDesignPresetId` | Fine-grained preset variant within that layout |
+
+**Confirmed values** (from `getPageRelavantDataOnly` API response + live storefront `gbb.settings.stepsConfigurationData`):
+
+| Display Name | `bundleDesignTemplate` | `bundleDesignPresetId` |
+|---|---|---|
+| Classic Design | `FBP_SIDE_FOOTER` | `CLASSIC` |
+| Standard Design | unconfirmed | unconfirmed |
+| Compact Design | unconfirmed | unconfirmed |
+| Horizontal Design | unconfirmed | unconfirmed |
+
+Both test FPB bundles (`bundleId: 1` and `bundleId: 2`) use `FBP_SIDE_FOOTER` / `CLASSIC`. No bundle using a non-classic FPB preset is present in the store, so the remaining three preset IDs could not be enumerated.
+
+**FPB widget `DESIGN_TEMPLATE_CONFIGS` constant** (from `easy-bundle-full-page-min.js`):
+
+```javascript
+const DESIGN_TEMPLATE_CONFIGS = {
+  BUILD_FROM_SCRATCH_NEWPRODUCTCARD: { value: "gbbProductsCardLayoutV2" },
+  FBP_SIDE_FOOTER:                   { value: "gbbMinimilisticLayout" }
+};
+```
+
+**DOM rendering logic** (`insertWrapperIntoBody`):
+
+```javascript
+// 1. If bundleDesignTemplate is in DESIGN_TEMPLATE_CONFIGS, add CSS classes
+if (bundleDesignTemplate in DESIGN_TEMPLATE_CONFIGS) {
+  [DESIGN_TEMPLATE_CONFIGS[bundleDesignTemplate].value, "gbbProductsCardLayoutV2"]
+    .forEach(cls => $(".gbbPageBody").addClass(cls));
+  $(".gbbPageBody").attr("data-template-id", bundleDesignTemplate);
+}
+
+// 2. Apply bundleDesignPresetId as a body attribute (drives CSS for non-classic presets)
+$("body").attr("gbb-bundle-design-preset-id", bundleDesignPresetId);
+```
+
+**Observed DOM for Classic Design (FBP_SIDE_FOOTER / CLASSIC):**
+
+```html
+<body gbb-bundle-design-preset-id="CLASSIC">
+  <div class="gbbPageBody gbbMinimilisticLayout gbbProductsCardLayoutV2 bundle-2"
+       data-template-id="FBP_SIDE_FOOTER"
+       id="gbbBundle"
+       ...>
+```
+
+For non-classic FPB designs, `body` still gets `gbb-bundle-design-preset-id` set to the preset value, and `gbbMinimilisticLayout` would NOT be added (only `gbbProductsCardLayoutV2`). CSS keyed on `[gbb-bundle-design-preset-id]` drives the visual differentiation.
+
+**FPB template save mechanism**: The "Select template" overlay in the EB Admin does NOT fire a separate backend save request in the observable CDP network panel context. The `modifyBundleFields` call that fires when clicking "Next" only resets the `previewTemplateSelectionModalCnt` counter. The actual template save mechanism is confirmed to operate outside the main CDP context (likely via Shopify App Bridge cross-iframe postMessage). This was confirmed across multiple click attempts.
+
+---
+
+### PPB `displayVariantsAsIndividualProducts: true` DOM Rendering
+
+**Setting:** When `displayVariantsAsIndividualProducts: true` is set on a PPB category, each variant of a multi-variant product is rendered as a completely independent product card.
+
+**JS state representation**: The `state.categories[categoryId].allProducts` array is pre-flattened by the widget — each entry represents a single variant:
+
+```json
+// Multi-variant product (Yellow Sofa — 3 variants) becomes 3 separate entries:
+[
+  { "id": 8322634088644, "title": "Yellow Sofa", "variantCount": 1, "variantTitles": ["Yellow Sofa - 2 Seater"] },
+  { "id": 8322634088644, "title": "Yellow Sofa", "variantCount": 1, "variantTitles": ["Yellow Sofa - 3 seater"] },
+  { "id": 8322634088644, "title": "Yellow Sofa", "variantCount": 1, "variantTitles": ["Yellow Sofa - 4 seater"] }
+]
+```
+
+Note: `id` is the **parent product ID** (same across all variants of the same product). `variantCount` is always `1` because the widget flattens into individual variant rows. The variant title becomes the card subtitle.
+
+**DOM structure per variant card** (from live Category 2 snapshot on WPB Research PPB):
+
+```html
+<!-- Each variant = its own gbbMixCascadeProductWrapper -->
+<div class="gbbMixCascadeProductWrapper"
+     data-product-id="8322634088644"
+     data-current-selected-variant-id="45038899691716"
+     data-product-quantity="0"
+     data-is-preorder="false">
+
+  <div class="gbbMixCascadeProductLeftSection">
+    <div class="gbbMixCascadeProductImageWrapper">
+      <img class="gbbMixCascadeProductImage" src="..." />
+    </div>
+    <div class="gbbMixCascadeProductsDetailsWrapper">
+      <div class="gbbMixCascadeProductTitle">Yellow Sofa</div>
+      <div class="gbbMixCascadeProductsPriceWrapper">
+        <div class="gbbMixCascadeProductsPrice">₹99.99</div>
+        <div class="gbbMixCascadeProductCompareAtPrice">₹150</div>
+      </div>
+      <!-- Variant subtitle — unique per card, absent when displayVariantsAsIndividualProducts is false -->
+      <div class="gbbMixCascadeCurrentVariantTitle">2 Seater</div>
+    </div>
+  </div>
+
+  <div class="gbbMixCascadeProductRightSection">
+    <div class="gbbMixCascadeProductBtnWrapper">
+      <div class="gbbMixCascadeAddBtn" data-is-event-registered="REGISTERED">Add +</div>
+    </div>
+  </div>
+</div>
+```
+
+**Key differentiators vs `displayVariantsAsIndividualProducts: false`**:
+
+| Field | `true` | `false` |
+|---|---|---|
+| Cards per multi-variant product | One card **per variant** | One card **per product** |
+| `data-product-id` | Parent product ID (repeated for each variant of the same product) | Parent product ID (unique per card) |
+| `data-current-selected-variant-id` | Variant-specific ID | Either default variant or user-selected variant |
+| `gbbMixCascadeCurrentVariantTitle` | Present — shows variant title | Absent |
+| Variant selector | None (no dropdown/swatches) | Likely present (not observed — no multi-variant products with `false` in test data) |
+
+**Observed example: Yellow Sofa (3 variants) in Category 2:**
+
+| Card | `data-product-id` | `data-current-selected-variant-id` | Variant subtitle |
+|---|---|---|---|
+| Card 1 | `8322634088644` | `45038899691716` | "2 Seater" |
+| Card 2 | `8322634088644` | `45038899724484` | "3 seater" |
+| Card 3 | `8322634088644` | `45038899757252` | "4 seater" |
