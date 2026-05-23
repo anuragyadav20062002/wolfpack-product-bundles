@@ -4,13 +4,21 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 23:30
+**Last Updated:** 2026-05-23 23:55
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 23:55 - Docs organized; EB Implementation Reference created in internal docs vault
+
+- Created `internal docs/EB Implementation Reference.md` — topic-organized distilled reference (admin endpoints, FPB/PPB data contracts, template ID enums, storefront globals, cart add payloads, box selection, text config, mixAndMatchBundleSettings, Wolfpack DB alignment). Sourced entirely from Phase 1–9 evidence.
+- Updated `internal docs/index.md` with an "EB Implementation Reference" block making it the mandatory first stop for EB porting questions.
+- Added `## 🎯 EB Implementation Reference` section to `CLAUDE.md` with mandatory search order: internal doc first, then full evidence record, then live investigation.
+- Updated `docs/competitor-analysis/00-index.md` to note the internal docs distilled reference alongside the primary evidence record entry.
+- Files changed: `internal docs/EB Implementation Reference.md` (new), `internal docs/index.md`, `CLAUDE.md`, `docs/competitor-analysis/00-index.md`.
 
 ### 2026-05-23 23:30 - Phase 9 complete — all 8 gaps fully resolved; investigation complete
 
@@ -163,3 +171,4 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - [x] Phase 20: Gap 7 (`productsData2` storefront shape) — present in stepsConfigurationData; empty steps included
 - [x] Phase 21: Gaps 6 & 8 partial — `pageCustomizationData.mixAndMatchData` full shape; `bundleTextConfig` runtime shape
 - [x] Phase 22: Gaps 2, 6, 8 fully resolved — `gbbBoxSelection.state` schema + ATC enforcement decompiled; `mixAndMatchBundleSettings` 25+ field schema + admin location; `bundleTextConfig` confirmed single sub-key; all 8 gaps ✅ RESOLVED
+- [x] Phase 23: Docs organized — `internal docs/EB Implementation Reference.md` created (topic-organized distilled reference); CLAUDE.md updated with mandatory EB porting search order; `00-index.md` updated; `internal docs/index.md` updated
