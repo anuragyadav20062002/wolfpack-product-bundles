@@ -893,12 +893,16 @@ No cursor variables (`after: $cursor`), no `pageInfo { hasNextPage endCursor }`,
 
 ## Gaps And Blockers
 
-Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination architecture. Phase 4 closed template enumeration and variant display DOM rendering. Remaining limits:
+Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination. Phase 4 closed template enumeration, FPB preset CSS confirmation, and variant display DOM rendering. Phase 5 confirmed PPB template dispatch architecture. Phases 6 and 7 captured the complete FPB and PPB template CSS from static analysis. **Eight gaps remain unconfirmed** — see the "Confirmed Gaps" section at the end of this document for exact reproduction steps for each.
 
-- **FPB non-classic preset IDs** (Phase 16 — fully resolved): All four FPB preset/template combinations confirmed via JS + CSS static analysis. `bundleDesignTemplate` is `FBP_SIDE_FOOTER` for all four designs; `bundleDesignPresetId` is `CLASSIC`, `STANDARD`, `COMPACT`, or `HORIZONTAL`. `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` is a legacy key in `DESIGN_TEMPLATE_CONFIGS` not used by any current preset. Network observation of the template save was not possible (overlay OOPIF), but the CSS scoping of `COMPACT`/`HORIZONTAL` rules inside `.gbbMinimilisticLayout` makes `FBP_SIDE_FOOTER` the only valid `bundleDesignTemplate` for all four presets.
-- Screenshots were not committed, per repo rule. Browser snapshots and network evidence were inspected live through Chrome DevTools.
+Fully resolved:
+- FPB non-classic preset IDs (`STANDARD`, `COMPACT`, `HORIZONTAL`) — confirmed via CSS scoping inside `.gbbMinimilisticLayout`; all four presets use `bundleDesignTemplate: "FBP_SIDE_FOOTER"`
+- FPB template CSS — all four preset rules extracted (Phase 6)
+- PPB template CSS — CASCADE base, COGNIVE, MODAL, SIMPLIFIED all extracted (Phase 7)
+- PPB template dispatch — binary `PDP_INPAGE` vs `PDP_MODAL` confirmed (Phase 5)
+- Screenshots were not committed, per repo rule
 
-These remaining limits do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
+These remaining gaps do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
 
 ---
 
@@ -1179,3 +1183,768 @@ This contrasts with FPB, which uses body attribute selectors (`body[gbb-bundle-d
 | Product Grid | `PDP_INPAGE` | `COGNIVE` | `gbbMix.templates.CASCADE.init()` + COGNIVE override | Body repositioned after selected step |
 | Horizontal Slots | `PDP_MODAL` | `MODAL` | `gbbMix.gbbMixAndMatchBundle.initialize()` | `renderFilledSlotsAsHorizontalStacked: true` → `gbbMixProductPageCategoriesWrapperHStacked` |
 | Vertical Slots | `PDP_MODAL` | `SIMPLIFIED` | `gbbMix.gbbMixAndMatchBundle.initialize()` | `renderFilledSlotsAsHorizontalStacked: false` → `gbbMixProductPageCategoriesWrapperVStacked` |
+
+---
+
+## Phase 6 — FPB Template CSS (Static Analysis)
+
+**Source:** `easy-bundle-full-page-min.css` (250,382 bytes, CloudFront CDN: `https://d1712zxri13o2p.cloudfront.net/full-page-bundle/production/active/easy-bundle-full-page-min.css`)
+
+**Method:** `curl` + Python brace-counting extraction of each full rule block.
+
+FPB CSS uses nested CSS (CSS Nesting Level 3). All template preset rules scope their overrides inside `.gbbMinimilisticLayout`, confirming that `bundleDesignTemplate = "FBP_SIDE_FOOTER"` (which adds that class) is required for all four presets. CSS custom properties (DCP variables) use the `--gbb-*` namespace.
+
+### STANDARD Design — base `.gbbMinimilisticLayout`
+
+**No `body[gbb-bundle-design-preset-id]` override.** STANDARD is the default layout: cards render in a vertical grid, footer is a sticky sidebar, and category tabs are plain underlined text links. All other presets override ON TOP of this base.
+
+Key base layout rules:
+
+```css
+.gbbMinimilisticLayout {
+  max-width: 1536px;
+  margin: 0 auto;
+
+  /* Product card grid */
+  .gbbProductItem {
+    gap: 8px;
+    border-radius: var(--gbb-side-footer-corner-border-radius);
+    border: none;
+    outline: 2px solid #f1f2f3;
+    grid-template-rows: 3fr 0.5fr 0.5fr;   /* image : text : action */
+  }
+
+  .gbbProductActionContainer {
+    grid-template-columns: 0.6fr .4fr;
+    grid-template-rows: 1fr;
+  }
+
+  /* Category nav: plain tab underline, not pill */
+  .gbbCategoryTabContainer {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5px;
+    align-items: center;
+    cursor: pointer;
+    padding: 10px;
+  }
+  .gbbCategoryTabContainer[data-is-active="true"] {
+    border-bottom: 2px solid var(--gbb-category-tab-active-text-color);
+  }
+
+  /* Desktop: sidebar footer + 3-col product grid */
+  .gbbMultipleCategoryBodyContainer {
+    display: grid;
+    grid-template-columns: 1fr .45fr;
+    gap: 15px;
+  }
+
+  /* Box selection: 3 cols by default, 2 cols for 2 or 4 rules */
+  .gbbBoxSelectionWrapper {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    text-align: center;
+  }
+  .gbbBoxSelectionWrapper[data-total-rules="2"],
+  .gbbBoxSelectionWrapper[data-total-rules="4"] { grid-template-columns: repeat(2, 1fr); }
+  .gbbBoxSelectionWrapper[data-total-rules="1"] { grid-template-columns: repeat(1, 1fr); }
+
+  /* Footer: sticky right panel on desktop */
+  @media (min-width: 800px) {
+    .gbbPageFooterHTML {
+      width: 100%;
+      height: fit-content;
+      padding: 20px;
+      border-radius: var(--gbb-side-footer-corner-border-radius);
+      position: sticky;
+      top: 10%;
+      border: 1px solid #E3E3E3;
+    }
+    .gbbProductsItemsContainer { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* 3-col on 1192px+, 2-col on 800–1024px, 3-col on 1192px+ */
+  @media (min-width: 1192px) { .gbbProductsItemsContainer { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 800px) and (max-width: 1024px) {
+    .gbbProductsItemsContainer { grid-template-columns: repeat(2, 1fr); }
+    .gbbMultipleCategoryBodyContainer { grid-template-columns: 1fr .7fr; }
+  }
+  @media (max-width: 768px) { .gbbMultipleCategoryBodyContainer { grid-template-columns: 1fr; } }
+}
+```
+
+---
+
+### CLASSIC Design
+
+**Selector:** `body[gbb-bundle-design-preset-id="CLASSIC"] { .gbbMinimilisticLayout { … } }`
+
+Key differences vs STANDARD: category tabs are pill-shaped with border-radius 99px; inactive tabs use `--gbb-tab-inactive-bg-color`; footer slot thumbnails are 80×80px; product grid switches to 4-col on desktop; box selection has a border and rounded corners.
+
+```css
+body[gbb-bundle-design-preset-id="CLASSIC"] {
+  .gbbMinimilisticLayout {
+    /* Category tabs: pill shape */
+    .gbbCategoryTabContainer {
+      border: 2px solid var(--gbb-category-tab-active-text-color);
+      border-radius: 99px;
+      grid-template-columns: 1fr;
+      padding: 4px 22px;
+      background-color: var(--gbb-tab-inactive-bg-color);
+    }
+    .gbbCategoryTabContainer .gbbCategoryTabTitle { color: var(--gbb-tab-inactive-text-color); }
+    .gbbCategoryTabContainer[data-is-active="true"] {
+      background-color: var(--gbb-tab-active-bg-color);
+    }
+    .gbbCategoryTabContainer[data-is-active="true"] .gbbCategoryTabTitle {
+      color: var(--gbb-tab-active-text-color);
+    }
+    .gbbMultipleCategoryTabsContainer { gap: 8px; }
+
+    /* Remove borders from structural sections */
+    .gbbMultipleCategoryHeaderContainer,
+    .gbbProductTitleOnly,
+    .gbbPageFooterHTML,
+    .gbbSlotFooterProductImageContainer { border: none; }
+
+    /* Product title: centered */
+    .gbbProductTitleOnly { text-align: center; }
+    .gbbProductATCWithContentWrapper .gbbProductItemPricesContainer { place-content: center; }
+
+    /* Slot footer: empty slot dashed border */
+    .gbbSlotFooterProductContainerEmpty {
+      background-color: transparent;
+      border-radius: 0px;
+      color: var(--gbb-cart-footer-next-button-color);
+      border: 2px dashed;
+    }
+    .gbbSlotFooterProductImageContainer { height: 80px; }
+
+    /* Box selection: bordered rounded container */
+    .gbbBoxSelectionWrapper {
+      padding: 8px;
+      border: 2px solid var(--gbb-box-selection-active-bg-color);
+      border-radius: var(--gbb-product-card-border-radius);
+    }
+
+    .gbbSlotFooterProductQuantity {
+      background: var(--gbb-cart-footer-next-button-color);
+      color: var(--gbb-cart-footer-next-button-text-color);
+    }
+
+    @media (min-width: 769px) {
+      .gbbMultipleCategoryTabsContainer { justify-content: center; }
+      .gbbMultipleCategoryBody, .gbbPersonalizePageHTML { max-width: 95%; }
+      /* 4-col product grid on desktop */
+      .gbbProductsItemsContainer { grid-template-columns: repeat(4, 1fr); }
+      .gbbSlotFooterProductsContainer {
+        grid-template-columns: repeat(auto-fit, minmax(80px, 80px));
+      }
+      .gbbSlotFooterProductContainer { height: 80px; width: 80px; }
+    }
+    @media (max-width: 768px) {
+      .gbbCategoryTabContainer { padding: 4px 14px; }
+    }
+  }
+}
+```
+
+---
+
+### COMPACT Design
+
+**Selector:** `body[gbb-bundle-design-preset-id="COMPACT"] { .gbbMinimilisticLayout { … } }`
+
+Key differences vs STANDARD: tabs use an inverted color scheme (active BG color as inactive BG, active text as inactive text); box selection tiers are pill-shaped with a "subtext badge" pinned to the top-right; desktop layout switches to a 60/40 content/sidebar split; slot thumbnails are larger (120×120px with 20px border-radius).
+
+```css
+body[gbb-bundle-design-preset-id="COMPACT"] {
+  .gbbMinimilisticLayout {
+    /* Category tabs: inverted pills */
+    .gbbCategoryTabContainer {
+      border: 2px solid var(--gbb-tab-active-bg-color);
+      grid-template-columns: 1fr;
+      padding: 4px 22px;
+      background-color: var(--gbb-tab-active-text-color); /* inverted: active text color as bg */
+      border-radius: 99px;
+    }
+    .gbbCategoryTabContainer .gbbCategoryTabTitle { color: var(--gbb-tab-active-bg-color); }
+    .gbbCategoryTabContainer[data-is-active="true"] {
+      background-color: var(--gbb-tab-active-bg-color);
+    }
+    .gbbCategoryTabContainer[data-is-active="true"] .gbbCategoryTabTitle {
+      color: var(--gbb-tab-active-text-color);
+    }
+    .gbbMultipleCategoryTabsContainer { gap: 8px; }
+
+    .gbbMultipleCategoryHeaderContainer,
+    .gbbProductTitleOnly,
+    .gbbPageFooterHTML,
+    .gbbSlotFooterProductImageContainer { border: none; }
+
+    /* Box selection: outlined pill tiers */
+    .gbbBoxSelectionWrapper { padding: 8px; }
+    .gbbBoxSelectionItem,
+    .gbbBoxSelectionItem.gbbBoxSelectionItemActive { outline: none; border: 2px solid; }
+    .gbbBoxSelectionItem {
+      padding: 10px 0px;
+      position: relative;
+      background-color: var(--gbb-box-selection-active-text-color);
+      color: var(--gbb-box-selection-active-bg-color);
+    }
+    .gbbBoxSelectionItem.gbbBoxSelectionItemActive {
+      background-color: var(--gbb-box-selection-active-bg-color);
+      color: var(--gbb-box-selection-active-text-color);
+    }
+    /* Subtext badge: pinned top-right */
+    .gbbBoxSelectionSubtext {
+      position: absolute;
+      top: 80%;
+      right: 0px;
+      padding: 4px 12px;
+      border-radius: 99px;
+      border: 1px solid var(--gbb-box-selection-active-bg-color);
+      font-size: 10px;
+      color: var(--gbb-box-selection-active-bg-color);
+      background: var(--gbb-box-selection-active-text-color);
+    }
+
+    .gbbSlotFooterProductContainerEmpty {
+      background-color: transparent;
+      border: 2px dashed var(--gbb-cart-footer-next-button-color);
+    }
+
+    @media (min-width: 769px) {
+      /* 60/40 body split */
+      .gbbMultipleCategoryBodyContainer, .gbbPersonalizePageBodyWrapper {
+        grid-template-columns: .6fr .4fr;
+        gap: 30px;
+      }
+      /* Large slot thumbnails */
+      .gbbSlotFooterProductsContainer {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 120px));
+      }
+      .gbbSlotFooterProductImageContainer,
+      .gbbSlotFooterProductContainer { height: 120px; width: 120px; border-radius: 20px; }
+      .gbbBoxSelectionItem { padding: 12px 24px; }
+      .gbbBoxSelectionWrapper[data-total-rules="4"] { grid-template-columns: repeat(4, 1fr); }
+    }
+  }
+}
+```
+
+---
+
+### HORIZONTAL Design
+
+**Selector:** `body[gbb-bundle-design-preset-id="HORIZONTAL"] { .gbbMinimilisticLayout { … } }`
+
+Key differences vs STANDARD: each product card uses a horizontal 2-column layout (image left spanning full height, text/action stacked on the right); desktop product grid drops to 2-col; footer action area switches to 1-col stacked; no pill tabs (inherits STANDARD underline style).
+
+```css
+body[gbb-bundle-design-preset-id="HORIZONTAL"] {
+  .gbbMinimilisticLayout {
+    /* Product card: image left, content right */
+    .gbbProductItem {
+      grid-template-columns: .3fr .7fr;
+      grid-template-rows: .2fr auto .2fr;
+    }
+    .gbbProductImageContainer {
+      grid-column: 1;
+      grid-row: 1 / span 3;             /* image spans all 3 rows */
+    }
+    .gbbProductTextContainer  { grid-column: 2; grid-row: 1; align-self: start; }
+    .gbbProductDynamicContentContainer { grid-column: 2; grid-row: 2; }
+    .gbbProductActionContainer { grid-column: 2; grid-row: 3; }
+
+    .gbbProductImageContainerImg,
+    .gbbProductImageContainer { min-height: 140px; max-height: 140px; }
+    .gbbProductImageContainer img { object-fit: contain !important; }
+
+    /* With variant dropdown: add a 4th row */
+    .gbbProductItem:has(.gbbVariantDropdownWrapper) {
+      grid-template-rows: .2fr auto .2fr .2fr;
+      .gbbProductImageContainer { grid-row: 1 / span 4; }
+      .gbbVariantDropdownWrapper { grid-column: 2; grid-row: 3; align-self: end; }
+      .gbbProductActionContainer { grid-row: 4; }
+    }
+
+    /* Footer: list rows separated by horizontal lines */
+    .gbbFooterProductsContainer {
+      gap: 0px;
+      grid-template-rows: max-content;
+    }
+    .gbbFooterProductsContainer > * {
+      padding: 10px 0px;
+      border-bottom: 1px solid #E3E3E3;
+    }
+
+    /* Slot thumbnails: 90×90px */
+    .gbbSlotFooterProductsContainer {
+      grid-template-columns: repeat(auto-fit, minmax(90px, 90px));
+    }
+    .gbbSlotFooterProductImageContainer,
+    .gbbSlotFooterProductContainer { height: 90px; width: 90px; }
+
+    .gbbFooterActionContainer {
+      grid-template-columns: 1fr;   /* stacked, not side-by-side */
+      row-gap: 15px;
+    }
+    .gbbFooterTotalValueContainer { justify-self: end; }
+
+    .gbbSlotFooterProductContainerEmpty {
+      background-color: transparent;
+      border: 2px dashed var(--gbb-cart-footer-next-button-color);
+    }
+
+    /* Desktop: 65/35 body split, 2-col product grid */
+    @media (min-width: 769px) {
+      .gbbMultipleCategoryBodyContainer, .gbbPersonalizePageBodyWrapper {
+        grid-template-columns: .65fr .35fr;
+      }
+      .gbbFooterTotalContainer { grid-template-columns: 1fr 1fr; }
+      .gbbProductsItemsContainer { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Mobile: 1-col product list, shorter image */
+    @media (max-width: 768px) {
+      .gbbProductsItemsContainer { grid-template-columns: 1fr; }
+      .gbbProductImageContainerImg,
+      .gbbProductImageContainer { min-height: 120px; max-height: 120px; }
+    }
+  }
+}
+```
+
+---
+
+## Phase 7 — PPB Template CSS (Static Analysis)
+
+**Source:** `mixAndMatchBundle.css` (131,220 bytes, CloudFront CDN: `https://d1712zxri13o2p.cloudfront.net/product-page-bundle/production/active/mixAndMatchBundle.css`)
+
+**Method:** `curl` + Python brace-counting extraction. This file is the primary PPB stylesheet — `easy-bundle-min.css` (7,609 bytes) only contains shared cart/upsell styles and has zero template-specific selectors.
+
+PPB CSS uses two scoping mechanisms:
+1. `body[gbbmix-template-id="COGNIVE"|"SIMPLIFIED"]` — template-specific rule blocks
+2. `body[gbb-mix-consolidated-design="true"]` — the "consolidated design" token mapping that bridges DCP variables to widget-internal CSS custom properties
+
+CASCADE (Product List) and MODAL (Horizontal Slots) have NO `body[gbbmix-template-id]` override blocks — they render using the base stylesheet without scoped overrides.
+
+---
+
+### CSS Custom Properties — PPB `:root` Defaults
+
+PPB defines defaults for all DCP-facing variables at `:root`. Merchants override these through DCP settings.
+
+```css
+:root {
+  /* Product card */
+  --product-card-bg-color: #FFFFFF;
+  --product-card-border-radius: 12px;
+  --product-card-image-border-radius: 5px;
+  --product-card-image-fit: cover;
+  --product-card-title-color: #1E1E1E;
+  --product-card-title-font: 16px;
+  --product-card-title-weight: 600;
+  --product-card-price-color: #000000;
+  --product-card-button-bg-color: #000000;
+  --product-card-button-text-color: #FFFFFF;
+  --product-card-button-border-radius: 5px;
+  --product-card-quantity-border-radius: 6px;
+  --product-card-variant-selector-font-size: 12px;
+
+  /* Category tabs */
+  --tabs-active-bg-color: #1E1E1E;
+  --tabs-active-text-color: #FFFFFF;
+  --tabs-inactive-bg-color: #F4F9F9;
+  --tabs-inactive-text-color: #1E1E1E;
+  --tabs-border-radius: 8px;
+
+  /* Footer */
+  --footer-bg-color: #1E1E1ECC;
+  --footer-final-price-color: #000;
+  --footer-next-btn-bg-color: #FFF;
+  --footer-next-btn-text-color: #000;
+  --footer-buttons-border-radius: 10px;
+
+  /* Empty state slot card */
+  --empty-state-card-bg-color: #FFFFFF;
+  --empty-state-card-border-color: #000;
+  --empty-state-card-border-style: dashed;
+  --empty-state-card-text-color: #3e3e3e;
+
+  /* Cart drawer */
+  --drawer-bg-color: #F4F9F9;
+  --drawer-border-radius: 15px 15px 0 0;
+
+  /* Discount progress bar */
+  --footer-discount-progress-bar-empty-color: #C1E7C5;
+  --footer-discount-progress-bar-filled-color: #15A524;
+
+  /* CASCADE-specific */
+  --cascade-product-card-btn-radius: 100px;
+  --cascade-product-card-image-border-radius: 6px;
+  --cascade-atc-button-border-radius: 6px;
+  --cascade-atc-button-font-size: 18px;
+  --cascade-footer-bg-color: transparent;
+  --cascade-footer-bg-color-mobile: #ffffff;
+  --cascade-box-active-border-color: var(--product-card-button-bg-color);
+  --cascade-box-inactive-border-color: #e9e9e9;
+  --cascade-box-inactive-bg-color: #fff;
+  --cascade-box-active-discount-text-color: #00b67a;
+}
+```
+
+---
+
+### Consolidated Design Token Bridge
+
+When `body[gbb-mix-consolidated-design="true"]` is set (all current EB bundles use this), EB maps DCP variables to widget-internal CSS properties:
+
+```css
+body[gbb-mix-consolidated-design="true"] {
+  /* Color tokens */
+  --gbbMix-primary-color: var(--add-bundle-btn-bg-color);
+  --gbbMix-primary-button-text-color: var(--add-bundle-btn-text-color);
+  --gbbMix-primary-text-color: var(--product-card-price-color);
+  --gbbMix-secondary-color: var(--tabs-inactive-bg-color);
+  --gbbMix-cart-text-color: var(--footer-text-color);
+  --gbbMix-cart-bg-color: var(--footer-bg-color);
+
+  /* Corner tokens */
+  --gbbMix-button-border-radius: var(--add-bundle-btn-border-radius);
+  --gbbMix-card-border-radius: var(--product-card-border-radius);
+  --gbbMix-card-image-border-radius: var(--product-card-image-border-radius);
+
+  /* Typography tokens */
+  --gbbMix-primary-font-size: var(--product-card-title-font, 16px);
+  --gbbMix-primary-font-weight: var(--product-card-title-weight);
+  --gbbMix-secondary-font-size: var(--header-discount-text-font, 14px);
+  --gbbMix-body-font-size: var(--product-card-variant-selector-font-size, 14px);
+  --gbbMix-image-fit: var(--product-card-image-fit);
+}
+
+/* PDP_INPAGE reduces font sizes by 2px (smaller in-page variant) */
+body[gbb-mix-consolidated-design="true"][gbbmix-template-type="PDP_INPAGE"] {
+  --gbbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px);
+  --gbbMix-secondary-font-size: calc(var(--header-discount-text-font, 14px) - 2px);
+  --gbbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px);
+}
+```
+
+---
+
+### CASCADE (Product List) — base layout, no template-id overrides
+
+`body[gbbmix-template-id="CASCADE"]` has **no rule block** in the CSS. CASCADE is the default `PDP_INPAGE` rendering — all base `.gbbMixCascade*` CSS applies without scoped overrides. The widget renders a vertical product list within each category, with a side cart drawer on desktop.
+
+---
+
+### COGNIVE (Product Grid)
+
+**Selector:** `body[gbbmix-template-id="COGNIVE"] { … }`
+
+Key differences vs CASCADE: categories render vertically instead of as horizontal tabs; product cards switch to a 3-col grid layout (2-col on mobile); images fill a 1:1 aspect ratio; text is centered; body wrapper is repositioned after selected step (driven by JS `reArrangeBodyWrapperPosition`).
+
+```css
+body[gbbmix-template-id="COGNIVE"] {
+  /* Category nav: vertical stack instead of horizontal tabs */
+  .gbbMixCascadeStepsWrapper { padding-bottom: 20px; }
+  .gbbMixCascadeStepsWrapper .gbbMixCascadeStepsContainer { display: flex; }
+  .gbbMixCascadeStepsContainer {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    height: auto !important;
+    align-items: flex-start;
+  }
+  .gbbMixCascadeStepsDivider { display: none; }
+  .gbbMixCascadeStep {
+    width: 100%;
+    border-bottom: 1px solid var(--gbbMix-primary-color, #000);
+    padding-bottom: 15px;
+  }
+
+  /* Product card: stacked column, centered */
+  .gbbMixCascadeProductWrapper {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .gbbMixCascadeProductLeftSection {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+  .gbbMixCascadeProductRightSection {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Product grid: 3 columns desktop, 2 columns mobile */
+  .gbbMixCascadeProductsWrapper {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    padding-inline: 8px;
+  }
+  .gbbMixCascadeProductImageWrapper {
+    width: 100%;
+    height: 100%;
+    object-fit: var(--gbbMix-image-fit, "cover");
+    aspect-ratio: 1/1;
+  }
+
+  /* Centered text */
+  .gbbMixCascadeProductTitle {
+    text-align: center !important;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-all;
+    white-space: wrap;
+  }
+  .gbbMixCascadeCurrentVariantTitle {
+    white-space: wrap;
+    text-align: center;
+    word-wrap: break-word;
+  }
+  .gbbMixCascadeProductsPriceWrapper {
+    word-wrap: break-word;
+    justify-content: center;
+  }
+
+  /* Full-width action buttons */
+  .gbbMixCascadeProductBtnWrapper, .gbbMixCascadeAddBtn,
+  .gbbMixCascadeQuantityWrapper, .gbbMixCascadeVariantSelectionWrapper,
+  .gbbMixCascadeVariantSelectionWrapper select { width: 100%; }
+
+  /* Body wrapper: inserted after selected step by JS */
+  .gbbMixCascadeBodyWrapper { margin-top: 0px; width: 100%; }
+
+  /* Category tabs: horizontal flex (not grid tabs) */
+  .gbbMixCascadeCategoryTabsWrapper {
+    grid-template-columns: repeat(auto);
+    display: flex;
+  }
+  .gbbMixCascadeCategoryTab { padding: 8px 10px; }
+
+  @media only screen and (max-width: 768px) {
+    .gbbMixCogniveProductsWrapper { grid-template-columns: 1fr 1fr; }
+  }
+}
+```
+
+---
+
+### MODAL (Horizontal Slots) — base layout, no template-id overrides
+
+`body[gbbmix-template-id="MODAL"]` has **no rule block** in the CSS. MODAL is the default `PDP_MODAL` rendering. The slot layout is controlled by the class applied to `.gbbMixProductPageCategoriesWrapper`:
+
+```css
+.gbbMixProductPageCategoriesWrapper {
+  width: 100%;
+  display: grid;
+}
+
+/* Horizontal Slots: categories laid out side by side (3-col selected product grid) */
+.gbbMixProductPageCategoriesWrapperHStacked {
+  grid-template-columns: 1fr;
+  column-gap: 16px;
+  row-gap: 20px;
+}
+.gbbMixProductPageCategoriesWrapperHStacked
+  .gbbMixProductPageCategoryWrapper
+  .gbbMixProductPageCategoryTitle {
+  font-size: var(--exp-category-card-hstack-title-font-size);
+  line-height: 16px;
+}
+.gbbMixProductPageCategoriesWrapperHStacked
+  .gbbMixProductPageCategoryWrapper
+  .gbbMixProductPageCategorySelectedProductsWrapper,
+.gbbMixProductsHorizontalLayout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Each category column: subgrid rows for title + slot grid alignment */
+.gbbMixProductPageCategoriesWrapper .gbbMixProductPageCategoryWrapper {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  gap: 10px;
+}
+```
+
+---
+
+### SIMPLIFIED (Vertical Slots)
+
+**Selector:** `body[gbbmix-template-id="SIMPLIFIED"] { … }`
+
+Key differences vs MODAL: selected product slots render in a single vertical column (`grid-template-columns: 1fr`); each selected product card is a compact horizontal row (image left 50×50px, title+variant+remove right); empty slot cards are short rows (min-height 60px) with icon and text side-by-side; skeleton loading cards are also 1-col.
+
+```css
+/* Vertical Slots slot grid: 1 column */
+.gbbMixProductPageCategoriesWrapperVStacked {
+  grid-template-columns: 1fr;
+  gap: 26px;
+}
+.gbbMixProductPageCategoriesWrapperVStacked
+  .gbbMixProductPageCategoryWrapper
+  .gbbMixProductPageCategorySelectedProductsWrapper {
+  display: grid;
+  grid-template-columns: 1fr;    /* 1 slot per row */
+}
+
+body[gbbmix-template-id="SIMPLIFIED"] {
+  /* Empty state card: short horizontal row */
+  .gbbMixEmptyStateCardWrapper { grid-template-columns: 1fr; }
+  .gbbMixEmptyStateCard .gbbMixEmptyStatCardAndTextWrapper {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    flex-direction: row-reverse;   /* icon on right, text on left */
+  }
+  .gbbMixEmptyStateCard { min-height: 60px; }
+
+  /* Selected product card: compact horizontal row */
+  .gbbMixSelectedProductCard {
+    min-height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .gbbMixSelectedProductCard .gbbMixSelectedProductCardTitleAndVariantTitleWrapper {
+    text-align: left;
+    width: 100%;
+  }
+  .gbbMixSelectedProductCard .gbbMixSelectedProductCardImageWrapper {
+    min-width: 50px;
+    width: 50px;
+    height: 50px;
+  }
+  /* Remove button inline (not absolute-positioned) */
+  .gbbMixSelectedProductCard .gbbMixProductPageCategorySelectedPrtoductIconWrapper {
+    position: static;
+    order: 5;
+  }
+  /* Discount badge inline */
+  .gbbMixSelectedProductCard .gbbMixSelectedProductCardDiscountBadge {
+    position: static;
+    white-space: nowrap;
+  }
+
+  /* Loading skeleton: 1-col rows */
+  .gbbMixSkeletonsCardWrapper { grid-template-columns: 1fr; }
+  .gbbMixSkeletonsCardWrapper .gbbMixSkeletonWrapper { height: 60px; }
+
+  @media (max-width: 768px) {
+    .gbbMixProductPageCategoriesWrapper .gbbMixProductPageCategoryWrapper
+      .gbbMixProductPageCategorySelectedProductsWrapper .gbbMixEmptyStateCard { min-height: 60px; }
+    .gbbMixProductPageCategoriesWrapper .gbbMixProductPageCategoryWrapper
+      .gbbMixProductPageCategorySelectedProductsWrapper .gbbMixSelectedProductCard { min-height: 60px; }
+  }
+}
+```
+
+---
+
+## Confirmed Gaps — Features Without Captured Evidence
+
+This section records features that exist in EB but were not observable during the investigation. **No WPB implementation should be built from assumptions for these items.** Each gap requires either a new capture session or an explicit design decision before implementation.
+
+### Gap 1 — Multi-step FPB Cart Add Payload (unconfirmed)
+
+**What's known:** Single-step FPB cart add sends all selected component items in one `POST /cart/add.js` (JSON) call with `_easyBundle:OfferId: "FBP-{bundleId}_{sessionKey}_{itemIndex}"` per line.
+
+**What's unknown:** For a multi-step FPB bundle (multiple `productsDataN` steps), the cart accumulation pattern is unconfirmed:
+- Are items from all steps sent in a single `POST /cart/add.js` call (most likely), or does each step trigger a separate call?
+- Does `_boxProduct` item property change per step (it was `"addProductsPage1"` in the single-step capture)?
+- Does the `bundle_details` cart metafield shape change for multi-step?
+
+**To confirm:** Create a 2-step FPB on `yash-wolfpack`, add products on both steps, click Add To Cart, and capture the `/cart/add.js` network payload.
+
+---
+
+### Gap 2 — FPB Box Selection Enforcement Logic (JS, unconfirmed)
+
+**What's known:** `boxSelection.rules[].boxQuantity` sets the target quantity for each tier. `boxSelection.isEnabled: false` disables quantity enforcement. CSS rules for `gbbBoxSelectionItem`, `gbbBoxSelectionItemActive`, and `gbbBoxSelectionItemActive` are captured.
+
+**What's unknown:** How the widget enforces box quantity in the storefront:
+- What disables the "Next" / "Add to Cart" button (CSS class added to `gbbFooterNextButton`? `disabled` attribute? `pointer-events: none`?)?
+- What triggers the condition toast (`gbbConditionNotificationToast` / `gbbConditionNotificationActive`)?
+- How `currSelectedBoxQuantity` in `gbbMix.templates.CASCADE.state` is tracked and compared to `boxQuantity`.
+- Whether incomplete box selection blocks per-step or per-bundle.
+
+**To confirm:** Enable `boxSelection` on a test FPB or PPB, add fewer products than required, and inspect the ATC button state + JS state + toast behavior via Chrome DevTools.
+
+---
+
+### Gap 3 — FPB Storefront Config Runtime Shape (unconfirmed)
+
+**What's known:** `window.easybundles_ext_data.bundleLinkData` carries FPB bundle config inline in the proxy page document. The admin-side save shape is fully documented.
+
+**What's unknown:** The exact server-serialized shape of `bundleLinkData[].stepsConfigurationData` at runtime — whether EB's server denormalizes product GIDs into inline product objects (pre-hydrated) or only includes IDs and lets the widget call Storefront API separately. The live storefront was not captured for `stepsConfigurationData` specifically.
+
+**To confirm:** On `yash-wolfpack`, load a FPB bundle page, run `JSON.stringify(window.easybundles_ext_data.bundleLinkData[0], null, 2)` in DevTools and record the full output (omit token fields).
+
+---
+
+### Gap 4 — PPB COGNIVE Live DOM (unconfirmed)
+
+**What's known:** CSS rules (`body[gbbmix-template-id="COGNIVE"]`) and JS `reArrangeBodyWrapperPosition` function are both fully captured. The grid layout (3-col desktop, 2-col mobile) and vertical step stacking are confirmed from CSS.
+
+**What's unknown:** Live DOM structure when COGNIVE is rendered — what the step containers look like, how `.gbbMixCascadeBodyWrapper` appears after step selection, and what `gbbMixCogniveProductsWrapper` renders.
+
+**To confirm:** Change `WPB Research Product Page Bundle 2026-05-22` template to "Product Grid" in EB admin, load the storefront, take a DOM snapshot.
+
+---
+
+### Gap 5 — PPB MODAL and SIMPLIFIED Live DOM (unconfirmed)
+
+**What's known:** CSS rules for `gbbMixProductPageCategoriesWrapperHStacked` (MODAL) and `body[gbbmix-template-id="SIMPLIFIED"]` + `gbbMixProductPageCategoriesWrapperVStacked` are captured. The `rearrangeCategoriesToHorizontalLayout` JS function is documented.
+
+**What's unknown:** Live DOM for either the MODAL (Horizontal Slots) or SIMPLIFIED (Vertical Slots) templates — specifically what `gbbMixProductPageCategoryWrapper`, `gbbMixSelectedProductCard`, and `gbbMixEmptyStateCard` look like in context.
+
+**To confirm:** Load `WPB Research Product Page Bundle 2026-05-22` with template set to "Horizontal Slots" or "Vertical Slots" and capture `take_snapshot()`.
+
+---
+
+### Gap 6 — PPB `useSingleStepCategoriesAsBundleSteps: true` (unconfirmed)
+
+**What's known:** The flag exists in PPB creation and update payloads (observed as `false` in all captures). The `gbbMixAndMatchBundle.state.useSingleStepCategoriesAsBundleSteps` JS field exists.
+
+**What's unknown:** What changes in the storefront rendering when `true` — whether step navigation appears, how categories map to steps, what the admin UI looks like in this mode.
+
+**To confirm:** Create or modify a PPB bundle with `useSingleStepCategoriesAsBundleSteps: true` and capture both admin and storefront behavior.
+
+---
+
+### Gap 7 — FPB `productsData2` Storefront Shape (unconfirmed)
+
+**What's known:** The admin update payload includes `productsData2` in the 37KB captured shape. `navigationItems` with two entries was observed in a different capture. The step navigation DOM is documented for two steps.
+
+**What's unknown:** Whether `window.easybundles_ext_data.bundleLinkData[].stepsConfigurationData` includes the full `productsData2` category+product data when a second step is configured and published, or only includes published/active steps.
+
+**To confirm:** Publish a 2-step FPB and capture the full `stepsConfigurationData` structure from `window.easybundles_ext_data`.
+
+---
+
+### Gap 8 — FPB `bundleTextConfig` Full Shape (unconfirmed)
+
+**What's known:** `bundleTextConfig.bundleSummary` is listed as a top-level key in the `stepsConfiguration/update` payload. `languageData` in `window.easybundles_ext_data` carries merchant-customizable UI copy strings.
+
+**What's unknown:** The full `bundleTextConfig` field structure — what sub-keys exist beyond `bundleSummary` and which strings are DCP-managed vs admin-saved vs defaults.
+
+**To confirm:** In the EB admin FPB editor, open the "Bundle Text" or "Customize Text" section and capture the save payload for any text override.

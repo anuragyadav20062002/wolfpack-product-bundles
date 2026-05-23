@@ -4,13 +4,23 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 20:15
+**Last Updated:** 2026-05-23 21:30
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 21:30 - Phases 6 & 7 complete — full CSS for all FPB and PPB templates captured; 8 gaps documented
+
+- Fetched `easy-bundle-full-page-min.css` (250,382 bytes, CloudFront) and extracted complete CSS for all 4 FPB design presets: STANDARD (base `.gbbMinimilisticLayout`), CLASSIC, COMPACT, HORIZONTAL.
+- Fetched `mixAndMatchBundle.css` (131,220 bytes, CloudFront) — the actual PPB stylesheet (not `easy-bundle-min.css`). CSS for all 4 PPB templates captured: CASCADE (base, no overrides), COGNIVE (`body[gbbmix-template-id="COGNIVE"]`), MODAL (base PDP_MODAL, no overrides), SIMPLIFIED (`body[gbbmix-template-id="SIMPLIFIED"]`).
+- Captured `body[gbb-mix-consolidated-design="true"]` DCP token bridge and `:root` CSS custom properties.
+- Captured HStacked/VStacked base rules and all media query overrides.
+- Added Phase 6 (FPB Template CSS) and Phase 7 (PPB Template CSS) to research doc.
+- Documented 8 confirmed gaps with exact reproduction steps: multi-step FPB cart add, box enforcement logic, FPB storefront config runtime shape, COGNIVE live DOM, MODAL/SIMPLIFIED live DOM, `useSingleStepCategoriesAsBundleSteps: true`, `productsData2` storefront shape, `bundleTextConfig` full shape.
+- Updated Gaps And Blockers section with resolved list and pointer to new "Confirmed Gaps" section.
 
 ### 2026-05-23 20:15 - Phase 5 complete — PPB template rendering architecture confirmed via JS static analysis
 
