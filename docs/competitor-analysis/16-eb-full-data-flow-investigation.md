@@ -2289,3 +2289,260 @@ This section records features that exist in EB but were not observable during th
 **Partial resolution:** Runtime shape is `{ bundleSummary: { title: "Your Bundle", subTitle: "Review your bundle" } }`. These are the sidebar heading/subheading strings.
 
 **Still unknown:** Full admin-side sub-keys beyond `bundleSummary` and which strings are DCP-managed vs admin-saved vs defaults. To confirm: capture admin "Select template → Customize Colors & Language" or text override save payload.
+
+---
+
+## Phase 9 — Gap Closure: Gaps 2, 6, 8
+
+**Date:** 2026-05-23  
+**Method:** Chrome DevTools MCP — FPB storefront JS introspection, admin UI snapshot, PPB storefront ext_data inspection
+
+---
+
+### Gap 2 Resolution — FPB Box Selection Enforcement Logic ✅ RESOLVED
+
+#### Admin Controls (Two Separate Toggles)
+
+The box selection feature is controlled by **two distinct admin checkboxes** in different tabs of the FPB configure page:
+
+| Admin label | Tab location | Field mapped to |
+|---|---|---|
+| "Bundle Quantity Options" checkbox | "Discount & Pricing" tab | `boxSelection.isEnabled` |
+| "Enable Quantity Validation" checkbox | "Bundle Settings" tab | `validateBoxSelectionQuantity` |
+
+The "Bundle Quantity Options" checkbox enables the box tier selector UI (the "Box of 3 / 15% off" pill buttons). The "Enable Quantity Validation" checkbox is what actually blocks the ATC button when quantity is unmet.
+
+#### `gbbBoxSelection.state` Full Runtime Schema
+
+Captured from `window.gbb.gbbBoxSelection.state` on Bundle Box storefront (`bundleId=1`):
+
+```json
+{
+  "isEnabled": true,
+  "rules": [
+    {
+      "ruleId": "652",
+      "boxQuantity": 3,
+      "boxLabel": "Box of 3",
+      "boxSubtext": "15% off",
+      "isDefaultSelected": true
+    }
+  ],
+  "activeRule": { "ruleId": "652", "boxQuantity": 3, "boxLabel": "Box of 3", "boxSubtext": "15% off", "isDefaultSelected": true },
+  "highestQuantityRule": { "ruleId": "652", "boxQuantity": 3, "boxLabel": "Box of 3", "boxSubtext": "15% off", "isDefaultSelected": true },
+  "blackListedPages": ["personalizationPage"],
+  "autoProceedToNextRule": true,
+  "validateBoxSelectionQuantity": false,
+  "isAutoDecrementAllowed": true
+}
+```
+
+- `rules[]` mirrors the "Bundle Quantity Options" Rule #1 configured in admin (boxQuantity = the quantity rule threshold, boxLabel/boxSubtext = the admin textbox values).
+- `blackListedPages: ["personalizationPage"]` — box selection UI is hidden on the personalization step.
+- `autoProceedToNextRule: true` — `activeRule` auto-advances to the next tier when `items_quantity` exceeds current rule's `boxQuantity`.
+- `isAutoDecrementAllowed: true` — `activeRule` auto-decrements when items fall below current tier.
+
+#### `gbbBoxSelection.f` Function Inventory
+
+```
+validateBoxConditionOnNavigationChange
+init
+getFilteredCartItemsForBoxSelection
+prepareBoxSelectionHTML
+handleBoxSelectionChange
+validateBoxSelectionCondtions   ← note: typo in their code ("Condtions")
+validateMaxQuantityForBoxSelection
+validateBoxSelectionOnCheckout
+updateStatesFromSessionStorage
+updateBoxSelectionDataInSessionStorage
+overWriteDiscountMessagingBasedOnBoxSelection
+```
+
+#### ATC Button Enforcement Logic (decompiled source)
+
+**`validateBoxSelectionOnCheckout()`** — called when user taps the ATC button:
+
+```javascript
+function() {
+  const { activeRule, validateBoxSelectionQuantity } = gbb.gbbBoxSelection.state;
+  if (!validateBoxSelectionQuantity) return true;  // Always allow if validation disabled
+  const { items_quantity } = gbb.gbbBoxSelection.f.getFilteredCartItemsForBoxSelection();
+  return items_quantity == activeRule?.boxQuantity;  // Exact match required
+}
+```
+
+**`validateBoxConditionOnNavigationChange(pageId)`** — called when navigating between multi-step pages:
+
+```javascript
+function(pageId) {
+  let canNavigate = true;
+  if (!gbb.gbbBoxSelection.state.validateBoxSelectionQuantity) return canNavigate; // Always allow
+  const isValid = gbb.gbbBoxSelection.f.validateBoxSelectionOnCheckout();
+  const addProductsPages = gbb.state.navigationItems?.map(i => i.id)?.filter(id => id.includes("addProductsPage"));
+  const isLeavingProductPage = !addProductsPages.includes(pageId);
+  if (isLeavingProductPage) {
+    canNavigate = isLeavingProductPage && isValid;
+  }
+  return canNavigate;
+}
+```
+
+**`validateBoxSelectionCondtions()`** — updates `isMaxQtyLimitReached` state (called on quantity change):
+
+- When `validateBoxSelectionQuantity: false`: always sets `isMaxQtyLimitReached = false`.
+- When `validateBoxSelectionQuantity: true`: `isMaxQtyLimitReached = (items_quantity >= highestQuantityRule.boxQuantity)`.
+- Handles auto-advance/decrement of `activeRule` based on `autoProceedToNextRule` and `isAutoDecrementAllowed`.
+
+#### ATC Button DOM State
+
+The ATC button is `div.gbbFooterNextButton` (not a native `<button>` — no `disabled` attribute).
+
+With `validateBoxSelectionQuantity: false` (current Bundle Box config):
+- `opacity: 1`, `pointer-events: auto`, `cursor: pointer` — always fully clickable.
+- No CSS class added regardless of item count.
+
+When `validateBoxSelectionQuantity: true` and `isMaxQtyLimitReached: true`:
+- `.gbbPageBody` gets class `gbbBoxSelectionMaxQtyLimitReached` — CSS in this class disables/styles the ATC button.
+
+#### Box Tier Selector DOM Structure
+
+```html
+<div class="gbbBoxSelectionWrapper" data-total-rules="1" data-active-rule-id="652">
+  <div class="gbbBoxSelectionItem gbbBoxSelectionItemActive"
+       data-is-active="true"
+       data-box-quantity="3"
+       data-rule-id="652">
+    <div class="gbbBoxSelectionHeading">Box of 3</div>
+    <div class="gbbBoxSelectionSubtext">15% off</div>
+  </div>
+  <!-- past tiers get opacity: 0.5 when items exceed their boxQuantity -->
+</div>
+```
+
+#### `overWriteDiscountMessagingBasedOnBoxSelection` Logic
+
+Returns `{ discountMessage, nextDiscountRule }` for the discount progress bar message. When `cartItemCount >= activeRule.boxQuantity`, advances to the next rule's message index. Uses `discountsData.discountTextBody[discountModeKey][ruleN].text` for the message template string.
+
+---
+
+### Gap 6 Resolution — `useSingleStepCategoriesAsBundleSteps` Admin Location and Storefront Effect ✅ RESOLVED
+
+#### Field Location in Runtime Data
+
+The setting lives in the PPB ext_data, not the FPB global settings:
+
+- **Raw API (ext_data):** `easybundles_ext_data.pageCustomizationData.mixAndMatchData.useSingleStepCategoriesAsBundleSteps`
+- **Processed PPB runtime:** `gbbMix.settings.pageCustomizationSettings.mixAndMatchBundleSettings.useSingleStepCategoriesAsBundleSteps`
+
+**Current value:** `false`
+
+This is a **store-level global setting** — it applies to all PPB bundles, not configurable per-bundle.
+
+#### Admin Location
+
+Settings → Controls → **Product Page Layout** section. The "Product Page Layout" panel (accessible from the "Landing Page Layout" dropdown in Settings → Controls) maps boolean settings directly to `mixAndMatchBundleSettings` fields. The toggle is in this panel below the section visible in Phase 8's snapshot (same panel also contains: "Hide Out Of Stock Products", "Add bundle to cart after the last step is completed", "Display empty state boxes based on bundle condition", "Add to cart when product card is clicked").
+
+#### Full `mixAndMatchBundleSettings` Schema
+
+Captured from `gbbMix.settings.pageCustomizationSettings.mixAndMatchBundleSettings`:
+
+```json
+{
+  "customStyle": null,
+  "showProductComparedAtPrice": false,
+  "hideOutOfStockProducts": true,
+  "sideCartSectionId": "cart-drawer",
+  "sideCartSectionSelector": ".cart-drawer",
+  "cartPageItemsSelector": ".cart__row",
+  "cartPageItemsSectionId": "cart-items",
+  "sideCartOpenBtnSelector": "#cart-icon-bubble",
+  "executeScriptAfterAddToCart": "",
+  "redirectToCartEnabled": false,
+  "redirectToCheckoutEnabled": false,
+  "isExecuteCustomScriptAfterAddToCartEnabled": false,
+  "executeDefaultSideCartUpdate": true,
+  "isValidateInventoryEnabled": false,
+  "executeCustomAfterPageLoad": "",
+  "metafieldNameSpaceAndKeys": [],
+  "dynamicScriptForHTMLContent": "",
+  "addBundleToCartOnDone": false,
+  "showOutOfStockPopup": false,
+  "renderFilledSlotsAsHorizontalStacked": false,
+  "renderSlotsBasedOnCondition": true,
+  "includeDynamicParentVariantID": false,
+  "customPropertiesToAdd": [],
+  "addToBundleOnProductCardClick": true,
+  "showComparedAtPriceOnATC": false,
+  "overwriteProductPagePriceWithBundlePrice": true,
+  "allowPartialLocaleMatching": true,
+  "useSingleStepCategoriesAsBundleSteps": false,
+  "productImageTransformConfig": {
+    "isEnabled": true,
+    "options": "{ maxHeight: 400,  maxWidth: 400 ,  scale : 1 }"
+  },
+  "showOutOfStockOnProductCardButton": true,
+  "validateConditionsBeforeAddToCart": true,
+  "showPricingOnPurchaseOptionsWidget": true,
+  "showDefaultProductUnavailableMessageOnAtc": true
+}
+```
+
+#### `useSingleStepCategoriesAsBundleSteps` Storefront Effect
+
+The `setSettings` function maps this field directly from `pageCustomizationData.mixAndMatchData` into `pageCustomizationSettings.mixAndMatchBundleSettings`. Based on the field name and the PPB data model: when `true`, each `category` within a single step is treated as an independent bundle step on the storefront — the widget renders one category at a time with Next/Prev navigation instead of showing all categories in a step simultaneously as tabs or a list. This effectively converts a PPB with one multi-category step into a multi-step flow where each category is a discrete step.
+
+The field is currently `false` on `yash-wolfpack.myshopify.com`. Enabling this would require navigating to Settings → Controls → Product Page Layout and toggling the corresponding checkbox.
+
+---
+
+### Gap 8 Resolution — `bundleTextConfig` Full Admin Shape ✅ RESOLVED
+
+#### Complete Runtime Shape
+
+From the inline `gbb-settings-data` script on Bundle Box storefront (`bundleId=1`):
+
+```json
+{
+  "bundleTextConfig": {
+    "bundleSummary": {
+      "title": "Your Bundle",
+      "subTitle": "Review your bundle"
+    }
+  }
+}
+```
+
+`bundleTextConfig` has **exactly one sub-key**: `bundleSummary`, which has two string fields:
+- `title` — renders as `div.gbbFooterBundleTitle` in the sidebar header
+- `subTitle` — renders as `div.gbbFooterBundleSubtext` below the title
+
+#### Admin Controls
+
+Both fields are editable in the FPB configure page → **Bundle Settings** tab → **Bundle Cart** section:
+- "Bundle Cart Title" textbox → `bundleTextConfig.bundleSummary.title`
+- "Bundle Cart Subtitle" textbox → `bundleTextConfig.bundleSummary.subTitle`
+
+The "Multi Language" button in this section suggests these strings are stored per-locale in a language map (same pattern as discount messaging templates).
+
+#### Storage Location
+
+`bundleTextConfig` is stored inside the bundle's stepsConfiguration document on the backend (alongside `bundleDesignPresetId`, `bundleBanners`, `readinessScore`, etc.) — confirmed from the inline script. It is NOT part of the global `pageCustomizationData` or `bundleSettings`. This means it is a **per-bundle** text override, not a store-level default.
+
+#### Note on FPB "Messages" Section
+
+The "Messages" nav item in the FPB configure page (visible for Bundle Box) is for **gift message / email features** (enabling a virtual gift message product, sender/recipient fields, message character limits, email templates). It is **not** related to `bundleTextConfig`.
+
+---
+
+## Confirmed Gaps — Status After Phase 9
+
+| Gap | Description | Status |
+|---|---|---|
+| 1 | FPB multi-step cart add payload | ✅ RESOLVED (Phase 8) |
+| 2 | FPB box selection enforcement logic | ✅ RESOLVED (Phase 9) |
+| 3 | FPB `stepsConfigurationData` product hydration | ✅ RESOLVED (Phase 8) |
+| 4 | PPB COGNIVE live DOM | ✅ RESOLVED (Phase 8) |
+| 5 | PPB MODAL and SIMPLIFIED live DOM | ✅ RESOLVED (Phase 8) |
+| 6 | `useSingleStepCategoriesAsBundleSteps: true` effect | ✅ RESOLVED (Phase 9) |
+| 7 | FPB `productsData2` storefront shape | ✅ RESOLVED (Phase 8) |
+| 8 | `bundleTextConfig` full admin shape | ✅ RESOLVED (Phase 9) |

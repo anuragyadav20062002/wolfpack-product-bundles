@@ -4,13 +4,21 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 22:45
+**Last Updated:** 2026-05-23 23:30
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 23:30 - Phase 9 complete — all 8 gaps fully resolved; investigation complete
+
+- **Gap 2 (Box Selection Enforcement Logic) — RESOLVED:** Captured complete `gbbBoxSelection.state` runtime schema (`isEnabled`, `rules[]`, `activeRule`, `highestQuantityRule`, `blackListedPages`, `autoProceedToNextRule`, `validateBoxSelectionQuantity`, `isAutoDecrementAllowed`). Decompiled and documented `validateBoxSelectionOnCheckout` function source — when `validateBoxSelectionQuantity: false` (default), ATC is never blocked regardless of quantity. ATC button is a `div.gbbFooterNextButton` (not `<button>`); enforcement is CSS-only via `gbbBoxSelectionMaxQtyLimitReached` class on `.gbbPageBody`. Box tier DOM captured: `div.gbbBoxSelectionWrapper[data-total-rules][data-active-rule-id]` > `div.gbbBoxSelectionItem[data-box-quantity][data-rule-id][data-is-active]`. Admin toggle location confirmed: FPB configure → Bundle Settings → "Bundle Quantity Options" checkbox + "Enable Quantity Validation" sub-checkbox.
+- **Gap 6 (`useSingleStepCategoriesAsBundleSteps` admin location + storefront effect) — RESOLVED:** Confirmed this is a store-level global PPB setting in `pageCustomizationData.mixAndMatchData`, processed into `gbbMix.settings.pageCustomizationSettings.mixAndMatchBundleSettings`. Admin location: Settings → Controls → Product Page Layout section. Storefront effect when `true`: each category within a single step renders as a discrete navigable bundle step (Next/Prev), instead of showing all categories simultaneously. Captured full `mixAndMatchBundleSettings` schema: 25+ fields including `hideOutOfStockProducts`, `addBundleToCartOnDone`, `renderSlotsBasedOnCondition`, `renderFilledSlotsAsHorizontalStacked`, `addToBundleOnProductCardClick`, `validateConditionsBeforeAddToCart`, `maxSlotsPerRow`, `displayConditionDescriptions`, `expandProductCardOnHover`, `displayPrices`, `displayCompareAtPrices`, `displayQuantityInput`, `displaySeeMoreLink`, `displaySwatchColours`, `displaySwatchImages`, and `bundleAddingAnimation`.
+- **Gap 8 (`bundleTextConfig` full admin shape) — RESOLVED:** Confirmed `bundleTextConfig` has exactly one sub-key (`bundleSummary`) with exactly two string fields (`title`, `subTitle`). Shape: `{ bundleSummary: { title: "Your Bundle", subTitle: "Review your bundle" } }`. Stored in per-bundle stepsConfiguration (inline `gbb-settings-data` script), NOT global settings. Admin controls: FPB configure → Bundle Settings tab → Bundle Cart section → "Bundle Cart Title" and "Bundle Cart Subtitle" textboxes. Confirmed the FPB "Messages" nav section is for gift messaging (virtual gift product, sender/recipient fields, email templates) — a completely separate feature unrelated to `bundleTextConfig`.
+- Updated all 8 "Confirmed Gaps" table entries to ✅ RESOLVED in `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` (Phase 9 section appended).
+- Investigation is now fully complete. All 8 originally documented gaps are resolved.
 
 ### 2026-05-23 22:45 - Phase 8 complete — 5 of 8 gaps resolved; 2 gaps partially resolved
 
@@ -154,3 +162,4 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - [x] Phase 19: Gaps 4 & 5 (PPB COGNIVE + MODAL/SIMPLIFIED DOM) — confirmed via template switch + storefront capture; `boxSelection` schema captured; `renderFilledSlotsAsHorizontalStacked` architecture documented
 - [x] Phase 20: Gap 7 (`productsData2` storefront shape) — present in stepsConfigurationData; empty steps included
 - [x] Phase 21: Gaps 6 & 8 partial — `pageCustomizationData.mixAndMatchData` full shape; `bundleTextConfig` runtime shape
+- [x] Phase 22: Gaps 2, 6, 8 fully resolved — `gbbBoxSelection.state` schema + ATC enforcement decompiled; `mixAndMatchBundleSettings` 25+ field schema + admin location; `bundleTextConfig` confirmed single sub-key; all 8 gaps ✅ RESOLVED
