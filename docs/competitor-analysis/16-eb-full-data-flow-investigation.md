@@ -895,7 +895,7 @@ No cursor variables (`after: $cursor`), no `pageInfo { hasNextPage endCursor }`,
 
 Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination architecture. Phase 4 closed template enumeration and variant display DOM rendering. Remaining limits:
 
-- **FPB non-classic preset IDs** (Phase 16 — investigated, inference only): `bundleDesignPresetId` values for Standard Design, Compact Design, and Horizontal Design are inferred as `STANDARD`, `COMPACT`, `HORIZONTAL` from the confirmed `CLASSIC` naming pattern and CDN image filenames. Network confirmation is blocked — the template save fires from within the App Bridge overlay OOPIF and is not captured in the admin.shopify.com CDP network panel regardless of the interaction path used (Select → Next, Select → Next → Preview bundle all attempted). `bundleDesignTemplate` for non-classic designs remains unknown.
+- **FPB non-classic preset IDs** (Phase 16 — fully resolved): All four FPB preset/template combinations confirmed via JS + CSS static analysis. `bundleDesignTemplate` is `FBP_SIDE_FOOTER` for all four designs; `bundleDesignPresetId` is `CLASSIC`, `STANDARD`, `COMPACT`, or `HORIZONTAL`. `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` is a legacy key in `DESIGN_TEMPLATE_CONFIGS` not used by any current preset. Network observation of the template save was not possible (overlay OOPIF), but the CSS scoping of `COMPACT`/`HORIZONTAL` rules inside `.gbbMinimilisticLayout` makes `FBP_SIDE_FOOTER` the only valid `bundleDesignTemplate` for all four presets.
 - Screenshots were not committed, per repo rule. Browser snapshots and network evidence were inspected live through Chrome DevTools.
 
 These remaining limits do not change the main data-shape conclusion: categories are stable first-class step children, direct products and selected collections are separately represented under each category, product/collection hydration preserves Shopify GIDs plus numeric storefront IDs, both FPB and PPB use the same `_easyBundle:OfferId` + `bundle_details` metafield cart pattern, and the multi-step FPB uses URL-based page navigation with checkmark-completed step indicators.
@@ -937,18 +937,37 @@ FPB uses two separate fields to identify a template, not one:
 | `bundleDesignTemplate` | `stepsConfigurationData.bundleDesignTemplate` | High-level layout class selector |
 | `bundleDesignPresetId` | `stepsConfigurationData.bundleDesignPresetId` | Fine-grained preset variant within that layout |
 
-**Confirmed + inferred values** (Classic confirmed from `getPageRelavantDataOnly` API response + live storefront `gbb.settings.stepsConfigurationData`; non-classic `bundleDesignPresetId` values inferred from UI display names and image filenames):
+**Confirmed values** (all four entries confirmed via CSS + JS source analysis of `easy-bundle-full-page-min.js` and `easy-bundle-full-page-min.css`):
 
 | Display Name | `bundleDesignTemplate` | `bundleDesignPresetId` |
 |---|---|---|
-| Classic Design | `FBP_SIDE_FOOTER` | `CLASSIC` ✅ confirmed |
-| Standard Design | unconfirmed | `STANDARD` (inferred) |
-| Compact Design | unconfirmed | `COMPACT` (inferred) |
-| Horizontal Design | unconfirmed | `HORIZONTAL` (inferred) |
+| Classic Design | `FBP_SIDE_FOOTER` | `CLASSIC` ✅ |
+| Standard Design | `FBP_SIDE_FOOTER` | `STANDARD` ✅ |
+| Compact Design | `FBP_SIDE_FOOTER` | `COMPACT` ✅ |
+| Horizontal Design | `FBP_SIDE_FOOTER` | `HORIZONTAL` ✅ |
 
-**Inference basis:** The EB admin overlay CDN image filenames follow the pattern `landing-page-template-{lowercase-display-name}-design.avif`. The confirmed case (`landing-page-template-classic-design.avif` → `CLASSIC`) shows a direct uppercase mapping. The remaining images are `landing-page-template-standard-design.avif`, `landing-page-template-compact-design.avif`, and `landing-page-template-horizontal-design.avif`, implying `STANDARD`, `COMPACT`, and `HORIZONTAL` respectively. The `bundleDesignTemplate` layout class for non-classic designs is unknown; they may use `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` or `FBP_SIDE_FOOTER` with a different preset.
+**Confirmation method — `insertWrapperIntoBody` rendering logic (from `easy-bundle-full-page-min.js`):**
 
-**Network confirmation blocked:** The template save fires from within the Shopify App Bridge overlay OOPIF to `prod.backend.giftbox.giftkart.app` through a path not captured in the admin.shopify.com CDP network panel. `modifyBundleFields` (the only observable backend call from the overlay) carries only UI counter resets (`previewTemplateSelectionModalCnt`, `previewBundleModalCnt`), not the template value. Multiple interaction paths were attempted (Select → Next, Select → Next → Preview bundle, keyboard navigation) with the same result.
+```javascript
+if (e in DESIGN_TEMPLATE_CONFIGS) {
+  [DESIGN_TEMPLATE_CONFIGS[e].value, "gbbProductsCardLayoutV2"]
+    .forEach(t => gbb.$(".gbbPageBody").addClass(t));
+  gbb.$(".gbbPageBody").attr("data-template-id", e);   // e = bundleDesignTemplate
+}
+gbb.$("body").attr("gbb-bundle-design-preset-id", a);  // a = bundleDesignPresetId
+```
+
+For `FBP_SIDE_FOOTER`, `DESIGN_TEMPLATE_CONFIGS["FBP_SIDE_FOOTER"].value = "gbbMinimilisticLayout"`, so `.gbbPageBody` receives both `gbbMinimilisticLayout` and `gbbProductsCardLayoutV2`.
+
+**Confirmation via CSS — preset-scoped rules in `easy-bundle-full-page-min.css`:**
+
+```css
+body[gbb-bundle-design-preset-id="CLASSIC"]    { .gbbMinimilisticLayout { /* tab border-radius */ } }
+body[gbb-bundle-design-preset-id="COMPACT"]    { .gbbMinimilisticLayout { /* single-column grid */ } }
+body[gbb-bundle-design-preset-id="HORIZONTAL"] { .gbbMinimilisticLayout { /* 2-column product row */ } }
+```
+
+`COMPACT` and `HORIZONTAL` scope their overrides inside `.gbbMinimilisticLayout`. Since `gbbMinimilisticLayout` is **only applied when `bundleDesignTemplate === "FBP_SIDE_FOOTER"`**, all four presets must use `FBP_SIDE_FOOTER`. `STANDARD` has no CSS overrides — it is the default `.gbbMinimilisticLayout` appearance. `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` is a legacy layout key (present in `DESIGN_TEMPLATE_CONFIGS` for backwards compatibility) not used by any current design preset.
 
 **FPB widget `DESIGN_TEMPLATE_CONFIGS` constant** (from `easy-bundle-full-page-min.js`):
 

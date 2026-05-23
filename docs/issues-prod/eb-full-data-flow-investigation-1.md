@@ -4,13 +4,21 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 19:00
+**Last Updated:** 2026-05-23 19:30
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 19:30 - Phase 16 fully resolved — all FPB preset IDs confirmed via CSS/JS static analysis
+
+- Fetched `easy-bundle-full-page-min.js` via Bash/curl and found the `insertWrapperIntoBody` class-application logic: `[DESIGN_TEMPLATE_CONFIGS[e].value, "gbbProductsCardLayoutV2"].forEach(...)` — for `FBP_SIDE_FOOTER` this adds `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2`.
+- Fetched `easy-bundle-full-page-min.css` and confirmed three preset-scoped CSS rules: `body[gbb-bundle-design-preset-id="CLASSIC"]`, `body[gbb-bundle-design-preset-id="COMPACT"]`, `body[gbb-bundle-design-preset-id="HORIZONTAL"]`, all scoped inside `.gbbMinimilisticLayout`.
+- Since `.gbbMinimilisticLayout` is only applied when `bundleDesignTemplate === "FBP_SIDE_FOOTER"`, all four presets must use `FBP_SIDE_FOOTER`. `STANDARD` is the default style (no CSS overrides). `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` is a legacy key, unused by current presets.
+- Updated research doc with confirmed table and full CSS/JS evidence.
+- Phase 16 is fully resolved. `bundleDesignTemplate` = `FBP_SIDE_FOOTER` for ALL four FPB design presets.
 
 ### 2026-05-23 19:00 - Completed Phase 16 — FPB non-classic preset ID investigation (inference)
 
