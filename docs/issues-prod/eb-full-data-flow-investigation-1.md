@@ -4,13 +4,22 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 19:30
+**Last Updated:** 2026-05-23 20:15
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 20:15 - Phase 5 complete — PPB template rendering architecture confirmed via JS static analysis
+
+- Fetched `easy-bundle-product-page-min.js` (518,931 bytes) via curl + Python grep.
+- Confirmed binary template dispatch: `PDP_INPAGE` → `gbbMix.templates.CASCADE.init(t)`, `PDP_MODAL` → `gbbMix.gbbMixAndMatchBundle.initialize(t, e)`.
+- Confirmed `gbbMix.templates` only defines `CASCADE` (full) and `COGNIVE` (lightweight override with `reArrangeBodyWrapperPosition`). No `MODAL` or `SIMPLIFIED` template objects exist.
+- `SIMPLIFIED` has **zero occurrences** in the widget JS — it is an admin-only enum. The actual storefront difference between Horizontal Slots and Vertical Slots is driven by `renderFilledSlotsAsHorizontalStacked` → CSS classes `gbbMixProductPageCategoriesWrapperHStacked` / `gbbMixProductPageCategoriesWrapperVStacked`.
+- Confirmed `easy-bundle-min.css` (7,609 bytes) contains only cart/upsell shared styles — zero template-specific selectors. PPB template differentiation is purely JS-class-based (vs FPB which uses `body[gbb-bundle-design-preset-id]` CSS attribute selectors).
+- Added Phase 5 section to `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`.
 
 ### 2026-05-23 19:30 - Phase 16 fully resolved — all FPB preset IDs confirmed via CSS/JS static analysis
 

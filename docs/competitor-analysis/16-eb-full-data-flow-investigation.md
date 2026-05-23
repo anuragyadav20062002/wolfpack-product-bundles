@@ -1075,3 +1075,107 @@ Note: `id` is the **parent product ID** (same across all variants of the same pr
 | Card 1 | `8322634088644` | `45038899691716` | "2 Seater" |
 | Card 2 | `8322634088644` | `45038899724484` | "3 seater" |
 | Card 3 | `8322634088644` | `45038899757252` | "4 seater" |
+
+---
+
+## Phase 5 — PPB Template Rendering Architecture (Static Analysis)
+
+**Method:** `curl` + Python grep on `easy-bundle-product-page-min.js` (518,931 bytes, Shopify CDN) and `easy-bundle-min.css` (7,609 bytes, Shopify CDN). Same technique used to confirm FPB template architecture in Phase 4.
+
+### PPB Template Dispatch (Binary Split)
+
+The widget makes a single binary dispatch based on `bundleDesignTemplate`:
+
+```javascript
+"PDP_INPAGE" === gbbMix.state.template.type
+  ? gbbMix.templates.CASCADE.init(t)           // Product List / Product Grid
+  : gbbMix.gbbMixAndMatchBundle.initialize(t, e) // Horizontal Slots / Vertical Slots
+```
+
+- **`PDP_INPAGE`** → dedicated cascade template system (`gbbMix.templates.CASCADE`)
+- **`PDP_MODAL`** → base mix-and-match bundle renderer (`gbbMix.gbbMixAndMatchBundle`)
+
+### PPB Body Attribute Assignment
+
+Template state is written to body attributes immediately after bundle data loads:
+
+```javascript
+gbbMix.state.template = {
+  id:   a?.bundleDesignTemplateData?.templateId ?? "MODAL",
+  type: a.bundleDesignTemplate ?? "PDP_MODAL"
+};
+document.body.setAttribute("gbbmix-template-id",   gbbMix.state.template.id);
+document.body.setAttribute("gbbmix-template-type",  gbbMix.state.template.type);
+gbbMix.gbbMixAndMatchBundle.f.setPageAttributes({
+  "template-id":   gbbMix.state.template.id,
+  "template-type": gbbMix.state.template.type
+});
+```
+
+Default fallbacks: `id: "MODAL"`, `type: "PDP_MODAL"`.
+
+### PPB Template Objects in Widget JS
+
+`gbbMix.templates` only defines two named objects:
+
+| Template object | Presence | Role |
+|---|---|---|
+| `gbbMix.templates.CASCADE` | Full object — state, init, initialise, f, registerCustomEvents, insertIntoDOM | Drives both Product List and Product Grid rendering via PDP_INPAGE path |
+| `gbbMix.templates.COGNIVE` | Lightweight override — single `reArrangeBodyWrapperPosition` function | Repositions `.gbbMixCascadeBodyWrapper` after the selected step for grid layout |
+| `gbbMix.templates.MODAL` | **Not present** — handled directly by `gbbMix.gbbMixAndMatchBundle` | — |
+| `gbbMix.templates.SIMPLIFIED` | **Not present** — `SIMPLIFIED` has zero occurrences in widget JS | — |
+
+**COGNIVE rendering**: Uses the same `CASCADE` rendering path. `reArrangeBodyWrapperPosition` runs on step selection to move `.gbbMixCascadeBodyWrapper` after the currently selected `.gbbMixCascadeStep`, creating an in-page expanded grid view rather than a top-level list.
+
+```javascript
+// COGNIVE reArrangeBodyWrapperPosition (from gbbMix.templates.COGNIVE.f):
+if ("COGNIVE" !== gbbMix.state.template.id || !hasMultipleSteps) return;
+const stepEl = stepsWrapper.querySelector(`.gbbMixCascadeStep[data-step-id='${currentStepId}']`);
+stepEl?.after(bodyWrapper);
+gbbMix.utility.rerunAnimation(bodyWrapper, "gbbMixSlide");
+```
+
+### Horizontal Slots vs Vertical Slots (MODAL vs SIMPLIFIED)
+
+Both use `PDP_MODAL` and `gbbMix.gbbMixAndMatchBundle`. The visual difference is NOT driven by `templateId` in the widget — instead it is driven by the `renderFilledSlotsAsHorizontalStacked` bundle setting:
+
+```javascript
+getSelectedProductsViewType: function() {
+  // Bundle-level override takes precedence over page customization setting
+  const bundleLevel = gbbMix.settings.mixAndMatchBundleData.renderFilledSlotsAsHorizontalStacked;
+  const pageLevel   = gbbMix.settings.pageCustomizationSettings
+                        .mixAndMatchBundleSettings.renderFilledSlotsAsHorizontalStacked;
+  return (bundleLevel ?? pageLevel) ? "HORIZONTALLY_STACKED" : "VERTICALLY_STACKED";
+}
+```
+
+The result is stored in `gbbMix.gbbMixAndMatchBundle.state.selectedProductsViewState` and applied as a CSS class:
+
+```javascript
+// In prepareIndividualCategorySelectionUI:
+"HORIZONTALLY_STACKED" === selectedProductsViewState
+  ? categoriesWrapper.classList.add("gbbMixProductPageCategoriesWrapperHStacked")
+  : categoriesWrapper.classList.add("gbbMixProductPageCategoriesWrapperVStacked");
+```
+
+**Key implication**: `templateId: "SIMPLIFIED"` is an admin-side enum value only. The widget JS does not reference `SIMPLIFIED` at all (0 occurrences). The storefront rendering difference between "Horizontal Slots" and "Vertical Slots" is fully determined by `renderFilledSlotsAsHorizontalStacked`, not by `gbbmix-template-id`.
+
+### PPB CSS Architecture
+
+`easy-bundle-min.css` (7,609 bytes) contains only cart/upsell shared styles (`gbbRemoveCartItemConfirmation*`, `gbbCartPage*`, `gbbExtBundle*`, `gbbOfferWidget*`). It has **zero** template-specific selectors — no `[gbbmix-template-id]`, no `[gbbmix-template-type]`, no template class names.
+
+Template visual differentiation in PPB is driven entirely by JS-applied CSS classes:
+- `gbbMixProductPageCategoriesWrapperHStacked` — horizontal filled-slots layout
+- `gbbMixProductPageCategoriesWrapperVStacked` — vertical filled-slots layout
+- `gbbMixCascadeStepsWrapper` / `gbbMixCascadeBodyWrapper` — PDP_INPAGE cascade layout
+
+This contrasts with FPB, which uses body attribute selectors (`body[gbb-bundle-design-preset-id="COMPACT"]`) in its CSS for preset differentiation.
+
+### PPB Template Architecture Summary
+
+| Display Name | `bundleDesignTemplate` | `templateId` | Dispatch path | Visual key |
+|---|---|---|---|---|
+| Product List | `PDP_INPAGE` | `CASCADE` | `gbbMix.templates.CASCADE.init()` | Flat step list, cascade body |
+| Product Grid | `PDP_INPAGE` | `COGNIVE` | `gbbMix.templates.CASCADE.init()` + COGNIVE override | Body repositioned after selected step |
+| Horizontal Slots | `PDP_MODAL` | `MODAL` | `gbbMix.gbbMixAndMatchBundle.initialize()` | `renderFilledSlotsAsHorizontalStacked: true` → `gbbMixProductPageCategoriesWrapperHStacked` |
+| Vertical Slots | `PDP_MODAL` | `SIMPLIFIED` | `gbbMix.gbbMixAndMatchBundle.initialize()` | `renderFilledSlotsAsHorizontalStacked: false` → `gbbMixProductPageCategoriesWrapperVStacked` |
