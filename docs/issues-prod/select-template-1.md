@@ -1,9 +1,9 @@
 # Issue: Select Template Nav Section — FPB + PPB
 **Issue ID:** select-template-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-23 03:00
+**Last Updated:** 2026-05-23 03:30
 
 ## Overview
 Add a "Select template" nav section to both FPB and PPB configure pages. Merchants can choose from 4 visual layout presets per bundle type. Mirrors EB's Customization overlay (captured 2026-05-23 via Chrome DevTools MCP). Persists `wpbLayoutTemplate` + `wpbPresetId` to `Bundle` DB model.
@@ -47,4 +47,4 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - [x] Phase 5: FPB route — add nav item + section UI + form state + hidden inputs
 - [x] Phase 6: PPB route — same for PPB with PPB-specific templates
 - [x] Phase 7: Nav map update
-- [ ] Phase 8: Lint + final commit
+- [x] Phase 8: Lint + final commit
