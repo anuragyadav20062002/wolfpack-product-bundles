@@ -19,6 +19,13 @@ function int(formData: FormData, key: string): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+export function parseWpbTemplate(formData: FormData) {
+  return {
+    wpbLayoutTemplate: str(formData, "wpbLayoutTemplate"),
+    wpbPresetId:       str(formData, "wpbPresetId"),
+  };
+}
+
 export function parsePPBGiftMessages(formData: FormData) {
   const enableLimit = bool(formData, "giftMessageEnableLimit", false);
   return {
