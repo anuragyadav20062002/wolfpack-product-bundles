@@ -2103,21 +2103,6 @@ export default function ConfigureBundleFlow() {
                                   />
                                   <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language">Multi Language</s-button>
                                 </div>
-                                <div style={{ marginBottom: 10 }}>
-                                  <s-text-field
-                                    label="Category Title"
-                                    placeholder="Visible title on storefront"
-                                    value={(cat as any).title ?? ""}
-                                    onInput={(e: Event) => {
-                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                        i === catIndex ? { ...c, title: (e.target as HTMLInputElement).value } : c
-                                      );
-                                      stepsState.updateStepField(step.id, "StepCategory", updated);
-                                      markAsDirty();
-                                    }}
-                                    autoComplete="off"
-                                  />
-                                </div>
                                 <div className={fullPageBundleStyles.tabRow}>
                                   <button
                                     className={catActiveTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
@@ -2165,7 +2150,7 @@ export default function ConfigureBundleFlow() {
                                           markAsDirty();
                                         }}
                                       >
-                                        {catProducts.length > 0 ? "Edit Products" : "Add Products"}
+                                        Add Products
                                       </s-button>
                                       {catProducts.length > 0 && (
                                         <s-badge tone="success">{catProducts.length} Selected</s-badge>
@@ -2223,7 +2208,7 @@ export default function ConfigureBundleFlow() {
                                           markAsDirty();
                                         }}
                                       >
-                                        {catCollections.length > 0 ? "Edit Collections" : "Add Collections"}
+                                        Add Collections
                                       </s-button>
                                       {catCollections.length > 0 && (
                                         <s-badge tone="success">{catCollections.length} Selected</s-badge>
@@ -2300,11 +2285,18 @@ export default function ConfigureBundleFlow() {
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Rules Configuration</h3>
                         <QuestionHelpTooltip tooltipKey="rulesConfiguration" />
                       </div>
-                      <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
+                      <p style={{ margin: "0 0 8px", fontSize: 14, color: "#6d7175" }}>
                         Apply rules to the entire step or to specific categories to guide your customer's selections.
                       </p>
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.linkButton}
+                        style={{ marginBottom: 12, display: "inline-block" }}
+                        onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                      >
+                        Learn More
+                      </button>
                       {(() => {
-                        const filters = ((step as any).filters as { label: string; collectionHandle: string }[] || []);
                         const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
                         const activeRuleMode = ruleCount === 0 ? "none" : "step";
                         const handleRuleModeChange = (nextMode: string) => {
@@ -2322,6 +2314,7 @@ export default function ConfigureBundleFlow() {
                             {[
                               { label: "No rules", value: "none" },
                               { label: "Step rules", value: "step" },
+                              { label: "Category rules", value: "category" },
                             ].map(opt => (
                               <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
                                 <input
