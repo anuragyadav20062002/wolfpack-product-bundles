@@ -462,6 +462,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
     const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
     const bundleLevelCss = bundleLevelCssRaw || null;
+    const wpbLayoutTemplateRaw = formData.get("wpbLayoutTemplate") as string | null;
+    const wpbLayoutTemplate = wpbLayoutTemplateRaw?.trim() || null;
+    const wpbPresetIdRaw = formData.get("wpbPresetId") as string | null;
+    const wpbPresetId = wpbPresetIdRaw?.trim() || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -598,6 +602,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         bundleBannerDesktopUrl,
         bundleBannerMobileUrl,
         bundleLevelCss,
+        wpbLayoutTemplate,
+        wpbPresetId,
         // Update steps if provided
         ...(stepsData && {
           steps: {

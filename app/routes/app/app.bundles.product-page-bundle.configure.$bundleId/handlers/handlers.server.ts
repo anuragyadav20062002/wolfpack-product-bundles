@@ -25,7 +25,7 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
-import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings } from "./parsers";
+import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings, parseWpbTemplate } from "./parsers";
 import {
   normaliseShopifyProductId,
   safeJsonParse,
@@ -366,6 +366,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
         ...parsePPBBundleSettings(formData),
+        ...parseWpbTemplate(formData),
         // Update steps if provided
         ...(stepsData && {
           steps: {

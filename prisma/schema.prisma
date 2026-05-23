@@ -138,6 +138,9 @@ model Bundle {
   bundleBannerDesktopUrl           String?
   bundleBannerMobileUrl            String?
   bundleLevelCss                   String?
+  // Select Template (wpb-layout)
+  wpbLayoutTemplate                String?  // "FBP_SIDE_FOOTER" | "PDP_INPAGE" | "PDP_MODAL"
+  wpbPresetId                      String?  // "STANDARD" | "CLASSIC" | "COMPACT" | "HORIZONTAL" | "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED"
   bundleType       BundleType        @default(product_page)
   fullPageLayout   FullPageLayout?   @default(footer_bottom)
   status           BundleStatus      @default(draft)
