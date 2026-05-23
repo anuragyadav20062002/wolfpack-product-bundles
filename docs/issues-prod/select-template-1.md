@@ -1,9 +1,9 @@
 # Issue: Select Template Nav Section — FPB + PPB
 **Issue ID:** select-template-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-23 03:30
+**Last Updated:** 2026-05-23 05:00
 
 ## Overview
 Add a "Select template" nav section to both FPB and PPB configure pages. Merchants can choose from 4 visual layout presets per bundle type. Mirrors EB's Customization overlay (captured 2026-05-23 via Chrome DevTools MCP). Persists `wpbLayoutTemplate` + `wpbPresetId` to `Bundle` DB model.
@@ -15,6 +15,17 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - `test-spec/select-template.spec.md`
 
 ## Progress Log
+
+### 2026-05-23 05:00 - UI redesign — EB parity, paint-brush icon, HR separator
+- FPB + PPB: changed `select_template` nav icon from `product` → `paint-brush-flat`
+- FPB + PPB: added `<hr>` separator (1px solid #e1e3e5) before `select_template` nav item (mirrors EB)
+- FPB + PPB: redesigned template cards to match EB Customization overlay:
+  - `border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5"`, `borderRadius: 12`
+  - Full-size `<img>` with `aspectRatio: "4/3"`, `objectFit: "cover"`, using public thumbnail assets
+  - Card footer: template name (bold, left) + Select/Selected `s-button` (right)
+  - Outer card `onClick` + button `e.stopPropagation()` for full card clickability
+  - EB-matching header: "Customize your bundle" title + subtext + "Customize Colors & Language" button
+- All 12 unit tests passing; ESLint zero new errors; 0 TS errors in changed files
 
 ### 2026-05-23 03:00 - Phases 5, 6, 7 complete — route UI + nav map
 - Phase 5: FPB route — added `select_template` nav item; state vars; 2×2 FPB template grid; formData appends; useCallback deps
@@ -48,3 +59,4 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - [x] Phase 6: PPB route — same for PPB with PPB-specific templates
 - [x] Phase 7: Nav map update
 - [x] Phase 8: Lint + final commit
+- [x] Phase 9: UI redesign — EB parity (icon, HR, card design)

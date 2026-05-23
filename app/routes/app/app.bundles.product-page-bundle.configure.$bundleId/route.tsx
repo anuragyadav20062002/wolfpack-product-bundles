@@ -198,7 +198,7 @@ const bundleSetupItems = [
   { id: "discount_pricing",   label: "Discount & Pricing", iconType: "filter" },
   { id: "bundle_visibility",  label: "Bundle Visibility",  iconType: "view"   },
   { id: "bundle_settings",    label: "Bundle Settings",    iconType: "edit"   },
-  { id: "select_template",    label: "Select Template",    iconType: "product" },
+  { id: "select_template",    label: "Select Template",    iconType: "paint-brush-flat" },
 ];
 
 const bundleVisibilityChildItems = [
@@ -1423,6 +1423,9 @@ export default function ConfigureBundleFlow() {
                       }
                       return (
                         <div key={item.id}>
+                          {item.id === "select_template" && (
+                            <hr style={{ margin: "8px 0", border: "none", borderTop: "1px solid #e1e3e5" }} />
+                          )}
                           <button
                             type="button"
                             className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
@@ -3146,62 +3149,61 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "select_template" && (() => {
               const ppbTemplates = [
-                { presetId: "CASCADE",    layoutTemplate: "PDP_INPAGE", label: "Product List"     },
-                { presetId: "COGNIVE",    layoutTemplate: "PDP_INPAGE", label: "Product Grid"     },
-                { presetId: "MODAL",      layoutTemplate: "PDP_MODAL",  label: "Horizontal Slots" },
-                { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL",  label: "Vertical Slots"   },
+                { presetId: "CASCADE",    layoutTemplate: "PDP_INPAGE", label: "Product List",     image: "/productPageThumbnail.png"   },
+                { presetId: "COGNIVE",    layoutTemplate: "PDP_INPAGE", label: "Product Grid",     image: "/fullPageThumbnail.png"       },
+                { presetId: "MODAL",      layoutTemplate: "PDP_MODAL",  label: "Horizontal Slots", image: "/sidePanelThumbnail.png"      },
+                { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL",  label: "Vertical Slots",   image: "/floatingCardThumbnail.png"   },
               ];
               return (
                 <div>
                   <s-stack direction="block" gap="base">
                     <s-section>
-                      <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <s-heading level="3" style={{ flex: 1 }}>Customize your bundle</s-heading>
-                          <s-button
-                            variant="secondary"
-                            onClick={() => navigate("/app/design-control-panel")}
-                          >
+                      <s-stack direction="block" gap="base">
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Customize your bundle</h3>
+                            <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
+                          </div>
+                          <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
                             Customize Colors &amp; Language
                           </s-button>
-                        </s-stack>
-                        <s-text tone="subdued">Choose a design that suits your needs and fits your brand</s-text>
-                        <s-grid columns="2" gap="base">
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                           {ppbTemplates.map((tpl) => {
                             const isSelected = wpbPresetId === tpl.presetId && wpbLayoutTemplate === tpl.layoutTemplate;
                             return (
-                              <s-box key={tpl.presetId} border="base" borderRadius="base" padding="small">
-                                <s-stack direction="block" gap="small">
-                                  <div style={{
-                                    width: "100%",
-                                    aspectRatio: "16/9",
-                                    background: "#f3f3f3",
-                                    borderRadius: 6,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                  }}>
-                                    <s-text tone="subdued">{tpl.label}</s-text>
-                                  </div>
-                                  <s-stack direction="inline" alignItems="center" gap="small">
-                                    <s-text style={{ flex: 1, fontWeight: 500 }}>{tpl.label}</s-text>
-                                    <s-button
-                                      variant={isSelected ? "primary" : "secondary"}
-                                      disabled={isSelected || undefined}
-                                      onClick={() => {
-                                        setWpbLayoutTemplate(tpl.layoutTemplate);
-                                        setWpbPresetId(tpl.presetId);
-                                        markAsDirty();
-                                      }}
-                                    >
-                                      {isSelected ? "Selected" : "Select"}
-                                    </s-button>
-                                  </s-stack>
-                                </s-stack>
-                              </s-box>
+                              <div
+                                key={tpl.presetId}
+                                style={{
+                                  border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
+                                  borderRadius: 12,
+                                  overflow: "hidden",
+                                  background: "#f6f6f7",
+                                  cursor: isSelected ? "default" : "pointer",
+                                }}
+                                onClick={() => { if (!isSelected) { setWpbLayoutTemplate(tpl.layoutTemplate); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
+                              >
+                                <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
+                                  <img
+                                    src={tpl.image}
+                                    alt={tpl.label}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                  />
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
+                                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{tpl.label}</span>
+                                  <s-button
+                                    variant={isSelected ? "primary" : "secondary"}
+                                    disabled={isSelected || undefined}
+                                    onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setWpbLayoutTemplate(tpl.layoutTemplate); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
+                                  >
+                                    {isSelected ? "Selected" : "Select"}
+                                  </s-button>
+                                </div>
+                              </div>
                             );
                           })}
-                        </s-grid>
+                        </div>
                       </s-stack>
                     </s-section>
                   </s-stack>
