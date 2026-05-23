@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-23 06:00
+**Last Updated:** 2026-05-24 10:00
 
 ## Overview
 
@@ -34,6 +34,15 @@ FPB + PPB changes:
 - Files: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
 - ESLint: 0 errors; all unit tests passing
 
+### 2026-05-24 10:00 - Section 2 complete: Bundle Visibility parity (FPB + PPB)
+
+FPB + PPB changes:
+- App Embed Status: removed leading `<s-icon>` — EB has no icon before the heading
+- Publishing Best Practices cards: replaced `<s-icon name="image-alt" />` placeholder with `<img src={img} alt={title} />` using WPB public images (bundleGallery.png, fpb.png, pdp.png, productPageThumbnail.png); `.visibilityGuideMedia` height raised 74px → 120px with `overflow:hidden` + `img { object-fit:cover }` in shared CSS
+- Your Bundle Link: removed `<s-icon name="globe" />` before heading; changed inline stack → block stack; added "emails," to description to match EB copy exactly
+- Files: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`, `app/styles/routes/bundle-configure-shared.module.css`
+- ESLint: 0 errors; visually verified in Chrome (App Embed Status no icon, cards with images, Bundle Link no globe)
+
 ### 2026-05-23 - Issue created, starting Section 1: Step Flow + Step Setup + Category accordion
 
 ## Phases Checklist
@@ -43,6 +52,6 @@ FPB + PPB changes:
   - [x] Implement FPB changes
   - [x] Implement PPB changes
   - [ ] E2E verify in Chrome (full E2E at end of all sections)
-- [ ] Section 2: Bundle Visibility (FPB + PPB)
+- [x] Section 2: Bundle Visibility (FPB + PPB)
 - [ ] Section 3: Bundle Settings (FPB + PPB)
 - [ ] Section 4: Select Template — full reaudit (FPB + PPB)

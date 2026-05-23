@@ -3136,7 +3136,6 @@ export default function ConfigureBundleFlow() {
               <s-stack direction="block" gap="base">
                 <s-section>
                   <s-stack direction="inline" gap="base" alignItems="center">
-                    <s-icon name={appEmbedEnabled ? "check" : "alert-triangle"} />
                     <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
                       <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>App Embed Status</h3>
                       <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
@@ -3166,14 +3165,14 @@ export default function ConfigureBundleFlow() {
                     </s-stack>
                     <div className={fullPageBundleStyles.visibilityGuideGrid}>
                       {[
-                        ["Hero Banner", "Add a button to your homepage hero to drive shoppers directly to your bundle."],
-                        ["Navigation Menu", "Add your bundle as a nav link so shoppers can find it from anywhere on your store."],
-                        ["Announcement Banner", "Show your offer in the announcement bar so visitors see it instantly."],
-                        ["Featured Product Card", "Feature your bundle product on your homepage so shoppers find it right away."],
-                      ].map(([title, description]) => (
+                        { title: "Hero Banner",         desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",           img: "/bundleGallery.png" },
+                        { title: "Navigation Menu",     desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.",      img: "/fpb.png" },
+                        { title: "Announcement Banner", desc: "Show your offer in the announcement bar so visitors see it instantly.",                    img: "/pdp.png" },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",           img: "/productPageThumbnail.png" },
+                      ].map(({ title, desc: description, img }) => (
                         <div key={title} className={fullPageBundleStyles.visibilityGuideCard}>
                           <div className={fullPageBundleStyles.visibilityGuideMedia}>
-                            <s-icon name="image-alt" />
+                            <img src={img} alt={title} />
                           </div>
                           <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{title}</h4>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175", lineHeight: 1.35 }}>{description}</p>
@@ -3189,14 +3188,11 @@ export default function ConfigureBundleFlow() {
                 {bundle.bundleType === 'full_page' && (
                   <s-section>
                     <s-stack direction="block" gap="small">
-                      <s-stack direction="inline" gap="small">
-                        <s-icon name="globe" />
-                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your Bundle Link</h3>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Use this link to place your bundle anywhere - theme components, ads, or social bios.
-                          </p>
-                        </s-stack>
+                      <s-stack direction="block" gap="small-400">
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your Bundle Link</h3>
+                        <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
+                          Use this link to place your bundle anywhere - theme components, emails, ads, or social bios.
+                        </p>
                       </s-stack>
                       <s-stack direction="inline" gap="small">
                         <s-text-field
