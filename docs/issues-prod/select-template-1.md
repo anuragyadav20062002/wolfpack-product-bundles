@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-23 02:00
+**Last Updated:** 2026-05-23 03:00
 
 ## Overview
 Add a "Select template" nav section to both FPB and PPB configure pages. Merchants can choose from 4 visual layout presets per bundle type. Mirrors EB's Customization overlay (captured 2026-05-23 via Chrome DevTools MCP). Persists `wpbLayoutTemplate` + `wpbPresetId` to `Bundle` DB model.
@@ -15,6 +15,12 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - `test-spec/select-template.spec.md`
 
 ## Progress Log
+
+### 2026-05-23 03:00 - Phases 5, 6, 7 complete — route UI + nav map
+- Phase 5: FPB route — added `select_template` nav item; state vars; 2×2 FPB template grid; formData appends; useCallback deps
+- Phase 6: PPB route — same as FPB, PPB-specific templates (CASCADE/COGNIVE/MODAL/SIMPLIFIED)
+- Phase 7: `docs/app-nav-map/APP_NAVIGATION_MAP.md` updated for both FPB + PPB select_template sections
+- All 12 unit tests passing; 0 TS errors; 0 ESLint errors
 
 ### 2026-05-23 02:00 - Phases 1, 3, 4 complete — schema + handlers
 - Phase 1: Added `wpbLayoutTemplate String?` + `wpbPresetId String?` to `prisma/schema.prisma`; migration `20260523124643_add_wpb_layout_template_preset_id` applied to SIT DB
@@ -38,7 +44,7 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - [x] Phase 2: Parser — add `parseWpbTemplate` to PPB parsers.ts; unit tests pass
 - [x] Phase 3: FPB handler — parse + persist new fields in FPB save handler
 - [x] Phase 4: PPB handler — spread `parseWpbTemplate` in PPB save handler
-- [ ] Phase 5: FPB route — add nav item + section UI + form state + hidden inputs
-- [ ] Phase 6: PPB route — same for PPB with PPB-specific templates
-- [ ] Phase 7: Nav map update
+- [x] Phase 5: FPB route — add nav item + section UI + form state + hidden inputs
+- [x] Phase 6: PPB route — same for PPB with PPB-specific templates
+- [x] Phase 7: Nav map update
 - [ ] Phase 8: Lint + final commit

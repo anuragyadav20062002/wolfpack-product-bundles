@@ -223,6 +223,7 @@ const bundleSetupItems = [
   { id: "discount_pricing",  label: "Discount & Pricing", iconType: "filter", fullPageOnly: false },
   { id: "bundle_visibility", label: "Bundle Visibility",  iconType: "view",   fullPageOnly: true  },
   { id: "bundle_settings",   label: "Bundle Settings",    iconType: "edit",   fullPageOnly: false },
+  { id: "select_template",   label: "Select Template",    iconType: "product", fullPageOnly: false },
 ];
 
 const stepSetupChildItems = [
@@ -694,6 +695,10 @@ export default function ConfigureBundleFlow() {
   // Bundle Level CSS state (Gap 3)
   const [bundleLevelCss, setBundleLevelCss] = useState<string>((bundle as any).bundleLevelCss ?? "");
 
+  // Select Template state
+  const [wpbLayoutTemplate, setWpbLayoutTemplate] = useState<string | null>((bundle as any).wpbLayoutTemplate ?? null);
+  const [wpbPresetId, setWpbPresetId] = useState<string | null>((bundle as any).wpbPresetId ?? null);
+
   // Step chip navigation slide animation
   const [slideKey, setSlideKey] = useState(0);
   const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
@@ -945,6 +950,8 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleBannerDesktopUrl", bundleBannerDesktopUrl);
       formData.append("bundleBannerMobileUrl", bundleBannerMobileUrl);
       formData.append("bundleLevelCss", bundleLevelCss);
+      formData.append("wpbLayoutTemplate", wpbLayoutTemplate ?? "");
+      formData.append("wpbPresetId", wpbPresetId ?? "");
 
       // Submit to server action using fetcher
 
@@ -1003,6 +1010,8 @@ export default function ConfigureBundleFlow() {
     bundleBannerDesktopUrl,
     bundleBannerMobileUrl,
     bundleLevelCss,
+    wpbLayoutTemplate,
+    wpbPresetId,
     shopify
   ]);
 
@@ -3806,6 +3815,72 @@ export default function ConfigureBundleFlow() {
                         status={formState.bundleStatus}
                         onChange={formState.setBundleStatus}
                       />
+                    </s-section>
+                  </s-stack>
+                </div>
+              );
+            })()}
+
+            {activeSection === "select_template" && (() => {
+              const fpbTemplates = [
+                { presetId: "STANDARD",   label: "Standard Design"   },
+                { presetId: "CLASSIC",    label: "Classic Design"    },
+                { presetId: "COMPACT",    label: "Compact Design"    },
+                { presetId: "HORIZONTAL", label: "Horizontal Design" },
+              ];
+              const FPB_LAYOUT = "FBP_SIDE_FOOTER";
+              return (
+                <div>
+                  <s-stack direction="block" gap="base">
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <s-heading level="3" style={{ flex: 1 }}>Customize your bundle</s-heading>
+                          <s-button
+                            variant="secondary"
+                            onClick={() => navigate("/app/design-control-panel")}
+                          >
+                            Customize Colors &amp; Language
+                          </s-button>
+                        </s-stack>
+                        <s-text tone="subdued">Choose a design that suits your needs and fits your brand</s-text>
+                        <s-grid columns="2" gap="base">
+                          {fpbTemplates.map((tpl) => {
+                            const isSelected = wpbPresetId === tpl.presetId && wpbLayoutTemplate === FPB_LAYOUT;
+                            return (
+                              <s-box key={tpl.presetId} border="base" borderRadius="base" padding="small">
+                                <s-stack direction="block" gap="small">
+                                  <div style={{
+                                    width: "100%",
+                                    aspectRatio: "16/9",
+                                    background: "#f3f3f3",
+                                    borderRadius: 6,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}>
+                                    <s-text tone="subdued">{tpl.label}</s-text>
+                                  </div>
+                                  <s-stack direction="inline" alignItems="center" gap="small">
+                                    <s-text style={{ flex: 1, fontWeight: 500 }}>{tpl.label}</s-text>
+                                    <s-button
+                                      variant={isSelected ? "primary" : "secondary"}
+                                      disabled={isSelected || undefined}
+                                      onClick={() => {
+                                        setWpbLayoutTemplate(FPB_LAYOUT);
+                                        setWpbPresetId(tpl.presetId);
+                                        markAsDirty();
+                                      }}
+                                    >
+                                      {isSelected ? "Selected" : "Select"}
+                                    </s-button>
+                                  </s-stack>
+                                </s-stack>
+                              </s-box>
+                            );
+                          })}
+                        </s-grid>
+                      </s-stack>
                     </s-section>
                   </s-stack>
                 </div>

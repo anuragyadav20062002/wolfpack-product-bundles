@@ -287,9 +287,16 @@ FPB Configure Page
 │   │   ├── Tier configuration (multi-tier pricing)
 │   │   └── Preview of effective prices
 │   │
-│   └── Sync Bundle
-│       ├── Sync status / last synced timestamp
-│       └── [Button] "Sync Now" → background job
+│   ├── Sync Bundle
+│   │   ├── Sync status / last synced timestamp
+│   │   └── [Button] "Sync Now" → background job
+│   │
+│   └── Select Template        → select_template section
+│       ├── Heading: "Customize your bundle"
+│       ├── [Button] "Customize Colors & Language" → /app/design-control-panel
+│       └── 2×2 template grid (FPB: Standard Design, Classic Design, Compact Design, Horizontal Design)
+│           └── Each card: preview placeholder + label + [Select]/[Selected] button
+│               Persists: wpbLayoutTemplate (always FBP_SIDE_FOOTER) + wpbPresetId (STANDARD | CLASSIC | COMPACT | HORIZONTAL)
 │
 ├── Save Bar (App Bridge): [Discard] [Save]
 │
@@ -316,7 +323,8 @@ PPB Configure Page
 │   ├── Messages                     → messages section
 │   ├── Discount & Pricing           → discount_pricing section
 │   ├── [👁] Bundle Visibility       → bundle_visibility section  [Pending badge when widget disabled]
-│   └── [✏] Bundle Settings         → bundle_settings section
+│   ├── [✏] Bundle Settings         → bundle_settings section
+│   └── [📦] Select Template        → select_template section
 │
 ├── Step Setup
 │   ├── Bundle product picker (Shopify resource picker)
@@ -375,6 +383,13 @@ PPB Configure Page
 │   ├── Cart Line Labels (bundleCartTitle + bundleCartSubtitle)
 │   ├── Bundle Banners (bundleBannerDesktopUrl + bundleBannerMobileUrl)
 │   └── Custom CSS textarea (bundleLevelCss — sanitized via processCss)
+│
+├── Select Template
+│   ├── Heading: "Customize your bundle"
+│   ├── [Button] "Customize Colors & Language" → /app/design-control-panel
+│   └── 2×2 template grid (PPB: Product List, Product Grid, Horizontal Slots, Vertical Slots)
+│       └── Each card: preview placeholder + label + [Select]/[Selected] button
+│           Persists: wpbLayoutTemplate (PDP_INPAGE | PDP_MODAL) + wpbPresetId (CASCADE | COGNIVE | MODAL | SIMPLIFIED)
 │
 └── Floating Readiness Gauge (position: fixed, bottom-left)
     ├── Circular SVG progress ring (score 0–100)
