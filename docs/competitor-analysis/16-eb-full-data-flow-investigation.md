@@ -893,7 +893,7 @@ No cursor variables (`after: $cursor`), no `pageInfo { hasNextPage endCursor }`,
 
 ## Gaps And Blockers
 
-Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination. Phase 4 closed template enumeration, FPB preset CSS confirmation, and variant display DOM rendering. Phase 5 confirmed PPB template dispatch architecture. Phases 6 and 7 captured the complete FPB and PPB template CSS from static analysis. **Eight gaps remain unconfirmed** — see the "Confirmed Gaps" section at the end of this document for exact reproduction steps for each.
+Phase 3 closed multi-step navigation DOM, JS state transitions, and collection pagination. Phase 4 closed template enumeration, FPB preset CSS confirmation, and variant display DOM rendering. Phase 5 confirmed PPB template dispatch architecture. Phases 6 and 7 captured the complete FPB and PPB template CSS from static analysis. Phase 8 resolved Gaps 1, 3, 4, 5, and 7 and partially resolved Gaps 6 and 8. **Two gaps remain fully unconfirmed** — Gap 2 (box enforcement UI behavior) and the storefront effect of `useSingleStepCategoriesAsBundleSteps: true` (Gap 6 partial) — see the "Confirmed Gaps" section at the end of this document.
 
 Fully resolved:
 - FPB non-classic preset IDs (`STANDARD`, `COMPACT`, `HORIZONTAL`) — confirmed via CSS scoping inside `.gbbMinimilisticLayout`; all four presets use `bundleDesignTemplate: "FBP_SIDE_FOOTER"`
@@ -1860,20 +1860,381 @@ body[gbbmix-template-id="SIMPLIFIED"] {
 
 ---
 
+## Phase 8 — Gap Resolution Session (2026-05-23)
+
+This phase resolves five of the eight previously unconfirmed gaps via live storefront inspection of the two research bundles.
+
+---
+
+### Phase 8 / Gap 1 Resolution — Multi-step FPB Cart Add Payload (RESOLVED)
+
+**Bundle under test:** `WPB Research Landing Bundle 2026-05-22` (`bundleId: 2`, two steps: `addProductsPage1`, `addProductsPage2`)
+
+**Finding:** A multi-step FPB cart add is a single `POST /cart/add.js` with a JSON body. Items from all selected steps are batched into one `items` array. There is no per-step separate call.
+
+**`POST /cart/add.js` request body (multi-step FPB, 1 item from step 1):**
+
+```json
+{
+  "items": [
+    {
+      "id": 45038877868228,
+      "quantity": 1,
+      "properties": {
+        "Box": 2,
+        "_bundleName": "WPB Research Landing Bundle 2026-05-22",
+        "_easyBundle:prodQty": 1,
+        "_easyBundle:OfferId": "FBP-2_AQR_1"
+      }
+    }
+  ]
+}
+```
+
+**Cart properties sent per item:**
+
+| Property | Value format | Notes |
+|---|---|---|
+| `_easyBundle:OfferId` | `FBP-{bundleId}_{sessionKey}_{itemCount}` | Unique per add-to-cart action |
+| `_bundleName` | Bundle name string | Display only |
+| `_easyBundle:prodQty` | Integer | Total product count in this add |
+| `Box` | Integer (box tier index, 1-based) | Which `boxSelection.rules` tier was selected |
+
+**Key finding — step info is client-only:** The widget client state (`giftBoxCartData.items[].properties`) tracks `_boxProduct` (step page ID, e.g. `"addProductsPage1"`), `_Category`, `_CategoryName`, and `_uniqueGbbItemKey`. **None of these step/category properties are sent to `/cart/add.js`.** The cart line item has no step attribution. Cart Transform groups by `_easyBundle:OfferId` alone.
+
+**`_easyBundle:OfferId` session key format:** The `_{sessionKey}` segment is a 3-character alphanumeric session token regenerated each page load. The trailing `_{itemCount}` suffix in the cart payload becomes the key **without** the suffix in the `bundle_details` metafield: `FBP-2_AQR_1` → metafield key `FBP-2_AQR`.
+
+**Post-add Storefront API sequence (same pattern as single-step):**
+
+1. `POST /api/2025-04/graphql.json` → `GetCartMetafield` query — fetches existing `bundle_details` JSON
+2. `POST /api/2025-04/graphql.json` → `cartMetafieldsSet` mutation — merges new session into accumulated value
+
+**`bundle_details` metafield value after three add-to-cart actions (FPB + PPB + FPB again):**
+
+```json
+{
+  "FBP-2_K6C": { "displayProperties": { "Items": "1 x 14k Dangling Obsidian Earrings" } },
+  "MIX-894502_K1K": { "displayProperties": { "Items": "1 x 14k Dangling Obsidian Earrings" } },
+  "FBP-2_AQR": { "displayProperties": { "Items": "1 x 14k Dangling Obsidian Earrings" } }
+}
+```
+
+Multiple bundle sessions (including FPB + PPB) accumulate under separate keys in the same `bundle_details` cart metafield.
+
+---
+
+### Phase 8 / Gap 3 Resolution — FPB Storefront Config Runtime Shape (RESOLVED)
+
+**Finding:** `window.easybundles_ext_data.bundleLinkData` is NOT the FPB config container. It is a separate product-link registry with these keys only: `_id, bundleId, bundleName, createdAt, parentProductShopifyData, parentProductVariantId, bundleImg, bundleUpsellConfig, productsForBundleLink, collectionsForBundleLink`.
+
+**The FPB bundle config lives at `window.gbb.settings.stepsConfigurationData`.** This object is loaded inline in the `/apps/gbb/easybundle/{bundleId}` proxy page HTML response — no separate config API call.
+
+**`window.gbb.settings` top-level keys:**
+
+```
+pageCustomizationData, giftwrap, greetingCard, giftMessage, customerUploads, videoMessage,
+giftAddons, scheduleDelivery, addonProducts, stepsConfigurationData, discountsData,
+SERVER_URL, app, bundleSettings, merchantInfo, languageData, STOREFRONT_ACCESS_TOKEN,
+gbbKiteData, shopifyData
+```
+
+**Product hydration architecture — direct-product categories:**
+
+Products stored in `productsData1.categories.{catId}.products[]` in the admin payload contain only IDs. At storefront runtime, the widget calls:
+
+```graphql
+query test($ids: [ID!]!, $countryCode: CountryCode!, $languageCode: LanguageCode!)
+  @inContext(country: $countryCode, language: $languageCode) {
+  nodes(ids: $ids) {
+    ... on Product {
+      id availableForSale title handle createdAt description productType
+      options { id name values }
+      featuredImage { id originalSrc alt transformedSrc }
+      images(first: 100) { edges { node { id originalSrc alt transformedSrc } } }
+      media(first: 100) { edges { node { id alt previewImage { url id } } } }
+      sellingPlanGroups(first: 100) { ... }
+      variants(first: 100) {
+        edges { node {
+          id sku title price { amount currencyCode } weight weightUnit
+          requiresShipping currentlyNotInStock compareAtPrice { amount currencyCode }
+          quantityAvailable selectedOptions { name value } availableForSale
+          image { id originalSrc transformedSrc }
+          sellingPlanAllocations(first: 100) { ... }
+        } }
+      }
+      priceRange { ... } compareAtPriceRange { ... }
+      tags totalInventory vendor requiresSellingPlan updatedAt
+    }
+  }
+}
+```
+
+The call fires on page load, batching all direct-product IDs from all categories across all steps. Products from collection-backed categories are fetched separately on category tab activation (also via `nodes(ids: [...])`, IDs pre-fetched from the collection).
+
+**Product shape in `window.gbb.state.giftBoxCartData.items[].` after hydration:**
+
+```
+id (GID), productId (numeric string), graphqlId (GID), handle, variants[], hasOnlyDefaultVariant,
+images[], title, tags[], updated_at, sellingPlanGroups[]
+```
+
+**`bundleTextConfig` runtime shape (Gap 8 partial):**
+
+```json
+{
+  "bundleTextConfig": {
+    "bundleSummary": {
+      "title": "Your Bundle",
+      "subTitle": "Review your bundle"
+    }
+  }
+}
+```
+
+Only `bundleSummary` with `title` and `subTitle` observed at runtime. Admin save may expose additional sub-keys.
+
+**Page tracking call:** On each FPB page load, the widget fires:
+
+```http
+POST /apps/gbb/updateFullPageBundleView
+{
+  "data": {
+    "shopName": "...",
+    "stepsConfigurationData": {
+      "shopName": "...",
+      "_id": "...",
+      "bundleId": "2",
+      "bundleName": "WPB Research Landing Bundle 2026-05-22",
+      "trackBundleSessionViews": true,
+      "source": "directLink"
+    }
+  }
+}
+```
+
+Response: `{ "responseCode": 200, "responseMessage": "Full page Bundle View updated successfully" }`. This is analytics-only; does not return config.
+
+---
+
+### Phase 8 / Gap 4 Resolution — PPB COGNIVE Live DOM (RESOLVED)
+
+Template switched from "Product List" (CASCADE) to "Product Grid" (COGNIVE) on `WPB Research Product Page Bundle 2026-05-22` via EB admin overlay (`POST /api/mixAndMatch/update` payload: `bundleDesignTemplate: "PDP_INPAGE"`, `bundleDesignTemplateData.templateId: "COGNIVE"`).
+
+**COGNIVE admin save payload:**
+
+```json
+{
+  "bundleDesignTemplate": "PDP_INPAGE",
+  "bundleDesignTemplateData": { "templateId": "COGNIVE" }
+}
+```
+
+**COGNIVE vs CASCADE DOM differences (only what changes):**
+
+| Element | CASCADE | COGNIVE |
+|---|---|---|
+| `gbbMixCascadeStepsContainer` | `flex-direction: row` (horizontal steps) | `flex-direction: column` (vertical steps) |
+| `gbbMixCascadeProductsWrapper` | vertical list (`display: block`) | `display: grid; grid-template-columns: ~84.7px 84.7px 84.7px` (3-col) |
+| Product card `gbbMixCascadeProductWrapper` | horizontal row (`flex-direction: row`) | vertical column (`flex-direction: column; width: ~84.7px`) |
+| Product title/price | left-aligned | `text-align: center` |
+| Product image | proportional, left-side | `width: ~84.7px; height: ~84.7px; object-fit: cover` (square crop) |
+
+The COGNIVE template reuses all CASCADE class names — it is a CSS-only variant of CASCADE. JS init path is identical (`gbbMix.templates.CASCADE.init(t)`). The `body[gbbmix-template-id="COGNIVE"]` attribute drives the CSS selector overrides.
+
+**`boxSelection` full schema** (captured from COGNIVE admin save response):
+
+```json
+{
+  "boxSelection": {
+    "rules": [
+      {
+        "ruleId": "134",
+        "boxQuantity": 2,
+        "boxLabel": "Box of 2",
+        "boxSubtext": "5% off",
+        "isDefaultSelected": true
+      },
+      {
+        "ruleId": "905",
+        "boxQuantity": 21500,
+        "boxLabel": "Box of 2",
+        "boxSubtext": "5% off",
+        "isDefaultSelected": false
+      }
+    ],
+    "isEnabled": false,
+    "validateBoxSelectionQuantity": false,
+    "textConfig": {
+      "isEnabled": false,
+      "boxConditionSuccessText": "All Set! (You can add more items)",
+      "boxConditionInitialText": "Select upto {{quantityDifference}} Items",
+      "boxConditionInProgressText": "{{quantityDifference}} Items to Go"
+    }
+  }
+}
+```
+
+---
+
+### Phase 8 / Gap 5 Resolution — PPB MODAL and SIMPLIFIED Live DOM (RESOLVED)
+
+Template switched to "Horizontal Slots" (MODAL) and then "Vertical Slots" (SIMPLIFIED) via EB admin overlay.
+
+**MODAL admin save payload:**
+
+```json
+{
+  "bundleDesignTemplate": "PDP_MODAL",
+  "bundleDesignTemplateData": { "templateId": "MODAL" }
+}
+```
+
+**SIMPLIFIED admin save payload:**
+
+```json
+{
+  "bundleDesignTemplate": "PDP_MODAL",
+  "bundleDesignTemplateData": { "templateId": "SIMPLIFIED" }
+}
+```
+
+Both MODAL and SIMPLIFIED use `bundleDesignTemplate: "PDP_MODAL"` and fire JS path `gbbMixAndMatchBundle.initialize(t, e)`. The DOM structure is completely different from CASCADE/COGNIVE.
+
+**MODAL/SIMPLIFIED outer DOM structure:**
+
+```
+gbbMixPageWrapper gbbMixProductPageWrapperV2
+  gbbMixProductPageWidgetContainer  (display: grid)
+    gbbMixProductPageCategoriesWrapper gbbMixProductPageCategoriesWrapperVStacked
+      (display: grid; grid-template-columns: 300px)
+      gbbMixProductPageCategoryWrapper gbbMixProductPageStepWrapper
+        (data-step-id="productsData1", data-step-title="Step 1 - Product Picks")
+        gbbMixProductPageCategoryTitle gbbMixProductPageStepTitle
+        gbbMixProductPageCategorySelectedProductsWrapper gbbMixProductPageStepSelectedProductsWrapper
+          ← 3-column MODAL: grid-template-columns: 89.3px 89.3px 89.3px
+          ← 1-column SIMPLIFIED: grid-template-columns: 300px
+          gbbMixProductCardWrapper
+            gbbMixEmptyStateCard (data-step-id, data-category-id, data-is-event-registered)
+      gbbMixProductPageCategoryWrapper  (data-category-id="DefaultProduct")
+        gbbMixProductPageCategorySelectedProductsWrapper
+          gbbMixProductCardWrapper (data-unique-item-key, data-category-id, data-step-id)
+            gbbMixSelectedProductCard (data-variant-id, data-unique-item-key, data-category-id)
+    gbbMixFooterPriceSectionWrapper  (display: none)
+    gbbMixBundleAddToCartBtnWrapper
+      gbbMixAddtoCartBtn gbbMixAddtoCartBtnV2 gbbMixAddtoCartBtnDisabled
+  gbbMixModalContentWrapper
+    gbbMixModalHeader
+    gbbMixModalBody
+    gbbMixModalFooter
+```
+
+**MODAL vs SIMPLIFIED key difference:**
+
+The only DOM difference between MODAL and SIMPLIFIED is `grid-template-columns` on `.gbbMixProductPageCategorySelectedProductsWrapper`:
+
+| Template | `grid-template-columns` | Slot appearance |
+|---|---|---|
+| MODAL (Horizontal Slots) | `89.3px 89.3px 89.3px` | Three narrow mini-slot cards per row |
+| SIMPLIFIED (Vertical Slots) | `300px` (full-width) | One full-width slot per row |
+
+Both templates set `body[gbbmix-template-id="MODAL"]` or `body[gbbmix-template-id="SIMPLIFIED"]` respectively. The CSS rule `body[gbbmix-template-id="SIMPLIFIED"] .gbbMixProductPageCategorySelectedProductsWrapper { grid-template-columns: 1fr }` is what drives SIMPLIFIED's single-column layout.
+
+**`renderFilledSlotsAsHorizontalStacked` architecture** (new finding, related to Gap 5):
+
+The MODAL/SIMPLIFIED distinction (`PDP_MODAL` + `templateId`) controls **modal trigger behavior only**, not layout. The HStacked vs VStacked category arrangement is separately controlled by the global `pageCustomizationData.mixAndMatchData.renderFilledSlotsAsHorizontalStacked` flag — a store-level setting, not per-bundle.
+
+When `renderFilledSlotsAsHorizontalStacked: true`, the widget calls `gbbMix.utility.rearrangeCategoriesToHorizontalLayout()` which adds `gbbMixProductPageCategoriesWrapperHStacked` class → `grid-template-columns: repeat(3, 1fr)`.
+
+Per-bundle override possible via `null == bundleLevelSetting ? globalSetting : bundleLevelSetting` pattern in the widget JS.
+
+---
+
+### Phase 8 / Gap 6 Partial Resolution — `useSingleStepCategoriesAsBundleSteps` (PARTIALLY RESOLVED)
+
+**Source confirmed:** `useSingleStepCategoriesAsBundleSteps` is a global page customization setting at `window.easybundles_ext_data.pageCustomizationData.mixAndMatchData.useSingleStepCategoriesAsBundleSteps`. It is NOT a per-bundle field on the PPB document.
+
+**Full `pageCustomizationData.mixAndMatchData` shape captured at runtime:**
+
+```json
+{
+  "executeScriptAfterAddToCart": "",
+  "redirectToCartEnabled": false,
+  "redirectToCheckoutEnabled": false,
+  "isExecuteCustomScriptAfterAddToCartEnabled": false,
+  "executeDefaultSideCartUpdate": true,
+  "sideCartSectionId": "",
+  "sideCartSectionSelector": "",
+  "cartPageItemsSelector": "",
+  "cartPageItemsSectionId": "",
+  "hideOutOfStockProducts": true,
+  "isValidateInventoryEnabled": false,
+  "sideCartOpenBtnSelector": "",
+  "executeCustomAfterPageLoad": "",
+  "customStyle": null,
+  "showProductComparedAtPrice": false,
+  "addBundleToCartOnDone": false,
+  "renderSlotsBasedOnCondition": true,
+  "renderFilledSlotsAsHorizontalStacked": false,
+  "addToBundleOnProductCardClick": true,
+  "overwriteProductPagePriceWithBundlePrice": true,
+  "allowPartialLocaleMatching": true,
+  "useSingleStepCategoriesAsBundleSteps": false,
+  "showOutOfStockOnProductCardButton": true,
+  "validateConditionsBeforeAddToCart": true,
+  "showPricingOnPurchaseOptionsWidget": true,
+  "showDefaultProductUnavailableMessageOnAtc": true
+}
+```
+
+**What remains unknown:** The storefront rendering change when `useSingleStepCategoriesAsBundleSteps: true` — whether categories appear as top-level step tabs, how `gbbMixCascadeStepsWrapper` is affected, and where the admin toggle lives.
+
+---
+
+### Phase 8 / Gap 7 Resolution — FPB `productsData2` Storefront Shape (RESOLVED)
+
+**Finding:** `productsData2` IS present at `window.gbb.settings.stepsConfigurationData.productsData2` when a second step is configured, even if that step has no products. The structure is identical to `productsData1`.
+
+**`productsData2` JS state at runtime (`WPB Research Landing Bundle 2026-05-22`):**
+
+```json
+{
+  "productPageStepText": "Multiple Categories",
+  "categories": {
+    "category33774": {
+      "categoryId": "category33774",
+      "products": [],
+      "collectionsSelectedData": []
+    }
+  }
+}
+```
+
+Empty steps (0 products, 0 collections) are still included in the runtime config. The storefront renders "No Products Available" for empty steps — the widget does not hide empty steps from navigation.
+
+**Navigation state on page 2 (step 2):**
+
+```json
+{
+  "currentPageId": "addProductsPage2",
+  "isLastPage": true,
+  "navigationItems": [
+    { "id": "addProductsPage1", "text": "Step 1 - Jewelry Picks", "isActive": false, "isCompleted": true },
+    { "id": "addProductsPage2", "text": "Multiple Categories", "isActive": true, "isCompleted": false }
+  ]
+}
+```
+
+Step 1 transitions to `isCompleted: true` (checkmark DOM indicator) when Next is clicked.
+
+---
+
 ## Confirmed Gaps — Features Without Captured Evidence
 
 This section records features that exist in EB but were not observable during the investigation. **No WPB implementation should be built from assumptions for these items.** Each gap requires either a new capture session or an explicit design decision before implementation.
 
-### Gap 1 — Multi-step FPB Cart Add Payload (unconfirmed)
+### Gap 1 — Multi-step FPB Cart Add Payload ✅ RESOLVED (Phase 8)
 
-**What's known:** Single-step FPB cart add sends all selected component items in one `POST /cart/add.js` (JSON) call with `_easyBundle:OfferId: "FBP-{bundleId}_{sessionKey}_{itemIndex}"` per line.
-
-**What's unknown:** For a multi-step FPB bundle (multiple `productsDataN` steps), the cart accumulation pattern is unconfirmed:
-- Are items from all steps sent in a single `POST /cart/add.js` call (most likely), or does each step trigger a separate call?
-- Does `_boxProduct` item property change per step (it was `"addProductsPage1"` in the single-step capture)?
-- Does the `bundle_details` cart metafield shape change for multi-step?
-
-**To confirm:** Create a 2-step FPB on `yash-wolfpack`, add products on both steps, click Add To Cart, and capture the `/cart/add.js` network payload.
+**Resolution:** Single `POST /cart/add.js` with JSON body containing all items from all steps. Step info is NOT sent in cart properties. See Phase 8 / Gap 1 Resolution for the full payload, property schema, and `bundle_details` metafield format.
 
 ---
 
@@ -1891,60 +2252,40 @@ This section records features that exist in EB but were not observable during th
 
 ---
 
-### Gap 3 — FPB Storefront Config Runtime Shape (unconfirmed)
+### Gap 3 — FPB Storefront Config Runtime Shape ✅ RESOLVED (Phase 8)
 
-**What's known:** `window.easybundles_ext_data.bundleLinkData` carries FPB bundle config inline in the proxy page document. The admin-side save shape is fully documented.
-
-**What's unknown:** The exact server-serialized shape of `bundleLinkData[].stepsConfigurationData` at runtime — whether EB's server denormalizes product GIDs into inline product objects (pre-hydrated) or only includes IDs and lets the widget call Storefront API separately. The live storefront was not captured for `stepsConfigurationData` specifically.
-
-**To confirm:** On `yash-wolfpack`, load a FPB bundle page, run `JSON.stringify(window.easybundles_ext_data.bundleLinkData[0], null, 2)` in DevTools and record the full output (omit token fields).
+**Resolution:** Config lives at `window.gbb.settings.stepsConfigurationData` (NOT in `bundleLinkData`). Embedded inline in the proxy page HTML. Products are ID-only in the admin payload; the widget fetches full data on page load via `nodes(ids: [...])` Storefront API query. See Phase 8 / Gap 3 Resolution for the full `window.gbb.settings` key list, hydration query, and `bundleTextConfig` partial shape.
 
 ---
 
-### Gap 4 — PPB COGNIVE Live DOM (unconfirmed)
+### Gap 4 — PPB COGNIVE Live DOM ✅ RESOLVED (Phase 8)
 
-**What's known:** CSS rules (`body[gbbmix-template-id="COGNIVE"]`) and JS `reArrangeBodyWrapperPosition` function are both fully captured. The grid layout (3-col desktop, 2-col mobile) and vertical step stacking are confirmed from CSS.
-
-**What's unknown:** Live DOM structure when COGNIVE is rendered — what the step containers look like, how `.gbbMixCascadeBodyWrapper` appears after step selection, and what `gbbMixCogniveProductsWrapper` renders.
-
-**To confirm:** Change `WPB Research Product Page Bundle 2026-05-22` template to "Product Grid" in EB admin, load the storefront, take a DOM snapshot.
+**Resolution:** COGNIVE is a CSS-only variant of CASCADE — same class names, same JS init path. Differences: vertical step stacking, 3-column product grid (~84.7px cells), square-cropped images, centered text. See Phase 8 / Gap 4 Resolution for full DOM diff table and `boxSelection` schema.
 
 ---
 
-### Gap 5 — PPB MODAL and SIMPLIFIED Live DOM (unconfirmed)
+### Gap 5 — PPB MODAL and SIMPLIFIED Live DOM ✅ RESOLVED (Phase 8)
 
-**What's known:** CSS rules for `gbbMixProductPageCategoriesWrapperHStacked` (MODAL) and `body[gbbmix-template-id="SIMPLIFIED"]` + `gbbMixProductPageCategoriesWrapperVStacked` are captured. The `rearrangeCategoriesToHorizontalLayout` JS function is documented.
-
-**What's unknown:** Live DOM for either the MODAL (Horizontal Slots) or SIMPLIFIED (Vertical Slots) templates — specifically what `gbbMixProductPageCategoryWrapper`, `gbbMixSelectedProductCard`, and `gbbMixEmptyStateCard` look like in context.
-
-**To confirm:** Load `WPB Research Product Page Bundle 2026-05-22` with template set to "Horizontal Slots" or "Vertical Slots" and capture `take_snapshot()`.
+**Resolution:** Both use `gbbMixProductPageWidgetContainer` with slot cards. MODAL = 3-column 89px mini-slots; SIMPLIFIED = 1-column 300px full-width slots. `renderFilledSlotsAsHorizontalStacked` is a separate global flag controlling category arrangement. See Phase 8 / Gap 5 Resolution for the full DOM tree and MODAL vs SIMPLIFIED diff.
 
 ---
 
-### Gap 6 — PPB `useSingleStepCategoriesAsBundleSteps: true` (unconfirmed)
+### Gap 6 — PPB `useSingleStepCategoriesAsBundleSteps: true` (PARTIALLY RESOLVED — Phase 8)
 
-**What's known:** The flag exists in PPB creation and update payloads (observed as `false` in all captures). The `gbbMixAndMatchBundle.state.useSingleStepCategoriesAsBundleSteps` JS field exists.
+**Partial resolution:** Confirmed as a global page customization setting in `pageCustomizationData.mixAndMatchData`, not per-bundle. Currently `false`. Full `pageCustomizationData.mixAndMatchData` shape captured. See Phase 8 / Gap 6 Partial Resolution.
 
-**What's unknown:** What changes in the storefront rendering when `true` — whether step navigation appears, how categories map to steps, what the admin UI looks like in this mode.
-
-**To confirm:** Create or modify a PPB bundle with `useSingleStepCategoriesAsBundleSteps: true` and capture both admin and storefront behavior.
+**Still unknown:** Storefront rendering change when `true` and admin toggle location.
 
 ---
 
-### Gap 7 — FPB `productsData2` Storefront Shape (unconfirmed)
+### Gap 7 — FPB `productsData2` Storefront Shape ✅ RESOLVED (Phase 8)
 
-**What's known:** The admin update payload includes `productsData2` in the 37KB captured shape. `navigationItems` with two entries was observed in a different capture. The step navigation DOM is documented for two steps.
-
-**What's unknown:** Whether `window.easybundles_ext_data.bundleLinkData[].stepsConfigurationData` includes the full `productsData2` category+product data when a second step is configured and published, or only includes published/active steps.
-
-**To confirm:** Publish a 2-step FPB and capture the full `stepsConfigurationData` structure from `window.easybundles_ext_data`.
+**Resolution:** `productsData2` is present in `window.gbb.settings.stepsConfigurationData.productsData2` with the same structure as `productsData1`. Empty steps (0 products, 0 collections) are included. Storefront renders "No Products Available" for empty categories. See Phase 8 / Gap 7 Resolution.
 
 ---
 
-### Gap 8 — FPB `bundleTextConfig` Full Shape (unconfirmed)
+### Gap 8 — FPB `bundleTextConfig` Full Shape (PARTIALLY RESOLVED — Phase 8)
 
-**What's known:** `bundleTextConfig.bundleSummary` is listed as a top-level key in the `stepsConfiguration/update` payload. `languageData` in `window.easybundles_ext_data` carries merchant-customizable UI copy strings.
+**Partial resolution:** Runtime shape is `{ bundleSummary: { title: "Your Bundle", subTitle: "Review your bundle" } }`. These are the sidebar heading/subheading strings.
 
-**What's unknown:** The full `bundleTextConfig` field structure — what sub-keys exist beyond `bundleSummary` and which strings are DCP-managed vs admin-saved vs defaults.
-
-**To confirm:** In the EB admin FPB editor, open the "Bundle Text" or "Customize Text" section and capture the save payload for any text override.
+**Still unknown:** Full admin-side sub-keys beyond `bundleSummary` and which strings are DCP-managed vs admin-saved vs defaults. To confirm: capture admin "Select template → Customize Colors & Language" or text override save payload.

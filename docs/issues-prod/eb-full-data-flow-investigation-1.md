@@ -4,13 +4,25 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-05-22
-**Last Updated:** 2026-05-23 21:30
+**Last Updated:** 2026-05-23 22:45
 
 ## Overview
 
 Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
 
 ## Progress Log
+
+### 2026-05-23 22:45 - Phase 8 complete — 5 of 8 gaps resolved; 2 gaps partially resolved
+
+- Restored PPB template to CASCADE via admin overlay (`POST /api/mixAndMatch/update` with `bundleDesignTemplate: "PDP_INPAGE"`, `templateId: "CASCADE"`).
+- **Gap 1 (Multi-step FPB cart add) — RESOLVED:** Captured `POST /cart/add.js` for a 2-step FPB (`WPB Research Landing Bundle`, bundleId=2). Single call with JSON body; step info (`_boxProduct`, `_Category`, `_CategoryName`) is tracked client-side only and NOT sent to cart. Cart properties: `Box` (tier index), `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId` (`FBP-{id}_{sessionKey}_{count}`). Confirmed `GetCartMetafield` + `cartMetafieldsSet` sequence writes `bundle_details` metafield accumulating across sessions.
+- **Gap 3 (FPB runtime config shape) — RESOLVED:** Config lives at `window.gbb.settings.stepsConfigurationData` (NOT `easybundles_ext_data.bundleLinkData`), embedded inline in proxy HTML. Products are ID-only in admin payload; widget fetches full data on load via `nodes(ids:[...])` Storefront API query with full variant/image/sellingPlan fields. `updateFullPageBundleView` call is analytics-only.
+- **Gap 4 (COGNIVE DOM) — RESOLVED:** COGNIVE is CSS-only variant of CASCADE. Captured admin save payload, storefront DOM diff (vertical steps, 3-col grid, square images, centered text), and full `boxSelection` schema.
+- **Gap 5 (MODAL/SIMPLIFIED DOM) — RESOLVED:** Both use `PDP_MODAL` + `gbbMixProductPageWidgetContainer`. MODAL = 3-column 89px mini-slots; SIMPLIFIED = 1-column 300px full-width slots. Confirmed `renderFilledSlotsAsHorizontalStacked` is a separate global flag (not template-specific). Full `pageCustomizationData.mixAndMatchData` shape captured (23 keys).
+- **Gap 6 (`useSingleStepCategoriesAsBundleSteps`) — PARTIALLY RESOLVED:** Confirmed it's a global setting in `pageCustomizationData.mixAndMatchData`, not per-bundle. Storefront effect when `true` still unknown.
+- **Gap 7 (`productsData2` storefront shape) — RESOLVED:** Present in `window.gbb.settings.stepsConfigurationData.productsData2` with same structure as `productsData1`. Empty steps included. Navigation state transitions (`isCompleted: true`) confirmed on step 1 after clicking Next.
+- **Gap 8 (`bundleTextConfig` shape) — PARTIALLY RESOLVED:** Runtime shape: `{ bundleSummary: { title: "Your Bundle", subTitle: "Review your bundle" } }`. Additional admin sub-keys unknown.
+- Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` with Phase 8 section (7 subsections), updated all 8 Confirmed Gaps entries to reflect resolution status, and updated Gaps And Blockers summary.
 
 ### 2026-05-23 21:30 - Phases 6 & 7 complete — full CSS for all FPB and PPB templates captured; 8 gaps documented
 
@@ -137,3 +149,8 @@ Create fresh EB full-page and product-page test bundles in the authenticated `ya
 - [x] Phase 14: Discover and document FPB two-field template system (`bundleDesignTemplate` + `bundleDesignPresetId`)
 - [x] Phase 15: Capture `displayVariantsAsIndividualProducts: true` DOM structure with multi-variant products
 - [x] Phase 16: Confirm FPB non-classic preset IDs — inferred as STANDARD/COMPACT/HORIZONTAL from naming convention; network confirmation blocked by overlay OOPIF architecture
+- [x] Phase 17: Gap 1 (multi-step FPB cart add) — single `POST /cart/add.js`, step info client-only, confirmed `bundle_details` accumulation pattern
+- [x] Phase 18: Gap 3 (FPB runtime config shape) — `window.gbb.settings.stepsConfigurationData`, inline in proxy HTML, products hydrated via `nodes(ids:[...])`
+- [x] Phase 19: Gaps 4 & 5 (PPB COGNIVE + MODAL/SIMPLIFIED DOM) — confirmed via template switch + storefront capture; `boxSelection` schema captured; `renderFilledSlotsAsHorizontalStacked` architecture documented
+- [x] Phase 20: Gap 7 (`productsData2` storefront shape) — present in stepsConfigurationData; empty steps included
+- [x] Phase 21: Gaps 6 & 8 partial — `pageCustomizationData.mixAndMatchData` full shape; `bundleTextConfig` runtime shape
