@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 12:00
+**Last Updated:** 2026-05-25 14:00
 
 ## Overview
 
@@ -94,6 +94,14 @@ export interface PricingMessages {
 13. [ ] Update widget JS + rebuild
 14. [ ] Data migration script for existing DB records (nested → flat)
 15. [ ] Lint + commit
+
+### 2026-05-25 14:00 - Step 10 complete: BXY rule UI updated in all three configure routes
+
+- FPB `route.tsx`: removed `ConditionType`, `ConditionOperator`, `DISCOUNT_CONDITION_TYPE_OPTIONS`, `DISCOUNT_OPERATOR_OPTIONS` imports; replaced old nested rule fields with flat-shape conditional render — BXY shows customerBuys/customerGets/discountValue/bxyDiscountType/bxyApplyMode; non-BXY shows conditionType/conditionValue/discountValue
+- PPB `route.tsx`: same import cleanup; replaced old step-based BXY UI (`buyStepId`/`getStepId`/`getQty`) with new quantity-based BXY section; replaced non-BXY nested fields with flat-shape fields
+- `create_.configure.$bundleId/route.tsx`: same import cleanup; added BXY/non-BXY conditional inside wizard rule builder
+- 28 unit tests GREEN (pricing-display-options + discount-pricing-parity)
+- ESLint: 0 errors on all three files
 
 ### 2026-05-25 10:00 - Section 6: Discount & Pricing — research complete, beginning implementation
 
@@ -259,15 +267,15 @@ Files changed:
 - [ ] Section 6: Discount & Pricing parity (FPB + PPB)
   - [x] Audit EB — BXY rule UI, Progress Bar, Discount Messaging (complete)
   - [x] Exact new flat PricingRule type shape defined (see 2026-05-25 12:00 log)
-  - [ ] TDD: test spec `test-spec/discount-pricing-parity.spec.md`
-  - [ ] TDD RED: failing tests for `parsePricingRule` + `parsePricingConfiguration`
-  - [ ] TDD GREEN: `app/lib/pricing-rule-parser.ts` parsers
-  - [ ] Update `app/types/pricing.ts` — new flat PricingRule, extended PricingMessages
-  - [ ] Update `app/lib/pricing-display-options.ts` — adapt to flat shape
-  - [ ] Update FPB + PPB handlers (remove nested backwards-compat readers)
-  - [ ] Update metafield sync writers (bundle-product, component-product, standard-metafields)
-  - [ ] Update pricing-calculation.server.ts
-  - [ ] BXY UI: FPB + PPB route.tsx — Customer buys/gets + discount type + apply mode
+  - [x] TDD: test spec `test-spec/discount-pricing-parity.spec.md`
+  - [x] TDD RED: failing tests for `parsePricingRule` + `parsePricingConfiguration`
+  - [x] TDD GREEN: `app/lib/pricing-rule-parser.ts` parsers
+  - [x] Update `app/types/pricing.ts` — new flat PricingRule, extended PricingMessages
+  - [x] Update `app/lib/pricing-display-options.ts` — adapt to flat shape
+  - [x] Update FPB + PPB handlers (remove nested backwards-compat readers)
+  - [x] Update metafield sync writers (bundle-product, component-product, standard-metafields)
+  - [x] Update pricing-calculation.server.ts
+  - [x] BXY UI: FPB + PPB + create-configure route.tsx — Customer buys/gets + discount type + apply mode
   - [ ] Progress Bar Step-Based: per-rule Tier Text + Tier Subtext fields
   - [ ] Progress Bar Multi Language modal (s-modal, language dropdown, per-rule tier texts)
   - [ ] Discount Messaging: dropdown + chips language selector (replace tabs)

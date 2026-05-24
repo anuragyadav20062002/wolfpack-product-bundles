@@ -15,8 +15,6 @@ import {
 
 import {
   DiscountMethod,
-  ConditionType,
-  ConditionOperator,
   type PricingRule,
   centsToAmount,
   amountToCents,
@@ -25,8 +23,6 @@ import {
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
-  DISCOUNT_CONDITION_TYPE_OPTIONS,
-  DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
@@ -2804,66 +2800,105 @@ export default function ConfigureBundleFlow() {
                               </s-button>
                             </s-stack>
 
-                            <s-stack direction="block" gap="small-100">
-                              <s-stack direction="inline" gap="small-100">
-                                <s-select
-                                  label="Discount on"
-                                  value={rule.condition.type}
-                                  onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                    condition: { ...rule.condition, type: (e.target as HTMLSelectElement).value as any }
-                                  })}
-                                >
-                                  {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(opt => (
-                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                  ))}
-                                </s-select>
-                                <s-select
-                                  label="Condition"
-                                  value={rule.condition.operator}
-                                  onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                    condition: { ...rule.condition, operator: (e.target as HTMLSelectElement).value as any }
-                                  })}
-                                >
-                                  {[...DISCOUNT_OPERATOR_OPTIONS].map(opt => (
-                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                  ))}
-                                </s-select>
-                                <s-number-field
-                                  label={rule.condition.operator === ConditionOperator.GTE ? "is greater than or equal to" : "Value"}
-                                  value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
-                                  onInput={(e: Event) => {
-                                    const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                    const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
-                                    pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, value: finalValue }
-                                    });
-                                  }}
-                                  min="0"
-                                  helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
-                                />
-                                <s-number-field
-                                  label={
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "Percentage Off" :
-                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? "Fixed Amount Off" :
-                                        "Fixed Bundle Price"
-                                  }
-                                  value={String(
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                      centsToAmount(rule.discount.value)
-                                  )}
-                                  onInput={(e: Event) => {
-                                    const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                    pricingState.updateDiscountRule(rule.id, {
-                                      discount: { ...rule.discount, value: finalValue }
-                                    });
-                                  }}
-                                  min="0"
-                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
-                                />
+                            {pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? (
+                              <s-stack direction="block" gap="small-100">
+                                <s-stack direction="inline" gap="small-100">
+                                  <s-number-field
+                                    label="Customer buys"
+                                    value={String(rule.customerBuys ?? 2)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      customerBuys: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                    })}
+                                    min="1"
+                                  />
+                                  <s-number-field
+                                    label="Customer gets"
+                                    value={String(rule.customerGets ?? 1)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      customerGets: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                    })}
+                                    min="1"
+                                  />
+                                  <s-number-field
+                                    label="Discount value"
+                                    value={String(rule.discountValue ?? 0)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      discountValue: Number((e.target as HTMLInputElement).value) || 0
+                                    })}
+                                    min="0"
+                                    suffix={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "%" : undefined}
+                                  />
+                                </s-stack>
+                                <s-stack direction="inline" gap="small-100">
+                                  <s-select
+                                    label="Discount type"
+                                    value={rule.bxyDiscountType ?? 'percentage'}
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
+                                    })}
+                                  >
+                                    <s-option value="percentage">% Off</s-option>
+                                    <s-option value="fixed_amount">Fixed Amount Off</s-option>
+                                  </s-select>
+                                  <s-select
+                                    label="Apply discount to"
+                                    value={rule.bxyApplyMode ?? 'lowest_priced'}
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
+                                    })}
+                                  >
+                                    <s-option value="lowest_priced">Lowest Priced</s-option>
+                                    <s-option value="latest_added">Latest Added</s-option>
+                                  </s-select>
+                                </s-stack>
                               </s-stack>
-                            </s-stack>
+                            ) : (
+                              <s-stack direction="block" gap="small-100">
+                                <s-stack direction="inline" gap="small-100">
+                                  <s-select
+                                    label="Condition type"
+                                    value={rule.conditionType ?? 'quantity'}
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      conditionType: (e.target as HTMLSelectElement).value as 'quantity' | 'amount'
+                                    })}
+                                  >
+                                    <s-option value="quantity">Quantity</s-option>
+                                    <s-option value="amount">Amount</s-option>
+                                  </s-select>
+                                  <s-number-field
+                                    label={rule.conditionType === 'amount' ? "Minimum amount" : "Minimum quantity"}
+                                    value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
+                                    onInput={(e: Event) => {
+                                      const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                      const finalValue = rule.conditionType === 'amount' ? amountToCents(numValue) : numValue;
+                                      pricingState.updateDiscountRule(rule.id, { conditionValue: finalValue });
+                                    }}
+                                    min="0"
+                                    helpText={rule.conditionType === 'amount' ? "Amount in shop's currency" : undefined}
+                                  />
+                                  <s-number-field
+                                    label={
+                                      pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "Percentage off" :
+                                        pricingState.discountType === DiscountMethod.FIXED_AMOUNT_OFF ? "Fixed amount off" :
+                                          "Bundle price"
+                                    }
+                                    value={String(
+                                      pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                        ? rule.discountValue
+                                        : centsToAmount(rule.discountValue)
+                                    )}
+                                    onInput={(e: Event) => {
+                                      const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                      const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
+                                      pricingState.updateDiscountRule(rule.id, { discountValue: finalValue });
+                                    }}
+                                    min="0"
+                                    suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                    helpText={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
+                                  />
+                                </s-stack>
+                              </s-stack>
+                            )}
                           </s-stack>
                         </s-section>
                       ))}

@@ -6,8 +6,6 @@ import { AppLogger } from "../../../lib/logger";
 // Note: Migrated from @shopify/polaris to Polaris web components (s-* and ui-*)
 import {
   DiscountMethod,
-  ConditionType,
-  ConditionOperator,
   type PricingRule,
   generateRulePreview,
   centsToAmount,
@@ -17,8 +15,6 @@ import {
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
-  DISCOUNT_CONDITION_TYPE_OPTIONS,
-  DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { useTranslation } from "react-i18next";
@@ -2149,54 +2145,89 @@ export default function ConfigureBundleFlow() {
                       </s-select>
 
                       {/* Buy X Get Y rule builder */}
-                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (() => {
-                        const bxyRule = pricingState.discountRules[0];
-                        if (!bxyRule) {
-                          return (
-                            <s-button variant="tertiary" style={{ width: "100%" }} onClick={pricingState.addDiscountRule}>
-                              Configure Buy X Get Y
+                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
+                        <s-stack direction="block" gap="small">
+                          {pricingState.discountRules.map((rule, index) => (
+                            <s-section key={rule.id}>
+                              <s-stack direction="block" gap="small">
+                                <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                                  <span style={{ fontSize: 14, fontWeight: 500 }}>Rule #{index + 1}</span>
+                                  <s-button
+                                    variant="plain"
+                                    tone="critical"
+                                    onClick={() => pricingState.removeDiscountRule(rule.id)}
+                                  >
+                                    Remove
+                                  </s-button>
+                                </s-stack>
+                                <s-stack direction="inline" gap="small-100">
+                                  <s-number-field
+                                    label="Customer buys"
+                                    value={String(rule.customerBuys ?? 2)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      customerBuys: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                    })}
+                                    min="1"
+                                  />
+                                  <s-number-field
+                                    label="Customer gets"
+                                    value={String(rule.customerGets ?? 1)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      customerGets: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                    })}
+                                    min="1"
+                                  />
+                                  <s-number-field
+                                    label="Discount value"
+                                    value={String(rule.discountValue ?? 0)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      discountValue: Number((e.target as HTMLInputElement).value) || 0
+                                    })}
+                                    min="0"
+                                    suffix={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "%" : undefined}
+                                  />
+                                </s-stack>
+                                <s-stack direction="inline" gap="small-100">
+                                  <s-select
+                                    label="Discount type"
+                                    value={rule.bxyDiscountType ?? 'percentage'}
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
+                                    })}
+                                  >
+                                    <s-option value="percentage">% Off</s-option>
+                                    <s-option value="fixed_amount">Fixed Amount Off</s-option>
+                                  </s-select>
+                                  <s-select
+                                    label="Apply discount to"
+                                    value={rule.bxyApplyMode ?? 'lowest_priced'}
+                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
+                                    })}
+                                  >
+                                    <s-option value="lowest_priced">Lowest Priced</s-option>
+                                    <s-option value="latest_added">Latest Added</s-option>
+                                  </s-select>
+                                </s-stack>
+                              </s-stack>
+                            </s-section>
+                          ))}
+                          {pricingState.discountRules.length < 4 ? (
+                            <s-button
+                              variant="secondary"
+                              icon="plus"
+                              style={{ width: "100%" }}
+                              onClick={pricingState.addDiscountRule}
+                            >
+                              Add Rule
                             </s-button>
-                          );
-                        }
-                        return (
-                          <s-section>
-                            <s-stack direction="vertical" gap="300">
-                              <s-heading size="small">Buy X Get Y Configuration</s-heading>
-                              <s-select
-                                label="Buy from step"
-                                helpText="Customer must fill this step to trigger the offer."
-                                onChange={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { buyStepId: (e.target as HTMLSelectElement).value })}
-                              >
-                                <option value="">— select step —</option>
-                                {stepsState.steps.map((s: any) => (
-                                  <option key={s.id} value={s.id} selected={(bxyRule as any).buyStepId === s.id || undefined}>
-                                    {s.name || `Step ${s.position ?? ''}`}
-                                  </option>
-                                ))}
-                              </s-select>
-                              <s-select
-                                label="Get (free gift step)"
-                                helpText="Products in this step are given free when the offer triggers."
-                                onChange={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { getStepId: (e.target as HTMLSelectElement).value })}
-                              >
-                                <option value="">— select step —</option>
-                                {stepsState.steps.map((s: any) => (
-                                  <option key={s.id} value={s.id} selected={(bxyRule as any).getStepId === s.id || undefined}>
-                                    {s.name || `Step ${s.position ?? ''}`}
-                                  </option>
-                                ))}
-                              </s-select>
-                              <s-number-field
-                                label="Free quantity"
-                                helpText="How many items from the get-step are discounted to $0."
-                                min={1}
-                                value={String((bxyRule as any).getQty ?? 1)}
-                                onInput={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { getQty: Number((e.target as HTMLInputElement).value) || 1 })}
-                              />
-                            </s-stack>
-                          </s-section>
-                        );
-                      })()}
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                              Maximum 4 discount rules reached
+                            </p>
+                          )}
+                        </s-stack>
+                      )}
 
                       {/* Discount Rules (non-BUY_X_GET_Y types) */}
                       {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
@@ -2215,76 +2246,49 @@ export default function ConfigureBundleFlow() {
                                 </s-button>
                               </s-stack>
 
-                              {/* Condition Section */}
-                              <s-stack direction="block" gap="small-100">
-                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>When:</p>
-                                <s-stack direction="inline" gap="small-100">
-                                  <s-select
-                                    label="Type"
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, type: (e.target as HTMLSelectElement).value as any }
-                                    })}
-                                  >
-                                    {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(opt => (
-                                      <option key={opt.value} value={opt.value} selected={rule.condition.type === opt.value || undefined}>{opt.label}</option>
-                                    ))}
-                                  </s-select>
-                                  <s-select
-                                    label="Operator"
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, operator: (e.target as HTMLSelectElement).value as any }
-                                    })}
-                                  >
-                                    {[...DISCOUNT_OPERATOR_OPTIONS].map(opt => (
-                                      <option key={opt.value} value={opt.value} selected={rule.condition.operator === opt.value || undefined}>{opt.label}</option>
-                                    ))}
-                                  </s-select>
-                                  <s-text-field
-                                    label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
-                                    value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
-                                    onInput={(e: Event) => {
-                                      const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                      const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
-                                      pricingState.updateDiscountRule(rule.id, {
-                                        condition: { ...rule.condition, value: finalValue }
-                                      });
-                                    }}
-                                    type="number"
-                                    min="0"
-                                    step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
-                                    helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
-                                    autoComplete="off"
-                                  />
-                                </s-stack>
-                              </s-stack>
-
-                              {/* Discount Section */}
-                              <s-stack direction="block" gap="small-100">
-                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Apply:</p>
-                                <s-text-field
+                              {/* Condition + Discount (flat shape) */}
+                              <s-stack direction="inline" gap="small-100">
+                                <s-select
+                                  label="Condition type"
+                                  value={rule.conditionType ?? 'quantity'}
+                                  onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                    conditionType: (e.target as HTMLSelectElement).value as 'quantity' | 'amount'
+                                  })}
+                                >
+                                  <s-option value="quantity">Quantity</s-option>
+                                  <s-option value="amount">Amount</s-option>
+                                </s-select>
+                                <s-number-field
+                                  label={rule.conditionType === 'amount' ? "Minimum amount" : "Minimum quantity"}
+                                  value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
+                                  onInput={(e: Event) => {
+                                    const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                    const finalValue = rule.conditionType === 'amount' ? amountToCents(numValue) : numValue;
+                                    pricingState.updateDiscountRule(rule.id, { conditionValue: finalValue });
+                                  }}
+                                  min="0"
+                                  helpText={rule.conditionType === 'amount' ? "Amount in shop's currency" : undefined}
+                                />
+                                <s-number-field
                                   label={
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                        'Bundle Price'
+                                    pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "Percentage off" :
+                                      pricingState.discountType === DiscountMethod.FIXED_AMOUNT_OFF ? "Fixed amount off" :
+                                        "Bundle price"
                                   }
                                   value={String(
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                      centsToAmount(rule.discount.value)
+                                    pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                      ? rule.discountValue
+                                      : centsToAmount(rule.discountValue)
                                   )}
                                   onInput={(e: Event) => {
                                     const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                    pricingState.updateDiscountRule(rule.id, {
-                                      discount: { ...rule.discount, value: finalValue }
-                                    });
+                                    const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
+                                    pricingState.updateDiscountRule(rule.id, { discountValue: finalValue });
                                   }}
-                                  type="number"
                                   min="0"
-                                  max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
-                                  step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
-                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
-                                  autoComplete="off"
+                                  max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
+                                  suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                  helpText={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
                                 />
                               </s-stack>
 
