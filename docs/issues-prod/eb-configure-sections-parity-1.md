@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 18:00
+**Last Updated:** 2026-05-24 19:00
 
 ## Overview
 
@@ -81,6 +81,16 @@ New phases (extending existing Section 4 work):
 - Dedicated `useFetcher` save on "Next" click (`intent: "updateBundleDesignTemplate"`) — independent of main form
 - Dismiss bug eliminated by removing `s-modal` entirely
 - Both FPB + PPB routes
+
+### 2026-05-24 19:00 - Select Template: full-screen modal, dismiss fix, confirm step layout, divider removal (FPB + PPB)
+
+- Added `isSelectTemplateModalOpen` state + `useEffect` (same pattern as syncModal) — fixes dismiss button: X now properly closes via state → `hidePolarisModal`
+- Added `size="large"` to `<s-modal>` — opens full-screen
+- Confirm step: moved "View your bundle" heading + subtitle outside the gray card to match EB screenshot (previously they were inside)
+- "Preview bundle" button now calls `setIsSelectTemplateModalOpen(false)` instead of `hidePolarisModal` directly
+- Removed `stepSetupDivider` HR from PPB Step Flow card (was 1px gray line between step nav chips and step content)
+- Files: `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+- ESLint: 0 errors
 
 ### 2026-05-24 18:00 - Select Template: switch to s-modal, add confirm step (FPB + PPB)
 

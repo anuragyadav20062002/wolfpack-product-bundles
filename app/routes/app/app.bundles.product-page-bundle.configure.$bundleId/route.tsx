@@ -558,6 +558,7 @@ export default function ConfigureBundleFlow() {
 
   // Select Template modal state
   const selectTemplateModalRef = useRef<HTMLElement>(null);
+  const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
   const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
   const templateFetcher = useFetcher();
 
@@ -1204,11 +1205,15 @@ export default function ConfigureBundleFlow() {
     isCollectionsModalOpen ? showPolarisModal(collectionsModalRef) : hidePolarisModal(collectionsModalRef);
   }, [isCollectionsModalOpen]);
 
+  useEffect(() => {
+    isSelectTemplateModalOpen ? showPolarisModal(selectTemplateModalRef) : hidePolarisModal(selectTemplateModalRef);
+  }, [isSelectTemplateModalOpen]);
+
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
-  useModalHideListener(selectTemplateModalRef, () => setTemplateModalStep("select"));
+  useModalHideListener(selectTemplateModalRef, () => { setIsSelectTemplateModalOpen(false); setTemplateModalStep("select"); });
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -1218,7 +1223,7 @@ export default function ConfigureBundleFlow() {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
     setTemplateModalStep("select");
-    showPolarisModal(selectTemplateModalRef);
+    setIsSelectTemplateModalOpen(true);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
 
   const handleTemplateNext = useCallback(() => {
@@ -1548,8 +1553,6 @@ export default function ConfigureBundleFlow() {
                       <span>Add Step</span>
                     </button>
                   </div>
-                  <div className={productPageBundleStyles.stepSetupDivider} />
-
                   {stepsState.steps.map((step, index) => activeTabIndex === index && (
                     <div
                       key={`${step.id}-${slideKey}`}
@@ -3724,7 +3727,7 @@ export default function ConfigureBundleFlow() {
       />
 
       {/* Select Template — Shopify native modal */}
-      <s-modal ref={selectTemplateModalRef} heading="Customization">
+      <s-modal ref={selectTemplateModalRef} heading="Customization" size="large">
         {templateModalStep === "select" ? (() => {
           const ppbTemplates = [
             { presetId: "CASCADE",    layoutTemplate: "PDP_INPAGE", label: "Product List",     image: "/productPageThumbnail.png"   },
@@ -3787,18 +3790,22 @@ export default function ConfigureBundleFlow() {
             </>
           );
         })() : (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 320 }}>
-            <div style={{ textAlign: "center", background: "#f6f6f7", borderRadius: 12, padding: "48px 40px", maxWidth: 480, width: "100%" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 500, color: "#6d7175" }}>View your bundle</p>
-              <p style={{ margin: "0 0 20px", fontSize: 13, color: "#6d7175" }}>View your bundle with your customizations</p>
-              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e3f1eb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <s-icon name="check" />
-              </div>
-              <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 600 }}>Your bundle is ready</h2>
-              <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6d7175" }}>Preview it now with your customizations</p>
-              <s-button variant="secondary" onClick={() => hidePolarisModal(selectTemplateModalRef)}>Preview bundle</s-button>
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>View your bundle</h2>
+              <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>View your bundle with your customizations</p>
             </div>
-          </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ textAlign: "center", background: "#f6f6f7", borderRadius: 12, padding: "48px 40px", maxWidth: 480, width: "100%" }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e3f1eb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <s-icon name="check" />
+                </div>
+                <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 600 }}>Your bundle is ready</h2>
+                <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6d7175" }}>Preview it now with your customizations</p>
+                <s-button variant="secondary" onClick={() => setIsSelectTemplateModalOpen(false)}>Preview bundle</s-button>
+              </div>
+            </div>
+          </>
         )}
       </s-modal>
 
