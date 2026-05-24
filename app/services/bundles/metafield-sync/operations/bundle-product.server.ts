@@ -275,22 +275,16 @@ export async function updateBundleProductMetafields(
 
   if (bundleConfiguration.pricing?.enabled && bundleConfiguration.pricing?.rules?.length > 0) {
     const rule = bundleConfiguration.pricing.rules[0];
+    priceAdjustment.method = bundleConfiguration.pricing.method || 'percentage_off';
+    priceAdjustment.value = parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
 
-    // Extract method and value from nested discount structure
-    if (rule.discount) {
-      // Use discount.method if available, otherwise fall back to pricing.method
-      priceAdjustment.method = rule.discount.method || bundleConfiguration.pricing.method;
-      priceAdjustment.value = parseFloat(rule.discount.value) || 0;
-    } else if (typeof rule.discountValue !== 'undefined') {
-      priceAdjustment.value = parseFloat(rule.discountValue) || 0;
-    }
-
-    // Add conditions if present
-    if (rule.condition) {
+    const condType = rule.conditionType || rule.condition?.type;
+    const condValue = parseFloat(rule.conditionValue ?? rule.condition?.value ?? 0) || 0;
+    if (condType && condValue > 0) {
       priceAdjustment.conditions = {
-        type: rule.condition.type || 'quantity',
-        operator: rule.condition.operator || 'gte',
-        value: parseFloat(rule.condition.value) || 0
+        type: condType,
+        operator: 'gte',
+        value: condValue,
       };
     }
   }
@@ -349,20 +343,19 @@ export async function updateBundleProductMetafields(
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,
       method: bundleConfiguration.pricing.method || 'percentage_off',
-      rules: (bundleConfiguration.pricing.rules || []).map((rule: any) => ({
-        condition: rule.condition ? {
-          type: rule.condition.type || 'quantity',
-          operator: rule.condition.operator || 'gte',
-          value: parseFloat(rule.condition.value) || 0
-        } : null,
-        discount: rule.discount ? {
-          method: rule.discount.method || bundleConfiguration.pricing.method,
-          value: parseFloat(rule.discount.value) || 0
-        } : {
-          method: bundleConfiguration.pricing.method,
-          value: parseFloat(rule.discountValue) || 0
-        }
-      }))
+      rules: (bundleConfiguration.pricing.rules || []).map((rule: any) => {
+        const flat: Record<string, unknown> = {
+          id: rule.id,
+          conditionType: rule.conditionType || rule.condition?.type || 'quantity',
+          conditionValue: parseFloat(rule.conditionValue ?? rule.condition?.value ?? 0) || 0,
+          discountValue: parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0,
+        };
+        if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+        if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+        if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+        if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+        return flat;
+      }),
     } : null,
     messaging: {
       progressTemplate: bundleConfiguration.pricing?.messages?.progress || bundleConfiguration.messaging?.progressTemplate || 'Add {conditionText} to get {discountText}',

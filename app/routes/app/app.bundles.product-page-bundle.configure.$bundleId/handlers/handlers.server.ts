@@ -752,13 +752,19 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           pricing: {
             enabled: bundle.pricing.enabled,
             method: bundle.pricing.method,
-            rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
-              id: rule.id,
-              conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
-              value: rule.value || 0, // Keep as decimal - widget will convert to cents
-              discountValue: rule.discountValue || 0,
-              fixedBundlePrice: rule.fixedBundlePrice || 0
-            })),
+            rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => {
+              const flat: Record<string, unknown> = {
+                id: rule.id,
+                conditionType: rule.conditionType || rule.type || 'quantity',
+                conditionValue: parseFloat(rule.conditionValue ?? rule.value ?? 0) || 0,
+                discountValue: parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0,
+              };
+              if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+              if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+              if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+              if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+              return flat;
+            }),
             messages: {
               progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
               qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
@@ -948,13 +954,19 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       pricing: {
         enabled: bundle.pricing.enabled,
         method: bundle.pricing.method,
-        rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
-          id: rule.id,
-          conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
-          value: rule.value || 0, // Keep as decimal - widget will convert to cents
-          discountValue: rule.discountValue || 0,
-          fixedBundlePrice: rule.fixedBundlePrice || 0
-        })),
+        rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => {
+            const flat: Record<string, unknown> = {
+              id: rule.id,
+              conditionType: rule.conditionType || rule.type || 'quantity',
+              conditionValue: parseFloat(rule.conditionValue ?? rule.value ?? 0) || 0,
+              discountValue: parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0,
+            };
+            if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+            if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+            if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+            if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+            return flat;
+          }),
         messages: {
           progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
           qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
@@ -1180,13 +1192,19 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
         pricing: {
           enabled: bundle.pricing.enabled,
           method: bundle.pricing.method,
-          rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
-            id: rule.id,
-            conditionType: rule.type || 'quantity',
-            value: rule.value || 0,
-            discountValue: rule.discountValue || 0,
-            fixedBundlePrice: rule.fixedBundlePrice || 0,
-          })),
+          rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => {
+              const flat: Record<string, unknown> = {
+                id: rule.id,
+                conditionType: rule.conditionType || rule.type || 'quantity',
+                conditionValue: parseFloat(rule.conditionValue ?? rule.value ?? 0) || 0,
+                discountValue: parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0,
+              };
+              if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+              if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+              if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+              if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+              return flat;
+            }),
           messages: {
             progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
             qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',

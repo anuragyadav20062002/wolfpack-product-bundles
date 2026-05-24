@@ -121,40 +121,19 @@ function buildFullPageBundlePricing(pricing: any) {
     enabled: pricing.enabled,
     method: pricing.method || "percentage_off",
     rules: safeJsonParse(pricing.rules, []).map((rule: any) => {
-      const conditionValue = Number(
-        rule.condition?.value ??
-        rule.conditionValue ??
-        rule.value ??
-        0,
-      ) || 0;
-      const discountValue = Number(
-        rule.discount?.value ??
-        rule.discountValue ??
-        0,
-      ) || 0;
-      const fixedBundlePrice = Number(rule.fixedBundlePrice ?? 0) || 0;
-      const hasCondition =
-        Boolean(rule.condition) ||
-        Boolean(rule.conditionType) ||
-        Boolean(rule.type) ||
-        typeof rule.value !== "undefined";
-
-      return {
+      const conditionValue = Number(rule.conditionValue ?? rule.condition?.value ?? rule.value ?? 0) || 0;
+      const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+      const flat: Record<string, unknown> = {
         id: rule.id,
-        condition: hasCondition
-          ? {
-              type: rule.condition?.type || rule.conditionType || rule.type || "quantity",
-              operator: rule.condition?.operator || rule.operator || "gte",
-              value: conditionValue,
-            }
-          : null,
-        discount: {
-          method: rule.discount?.method || pricing.method || "percentage_off",
-          value: discountValue,
-        },
-        fixedBundlePrice,
+        conditionType: rule.conditionType || rule.condition?.type || "quantity",
+        conditionValue,
         discountValue,
       };
+      if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+      if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+      if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+      if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+      return flat;
     }),
     display: {
       showFooter: pricing.showFooter !== false,
@@ -163,8 +142,11 @@ function buildFullPageBundlePricing(pricing: any) {
     messages: {
       progress: firstRuleMessage?.discountText || DEFAULT_PROGRESS_MESSAGE,
       qualified: firstRuleMessage?.successMessage || DEFAULT_SUCCESS_MESSAGE,
+      showInCart: true,
       showDiscountMessaging: parsedMessages.showDiscountMessaging || false,
       displayOptions: parsedMessages.displayOptions || null,
+      tierTextByRuleId: parsedMessages.tierTextByRuleId || null,
+      tierTextByLocaleByRuleId: parsedMessages.tierTextByLocaleByRuleId || null,
     },
   };
 }
@@ -377,11 +359,19 @@ function buildFpbBaseConfig(
     pricing: {
       enabled: discountData.discountEnabled,
       method: discountData.discountType,
-      rules: (discountData.discountRules || []).map((rule: any) => ({
-        id: rule.id,
-        condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
-        discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
-      })),
+      rules: (discountData.discountRules || []).map((rule: any) => {
+        const flat: Record<string, unknown> = {
+          id: rule.id,
+          conditionType: rule.conditionType || 'quantity',
+          conditionValue: Number(rule.conditionValue ?? rule.value ?? 0) || 0,
+          discountValue: Number(rule.discountValue ?? 0) || 0,
+        };
+        if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+        if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+        if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+        if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+        return flat;
+      }),
       display: {
         showFooter: discountData.showFooter !== false,
         showDiscountProgressBar: discountData.showDiscountProgressBar === true,
@@ -393,6 +383,8 @@ function buildFpbBaseConfig(
         showInCart: true,
         displayOptions: discountData.pricingDisplayOptions || null,
         ruleMessagesByLocale: discountData.ruleMessagesByLocale || null,
+        tierTextByRuleId: discountData.tierTextByRuleId || null,
+        tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId || null,
       },
     },
     bundleParentVariantId: bundleParentVariantId,
@@ -693,7 +685,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {},
-                  displayOptions: discountData.pricingDisplayOptions || null
+                  displayOptions: discountData.pricingDisplayOptions || null,
+                  tierTextByRuleId: discountData.tierTextByRuleId || null,
+                  tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId || null,
                 },
                 ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               },
@@ -707,7 +701,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                   showDiscountDisplay: true,
                   showDiscountMessaging: discountData.discountMessagingEnabled || false,
                   ruleMessages: discountData.ruleMessages || {},
-                  displayOptions: discountData.pricingDisplayOptions || null
+                  displayOptions: discountData.pricingDisplayOptions || null,
+                  tierTextByRuleId: discountData.tierTextByRuleId || null,
+                  tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId || null,
                 },
                 ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               }

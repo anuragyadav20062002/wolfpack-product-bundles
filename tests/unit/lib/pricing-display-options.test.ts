@@ -3,36 +3,14 @@ import {
   normalizePricingDisplayOptions,
   serializePricingDisplayOptions,
 } from "../../../app/lib/pricing-display-options";
-import { ConditionOperator, ConditionType, DiscountMethod, type PricingRule } from "../../../app/types/pricing";
+import type { PricingRule } from "../../../app/types/pricing";
 
 function quantityRule(id: string, quantity: number, discountValue: number): PricingRule {
-  return {
-    id,
-    condition: {
-      type: ConditionType.QUANTITY,
-      operator: ConditionOperator.GTE,
-      value: quantity,
-    },
-    discount: {
-      method: DiscountMethod.PERCENTAGE_OFF,
-      value: discountValue,
-    },
-  };
+  return { id, conditionType: "quantity", conditionValue: quantity, discountValue };
 }
 
 function amountRule(id: string, amountCents: number, discountValue: number): PricingRule {
-  return {
-    id,
-    condition: {
-      type: ConditionType.AMOUNT,
-      operator: ConditionOperator.GTE,
-      value: amountCents,
-    },
-    discount: {
-      method: DiscountMethod.FIXED_AMOUNT_OFF,
-      value: discountValue,
-    },
-  };
+  return { id, conditionType: "amount", conditionValue: amountCents, discountValue };
 }
 
 describe("normalizePricingDisplayOptions", () => {

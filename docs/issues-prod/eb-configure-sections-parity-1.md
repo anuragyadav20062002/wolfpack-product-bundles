@@ -1,18 +1,19 @@
-# Issue: EB Configure Sections Parity — Step Flow, Bundle Visibility, Bundle Settings, Select Template
+# Issue: EB Configure Sections Parity — Step Flow, Bundle Visibility, Bundle Settings, Select Template, Discount & Pricing
 
 **Issue ID:** eb-configure-sections-parity-1
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 21:00
+**Last Updated:** 2026-05-25 12:00
 
 ## Overview
 
-Full EB parity pass on 4 configure-page sections, for both FPB and PPB:
+Full EB parity pass on configure-page sections, for both FPB and PPB:
 1. **Step Flow card + Step Setup + Category accordion** — inner content, heading, card structure
 2. **Bundle Visibility** — entire section + sub-sections
 3. **Bundle Settings** — entire section
 4. **Select Template** — full reaudit (modals, buttons, copy, layout)
+5. **Discount & Pricing** — full section parity: BXY rule UI, Progress Bar (Step-Based + Multi Language), Discount Messaging (language UI + default texts)
 
 Done section-by-section, FPB+PPB together per section. Screenshots taken at each stage to verify 100% accuracy before committing.
 
@@ -21,6 +22,104 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 
 ## Progress Log
+
+### 2026-05-25 12:00 - Section 6: Exact type shape confirmed, beginning TDD
+
+**Scope re-confirmed by user:** Full flat-shape migration (EB shape, not nested WPB shape).
+
+**Blast radius (all consumers of `rule.discount` / `rule.condition`):**
+- `app/types/pricing.ts` — type definition (core change)
+- `app/lib/pricing-display-options.ts` — normalize/serialize
+- FPB handler, FPB route.tsx
+- PPB handler, PPB route.tsx
+- `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`
+- `app/services/bundles/metafield-sync/operations/bundle-product.server.ts`
+- `app/services/bundles/metafield-sync/operations/component-product.server.ts`
+- `app/services/bundles/standard-metafields.server.ts`
+- `app/services/bundles/pricing-calculation.server.ts`
+- `app/assets/bundle-widget-full-page.js` + product-page + pricing-calculator.js (+ rebuild)
+- Cart transform (Rust) reads a SEPARATE compact `$app:price_adjustment` metafield — not directly the PricingRule type. Metafield writer changes shape written, Rust stays the same.
+
+**New flat `PricingRule` interface (target):**
+```typescript
+export interface PricingRule {
+  id: string;
+  // Flat condition (replaces nested condition: { type, operator, value })
+  conditionType: 'quantity' | 'amount';
+  conditionValue: number;
+  // Flat discount value (method is top-level on PricingConfiguration.method)
+  discountValue: number;
+  // BXY-specific fields (only when PricingConfiguration.method === BUY_X_GET_Y)
+  customerBuys?: number;
+  customerGets?: number;
+  bxyDiscountType?: 'percentage' | 'fixed_amount';
+  bxyApplyMode?: 'lowest_priced' | 'latest_added';
+}
+```
+
+**Dropped from PricingRule:**
+- `condition: { type, operator, value }` — replaced by `conditionType` + `conditionValue`
+- `discount: { method, value }` — replaced by `discountValue`; `method` stays top-level
+- `condition.operator` — dropped; EB always uses ≥; cart transform compact writer hard-codes `"gte"`
+- `display?: { label, color }` — not in EB, dropped
+- `buyStepId`, `getStepId` — PPB step-based BXY removed, dropped
+- `getQty` — replaced by `customerGets`
+
+**Extended `PricingMessages`:**
+```typescript
+export interface PricingMessages {
+  progress: string;
+  qualified: string;
+  showInCart: boolean;
+  // NEW: for Progress Bar Step-Based per-rule tier text
+  tierTextByRuleId?: Record<string, { tierText: string; tierSubtext: string }>;
+  // NEW: for Progress Bar Multi Language modal
+  tierTextByLocaleByRuleId?: Record<string, Record<string, { tierText: string; tierSubtext: string }>>;
+}
+```
+
+**Implementation sequence (TDD):**
+1. [x] Type shape defined (this log entry)
+2. [x] Create test spec `test-spec/discount-pricing-parity.spec.md`
+3. [x] Write failing tests for `parsePricingRule` and `parsePricingConfiguration` (19 RED)
+4. [x] Create `app/lib/pricing-rule-parser.ts` — make tests GREEN (19/19)
+5. [x] Update `app/types/pricing.ts` — new flat PricingRule, extended PricingMessages
+6. [x] Update `app/lib/pricing-display-options.ts`
+7. [x] Update FPB + PPB handlers (flat shape in buildFullPageBundlePricing + Prisma upsert + metafield payload)
+8. [x] Update metafield sync writers (bundle-product + component-product + standard-metafields)
+9. [x] Update pricing-calculation.server.ts
+10. [ ] BXY UI: FPB + PPB route.tsx (Customer buys/gets + discount type + apply mode)
+11. [ ] Progress Bar: Step-Based tier text/subtext fields + Multi Language modal
+12. [ ] Discount Messaging: dropdown + chips (replace tab-based locale selector)
+13. [ ] Update widget JS + rebuild
+14. [ ] Data migration script for existing DB records (nested → flat)
+15. [ ] Lint + commit
+
+### 2026-05-25 10:00 - Section 6: Discount & Pricing — research complete, beginning implementation
+
+Scope decisions (confirmed prior session):
+- **DTO:** Keep WPB's nested `PricingRule` shape; add missing BXY fields (`applyDiscountTo`). No full flat-shape migration needed — EB's flat shape is less expressive and migration would be destructive.
+- **BXY approach:** Replace BXY rule UI to match EB — "Customer buys" / "Customer gets" / "Discount value" / "Discount type" (% off | ₹ off) / "Apply Discount to" (lowest | latest). Both FPB + PPB.
+- **Multi-language:** Implement full EB pattern for both Discount Messaging (language dropdown + chips + per-rule text fields) and Progress Bar Step-Based (tier text/subtext per rule + Multi Language modal).
+
+Key findings from live EB investigation:
+- BXY rule: `customerBuys` (min qty) + `customerGets` (qty) + `discountValue` + `discountType` (% off | ₹ off) + `applyDiscountTo` (lowest | latest)
+- Progress Bar Simple Bar → Multi Language button disabled; Step-Based Bar → button enabled
+- Step-Based Bar reveals per-rule "Tier Text" (e.g., "Add 3") + "Tier Subtext" (e.g., "1 Product(s) @ 100% off") editable fields
+- Progress Bar Multi Language modal: "Customize Text for Multiple Languages" → Select Language dropdown + per-rule Tier Text | Tier Subtext → "Save and close"
+- Discount Messaging: language dropdown (not tabs), "Active languages" chip, "Show Variables" button
+- BXY default texts: Rule 1 = `"Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at..."`, Rule N = `"Add {{discountConditionDiff}} more to get {{discountedItems}}..."`, Success = `"Success! You got {{discountedItems}}..."`
+- All findings added to `internal docs/EB Implementation Reference.md`
+
+Implementation plan for FPB + PPB:
+1. Extend `PricingRule` type with `applyDiscountTo?: "lowest" | "latest"` and `bxyDiscountSubtype?: "percentage" | "fixed_amount"`
+2. BXY rule UI: conditional render when `discountType === BUY_X_GET_Y` — show Customer buys/gets/discount value/type/apply-to fields
+3. Progress Bar: when Step-Based Bar — show per-rule Tier Text + Tier Subtext fields; "Multi Language" button opens `<s-modal>` with language dropdown + per-rule fields
+4. Add `tierTextByRuleId` + `tierTextByLocaleByRuleId` to `BundlePricing.messages` JSON
+5. Discount Messaging: change from tab-based locale selector to dropdown + chips
+6. Update default text constants for BXY
+7. Update `pricingState` hook + FPB/PPB handlers
+8. Run lint + commit
 
 ### 2026-05-24 21:00 - Step Flow card: move divider from above step tabs to below (FPB + PPB)
 
@@ -157,3 +256,22 @@ Files changed:
   - [x] FPB route.tsx: full-screen overlay + templateFetcher
   - [x] PPB route.tsx: same
   - [x] Lint + commit
+- [ ] Section 6: Discount & Pricing parity (FPB + PPB)
+  - [x] Audit EB — BXY rule UI, Progress Bar, Discount Messaging (complete)
+  - [x] Exact new flat PricingRule type shape defined (see 2026-05-25 12:00 log)
+  - [ ] TDD: test spec `test-spec/discount-pricing-parity.spec.md`
+  - [ ] TDD RED: failing tests for `parsePricingRule` + `parsePricingConfiguration`
+  - [ ] TDD GREEN: `app/lib/pricing-rule-parser.ts` parsers
+  - [ ] Update `app/types/pricing.ts` — new flat PricingRule, extended PricingMessages
+  - [ ] Update `app/lib/pricing-display-options.ts` — adapt to flat shape
+  - [ ] Update FPB + PPB handlers (remove nested backwards-compat readers)
+  - [ ] Update metafield sync writers (bundle-product, component-product, standard-metafields)
+  - [ ] Update pricing-calculation.server.ts
+  - [ ] BXY UI: FPB + PPB route.tsx — Customer buys/gets + discount type + apply mode
+  - [ ] Progress Bar Step-Based: per-rule Tier Text + Tier Subtext fields
+  - [ ] Progress Bar Multi Language modal (s-modal, language dropdown, per-rule tier texts)
+  - [ ] Discount Messaging: dropdown + chips language selector (replace tabs)
+  - [ ] Update BXY default text constants
+  - [ ] Widget JS update + rebuild (bundle-widget-full-page.js, bundle-widget-product-page.js, pricing-calculator.js)
+  - [ ] Data migration script: nested → flat format for existing DB records
+  - [ ] Lint + tests + commit

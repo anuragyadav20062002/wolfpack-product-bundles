@@ -250,20 +250,15 @@ export async function updateComponentProductMetafields(
 
   if (bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0) {
     const rule = bundleConfig.pricing.rules[0];
+    priceAdjustment.value = parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
 
-    // Extract value from discount structure
-    if (rule.discount && typeof rule.discount.value !== 'undefined') {
-      priceAdjustment.value = parseFloat(rule.discount.value) || 0;
-    } else if (typeof rule.discountValue !== 'undefined') {
-      priceAdjustment.value = parseFloat(rule.discountValue) || 0;
-    }
-
-    // Add conditions if present
-    if (rule.condition) {
+    const condType = rule.conditionType || rule.condition?.type;
+    const condValue = parseFloat(rule.conditionValue ?? rule.condition?.value ?? 0) || 0;
+    if (condType && condValue > 0) {
       priceAdjustment.conditions = {
-        type: rule.condition.type || 'quantity',
-        operator: rule.condition.operator || 'gte',
-        value: parseFloat(rule.condition.value) || 0
+        type: condType,
+        operator: 'gte',
+        value: condValue,
       };
     }
   }

@@ -1,5 +1,4 @@
 import {
-  ConditionType,
   DiscountMethod,
   type PricingDisplayOptions,
   type PricingProgressBarType,
@@ -62,6 +61,7 @@ interface NormalizeInput {
   showProgressBar?: boolean;
   steps?: PricingDisplayStep[];
   currencySymbol?: string;
+  method?: string;
 }
 
 interface SerializeInput {
@@ -70,11 +70,11 @@ interface SerializeInput {
 }
 
 function isQuantityRule(rule: PricingRule): boolean {
-  return rule.condition?.type === ConditionType.QUANTITY || String(rule.condition?.type) === "quantity";
+  return rule.conditionType === "quantity";
 }
 
 function isAmountRule(rule: PricingRule): boolean {
-  return rule.condition?.type === ConditionType.AMOUNT || String(rule.condition?.type) === "amount";
+  return rule.conditionType === "amount";
 }
 
 function getDisplayOptions(messages: any): Partial<PricingDisplayOptions> {
@@ -83,9 +83,8 @@ function getDisplayOptions(messages: any): Partial<PricingDisplayOptions> {
     : {};
 }
 
-function formatDiscountText(rule: PricingRule, currencySymbol: string): string {
-  const method = rule.discount?.method;
-  const value = Number(rule.discount?.value ?? 0) || 0;
+function formatDiscountText(rule: PricingRule, method: DiscountMethod | string, currencySymbol: string): string {
+  const value = Number(rule.discountValue ?? 0) || 0;
 
   if (method === DiscountMethod.PERCENTAGE_OFF || method === "percentage_off") {
     return `${value}% off`;
@@ -172,6 +171,7 @@ export function normalizePricingDisplayOptions({
   showProgressBar = false,
   steps,
   currencySymbol = "$",
+  method = "percentage_off",
 }: NormalizeInput): NormalizedPricingDisplayOptions {
   const safeRules = Array.isArray(rules) ? rules : [];
   const displayOptions = getDisplayOptions(messages);
@@ -179,7 +179,7 @@ export function normalizePricingDisplayOptions({
   const savedOptionsByRuleId = savedQuantityOptions?.optionsByRuleId || {};
   const quantityRules = safeRules
     .filter(isQuantityRule)
-    .sort((a, b) => (Number(a.condition?.value ?? 0) || 0) - (Number(b.condition?.value ?? 0) || 0));
+    .sort((a, b) => (Number(a.conditionValue ?? 0) || 0) - (Number(b.conditionValue ?? 0) || 0));
   const quantityRuleIds = new Set(quantityRules.map((rule) => rule.id));
   const savedDefaultRuleId = savedQuantityOptions?.defaultRuleId || null;
   const defaultRuleId = savedDefaultRuleId && quantityRuleIds.has(savedDefaultRuleId)
@@ -187,14 +187,14 @@ export function normalizePricingDisplayOptions({
     : quantityRules[0]?.id || null;
 
   const quantityOptions = quantityRules.map((rule) => {
-    const quantity = Number(rule.condition?.value ?? 0) || 0;
+    const quantity = Number(rule.conditionValue ?? 0) || 0;
     const savedOption = savedOptionsByRuleId[rule.id] || {};
 
     return {
       ruleId: rule.id,
       quantity,
       label: savedOption.label || `Box of ${quantity}`,
-      subtext: savedOption.subtext || formatDiscountText(rule, currencySymbol),
+      subtext: savedOption.subtext || formatDiscountText(rule, method, currencySymbol),
       isDefault: rule.id === defaultRuleId,
       compatibility: getCompatibility(quantity, steps),
     };
@@ -203,12 +203,12 @@ export function normalizePricingDisplayOptions({
   const progressOptions = displayOptions.progressBar;
   const milestones = safeRules
     .filter((rule) => isQuantityRule(rule) || isAmountRule(rule))
-    .sort((a, b) => (Number(a.condition?.value ?? 0) || 0) - (Number(b.condition?.value ?? 0) || 0))
+    .sort((a, b) => (Number(a.conditionValue ?? 0) || 0) - (Number(b.conditionValue ?? 0) || 0))
     .map((rule) => ({
       ruleId: rule.id,
       conditionType: isAmountRule(rule) ? "amount" as const : "quantity" as const,
-      value: Number(rule.condition?.value ?? 0) || 0,
-      label: formatDiscountText(rule, currencySymbol),
+      value: Number(rule.conditionValue ?? 0) || 0,
+      label: formatDiscountText(rule, method, currencySymbol),
     }));
 
   return {
