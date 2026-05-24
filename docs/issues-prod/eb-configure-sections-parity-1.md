@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 19:00
+**Last Updated:** 2026-05-24 20:00
 
 ## Overview
 
@@ -82,12 +82,21 @@ New phases (extending existing Section 4 work):
 - Dismiss bug eliminated by removing `s-modal` entirely
 - Both FPB + PPB routes
 
+### 2026-05-24 20:00 - Select Template: align modal pattern with all other modals (FPB + PPB)
+
+- Added `isSelectTemplateModalOpen` state (initialized `false`) to both FPB + PPB
+- Added `useEffect` watching `isSelectTemplateModalOpen` → `showPolarisModal`/`hidePolarisModal` — exactly the same pattern as `isSyncModalOpen`, `isProductsModalOpen`, etc.
+- `openSelectTemplateModal` now calls `setIsSelectTemplateModalOpen(true)` (was direct `showPolarisModal`)
+- `useModalHideListener` now calls `setIsSelectTemplateModalOpen(false)` + `setTemplateModalStep("select")`
+- "Preview bundle" button calls `setIsSelectTemplateModalOpen(false)` (not `hidePolarisModal` directly)
+- `size="large"` + confirm step layout retained from prior session
+- Files: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+- ESLint: 0 errors
+
 ### 2026-05-24 19:00 - Select Template: full-screen modal, dismiss fix, confirm step layout, divider removal (FPB + PPB)
 
-- Added `isSelectTemplateModalOpen` state + `useEffect` (same pattern as syncModal) — fixes dismiss button: X now properly closes via state → `hidePolarisModal`
 - Added `size="large"` to `<s-modal>` — opens full-screen
 - Confirm step: moved "View your bundle" heading + subtitle outside the gray card to match EB screenshot (previously they were inside)
-- "Preview bundle" button now calls `setIsSelectTemplateModalOpen(false)` instead of `hidePolarisModal` directly
 - Removed `stepSetupDivider` HR from PPB Step Flow card (was 1px gray line between step nav chips and step content)
 - Files: `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
 - ESLint: 0 errors
