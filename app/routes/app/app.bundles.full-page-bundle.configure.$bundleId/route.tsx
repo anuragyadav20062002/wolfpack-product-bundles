@@ -726,6 +726,10 @@ export default function ConfigureBundleFlow() {
     onConfirm: (() => void) | null;
   }>({ open: false, onConfirm: null });
 
+  // Select Template modal state
+  const selectTemplateModalRef = useRef<HTMLElement>(null);
+  const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [readinessOpen, setReadinessOpen] = useState(false);
@@ -782,6 +786,10 @@ export default function ConfigureBundleFlow() {
   useEffect(() => {
     isSyncModalOpen ? showPolarisModal(syncModalRef) : hidePolarisModal(syncModalRef);
   }, [isSyncModalOpen]);
+
+  useEffect(() => {
+    isSelectTemplateModalOpen ? showPolarisModal(selectTemplateModalRef) : hidePolarisModal(selectTemplateModalRef);
+  }, [isSelectTemplateModalOpen]);
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -1436,6 +1444,7 @@ export default function ConfigureBundleFlow() {
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
+  useModalHideListener(selectTemplateModalRef, () => setIsSelectTemplateModalOpen(false));
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
@@ -1820,7 +1829,7 @@ export default function ConfigureBundleFlow() {
                             <button
                               type="button"
                               className={`${fullPageBundleStyles.setupNavItem} ${isActive ? fullPageBundleStyles.setupNavItemActive : ""}`}
-                              onClick={() => handleSectionChange(item.id)}
+                              onClick={() => { if (item.id === "select_template") { setIsSelectTemplateModalOpen(true); } else { handleSectionChange(item.id); } }}
                             >
                               <span className={fullPageBundleStyles.setupNavIcon} aria-hidden="true">
                                 {item.iconType
@@ -3883,71 +3892,6 @@ export default function ConfigureBundleFlow() {
               );
             })()}
 
-            {activeSection === "select_template" && (() => {
-              const fpbTemplates = [
-                { presetId: "STANDARD",   label: "Standard Design",   image: "/fullPageThumbnail.png"       },
-                { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"      },
-                { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png"   },
-                { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"    },
-              ];
-              const FPB_LAYOUT = "FBP_SIDE_FOOTER";
-              return (
-                <div>
-                  <s-stack direction="block" gap="base">
-                    <s-section>
-                      <s-stack direction="block" gap="base">
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                          <div>
-                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Customize your bundle</h3>
-                            <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
-                          </div>
-                          <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
-                            Customize Colors &amp; Language
-                          </s-button>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                          {fpbTemplates.map((tpl) => {
-                            const isSelected = wpbPresetId === tpl.presetId && wpbLayoutTemplate === FPB_LAYOUT;
-                            return (
-                              <div
-                                key={tpl.presetId}
-                                style={{
-                                  border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
-                                  borderRadius: 12,
-                                  overflow: "hidden",
-                                  background: "#f6f6f7",
-                                  cursor: isSelected ? "default" : "pointer",
-                                }}
-                                onClick={() => { if (!isSelected) { setWpbLayoutTemplate(FPB_LAYOUT); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
-                              >
-                                <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
-                                  <img
-                                    src={tpl.image}
-                                    alt={tpl.label}
-                                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                  />
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
-                                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{tpl.label}</span>
-                                  <s-button
-                                    variant={isSelected ? "primary" : "secondary"}
-                                    disabled={isSelected || undefined}
-                                    onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setWpbLayoutTemplate(FPB_LAYOUT); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
-                                  >
-                                    {isSelected ? "Selected" : "Select"}
-                                  </s-button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </s-stack>
-                    </s-section>
-                  </s-stack>
-                </div>
-              );
-            })()}
-
             {activeSection === "bundle_widget" && (
               <div data-tour-target="fpb-bundle-widget">
                 <s-stack direction="block" gap="base">
@@ -4329,6 +4273,67 @@ export default function ConfigureBundleFlow() {
         onDiscard={handleConfirmDiscard}
         onContinue={closeDiscardModal}
       />
+
+      {/* Select Template Modal */}
+      <s-modal ref={selectTemplateModalRef} heading="Customization">
+        {(() => {
+          const fpbTemplates = [
+            { presetId: "STANDARD",   label: "Standard Design",   image: "/fullPageThumbnail.png"     },
+            { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
+            { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
+            { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
+          ];
+          const FPB_LAYOUT = "FBP_SIDE_FOOTER";
+          return (
+            <div>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Customize your bundle</h3>
+                  <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
+                </div>
+                <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                  Customize Colors &amp; Language
+                </s-button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {fpbTemplates.map((tpl) => {
+                  const isSelected = wpbPresetId === tpl.presetId && wpbLayoutTemplate === FPB_LAYOUT;
+                  return (
+                    <div
+                      key={tpl.presetId}
+                      style={{
+                        border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        background: "#f6f6f7",
+                        cursor: isSelected ? "default" : "pointer",
+                      }}
+                      onClick={() => { if (!isSelected) { setWpbLayoutTemplate(FPB_LAYOUT); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
+                    >
+                      <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
+                        <img src={tpl.image} alt={tpl.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
+                        <h3 style={{ flex: 1, margin: 0, fontSize: 14, fontWeight: 600 }}>{tpl.label}</h3>
+                        <s-button
+                          variant={isSelected ? "primary" : "secondary"}
+                          disabled={isSelected || undefined}
+                          onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setWpbLayoutTemplate(FPB_LAYOUT); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
+                        >
+                          {isSelected ? "Selected" : "Select"}
+                        </s-button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+        <s-button slot="primaryAction" variant="primary" onClick={() => setIsSelectTemplateModalOpen(false)}>
+          Next
+        </s-button>
+      </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">

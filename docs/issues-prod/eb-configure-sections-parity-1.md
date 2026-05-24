@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 11:30
+**Last Updated:** 2026-05-24 12:30
 
 ## Overview
 
@@ -43,6 +43,19 @@ FPB + PPB changes:
 - Files: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`, `app/styles/routes/bundle-configure-shared.module.css`
 - ESLint: 0 errors; visually verified in Chrome (App Embed Status no icon, cards with images, Bundle Link no globe)
 
+### 2026-05-24 12:30 - Section 4 complete: Select Template modal (FPB + PPB)
+
+FPB + PPB changes:
+- Removed inline `{activeSection === "select_template" && ...}` panel — Select Template no longer occupies main content area
+- Added `selectTemplateModalRef` + `isSelectTemplateModalOpen` state to both routes
+- Nav "Select Template" click now opens `<s-modal heading="Customization">` instead of switching inline section
+- Modal contains: "Customize your bundle" header + subtitle + "Customize Colors & Language" secondary button; 2×2 template grid with `<h3>` card names (matching EB a11y pattern); "Next" primary button that closes modal
+- `useModalHideListener` wired so Escape/backdrop/X also closes and resets state
+- FPB templates: STANDARD/CLASSIC/COMPACT/HORIZONTAL with FBP_SIDE_FOOTER layout
+- PPB templates: CASCADE/COGNIVE/MODAL/SIMPLIFIED with PDP_INPAGE/PDP_MODAL layouts
+- Files: `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+- ESLint: 0 errors
+
 ### 2026-05-24 11:30 - Section 3 complete: Bundle Settings parity (FPB + PPB)
 
 FPB + PPB changes:
@@ -69,4 +82,4 @@ FPB + PPB changes:
   - [ ] E2E verify in Chrome (full E2E at end of all sections)
 - [x] Section 2: Bundle Visibility (FPB + PPB)
 - [x] Section 3: Bundle Settings (FPB + PPB)
-- [ ] Section 4: Select Template — full reaudit (FPB + PPB)
+- [x] Section 4: Select Template — modal (FPB + PPB)

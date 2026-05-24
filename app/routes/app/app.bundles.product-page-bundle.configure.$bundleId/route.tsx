@@ -551,6 +551,10 @@ export default function ConfigureBundleFlow() {
   const [wpbLayoutTemplate, setWpbLayoutTemplate] = useState<string | null>((bundle as any).wpbLayoutTemplate ?? null);
   const [wpbPresetId, setWpbPresetId] = useState<string | null>((bundle as any).wpbPresetId ?? null);
 
+  // Select Template modal state
+  const selectTemplateModalRef = useRef<HTMLElement>(null);
+  const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
+
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
@@ -1198,10 +1202,15 @@ export default function ConfigureBundleFlow() {
     isCollectionsModalOpen ? showPolarisModal(collectionsModalRef) : hidePolarisModal(collectionsModalRef);
   }, [isCollectionsModalOpen]);
 
+  useEffect(() => {
+    isSelectTemplateModalOpen ? showPolarisModal(selectTemplateModalRef) : hidePolarisModal(selectTemplateModalRef);
+  }, [isSelectTemplateModalOpen]);
+
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
+  useModalHideListener(selectTemplateModalRef, () => setIsSelectTemplateModalOpen(false));
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -1430,7 +1439,7 @@ export default function ConfigureBundleFlow() {
                           <button
                             type="button"
                             className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
-                            onClick={() => handleSectionChange(item.id)}
+                            onClick={() => { if (item.id === "select_template") { setIsSelectTemplateModalOpen(true); } else { handleSectionChange(item.id); } }}
                           >
                             <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
                               {item.iconType
@@ -3181,70 +3190,6 @@ export default function ConfigureBundleFlow() {
               );
             })()}
 
-            {activeSection === "select_template" && (() => {
-              const ppbTemplates = [
-                { presetId: "CASCADE",    layoutTemplate: "PDP_INPAGE", label: "Product List",     image: "/productPageThumbnail.png"   },
-                { presetId: "COGNIVE",    layoutTemplate: "PDP_INPAGE", label: "Product Grid",     image: "/fullPageThumbnail.png"       },
-                { presetId: "MODAL",      layoutTemplate: "PDP_MODAL",  label: "Horizontal Slots", image: "/sidePanelThumbnail.png"      },
-                { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL",  label: "Vertical Slots",   image: "/floatingCardThumbnail.png"   },
-              ];
-              return (
-                <div>
-                  <s-stack direction="block" gap="base">
-                    <s-section>
-                      <s-stack direction="block" gap="base">
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                          <div>
-                            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Customize your bundle</h3>
-                            <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
-                          </div>
-                          <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
-                            Customize Colors &amp; Language
-                          </s-button>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                          {ppbTemplates.map((tpl) => {
-                            const isSelected = wpbPresetId === tpl.presetId && wpbLayoutTemplate === tpl.layoutTemplate;
-                            return (
-                              <div
-                                key={tpl.presetId}
-                                style={{
-                                  border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
-                                  borderRadius: 12,
-                                  overflow: "hidden",
-                                  background: "#f6f6f7",
-                                  cursor: isSelected ? "default" : "pointer",
-                                }}
-                                onClick={() => { if (!isSelected) { setWpbLayoutTemplate(tpl.layoutTemplate); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
-                              >
-                                <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
-                                  <img
-                                    src={tpl.image}
-                                    alt={tpl.label}
-                                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                  />
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
-                                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{tpl.label}</span>
-                                  <s-button
-                                    variant={isSelected ? "primary" : "secondary"}
-                                    disabled={isSelected || undefined}
-                                    onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setWpbLayoutTemplate(tpl.layoutTemplate); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
-                                  >
-                                    {isSelected ? "Selected" : "Select"}
-                                  </s-button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </s-stack>
-                    </s-section>
-                  </s-stack>
-                </div>
-              );
-            })()}
-
             {activeSection === "free_gift_addons" && (() => {
               const step = stepsState.steps[activeTabIndex] || stepsState.steps[0];
               if (!step) return (
@@ -3761,6 +3706,66 @@ export default function ConfigureBundleFlow() {
         onDiscard={handleConfirmDiscard}
         onContinue={closeDiscardModal}
       />
+
+      {/* Select Template Modal */}
+      <s-modal ref={selectTemplateModalRef} heading="Customization">
+        {(() => {
+          const ppbTemplates = [
+            { presetId: "CASCADE",    layoutTemplate: "PDP_INPAGE", label: "Product List",     image: "/productPageThumbnail.png"   },
+            { presetId: "COGNIVE",    layoutTemplate: "PDP_INPAGE", label: "Product Grid",     image: "/fullPageThumbnail.png"       },
+            { presetId: "MODAL",      layoutTemplate: "PDP_MODAL",  label: "Horizontal Slots", image: "/sidePanelThumbnail.png"      },
+            { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL",  label: "Vertical Slots",   image: "/floatingCardThumbnail.png"   },
+          ];
+          return (
+            <div>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Customize your bundle</h3>
+                  <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
+                </div>
+                <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                  Customize Colors &amp; Language
+                </s-button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                {ppbTemplates.map((tpl) => {
+                  const isSelected = wpbPresetId === tpl.presetId && wpbLayoutTemplate === tpl.layoutTemplate;
+                  return (
+                    <div
+                      key={tpl.presetId}
+                      style={{
+                        border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
+                        borderRadius: 12,
+                        overflow: "hidden",
+                        background: "#f6f6f7",
+                        cursor: isSelected ? "default" : "pointer",
+                      }}
+                      onClick={() => { if (!isSelected) { setWpbLayoutTemplate(tpl.layoutTemplate); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
+                    >
+                      <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
+                        <img src={tpl.image} alt={tpl.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
+                        <h3 style={{ flex: 1, margin: 0, fontSize: 14, fontWeight: 600 }}>{tpl.label}</h3>
+                        <s-button
+                          variant={isSelected ? "primary" : "secondary"}
+                          disabled={isSelected || undefined}
+                          onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setWpbLayoutTemplate(tpl.layoutTemplate); setWpbPresetId(tpl.presetId); markAsDirty(); } }}
+                        >
+                          {isSelected ? "Selected" : "Select"}
+                        </s-button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+        <s-button slot="primaryAction" variant="primary" onClick={() => setIsSelectTemplateModalOpen(false)}>
+          Next
+        </s-button>
+      </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Bundle?">
