@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 12:30
+**Last Updated:** 2026-05-24 16:30
 
 ## Overview
 
@@ -73,6 +73,27 @@ FPB + PPB changes:
 
 ### 2026-05-23 - Issue created, starting Section 1: Step Flow + Step Setup + Category accordion
 
+### 2026-05-24 14:00 - Starting Section 5: Select Template v2 — full-screen overlay + field rename + dedicated save + dismiss bug fix
+
+New phases (extending existing Section 4 work):
+- Rename DB fields: `wpbLayoutTemplate` → `bundleDesignTemplate`, `wpbPresetId` → `bundleDesignPresetId` (match EB names)
+- Replace `s-modal` with `position:fixed;inset:0` full-screen overlay (EB parity; z-index 2147482000)
+- Dedicated `useFetcher` save on "Next" click (`intent: "updateBundleDesignTemplate"`) — independent of main form
+- Dismiss bug eliminated by removing `s-modal` entirely
+- Both FPB + PPB routes
+
+### 2026-05-24 16:30 - Section 5 complete
+
+Files changed:
+- `prisma/schema.prisma` — renamed `wpbLayoutTemplate` → `bundleDesignTemplate`, `wpbPresetId` → `bundleDesignPresetId`
+- `prisma/migrations/20260524081409_rename_bundle_design_template_fields/` — migration applied
+- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/parsers.ts` — renamed `parseWpbTemplate` → `parseBundleDesignTemplate`, updated field names
+- `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` — removed template fields from `handleSaveBundle`, added `handleUpdateBundleDesignTemplate`
+- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts` — same; fixed stray extra `}` parsing error
+- `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` — full-screen overlay, `templateFetcher`, Escape key, pending state, removed s-modal; fixed stray extra `}` parsing error
+- `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx` — same
+- `tests/unit/routes/select-template.test.ts` — updated to `parseBundleDesignTemplate` + new field names (12 tests, all green)
+
 ## Phases Checklist
 
 - [x] Section 1: Step Flow card + Step Setup + Category accordion (FPB + PPB)
@@ -83,3 +104,12 @@ FPB + PPB changes:
 - [x] Section 2: Bundle Visibility (FPB + PPB)
 - [x] Section 3: Bundle Settings (FPB + PPB)
 - [x] Section 4: Select Template — modal (FPB + PPB)
+- [x] Section 5: Select Template v2 — full-screen overlay + EB field rename + dedicated save + dismiss fix
+  - [x] TDD: update tests (RED)
+  - [x] Update parsers.ts (GREEN)
+  - [x] Schema migration: rename DB fields
+  - [x] FPB handler: remove from saveBundle, add handleUpdateBundleDesignTemplate
+  - [x] PPB handler: same
+  - [x] FPB route.tsx: full-screen overlay + templateFetcher
+  - [x] PPB route.tsx: same
+  - [x] Lint + commit

@@ -19,10 +19,10 @@ function int(formData: FormData, key: string): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
-export function parseWpbTemplate(formData: FormData) {
+export function parseBundleDesignTemplate(formData: FormData) {
   return {
-    wpbLayoutTemplate: str(formData, "wpbLayoutTemplate"),
-    wpbPresetId:       str(formData, "wpbPresetId"),
+    bundleDesignTemplate: str(formData, "bundleDesignTemplate"),
+    bundleDesignPresetId: str(formData, "bundleDesignPresetId"),
   };
 }
 

@@ -1,11 +1,11 @@
 /**
- * Unit tests — parseWpbTemplate
+ * Unit tests — parseBundleDesignTemplate
  *
  * Spec: test-spec/select-template.spec.md
- * Issue: [select-template-1]
+ * Issue: [eb-configure-sections-parity-1]
  */
 
-import { parseWpbTemplate } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/parsers";
+import { parseBundleDesignTemplate } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/parsers";
 
 function makeForm(fields: Record<string, string>): FormData {
   const fd = new FormData();
@@ -15,106 +15,106 @@ function makeForm(fields: Record<string, string>): FormData {
   return fd;
 }
 
-describe("parseWpbTemplate", () => {
+describe("parseBundleDesignTemplate", () => {
   // --- defaults and empty form ---
 
   it("returns null for both fields when form is empty", () => {
-    const result = parseWpbTemplate(makeForm({}));
-    expect(result.wpbLayoutTemplate).toBeNull();
-    expect(result.wpbPresetId).toBeNull();
+    const result = parseBundleDesignTemplate(makeForm({}));
+    expect(result.bundleDesignTemplate).toBeNull();
+    expect(result.bundleDesignPresetId).toBeNull();
   });
 
-  it("returns null for wpbPresetId when value is only whitespace", () => {
-    const result = parseWpbTemplate(makeForm({ wpbPresetId: "  " }));
-    expect(result.wpbPresetId).toBeNull();
+  it("returns null for bundleDesignPresetId when value is only whitespace", () => {
+    const result = parseBundleDesignTemplate(makeForm({ bundleDesignPresetId: "  " }));
+    expect(result.bundleDesignPresetId).toBeNull();
   });
 
-  it("returns null for wpbLayoutTemplate when value is only whitespace", () => {
-    const result = parseWpbTemplate(makeForm({ wpbLayoutTemplate: "  " }));
-    expect(result.wpbLayoutTemplate).toBeNull();
+  it("returns null for bundleDesignTemplate when value is only whitespace", () => {
+    const result = parseBundleDesignTemplate(makeForm({ bundleDesignTemplate: "  " }));
+    expect(result.bundleDesignTemplate).toBeNull();
   });
 
   // --- valid FPB presets ---
 
   it("parses FPB Standard preset", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "FBP_SIDE_FOOTER",
-      wpbPresetId: "STANDARD",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "FBP_SIDE_FOOTER",
+      bundleDesignPresetId: "STANDARD",
     }));
-    expect(result.wpbLayoutTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.wpbPresetId).toBe("STANDARD");
+    expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
+    expect(result.bundleDesignPresetId).toBe("STANDARD");
   });
 
   it("parses FPB Classic preset", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "FBP_SIDE_FOOTER",
-      wpbPresetId: "CLASSIC",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "FBP_SIDE_FOOTER",
+      bundleDesignPresetId: "CLASSIC",
     }));
-    expect(result.wpbLayoutTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.wpbPresetId).toBe("CLASSIC");
+    expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
+    expect(result.bundleDesignPresetId).toBe("CLASSIC");
   });
 
   it("parses FPB Compact preset", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "FBP_SIDE_FOOTER",
-      wpbPresetId: "COMPACT",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "FBP_SIDE_FOOTER",
+      bundleDesignPresetId: "COMPACT",
     }));
-    expect(result.wpbLayoutTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.wpbPresetId).toBe("COMPACT");
+    expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
+    expect(result.bundleDesignPresetId).toBe("COMPACT");
   });
 
   it("parses FPB Horizontal preset", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "FBP_SIDE_FOOTER",
-      wpbPresetId: "HORIZONTAL",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "FBP_SIDE_FOOTER",
+      bundleDesignPresetId: "HORIZONTAL",
     }));
-    expect(result.wpbLayoutTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.wpbPresetId).toBe("HORIZONTAL");
+    expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
+    expect(result.bundleDesignPresetId).toBe("HORIZONTAL");
   });
 
   // --- valid PPB templates ---
 
   it("parses PPB Product List (PDP_INPAGE + CASCADE)", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "PDP_INPAGE",
-      wpbPresetId: "CASCADE",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "PDP_INPAGE",
+      bundleDesignPresetId: "CASCADE",
     }));
-    expect(result.wpbLayoutTemplate).toBe("PDP_INPAGE");
-    expect(result.wpbPresetId).toBe("CASCADE");
+    expect(result.bundleDesignTemplate).toBe("PDP_INPAGE");
+    expect(result.bundleDesignPresetId).toBe("CASCADE");
   });
 
   it("parses PPB Product Grid (PDP_INPAGE + COGNIVE)", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "PDP_INPAGE",
-      wpbPresetId: "COGNIVE",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "PDP_INPAGE",
+      bundleDesignPresetId: "COGNIVE",
     }));
-    expect(result.wpbLayoutTemplate).toBe("PDP_INPAGE");
-    expect(result.wpbPresetId).toBe("COGNIVE");
+    expect(result.bundleDesignTemplate).toBe("PDP_INPAGE");
+    expect(result.bundleDesignPresetId).toBe("COGNIVE");
   });
 
   it("parses PPB Horizontal Slots (PDP_MODAL + MODAL)", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "PDP_MODAL",
-      wpbPresetId: "MODAL",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "PDP_MODAL",
+      bundleDesignPresetId: "MODAL",
     }));
-    expect(result.wpbLayoutTemplate).toBe("PDP_MODAL");
-    expect(result.wpbPresetId).toBe("MODAL");
+    expect(result.bundleDesignTemplate).toBe("PDP_MODAL");
+    expect(result.bundleDesignPresetId).toBe("MODAL");
   });
 
   it("parses PPB Vertical Slots (PDP_MODAL + SIMPLIFIED)", () => {
-    const result = parseWpbTemplate(makeForm({
-      wpbLayoutTemplate: "PDP_MODAL",
-      wpbPresetId: "SIMPLIFIED",
+    const result = parseBundleDesignTemplate(makeForm({
+      bundleDesignTemplate: "PDP_MODAL",
+      bundleDesignPresetId: "SIMPLIFIED",
     }));
-    expect(result.wpbLayoutTemplate).toBe("PDP_MODAL");
-    expect(result.wpbPresetId).toBe("SIMPLIFIED");
+    expect(result.bundleDesignTemplate).toBe("PDP_MODAL");
+    expect(result.bundleDesignPresetId).toBe("SIMPLIFIED");
   });
 
-  // --- presetId present, layoutTemplate absent ---
+  // --- presetId present, template absent ---
 
-  it("parses wpbPresetId independently when wpbLayoutTemplate is absent", () => {
-    const result = parseWpbTemplate(makeForm({ wpbPresetId: "CASCADE" }));
-    expect(result.wpbLayoutTemplate).toBeNull();
-    expect(result.wpbPresetId).toBe("CASCADE");
+  it("parses bundleDesignPresetId independently when bundleDesignTemplate is absent", () => {
+    const result = parseBundleDesignTemplate(makeForm({ bundleDesignPresetId: "CASCADE" }));
+    expect(result.bundleDesignTemplate).toBeNull();
+    expect(result.bundleDesignPresetId).toBe("CASCADE");
   });
 });

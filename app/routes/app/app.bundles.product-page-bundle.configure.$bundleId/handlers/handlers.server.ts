@@ -25,7 +25,7 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
-import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings, parseWpbTemplate } from "./parsers";
+import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings, parseBundleDesignTemplate } from "./parsers";
 import {
   normaliseShopifyProductId,
   safeJsonParse,
@@ -366,7 +366,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
         ...parsePPBBundleSettings(formData),
-        ...parseWpbTemplate(formData),
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -1288,4 +1287,20 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       error: (error as Error).message || "Widget placement validation failed"
     }, { status: 500 });
   }
+}
+
+export async function handleUpdateBundleDesignTemplate(
+  _admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+  formData: FormData
+) {
+  const { bundleDesignTemplate, bundleDesignPresetId } = parseBundleDesignTemplate(formData);
+
+  await db.bundle.update({
+    where: { id: bundleId, shopId: session.shop },
+    data: { bundleDesignTemplate, bundleDesignPresetId },
+  });
+
+  return json({ success: true });
 }

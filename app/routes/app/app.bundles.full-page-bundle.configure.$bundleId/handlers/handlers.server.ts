@@ -465,10 +465,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
     const maxQtyPerProductRaw = formData.get("maxQtyPerProduct") as string | null;
     const maxQtyPerProduct = maxQtyPerProductRaw ? parseInt(maxQtyPerProductRaw, 10) || null : null;
-    const wpbLayoutTemplateRaw = formData.get("wpbLayoutTemplate") as string | null;
-    const wpbLayoutTemplate = wpbLayoutTemplateRaw?.trim() || null;
-    const wpbPresetIdRaw = formData.get("wpbPresetId") as string | null;
-    const wpbPresetId = wpbPresetIdRaw?.trim() || null;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -607,8 +603,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         bundleLevelCss,
         productSlotsEnabled,
         maxQtyPerProduct,
-        wpbLayoutTemplate,
-        wpbPresetId,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -1777,4 +1771,21 @@ export async function handleRenamePageSlug(
       error: (error as Error).message || "Failed to rename page slug"
     }, { status: 500 });
   }
+}
+
+export async function handleUpdateBundleDesignTemplate(
+  _admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+  formData: FormData
+) {
+  const bundleDesignTemplate = (formData.get("bundleDesignTemplate") as string)?.trim() || null;
+  const bundleDesignPresetId = (formData.get("bundleDesignPresetId") as string)?.trim() || null;
+
+  await db.bundle.update({
+    where: { id: bundleId, shopId: session.shop },
+    data: { bundleDesignTemplate, bundleDesignPresetId },
+  });
+
+  return json({ success: true });
 }
