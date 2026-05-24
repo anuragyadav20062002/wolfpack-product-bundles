@@ -532,6 +532,28 @@ export default function ConfigureBundleFlow() {
   const [progressBarProgressText, setProgressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? "Add {{conditionText}} to unlock {{discountText}}");
   const [progressBarSuccessText, setProgressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? "{{discountText}} unlocked");
 
+  const [tierTextByRuleId, setTierTextByRuleId] = useState<Record<string, { tierText: string; tierSubtext: string }>>(
+    ((bundle as any).pricing?.messages?.tierTextByRuleId as Record<string, { tierText: string; tierSubtext: string }>) ?? {}
+  );
+  const [tierTextByLocaleByRuleId, setTierTextByLocaleByRuleId] = useState<Record<string, Record<string, { tierText: string; tierSubtext: string }>>>(
+    ((bundle as any).pricing?.messages?.tierTextByLocaleByRuleId as Record<string, Record<string, { tierText: string; tierSubtext: string }>>) ?? {}
+  );
+  const progressBarMultiLangModalRef = useRef<HTMLElement>(null);
+  const [isProgressBarMultiLangModalOpen, setIsProgressBarMultiLangModalOpen] = useState(false);
+  const [activeProgressBarLocale, setActiveProgressBarLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+
+  const [discountMessagingMultiLanguageEnabled, setDiscountMessagingMultiLanguageEnabled] = useState<boolean>(
+    !!(bundle as any).pricing?.ruleMessagesByLocale
+  );
+  const [ruleMessagesByLocale, setRuleMessagesByLocale] = useState<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
+    ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
+  );
+  const [activeDiscountLocale, setActiveDiscountLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+
   // FR-05: Bundle Settings — new sub-sections
   const [preSelectedProductVariantId, setPreSelectedProductVariantId] = useState<string>((bundle as any).preSelectedProductVariantId ?? "");
   const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>((bundle as any).maxQtyPerProduct?.toString() ?? "");
@@ -634,6 +656,10 @@ export default function ConfigureBundleFlow() {
         showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
         ruleMessages,
+        discountMessagingMultiLanguageEnabled,
+        ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
+        tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
+        tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
         displayOptions: {
           bundleQuantityOptions: {
             enabled: qtyOptionsEnabled,
@@ -1205,11 +1231,16 @@ export default function ConfigureBundleFlow() {
     isSelectTemplateModalOpen ? showPolarisModal(selectTemplateModalRef) : hidePolarisModal(selectTemplateModalRef);
   }, [isSelectTemplateModalOpen]);
 
+  useEffect(() => {
+    isProgressBarMultiLangModalOpen ? showPolarisModal(progressBarMultiLangModalRef) : hidePolarisModal(progressBarMultiLangModalRef);
+  }, [isProgressBarMultiLangModalOpen]);
+
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(selectTemplateModalRef, () => { setIsSelectTemplateModalOpen(false); setTemplateModalStep("select"); });
+  useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -1291,7 +1322,11 @@ export default function ConfigureBundleFlow() {
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
-          ruleMessages
+          ruleMessages,
+          discountMessagingMultiLanguageEnabled,
+          ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
+          tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
+          tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
       </form>
@@ -2338,82 +2373,115 @@ export default function ConfigureBundleFlow() {
                           </s-tooltip>
                         </s-stack>
 
-                        {/* Variables Helper */}
-                        <details>
-                          <summary className={productPageBundleStyles.helpSummary}>
-                            Show Variables
-                          </summary>
-                          <div className={productPageBundleStyles.helpContainer}>
-                            <div className={productPageBundleStyles.helpItem}>
-                              <strong>Essential (Most Used):</strong><br />
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
-                              <code>{'{{bundleName}}'}</code> - Bundle name
-                            </div>
-                            <div className={productPageBundleStyles.helpItem}>
-                              <strong>Specific:</strong><br />
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
-                              <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
-                            </div>
-                            <div className={productPageBundleStyles.helpItem}>
-                              <strong>Pricing:</strong><br />
-                              <code>{'{{currentAmount}}'}</code> - Current total<br />
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
-                              <code>{'{{savingsAmount}}'}</code> - Amount saved
-                            </div>
-                            <div className={productPageBundleStyles.helpFooter}>
-                              <strong>Quick Examples:</strong><br />
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
-                              🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
-                            </div>
-                          </div>
-                        </details>
-
-                        {/* Dynamic rule-based messaging */}
-                        {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
+                        {pricingState.discountMessagingEnabled && (
                           <s-stack direction="block" gap="small">
-                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <s-stack key={rule.id} direction="block" gap="small">
-                                <s-section>
-                                  <s-stack direction="block" gap="small-100">
-                                    <span style={{ fontSize: 14, fontWeight: 500 }}>Rule #{index + 1} Messages</span>
-                                    <s-text-area
-                                      label="Discount Text"
-                                      value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
-                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'discountText', (e.target as HTMLTextAreaElement).value)}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer is close to qualifying for the discount"
-                                    />
+                            {shopLocales.length > 0 && (
+                              <s-stack direction="inline" gap="small" alignItems="flex-end">
+                                <s-select
+                                  label="Language"
+                                  value={activeDiscountLocale}
+                                  onChange={(e: Event) => {
+                                    const locale = (e.target as HTMLSelectElement).value;
+                                    setActiveDiscountLocale(locale);
+                                    const primaryLocale = shopLocales.find((l: any) => l.primary)?.locale ?? "en";
+                                    if (locale !== primaryLocale && !ruleMessagesByLocale[locale]) {
+                                      setDiscountMessagingMultiLanguageEnabled(true);
+                                      setRuleMessagesByLocale(prev => ({ ...prev, [locale]: ruleMessages }));
+                                      markAsDirty();
+                                    }
+                                  }}
+                                >
+                                  {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                                    <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+                                  ))}
+                                </s-select>
+                                {Object.keys(ruleMessagesByLocale).length > 0 && (
+                                  <s-stack direction="inline" gap="small-100" style={{ flexWrap: "wrap" }}>
+                                    {Object.keys(ruleMessagesByLocale).map(locale => {
+                                      const locName = shopLocales.find((l: any) => l.locale === locale)?.name ?? locale;
+                                      return <s-chip key={locale}>{locName}</s-chip>;
+                                    })}
                                   </s-stack>
-                                </s-section>
-
-                                <s-section>
-                                  <s-stack direction="block" gap="small-100">
-                                    <s-text-area
-                                      label="Success Message"
-                                      value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
-                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'successMessage', (e.target as HTMLTextAreaElement).value)}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer qualifies for the discount"
-                                    />
-                                  </s-stack>
-                                </s-section>
+                                )}
                               </s-stack>
-                            ))}
+                            )}
+                            <div style={{ textAlign: "right" }}>
+                              <s-button
+                                variant="plain"
+                                onClick={() => showPolarisModal(templateVariablesModalRef)}
+                              >
+                                Show Variables
+                              </s-button>
+                            </div>
+                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 ? (
+                              <s-stack direction="block" gap="small">
+                                {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => {
+                                  const localeMessages = discountMessagingMultiLanguageEnabled
+                                    ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
+                                    : ruleMessages[rule.id];
+                                  return (
+                                    <s-section key={rule.id}>
+                                      <s-stack direction="block" gap="small">
+                                        <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
+                                          Rule #{index + 1} Messages
+                                        </h5>
+                                        <s-text-area
+                                          label="Discount Text"
+                                          value={localeMessages?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLTextAreaElement).value;
+                                            if (discountMessagingMultiLanguageEnabled) {
+                                              setRuleMessagesByLocale(prev => ({
+                                                ...prev,
+                                                [activeDiscountLocale]: {
+                                                  ...(prev[activeDiscountLocale] || {}),
+                                                  [rule.id]: { ...(prev[activeDiscountLocale]?.[rule.id] || {}), discountText: val },
+                                                },
+                                              }));
+                                              markAsDirty();
+                                            } else {
+                                              updateRuleMessage(rule.id, 'discountText', val);
+                                            }
+                                          }}
+                                          autoComplete="off"
+                                          helpText="This message appears when the customer is close to qualifying for the discount."
+                                        />
+                                        <s-text-area
+                                          label="Success Message"
+                                          value={localeMessages?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLTextAreaElement).value;
+                                            if (discountMessagingMultiLanguageEnabled) {
+                                              setRuleMessagesByLocale(prev => ({
+                                                ...prev,
+                                                [activeDiscountLocale]: {
+                                                  ...(prev[activeDiscountLocale] || {}),
+                                                  [rule.id]: { ...(prev[activeDiscountLocale]?.[rule.id] || {}), successMessage: val },
+                                                },
+                                              }));
+                                              markAsDirty();
+                                            } else {
+                                              updateRuleMessage(rule.id, 'successMessage', val);
+                                            }
+                                          }}
+                                          autoComplete="off"
+                                          helpText="This message appears when the customer qualifies for the discount."
+                                        />
+                                      </s-stack>
+                                    </s-section>
+                                  );
+                                })}
+                              </s-stack>
+                            ) : (
+                              <s-section>
+                                <s-stack direction="block" gap="small-100" style={{ alignItems: "center" }}>
+                                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                                    Add discount rules to configure messaging
+                                  </p>
+                                </s-stack>
+                              </s-section>
+                            )}
                           </s-stack>
-                        )}
-
-                        {/* No rules message */}
-                        {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
-                          <s-section>
-                            <s-stack direction="block" gap="small-100" style={{ alignItems: "center" }}>
-                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
-                                Add discount rules to configure messaging
-                              </p>
-                            </s-stack>
-                          </s-section>
                         )}
                       </s-stack>
                     </s-stack>
@@ -2521,7 +2589,12 @@ export default function ConfigureBundleFlow() {
                       {progressBarEnabled && (
                         <div className={productPageBundleStyles.nestedDisplayOptions}>
                           <s-stack direction="block" gap="small">
-                            <s-button variant="secondary" icon="globe" disabled>
+                            <s-button
+                              variant="secondary"
+                              icon="globe"
+                              disabled={progressBarType !== "step_based" || shopLocales.length === 0 || undefined}
+                              onClick={() => setIsProgressBarMultiLangModalOpen(true)}
+                            >
                               Multi Language
                             </s-button>
                             <s-select
@@ -2532,22 +2605,57 @@ export default function ConfigureBundleFlow() {
                               <s-option value="simple">Simple Bar</s-option>
                               <s-option value="step_based">Step Based Bar</s-option>
                             </s-select>
-                            <s-stack direction="inline" gap="small">
-                              <s-text-area
-                                label="Progress Text"
-                                helpText="Shown while customer is working toward a discount. Supports {{conditionText}}, {{discountText}}."
-                                value={progressBarProgressText}
-                                onInput={(e: Event) => setProgressBarProgressText((e.target as HTMLTextAreaElement).value)}
-                                autoComplete="off"
-                              />
-                              <s-text-area
-                                label="Success Text"
-                                helpText="Shown when the discount is unlocked. Supports {{discountText}}."
-                                value={progressBarSuccessText}
-                                onInput={(e: Event) => setProgressBarSuccessText((e.target as HTMLTextAreaElement).value)}
-                                autoComplete="off"
-                              />
-                            </s-stack>
+                            {progressBarType === "step_based" ? (
+                              <s-stack direction="block" gap="small">
+                                {pricingState.discountRules.length === 0 ? (
+                                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+                                ) : pricingState.discountRules.map((rule: any, index: number) => (
+                                  <s-section key={rule.id}>
+                                    <s-stack direction="inline" gap="small">
+                                      <s-text-area
+                                        label={`Rule ${index + 1} Tier Text`}
+                                        value={tierTextByRuleId[rule.id]?.tierText ?? ""}
+                                        onInput={(e: Event) => {
+                                          const val = (e.target as HTMLTextAreaElement).value;
+                                          setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: val, tierSubtext: prev[rule.id]?.tierSubtext ?? "" } }));
+                                          markAsDirty();
+                                        }}
+                                        autoComplete="off"
+                                        helpText="Short label for this tier (e.g. 'Add 3')"
+                                      />
+                                      <s-text-area
+                                        label={`Rule ${index + 1} Tier Subtext`}
+                                        value={tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                                        onInput={(e: Event) => {
+                                          const val = (e.target as HTMLTextAreaElement).value;
+                                          setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: prev[rule.id]?.tierText ?? "", tierSubtext: val } }));
+                                          markAsDirty();
+                                        }}
+                                        autoComplete="off"
+                                        helpText="Detail line below tier label (e.g. '1 Product(s) @ 20% off')"
+                                      />
+                                    </s-stack>
+                                  </s-section>
+                                ))}
+                              </s-stack>
+                            ) : (
+                              <s-stack direction="inline" gap="small">
+                                <s-text-area
+                                  label="Progress Text"
+                                  helpText="Shown while customer is working toward a discount. Supports {{conditionText}}, {{discountText}}."
+                                  value={progressBarProgressText}
+                                  onInput={(e: Event) => setProgressBarProgressText((e.target as HTMLTextAreaElement).value)}
+                                  autoComplete="off"
+                                />
+                                <s-text-area
+                                  label="Success Text"
+                                  helpText="Shown when the discount is unlocked. Supports {{discountText}}."
+                                  value={progressBarSuccessText}
+                                  onInput={(e: Event) => setProgressBarSuccessText((e.target as HTMLTextAreaElement).value)}
+                                  autoComplete="off"
+                                />
+                              </s-stack>
+                            )}
                             <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                               {pricingState.discountRules.length} discount milestones available from current rules.
                             </p>
@@ -3855,6 +3963,66 @@ export default function ConfigureBundleFlow() {
         >
           Done
         </s-button>
+      </s-modal>
+
+      {/* Progress Bar Multi Language Modal */}
+      <s-modal ref={progressBarMultiLangModalRef} heading="Customize Text for Multiple Languages">
+        <s-stack direction="block" gap="small">
+          {shopLocales.length > 0 && (
+            <s-select
+              label="Language"
+              value={activeProgressBarLocale}
+              onChange={(e: Event) => setActiveProgressBarLocale((e.target as HTMLSelectElement).value)}
+            >
+              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+              ))}
+            </s-select>
+          )}
+          {pricingState.discountRules.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+          ) : pricingState.discountRules.map((rule: any, index: number) => (
+            <s-section key={rule.id}>
+              <s-stack direction="inline" gap="small">
+                <s-text-area
+                  label={`Rule ${index + 1} Tier Text`}
+                  value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? ""}
+                  onInput={(e: Event) => {
+                    const val = (e.target as HTMLTextAreaElement).value;
+                    setTierTextByLocaleByRuleId(prev => ({
+                      ...prev,
+                      [activeProgressBarLocale]: {
+                        ...(prev[activeProgressBarLocale] || {}),
+                        [rule.id]: { tierText: val, tierSubtext: prev[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? "" },
+                      },
+                    }));
+                    markAsDirty();
+                  }}
+                  autoComplete="off"
+                  helpText="Short label for this tier (e.g. 'Add 3')"
+                />
+                <s-text-area
+                  label={`Rule ${index + 1} Tier Subtext`}
+                  value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                  onInput={(e: Event) => {
+                    const val = (e.target as HTMLTextAreaElement).value;
+                    setTierTextByLocaleByRuleId(prev => ({
+                      ...prev,
+                      [activeProgressBarLocale]: {
+                        ...(prev[activeProgressBarLocale] || {}),
+                        [rule.id]: { tierText: prev[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? "", tierSubtext: val },
+                      },
+                    }));
+                    markAsDirty();
+                  }}
+                  autoComplete="off"
+                  helpText="Detail line below tier label (e.g. '1 Product(s) @ 20% off')"
+                />
+              </s-stack>
+            </s-section>
+          ))}
+        </s-stack>
+        <s-button slot="primaryAction" onClick={() => setIsProgressBarMultiLangModalOpen(false)}>Save and close</s-button>
       </s-modal>
 
       <BundleReadinessOverlay

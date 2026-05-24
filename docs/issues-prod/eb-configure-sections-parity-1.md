@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 14:00
+**Last Updated:** 2026-05-25 16:30
 
 ## Overview
 
@@ -88,12 +88,34 @@ export interface PricingMessages {
 7. [x] Update FPB + PPB handlers (flat shape in buildFullPageBundlePricing + Prisma upsert + metafield payload)
 8. [x] Update metafield sync writers (bundle-product + component-product + standard-metafields)
 9. [x] Update pricing-calculation.server.ts
-10. [ ] BXY UI: FPB + PPB route.tsx (Customer buys/gets + discount type + apply mode)
-11. [ ] Progress Bar: Step-Based tier text/subtext fields + Multi Language modal
-12. [ ] Discount Messaging: dropdown + chips (replace tab-based locale selector)
+10. [x] BXY UI: FPB + PPB route.tsx (Customer buys/gets + discount type + apply mode)
+11. [x] Progress Bar: Step-Based tier text/subtext fields + Multi Language modal (FPB + PPB)
+12. [x] Discount Messaging: dropdown + chips language selector (FPB + PPB)
 13. [ ] Update widget JS + rebuild
 14. [ ] Data migration script for existing DB records (nested → flat)
 15. [ ] Lint + commit
+
+### 2026-05-25 16:30 - Steps 11–12 complete: Progress Bar Multi Language + Discount Messaging (FPB + PPB)
+
+**FPB route.tsx** (previously completed):
+- Added `tierTextByRuleId`, `tierTextByLocaleByRuleId`, `progressBarMultiLangModalRef`, `isProgressBarMultiLangModalOpen`, `activeProgressBarLocale` state
+- Added `discountMessagingMultiLanguageEnabled`, `ruleMessagesByLocale`, `activeDiscountLocale` state with `originalRef` mirrors
+- Progress Bar section: Multi Language button enabled when `step_based` + has locales; step_based shows per-rule Tier Text/Subtext; simple shows Progress/Success text
+- Added Progress Bar Multi Language `<s-modal>` with language dropdown + per-rule tier text/subtext per locale
+- Discount Messaging: replaced `<details>/<summary>` Show Variables with `<s-button variant="plain">` + added language `<s-select>` + "Active languages" `<s-chip>` row; per-locale rule message editing wired
+- `discountData` formData updated to include `tierTextByRuleId`, `tierTextByLocaleByRuleId`, `ruleMessagesByLocale`, `discountMessagingMultiLanguageEnabled`
+
+**PPB route.tsx** (this entry):
+- Added same state block: `tierTextByRuleId`, `tierTextByLocaleByRuleId`, `progressBarMultiLangModalRef`, `isProgressBarMultiLangModalOpen`, `activeProgressBarLocale`, `discountMessagingMultiLanguageEnabled`, `ruleMessagesByLocale`, `activeDiscountLocale`
+- Added `useEffect` wiring for Progress Bar Multi Language modal open/close
+- Added `useModalHideListener` for progress bar modal
+- Progress Bar section: Multi Language button now conditional on `progressBarType === "step_based"` (was hardcoded `disabled`); step_based shows per-rule Tier Text/Subtext; simple shows Progress/Success text
+- Added Progress Bar Multi Language `<s-modal>` with same language dropdown + per-rule tier text pattern
+- Discount Messaging: removed old `<details>/<summary>` "Show Variables" + pre-existing multi-language absence; added language `<s-select>` + chips + per-locale rule message editing
+- Both `formData.append("discountData", ...)` and hidden `<input name="discountData">` updated with new fields
+- ESLint: 0 errors
+
+**Next:** Widget JS update + rebuild (step 13)
 
 ### 2026-05-25 14:00 - Step 10 complete: BXY rule UI updated in all three configure routes
 
@@ -276,9 +298,9 @@ Files changed:
   - [x] Update metafield sync writers (bundle-product, component-product, standard-metafields)
   - [x] Update pricing-calculation.server.ts
   - [x] BXY UI: FPB + PPB + create-configure route.tsx — Customer buys/gets + discount type + apply mode
-  - [ ] Progress Bar Step-Based: per-rule Tier Text + Tier Subtext fields
-  - [ ] Progress Bar Multi Language modal (s-modal, language dropdown, per-rule tier texts)
-  - [ ] Discount Messaging: dropdown + chips language selector (replace tabs)
+  - [x] Progress Bar Step-Based: per-rule Tier Text + Tier Subtext fields (FPB + PPB)
+  - [x] Progress Bar Multi Language modal (s-modal, language dropdown, per-rule tier texts) (FPB + PPB)
+  - [x] Discount Messaging: dropdown + chips language selector (FPB + PPB)
   - [ ] Update BXY default text constants
   - [ ] Widget JS update + rebuild (bundle-widget-full-page.js, bundle-widget-product-page.js, pricing-calculator.js)
   - [ ] Data migration script: nested → flat format for existing DB records
