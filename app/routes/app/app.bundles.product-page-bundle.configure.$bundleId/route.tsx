@@ -1556,6 +1556,7 @@ export default function ConfigureBundleFlow() {
                   {stepsState.steps.map((step, index) => activeTabIndex === index && (
                     <div
                       key={`${step.id}-${slideKey}`}
+                      style={{ paddingTop: "16px" }}
                       className={slideDir === "forward" ? productPageBundleStyles.slideForward : slideDir === "backward" ? productPageBundleStyles.slideBackward : ""}
                     >
                       <div className={productPageBundleStyles.stepSetupHeader}>

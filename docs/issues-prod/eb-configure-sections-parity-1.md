@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 20:00
+**Last Updated:** 2026-05-24 21:00
 
 ## Overview
 
@@ -21,6 +21,18 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 
 ## Progress Log
+
+### 2026-05-24 21:00 - Step Flow card: move divider from above step tabs to below (FPB + PPB)
+
+FPB changes:
+- `full-page-bundle-configure.module.css`: `.stepNav` changed `border-top` → `border-bottom` (divider now appears after step tabs, not before them)
+- `full-page-bundle-configure.module.css`: `.stepFlowCard` changed `padding-bottom: 0` → `padding-bottom: 8px` (gives the border-bottom breathing room inside the card before the card's outer border)
+
+PPB changes:
+- `product-page-bundle-configure.module.css`: `.stepNav` changed `border-top` → `border-bottom`
+- `app.bundles.product-page-bundle.configure.$bundleId/route.tsx`: added `style={{ paddingTop: "16px" }}` to slide animation wrapper div so "Step Setup" heading has breathing room below the new divider
+
+Also read EB "How to setup?" popup content in full — our implementation is aligned with EB's multi-step flow: Steps → Categories → Products, selection rules (step-level and category-level), discounts, and design.
 
 ### 2026-05-23 06:00 - Section 1 complete: Category accordion + Step Setup parity
 

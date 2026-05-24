@@ -832,7 +832,7 @@
 /* ── Step Chip Navigation ─────────────────────────────────────── */
 .stepFlowCard {
   overflow: visible;
-  padding-bottom: 0;
+  padding-bottom: 8px;
 }
 
 .stepNav {
@@ -842,7 +842,7 @@
   flex-wrap: wrap;
   padding: 12px 24px 16px 20px;
   margin: 12px -24px 0 -20px;
-  border-top: 1px solid #ebecef;
+  border-bottom: 1px solid #ebecef;
 }
 
 .stepChip,
