@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 17:30
+**Last Updated:** 2026-05-24 18:00
 
 ## Overview
 
@@ -81,6 +81,14 @@ New phases (extending existing Section 4 work):
 - Dedicated `useFetcher` save on "Next" click (`intent: "updateBundleDesignTemplate"`) — independent of main form
 - Dismiss bug eliminated by removing `s-modal` entirely
 - Both FPB + PPB routes
+
+### 2026-05-24 18:00 - Select Template: switch to s-modal, add confirm step (FPB + PPB)
+
+- Replaced position:fixed custom overlay with `s-modal heading="Customization"` — Shopify Admin renders native chrome (heading + X dismiss button)
+- Removed manual keyboard Escape listener (s-modal handles natively); added `useModalHideListener` to reset step on close
+- "Next" no longer closes modal — transitions to "confirm" step showing "Your bundle is ready / Preview bundle" screen (EB parity)
+- "Preview bundle" calls `hidePolarisModal` to close
+- `openSelectTemplateOverlay` renamed `openSelectTemplateModal`; uses `showPolarisModal` imperatively
 
 ### 2026-05-24 17:30 - Post-E2E fixes: barrel export + X dismiss button (FPB + PPB)
 

@@ -731,8 +731,9 @@ export default function ConfigureBundleFlow() {
     onConfirm: (() => void) | null;
   }>({ open: false, onConfirm: null });
 
-  // Select Template overlay state
-  const [isSelectTemplateOverlayOpen, setIsSelectTemplateOverlayOpen] = useState(false);
+  // Select Template modal state
+  const selectTemplateModalRef = useRef<HTMLElement>(null);
+  const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
   const templateFetcher = useFetcher();
 
   // Sync Bundle modal state
@@ -796,10 +797,11 @@ export default function ConfigureBundleFlow() {
     setShowDiscardModal(false);
   }, []);
 
-  const openSelectTemplateOverlay = useCallback(() => {
+  const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
-    setIsSelectTemplateOverlayOpen(true);
+    setTemplateModalStep("select");
+    showPolarisModal(selectTemplateModalRef);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
 
   const handleTemplateNext = useCallback(() => {
@@ -810,17 +812,8 @@ export default function ConfigureBundleFlow() {
     templateFetcher.submit(fd, { method: "POST" });
     setBundleDesignTemplate(pendingDesignTemplate);
     setBundleDesignPresetId(pendingDesignPresetId);
-    setIsSelectTemplateOverlayOpen(false);
+    setTemplateModalStep("confirm");
   }, [pendingDesignTemplate, pendingDesignPresetId, templateFetcher]);
-
-  useEffect(() => {
-    if (!isSelectTemplateOverlayOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsSelectTemplateOverlayOpen(false);
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isSelectTemplateOverlayOpen]);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
 
@@ -1467,6 +1460,7 @@ export default function ConfigureBundleFlow() {
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
+  useModalHideListener(selectTemplateModalRef, () => setTemplateModalStep("select"));
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
@@ -1851,7 +1845,7 @@ export default function ConfigureBundleFlow() {
                             <button
                               type="button"
                               className={`${fullPageBundleStyles.setupNavItem} ${isActive ? fullPageBundleStyles.setupNavItemActive : ""}`}
-                              onClick={() => { if (item.id === "select_template") { openSelectTemplateOverlay(); } else { handleSectionChange(item.id); } }}
+                              onClick={() => { if (item.id === "select_template") { openSelectTemplateModal(); } else { handleSectionChange(item.id); } }}
                             >
                               <span className={fullPageBundleStyles.setupNavIcon} aria-hidden="true">
                                 {item.iconType
@@ -4296,51 +4290,28 @@ export default function ConfigureBundleFlow() {
         onContinue={closeDiscardModal}
       />
 
-      {/* Select Template — full-screen overlay (EB parity) */}
-      {isSelectTemplateOverlayOpen && (() => {
-        const fpbTemplates = [
-          { presetId: "STANDARD",   label: "Standard Design",   image: "/fullPageThumbnail.png"     },
-          { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
-          { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
-          { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
-        ];
-        const FPB_LAYOUT = "FBP_SIDE_FOOTER";
-        return (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 2147482000,
-              background: "#fff",
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
-            <div style={{ padding: "20px 32px", borderBottom: "1px solid #e1e3e5", flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+      {/* Select Template — Shopify native modal */}
+      <s-modal ref={selectTemplateModalRef} heading="Customization">
+        {templateModalStep === "select" ? (() => {
+          const fpbTemplates = [
+            { presetId: "STANDARD",   label: "Standard Design",   image: "/fullPageThumbnail.png"     },
+            { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
+            { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
+            { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
+          ];
+          const FPB_LAYOUT = "FBP_SIDE_FOOTER";
+          return (
+            <>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
                 <div>
-                  <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 500, color: "#6d7175", textTransform: "uppercase", letterSpacing: "0.04em" }}>Customization</p>
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>Customize your bundle</h2>
                   <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-                  <button
-                    type="button"
-                    aria-label="Close"
-                    onClick={() => setIsSelectTemplateOverlayOpen(false)}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
-                  >
-                    <s-icon name="x" />
-                  </button>
-                  <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
-                    Customize Colors &amp; Language
-                  </s-button>
-                </div>
+                <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                  Customize Colors &amp; Language
+                </s-button>
               </div>
-            </div>
-            <div style={{ flex: 1, overflow: "auto", padding: "32px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 900, margin: "0 auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                 {fpbTemplates.map((tpl) => {
                   const isSelected = pendingDesignPresetId === tpl.presetId && pendingDesignTemplate === FPB_LAYOUT;
                   return (
@@ -4372,19 +4343,32 @@ export default function ConfigureBundleFlow() {
                   );
                 })}
               </div>
-            </div>
-            <div style={{ padding: "16px 32px", borderTop: "1px solid #e1e3e5", display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
-              <s-button
-                variant="primary"
-                loading={templateFetcher.state === "submitting" || undefined}
-                onClick={handleTemplateNext}
-              >
-                Next
-              </s-button>
+              <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
+                <s-button
+                  variant="primary"
+                  loading={templateFetcher.state === "submitting" || undefined}
+                  onClick={handleTemplateNext}
+                >
+                  Next
+                </s-button>
+              </div>
+            </>
+          );
+        })() : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 320 }}>
+            <div style={{ textAlign: "center", background: "#f6f6f7", borderRadius: 12, padding: "48px 40px", maxWidth: 480, width: "100%" }}>
+              <p style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 500, color: "#6d7175" }}>View your bundle</p>
+              <p style={{ margin: "0 0 20px", fontSize: 13, color: "#6d7175" }}>View your bundle with your customizations</p>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e3f1eb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <s-icon name="check" />
+              </div>
+              <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 600 }}>Your bundle is ready</h2>
+              <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6d7175" }}>Preview it now with your customizations</p>
+              <s-button variant="secondary" onClick={() => hidePolarisModal(selectTemplateModalRef)}>Preview bundle</s-button>
             </div>
           </div>
-        );
-      })()}
+        )}
+      </s-modal>
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">
