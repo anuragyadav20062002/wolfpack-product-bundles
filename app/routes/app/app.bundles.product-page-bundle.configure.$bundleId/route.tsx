@@ -545,6 +545,7 @@ export default function ConfigureBundleFlow() {
   const [bundleBannerDesktopUrl, setBundleBannerDesktopUrl] = useState<string>((bundle as any).bundleBannerDesktopUrl ?? "");
   const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
   const [bundleLevelCss, setBundleLevelCss] = useState<string>((bundle as any).bundleLevelCss ?? "");
+  const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
 
   // Select Template state
   const [wpbLayoutTemplate, setWpbLayoutTemplate] = useState<string | null>((bundle as any).wpbLayoutTemplate ?? null);
@@ -3007,12 +3008,14 @@ export default function ConfigureBundleFlow() {
               return (
                 <div data-tour-target="ppb-bundle-status">
                   <s-stack direction="block" gap="base">
+
+                    {/* Pre Selected Product */}
                     <s-section>
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
                           {settingsStep && (
-                            <s-checkbox
+                            <s-switch
                               accessibilityLabel="Enable pre selected product for active step"
                               checked={settingsStep.isDefault || undefined}
                               onChange={(e: Event) => {
@@ -3022,9 +3025,15 @@ export default function ConfigureBundleFlow() {
                             />
                           )}
                         </s-stack>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                          Choose products that should be added to bundle by default
+                        </p>
                         <s-banner tone="info">
                           Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
                         </s-banner>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                          These products will be added to user&apos;s box automatically on the first step.
+                        </p>
                         <s-text-field
                           label="Default products title"
                           value={textOverrides.defaultProductsTitle ?? ""}
@@ -3057,6 +3066,7 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
                     </s-section>
 
+                    {/* Enable Quantity Validation */}
                     <s-section>
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
@@ -3079,6 +3089,7 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
                     </s-section>
 
+                    {/* Cart line item discount display */}
                     <s-section>
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
@@ -3087,15 +3098,12 @@ export default function ConfigureBundleFlow() {
                             Edit Defaults
                           </s-button>
                         </s-stack>
-                        <s-text size="small" tone="subdued">Shows how much the customer is saving on the bundle in cart</s-text>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Shows how much the customer is saving on the bundle in cart</p>
                         {[
                           { value: "defaults", label: "Use app defaults",         description: "Uses the discount format and label configured in your app settings." },
                           { value: "custom",   label: "Customize for this bundle", description: "Set a different discount format or label for this bundle only." },
                         ].map(({ value, label, description }) => (
-                          <label
-                            key={value}
-                            style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}
-                          >
+                          <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
                             <input
                               type="radio"
                               name="cartDiscountDisplay"
@@ -3113,16 +3121,52 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
                     </s-section>
 
+                    {/* Bundle Banner — 2-column side-by-side layout */}
                     <s-section>
                       <s-stack direction="block" gap="small">
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Level CSS</h3>
-                        <textarea
-                          value={bundleLevelCss}
-                          placeholder="/* Add custom CSS for this bundle */"
-                          rows={6}
-                          style={{ width: "100%", fontFamily: "monospace", fontSize: 13, padding: "8px 10px", borderRadius: 6, border: "1px solid #c9cccf", resize: "vertical", boxSizing: "border-box" }}
-                          onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
-                        />
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Banner</p>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Upload banner images for desktop and mobile views that will be displayed at the top of your bundle page.</p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                          <div>
+                            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Desktop</p>
+                            <FilePicker
+                              value={bundleBannerDesktopUrl || null}
+                              onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
+                            />
+                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1900x230</span></p>
+                          </div>
+                          <div>
+                            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Mobile</p>
+                            <FilePicker
+                              value={bundleBannerMobileUrl || null}
+                              onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
+                            />
+                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1100x500</span></p>
+                          </div>
+                        </div>
+                      </s-stack>
+                    </s-section>
+
+                    {/* Bundle Level CSS — collapsible */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <button
+                          type="button"
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          onClick={() => setBundleLevelCssExpanded((prev) => !prev)}
+                        >
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Level CSS</h3>
+                          <span style={{ fontSize: 18, color: "#6d7175", display: "inline-block", transform: bundleLevelCssExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+                        </button>
+                        {bundleLevelCssExpanded && (
+                          <textarea
+                            value={bundleLevelCss}
+                            placeholder="/* Add custom CSS for this bundle */"
+                            rows={6}
+                            style={{ width: "100%", fontFamily: "monospace", fontSize: 13, padding: "8px 10px", borderRadius: 6, border: "1px solid #c9cccf", resize: "vertical", boxSizing: "border-box" }}
+                            onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
+                          />
+                        )}
                       </s-stack>
                     </s-section>
 

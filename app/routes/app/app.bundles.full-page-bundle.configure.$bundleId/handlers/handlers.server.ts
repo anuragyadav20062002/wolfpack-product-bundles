@@ -462,6 +462,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleBannerMobileUrl = bundleBannerMobileUrlRaw || null;
     const bundleLevelCssRaw = formData.get("bundleLevelCss") as string | null;
     const bundleLevelCss = bundleLevelCssRaw || null;
+    const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
+    const maxQtyPerProductRaw = formData.get("maxQtyPerProduct") as string | null;
+    const maxQtyPerProduct = maxQtyPerProductRaw ? parseInt(maxQtyPerProductRaw, 10) || null : null;
     const wpbLayoutTemplateRaw = formData.get("wpbLayoutTemplate") as string | null;
     const wpbLayoutTemplate = wpbLayoutTemplateRaw?.trim() || null;
     const wpbPresetIdRaw = formData.get("wpbPresetId") as string | null;
@@ -602,6 +605,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         bundleBannerDesktopUrl,
         bundleBannerMobileUrl,
         bundleLevelCss,
+        productSlotsEnabled,
+        maxQtyPerProduct,
         wpbLayoutTemplate,
         wpbPresetId,
         // Update steps if provided
