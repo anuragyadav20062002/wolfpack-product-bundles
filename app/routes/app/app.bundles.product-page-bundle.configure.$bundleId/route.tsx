@@ -3756,9 +3756,19 @@ export default function ConfigureBundleFlow() {
                   <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>Customize your bundle</h2>
                   <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
                 </div>
-                <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
-                  Customize Colors &amp; Language
-                </s-button>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+                  <button
+                    type="button"
+                    aria-label="Close"
+                    onClick={() => setIsSelectTemplateOverlayOpen(false)}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    <s-icon name="x" />
+                  </button>
+                  <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                    Customize Colors &amp; Language
+                  </s-button>
+                </div>
               </div>
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "32px" }}>

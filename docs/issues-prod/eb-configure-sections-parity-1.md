@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-24 16:30
+**Last Updated:** 2026-05-24 17:30
 
 ## Overview
 
@@ -81,6 +81,11 @@ New phases (extending existing Section 4 work):
 - Dedicated `useFetcher` save on "Next" click (`intent: "updateBundleDesignTemplate"`) — independent of main form
 - Dismiss bug eliminated by removing `s-modal` entirely
 - Both FPB + PPB routes
+
+### 2026-05-24 17:30 - Post-E2E fixes: barrel export + X dismiss button (FPB + PPB)
+
+- Fixed `handleUpdateBundleDesignTemplate` missing from PPB + FPB `handlers/index.ts` barrel re-exports — caused HTTP 500 on template save POST
+- Added X dismiss button (top-right of overlay header) to both FPB + PPB overlays; calls `setIsSelectTemplateOverlayOpen(false)`
 
 ### 2026-05-24 16:30 - Section 5 complete
 
