@@ -636,6 +636,18 @@
   composes: ruleFields from "./bundle-configure-shared.module.css";
 }
 
+.discountRuleCard {
+  composes: discountRuleCard from "./bundle-configure-shared.module.css";
+}
+
+.discountRuleHeader {
+  composes: discountRuleHeader from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionsInactive {
+  composes: displayOptionsInactive from "./bundle-configure-shared.module.css";
+}
+
 .rulesList {
   composes: rulesList from "./bundle-configure-shared.module.css";
 }

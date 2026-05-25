@@ -71,6 +71,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     normalizePricingRuleMessages({
       rules: Array.isArray(initialPricing?.rules) ? initialPricing.rules : [],
       messages: initialPricing?.messages || {},
+      method: initialPricing?.method,
     })
   );
   const [showVariables, setShowVariables] = useState(false);
@@ -155,6 +156,32 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
         },
       },
     }));
+  }, [setPricingDisplayOptions]);
+
+  const updateLocalizedBundleQuantityOption = useCallback((
+    locale: string,
+    ruleId: string,
+    updates: { label?: string; subtext?: string }
+  ) => {
+    setPricingDisplayOptions(prev => {
+      const optionsByLocaleByRuleId = prev.bundleQuantityOptions.optionsByLocaleByRuleId ?? {};
+      return {
+        ...prev,
+        bundleQuantityOptions: {
+          ...prev.bundleQuantityOptions,
+          optionsByLocaleByRuleId: {
+            ...optionsByLocaleByRuleId,
+            [locale]: {
+              ...(optionsByLocaleByRuleId[locale] ?? {}),
+              [ruleId]: {
+                ...(optionsByLocaleByRuleId[locale]?.[ruleId] ?? { label: "", subtext: "" }),
+                ...updates,
+              },
+            },
+          },
+        },
+      };
+    });
   }, [setPricingDisplayOptions]);
 
   const setProgressBarType = useCallback((type: PricingProgressBarType) => {
@@ -289,6 +316,7 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setBundleQuantityOptionsEnabled,
     setBundleQuantityDefaultRule,
     updateBundleQuantityOption,
+    updateLocalizedBundleQuantityOption,
     setProgressBarType,
     updateProgressBarOptions,
     toggleDiscountEnabled,

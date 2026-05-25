@@ -1,13 +1,16 @@
-# Test Spec: Discount & Pricing Parity — Flat PricingRule Parser
+# Test Spec: Discount & Pricing Parity - Rules And Admin UI Contract
 **Spec ID:** discount-pricing-parity  **Issue:** [eb-configure-sections-parity-1]  **Created:** 2026-05-25
 
 ## Purpose
 
 Verify that `parsePricingRule` and `parsePricingConfiguration` in `app/lib/pricing-rule-parser.ts`
-correctly parse, validate, and coerce raw DB JSON into the new flat `PricingRule` shape.
+correctly parse, validate, and coerce raw DB JSON into the flat `PricingRule` shape.
 
-Also covers `migrateNestedRule` — the one-time converter used by the data migration script to
+Also covers `migrateNestedRule` - the existing converter used by the data migration script to
 transform existing nested `{ condition, discount }` DB records into the flat format.
+
+This corrective parity session additionally verifies the FPB and PPB Discount & Pricing route
+source contract against the live EB controls captured on 2026-05-25.
 
 ## Test Cases
 
@@ -51,8 +54,40 @@ transform existing nested `{ condition, discount }` DB records into the flat for
 | 19 | Messages with tierTextByRuleId | `{ ..., messages: { ..., tierTextByRuleId: { "r1": { tierText: "Add 3", tierSubtext: "1 at 100% off" } } } }` | `tierTextByRuleId` preserved | Progress Bar tier text |
 | 20 | Messages with tierTextByLocaleByRuleId | Multi-locale tier text present | Preserved as-is | Multi Language modal data |
 
+### Discount & Pricing route UI contract - FPB and PPB
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 21 | Progress mode labels | Both configure route sources | `Simple Bar` and `Step-Based Bar` are rendered; Simple Bar text inputs are not rendered | Confirmed live in FPB and PPB |
+| 22 | Buy X, get Y controls | Both configure route sources | `% off`, `₹ off`, `The lowest priced items`, `The latest added items` | Exact live copy |
+| 23 | Type change default rule | Both configure route sources | Changing discount type creates one rule of the selected type | Live change does not leave empty rules |
+| 24 | Discount messaging notice | Both configure route sources | Full Buy X, get Y information notice is rendered independently of messaging-enabled content | Visible while messaging is off |
+| 25 | Message variable modal | Both configure route sources | Addressable modal target, heading `Variables`, confirmed five discount variables, no primary save/footer action, and native close dismisses it | Live modal is close-only |
+| 26 | Bundle Quantity Options modal | Both configure route sources | An addressable `Customize Text for Multiple Languages` modal can render `Select Language`, `Box Label`, `Box Subtext`, and `Save and close` | Existing route previously had no BQO modal |
+| 27 | Display-option order | Both configure route sources | Bundle Quantity Options before Progress Bar before Discount Messaging | Matches live visual order |
+| 28 | Rule and display state styling | Both configure route sources | Adjacent rule/remove header and zero-rule muted display options styling hook | Visual verification remains required |
+| 29 | Discount type labels/order | Shared discount method options | `Fixed Amount Off`, `Percentage Off`, `Fixed Bundle Price`, `Buy X, get Y` in order | Confirmed live select copy |
+
+### Default rule creation after discount-type change
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 30 | Percentage default | `createNewPricingRule(PERCENTAGE_OFF)` | Quantity `2`, discount `5` | Live type-switch default |
+| 31 | Fixed amount default | `createNewPricingRule(FIXED_AMOUNT_OFF)` | Quantity `2`, discount `500` cents | Renders currency value `5` |
+| 32 | Fixed bundle price default | `createNewPricingRule(FIXED_BUNDLE_PRICE)` | Product count `2`, price `500` cents | Renders currency value `5` |
+| 33 | Buy X, get Y default | `createNewPricingRule(BUY_X_GET_Y)` | Buys `2`, gets `1`, discount `100`, lowest-priced apply mode | Live initial offer |
+
+### Message template defaults
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 34 | Buy X, get Y default message | `normalizePricingRuleMessages({ method: BUY_X_GET_Y, rules: [rule], messages: {} })` | BXY `Discount Text` and `Success Message` templates | Ensures FPB type switch uses live BXY copy |
+
 ## Acceptance Criteria
-- [ ] All 20 test cases defined above pass
+- [ ] All parser test cases defined above pass
+- [ ] Route UI contract assertions for cases 21-29 pass
+- [ ] Default-rule assertions for cases 30-33 pass
+- [ ] Message-template assertion for case 34 passes
 - [ ] `parsePricingRule` exported from `app/lib/pricing-rule-parser.ts`
 - [ ] `migrateNestedRule` exported from `app/lib/pricing-rule-parser.ts`
 - [ ] `parsePricingConfiguration` exported from `app/lib/pricing-rule-parser.ts`

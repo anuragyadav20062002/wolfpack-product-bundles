@@ -244,8 +244,9 @@ export function useBundleConfigurationState({
     () => normalizePricingRuleMessages({
       rules: Array.isArray(bundle.pricing?.rules) ? bundle.pricing.rules : [],
       messages: bundle.pricing?.messages || {},
+      method: bundle.pricing?.method,
     }),
-    [bundle.pricing?.messages, bundle.pricing?.rules]
+    [bundle.pricing?.messages, bundle.pricing?.method, bundle.pricing?.rules]
   );
 
   const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>(initialRuleMessages);

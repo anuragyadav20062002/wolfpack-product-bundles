@@ -9,6 +9,7 @@ import {
   type PricingRule,
   centsToAmount,
   amountToCents,
+  createNewPricingRule,
 } from "../../../types/pricing";
 import {
   STEP_CONDITION_TYPE_OPTIONS,
@@ -83,6 +84,14 @@ const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
   ["{{addonsConditionDiff}}", "The remaining quantity a customer needs to add to unlock the add-on discount."],
   ["{{addonsDiscountValue}}", "The numerical value of the add-on discount (e.g. the '10' in 10% off)."],
   ["{{addonsDiscountValueUnit}}", "The unit symbol for the add-on discount (% or $)."],
+];
+
+const DISCOUNT_TEMPLATE_VARIABLES: [string, string][] = [
+  ["{{discountConditionDiff}}", "The remaining quantity or monetary amount a customer needs to add to their cart to unlock the discount."],
+  ["{{discountUnit}}", "The symbol for the discount requirement, such as your store's currency symbol ($) for amount-based rules."],
+  ["{{discountValue}}", "The numerical value of the discount reward itself (e.g., the '10' in a 10% or $10 discount)."],
+  ["{{discountValueUnit}}", "The symbol used for the discount reward, such as the percent sign (%) or the store's currency symbol ($)."],
+  ["{{discountedItems}}", "The quantity of items that will be discounted or given free as part of the \"Get Y\" offer."],
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -530,14 +539,22 @@ export default function ConfigureBundleFlow() {
 
   // FR-03: Display options state (Quantity Options + Progress Bar)
   const _savedDisplayOpts = (bundle as any).bundlePricing?.displayOptions ?? {};
+  const savedQuantityOptionsByRuleId = (_savedDisplayOpts?.bundleQuantityOptions?.optionsByRuleId ?? {}) as Record<string, { label?: string; subtext?: string }>;
   const [qtyOptionsEnabled, setQtyOptionsEnabled] = useState<boolean>(_savedDisplayOpts?.bundleQuantityOptions?.enabled === true);
   const [qtyOptionsDefaultRuleId, setQtyOptionsDefaultRuleId] = useState<string | null>(_savedDisplayOpts?.bundleQuantityOptions?.defaultRuleId ?? null);
-  const [qtyRuleLabels, setQtyRuleLabels] = useState<Record<string, string>>({});
-  const [qtyRuleSubtexts, setQtyRuleSubtexts] = useState<Record<string, string>>({});
+  const [qtyRuleLabels, setQtyRuleLabels] = useState<Record<string, string>>(
+    Object.fromEntries(Object.entries(savedQuantityOptionsByRuleId).map(([ruleId, option]) => [ruleId, option.label ?? ""]))
+  );
+  const [qtyRuleSubtexts, setQtyRuleSubtexts] = useState<Record<string, string>>(
+    Object.fromEntries(Object.entries(savedQuantityOptionsByRuleId).map(([ruleId, option]) => [ruleId, option.subtext ?? ""]))
+  );
+  const [qtyRuleTextsByLocaleByRuleId, setQtyRuleTextsByLocaleByRuleId] = useState<Record<string, Record<string, { label: string; subtext: string }>>>(
+    _savedDisplayOpts?.bundleQuantityOptions?.optionsByLocaleByRuleId ?? {}
+  );
   const [progressBarEnabled, setProgressBarEnabled] = useState<boolean>(_savedDisplayOpts?.progressBar?.enabled === true);
   const [progressBarType, setProgressBarType] = useState<string>(_savedDisplayOpts?.progressBar?.type ?? "step_based");
-  const [progressBarProgressText, setProgressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? DEFAULT_PROGRESS_BAR_PROGRESS_TEXT);
-  const [progressBarSuccessText, setProgressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? DEFAULT_PROGRESS_BAR_SUCCESS_TEXT);
+  const [progressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? DEFAULT_PROGRESS_BAR_PROGRESS_TEXT);
+  const [progressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? DEFAULT_PROGRESS_BAR_SUCCESS_TEXT);
 
   const [tierTextByRuleId, setTierTextByRuleId] = useState<Record<string, { tierText: string; tierSubtext: string }>>(
     ((bundle as any).pricing?.messages?.tierTextByRuleId as Record<string, { tierText: string; tierSubtext: string }>) ?? {}
@@ -548,6 +565,11 @@ export default function ConfigureBundleFlow() {
   const progressBarMultiLangModalRef = useRef<HTMLElement>(null);
   const [isProgressBarMultiLangModalOpen, setIsProgressBarMultiLangModalOpen] = useState(false);
   const [activeProgressBarLocale, setActiveProgressBarLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+  const bundleQuantityMultiLangModalRef = useRef<HTMLElement>(null);
+  const [isBundleQuantityMultiLangModalOpen, setIsBundleQuantityMultiLangModalOpen] = useState(false);
+  const [activeBundleQuantityLocale, setActiveBundleQuantityLocale] = useState<string>(
     shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
   );
 
@@ -631,6 +653,20 @@ export default function ConfigureBundleFlow() {
 
   // Template variables modal ref (for Footer Messaging "Show Variables")
   const templateVariablesModalRef = useRef<HTMLElement>(null);
+  const discountVariablesModalRef = useRef<HTMLElement>(null);
+  const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
+
+  const bundleQuantityOptionsEligible = pricingState.discountType !== DiscountMethod.BUY_X_GET_Y
+    && pricingState.discountRules.length > 0
+    && pricingState.discountRules.every((rule: PricingRule) => rule.conditionType === "quantity");
+  const displayOptionsInactive = !pricingState.discountEnabled || pricingState.discountRules.length === 0;
+
+  useEffect(() => {
+    if (!bundleQuantityOptionsEligible && qtyOptionsEnabled) {
+      setQtyOptionsEnabled(false);
+      markAsDirty();
+    }
+  }, [bundleQuantityOptionsEligible, qtyOptionsEnabled, markAsDirty]);
 
   // Step chip navigation
   const [activeTabIndex, setActiveTabIndex] = useState(0);
@@ -688,9 +724,10 @@ export default function ConfigureBundleFlow() {
             optionsByRuleId: Object.fromEntries(
               pricingState.discountRules.map((r: any) => [
                 r.id,
-                { label: qtyRuleLabels[r.id] ?? `Box of ${r.condition?.value ?? ''}`, subtext: qtyRuleSubtexts[r.id] ?? '' },
+                { label: qtyRuleLabels[r.id] ?? `Box of ${r.conditionValue ?? ''}`, subtext: qtyRuleSubtexts[r.id] ?? '' },
               ])
             ),
+            optionsByLocaleByRuleId: qtyRuleTextsByLocaleByRuleId,
           },
           progressBar: {
             enabled: progressBarEnabled,
@@ -760,6 +797,21 @@ export default function ConfigureBundleFlow() {
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
     ruleMessages,
+    qtyOptionsEnabled,
+    qtyOptionsDefaultRuleId,
+    qtyRuleLabels,
+    qtyRuleSubtexts,
+    qtyRuleTextsByLocaleByRuleId,
+    progressBarEnabled,
+    progressBarType,
+    progressBarProgressText,
+    progressBarSuccessText,
+    discountMessagingMultiLanguageEnabled,
+    successMessageByLocale,
+    ruleMessagesByLocale,
+    tierTextByRuleId,
+    tierTextByLocaleByRuleId,
+    globalSuccessMessage,
     selectedCollections,
     conditionsState.stepConditions,
     bundleProduct,
@@ -1256,12 +1308,22 @@ export default function ConfigureBundleFlow() {
     isProgressBarMultiLangModalOpen ? showPolarisModal(progressBarMultiLangModalRef) : hidePolarisModal(progressBarMultiLangModalRef);
   }, [isProgressBarMultiLangModalOpen]);
 
+  useEffect(() => {
+    isBundleQuantityMultiLangModalOpen ? showPolarisModal(bundleQuantityMultiLangModalRef) : hidePolarisModal(bundleQuantityMultiLangModalRef);
+  }, [isBundleQuantityMultiLangModalOpen]);
+
+  useEffect(() => {
+    isDiscountVariablesModalOpen ? showPolarisModal(discountVariablesModalRef) : hidePolarisModal(discountVariablesModalRef);
+  }, [isDiscountVariablesModalOpen]);
+
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(selectTemplateModalRef, () => { setIsSelectTemplateModalOpen(false); setTemplateModalStep("select"); });
   useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
+  useModalHideListener(bundleQuantityMultiLangModalRef, () => setIsBundleQuantityMultiLangModalOpen(false));
+  useModalHideListener(discountVariablesModalRef, () => setIsDiscountVariablesModalOpen(false));
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -1348,6 +1410,28 @@ export default function ConfigureBundleFlow() {
           ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
           tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
           tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
+          displayOptions: {
+            bundleQuantityOptions: {
+              enabled: qtyOptionsEnabled,
+              defaultRuleId: qtyOptionsDefaultRuleId,
+              optionsByRuleId: Object.fromEntries(
+                pricingState.discountRules.map((rule: PricingRule) => [
+                  rule.id,
+                  {
+                    label: qtyRuleLabels[rule.id] ?? `Box of ${rule.conditionValue ?? ""}`,
+                    subtext: qtyRuleSubtexts[rule.id] ?? "",
+                  },
+                ])
+              ),
+              optionsByLocaleByRuleId: qtyRuleTextsByLocaleByRuleId,
+            },
+            progressBar: {
+              enabled: progressBarEnabled,
+              type: progressBarType,
+              progressText: progressBarProgressText,
+              successText: progressBarSuccessText,
+            },
+          },
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
       </form>
@@ -2188,8 +2272,10 @@ export default function ConfigureBundleFlow() {
                         <s-select
                           value={pricingState.discountType}
                           onChange={(e: Event) => {
-                            pricingState.setDiscountType((e.target as HTMLSelectElement).value as DiscountMethod);
-                            pricingState.setDiscountRules([]);
+                            const nextDiscountType = (e.target as HTMLSelectElement).value as DiscountMethod;
+                            const nextRule = createNewPricingRule(nextDiscountType);
+                            pricingState.setDiscountType(nextDiscountType);
+                            pricingState.setDiscountRules([nextRule]);
                             setRuleMessages({});
                           }}
                         >
@@ -2202,14 +2288,14 @@ export default function ConfigureBundleFlow() {
                       {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
                         <s-stack direction="block" gap="small">
                           {pricingState.discountRules.map((rule, index) => (
-                            <s-section key={rule.id}>
+                            <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                               <s-stack direction="block" gap="small">
-                                <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                                <div className={productPageBundleStyles.discountRuleHeader}>
                                   <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
                                   <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
-                                </s-stack>
+                                </div>
                                 <s-stack direction="block" gap="small">
                                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer buys</p>
                                   <s-number-field
@@ -2238,7 +2324,6 @@ export default function ConfigureBundleFlow() {
                                         discountValue: Number((e.target as HTMLInputElement).value) || 0
                                       })}
                                       min="0"
-                                      suffix={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "%" : undefined}
                                     />
                                     <s-select
                                       label="Discount type"
@@ -2247,8 +2332,8 @@ export default function ConfigureBundleFlow() {
                                         bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
                                       })}
                                     >
-                                      <s-option value="percentage">% Off</s-option>
-                                      <s-option value="fixed_amount">Fixed Amount Off</s-option>
+                                      <s-option value="percentage">% off</s-option>
+                                      <s-option value="fixed_amount">₹ off</s-option>
                                     </s-select>
                                     <s-select
                                       label="Apply Discount to"
@@ -2278,14 +2363,14 @@ export default function ConfigureBundleFlow() {
                       {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
                         <s-stack direction="block" gap="small">
                           {pricingState.discountRules.map((rule, index) => (
-                            <s-section key={rule.id}>
+                            <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                               <s-stack direction="block" gap="small">
-                                <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                                <div className={productPageBundleStyles.discountRuleHeader}>
                                   <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
                                   <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
-                                </s-stack>
+                                </div>
                                 {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
                                   <s-stack direction="inline" gap="small-100">
                                     <s-number-field
@@ -2299,7 +2384,7 @@ export default function ConfigureBundleFlow() {
                                       value={String(centsToAmount(rule.discountValue))}
                                       onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, { discountValue: amountToCents(Number((e.target as HTMLInputElement).value) || 0) })}
                                       min="0"
-                                      helpText="Amount in shop's currency"
+                                      prefix="₹"
                                     />
                                   </s-stack>
                                 ) : (
@@ -2323,7 +2408,7 @@ export default function ConfigureBundleFlow() {
                                         pricingState.updateDiscountRule(rule.id, { conditionValue: finalValue });
                                       }}
                                       min="0"
-                                      helpText={rule.conditionType === 'amount' ? "Amount in shop's currency" : undefined}
+                                      prefix={rule.conditionType === 'amount' ? "₹" : undefined}
                                     />
                                     <s-number-field
                                       label={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "Percentage Off" : "Fixed Amount Off"}
@@ -2336,7 +2421,7 @@ export default function ConfigureBundleFlow() {
                                       min="0"
                                       max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
                                       suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                      helpText={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
+                                      prefix={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
                                     />
                                   </s-stack>
                                 )}
@@ -2358,12 +2443,165 @@ export default function ConfigureBundleFlow() {
               </s-section>
 
               <s-section>
-                <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? "auto" : "none" }}>
+                <div className={displayOptionsInactive ? productPageBundleStyles.displayOptionsInactive : undefined}>
                   <s-stack direction="block" gap="small">
                     <s-stack direction="block" gap="small-400">
                       <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Discount Display Options</h4>
                       <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Choose how discounts are displayed</p>
                     </s-stack>
+
+                    {/* Bundle Quantity Options — only for non-BXY */}
+                    {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
+                      <div className={productPageBundleStyles.displayOptionRow}>
+                        <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
+                          <s-stack direction="inline" gap="small" alignItems="center">
+                            <div className={productPageBundleStyles.displayOptionText}>
+                              <p className={productPageBundleStyles.displayOptionTitle}>Bundle Quantity Options</p>
+                              <p className={productPageBundleStyles.displayOptionDescription}>Configure this section to enable quantity options.</p>
+                            </div>
+                            <s-switch
+                              checked={qtyOptionsEnabled || undefined}
+                              disabled={!bundleQuantityOptionsEligible || undefined}
+                              onChange={(e: Event) => { setQtyOptionsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                            />
+                          </s-stack>
+                          <s-button
+                            variant="secondary"
+                            icon="globe"
+                            disabled={!qtyOptionsEnabled || shopLocales.length === 0 || undefined}
+                            onClick={() => setIsBundleQuantityMultiLangModalOpen(true)}
+                          >
+                            Multi Language
+                          </s-button>
+                        </s-stack>
+                        <p className={productPageBundleStyles.optionNote}>
+                          <strong>Note:</strong> Bundle Quantity Options can only be enabled when discount rules are based on quantity.
+                        </p>
+                        {qtyOptionsEnabled && (
+                          <div className={productPageBundleStyles.nestedDisplayOptions}>
+                            <s-stack direction="block" gap="small">
+                              {pricingState.discountRules.length === 0 ? (
+                                <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                                  Add quantity-based discount rules to configure bundle quantity options.
+                                </p>
+                              ) : (
+                                <s-stack direction="block" gap="small">
+                                  {pricingState.discountRules.map((r: any, i: number) => (
+                                    <s-section key={r.id}>
+                                      <s-stack direction="block" gap="small-100">
+                                        <s-stack direction="inline" gap="small" alignItems="center">
+                                          <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>Rule #{i + 1}</h5>
+                                          <s-button
+                                            variant="plain"
+                                            accessibilityLabel="Make this rule default"
+                                            onClick={() => { setQtyOptionsDefaultRuleId(r.id); markAsDirty(); }}
+                                          >
+                                            {r.id === qtyOptionsDefaultRuleId ? "\u2605" : "\u2606"} Make this rule default
+                                          </s-button>
+                                        </s-stack>
+                                        <s-stack direction="inline" gap="small">
+                                          <s-text-field
+                                            label="Box Label"
+                                            placeholder={`Box of ${r.conditionValue ?? ""}`}
+                                            value={qtyRuleLabels[r.id] ?? ""}
+                                            onInput={(e: Event) => { setQtyRuleLabels(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                                            autoComplete="off"
+                                          />
+                                          <s-text-field
+                                            label="Box Subtext"
+                                            placeholder="e.g. 20% off"
+                                            value={qtyRuleSubtexts[r.id] ?? ""}
+                                            onInput={(e: Event) => { setQtyRuleSubtexts(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                                            autoComplete="off"
+                                          />
+                                        </s-stack>
+                                      </s-stack>
+                                    </s-section>
+                                  ))}
+                                </s-stack>
+                              )}
+                            </s-stack>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Progress Bar */}
+                    <div className={productPageBundleStyles.displayOptionRow}>
+                      <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
+                        <s-stack direction="inline" gap="small" alignItems="center">
+                          <div className={productPageBundleStyles.displayOptionText}>
+                            <p className={productPageBundleStyles.displayOptionTitle}>Progress Bar</p>
+                            <p className={productPageBundleStyles.displayOptionDescription}>Edit the progress bar content and settings.</p>
+                          </div>
+                          <s-switch
+                            checked={progressBarEnabled || undefined}
+                            onChange={(e: Event) => { setProgressBarEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                          />
+                        </s-stack>
+                        <s-button
+                          variant="secondary"
+                          icon="globe"
+                          disabled={!progressBarEnabled || progressBarType !== "step_based" || shopLocales.length === 0 || undefined}
+                          onClick={() => setIsProgressBarMultiLangModalOpen(true)}
+                        >
+                          Multi Language
+                        </s-button>
+                      </s-stack>
+                      {progressBarEnabled && (
+                        <div className={productPageBundleStyles.nestedDisplayOptions}>
+                          <s-stack direction="block" gap="small">
+                            <s-choice-list
+                              label="Progress bar type"
+                              labelAccessibilityVisibility="exclusive"
+                              values={[progressBarType]}
+                              onChange={(e: Event) => {
+                                const val = ((e.currentTarget as any).values as string[] | undefined)?.[0];
+                                if (val) setProgressBarType(val);
+                              }}
+                            >
+                              <s-choice value="simple">Simple Bar</s-choice>
+                              <s-choice value="step_based">Step-Based Bar</s-choice>
+                            </s-choice-list>
+                            {progressBarType === "step_based" ? (
+                              <s-stack direction="block" gap="small">
+                                {pricingState.discountRules.length === 0 ? (
+                                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+                                ) : pricingState.discountRules.map((rule: any, index: number) => (
+                                  <s-section key={rule.id}>
+                                    <s-stack direction="block" gap="small-100">
+                                      <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Rule #{index + 1}</p>
+                                      <s-stack direction="inline" gap="small">
+                                        <s-text-field
+                                          label="Tier Text"
+                                          value={tierTextByRuleId[rule.id]?.tierText ?? ""}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLInputElement).value;
+                                            setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: val, tierSubtext: prev[rule.id]?.tierSubtext ?? "" } }));
+                                            markAsDirty();
+                                          }}
+                                          autoComplete="off"
+                                        />
+                                        <s-text-field
+                                          label="Tier Subtext"
+                                          value={tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLInputElement).value;
+                                            setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: prev[rule.id]?.tierText ?? "", tierSubtext: val } }));
+                                            markAsDirty();
+                                          }}
+                                          autoComplete="off"
+                                        />
+                                      </s-stack>
+                                    </s-stack>
+                                  </s-section>
+                                ))}
+                              </s-stack>
+                            ) : null}
+                          </s-stack>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Discount Messaging */}
                     <div className={productPageBundleStyles.displayOptionRow}>
@@ -2373,16 +2611,16 @@ export default function ConfigureBundleFlow() {
                             <p className={productPageBundleStyles.displayOptionTitle}>Discount Messaging</p>
                             <p className={productPageBundleStyles.displayOptionDescription}>Edit how discount messages appear above the subtotal.</p>
                           </div>
-                          <QuestionHelpTooltip tooltipKey="discountMessaging" />
                           <s-switch
                             checked={pricingState.discountMessagingEnabled || undefined}
                             onChange={(e: Event) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
                           />
                         </s-stack>
-                        {pricingState.discountMessagingEnabled && shopLocales.length > 0 && (
+                        {shopLocales.length > 0 && (
                           <s-checkbox
                             label="Enable multi-language"
                             checked={discountMessagingMultiLanguageEnabled || undefined}
+                            disabled={!pricingState.discountMessagingEnabled || undefined}
                             onChange={(e: Event) => {
                               setDiscountMessagingMultiLanguageEnabled((e.target as HTMLInputElement).checked);
                               markAsDirty();
@@ -2390,6 +2628,11 @@ export default function ConfigureBundleFlow() {
                           />
                         )}
                       </s-stack>
+                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
+                        <s-banner tone="info">
+                          Discount messaging displays the Total Quantity to Claim Offer (Buy + Get) to ensure customers add their rewards to the cart
+                        </s-banner>
+                      )}
                       {pricingState.discountMessagingEnabled && (
                         <div className={productPageBundleStyles.nestedDisplayOptions}>
                           <s-stack direction="block" gap="small">
@@ -2427,15 +2670,10 @@ export default function ConfigureBundleFlow() {
                               </s-stack>
                             )}
                             <div style={{ textAlign: "right" }}>
-                              <s-button variant="plain" onClick={() => showPolarisModal(templateVariablesModalRef)}>
+                              <s-button variant="plain" onClick={() => setIsDiscountVariablesModalOpen(true)}>
                                 Show Variables
                               </s-button>
                             </div>
-                            {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
-                              <s-banner tone="info">
-                                For BXY discounts, messages support &#123;&#123;discountedItems&#125;&#125; for the quantity of discounted items.
-                              </s-banner>
-                            )}
                             {pricingState.discountRules.length > 0 ? (
                               <s-stack direction="block" gap="small">
                                 {pricingState.discountRules.map((rule: any, index: number) => {
@@ -2447,7 +2685,7 @@ export default function ConfigureBundleFlow() {
                                   return (
                                     <s-section key={rule.id}>
                                       <s-stack direction="block" gap="small">
-                                        <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1} Messages</h5>
+                                        <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
                                         <s-text-field
                                           label="Discount Text"
                                           value={localeMessages?.discountText || defaultDiscountText}
@@ -2463,7 +2701,7 @@ export default function ConfigureBundleFlow() {
                                               }));
                                               markAsDirty();
                                             } else {
-                                              updateRuleMessage(rule.id, 'discountText', val);
+                                              updateRuleMessage(rule.id, "discountText", val);
                                             }
                                           }}
                                           autoComplete="off"
@@ -2508,175 +2746,6 @@ export default function ConfigureBundleFlow() {
                                 </p>
                               </s-section>
                             )}
-                          </s-stack>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bundle Quantity Options — only for non-BXY */}
-                    {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
-                      <div className={productPageBundleStyles.displayOptionRow}>
-                        <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
-                          <s-stack direction="inline" gap="small" alignItems="center">
-                            <div className={productPageBundleStyles.displayOptionText}>
-                              <p className={productPageBundleStyles.displayOptionTitle}>Bundle Quantity Options</p>
-                              <p className={productPageBundleStyles.displayOptionDescription}>Configure this section to enable quantity options.</p>
-                            </div>
-                            <QuestionHelpTooltip tooltipKey="bundleQuantityOptions" />
-                            <s-switch
-                              checked={qtyOptionsEnabled || undefined}
-                              onChange={(e: Event) => { setQtyOptionsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                            />
-                          </s-stack>
-                          <s-button variant="secondary" icon="globe" disabled={!qtyOptionsEnabled || undefined}>
-                            Multi Language
-                          </s-button>
-                        </s-stack>
-                        {qtyOptionsEnabled && (
-                          <div className={productPageBundleStyles.nestedDisplayOptions}>
-                            <s-stack direction="block" gap="small">
-                              <p className={productPageBundleStyles.optionNote}>
-                                <strong>Note:</strong> Bundle Quantity Options can only be enabled when discount rules are based on quantity.
-                              </p>
-                              {pricingState.discountRules.length === 0 ? (
-                                <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                                  Add quantity-based discount rules to configure bundle quantity options.
-                                </p>
-                              ) : (
-                                <s-stack direction="block" gap="small">
-                                  {pricingState.discountRules.map((r: any, i: number) => (
-                                    <s-section key={r.id}>
-                                      <s-stack direction="block" gap="small-100">
-                                        <s-stack direction="inline" gap="small" alignItems="center">
-                                          <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>Rule #{i + 1}</h5>
-                                          {r.id === qtyOptionsDefaultRuleId ? (
-                                            <span style={{ fontSize: 13, color: "#2c6ecb" }}>&#9733; Default rule</span>
-                                          ) : (
-                                            <s-button variant="plain" onClick={() => { setQtyOptionsDefaultRuleId(r.id); markAsDirty(); }}>
-                                              &#9734; Make this rule default
-                                            </s-button>
-                                          )}
-                                        </s-stack>
-                                        <s-stack direction="inline" gap="small">
-                                          <s-text-field
-                                            label="Box Label"
-                                            placeholder={`Box of ${r.conditionValue ?? ""}`}
-                                            value={qtyRuleLabels[r.id] ?? ""}
-                                            onInput={(e: Event) => { setQtyRuleLabels(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value })); markAsDirty(); }}
-                                            autoComplete="off"
-                                          />
-                                          <s-text-field
-                                            label="Box Subtext"
-                                            placeholder="e.g. 20% off"
-                                            value={qtyRuleSubtexts[r.id] ?? ""}
-                                            onInput={(e: Event) => { setQtyRuleSubtexts(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value })); markAsDirty(); }}
-                                            autoComplete="off"
-                                          />
-                                        </s-stack>
-                                      </s-stack>
-                                    </s-section>
-                                  ))}
-                                </s-stack>
-                              )}
-                            </s-stack>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Progress Bar */}
-                    <div className={productPageBundleStyles.displayOptionRow}>
-                      <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
-                        <s-stack direction="inline" gap="small" alignItems="center">
-                          <div className={productPageBundleStyles.displayOptionText}>
-                            <p className={productPageBundleStyles.displayOptionTitle}>Progress Bar</p>
-                            <p className={productPageBundleStyles.displayOptionDescription}>Edit the progress bar content and settings.</p>
-                          </div>
-                          <QuestionHelpTooltip tooltipKey="discountProgressBar" />
-                          <s-switch
-                            checked={progressBarEnabled || undefined}
-                            onChange={(e: Event) => { setProgressBarEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </s-stack>
-                        <s-button
-                          variant="secondary"
-                          icon="globe"
-                          disabled={!progressBarEnabled || progressBarType !== "step_based" || shopLocales.length === 0 || undefined}
-                          onClick={() => setIsProgressBarMultiLangModalOpen(true)}
-                        >
-                          Multi Language
-                        </s-button>
-                      </s-stack>
-                      {progressBarEnabled && (
-                        <div className={productPageBundleStyles.nestedDisplayOptions}>
-                          <s-stack direction="block" gap="small">
-                            <s-choice-list
-                              label="Progress bar type"
-                              labelAccessibilityVisibility="exclusive"
-                              values={[progressBarType]}
-                              onChange={(e: Event) => {
-                                const val = ((e.currentTarget as any).values as string[] | undefined)?.[0];
-                                if (val) setProgressBarType(val);
-                              }}
-                            >
-                              <s-choice value="simple">Simple Bar</s-choice>
-                              <s-choice value="step_based">Step Based Bar</s-choice>
-                            </s-choice-list>
-                            {progressBarType === "step_based" ? (
-                              <s-stack direction="block" gap="small">
-                                {pricingState.discountRules.length === 0 ? (
-                                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
-                                ) : pricingState.discountRules.map((rule: any, index: number) => (
-                                  <s-section key={rule.id}>
-                                    <s-stack direction="block" gap="small-100">
-                                      <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Rule #{index + 1}</p>
-                                      <s-stack direction="inline" gap="small">
-                                        <s-text-field
-                                          label="Tier Text"
-                                          value={tierTextByRuleId[rule.id]?.tierText ?? ""}
-                                          onInput={(e: Event) => {
-                                            const val = (e.target as HTMLInputElement).value;
-                                            setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: val, tierSubtext: prev[rule.id]?.tierSubtext ?? "" } }));
-                                            markAsDirty();
-                                          }}
-                                          autoComplete="off"
-                                        />
-                                        <s-text-field
-                                          label="Tier Subtext"
-                                          value={tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
-                                          onInput={(e: Event) => {
-                                            const val = (e.target as HTMLInputElement).value;
-                                            setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: prev[rule.id]?.tierText ?? "", tierSubtext: val } }));
-                                            markAsDirty();
-                                          }}
-                                          autoComplete="off"
-                                        />
-                                      </s-stack>
-                                    </s-stack>
-                                  </s-section>
-                                ))}
-                              </s-stack>
-                            ) : (
-                              <s-stack direction="block" gap="small">
-                                <s-text-field
-                                  label="Progress Text"
-                                  helpText="Shown while customer is working toward a discount. Supports {{conditionText}}, {{discountText}}."
-                                  value={progressBarProgressText}
-                                  onInput={(e: Event) => { setProgressBarProgressText((e.target as HTMLInputElement).value); markAsDirty(); }}
-                                  autoComplete="off"
-                                />
-                                <s-text-field
-                                  label="Success Text"
-                                  helpText="Shown when the discount is unlocked. Supports {{discountText}}."
-                                  value={progressBarSuccessText}
-                                  onInput={(e: Event) => { setProgressBarSuccessText((e.target as HTMLInputElement).value); markAsDirty(); }}
-                                  autoComplete="off"
-                                />
-                              </s-stack>
-                            )}
-                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                              {pricingState.discountRules.length} discount milestones available from current rules.
-                            </p>
                           </s-stack>
                         </div>
                       )}
@@ -3983,12 +4052,89 @@ export default function ConfigureBundleFlow() {
         </s-button>
       </s-modal>
 
-      {/* Progress Bar Multi Language Modal */}
-      <s-modal ref={progressBarMultiLangModalRef} heading="Customize Text for Multiple Languages">
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="small">
+        <s-stack direction="block" gap="small">
+          {DISCOUNT_TEMPLATE_VARIABLES.map(([variable, description]) => (
+            <div key={variable} className={productPageBundleStyles.templateVariableItem}>
+              <s-text tone="subdued">{description}</s-text>
+              <s-badge>{variable}</s-badge>
+            </div>
+          ))}
+        </s-stack>
+      </s-modal>
+
+      {/* Bundle Quantity Options Multi Language Modal */}
+      <s-modal id="discount-bundle-quantity-language-modal" ref={bundleQuantityMultiLangModalRef} heading="Customize Text for Multiple Languages">
         <s-stack direction="block" gap="small">
           {shopLocales.length > 0 && (
             <s-select
-              label="Language"
+              label="Select Language"
+              value={activeBundleQuantityLocale}
+              onChange={(e: Event) => setActiveBundleQuantityLocale((e.target as HTMLSelectElement).value)}
+            >
+              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+              ))}
+            </s-select>
+          )}
+          {pricingState.discountRules.map((rule: PricingRule, index: number) => {
+            const localizedOption = qtyRuleTextsByLocaleByRuleId[activeBundleQuantityLocale]?.[rule.id];
+            return (
+              <s-section key={rule.id}>
+                <s-stack direction="block" gap="small-100">
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</p>
+                  <s-text-field
+                    label="Box Label"
+                    value={localizedOption?.label ?? qtyRuleLabels[rule.id] ?? `Box of ${rule.conditionValue ?? ""}`}
+                    onInput={(e: Event) => {
+                      const label = (e.target as HTMLInputElement).value;
+                      setQtyRuleTextsByLocaleByRuleId((prev) => ({
+                        ...prev,
+                        [activeBundleQuantityLocale]: {
+                          ...(prev[activeBundleQuantityLocale] ?? {}),
+                          [rule.id]: {
+                            label,
+                            subtext: prev[activeBundleQuantityLocale]?.[rule.id]?.subtext ?? qtyRuleSubtexts[rule.id] ?? "",
+                          },
+                        },
+                      }));
+                      markAsDirty();
+                    }}
+                    autoComplete="off"
+                  />
+                  <s-text-field
+                    label="Box Subtext"
+                    value={localizedOption?.subtext ?? qtyRuleSubtexts[rule.id] ?? ""}
+                    onInput={(e: Event) => {
+                      const subtext = (e.target as HTMLInputElement).value;
+                      setQtyRuleTextsByLocaleByRuleId((prev) => ({
+                        ...prev,
+                        [activeBundleQuantityLocale]: {
+                          ...(prev[activeBundleQuantityLocale] ?? {}),
+                          [rule.id]: {
+                            label: prev[activeBundleQuantityLocale]?.[rule.id]?.label ?? qtyRuleLabels[rule.id] ?? `Box of ${rule.conditionValue ?? ""}`,
+                            subtext,
+                          },
+                        },
+                      }));
+                      markAsDirty();
+                    }}
+                    autoComplete="off"
+                  />
+                </s-stack>
+              </s-section>
+            );
+          })}
+        </s-stack>
+        <s-button slot="primaryAction" onClick={() => setIsBundleQuantityMultiLangModalOpen(false)}>Save and close</s-button>
+      </s-modal>
+
+      {/* Progress Bar Multi Language Modal */}
+      <s-modal id="discount-progress-language-modal" ref={progressBarMultiLangModalRef} heading="Customize Text for Multiple Languages">
+        <s-stack direction="block" gap="small">
+          {shopLocales.length > 0 && (
+            <s-select
+              label="Select Language"
               value={activeProgressBarLocale}
               onChange={(e: Event) => setActiveProgressBarLocale((e.target as HTMLSelectElement).value)}
             >
@@ -4001,9 +4147,11 @@ export default function ConfigureBundleFlow() {
             <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
           ) : pricingState.discountRules.map((rule: any, index: number) => (
             <s-section key={rule.id}>
-              <s-stack direction="inline" gap="small">
-                <s-text-area
-                  label={`Rule ${index + 1} Tier Text`}
+              <s-stack direction="block" gap="small-100">
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</p>
+                <s-stack direction="inline" gap="small">
+                  <s-text-area
+                  label="Tier Text"
                   value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? ""}
                   onInput={(e: Event) => {
                     const val = (e.target as HTMLTextAreaElement).value;
@@ -4019,8 +4167,8 @@ export default function ConfigureBundleFlow() {
                   autoComplete="off"
                   helpText="Short label for this tier (e.g. 'Add 3')"
                 />
-                <s-text-area
-                  label={`Rule ${index + 1} Tier Subtext`}
+                  <s-text-area
+                  label="Tier Subtext"
                   value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
                   onInput={(e: Event) => {
                     const val = (e.target as HTMLTextAreaElement).value;
@@ -4035,7 +4183,8 @@ export default function ConfigureBundleFlow() {
                   }}
                   autoComplete="off"
                   helpText="Detail line below tier label (e.g. '1 Product(s) @ 20% off')"
-                />
+                  />
+                </s-stack>
               </s-stack>
             </s-section>
           ))}

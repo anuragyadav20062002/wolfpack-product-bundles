@@ -81,6 +81,7 @@ export interface BundleQuantityOptionsDisplay {
   enabled: boolean;
   defaultRuleId: string | null;
   optionsByRuleId: Record<string, BundleQuantityOptionDisplay>;
+  optionsByLocaleByRuleId: Record<string, Record<string, BundleQuantityOptionDisplay>>;
 }
 
 export interface PricingProgressBarDisplayOptions {
@@ -246,12 +247,13 @@ export function createNewPricingRule(method: DiscountMethod): PricingRule {
   const base: PricingRule = {
     id: `rule-${Date.now()}`,
     conditionType: 'quantity',
-    conditionValue: 0,
-    discountValue: 0,
+    conditionValue: 2,
+    discountValue: method === DiscountMethod.PERCENTAGE_OFF ? 5 : 500,
   };
   if (method === DiscountMethod.BUY_X_GET_Y) {
     return {
       ...base,
+      discountValue: 100,
       customerBuys: 2,
       customerGets: 1,
       bxyDiscountType: 'percentage',

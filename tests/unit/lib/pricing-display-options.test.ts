@@ -3,7 +3,7 @@ import {
   normalizePricingDisplayOptions,
   serializePricingDisplayOptions,
 } from "../../../app/lib/pricing-display-options";
-import type { PricingRule } from "../../../app/types/pricing";
+import { DiscountMethod, type PricingRule } from "../../../app/types/pricing";
 
 function quantityRule(id: string, quantity: number, discountValue: number): PricingRule {
   return { id, conditionType: "quantity", conditionValue: quantity, discountValue };
@@ -66,6 +66,26 @@ describe("normalizePricingDisplayOptions", () => {
     expect(result.bundleQuantityOptions.defaultRuleId).toBe("rule-2");
     expect(result.bundleQuantityOptions.options[0].isDefault).toBe(true);
     expect(result.bundleQuantityOptions.options[1].isDefault).toBe(false);
+  });
+
+  it("preserves localized bundle quantity option labels for the language modal", () => {
+    const result = normalizePricingDisplayOptions({
+      rules: [quantityRule("rule-2", 2, 10)],
+      messages: {
+        displayOptions: {
+          bundleQuantityOptions: {
+            enabled: true,
+            optionsByLocaleByRuleId: {
+              fr: { "rule-2": { label: "Boite de 2", subtext: "10% de reduction" } },
+            },
+          },
+        },
+      },
+    });
+
+    expect(result.bundleQuantityOptions.optionsByLocaleByRuleId).toEqual({
+      fr: { "rule-2": { label: "Boite de 2", subtext: "10% de reduction" } },
+    });
   });
 
   it("marks quantity options blocked when configured steps cannot satisfy the threshold", () => {
@@ -179,6 +199,19 @@ describe("normalizePricingRuleMessages", () => {
       },
     });
   });
+
+  it("creates Buy X, get Y message templates when that discount method is active", () => {
+    expect(normalizePricingRuleMessages({
+      rules: [quantityRule("rule-bxy", 2, 100)],
+      messages: {},
+      method: DiscountMethod.BUY_X_GET_Y,
+    })).toEqual({
+      "rule-bxy": {
+        discountText: "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!",
+        successMessage: "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off",
+      },
+    });
+  });
 });
 
 describe("serializePricingDisplayOptions", () => {
@@ -235,6 +268,7 @@ describe("serializePricingDisplayOptions", () => {
             "rule-3": { label: "Box of 3", subtext: "15% off" },
             "rule-5": { label: "Box of 5", subtext: "25% off" },
           },
+          optionsByLocaleByRuleId: {},
         },
         progressBar: {
           enabled: true,

@@ -35,6 +35,7 @@ export interface NormalizedPricingDisplayOptions {
     enabled: boolean;
     defaultRuleId: string | null;
     options: NormalizedBundleQuantityOption[];
+    optionsByLocaleByRuleId: Record<string, Record<string, { label: string; subtext: string }>>;
   };
   progressBar: {
     enabled: boolean;
@@ -48,6 +49,7 @@ export interface NormalizedPricingDisplayOptions {
 export interface NormalizedRuleMessageInput {
   rules?: PricingRule[] | null;
   messages?: any;
+  method?: DiscountMethod | string;
 }
 
 export const DEFAULT_PROGRESS_BAR_PROGRESS_TEXT = "Add {{conditionText}} to unlock {{discountText}}";
@@ -139,28 +141,35 @@ function normalizeTemplate(value: unknown, defaultValue: string): string {
 export function normalizePricingRuleMessages({
   rules = [],
   messages = {},
+  method,
 }: NormalizedRuleMessageInput): Record<string, { discountText: string; successMessage: string }> {
   const safeRules = Array.isArray(rules) ? rules : [];
   const savedRuleMessages = messages && typeof messages === "object" && messages.ruleMessages
     ? messages.ruleMessages
     : {};
+  const defaultDiscountText = method === DiscountMethod.BUY_X_GET_Y
+    ? DEFAULT_DISCOUNT_RULE_TEXT_BXY
+    : DEFAULT_DISCOUNT_RULE_TEXT;
+  const defaultSuccessMessage = method === DiscountMethod.BUY_X_GET_Y
+    ? DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY
+    : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
 
   return safeRules.reduce<Record<string, { discountText: string; successMessage: string }>>((acc, rule) => {
     const savedMessage = savedRuleMessages?.[rule.id];
     if (!savedMessage || typeof savedMessage !== "object") {
       acc[rule.id] = {
-        discountText: DEFAULT_DISCOUNT_RULE_TEXT,
-        successMessage: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
+        discountText: defaultDiscountText,
+        successMessage: defaultSuccessMessage,
       };
       return acc;
     }
 
     const discountText = typeof savedMessage.discountText === "string" && savedMessage.discountText.trim().length > 0
       ? savedMessage.discountText
-      : DEFAULT_DISCOUNT_RULE_TEXT;
+      : defaultDiscountText;
     const successMessage = typeof savedMessage.successMessage === "string" && savedMessage.successMessage.trim().length > 0
       ? savedMessage.successMessage
-      : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+      : defaultSuccessMessage;
 
     acc[rule.id] = { discountText, successMessage };
     return acc;
@@ -179,6 +188,7 @@ export function normalizePricingDisplayOptions({
   const displayOptions = getDisplayOptions(messages);
   const savedQuantityOptions = displayOptions.bundleQuantityOptions;
   const savedOptionsByRuleId = savedQuantityOptions?.optionsByRuleId || {};
+  const savedOptionsByLocaleByRuleId = savedQuantityOptions?.optionsByLocaleByRuleId || {};
   const quantityRules = safeRules
     .filter(isQuantityRule)
     .sort((a, b) => (Number(a.conditionValue ?? 0) || 0) - (Number(b.conditionValue ?? 0) || 0));
@@ -218,6 +228,7 @@ export function normalizePricingDisplayOptions({
       enabled: savedQuantityOptions?.enabled === true,
       defaultRuleId,
       options: quantityOptions,
+      optionsByLocaleByRuleId: savedOptionsByLocaleByRuleId,
     },
     progressBar: {
       enabled: progressOptions?.enabled === true || showProgressBar === true,
@@ -251,6 +262,7 @@ export function serializePricingDisplayOptions({
         enabled: options.bundleQuantityOptions.enabled,
         defaultRuleId: options.bundleQuantityOptions.defaultRuleId,
         optionsByRuleId,
+        optionsByLocaleByRuleId: options.bundleQuantityOptions.optionsByLocaleByRuleId,
       },
       progressBar: {
         enabled: options.progressBar.enabled,

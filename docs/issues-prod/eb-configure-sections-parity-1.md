@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 21:30
+**Last Updated:** 2026-05-25 20:20 IST
 
 ## Overview
 
@@ -22,6 +22,60 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 
 ## Progress Log
+
+### 2026-05-25 20:20 IST - Discount & Pricing live-parity implementation verified
+
+- Completed the scoped FPB and PPB Discount & Pricing corrections: confirmed discount-type order and rule structures, Buy X/get Y field layout and persistent notice, Bundle Quantity Options eligibility and localized Box fields, Progress Bar mode/language fields, Discount Messaging Variables behavior, and method-aware Buy X/get Y default messages.
+- Kept the implementation within existing pricing display-option and configure-route persistence paths. The shared discount method labels also affect the create-configure consumer; no schema, widget, storefront, or compatibility migration code was introduced.
+- Runtime verification passed in embedded PPB and FPB for Buy X/get Y rendering, notice behavior, Variables modal contents, and native modal close. A fresh PPB fixed-amount rule also showed eligible Box Label/Box Subtext fields. Multi-language modal activation cannot be runtime-exercised in SIT because the loaded shop exposes no locales; its fields and modal targets are covered by source-contract tests and the production build.
+- Regression coverage passed: `npx jest tests/unit/routes/discount-pricing-ui-contract.test.ts tests/unit/lib/pricing-rule-defaults.test.ts tests/unit/lib/pricing-display-options.test.ts tests/unit/routes/discount-pricing-parity.test.ts --runInBand --silent` (49 tests), `npx eslint --max-warnings 9999 ...` (0 errors, 1234 accepted existing warnings), and `npm run build`. `npx tsc --noEmit --pretty false` remains blocked by pre-existing syntax errors at `tests/unit/lib/analytics-helpers.test.ts:308`.
+- Updated the app navigation map for the changed modal/control flow and rebuilt the graphify code graph (3340 nodes, 4542 edges, 512 communities). Generated graph outputs were already modified in the working tree before this scoped implementation and are excluded from its commit.
+
+### 2026-05-25 20:12 IST - FPB BXY browser pass identifies method-aware message default gap
+
+- In the live embedded FPB route, switching an unsaved discount to `Buy X, get Y` correctly renders the BXY rule inputs, hides Bundle Quantity Options, and displays the persistent messaging notice.
+- The same FPB state renders the standard `Discount Text` default rather than the confirmed BXY default. PPB renders the BXY default correctly.
+- Root cause: FPB uses `normalizePricingRuleMessages()` for unsaved/default rule text, but that helper currently has no discount-method input and can only synthesize standard defaults.
+- Next: add a failing unit case for BXY default normalization, pass the existing method into current normalization consumers, and repeat FPB runtime proof.
+
+### 2026-05-25 20:12 IST - Runtime verification identifies modal target wiring correction
+
+- Verified the updated PPB Discount & Pricing surface in a fresh embedded Admin tab: the confirmed discount-type order, display-option ordering, Discount Messaging fields, and five Variables tokens render from the current implementation.
+- A direct click and keyboard activation of the native close control left the new Variables modal open. Shopify's Polaris web-component guidance requires addressable modal IDs for command/method-controlled overlays, while the new Discount & Pricing modals currently lack IDs.
+- A saved pre-existing PPB test bundle displays a quantity selection with missing stored `conditionType`, which keeps Bundle Quantity Options ineligible. A newly created quantity rule enables the section correctly; no backwards-compatibility inference will be added.
+- Next: add failing source-contract assertions for addressable pricing modals, add the scoped Polaris modal IDs without changing live copy/layout, and repeat embedded close/BXY verification.
+
+### 2026-05-25 17:54 IST - TDD red baseline identifies bounded pricing-message wiring addition
+
+- Added `tests/unit/routes/discount-pricing-ui-contract.test.ts` and expanded `test-spec/discount-pricing-parity.spec.md` for the confirmed live admin controls.
+- Red baseline: `npx jest tests/unit/routes/discount-pricing-ui-contract.test.ts --runInBand` fails 13 of 14 assertions; FPB already passes only the display-option ordering assertion.
+- Confirmed implementation gaps include Simple Bar extra fields, wrong Buy X, get Y option copy/notice, missing type-change default rule, wrong Variables modal behavior/content, missing Bundle Quantity Options language modal, rule-header/disabled-state styling hooks, and PPB display-option ordering.
+- The missing Bundle Quantity Options language modal cannot persist translations using the existing payload. Scope is therefore expanded only to carry localized `Box Label` / `Box Subtext` values through existing `displayOptions.bundleQuantityOptions` form-state and save wiring; no schema, widget, or storefront change is introduced.
+- Next: implement route/style/state/payload corrections, then make the new contract tests green and run the focused existing pricing suite.
+
+### 2026-05-25 17:51 IST - Implementation baseline completed from live FPB and PPB
+
+- Rechecked the live EB Discount & Pricing surface in both a Full Page Bundle and Product Page Bundle before source changes; no `How to setup` or `Learn More` action is visible within the affected section.
+- Confirmed FPB renders the same distinct Fixed Bundle Price and Buy X, get Y rule structures already captured for PPB, and that Buy X, get Y hides Bundle Quantity Options.
+- Corrected one audit transcription: both live bundle types label the progress radio `Step-Based Bar`, not `Step-Based`.
+- Existing repository code already contains earlier Discount & Pricing work; this pass is a corrective parity implementation against the revised live contract rather than a new feature pipeline.
+- Next: update the plan/reference/test contract for the corrected radio label, write failing parity assertions for remaining gaps, then edit the two configure surfaces and scoped styles only where the tests/live comparison identify differences.
+
+### 2026-05-25 17:34 IST - Discount & Pricing live-parity plan revised
+
+- Replaced the draft plan in `docs/issues-prod/discount-pricing-eb-parity-plan.md` with a live-evidence implementation contract, corrected UI state tables, modal contracts, scoped implementation phases, and verification checklist.
+- Updated the local ignored reference `internal docs/EB Implementation Reference.md` with confirmed Fixed Bundle Price fields, Bundle Quantity Options modal behavior, Progress Bar labels/state behavior, shared Discount Messaging success field, and the Buy X, get Y notice behavior.
+- No application code, tests, widget assets, SDK assets, or generated graph outputs were changed during this plan-revision pass.
+- Next: begin implementation only from the revised plan after review of this corrected baseline.
+
+### 2026-05-25 17:31 IST - Re-audited Discount & Pricing plan against live EB before implementation
+
+- User directed that `docs/issues-prod/discount-pricing-eb-parity-plan.md` be revised before any implementation changes.
+- Captured live PPB Discount & Pricing states for Percentage Off, Fixed Amount Off, Fixed Bundle Price, and Buy X, get Y in a disposable unsaved EB tab; opened the Bundle Quantity Options, Progress Bar, and Variables modals for exact labels and behavior.
+- Corrected plan targets: non-Buy X, get Y rules retain threshold fields; Fixed Bundle Price uses `Number of Products in Bundle` and `Price`; Buy X, get Y uses `Minimum quantity of items`, `Quantity`, and the exact apply-to choices; both multi-language modals include `Select Language`; progress inputs use `Tier Text` and `Tier Subtext`; the Buy X, get Y messaging notice remains visible when messaging is disabled.
+- Confirmed with two percentage rules that Discount Messaging has one per-rule `Discount Text` field and a single bottom `Success Message` field.
+- This documentation correction supersedes the unverified layout assumptions in the draft plan; no implementation code is changed in this pass.
+- Next: revise the plan and internal EB reference, then review them as the implementation contract.
 
 ### 2026-05-25 12:00 - Section 6: Exact type shape confirmed, beginning TDD
 

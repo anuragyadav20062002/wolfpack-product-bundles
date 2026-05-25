@@ -479,6 +479,26 @@
   gap: 8px;
 }
 
+.discountRuleCard {
+  display: block;
+  padding: 12px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #f6f6f7;
+}
+
+.discountRuleHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.displayOptionsInactive {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .emptyState {
   border: 1.5px dashed #d1d5db;
   border-radius: 8px;

@@ -282,10 +282,12 @@ FPB Configure Page
 │   │   └── [Button] "Add Step" → inline step builder
 │   │       └── Product/Collection picker per step → opens Product Picker
 │   │
-│   ├── Pricing
-│   │   ├── Discount type selector (percentage / fixed amount / fixed price)
-│   │   ├── Tier configuration (multi-tier pricing)
-│   │   └── Preview of effective prices
+│   ├── Discount & Pricing
+│   │   ├── Discount type selector: Fixed Amount Off / Percentage Off / Fixed Bundle Price / Buy X, get Y
+│   │   ├── Rule cards; Buy X, get Y uses Customer buys/gets, Discount value/type, and Apply Discount to
+│   │   ├── Bundle Quantity Options: Box Label/Subtext per eligible rule + Multi Language modal
+│   │   ├── Progress Bar: Simple Bar / Step-Based Bar + Multi Language modal
+│   │   └── Discount Messaging: per-rule Discount Text, one Success Message, Variables modal
 │   │
 │   ├── Sync Bundle
 │   │   ├── Sync status / last synced timestamp
@@ -305,7 +307,10 @@ FPB Configure Page
     ├── Product Picker Modal (Shopify resource picker)
     ├── Page Selector Modal (select Shopify page)
     ├── Theme Templates Modal (choose product template)
-    └── Widget Placement Validation Modal
+    ├── Widget Placement Validation Modal
+    ├── Variables Modal (Discount Messaging variable reference)
+    ├── Bundle Quantity Options Multi Language Modal (Box Label / Box Subtext)
+    └── Progress Bar Multi Language Modal (Tier Text / Tier Subtext)
 ```
 
 ---
@@ -350,19 +355,19 @@ PPB Configure Page
 │       └── Char limit switch + number field (giftMessageEnableLimit + giftMessageCharLimit)
 │
 ├── Discount & Pricing
-│   ├── Enable toggle + discount method selector
-│   ├── Buy X Get Y rule builder (shown when method = BUY_X_GET_Y)
-│   │   └── Per-rule: buyStepId, getStepId, getQty selectors
-│   ├── Standard rule builder (shown for other methods)
+│   ├── Enable toggle + discount type selector: Fixed Amount Off / Percentage Off / Fixed Bundle Price / Buy X, get Y
+│   ├── Buy X, get Y rule builder (shown when selected)
+│   │   └── Per-rule: Customer buys, Customer gets, Discount value/type, Apply Discount to
+│   ├── Standard and Fixed Bundle Price rule builders (shown for other types)
 │   ├── Bundle Quantity Options sub-section
-│   │   ├── Toggle: qtyOptionsEnabled
-│   │   ├── Per-rule: Box Label + Box Subtext inputs
-│   │   └── Default rule radio selector (qtyOptionsDefaultRuleId)
-│   └── Discount Progress Bar sub-section
-│       ├── Toggle: progressBarEnabled
-│       ├── Style: Simple Bar / Step-Based Bar radio
-│       ├── Progress Text textarea
-│       └── Success Text textarea
+│   │   ├── Per-rule: Box Label + Box Subtext inputs + Make this rule default action
+│   │   └── Multi Language modal: Select Language, Box Label, Box Subtext
+│   ├── Progress Bar sub-section
+│   │   ├── Style: Simple Bar / Step-Based Bar radio
+│   │   └── Multi Language modal: Select Language, Tier Text, Tier Subtext
+│   └── Discount Messaging sub-section
+│       ├── Per-rule Discount Text + one global Success Message
+│       └── Variables modal: five supported discount template variables
 │
 ├── Bundle Visibility
 │   ├── App Embed Status (inline AppEmbedBanner when disabled)
