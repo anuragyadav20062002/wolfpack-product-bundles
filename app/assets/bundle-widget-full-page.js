@@ -1714,18 +1714,18 @@ class BundleWidgetFullPage {
     if (pricing?.enabled && rules.length > 0) {
       const pricingMethod = pricing.method || 'percentage_off';
       const bestRule = rules.reduce((best, rule) => {
-        const dv = rule.discountValue ?? rule.discount?.value ?? 0;
-        const bestDv = best.discountValue ?? best.discount?.value ?? 0;
+        const dv = rule.discountValue ?? 0;
+        const bestDv = best.discountValue ?? 0;
         const isPercent = pricingMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
         const discountValue = isPercent ? dv : dv / 100;
         const bestValue = isPercent ? bestDv : bestDv / 100;
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      const targetQty = bestRule.conditionValue ?? bestRule.condition?.value ?? 0;
-      const conditionOperator = bestRule.conditionOperator || bestRule.condition?.operator;
+      const targetQty = bestRule.conditionValue ?? 0;
+      const conditionOperator = bestRule.conditionOperator;
       const discountMethod = pricingMethod;
-      const discountValue = bestRule.discountValue ?? bestRule.discount?.value ?? 0;
+      const discountValue = bestRule.discountValue ?? 0;
 
       // Build operator-aware quantity text
       const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');

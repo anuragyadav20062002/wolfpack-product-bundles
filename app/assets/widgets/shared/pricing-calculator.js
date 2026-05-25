@@ -74,11 +74,11 @@ export class PricingCalculator {
     let bestRule = null;
 
     for (const rule of rules) {
-      const conditionType = rule.conditionType || rule.condition?.type;
+      const conditionType = rule.conditionType;
       if (!conditionType) continue;
 
-      const conditionOperator = rule.conditionOperator || rule.condition?.operator || 'gte';
-      const conditionValue = rule.conditionValue ?? rule.condition?.value ?? 0;
+      const conditionOperator = rule.conditionOperator || 'gte';
+      const conditionValue = rule.conditionValue ?? 0;
 
       let conditionMet = false;
 
@@ -89,8 +89,7 @@ export class PricingCalculator {
       }
 
       if (conditionMet) {
-        const bestConditionValue = bestRule ? (bestRule.conditionValue ?? bestRule.condition?.value ?? 0) : -1;
-        if (!bestRule || conditionValue > bestConditionValue) {
+        if (!bestRule || conditionValue > (bestRule.conditionValue ?? 0)) {
           bestRule = rule;
         }
       }
@@ -108,8 +107,8 @@ export class PricingCalculator {
     }
 
     let discountAmount = 0;
-    const discountMethod = bundle.pricing?.method || bestRule.discount?.method || 'percentage_off';
-    const discountValue = bestRule.discountValue ?? bestRule.discount?.value ?? 0;
+    const discountMethod = bundle.pricing?.method || 'percentage_off';
+    const discountValue = bestRule.discountValue ?? 0;
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
@@ -194,15 +193,15 @@ export class PricingCalculator {
     if (!bundle?.pricing?.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
-      (a.conditionValue ?? a.condition?.value ?? 0) - (b.conditionValue ?? b.condition?.value ?? 0)
+      (a.conditionValue ?? 0) - (b.conditionValue ?? 0)
     );
 
     for (const rule of rules) {
-      const conditionType = rule.conditionType || rule.condition?.type;
+      const conditionType = rule.conditionType;
       if (!conditionType) continue;
 
-      const conditionOperator = rule.conditionOperator || rule.condition?.operator || 'gte';
-      const conditionValue = rule.conditionValue ?? rule.condition?.value ?? 0;
+      const conditionOperator = rule.conditionOperator || 'gte';
+      const conditionValue = rule.conditionValue ?? 0;
 
       // Check if this rule is not yet satisfied
       let isRuleSatisfied = false;

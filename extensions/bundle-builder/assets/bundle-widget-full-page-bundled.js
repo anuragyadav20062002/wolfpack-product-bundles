@@ -511,11 +511,11 @@ class PricingCalculator {
     let bestRule = null;
 
     for (const rule of rules) {
-      const conditionType = rule.conditionType || rule.condition?.type;
+      const conditionType = rule.conditionType;
       if (!conditionType) continue;
 
-      const conditionOperator = rule.conditionOperator || rule.condition?.operator || 'gte';
-      const conditionValue = rule.conditionValue ?? rule.condition?.value ?? 0;
+      const conditionOperator = rule.conditionOperator || 'gte';
+      const conditionValue = rule.conditionValue ?? 0;
 
       let conditionMet = false;
 
@@ -526,8 +526,7 @@ class PricingCalculator {
       }
 
       if (conditionMet) {
-        const bestConditionValue = bestRule ? (bestRule.conditionValue ?? bestRule.condition?.value ?? 0) : -1;
-        if (!bestRule || conditionValue > bestConditionValue) {
+        if (!bestRule || conditionValue > (bestRule.conditionValue ?? 0)) {
           bestRule = rule;
         }
       }
@@ -545,8 +544,8 @@ class PricingCalculator {
     }
 
     let discountAmount = 0;
-    const discountMethod = bundle.pricing?.method || bestRule.discount?.method || 'percentage_off';
-    const discountValue = bestRule.discountValue ?? bestRule.discount?.value ?? 0;
+    const discountMethod = bundle.pricing?.method || 'percentage_off';
+    const discountValue = bestRule.discountValue ?? 0;
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
@@ -628,15 +627,15 @@ class PricingCalculator {
     if (!bundle?.pricing?.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
-      (a.conditionValue ?? a.condition?.value ?? 0) - (b.conditionValue ?? b.condition?.value ?? 0)
+      (a.conditionValue ?? 0) - (b.conditionValue ?? 0)
     );
 
     for (const rule of rules) {
-      const conditionType = rule.conditionType || rule.condition?.type;
+      const conditionType = rule.conditionType;
       if (!conditionType) continue;
 
-      const conditionOperator = rule.conditionOperator || rule.condition?.operator || 'gte';
-      const conditionValue = rule.conditionValue ?? rule.condition?.value ?? 0;
+      const conditionOperator = rule.conditionOperator || 'gte';
+      const conditionValue = rule.conditionValue ?? 0;
 
       let isRuleSatisfied = false;
 
@@ -814,11 +813,11 @@ class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    const conditionType = ruleToUse.conditionType || ruleToUse.condition?.type || 'quantity';
-    const targetValue = ruleToUse.conditionValue ?? ruleToUse.condition?.value ?? 0;
-    const conditionOperator = ruleToUse.conditionOperator || ruleToUse.condition?.operator || 'gte';
-    const discountMethod = bundle.pricing?.method || ruleToUse.discount?.method || 'percentage_off';
-    const rawDiscountValue = ruleToUse.discountValue ?? ruleToUse.discount?.value ?? 0;
+    const conditionType = ruleToUse.conditionType || 'quantity';
+    const targetValue = ruleToUse.conditionValue ?? 0;
+    const conditionOperator = ruleToUse.conditionOperator || 'gte';
+    const discountMethod = bundle.pricing?.method || 'percentage_off';
+    const rawDiscountValue = ruleToUse.discountValue ?? 0;
 
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
@@ -3961,18 +3960,18 @@ class BundleWidgetFullPage {
     if (pricing?.enabled && rules.length > 0) {
       const pricingMethod = pricing.method || 'percentage_off';
       const bestRule = rules.reduce((best, rule) => {
-        const dv = rule.discountValue ?? rule.discount?.value ?? 0;
-        const bestDv = best.discountValue ?? best.discount?.value ?? 0;
+        const dv = rule.discountValue ?? 0;
+        const bestDv = best.discountValue ?? 0;
         const isPercent = pricingMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
         const discountValue = isPercent ? dv : dv / 100;
         const bestValue = isPercent ? bestDv : bestDv / 100;
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      const targetQty = bestRule.conditionValue ?? bestRule.condition?.value ?? 0;
-      const conditionOperator = bestRule.conditionOperator || bestRule.condition?.operator;
+      const targetQty = bestRule.conditionValue ?? 0;
+      const conditionOperator = bestRule.conditionOperator;
       const discountMethod = pricingMethod;
-      const discountValue = bestRule.discountValue ?? bestRule.discount?.value ?? 0;
+      const discountValue = bestRule.discountValue ?? 0;
 
       const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
 
