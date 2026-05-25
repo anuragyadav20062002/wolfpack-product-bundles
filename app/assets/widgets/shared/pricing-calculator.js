@@ -73,28 +73,24 @@ export class PricingCalculator {
     const rules = bundle.pricing.rules;
     let bestRule = null;
 
-    // Find the best applicable rule using nested structure
     for (const rule of rules) {
-      // Skip rules with no condition (can happen if saved without one)
-      if (!rule.condition) continue;
+      const conditionType = rule.conditionType || rule.condition?.type;
+      if (!conditionType) continue;
 
-      // Access nested condition structure
-      const conditionType = rule.condition.type; // 'quantity' or 'amount'
-      const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
-      const conditionValue = rule.condition.value; // threshold
+      const conditionOperator = rule.conditionOperator || rule.condition?.operator || 'gte';
+      const conditionValue = rule.conditionValue ?? rule.condition?.value ?? 0;
 
       let conditionMet = false;
 
       if (conditionType === 'amount') {
-        // Amount-based condition (value is in cents)
         conditionMet = this.checkCondition(totalPrice, conditionOperator, conditionValue);
       } else {
-        // Quantity-based condition
         conditionMet = this.checkCondition(totalQuantity, conditionOperator, conditionValue);
       }
 
       if (conditionMet) {
-        if (!bestRule || conditionValue > bestRule.condition.value) {
+        const bestConditionValue = bestRule ? (bestRule.conditionValue ?? bestRule.condition?.value ?? 0) : -1;
+        if (!bestRule || conditionValue > bestConditionValue) {
           bestRule = rule;
         }
       }
@@ -111,10 +107,9 @@ export class PricingCalculator {
       };
     }
 
-    // Calculate discount amount using nested discount structure
     let discountAmount = 0;
-    const discountMethod = bestRule.discount.method;
-    const discountValue = bestRule.discount.value; // Already in cents for amount methods
+    const discountMethod = bundle.pricing?.method || bestRule.discount?.method || 'percentage_off';
+    const discountValue = bestRule.discountValue ?? bestRule.discount?.value ?? 0;
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
@@ -198,15 +193,16 @@ export class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending) — copy to avoid mutating the original
-    const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
+    const rules = [...bundle.pricing.rules].sort((a, b) =>
+      (a.conditionValue ?? a.condition?.value ?? 0) - (b.conditionValue ?? b.condition?.value ?? 0)
+    );
 
     for (const rule of rules) {
-      if (!rule.condition) continue;
+      const conditionType = rule.conditionType || rule.condition?.type;
+      if (!conditionType) continue;
 
-      const conditionType = rule.condition.type;
-      const conditionOperator = rule.condition.operator;
-      const conditionValue = rule.condition.value;
+      const conditionOperator = rule.conditionOperator || rule.condition?.operator || 'gte';
+      const conditionValue = rule.conditionValue ?? rule.condition?.value ?? 0;
 
       // Check if this rule is not yet satisfied
       let isRuleSatisfied = false;

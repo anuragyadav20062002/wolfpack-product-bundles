@@ -1203,9 +1203,8 @@ class BundleWidgetProductPage {
     );
 
     const rule = rules[0];
-    const condition = rule?.condition;
-    const conditionValue = parseFloat(condition?.value) || 0;
-    const conditionType = condition?.type || 'quantity';
+    const conditionValue = parseFloat(rule?.conditionValue ?? rule?.condition?.value) || 0;
+    const conditionType = rule?.conditionType || rule?.condition?.type || 'quantity';
     const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
     const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
     const met = progress >= 1;
@@ -1213,7 +1212,7 @@ class BundleWidgetProductPage {
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity);
     const discountText = discountInfo.hasDiscount
       ? (this.selectedBundle.pricing.method === 'percentage_off'
-          ? `${rule.discount?.value || 0}% off`
+          ? `${rule.discountValue ?? rule.discount?.value ?? 0}% off`
           : CurrencyManager.convertAndFormat(discountInfo.savings, CurrencyManager.getCurrencyInfo()))
       : '';
 

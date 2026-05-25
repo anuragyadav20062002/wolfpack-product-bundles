@@ -1711,24 +1711,21 @@ class BundleWidgetFullPage {
     let promoNote = '';
     let discountMessage = '';
 
-    // Check for discount rules and build discount message
     if (pricing?.enabled && rules.length > 0) {
-      // Find the best discount to highlight (use nested structure)
+      const pricingMethod = pricing.method || 'percentage_off';
       const bestRule = rules.reduce((best, rule) => {
-        const discountValue = rule.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
-          ? rule.discount?.value || 0
-          : ((rule.discount?.value || 0) / 100);
-        const bestValue = best.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
-          ? best.discount?.value || 0
-          : ((best.discount?.value || 0) / 100);
+        const dv = rule.discountValue ?? rule.discount?.value ?? 0;
+        const bestDv = best.discountValue ?? best.discount?.value ?? 0;
+        const isPercent = pricingMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+        const discountValue = isPercent ? dv : dv / 100;
+        const bestValue = isPercent ? bestDv : bestDv / 100;
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      // Build discount message based on best rule (using nested structure)
-      const targetQty = bestRule.condition?.value || 0;
-      const conditionOperator = bestRule.condition?.operator;
-      const discountMethod = bestRule.discount?.method;
-      const discountValue = bestRule.discount?.value || 0;
+      const targetQty = bestRule.conditionValue ?? bestRule.condition?.value ?? 0;
+      const conditionOperator = bestRule.conditionOperator || bestRule.condition?.operator;
+      const discountMethod = pricingMethod;
+      const discountValue = bestRule.discountValue ?? bestRule.discount?.value ?? 0;
 
       // Build operator-aware quantity text
       const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');

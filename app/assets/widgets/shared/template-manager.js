@@ -62,12 +62,11 @@ export class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    // Extract rule data using nested structure
-    const conditionType = ruleToUse.condition.type;
-    const targetValue = ruleToUse.condition.value;
-    const conditionOperator = ruleToUse.condition.operator;
-    const discountMethod = ruleToUse.discount.method;
-    const rawDiscountValue = ruleToUse.discount.value;
+    const conditionType = ruleToUse.conditionType || ruleToUse.condition?.type || 'quantity';
+    const targetValue = ruleToUse.conditionValue ?? ruleToUse.condition?.value ?? 0;
+    const conditionOperator = ruleToUse.conditionOperator || ruleToUse.condition?.operator || 'gte';
+    const discountMethod = bundle.pricing?.method || ruleToUse.discount?.method || 'percentage_off';
+    const rawDiscountValue = ruleToUse.discountValue ?? ruleToUse.discount?.value ?? 0;
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);

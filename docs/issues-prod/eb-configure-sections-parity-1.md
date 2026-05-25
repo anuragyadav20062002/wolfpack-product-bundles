@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 16:30
+**Last Updated:** 2026-05-25 17:30
 
 ## Overview
 
@@ -91,9 +91,23 @@ export interface PricingMessages {
 10. [x] BXY UI: FPB + PPB route.tsx (Customer buys/gets + discount type + apply mode)
 11. [x] Progress Bar: Step-Based tier text/subtext fields + Multi Language modal (FPB + PPB)
 12. [x] Discount Messaging: dropdown + chips language selector (FPB + PPB)
-13. [ ] Update widget JS + rebuild
-14. [ ] Data migration script for existing DB records (nested → flat)
+13. [x] Update widget JS + rebuild (pricing-calculator, template-manager, full-page, product-page; v2.9.2)
+14. [x] Data migration: not needed — metafield write boundary already normalizes inline
 15. [ ] Lint + commit
+
+### 2026-05-25 17:30 - Step 13 complete: Widget JS updated to flat rule shape (v2.9.2)
+
+**Finding:** `bundle-product.server.ts:349-351` and `handlers.server.ts:128` already inline-normalize nested → flat on every metafield write. No standalone migration script needed.
+
+**Files changed:**
+- `app/assets/widgets/shared/pricing-calculator.js` — `calculateDiscount`: replaced `rule.condition.*` reads with `rule.conditionType || rule.condition?.type` + `rule.conditionValue ?? rule.condition?.value`; replaced `rule.discount.method/value` with `bundle.pricing?.method` + `rule.discountValue ?? rule.discount?.value`; fixed early-skip guard (`!rule.condition` → `!conditionType`); fixed sort comparator. `getNextDiscountRule`: same reads updated.
+- `app/assets/widgets/shared/template-manager.js` — `createDiscountVariables`: same flat-first fallback reads.
+- `app/assets/bundle-widget-full-page.js` — promo banner block: `rule.discount?.method/value` → `pricing.method` + `rule.discountValue ?? rule.discount?.value`; `bestRule.condition?.value/operator` → flat-first.
+- `app/assets/bundle-widget-product-page.js` — progress bar block: `rule?.condition?.value/type` → `rule?.conditionValue ?? rule?.condition?.value`; `rule.discount?.value` → `rule.discountValue ?? rule.discount?.value`.
+- `scripts/build-widget-bundles.js` — `WIDGET_VERSION` bumped 2.9.1 → 2.9.2
+- `npm run build:widgets` — FPB bundled 239.1 KB, PPB bundled 148.8 KB ✓
+
+**Next:** Lint + commit (step 15)
 
 ### 2026-05-25 16:30 - Steps 11–12 complete: Progress Bar Multi Language + Discount Messaging (FPB + PPB)
 
@@ -115,7 +129,7 @@ export interface PricingMessages {
 - Both `formData.append("discountData", ...)` and hidden `<input name="discountData">` updated with new fields
 - ESLint: 0 errors
 
-**Next:** Widget JS update + rebuild (step 13)
+**Next:** Lint + commit (step 15)
 
 ### 2026-05-25 14:00 - Step 10 complete: BXY rule UI updated in all three configure routes
 
