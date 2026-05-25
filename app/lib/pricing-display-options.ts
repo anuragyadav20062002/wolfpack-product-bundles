@@ -54,6 +54,8 @@ export const DEFAULT_PROGRESS_BAR_PROGRESS_TEXT = "Add {{conditionText}} to unlo
 export const DEFAULT_PROGRESS_BAR_SUCCESS_TEXT = "{{discountText}} unlocked";
 export const DEFAULT_DISCOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!";
 export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.";
+export const DEFAULT_DISCOUNT_RULE_TEXT_BXY = "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!";
+export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY = "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off";
 
 interface NormalizeInput {
   rules?: PricingRule[] | null;

@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 17:30
+**Last Updated:** 2026-05-25 20:00
 
 ## Overview
 
@@ -93,7 +93,35 @@ export interface PricingMessages {
 12. [x] Discount Messaging: dropdown + chips language selector (FPB + PPB)
 13. [x] Update widget JS + rebuild (pricing-calculator, template-manager, full-page, product-page; v2.9.2)
 14. [x] Data migration: not needed — metafield write boundary already normalizes inline
-15. [ ] Lint + commit
+15. [x] UI parity pass: Discount & Pricing section (FPB + PPB) — all EB-matching changes
+16. [x] Lint + commit
+
+### 2026-05-25 20:00 - Step 15 complete: Discount & Pricing UI parity (FPB + PPB)
+
+**FPB route.tsx changes:**
+- Discount Messaging toggle: `s-checkbox` → `s-switch`
+- Added explicit "Enable multi-language" `s-checkbox` inside expanded Discount Messaging (was implicit via language select)
+- Multi-language section now gated on `discountMessagingMultiLanguageEnabled`: shows language dropdown + "Active languages" label + primary locale chip always + saved locale chips
+- Removed `setDiscountMessagingMultiLanguageEnabled(true)` side-effect from language select onChange (now purely checkbox-controlled)
+- Discount Text / Success Message: `s-text-area` → `s-text-field` with BXY-aware default texts (`DEFAULT_DISCOUNT_RULE_TEXT_BXY` / `DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY` when `discountType === BUY_X_GET_Y`)
+- Added `DEFAULT_DISCOUNT_RULE_TEXT_BXY` + `DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY` to imports
+
+**PPB route.tsx changes:**
+- Added imports: `DEFAULT_DISCOUNT_RULE_TEXT`, `DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE`, `DEFAULT_DISCOUNT_RULE_TEXT_BXY`, `DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY`, `DEFAULT_PROGRESS_BAR_PROGRESS_TEXT`, `DEFAULT_PROGRESS_BAR_SUCCESS_TEXT` from `pricing-display-options`
+- Removed `generateRulePreview` import (no longer used after Preview line removal)
+- Progress Bar useState defaults: replaced hardcoded strings with `DEFAULT_PROGRESS_BAR_PROGRESS_TEXT` / `DEFAULT_PROGRESS_BAR_SUCCESS_TEXT`
+- BXY rule layout: restructured from 2 inline rows → vertical with bold "Customer buys" / "Customer gets" headings, then inline row [discountValue | discountType select | applyMode select]; labels "Lowest Priced" → "The lowest priced items", "Latest Added" → "The latest added items"
+- Non-BXY rules: renamed "Condition type" → "Discount on", "Minimum quantity/amount" → "is greater than or equal to"; added Fixed Bundle Price branch (shows only "Number of Products in Bundle" + "Price", no "Discount on" select); removed "Preview:" line
+- Discount Messaging: moved from Card 1 to Card 2 (Discount Display Options section); toggle `s-checkbox` → `s-switch`; added "Enable multi-language" checkbox; restructured multi-lang section with "Active languages" label + primary locale chip always shown; `s-text-area` → `s-text-field` with BXY-aware defaults
+- BQO toggle: `s-checkbox` → `s-switch`
+- Progress Bar toggle: `s-checkbox` → `s-switch`
+- Progress Bar type: `s-select` → `s-choice-list` with `<s-choice>` children
+- Tier Text/Subtext: `s-text-area` → `s-text-field`; labels simplified to "Tier Text" / "Tier Subtext" with "Rule #N" heading above
+- Simple Bar text fields: `s-text-area` → `s-text-field`; switched from inline to block stack
+
+**ESLint:** 0 errors on all modified files.
+
+**Status:** All Discount & Pricing UI changes complete. Ready to commit.
 
 ### 2026-05-25 17:30 - Step 13 complete: Widget JS updated to flat rule shape (v2.9.2)
 
