@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 20:00
+**Last Updated:** 2026-05-25 21:30
 
 ## Overview
 
@@ -95,6 +95,17 @@ export interface PricingMessages {
 14. [x] Data migration: not needed — metafield write boundary already normalizes inline
 15. [x] UI parity pass: Discount & Pricing section (FPB + PPB) — all EB-matching changes
 16. [x] Lint + commit
+
+### 2026-05-25 21:30 - FPB Card 2 parity: BQO + Progress Bar + Discount Messaging updated to match PPB
+
+**FPB route.tsx Card 2 changes:**
+- BQO section: gated on `discountType !== BUY_X_GET_Y` (was always visible); Multi Language button moved inline with toggle header at `justifyContent: space-between` level (removed from inside nested div); "Make this rule default" changed from `variant={isDefault ? "primary" : "secondary"}` → ★/☆ pattern matching PPB
+- Progress Bar section: Multi Language button moved inline with toggle header; Simple Bar text fields changed from `s-stack direction="inline"` → `direction="block"`; help text updated to match PPB (`"Shown while customer..."` / `"Shown when the discount is unlocked..."`)
+- Discount Messaging section: "Enable multi-language" checkbox moved from inside nested div → inline with toggle header (gated on `discountMessagingEnabled && shopLocales.length > 0`); added BXY info banner; removed per-rule Success Message field; added global Success Message `<s-section>` after all rule sections; wired to `globalSuccessMessage` / `successMessageByLocale` state
+
+**ESLint:** 0 errors on both files.
+
+**Status:** Both FPB and PPB Card 1 and Card 2 are now identical. All UI parity complete.
 
 ### 2026-05-25 20:00 - Step 15 complete: Discount & Pricing UI parity (FPB + PPB)
 
