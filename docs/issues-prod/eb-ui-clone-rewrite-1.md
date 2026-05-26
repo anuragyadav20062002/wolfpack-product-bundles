@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 02:56 IST
+**Last Updated:** 2026-05-27 03:03 IST
 
 ## Overview
 
@@ -147,6 +147,18 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Captured storefront proof with widget `2.9.3`: desktop runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-threshold-fix-desktop-2026-05-27.json`, desktop screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-threshold-fix-2026-05-27.png`, mobile runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-threshold-fix-mobile-2026-05-27.json`, and mobile screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-threshold-fix-2026-05-27.png`.
 - Remaining confirmed gaps: the same save response still returns `bundle.steps[0].pageTitle = null` despite the request sending `pageTitle = "Build audit bundle"`, and the Horizontal Slots measured layout is still wider than the reference (`358-360px` section/grid versus the reference `345px` desktop grid target).
 - Next: commit this threshold fix, then start the next TDD slice for the measured Horizontal Slots geometry and the separate Step Title persistence gap.
+
+### 2026-05-27 03:01 IST - PPB horizontal-slot measured geometry slice started
+- Committed the runtime threshold fix as `ab950c1c`.
+- Re-read the EB desktop/mobile runtime JSON for Horizontal Slots. The target is desktop slot wrapper `345px`, grid columns `104.328px 104.328px 104.328px`, gap `16px`; mobile slot wrapper `360px`, grid columns about `110.66px`, gap `14px`.
+- WPB post-threshold proof still measures desktop `360px` section/grid with `109.328px` columns and mobile `358px` section/grid due the current product form container width.
+- Next edit: add a RED CSS contract for the desktop/mobile measured widths, bump the widget version for the bug-fix widget deploy path, patch Product Page widget CSS, rebuild widgets/minified assets, and recapture Chrome proof.
+
+### 2026-05-27 03:03 IST - PPB horizontal-slot geometry local slice verified
+- Added RED-to-green Product Page widget CSS contract coverage for desktop `345px` slot/action width, `104.328px` columns, mobile `360px` slot/action width, and `110.66px` columns.
+- Patched the raw Product Page widget CSS and bumped `WIDGET_VERSION` to `2.9.4`, then regenerated widget JS and minified CSS assets.
+- Verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build:widgets`, `npm run minify:assets css`, CSS size check (`99936` bytes FPB, `55167` bytes PPB), `npm run build`, graph rebuild, code competitor-reference scan, and `git diff --check`.
+- Next: commit this local geometry slice, run the user-authorized SIT deploy, then recapture desktop/mobile/runtime proof from the extension CDN before updating the manifest row.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

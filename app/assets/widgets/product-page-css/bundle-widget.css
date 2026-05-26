@@ -3067,15 +3067,16 @@ to {
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] {
-  max-width:100%;
+  width:345px;
+  max-width:345px;
   margin:0}
 
 .bundle-steps[data-ppb-template-type="PDP_MODAL"] {
   display:flex;
   flex-direction:column;
   gap:10px;
-  width:100%;
-  max-width:360px;
+  width:345px;
+  max-width:345px;
   margin:20px 0 12px;
   padding:0;
   align-items:stretch;
@@ -3083,10 +3084,10 @@ to {
 
 .bw-ppb-modal-slot-section {
   display:grid;
-  grid-template-columns:minmax(0,1fr);
+  grid-template-columns:345px;
   gap:10px;
-  width:100%;
-  max-width:360px}
+  width:345px;
+  max-width:345px}
 
 .bw-ppb-modal-slot-title {
   font-size:14px;
@@ -3098,9 +3099,9 @@ to {
 
 .bw-ppb-modal-slot-grid {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(3,104.328px);
   gap:16px;
-  width:100%;
+  width:345px;
   align-items:start;
   justify-items:stretch}
 
@@ -3148,6 +3149,9 @@ to {
   white-space:normal}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart {
+  width:345px;
+  max-width:345px;
+  box-sizing:border-box;
   height:45px;
   margin:14px 0 0;
   border-radius:4px;
@@ -3178,7 +3182,9 @@ to {
   display:flex;
   align-items:center;
   justify-content:center;
-  width:100%;
+  width:345px;
+  max-width:345px;
+  box-sizing:border-box;
   height:47px;
   background:#111111;
   color:#ffffff;
@@ -3191,13 +3197,26 @@ to {
   user-select:none}
 
 @media (max-width:480px) {
+  #bundle-builder-app[data-ppb-template-type="PDP_MODAL"],
   .bundle-steps[data-ppb-template-type="PDP_MODAL"],
   .bw-ppb-modal-slot-section {
-  max-width:360px}
+  width:360px;
+  max-width:calc(100vw - 30px)}
+
+  .bw-ppb-modal-slot-section {
+  grid-template-columns:minmax(0,1fr)}
 
   .bw-ppb-modal-slot-grid {
+  width:360px;
+  max-width:calc(100vw - 30px);
+  grid-template-columns:repeat(3,110.66px);
   gap:14px}
 
   .bw-ppb-modal-slot-grid .bw-slot-card--empty {
   height:160px}
+
+  #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart,
+  #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bw-ppb-dynamic-checkout-visual {
+  width:360px;
+  max-width:calc(100vw - 30px)}
 }
