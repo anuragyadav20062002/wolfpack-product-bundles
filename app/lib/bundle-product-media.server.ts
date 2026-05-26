@@ -16,13 +16,14 @@ export type BundleProductMediaNode = {
   } | null;
 };
 
-type FileReferenceRemovalInput = {
+type FileUpdateInput = {
   id: string;
-  referencesToRemove: string[];
+  alt?: string;
+  referencesToRemove?: string[];
 };
 
-export function getBundleProductPlaceholderAlt(bundleName: string): string {
-  return `${bundleName?.trim() || "Bundle"} - Bundle`;
+export function getBundleProductPlaceholderAlt(_bundleName: string): string {
+  return "";
 }
 
 export function buildBundleProductPlaceholderMediaInput(
@@ -53,7 +54,8 @@ function isBundleProductPlaceholderMedia(
   }
 
   const altText = mediaNode.alt || mediaNode.image?.altText || "";
-  return altText === getBundleProductPlaceholderAlt(bundleName);
+  const expectedAlt = getBundleProductPlaceholderAlt(bundleName);
+  return Boolean(expectedAlt) && altText === expectedAlt;
 }
 
 export function hasBundleProductPlaceholderMedia(
@@ -69,7 +71,7 @@ export function buildStaleBundleProductMediaReferenceRemovals(
   productId: string,
   mediaNodes: BundleProductMediaNode[] | undefined,
   bundleName: string,
-): FileReferenceRemovalInput[] {
+): Array<{ id: string; referencesToRemove: string[] }> {
   if (!productId || !hasBundleProductPlaceholderMedia(mediaNodes, bundleName)) {
     return [];
   }
@@ -82,6 +84,30 @@ export function buildStaleBundleProductMediaReferenceRemovals(
     if (isBundleProductPlaceholderMedia(mediaNode, bundleName) && !placeholderKept) {
       placeholderKept = true;
       return [];
+    }
+
+    return [{ id: mediaNode.id, referencesToRemove: [productId] }];
+  });
+}
+
+export function buildBundleProductMediaFileUpdates(
+  productId: string,
+  mediaNodes: BundleProductMediaNode[] | undefined,
+  bundleName: string,
+): FileUpdateInput[] {
+  if (!productId || !hasBundleProductPlaceholderMedia(mediaNodes, bundleName)) {
+    return [];
+  }
+
+  let placeholderKept = false;
+
+  return (mediaNodes || []).flatMap((mediaNode) => {
+    if (!mediaNode.id) return [];
+
+    if (isBundleProductPlaceholderMedia(mediaNode, bundleName) && !placeholderKept) {
+      placeholderKept = true;
+      const currentAlt = mediaNode.alt ?? mediaNode.image?.altText ?? "";
+      return currentAlt === "" ? [] : [{ id: mediaNode.id, alt: "" }];
     }
 
     return [{ id: mediaNode.id, referencesToRemove: [productId] }];

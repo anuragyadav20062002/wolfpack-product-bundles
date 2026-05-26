@@ -602,51 +602,167 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
-  it("removes stale generated product media references after save product sync", async () => {
-    MOCK_ADMIN.graphql
-      .mockResolvedValueOnce({
+  it("syncs generated product metadata and persists the Shopify-returned handle", async () => {
+    MOCK_ADMIN.graphql.mockImplementation(async (query: string, variables?: any) => {
+      if (query.includes("GetShopName")) {
+        return {
+          json: async () => ({
+            data: { shop: { name: "Yash-wolfpack" } },
+          }),
+        };
+      }
+
+      if (query.includes("GetBundleProductMedia")) {
+        return {
+          json: async () => ({
+            data: {
+              product: {
+                media: {
+                  nodes: [
+                    {
+                      id: "gid://shopify/MediaImage/current",
+                      alt: "",
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        };
+      }
+
+      return {
         json: async () => ({
           data: {
             productUpdate: {
-              product: { id: PRODUCT_ID, status: "ACTIVE" },
+              product: {
+                id: PRODUCT_ID,
+                status: variables?.variables?.product?.status || "ACTIVE",
+                handle: "wpb-complete-audit-product-page-2026-05-25",
+                vendor: "Yash-wolfpack",
+                productType: "product",
+              },
               userErrors: [],
             },
           },
         }),
+      };
+    });
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        name: "WPB Complete Audit Product Page 2026-05-25",
+        shopifyProductId: PRODUCT_ID,
+        shopifyProductHandle: "codex-ppb-2026-05-21",
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
       })
-      .mockResolvedValueOnce({
-        json: async () => ({
-          data: {
-            product: {
-              id: PRODUCT_ID,
-              media: {
-                nodes: [
-                  {
-                    id: "gid://shopify/MediaImage/current",
-                    alt: "PPB Bundle - Bundle",
-                    image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
-                  },
-                  {
-                    id: "gid://shopify/MediaImage/old",
-                    alt: "Old Product - Bundle",
-                    image: { url: "https://cdn.shopify.com/files/bundle_old.png" },
-                  },
-                ],
+    );
+    const fd = makeFormData({
+      bundleName: "WPB Complete Audit Product Page 2026-05-25",
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID, handle: "codex-ppb-2026-05-21" }),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductUpdateInput"),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            id: PRODUCT_ID,
+            title: "WPB Complete Audit Product Page 2026-05-25",
+            handle: "wpb-complete-audit-product-page-2026-05-25",
+            productType: "product",
+            vendor: "Yash-wolfpack",
+          }),
+        }),
+      }),
+    );
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "bundle-1" },
+        data: { shopifyProductHandle: "wpb-complete-audit-product-page-2026-05-25" },
+      }),
+    );
+  });
+
+  it("removes stale generated product media references after save product sync", async () => {
+    MOCK_ADMIN.graphql.mockImplementation(async (query: string, variables?: any) => {
+      if (query.includes("GetShopName")) {
+        return {
+          json: async () => ({
+            data: { shop: { name: "Test Shop" } },
+          }),
+        };
+      }
+
+      if (query.includes("GetBundleProductMedia")) {
+        return {
+          json: async () => ({
+            data: {
+              product: {
+                id: PRODUCT_ID,
+                media: {
+                  nodes: [
+                    {
+                      id: "gid://shopify/MediaImage/current",
+                      alt: "",
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                    },
+                    {
+                      id: "gid://shopify/MediaImage/old",
+                      alt: "Old Product",
+                      image: { url: "https://cdn.shopify.com/files/bundle_old.png" },
+                    },
+                  ],
+                },
               },
             },
-          },
-        }),
-      })
-      .mockResolvedValueOnce({
+          }),
+        };
+      }
+
+      if (query.includes("fileUpdate")) {
+        return {
+          json: async () => ({
+            data: {
+              fileUpdate: {
+                files: [{ id: "gid://shopify/MediaImage/old" }],
+                userErrors: [],
+              },
+            },
+          }),
+        };
+      }
+
+      return {
         json: async () => ({
           data: {
-            fileUpdate: {
-              files: [{ id: "gid://shopify/MediaImage/old" }],
+            productUpdate: {
+              product: {
+                id: PRODUCT_ID,
+                status: variables?.variables?.product?.status || "ACTIVE",
+                handle: "ppb-bundle",
+                vendor: "Test Shop",
+                productType: "product",
+              },
               userErrors: [],
             },
           },
         }),
-      });
+      };
+    });
     const fd = makeFormData({
       stepsData: JSON.stringify(makeStepWithProduct()),
       bundleProduct: JSON.stringify({ id: PRODUCT_ID, handle: "bundle-123" }),

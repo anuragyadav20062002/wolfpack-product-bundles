@@ -1,14 +1,13 @@
 import {
+  buildBundleProductMediaFileUpdates,
   buildStaleBundleProductMediaReferenceRemovals,
   getBundleProductPlaceholderAlt,
 } from "../../../app/lib/bundle-product-media.server";
 
 describe("bundle product media helpers", () => {
-  it("builds the generated placeholder alt text", () => {
-    expect(getBundleProductPlaceholderAlt("Product Page Fixture")).toBe(
-      "Product Page Fixture - Bundle",
-    );
-    expect(getBundleProductPlaceholderAlt("")).toBe("Bundle - Bundle");
+  it("builds an empty generated placeholder alt text", () => {
+    expect(getBundleProductPlaceholderAlt("Product Page Fixture")).toBe("");
+    expect(getBundleProductPlaceholderAlt("")).toBe("");
   });
 
   it("removes historical media and duplicate placeholders while keeping the first placeholder", () => {
@@ -17,17 +16,17 @@ describe("bundle product media helpers", () => {
       [
         {
           id: "gid://shopify/MediaImage/old",
-          alt: "Old Product - Bundle",
+          alt: "Old Product",
           image: { url: "https://cdn.shopify.com/files/bundle_abc.png" },
         },
         {
           id: "gid://shopify/MediaImage/current",
-          alt: "Product Page Fixture - Bundle",
+          alt: "",
           image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
         },
         {
           id: "gid://shopify/MediaImage/duplicate",
-          alt: "Product Page Fixture - Bundle",
+          alt: "",
           image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
         },
       ],
@@ -41,6 +40,36 @@ describe("bundle product media helpers", () => {
       },
       {
         id: "gid://shopify/MediaImage/duplicate",
+        referencesToRemove: ["gid://shopify/Product/123"],
+      },
+    ]);
+  });
+
+  it("updates stale placeholder alt text and removes historical media in one file batch", () => {
+    const updates = buildBundleProductMediaFileUpdates(
+      "gid://shopify/Product/123",
+      [
+        {
+          id: "gid://shopify/MediaImage/current",
+          alt: "Product Page Fixture - Bundle",
+          image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+        },
+        {
+          id: "gid://shopify/MediaImage/old",
+          alt: "Old Product",
+          image: { url: "https://cdn.shopify.com/files/bundle_old.png" },
+        },
+      ],
+      "Product Page Fixture",
+    );
+
+    expect(updates).toEqual([
+      {
+        id: "gid://shopify/MediaImage/current",
+        alt: "",
+      },
+      {
+        id: "gid://shopify/MediaImage/old",
         referencesToRemove: ["gid://shopify/Product/123"],
       },
     ]);

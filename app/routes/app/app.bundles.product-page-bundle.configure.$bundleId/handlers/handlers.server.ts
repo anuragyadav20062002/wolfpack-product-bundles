@@ -43,11 +43,12 @@ import { formatStepCategoryForRuntime } from "../../../../lib/bundle-config/cate
 import { syncThemeColors } from "../../../../services/theme-colors.server";
 import { buildBundleProductDescriptionHtml } from "../../../../lib/bundle-product-description.server";
 import {
+  buildBundleProductMediaFileUpdates,
   buildBundleProductPlaceholderMediaInput,
-  buildStaleBundleProductMediaReferenceRemovals,
   hasBundleProductPlaceholderMedia,
   type BundleProductMediaNode,
 } from "../../../../lib/bundle-product-media.server";
+import { buildGeneratedBundleProductMetadata } from "../../../../lib/bundle-product-data.server";
 import { publishProductToSalesChannels } from "../../../../services/shopify-publications.server";
 import {
   deriveCommonSellingPlanGroups,
@@ -67,6 +68,38 @@ export {
 };
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
+
+type ProductSyncResult = {
+  handle?: string | null;
+};
+
+type ProductSyncOptions = {
+  shopName?: string | null;
+  mediaNodes?: BundleProductMediaNode[];
+  skipMediaSync?: boolean;
+};
+
+async function loadShopName(admin: ShopifyAdmin): Promise<string | null> {
+  const GET_SHOP_NAME = `
+    query GetShopName {
+      shop {
+        name
+      }
+    }
+  `;
+
+  const response = await admin.graphql(GET_SHOP_NAME);
+  const data = await response.json() as { data?: { shop?: { name?: string | null } }; errors?: unknown[] };
+
+  if (data.errors?.length) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to fetch shop name for generated product vendor:", {
+      component: "app.bundles.product-page.configure",
+    }, data.errors);
+    return null;
+  }
+
+  return data.data?.shop?.name?.trim() || null;
+}
 
 async function loadBundleProductMediaNodes(
   admin: ShopifyAdmin,
@@ -163,22 +196,22 @@ async function addBundleProductPlaceholderMedia(
   return data.data?.productUpdate?.product?.media?.nodes || [];
 }
 
-async function removeBundleProductMediaReferences(
+async function updateBundleProductMediaFiles(
   admin: ShopifyAdmin,
-  files: Array<{ id: string; referencesToRemove: string[] }>,
+  files: Array<{ id: string; alt?: string; referencesToRemove?: string[] }>,
 ): Promise<void> {
   if (files.length === 0) return;
 
-  const REMOVE_BUNDLE_PRODUCT_MEDIA_REFERENCES = `
-    mutation RemoveBundleProductMediaReferences($files: [FileUpdateInput!]!) {
+  const UPDATE_BUNDLE_PRODUCT_MEDIA_FILES = `
+    mutation UpdateBundleProductMediaFiles($files: [FileUpdateInput!]!) {
       fileUpdate(files: $files) {
-        files { id }
+        files { id alt }
         userErrors { field message code }
       }
     }
   `;
 
-  const response = await admin.graphql(REMOVE_BUNDLE_PRODUCT_MEDIA_REFERENCES, {
+  const response = await admin.graphql(UPDATE_BUNDLE_PRODUCT_MEDIA_FILES, {
     variables: { files },
   });
   const data = await response.json() as {
@@ -188,7 +221,7 @@ async function removeBundleProductMediaReferences(
   const userErrors = data.data?.fileUpdate?.userErrors || [];
 
   if (data.errors?.length || userErrors.length > 0) {
-    AppLogger.warn("[PRODUCT_SYNC] Failed to remove stale generated product media references:", {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to update generated product media files:", {
       component: "app.bundles.product-page.configure",
       mediaIds: files.map((file) => file.id),
     }, { errors: data.errors || userErrors });
@@ -208,8 +241,8 @@ async function syncGeneratedBundleProductMedia(
       mediaNodes = updatedMediaNodes.length > 0 ? updatedMediaNodes : mediaNodes;
     }
 
-    const staleReferences = buildStaleBundleProductMediaReferenceRemovals(productId, mediaNodes, bundleName);
-    await removeBundleProductMediaReferences(admin, staleReferences);
+    const fileUpdates = buildBundleProductMediaFileUpdates(productId, mediaNodes, bundleName);
+    await updateBundleProductMediaFiles(admin, fileUpdates);
   } catch (error) {
     AppLogger.warn("[PRODUCT_SYNC] Generated product media sync failed:", {
       component: "app.bundles.product-page.configure",
@@ -226,19 +259,23 @@ async function syncBundleProductToShopify(
   bundleName: string,
   bundleDescription: string | null,
   bundleId: string,
-): Promise<void> {
+  options: ProductSyncOptions = {},
+): Promise<ProductSyncResult> {
   const shopifyStatus = finalStatus === BundleStatus.UNLISTED ? "ACTIVE" : finalStatus.toUpperCase();
   const descriptionHtml = buildBundleProductDescriptionHtml({
     bundleName,
     customDescription: bundleDescription,
     status: finalStatus,
   });
+  const shopName = options.shopName !== undefined ? options.shopName : await loadShopName(admin);
+  const productMetadata = buildGeneratedBundleProductMetadata({ bundleName, shopName });
+  const syncResult: ProductSyncResult = {};
   AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${shopifyProductId}`);
 
   const UPDATE_PRODUCT_STATUS = `
     mutation UpdateProductStatus($product: ProductUpdateInput!) {
       productUpdate(product: $product) {
-        product { id status }
+        product { id status handle vendor productType }
         userErrors { field message }
       }
     }
@@ -249,7 +286,7 @@ async function syncBundleProductToShopify(
       variables: {
           product: {
             id: shopifyProductId,
-            title: bundleName,
+            ...productMetadata,
             status: shopifyStatus,
             descriptionHtml,
           },
@@ -268,6 +305,7 @@ async function syncBundleProductToShopify(
         productId: shopifyProductId, targetStatus: shopifyStatus,
       }, { errors: statusUserErrors });
     } else {
+      syncResult.handle = responseData.data?.productUpdate?.product?.handle ?? null;
       AppLogger.info("[PRODUCT_SYNC] Successfully synced product status to Shopify", {
         component: "app.bundles.product-page.configure", productId: shopifyProductId,
         requestedStatus: shopifyStatus, actualStatus: responseData.data?.productUpdate?.product?.status,
@@ -279,7 +317,7 @@ async function syncBundleProductToShopify(
         variables: {
           product: {
             id: shopifyProductId,
-            title: bundleName,
+            ...productMetadata,
             status: "UNLISTED",
             descriptionHtml,
           },
@@ -292,16 +330,22 @@ async function syncBundleProductToShopify(
           component: "app.bundles.product-page.configure",
           productId: shopifyProductId,
         }, unlistedErrors);
+      } else {
+        syncResult.handle = unlistedData.data?.productUpdate?.product?.handle ?? syncResult.handle;
       }
     }
 
-    await syncGeneratedBundleProductMedia(admin, shopifyProductId, bundleName);
+    if (!options.skipMediaSync) {
+      await syncGeneratedBundleProductMedia(admin, shopifyProductId, bundleName, options.mediaNodes);
+    }
   } catch (error) {
     AppLogger.error("[PRODUCT_SYNC] Failed to sync product status (exception):", {
       component: "app.bundles.product-page.configure", operation: "sync-product-status",
       productId: shopifyProductId, targetStatus: shopifyStatus, bundleId,
     }, error as any);
   }
+
+  return syncResult;
 }
 
 function buildRuntimePricingRule(rule: any): Record<string, unknown> {
@@ -1051,7 +1095,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
       // Sync product status to Shopify
-      await syncBundleProductToShopify(
+      const productSyncResult = await syncBundleProductToShopify(
         admin,
         updatedBundle.shopifyProductId,
         finalStatus,
@@ -1059,6 +1103,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         updatedBundle.description,
         bundleId,
       );
+      if (productSyncResult.handle && productSyncResult.handle !== updatedBundle.shopifyProductHandle) {
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: { shopifyProductHandle: productSyncResult.handle },
+        });
+        updatedBundle.shopifyProductHandle = productSyncResult.handle;
+      }
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
@@ -1289,12 +1340,22 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
         });
       }
 
-      await syncGeneratedBundleProductMedia(
+      const productSyncResult = await syncBundleProductToShopify(
         admin,
         productId,
+        bundle.status,
         bundle.name,
-        shopifyProduct.media?.nodes,
+        bundle.description,
+        bundleId,
+        { mediaNodes: shopifyProduct.media?.nodes },
       );
+      const syncedProductHandle = productSyncResult.handle || shopifyProduct.handle;
+      if (productSyncResult.handle && productSyncResult.handle !== bundle.shopifyProductHandle) {
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: { shopifyProductHandle: productSyncResult.handle },
+        });
+      }
 
       // Update metafields with current bundle configuration
       if (bundle.pricing?.enabled) {
@@ -1303,7 +1364,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           shopifyProduct: {
             id: shopifyProduct.id,
             title: shopifyProduct.title,
-            handle: shopifyProduct.handle,
+            handle: syncedProductHandle,
             updatedAt: shopifyProduct.updatedAt
           }
         });
@@ -1348,6 +1409,20 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
             title
             handle
             status
+            productType
+            vendor
+            media(first: 10) {
+              nodes {
+                ... on MediaImage {
+                  id
+                  alt
+                  image {
+                    url
+                    altText
+                  }
+                }
+              }
+            }
             variants(first: 1) {
               edges {
                 node {
@@ -1364,14 +1439,16 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       }
     `;
 
+    const shopName = await loadShopName(admin);
+    const productMetadata = buildGeneratedBundleProductMetadata({
+      bundleName: bundle.name,
+      shopName,
+    });
     const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
     const response = await admin.graphql(CREATE_PRODUCT, {
       variables: {
         product: {
-          title: bundle.name,
-          handle: `bundle-${bundle.id}`,
-          productType: "Bundle",
-          vendor: "Bundle Builder",
+          ...productMetadata,
           status: "ACTIVE",
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
@@ -1391,7 +1468,12 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       throw new Error(`Failed to create bundle product: ${error.message}`);
     }
 
-    productId = data.data?.productCreate?.product?.id;
+    const createdProduct = data.data?.productCreate?.product;
+    productId = createdProduct?.id;
+    if (!productId) {
+      throw new Error("Created product has no ID");
+    }
+    const productHandle = createdProduct?.handle || productMetadata.handle;
 
     // Set price and inventory policy on the auto-created default variant
     // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
@@ -1419,17 +1501,28 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     // Update bundle with product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: productId, shopifyProductHandle: `bundle-${bundleId}` }
+      data: { shopifyProductId: productId, shopifyProductHandle: productHandle }
     });
     await publishProductToSalesChannels(admin, productId, "ppb-sync-product-create");
-    await syncBundleProductToShopify(
+    const productSyncResult = await syncBundleProductToShopify(
       admin,
       productId,
       bundle.status,
       bundle.name,
       bundle.description,
       bundleId,
+      {
+        shopName,
+        mediaNodes: createdProduct?.media?.nodes,
+        skipMediaSync: true,
+      },
     );
+    if (productSyncResult.handle && productSyncResult.handle !== productHandle) {
+      await db.bundle.update({
+        where: { id: bundleId },
+        data: { shopifyProductHandle: productSyncResult.handle },
+      });
+    }
   } else {
     // Update existing bundle product price if configuration changed
     try {
@@ -1548,7 +1641,19 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
         productCreate(product: $product, media: $media) {
           product {
-            id title handle status
+            id title handle status productType vendor
+            media(first: 10) {
+              nodes {
+                ... on MediaImage {
+                  id
+                  alt
+                  image {
+                    url
+                    altText
+                  }
+                }
+              }
+            }
             variants(first: 1) { edges { node { id } } }
           }
           userErrors { field message }
@@ -1556,14 +1661,16 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       }
     `;
 
+    const shopName = await loadShopName(admin);
+    const productMetadata = buildGeneratedBundleProductMetadata({
+      bundleName: bundle.name,
+      shopName,
+    });
     const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
     const createResponse = await admin.graphql(CREATE_PRODUCT, {
       variables: {
         product: {
-          title: bundle.name,
-          handle: `bundle-${bundle.id}`,
-          productType: 'Bundle',
-          vendor: 'Bundle Builder',
+          ...productMetadata,
           status: 'ACTIVE',
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
@@ -1583,7 +1690,9 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       throw new Error(`Failed to re-create Shopify product: ${err.message}`);
     }
 
-    const newProductId = createData.data?.productCreate?.product?.id;
+    const createdProduct = createData.data?.productCreate?.product;
+    const newProductId = createdProduct?.id;
+    const productHandle = createdProduct?.handle || productMetadata.handle;
 
     // Set price and inventory policy on the auto-created default variant
     // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
@@ -1616,17 +1725,28 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 6. Update DB with new product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: newProductId, shopifyProductHandle: `bundle-${bundleId}` },
+      data: { shopifyProductId: newProductId, shopifyProductHandle: productHandle },
     });
     await publishProductToSalesChannels(admin, newProductId, "ppb-sync-bundle-recreate");
-    await syncBundleProductToShopify(
+    const productSyncResult = await syncBundleProductToShopify(
       admin,
       newProductId,
       bundle.status,
       bundle.name,
       bundle.description,
       bundleId,
+      {
+        shopName,
+        mediaNodes: createdProduct?.media?.nodes,
+        skipMediaSync: true,
+      },
     );
+    if (productSyncResult.handle && productSyncResult.handle !== productHandle) {
+      await db.bundle.update({
+        where: { id: bundleId },
+        data: { shopifyProductHandle: productSyncResult.handle },
+      });
+    }
 
     // 7. Re-run metafield operations from DB-authoritative state
     if (bundle.pricing) {

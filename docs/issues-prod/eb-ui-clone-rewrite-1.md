@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 04:49 IST
+**Last Updated:** 2026-05-27 05:08 IST
 
 ## Overview
 
@@ -310,6 +310,35 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - CSS minification reports the Full Page app-block CSS at `97.6 KB` and Product Page app-block CSS at `54.0 KB`, both under Shopify's `100,000 B` limit.
 - Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
 - Next: commit this scoped generated-product media cleanup slice, then continue the Product Page visual comparison from exact media artwork and store-theme/header/vendor gaps.
+
+### 2026-05-27 04:51 IST - PPB generated product media cleanup committed
+- Committed the generated product media cleanup slice as `3a0794da` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit hook rebuilt graph output again; after whitespace trim, the only generated graph delta is the corpus word-count line in `graphify-out/GRAPH_REPORT.md`.
+- Next: continue Product Page visual comparison from exact generated-media artwork, store-theme/header, and vendor gaps.
+
+### 2026-05-27 04:54 IST - PPB generated product data gap isolated
+- Captured public product JSON proof for the reference at `/private/tmp/eb-ppb-product-js-2026-05-27.json` and WPB at `/private/tmp/wpb-ppb-product-js-2026-05-27.json`.
+- Reference product data is title `WPB Complete Audit Product Page 2026-05-25`, vendor `Yash-wolfpack`, handle `wpb-complete-audit-product-page-2026-05-25`, one AVIF parent product media image, and null media alt.
+- WPB product data now has the matching title and one media item, but still has vendor `Wolfpack: Product Bundles`, handle `codex-ppb-2026-05-21`, app-owned PNG placeholder artwork, and media alt `WPB Complete Audit Product Page 2026-05-25 - Bundle`.
+- Next slice: decide from evidence whether generated Product Page sync should normalize vendor/handle/media alt and whether exact parent-media artwork is app-owned product data or evidence-limited theme/store fixture context.
+
+### 2026-05-27 04:55 IST - PPB generated product metadata slice started
+- Re-read the current Shopify Admin GraphQL docs for `ProductCreateInput`, `ProductUpdateInput`, and `shop { name }`, plus the EB create/update proof and WPB public product JSON mismatch.
+- Scope decision: normalize generated Product Page bundle products to use the saved bundle-name handle, shop name vendor, `productType: "product"`, and empty generated-media alt text. Exact parent media artwork remains evidence-limited/app-owned asset work, so this slice will not hotlink or copy competitor media.
+- Next edit: add RED tests for generated product metadata helpers plus PPB create/recreate/save sync contracts, then patch the handler and capture fresh product JSON proof.
+
+### 2026-05-27 05:05 IST - PPB generated product metadata proof captured
+- Added RED-to-green coverage for generated product handle/metadata helpers, empty generated-media alt text, Product Page create/recreate metadata payloads, save-sync DB handle persistence, and generated file alt cleanup.
+- Patched Product Page generated product create/recreate/save/sync paths to query `shop { name }`, send current `ProductCreateInput`/`ProductUpdateInput` metadata with saved-name handle and `productType: "product"`, persist the Shopify-returned handle, and update placeholder file alt text through `fileUpdate`.
+- Live proof captured: Admin screenshot `/private/tmp/wpb-ppb-generated-product-data-admin-2026-05-27.png`, Admin API/DB proof `/private/tmp/wpb-ppb-generated-product-data-sync-admin-api-2026-05-27.json`, public product JSON `/private/tmp/wpb-ppb-product-js-after-data-sync-2026-05-27.json`, desktop runtime/screenshot `/private/tmp/wpb-ppb-generated-product-data-runtime-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-generated-product-data-storefront-desktop-2026-05-27.png`, and mobile runtime/screenshot `/private/tmp/wpb-ppb-generated-product-data-runtime-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-generated-product-data-storefront-mobile-2026-05-27.png`.
+- Product JSON now has title `WPB Complete Audit Product Page 2026-05-25`, handle `wpb-complete-audit-product-page-2026-05-25`, vendor `agent`, type `product`, one placeholder media image, and null media alt. The exact parent media artwork remains open because this slice keeps app-owned media.
+- Next: run full modified-file verification, graph rebuild, and commit this scoped generated-product metadata slice.
+
+### 2026-05-27 05:08 IST - PPB generated product metadata verification passed
+- Focused Jest passed: `npx jest tests/unit/lib/bundle-product-data.test.ts tests/unit/lib/bundle-product-media.test.ts tests/unit/routes/ppb-sync-product.test.ts tests/unit/routes/ppb-save-bundle.test.ts --runInBand`.
+- Modified-file ESLint passed with 0 errors and warnings only; `npm run build`, `npm run build:widgets`, and `npm run minify:assets css` passed.
+- Competitor-reference scan over code/test/deploy paths returned no matches; graph rebuild passed with the known graphify extraction warning and `git diff --check` passed after trimming generated report whitespace.
+- Next: commit the generated-product metadata slice with the issue prefix, then continue from exact media artwork and full Product Page visual comparison.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.
