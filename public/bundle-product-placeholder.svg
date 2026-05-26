@@ -1,53 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="1160" viewBox="0 0 1160 1160">
-  <rect width="1160" height="1160" fill="#ffffff"/>
-  <g opacity="0.18">
-    <rect x="200" y="96" width="250" height="170" rx="8" fill="#f7f9ff"/>
-    <rect x="646" y="116" width="320" height="140" rx="10" fill="#f7f9ff"/>
-    <rect x="96" y="382" width="250" height="128" rx="8" fill="#f8faff"/>
-    <rect x="740" y="506" width="280" height="140" rx="12" fill="#f8faff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+  <rect width="1000" height="1000" fill="#ffffff"/>
+
+  <g opacity="0.34" fill="#edf3ff">
+    <circle cx="455" cy="260" r="92"/>
+    <circle cx="610" cy="300" r="98"/>
+    <ellipse cx="508" cy="560" rx="185" ry="20"/>
+    <circle cx="320" cy="324" r="18"/>
+    <circle cx="298" cy="500" r="22"/>
+    <circle cx="633" cy="455" r="38"/>
   </g>
-  <g fill="none" stroke="#86a6e7" stroke-linecap="round" stroke-linejoin="round">
-    <g opacity="0.62" stroke-width="24">
-      <circle cx="447" cy="394" r="90"/>
-      <line x1="447" y1="304" x2="447" y2="484"/>
-      <rect x="548" y="300" width="118" height="196" rx="12" fill="#dbe7ff"/>
-      <path d="M552 300h110v-45h-110z" fill="#6c8bc9"/>
-      <path d="M552 350h110" stroke="#ffffff" opacity="0.5"/>
-      <rect x="710" y="370" width="142" height="152" rx="16" fill="#dbe7ff"/>
-      <path d="M720 370h120v-47h-120z" fill="#6c8bc9"/>
-      <path d="M778 434c22 22 38 42 38 63 0 27-21 48-47 48-27 0-47-21-47-48 0-21 34-65 56-63z" fill="#7696d4" stroke-width="8"/>
-      <rect x="238" y="362" width="76" height="238" rx="12" fill="#dbe7ff"/>
-      <path d="M238 362h76v-68h-76z" fill="#6c8bc9"/>
-      <path d="M272 444c17 17 29 30 29 45 0 18-14 33-31 33s-31-15-31-33c0-15 22-44 33-45z" fill="#7696d4" stroke-width="8"/>
-      <rect x="388" y="538" width="80" height="142" rx="12" fill="#dbe7ff"/>
-      <path d="M402 538h52v-38h-52z" fill="#6c8bc9"/>
-      <path d="M426 582c13 12 23 23 23 36 0 15-12 28-27 28s-27-13-27-28c0-13 20-37 31-36z" fill="#7696d4" stroke-width="7"/>
-      <rect x="532" y="533" width="116" height="204" rx="16" fill="#dbe7ff"/>
-      <circle cx="590" cy="594" r="8" fill="#86a6e7"/>
-      <path d="M532 676h116" stroke="#ffffff" opacity="0.55"/>
-      <path d="M702 584h192" stroke-width="18"/>
-      <path d="M724 552v64M856 552v64" stroke-width="14"/>
-      <rect x="665" y="655" width="242" height="114" rx="18" fill="#6c8bc9"/>
-      <circle cx="770" cy="713" r="44" fill="#ffffff" stroke-width="10"/>
-      <circle cx="770" cy="713" r="16" fill="#6c8bc9" stroke-width="0"/>
-      <path d="M928 336l80 80M912 286a78 78 0 1 0 0 156 78 78 0 0 0 0-156z" stroke-width="20"/>
-      <path d="M184 632l-82 82M102 550a78 78 0 1 0 0 156 78 78 0 0 0 0-156z" stroke-width="20"/>
-      <path d="M472 722c28 25 34 62 12 92M550 722c-28 25-34 62-12 92" stroke-width="18"/>
+
+  <g fill="none" stroke="#8fa9df" stroke-linecap="round" stroke-linejoin="round">
+    <g opacity="0.7" stroke-width="13">
+      <rect x="360" y="295" width="50" height="122" rx="9" fill="#dfe8fb"/>
+      <path d="M363 295h44v-40h-44z" fill="#6382be"/>
+      <path d="M381 255v-16h16" stroke="#6382be"/>
+      <rect x="374" y="336" width="20" height="38" rx="2" fill="#ffffff" opacity="0.7"/>
+      <path d="M384 352c9 9 15 18 15 29 0 13-10 23-23 23s-23-10-23-23c0-11 22-32 31-29z" fill="#8ea8df" stroke-width="5"/>
+
+      <circle cx="457" cy="335" r="53"/>
+      <path d="M457 282v106"/>
+      <path d="M412 335a53 53 0 0 1 45-52v104a53 53 0 0 1-45-52z" fill="#ffffff" opacity="0.9"/>
+
+      <rect x="527" y="245" width="67" height="132" rx="9" fill="#dfe8fb"/>
+      <path d="M531 245h59v-31h-59z" fill="#6382be"/>
+      <path d="M531 292h59" stroke="#ffffff" opacity="0.55"/>
+      <path d="M530 218h62" stroke="#6382be" stroke-width="10"/>
+
+      <rect x="615" y="286" width="74" height="118" rx="11" fill="#dfe8fb"/>
+      <path d="M621 286h62v-34h-62z" fill="#6382be"/>
+      <path d="M653 334c14 14 25 29 25 45 0 19-15 34-34 34s-34-15-34-34c0-16 31-48 43-45z" fill="#8ea8df" stroke-width="5"/>
+
+      <rect x="505" y="395" width="72" height="116" rx="9" fill="#dfe8fb"/>
+      <path d="M513 395h56" stroke="#ffffff" opacity="0.55"/>
+      <circle cx="541" cy="455" r="6" fill="#8fa9df" stroke-width="0"/>
+
+      <rect x="432" y="412" width="58" height="94" rx="8" fill="#dfe8fb"/>
+      <path d="M445 412h32v-24h-32z" fill="#6382be"/>
+      <path d="M461 441c10 10 18 20 18 32 0 14-12 25-26 25s-26-11-26-25c0-12 25-34 34-32z" fill="#8ea8df" stroke-width="5"/>
+
+      <path d="M574 430h146"/>
+      <path d="M594 405v50M694 405v50" stroke-width="10"/>
+      <rect x="592" y="492" width="174" height="83" rx="16" fill="#6382be"/>
+      <circle cx="682" cy="533" r="37" fill="#ffffff" stroke-width="9"/>
+      <circle cx="682" cy="533" r="13" fill="#6382be" stroke-width="0"/>
+
+      <circle cx="315" cy="438" r="46"/>
+      <path d="M348 471l42 42"/>
+      <circle cx="721" cy="315" r="35"/>
+      <path d="M746 340l38 38"/>
+      <circle cx="802" cy="362" r="5" fill="#8fa9df" stroke-width="0"/>
+
+      <path d="M482 515c23 19 29 49 11 74M533 515c-23 19-29 49-11 74" stroke-width="11"/>
     </g>
-    <g opacity="0.78" stroke-width="9">
-      <path d="M168 300h42M189 279v42M955 326h42M976 305v42M390 786h42M411 765v42M828 238h42M849 217v42M164 770h42M185 749v42"/>
+
+    <g opacity="0.78" stroke-width="8">
+      <path d="M310 272h28M324 258v28"/>
+      <path d="M745 246h28M759 232v28"/>
+      <path d="M780 438h28M794 424v28"/>
+      <path d="M432 552h32M448 536v32"/>
+      <path d="M322 573h28M336 559v28"/>
+      <path d="M628 206h18M637 197v18"/>
     </g>
   </g>
-  <ellipse cx="570" cy="824" rx="230" ry="26" fill="#b9c9ed" opacity="0.18"/>
-  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#45425e">
-    <text x="580" y="925" font-size="34">
+
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#3d3a56">
+    <text x="500" y="660" font-size="30">
       <tspan>This </tspan><tspan font-style="italic">placeholder image</tspan><tspan> is automatically assigned to</tspan>
     </text>
-    <text x="580" y="970" font-size="34">your new bundle builder product.</text>
-    <text x="580" y="1045" font-size="33">
+    <text x="500" y="700" font-size="30">your new bundle builder product.</text>
+    <text x="500" y="768" font-size="29">
       <tspan>To replace it, simply </tspan><tspan font-weight="700">edit this product in your Shopify</tspan>
     </text>
-    <text x="580" y="1090" font-size="33">
+    <text x="500" y="808" font-size="29">
       <tspan font-weight="700">'Products' section</tspan><tspan> and upload your own image.</tspan>
     </text>
   </g>

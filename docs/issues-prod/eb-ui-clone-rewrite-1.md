@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 05:17 IST
+**Last Updated:** 2026-05-27 05:23 IST
 
 ## Overview
 
@@ -355,6 +355,27 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Patched Product Page Sync Product and hard Sync Bundle to run DB-authoritative metafield rewrites regardless of pricing state; pricing remains `null` when no pricing row exists.
 - Verification passed: focused Jest, modified-file ESLint with 0 errors, code competitor-reference scan with no matches, `npm run build`, `npm run build:widgets`, `npm run minify:assets css`, graph rebuild with the known graphify extraction warning, and `git diff --check`.
 - Next: commit this scoped runtime-sync slice, then capture deployed/local Admin Sync Product runtime JSON proof before marking the generated-product runtime row green.
+
+### 2026-05-27 05:18 IST - PPB Sync Product runtime rewrite committed
+- Committed the no-pricing runtime metafield rewrite slice as `39cfdcea` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit graph hook output was normalized by trimming generated trailing spaces; no tracked code files are dirty after the commit.
+- Next: continue the generated product visual parity loop from the exact placeholder artwork/full Product Page visual comparison gap.
+
+### 2026-05-27 05:19 IST - PPB generated placeholder artwork slice started
+- Compared the reference parent-product placeholder artwork against WPB's app-owned `public/bundle-product-placeholder.svg` and `.png`; the copy and purpose match, but WPB's illustration is oversized and visibly different in the product media gallery.
+- Scope: replace only the app-owned placeholder artwork under the existing stable filenames so the existing generated-product media pipeline and Shopify media URL contract do not change.
+- Next edit: reshape the SVG to the reference proportions, regenerate the PNG from it, then capture a local image proof before committing.
+
+### 2026-05-27 05:22 IST - PPB generated placeholder artwork proof captured
+- Replaced `public/bundle-product-placeholder.svg` with a 1000x1000 app-owned asset using the stable placeholder copy and tighter reference-like illustration proportions.
+- Regenerated `public/bundle-product-placeholder.png` from the SVG via browser canvas export; the PNG is now 1000x1000 instead of 1160x1160.
+- Local rendered proof is stored at `/private/tmp/wpb-bundle-product-placeholder-rendered-2026-05-27.png`; direct SVG browser screenshot proof is `/private/tmp/wpb-bundle-product-placeholder-svg-proof-2026-05-27.png`.
+- Next: run build/code scans/graph checks, update the manifest, then commit this app-owned artwork slice.
+
+### 2026-05-27 05:23 IST - PPB generated placeholder artwork verification passed
+- Verification passed: asset type check confirms 1000x1000 PNG plus SVG source, code competitor-reference scan returned no matches, `npm run build`, `npm run build:widgets`, `npm run minify:assets css`, graph rebuild, and `git diff --check`.
+- The app-owned media URL path is unchanged (`/bundle-product-placeholder.png`), so generated product create/sync code does not need a data contract change.
+- Next: commit the placeholder artwork slice, then run a real Product Page Sync Product after deployment/local server refresh to upload the new media and capture public product JSON plus desktop/mobile proof.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.
