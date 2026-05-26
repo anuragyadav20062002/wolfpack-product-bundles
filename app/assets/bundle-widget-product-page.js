@@ -101,6 +101,7 @@ import {
 } from './bundle-widget-components.js';
 import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
+import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
 
 
 class BundleWidgetProductPage {
@@ -110,6 +111,7 @@ class BundleWidgetProductPage {
     this.selectedBundle = null;
     this.selectedProducts = [];
     this.stepProductData = [];
+    this.directDefaultProducts = [];
     this.currentStepIndex = 0;
     this.isInitialized = false;
     this.config = {};
@@ -124,7 +126,7 @@ class BundleWidgetProductPage {
 
     // Call async init but don't block constructor
     this.init().catch(error => {
-      this.showError(error.message);
+      this.showErrorUI(error);
     });
   }
 
@@ -170,9 +172,13 @@ class BundleWidgetProductPage {
 
       // Initialize data structures
       this.initializeDataStructures();
+      this._initDirectDefaultProducts();
+      await this._preloadDirectDefaultProducts();
 
       // Pre-load product data for default steps so filled cards show real image/title
       await this._preloadDefaultStepProducts();
+
+      this._relocateContainerToProductForm();
 
       // Setup DOM elements
       this.setupDOMElements();
@@ -406,6 +412,93 @@ class BundleWidgetProductPage {
     });
   }
 
+  _getDirectDefaultProductsData() {
+    const data = this.selectedBundle?.defaultProductsData;
+    if (!data || data.isDefaultProductsEnabled !== true || !Array.isArray(data.products)) {
+      return null;
+    }
+    return data;
+  }
+
+  _normalizeDirectDefaultProduct(product) {
+    const variant = Array.isArray(product.variants) ? product.variants[0] : null;
+    const variantId = this.extractId(variant?.variantGraphqlId || variant?.variantId);
+    if (!variantId) return null;
+
+    const imageUrl = product.images?.[0]?.originalSrc || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    const inventoryQuantity = typeof variant?.inventoryQuantity === 'number'
+      ? variant.inventoryQuantity
+      : null;
+    const price = Number.parseFloat(variant?.price || '0') * 100;
+    const requiredQuantity = Number(product.requiredQuantity || 1) || 1;
+    const explicitlyUnavailable = variant?.availableForSale === false || variant?.available === false;
+    const available = !explicitlyUnavailable;
+    const quantityAvailable = available && inventoryQuantity === 0 ? null : inventoryQuantity;
+
+    return {
+      id: this.extractId(product.graphqlId || product.productId) || product.productId || variantId,
+      title: product.title || '',
+      handle: product.handle || '',
+      imageUrl,
+      price,
+      compareAtPrice: null,
+      variantId,
+      available,
+      quantityAvailable,
+      currentlyNotInStock: false,
+      defaultRequiredQuantity: requiredQuantity,
+      variants: [{
+        id: variantId,
+        title: variant?.title || '',
+        price,
+        compareAtPrice: null,
+        available,
+        quantityAvailable,
+        currentlyNotInStock: false,
+      }],
+      images: imageUrl ? [{ src: imageUrl }] : [],
+      description: '',
+    };
+  }
+
+  _getDirectDefaultProductItems() {
+    const data = this._getDirectDefaultProductsData();
+    if (!data) return [];
+    return data.products
+      .map(product => this._normalizeDirectDefaultProduct(product))
+      .filter(Boolean);
+  }
+
+  _initDirectDefaultProducts() {
+    this.directDefaultProducts = this._getDirectDefaultProductItems();
+    if (this.directDefaultProducts.length === 0 || !this.selectedProducts[0]) return;
+
+    this.directDefaultProducts.forEach(product => {
+      this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+    });
+  }
+
+  async _preloadDirectDefaultProducts() {
+    if (this.directDefaultProducts.length === 0 || !this.selectedBundle?.steps?.[0]) return;
+    await this.loadStepProducts(0).catch(() => {});
+  }
+
+  _mergeDirectDefaultProductsIntoStep(stepIndex, products) {
+    if (stepIndex !== 0 || this.directDefaultProducts.length === 0) return products;
+    return products.concat(this.directDefaultProducts);
+  }
+
+  _isDirectDefaultVariant(variantId) {
+    const normalizedVariantId = this.extractId(variantId);
+    return this.directDefaultProducts.some(product => product.variantId === normalizedVariantId);
+  }
+
+  _getDirectDefaultRequiredQuantity(variantId) {
+    const normalizedVariantId = this.extractId(variantId);
+    const product = this.directDefaultProducts.find(item => item.variantId === normalizedVariantId);
+    return product ? (product.defaultRequiredQuantity || 1) : null;
+  }
+
   /**
    * Pre-fetches product data for all steps marked isDefault so that
    * the filled slot card can render with real image and title on first paint.
@@ -495,11 +588,42 @@ class BundleWidgetProductPage {
   // DOM SETUP
   // ========================================================================
 
+  _relocateContainerToProductForm() {
+    try {
+      if (!this.container || typeof document === 'undefined') return;
+      if (this.container.dataset.mountedAfterProductForm === 'true') return;
+
+      const selectors = [
+        'form[action*="/cart/add"]',
+        'product-form form',
+        '.product-form form',
+        '[data-type="add-to-cart-form"]',
+        'form[action^="/cart/add"]'
+      ];
+
+      const productForm = selectors
+        .map(selector => document.querySelector(selector))
+        .find(form => form && !form.contains(this.container) && !this.container.contains(form));
+
+      if (!productForm) return;
+
+      if (productForm.nextElementSibling !== this.container) {
+        productForm.insertAdjacentElement('afterend', this.container);
+      }
+
+      this.container.classList.add('bundle-widget-container--product-form-mounted');
+      this.container.dataset.mountedAfterProductForm = 'true';
+    } catch (_error) {
+      // Placement is best-effort; the widget still renders at its original block location.
+    }
+  }
+
   setupDOMElements() {
     const modalEl = this.ensureBottomSheet();
 
     // Get or create main UI elements
     this.elements = {
+      defaultProducts: this.container.querySelector('.bw-default-products') || this._createDirectDefaultProductsEl(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
       qtyPillsEl: this.container.querySelector('.bw-qty-pills') || this._createQtyPillsEl(),
       giftMessageEl: this.container.querySelector('.bw-gift-message') || this._createGiftMessageEl(),
@@ -509,7 +633,10 @@ class BundleWidgetProductPage {
       bsOverlay: document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay()
     };
 
-    // Append elements in display order (steps → qty pills → gift message → footer → ATC)
+    // Append elements in display order (default products → steps → qty pills → gift message → footer → ATC)
+    if (!this.container.querySelector('.bw-default-products')) {
+      this.container.appendChild(this.elements.defaultProducts);
+    }
     if (!this.container.querySelector('.bundle-steps')) {
       this.container.appendChild(this.elements.stepsContainer);
     }
@@ -530,6 +657,13 @@ class BundleWidgetProductPage {
   _createQtyPillsEl() {
     const el = document.createElement('div');
     el.className = 'bw-qty-pills';
+    el.style.display = 'none';
+    return el;
+  }
+
+  _createDirectDefaultProductsEl() {
+    const el = document.createElement('div');
+    el.className = 'bw-default-products';
     el.style.display = 'none';
     return el;
   }
@@ -679,6 +813,7 @@ class BundleWidgetProductPage {
   // ========================================================================
 
   renderUI() {
+    this._renderDirectDefaultProducts();
     this.renderSteps();
     this.renderQuantityOptionPills();
     this.renderGiftMessageUI();
@@ -704,6 +839,80 @@ class BundleWidgetProductPage {
       // Product-page bundle: Render with step boxes (current implementation)
       this.renderProductPageLayout();
     }
+  }
+
+  _renderDirectDefaultProducts() {
+    const el = this.elements.defaultProducts;
+    if (!el) return;
+    el.innerHTML = '';
+
+    const data = this._getDirectDefaultProductsData();
+    const products = this.directDefaultProducts || [];
+    if (!data || products.length === 0) {
+      el.style.display = 'none';
+      return;
+    }
+
+    el.style.display = 'block';
+    el.style.cssText = 'display:block;margin:0 0 14px;';
+
+    if (data.defaultProductsTitle) {
+      const title = document.createElement('h3');
+      title.className = 'bw-default-products__title';
+      title.textContent = data.defaultProductsTitle;
+      title.style.cssText = 'font-size:14px;font-weight:700;margin:0 0 10px;color:#1a1a1a;';
+      el.appendChild(title);
+    }
+
+    const list = document.createElement('div');
+    list.className = 'bw-default-products__list';
+    list.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+    products.forEach(product => {
+      const quantity = this.selectedProducts[0]?.[product.variantId] || product.defaultRequiredQuantity || 1;
+      const line = document.createElement('div');
+      line.className = 'bw-default-products__line';
+      line.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;';
+
+      const details = document.createElement('div');
+      details.className = 'bw-default-products__details';
+      details.style.cssText = 'display:flex;align-items:center;gap:10px;min-width:0;';
+
+      const image = document.createElement('img');
+      image.className = 'bw-default-products__image';
+      image.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      image.alt = product.title || '';
+      image.style.cssText = 'width:44px;height:44px;object-fit:cover;border-radius:4px;';
+      details.appendChild(image);
+
+      const text = document.createElement('div');
+      text.className = 'bw-default-products__text';
+      text.style.cssText = 'display:flex;flex-direction:column;gap:3px;min-width:0;';
+
+      const name = document.createElement('span');
+      name.className = 'bw-default-products__name';
+      name.textContent = `${product.title} x ${quantity}`;
+      name.style.cssText = 'font-size:13px;font-weight:700;color:#1a1a1a;';
+      text.appendChild(name);
+
+      const price = document.createElement('span');
+      price.className = 'bw-default-products__price';
+      price.textContent = CurrencyManager.convertAndFormat(product.price * quantity, currencyInfo);
+      price.style.cssText = 'font-size:13px;font-weight:700;color:#1a1a1a;';
+      text.appendChild(price);
+      details.appendChild(text);
+      line.appendChild(details);
+
+      const quantityBadge = document.createElement('span');
+      quantityBadge.className = 'bw-default-products__quantity';
+      quantityBadge.textContent = `x ${quantity}`;
+      quantityBadge.style.cssText = 'font-size:13px;color:#1a1a1a;white-space:nowrap;';
+      line.appendChild(quantityBadge);
+      list.appendChild(line);
+    });
+
+    el.appendChild(list);
   }
 
   // Returns a full-width banner image element for a step, or null if not configured
@@ -1128,6 +1337,7 @@ class BundleWidgetProductPage {
     // Guard: default products are compulsory — they must always stay in selectedProducts
     const step = this.selectedBundle?.steps[stepIndex];
     if (step?.isDefault && step?.defaultVariantId === variantId) return;
+    if (this._isDirectDefaultVariant(variantId)) return;
 
     const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
 
@@ -1141,6 +1351,7 @@ class BundleWidgetProductPage {
 
     // Update UI
     this.renderSteps();
+    this._renderDirectDefaultProducts();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
 
@@ -1167,8 +1378,14 @@ class BundleWidgetProductPage {
   clearStepSelections(stepIndex) {
     // Clear all product selections for this step
     this.selectedProducts[stepIndex] = {};
+    if (stepIndex === 0 && this.directDefaultProducts.length > 0) {
+      this.directDefaultProducts.forEach(product => {
+        this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+      });
+    }
 
     // Update UI
+    this._renderDirectDefaultProducts();
     this.renderSteps();
     this.updateAddToCartButton();
     this.updateFooterMessaging();
@@ -1196,20 +1413,21 @@ class BundleWidgetProductPage {
     }
 
     // Calculate current progress toward the first active rule's condition
-    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
+    const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
     );
 
     const rule = rules[0];
-    const conditionValue = parseFloat(rule?.conditionValue) || 0;
-    const conditionType = rule?.conditionType || 'quantity';
+    const discountMethod = PricingCalculator.getDiscountMethod(this.selectedBundle);
+    const conditionValue = PricingCalculator.getRuleConditionValue(rule, discountMethod);
+    const conditionType = PricingCalculator.getRuleConditionType(rule);
     const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
     const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
     const met = progress >= 1;
 
-    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity);
+    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
     const discountText = discountInfo.hasDiscount
       ? (this.selectedBundle.pricing.method === 'percentage_off'
           ? `${rule.discountValue ?? 0}% off`
@@ -1400,7 +1618,7 @@ class BundleWidgetProductPage {
   }
 
   updateAddToCartButton() {
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -1409,7 +1627,8 @@ class BundleWidgetProductPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
 
     const button = this.elements.addToCartButton;
@@ -1537,6 +1756,61 @@ class BundleWidgetProductPage {
     this.updateFooterMessaging();
   }
 
+  resolveStorefrontApiBase() {
+    const configuredAppUrl = window.__BUNDLE_APP_URL__ || '';
+    const currentOrigin = window.location.origin;
+    const currentHost = window.location.host;
+    const shopDomain = window.Shopify?.shop || this.container?.dataset.shop || '';
+
+    let configuredAppHost = '';
+    if (configuredAppUrl) {
+      try {
+        configuredAppHost = new URL(configuredAppUrl).host;
+      } catch (_error) {
+        configuredAppHost = '';
+      }
+    }
+
+    if (shopDomain && configuredAppHost !== currentHost) {
+      return '/apps/product-bundles';
+    }
+
+    return configuredAppUrl || currentOrigin;
+  }
+
+  collectStepProductIds(step) {
+    const productIds = [];
+    const addProductId = (product) => {
+      const id = product?.id || product?.graphqlId || product?.productId;
+      if (id && !productIds.includes(id)) productIds.push(id);
+    };
+
+    (step.products || []).forEach(addProductId);
+    (step.categories || []).forEach(category => {
+      (category.products || []).forEach(addProductId);
+      (category.selectedProducts || []).forEach(addProductId);
+    });
+
+    return productIds;
+  }
+
+  collectStepCollectionHandles(step) {
+    const handles = [];
+    const addCollectionHandle = (collection) => {
+      const handle = collection?.handle;
+      if (handle && !handles.includes(handle)) handles.push(handle);
+    };
+
+    (step.collections || []).forEach(addCollectionHandle);
+    (step.categories || []).forEach(category => {
+      (category.collections || []).forEach(addCollectionHandle);
+      (category.collectionsData || []).forEach(addCollectionHandle);
+      (category.collectionsSelectedData || []).forEach(addCollectionHandle);
+    });
+
+    return handles;
+  }
+
   async loadStepProducts(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
 
@@ -1548,11 +1822,10 @@ class BundleWidgetProductPage {
     let fetchFailed = false;
 
     const shop = window.Shopify?.shop || window.location.host;
-    const apiBaseUrl = window.__BUNDLE_APP_URL__ || window.location.origin;
+    const apiBaseUrl = this.resolveStorefrontApiBase();
 
-    // Source 1: product-based step — step.products contains GIDs from StepProduct entries
-    if (step.products && Array.isArray(step.products) && step.products.length > 0) {
-      const productIds = step.products.map(p => p.id);
+    const productIds = this.collectStepProductIds(step);
+    if (productIds.length > 0) {
       try {
         const response = await fetch(
           `${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}`
@@ -1568,28 +1841,28 @@ class BundleWidgetProductPage {
       }
     }
 
-    // Source 2: collection-based step — step.collections contains { handle, id, title }
-    if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const handles = step.collections.map(c => c.handle).filter(Boolean);
-      if (handles.length > 0) {
-        try {
-          const response = await fetch(
-            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(handles.join(','))}&shop=${encodeURIComponent(shop)}`
-          );
-          if (response.ok) {
-            const data = await response.json();
-            if (data.products?.length > 0) allProducts = allProducts.concat(data.products);
-          } else {
-            fetchFailed = true;
-          }
-        } catch (_e) {
+    const handles = this.collectStepCollectionHandles(step);
+    if (handles.length > 0) {
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(handles.join(','))}&shop=${encodeURIComponent(shop)}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.products?.length > 0) allProducts = allProducts.concat(data.products);
+        } else {
           fetchFailed = true;
         }
+      } catch (_e) {
+        fetchFailed = true;
       }
     }
 
     // Process and normalize product data
-    const processedProducts = this.processProductsForStep(allProducts, step);
+    const processedProducts = this._mergeDirectDefaultProductsIntoStep(
+      stepIndex,
+      this.processProductsForStep(allProducts, step)
+    );
 
     // Remove duplicates
     const seen = new Set();
@@ -1661,8 +1934,8 @@ class BundleWidgetProductPage {
             };
           });
       } else {
-        // Display product with default variant - check availability
-        const defaultVariant = product.variants?.[0];
+        // Display product with the first available variant when variants are not separate cards.
+        const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
 
         // Skip product if default variant is not available
         if (defaultVariant && defaultVariant.available !== true) {
@@ -1904,6 +2177,9 @@ class BundleWidgetProductPage {
 
     // Free gift product cards use a different border (gray instead of gold)
     const freeGiftCardClass = isFreeGiftStep ? ' bw-product-card--free-gift' : '';
+    const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
+      this.selectedBundle?.validateQuantityPerProduct
+    );
 
     productGrid.innerHTML = products.map(product => {
       const selectionKey = product.variantId || product.id;
@@ -1914,7 +2190,8 @@ class BundleWidgetProductPage {
       const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
       const atMaxStock = available !== null && currentQuantity >= available;
       const lowStock = available !== null && available > 0 && available <= 3;
-      const increaseDisabled = outOfStock || atMaxStock;
+      const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
+      const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
       const addDisabled = outOfStock;
 
       // Low-stock / out-of-stock badge — shown on the image, not in the CTA.
@@ -2226,6 +2503,10 @@ class BundleWidgetProductPage {
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
     let quantity = Math.max(0, newQuantity);
+    const directDefaultRequiredQuantity = this._getDirectDefaultRequiredQuantity(productId);
+    if (directDefaultRequiredQuantity !== null && quantity < directDefaultRequiredQuantity) {
+      quantity = directDefaultRequiredQuantity;
+    }
 
     // Clamp against real per-variant stock before doing anything else.
     // Uses quantityAvailable from the Storefront API (see getVariantAvailable).
@@ -2242,6 +2523,17 @@ class BundleWidgetProductPage {
       }
     }
 
+    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
+      this.selectedBundle?.validateQuantityPerProduct,
+      currentQuantity,
+      quantity,
+    );
+    if (!productQuantityCheck.allowed) {
+      ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+      return;
+    }
+
     // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
       return;
@@ -2256,6 +2548,7 @@ class BundleWidgetProductPage {
 
     // Update UI without re-rendering the entire modal (prevents event listener duplication)
     this.updateProductQuantityDisplay(stepIndex, productId, quantity);
+    this._renderDirectDefaultProducts();
     this.renderModalTabs();
     this.updateModalNavigation();
     this.updateModalFooterMessaging();
@@ -2336,9 +2629,26 @@ class BundleWidgetProductPage {
       const quantityDisplay = productCard.querySelector('.qty-display');
       const addBtn = productCard.querySelector('.product-add-btn');
       const selectedOverlay = productCard.querySelector('.selected-overlay');
+      const increaseBtn = productCard.querySelector('.qty-increase');
 
       if (quantityDisplay) {
         quantityDisplay.textContent = quantity;
+      }
+
+      if (increaseBtn) {
+        const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
+          this.selectedBundle?.validateQuantityPerProduct
+        );
+        const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+        const atMaxStock = available !== null && quantity >= available;
+        const atMaxProductQuantity = productQuantityLimit !== null && quantity >= productQuantityLimit;
+        const shouldDisableIncrease = outOfStock || atMaxStock || atMaxProductQuantity;
+        increaseBtn.disabled = shouldDisableIncrease;
+        if (shouldDisableIncrease) {
+          increaseBtn.setAttribute('aria-disabled', 'true');
+        } else {
+          increaseBtn.removeAttribute('aria-disabled');
+        }
       }
 
       if (addBtn) {
@@ -2422,7 +2732,7 @@ class BundleWidgetProductPage {
   }
 
   updateModalFooterMessaging() {
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -2431,7 +2741,8 @@ class BundleWidgetProductPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
@@ -2561,14 +2872,12 @@ class BundleWidgetProductPage {
     // dataset attribute — microtasks settle before animation frames).
     // eslint-disable-next-line no-unused-expressions
     overlay.offsetHeight;
-    overlay.classList.add('is-visible');
+    markLoadingOverlayVisible(overlay);
   }
 
   hideLoadingOverlay() {
     const overlay = this.container?.querySelector('.bundle-loading-overlay');
-    if (!overlay) return;
-    overlay.classList.remove('is-visible');
-    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    hideLoadingOverlayElement(overlay);
   }
 
   // ========================================================================
@@ -2652,6 +2961,46 @@ class BundleWidgetProductPage {
     }
   }
 
+  buildCartLineSourceProperties(selectedLines) {
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
+    const discountPercentage = discountInfo.discountPercentage
+      || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
+
+    const displayProperties = {
+      box: '1',
+      items: selectedLines
+        .map(({ product, quantity }) => `${quantity} x ${product.title || product.id}`)
+        .join(', '),
+      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo)
+    };
+
+    if (discountAmount > 0) {
+      const amount = CurrencyManager.convertAndFormat(discountAmount, currencyInfo);
+      const percentage = `${Math.round(discountPercentage)}%`;
+      displayProperties.youSave = {
+        amount,
+        percentage,
+        amountPercentage: `${amount} (${percentage})`
+      };
+    }
+
+    return {
+      '_bundle_display_properties': JSON.stringify(displayProperties)
+    };
+  }
+
   buildCartItems() {
     // Shopify Standard Bundle approach for configurable bundles:
     // Add ACTUAL selected component products to cart with _bundle_id property
@@ -2665,6 +3014,7 @@ class BundleWidgetProductPage {
     // Add ACTUAL selected component products to cart
     // Each component gets _bundle_id property for grouping in cart transform
     const unavailableProducts = []; // Track unavailable products
+    const selectedLines = [];
 
     this.selectedProducts.forEach((stepSelections, stepIndex) => {
       const productsInStep = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
@@ -2687,17 +3037,19 @@ class BundleWidgetProductPage {
               '_bundle_id': bundleInstanceId,
               '_bundle_name': this.selectedBundle.name,
               '_step_index': stepIndex.toString()
-            };
-            if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
-            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+                };
+                if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
+                if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+                if (this._isDirectDefaultVariant(variantId)) properties['_bundle_step_type'] = 'default';
 
-            const cartItem = {
+                const cartItem = {
               id: parseInt(this.extractId(actualVariantId)),
               quantity: quantity,
               properties
             };
 
             cartItems.push(cartItem);
+            selectedLines.push({ product, quantity });
           }
         }
       });
@@ -2709,6 +3061,11 @@ class BundleWidgetProductPage {
       const productList = unavailableProducts.join(', ');
       throw new Error(`The following product${unavailableProducts.length > 1 ? 's are' : ' is'} currently unavailable: ${productList}. Please remove ${unavailableProducts.length > 1 ? 'them' : 'it'} from your bundle or try again later.`);
     }
+
+    const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
+    cartItems.forEach(item => {
+      Object.assign(item.properties, sourceProperties);
+    });
 
     // Add gift message product line item (if enabled and a gift product is configured)
     const bundle = this.selectedBundle;

@@ -1556,7 +1556,7 @@ export default function WizardConfigureStep() {
                       </div>
                     </div>
 
-                    {/* Categories — EB-style accordion */}
+                    {/* Categories accordion */}
                     <div
                       className={styles.card}
                       data-tour-target="wizard-select-product"

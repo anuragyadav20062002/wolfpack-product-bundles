@@ -5,7 +5,7 @@ export type DCPSectionKey =
   | 'footer' | 'footerPrice' | 'footerButton' | 'footerDiscountProgress' | 'quantityBadge'
   | 'headerTabs' | 'headerText'
   | 'emptyState' | 'addToCartButton' | 'toasts' | 'modalCloseButton'
-  | 'accessibility' | 'widgetStyle'
+  | 'accessibility' | 'widgetStyle' | 'cartLineMessaging'
   | 'promoBanner' | 'tierPills'
   | 'fpbBadges' | 'pdpBadge'
   | 'stepTimeline';

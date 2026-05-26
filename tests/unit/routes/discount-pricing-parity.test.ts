@@ -2,7 +2,7 @@
  * Unit tests — flat PricingRule parsers
  *
  * Spec: test-spec/discount-pricing-parity.spec.md
- * Issue: [eb-configure-sections-parity-1]
+ * Issue: [discount-pricing-parity-1]
  */
 
 import {

@@ -2,6 +2,9 @@ import {
   normalizePricingRuleMessages,
   normalizePricingDisplayOptions,
   serializePricingDisplayOptions,
+  serializeBoxSelectionFromPricingDisplayOptions,
+  getDefaultDiscountRuleSuccessMessage,
+  getDefaultDiscountRuleText,
 } from "../../../app/lib/pricing-display-options";
 import { DiscountMethod, type PricingRule } from "../../../app/types/pricing";
 
@@ -165,6 +168,18 @@ describe("normalizePricingDisplayOptions", () => {
 });
 
 describe("normalizePricingRuleMessages", () => {
+  it("returns method-specific default copy for discount-type resets", () => {
+    expect(getDefaultDiscountRuleText(DiscountMethod.FIXED_AMOUNT_OFF)).toBe(
+      "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!"
+    );
+    expect(getDefaultDiscountRuleSuccessMessage(DiscountMethod.FIXED_AMOUNT_OFF)).toBe(
+      "Success! Your {{discountValueUnit}}{{discountValue}} discount has been applied to your cart."
+    );
+    expect(getDefaultDiscountRuleSuccessMessage(DiscountMethod.BUY_X_GET_Y)).toBe(
+      "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off"
+    );
+  });
+
   it("rehydrates saved message templates for current discount rules only", () => {
     expect(normalizePricingRuleMessages({
       rules: [quantityRule("rule-3", 3, 15)],
@@ -188,7 +203,7 @@ describe("normalizePricingRuleMessages", () => {
     });
   });
 
-  it("creates EB-style default message templates for rules without saved copy", () => {
+  it("creates evidence-matched default message templates for rules without saved copy", () => {
     expect(normalizePricingRuleMessages({
       rules: [quantityRule("rule-3", 3, 15)],
       messages: {},
@@ -209,6 +224,19 @@ describe("normalizePricingRuleMessages", () => {
       "rule-bxy": {
         discountText: "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!",
         successMessage: "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off",
+      },
+    });
+  });
+
+  it("creates fixed-amount message templates with the currency unit before the value", () => {
+    expect(normalizePricingRuleMessages({
+      rules: [quantityRule("rule-fixed", 2, 500)],
+      messages: {},
+      method: DiscountMethod.FIXED_AMOUNT_OFF,
+    })).toEqual({
+      "rule-fixed": {
+        discountText: "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!",
+        successMessage: "Success! Your {{discountValueUnit}}{{discountValue}} discount has been applied to your cart.",
       },
     });
   });
@@ -278,5 +306,54 @@ describe("serializePricingDisplayOptions", () => {
         },
       },
     });
+  });
+});
+
+describe("serializeBoxSelectionFromPricingDisplayOptions", () => {
+  it("writes the direct box-selection contract from enabled quantity options", () => {
+    const normalized = normalizePricingDisplayOptions({
+      rules: [quantityRule("rule-2", 2, 5)],
+      messages: {
+        displayOptions: {
+          bundleQuantityOptions: {
+            enabled: true,
+            defaultRuleId: "rule-2",
+            optionsByRuleId: {
+              "rule-2": { label: "Box of 2", subtext: "5% off" },
+            },
+          },
+        },
+      },
+    });
+
+    expect(serializeBoxSelectionFromPricingDisplayOptions(normalized)).toEqual({
+      isEnabled: true,
+      validateBoxSelectionQuantity: false,
+      rules: [
+        {
+          ruleId: "rule-2",
+          boxQuantity: 2,
+          boxLabel: "Box of 2",
+          boxSubtext: "5% off",
+          isDefaultSelected: true,
+        },
+      ],
+    });
+  });
+
+  it("clears the direct box-selection contract when quantity options are disabled", () => {
+    const normalized = normalizePricingDisplayOptions({
+      rules: [quantityRule("rule-2", 2, 5)],
+      messages: {
+        displayOptions: {
+          bundleQuantityOptions: {
+            enabled: false,
+            defaultRuleId: "rule-2",
+          },
+        },
+      },
+    });
+
+    expect(serializeBoxSelectionFromPricingDisplayOptions(normalized)).toBeNull();
   });
 });

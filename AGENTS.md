@@ -159,6 +159,8 @@ Use Polaris web components (`s-*`) for **all** Admin-embedded app UI. Fall back 
 
 **Acceptable custom HTML exceptions:** tab navigation, step chip/pill patterns, keyframe animations, fixed-position overlays, complex grids not achievable with `s-grid`.
 
+**Narrow EB clone rewrite exception:** For `eb-ui-clone-rewrite-1` only, custom non-Polaris Admin controls are allowed when exact evidence-backed EB pixel parity cannot be achieved with Polaris web components. Keep the exception scoped to the cloned control, document the evidence source in `docs/eb-ui-clone-rewrite/evidence-manifest.md`, and do not use this exception for unrelated Admin UI.
+
 Check availability: `mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-home")`
 
 ---
@@ -409,6 +411,62 @@ python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; 
 
 ---
 
+## 🔗 EB Help Links — Read Before Every Implementation
+
+Before implementing any EB feature, click and read **every** "How to setup" and "Learn More" link visible on any relevant card or feature in the EB app.
+
+**Why:** These links contain precise setup instructions, field explanations, and behavior details that are not visible from the UI alone. Skipping them means implementing based on guesswork.
+
+**Rules:**
+- ✅ Click every help/learn-more link on the relevant card or feature page before writing any code
+- ✅ If the link opens a **popup** (overlay/modal inside the EB app) — read the full popup content before dismissing
+- ✅ If the link opens a **new tab** (external website or docs page) — fetch and read the full page content via `WebFetch`
+- ❌ Do NOT start implementation until all available help links for that feature have been read
+- ❌ Do NOT assume the UI alone is sufficient — help content routinely reveals hidden fields, constraints, and sequencing requirements
+
+**Workflow:**
+1. Navigate to the relevant EB card/page in Chrome DevTools MCP
+2. `take_snapshot()` — identify all "How to setup", "Learn More", "?" or similar link text
+3. Click each link; screenshot and read popup content OR `WebFetch` the opened URL
+4. Document any new facts discovered in `internal docs/EB Implementation Reference.md`
+5. Only then proceed to implementation
+
+---
+
+## 🎯 EB Implementation Reference — Grounded Truth for Porting
+
+When implementing any feature that mirrors EB behaviour — step/category data shapes, admin API payloads, template IDs, storefront runtime globals, cart add format, box selection enforcement, or text config — **consult `internal docs/EB Implementation Reference.md` first.**
+
+This doc is the distilled, topic-organized reference captured from a live authenticated EB investigation. Do NOT guess EB's data shapes — they are fully documented there.
+
+### What it covers
+
+| Topic | What's documented |
+|---|---|
+| Admin API endpoints | All FPB + PPB create/update/save paths |
+| FPB step/category payload | Complete JSON shape including `categoryType`, product ID arrays, collection GIDs |
+| PPB step/category payload | Complete JSON shape including `conditions`, `displayVariantsAsIndividualProducts`, `displayVariantsAsSwatches` |
+| Discount configuration | `discountConfiguration` + compact `metafieldData.discount` mirror |
+| Default/preselected products | `defaultProductsData` full shape |
+| Template system | FPB two-field (`bundleDesignTemplate` + `bundleDesignPresetId`) — all 4 presets confirmed; PPB two-field (`bundleDesignTemplate` + `templateId`) — all 4 templates confirmed |
+| Storefront globals | FPB `window.gbb.*` + `stepsConfigurationData`; PPB `window.gbbMix.*` + `mixAndMatchBundleSettings` (25+ fields) |
+| Cart add format | FPB JSON + PPB multipart; `_easyBundle:OfferId` format; `bundle_details` metafield accumulation |
+| Box selection | `gbbBoxSelection.state` schema; ATC enforcement logic (decompiled); DOM structure |
+| Text config | `bundleTextConfig.bundleSummary.{title,subTitle}` — confirmed only two fields |
+| Collection pagination | Batch `nodes(ids:[...])` architecture — NOT cursor-based |
+| Wolfpack DB alignment | Field-by-field mapping from EB payload → Wolfpack model |
+
+### Mandatory search order for EB porting questions
+
+1. `internal docs/EB Implementation Reference.md` — confirmed facts, exact JSON shapes
+2. `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` — full evidence record with raw payloads, decompiled JS, and DOM captures
+3. Only then: live DevTools investigation if the reference doc has a gap
+
+❌ Do NOT assume or fabricate EB data shapes — they are documented.
+❌ Do NOT re-investigate facts already in the reference doc.
+
+---
+
 ## 📱 Storefront UI Audit — Desktop + Mobile
 
 When auditing storefront UI, test **both viewports**:
@@ -434,7 +492,7 @@ For any "parity", "compare", "match competitor" request — conduct a full audit
 5. Document every gap (placement, size, color, spacing, behavior)
 6. Implement only after audit is complete
 
-❌ Do NOT estimate spacing — measure it. ❌ Do NOT skip mobile. ❌ Do NOT implement partial parity.
+❌ Do NOT estimate spacing — measure it. ❌ Do NOT skip mobile for storefront parity. ❌ Do NOT implement partial parity.
 
 ---
 
@@ -468,5 +526,5 @@ Always `select_page` to the **iframe target** before `evaluate_script`. For thir
 
 ---
 
-**Last Updated:** 2026-05-22
+**Last Updated:** 2026-05-26
 **Author:** Aditya Awasthi

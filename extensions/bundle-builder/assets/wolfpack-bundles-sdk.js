@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 2.9.1
- * Built   : 2026-05-22
+ * Version : 2.9.2
+ * Built   : 2026-05-26
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.1';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.2';
 (function (window) {
   'use strict';
 
@@ -142,6 +142,37 @@ const ConditionValidator = (function () {
     return true;
   }
 
+  function getAllowedQuantityPerProduct(validateQuantityPerProduct) {
+    if (!validateQuantityPerProduct || validateQuantityPerProduct.isEnabled !== true) {
+      return null;
+    }
+
+    const allowed = Number(validateQuantityPerProduct.allowedQuantity);
+    if (!Number.isFinite(allowed) || allowed < 1) {
+      return 1;
+    }
+
+    return Math.floor(allowed);
+  }
+
+  function canUpdateProductQuantity(validateQuantityPerProduct, currentQuantity, newQuantity) {
+    const limit = getAllowedQuantityPerProduct(validateQuantityPerProduct);
+    if (limit === null) {
+      return { allowed: true, limit: null };
+    }
+
+    const current = Number(currentQuantity) || 0;
+    const proposed = Number(newQuantity) || 0;
+    if (proposed <= current) {
+      return { allowed: true, limit };
+    }
+
+    return {
+      allowed: proposed <= limit,
+      limit,
+    };
+  }
+
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /**
@@ -203,6 +234,8 @@ const ConditionValidator = (function () {
     calculateStepTotalAfterUpdate,
     canUpdateQuantity,
     isStepConditionSatisfied,
+    getAllowedQuantityPerProduct,
+    canUpdateProductQuantity,
   };
 }());
 
@@ -260,7 +293,8 @@ const BUNDLE_WIDGET = {
   DISCOUNT_METHODS: {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
-    FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
+    FIXED_BUNDLE_PRICE: 'fixed_bundle_price',
+    BUY_X_GET_Y: 'buy_x_get_y'
   },
 
   // Shared asset URLs
@@ -592,11 +626,12 @@ class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
     let totalQuantity = 0;
+    const unitPrices = [];
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
-      // Skip free gift steps — their retail cost is not charged to the customer.
-      // The cart transform handles making them $0 at checkout via adjusted discount math.
-      if (steps?.[stepIndex]?.isFreeGift) return;
+      // Skip only true free gifts. Optional add-on steps reuse the same
+      // non-blocking step path, but chargeable add-ons still affect totals.
+      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree !== false) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -629,14 +664,48 @@ class PricingCalculator {
             : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
+          for (let i = 0; i < quantity; i++) {
+            unitPrices.push(price);
+          }
         }
       });
     });
 
-    return { totalPrice, totalQuantity };
+    return { totalPrice, totalQuantity, unitPrices };
   }
 
-  static calculateDiscount(bundle, totalPrice, totalQuantity) {
+  static getDiscountMethod(bundle) {
+    return bundle?.pricing?.method || BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+  }
+
+  static getRuleConditionType(rule) {
+    return rule?.conditionType || 'quantity';
+  }
+
+  static getRuleConditionOperator(rule) {
+    return rule?.conditionOperator || 'gte';
+  }
+
+  static getRuleConditionValue(rule, discountMethod = BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+    if (
+      discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y &&
+      this.getRuleConditionType(rule) === 'quantity'
+    ) {
+      const customerBuys = Number(rule?.customerBuys || 0);
+      const customerGets = Number(rule?.customerGets || 0);
+      if (customerBuys > 0 && customerGets > 0) {
+        return customerBuys + customerGets;
+      }
+    }
+
+    return Number(rule?.conditionValue ?? 0);
+  }
+
+  static getRuleDiscountValue(rule) {
+    return Number(rule?.discountValue ?? 0);
+  }
+
+  static calculateDiscount(bundle, totalPrice, totalQuantity, unitPrices = []) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
       return {
         hasDiscount: false,
@@ -650,29 +719,26 @@ class PricingCalculator {
 
     const rules = bundle.pricing.rules;
     let bestRule = null;
+    const discountMethod = this.getDiscountMethod(bundle);
 
-    // Find the best applicable rule using nested structure
     for (const rule of rules) {
-      // Skip rules with no condition (can happen if saved without one)
-      if (!rule.condition) continue;
+      const conditionType = this.getRuleConditionType(rule);
+      if (!conditionType) continue;
 
-      // Access nested condition structure
-      const conditionType = rule.condition.type; // 'quantity' or 'amount'
-      const conditionOperator = rule.condition.operator; // 'gte', 'gt', 'lte', 'lt', 'eq'
-      const conditionValue = rule.condition.value; // threshold
+      const conditionOperator = this.getRuleConditionOperator(rule);
+      const conditionValue = this.getRuleConditionValue(rule, discountMethod);
 
       let conditionMet = false;
 
       if (conditionType === 'amount') {
-        // Amount-based condition (value is in cents)
         conditionMet = this.checkCondition(totalPrice, conditionOperator, conditionValue);
       } else {
-        // Quantity-based condition
         conditionMet = this.checkCondition(totalQuantity, conditionOperator, conditionValue);
       }
 
       if (conditionMet) {
-        if (!bestRule || conditionValue > bestRule.condition.value) {
+        const bestConditionValue = this.getRuleConditionValue(bestRule, discountMethod);
+        if (!bestRule || conditionValue > bestConditionValue) {
           bestRule = rule;
         }
       }
@@ -689,10 +755,8 @@ class PricingCalculator {
       };
     }
 
-    // Calculate discount amount using nested discount structure
     let discountAmount = 0;
-    const discountMethod = bestRule.discount.method;
-    const discountValue = bestRule.discount.value; // Already in cents for amount methods
+    const discountValue = this.getRuleDiscountValue(bestRule);
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
@@ -706,6 +770,14 @@ class PricingCalculator {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
         // discountValue is fixed bundle price in cents
         discountAmount = Math.max(0, totalPrice - discountValue);
+        break;
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y:
+        discountAmount = this.calculateBuyXGetYDiscountAmount(
+          bestRule,
+          totalPrice,
+          totalQuantity,
+          unitPrices
+        );
         break;
       default:
         discountAmount = 0;
@@ -728,6 +800,47 @@ class PricingCalculator {
 
 
     return result;
+  }
+
+  static calculateBuyXGetYDiscountAmount(rule, totalPrice, totalQuantity, unitPrices = []) {
+    const customerBuys = Number(rule?.customerBuys || 0);
+    const customerGets = Number(rule?.customerGets || 0);
+    const discountValue = this.getRuleDiscountValue(rule);
+    const discountType = rule?.bxyDiscountType || rule?.discountType || 'percentage';
+    const applyMode = rule?.bxyApplyMode || rule?.applyDiscountTo || 'lowest_priced';
+    const groupSize = customerBuys + customerGets;
+
+    if (customerBuys <= 0 || customerGets <= 0 || groupSize <= 0 || totalQuantity < groupSize) {
+      return 0;
+    }
+
+    const discountedItemCount = Math.min(
+      totalQuantity,
+      Math.floor(totalQuantity / groupSize) * customerGets
+    );
+    if (discountedItemCount <= 0) return 0;
+
+    const averageUnitPrice = totalQuantity > 0 ? totalPrice / totalQuantity : 0;
+    const prices = Array.isArray(unitPrices)
+      ? unitPrices.map(price => Number(price) || 0).filter(price => price > 0)
+      : [];
+
+    while (prices.length < totalQuantity && averageUnitPrice > 0) {
+      prices.push(averageUnitPrice);
+    }
+
+    const discountedPrices = applyMode === 'latest_added'
+      ? prices.slice(-discountedItemCount)
+      : [...prices].sort((a, b) => a - b).slice(0, discountedItemCount);
+
+    const discountAmount = discountedPrices.reduce((sum, price) => {
+      if (discountType === 'fixed_amount') {
+        return sum + Math.min(price, discountValue);
+      }
+      return sum + Math.round(price * (discountValue / 100));
+    }, 0);
+
+    return Math.min(Math.round(discountAmount), totalPrice);
   }
 
   static checkCondition(value, condition, targetValue) {
@@ -776,15 +889,18 @@ class PricingCalculator {
   static getNextDiscountRule(bundle, currentQuantity, currentAmount) {
     if (!bundle?.pricing?.rules?.length) return null;
 
-    // Sort rules by condition value (ascending) — copy to avoid mutating the original
-    const rules = [...bundle.pricing.rules].sort((a, b) => a.condition.value - b.condition.value);
+    const rules = [...bundle.pricing.rules].sort((a, b) =>
+      this.getRuleConditionValue(a, this.getDiscountMethod(bundle)) -
+      this.getRuleConditionValue(b, this.getDiscountMethod(bundle))
+    );
 
     for (const rule of rules) {
-      if (!rule.condition) continue;
+      const discountMethod = this.getDiscountMethod(bundle);
+      const conditionType = this.getRuleConditionType(rule);
+      if (!conditionType) continue;
 
-      const conditionType = rule.condition.type;
-      const conditionOperator = rule.condition.operator;
-      const conditionValue = rule.condition.value;
+      const conditionOperator = this.getRuleConditionOperator(rule);
+      const conditionValue = this.getRuleConditionValue(rule, discountMethod);
 
       // Check if this rule is not yet satisfied
       let isRuleSatisfied = false;
@@ -988,18 +1104,20 @@ class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    // Extract rule data using nested structure
-    const conditionType = ruleToUse.condition.type;
-    const targetValue = ruleToUse.condition.value;
-    const conditionOperator = ruleToUse.condition.operator;
-    const discountMethod = ruleToUse.discount.method;
-    const rawDiscountValue = ruleToUse.discount.value;
+    const discountMethod = PricingCalculator.getDiscountMethod(bundle);
+    const conditionType = PricingCalculator.getRuleConditionType(ruleToUse);
+    const targetValue = PricingCalculator.getRuleConditionValue(ruleToUse, discountMethod);
+    const conditionOperator = PricingCalculator.getRuleConditionOperator(ruleToUse);
+    const rawDiscountValue = PricingCalculator.getRuleDiscountValue(ruleToUse);
+    const discountedItems = discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y
+      ? String(Number(ruleToUse.customerGets || 0))
+      : (conditionType === 'quantity' ? targetValue.toString() : '0');
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
     // Calculate discount-specific values
-    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
+    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
 
     // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
@@ -1017,7 +1135,7 @@ class TemplateManager {
       discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
       discountValue: discountData.discountValue,
       discountValueUnit: discountData.discountValueUnit,
-      discountedItems: conditionType === 'quantity' ? targetValue.toString() : '0',
+      discountedItems,
 
       // Qualification status
       alreadyQualified: conditionData.alreadyQualified || false,
@@ -1157,7 +1275,7 @@ class TemplateManager {
     }
   }
 
-  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
+  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, rule = null) {
     if (rawDiscountValue == null) {
       console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
     }
@@ -1169,7 +1287,7 @@ class TemplateManager {
         return {
           discountText: `${percentage}% off`,
           discountValue: String(percentage),
-          discountValueUnit: '% off'
+          discountValueUnit: '%'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -1183,8 +1301,8 @@ class TemplateManager {
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
           discountText: `${currencyInfo.display.symbol}${amountOff} off`,
-          discountValue: `${currencyInfo.display.symbol}${amountOff}`,
-          discountValueUnit: ' off'
+          discountValue: amountOff,
+          discountValueUnit: currencyInfo.display.symbol
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -1200,6 +1318,28 @@ class TemplateManager {
           discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
           discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
           discountValueUnit: ''
+        };
+
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y:
+        if ((rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount') {
+          const convertedBxyAmount = CurrencyManager.convertCurrency(
+            safeValue,
+            currencyInfo.calculation.code,
+            currencyInfo.display.code,
+            currencyInfo.display.rate
+          );
+          const bxyAmountOff = (convertedBxyAmount / 100).toFixed(2);
+          return {
+            discountText: `${currencyInfo.display.symbol}${bxyAmountOff} off`,
+            discountValue: `${currencyInfo.display.symbol}${bxyAmountOff}`,
+            discountValueUnit: ''
+          };
+        }
+        const bxyPercentage = Math.round(safeValue);
+        return {
+          discountText: `${bxyPercentage}% off`,
+          discountValue: String(bxyPercentage),
+          discountValueUnit: '%'
         };
 
       default:
@@ -1295,6 +1435,7 @@ class ComponentGenerator {
       ? options.variantSelectorHtml
       : (isExpandedVariantCard ? '' : this.renderVariantSelector(product));
     const actionMode = options.actionMode || 'default';
+    const addButtonText = options.addButtonText || '+';
 
     // Render inline quantity controls when item is selected
     const renderInlineQuantityControls = () => {
@@ -1313,7 +1454,7 @@ class ComponentGenerator {
       if (actionMode === 'expandingQuantity') {
         return `
           <div class="product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`}
+            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
           </div>
         `;
       }
@@ -1321,7 +1462,7 @@ class ComponentGenerator {
       if (isSelected) {
         return renderInlineQuantityControls();
       }
-      return `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`;
+      return `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
     };
 
     // Render variant badge if this is an expanded variant card
@@ -1538,6 +1679,43 @@ function createDefaultLoadingAnimation() {
 </svg>`;
 
   return wrapper;
+}
+
+
+/**
+ * Loading overlay lifecycle helpers.
+ *
+ * Keeps visual transition behavior independent from accessibility exposure, and
+ * removes overlays even if the browser does not emit a transitionend event.
+ */
+
+
+const DEFAULT_HIDE_TIMEOUT_MS = 400;
+
+function markLoadingOverlayVisible(overlay) {
+  if (!overlay) return;
+  overlay.setAttribute('aria-hidden', 'false');
+  overlay.classList.add('is-visible');
+}
+
+function hideLoadingOverlayElement(overlay, timeoutMs = DEFAULT_HIDE_TIMEOUT_MS) {
+  if (!overlay) return;
+
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    overlay.remove();
+  };
+
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.classList.remove('is-visible');
+  overlay.addEventListener('transitionend', finish, { once: true });
+
+  const scheduler = typeof window !== 'undefined' && window.setTimeout
+    ? window.setTimeout.bind(window)
+    : setTimeout;
+  scheduler(finish, timeoutMs);
 }
 
 
@@ -1979,10 +2157,50 @@ function _generateBundleInstanceId(bundleId) {
   return bundleId + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 }
 
+function _formatCartAmount(cents, state) {
+  if (typeof state.formatMoney === 'function') return state.formatMoney(cents);
+  return String(cents);
+}
+
+function _buildCartLineSourceProperties(state, selectedLines) {
+  var retailCents = selectedLines.reduce(function (sum, line) {
+    if (line.step && line.step.isFreeGift) return sum;
+    return sum + ((Number(line.product.price) || 0) * line.quantity);
+  }, 0);
+  var discountCents = Math.max(0, Number(state.discountAmount || 0));
+  var discountPercentage = Number(state.discountPercentage || 0);
+  if (!discountPercentage && retailCents > 0 && discountCents > 0) {
+    discountPercentage = Math.round((discountCents / retailCents) * 100);
+  }
+
+  var displayProperties = {
+    box: '1',
+    items: selectedLines.map(function (line) {
+      return line.quantity + ' x ' + (line.product.title || line.product.id);
+    }).join(', '),
+    retailPrice: _formatCartAmount(retailCents, state),
+  };
+
+  if (discountCents > 0) {
+    var amount = _formatCartAmount(discountCents, state);
+    var percentage = Math.round(discountPercentage) + '%';
+    displayProperties.youSave = {
+      amount: amount,
+      percentage: percentage,
+      amountPercentage: amount + ' (' + percentage + ')',
+    };
+  }
+
+  return {
+    '_bundle_display_properties': JSON.stringify(displayProperties),
+  };
+}
+
 function buildCartItems(state) {
   var bundleInstanceId = _generateBundleInstanceId(state.bundleId);
   var items = [];
   var unavailable = [];
+  var selectedLines = [];
 
   state.steps.forEach(function (step, stepIndex) {
     var stepSelections = state.selections[step.id] || {};
@@ -2015,6 +2233,7 @@ function buildCartItems(state) {
         quantity: qty,
         properties: properties,
       });
+      selectedLines.push({ product: product, quantity: qty, step: step });
     });
   });
 
@@ -2024,6 +2243,11 @@ function buildCartItems(state) {
       ' currently unavailable: ' + unavailable.join(', ') + '.'
     );
   }
+
+  var sourceProperties = _buildCartLineSourceProperties(state, selectedLines);
+  items.forEach(function (item) {
+    Object.assign(item.properties, sourceProperties);
+  });
 
   return { items: items, bundleInstanceId: bundleInstanceId };
 }
@@ -2123,7 +2347,8 @@ function getDisplayPrice(state, PricingCalculator, CurrencyManager) {
   var discountInfo = PricingCalculator.calculateDiscount(
     state.bundleData,
     totals.totalPrice,
-    totals.totalQuantity
+    totals.totalQuantity,
+    totals.unitPrices
   );
 
   var original = totals.totalPrice;

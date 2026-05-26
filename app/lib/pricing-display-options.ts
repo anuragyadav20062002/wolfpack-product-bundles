@@ -46,6 +46,18 @@ export interface NormalizedPricingDisplayOptions {
   };
 }
 
+export interface SerializedBoxSelection {
+  isEnabled: true;
+  validateBoxSelectionQuantity: false;
+  rules: Array<{
+    ruleId: string;
+    boxQuantity: number;
+    boxLabel: string;
+    boxSubtext: string;
+    isDefaultSelected: boolean;
+  }>;
+}
+
 export interface NormalizedRuleMessageInput {
   rules?: PricingRule[] | null;
   messages?: any;
@@ -56,8 +68,34 @@ export const DEFAULT_PROGRESS_BAR_PROGRESS_TEXT = "Add {{conditionText}} to unlo
 export const DEFAULT_PROGRESS_BAR_SUCCESS_TEXT = "{{discountText}} unlocked";
 export const DEFAULT_DISCOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!";
 export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.";
+export const DEFAULT_FIXED_AMOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!";
+export const DEFAULT_FIXED_AMOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValueUnit}}{{discountValue}} discount has been applied to your cart.";
 export const DEFAULT_DISCOUNT_RULE_TEXT_BXY = "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!";
 export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY = "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off";
+
+export function getDefaultDiscountRuleText(method?: DiscountMethod | string): string {
+  if (method === DiscountMethod.BUY_X_GET_Y) {
+    return DEFAULT_DISCOUNT_RULE_TEXT_BXY;
+  }
+
+  if (method === DiscountMethod.FIXED_AMOUNT_OFF) {
+    return DEFAULT_FIXED_AMOUNT_RULE_TEXT;
+  }
+
+  return DEFAULT_DISCOUNT_RULE_TEXT;
+}
+
+export function getDefaultDiscountRuleSuccessMessage(method?: DiscountMethod | string): string {
+  if (method === DiscountMethod.BUY_X_GET_Y) {
+    return DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY;
+  }
+
+  if (method === DiscountMethod.FIXED_AMOUNT_OFF) {
+    return DEFAULT_FIXED_AMOUNT_RULE_SUCCESS_MESSAGE;
+  }
+
+  return DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+}
 
 interface NormalizeInput {
   rules?: PricingRule[] | null;
@@ -147,12 +185,8 @@ export function normalizePricingRuleMessages({
   const savedRuleMessages = messages && typeof messages === "object" && messages.ruleMessages
     ? messages.ruleMessages
     : {};
-  const defaultDiscountText = method === DiscountMethod.BUY_X_GET_Y
-    ? DEFAULT_DISCOUNT_RULE_TEXT_BXY
-    : DEFAULT_DISCOUNT_RULE_TEXT;
-  const defaultSuccessMessage = method === DiscountMethod.BUY_X_GET_Y
-    ? DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY
-    : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+  const defaultDiscountText = getDefaultDiscountRuleText(method);
+  const defaultSuccessMessage = getDefaultDiscountRuleSuccessMessage(method);
 
   return safeRules.reduce<Record<string, { discountText: string; successMessage: string }>>((acc, rule) => {
     const savedMessage = savedRuleMessages?.[rule.id];
@@ -271,5 +305,29 @@ export function serializePricingDisplayOptions({
         successText: options.progressBar.successText,
       },
     },
+  };
+}
+
+export function serializeBoxSelectionFromPricingDisplayOptions(
+  options: NormalizedPricingDisplayOptions,
+): SerializedBoxSelection | null {
+  if (options.bundleQuantityOptions.enabled !== true) return null;
+
+  const rules = options.bundleQuantityOptions.options
+    .filter((option) => option.quantity > 0)
+    .map((option) => ({
+      ruleId: option.ruleId,
+      boxQuantity: option.quantity,
+      boxLabel: option.label,
+      boxSubtext: option.subtext,
+      isDefaultSelected: option.isDefault,
+    }));
+
+  if (rules.length === 0) return null;
+
+  return {
+    isEnabled: true,
+    validateBoxSelectionQuantity: false,
+    rules,
   };
 }

@@ -40,11 +40,11 @@ import {
   handleEnsureBundleTemplates,
   handleValidateWidgetPlacement,
   handleUpdateBundleDesignTemplate,
+  handleValidateSellingPlanGroups,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
 import type { LoaderData, BundleProductCardProps } from "./types";
-import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import {
   MultiLanguageTextModal,
@@ -64,18 +64,37 @@ import {
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import {
-  DEFAULT_DISCOUNT_RULE_TEXT,
-  DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
-  DEFAULT_DISCOUNT_RULE_TEXT_BXY,
-  DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY,
   DEFAULT_PROGRESS_BAR_PROGRESS_TEXT,
   DEFAULT_PROGRESS_BAR_SUCCESS_TEXT,
+  getDefaultDiscountRuleSuccessMessage,
+  getDefaultDiscountRuleText,
 } from "../../../lib/pricing-display-options";
+import {
+  INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE,
+  PRODUCT_PAGE_EDIT_DEFAULTS_HREF,
+  PRODUCT_PAGE_SETUP_ITEMS,
+  SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
+  buildProductPageThemeEditorDeepLink,
+} from "../../../lib/bundle-config/product-page-admin-sections";
+import {
+  buildDefaultProductEntryFromPicker,
+  normalizeDefaultProductsData,
+  type DefaultProductsData,
+} from "../../../lib/bundle-config/default-products";
 
 declare global {
   interface Window {
     shopify?: { config?: { shop?: string } };
   }
+}
+
+interface SubscriptionValidationResponse {
+  success: boolean;
+  isValid?: boolean;
+  productCount?: number;
+  plans?: Array<{ id: string; name: string }>;
+  message?: string | null;
+  error?: string;
 }
 
 // showPolarisModal / hidePolarisModal imported from _shared/bundle-configure/modal-utils
@@ -193,6 +212,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleSyncBundle(admin, session, bundleId);
       case "updateBundleDesignTemplate":
         return await handleUpdateBundleDesignTemplate(admin, session, bundleId, formData);
+      case "validateSellingPlanGroups":
+        return await handleValidateSellingPlanGroups(admin, session, bundleId);
       default:
         return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
@@ -208,18 +229,19 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.product-page-bundle.configure.$bundleId/handlers/
 
 // Static navigation items - moved outside component to prevent recreation on every render
-const bundleSetupItems = [
-  { id: "step_setup",         label: "Step Setup",         iconType: "note"   },
-  { id: "discount_pricing",   label: "Discount & Pricing", iconType: "filter" },
-  { id: "bundle_visibility",  label: "Bundle Visibility",  iconType: "view"   },
-  { id: "bundle_settings",    label: "Bundle Settings",    iconType: "edit"   },
-  { id: "select_template",    label: "Select Template",    iconType: "paint-brush-flat" },
-];
+const bundleSetupItems = PRODUCT_PAGE_SETUP_ITEMS;
 
 const bundleVisibilityChildItems = [
   { id: "bundle_widget", label: "Bundle Widget" },
   { id: "bundle_embed",  label: "Bundle Embed"  },
 ];
+
+const productPageTemplateOptions = [
+  { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/productPageThumbnail.png" },
+  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/fullPageThumbnail.png" },
+  { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/sidePanelThumbnail.png" },
+  { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
+] as const;
 
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
@@ -402,6 +424,7 @@ export default function ConfigureBundleFlow() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
+  const subscriptionFetcher = useFetcher<SubscriptionValidationResponse>();
   const revalidator = useRevalidator();
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
@@ -480,7 +503,6 @@ export default function ConfigureBundleFlow() {
     activeSection,
     setActiveSection,
     forceNavigation,
-    setForceNavigation,
 
     // Original values ref
     originalValuesRef,
@@ -602,6 +624,15 @@ export default function ConfigureBundleFlow() {
   const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
   const [bundleLevelCss, setBundleLevelCss] = useState<string>((bundle as any).bundleLevelCss ?? "");
   const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
+  const initialDefaultProductsData = useMemo(
+    () => normalizeDefaultProductsData((bundle as any).defaultProductsData),
+    [bundle]
+  );
+  const [defaultProductsData, setDefaultProductsData] = useState<DefaultProductsData>(initialDefaultProductsData);
+  const originalDefaultProductsDataRef = useRef<DefaultProductsData>(initialDefaultProductsData);
+  const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
+    ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
+  );
 
   // Select Template state (main = DB-synced; pending = overlay working copy)
   const [bundleDesignTemplate, setBundleDesignTemplate] = useState<string | null>((bundle as any).bundleDesignTemplate ?? null);
@@ -609,8 +640,7 @@ export default function ConfigureBundleFlow() {
   const [pendingDesignTemplate, setPendingDesignTemplate] = useState<string | null>(null);
   const [pendingDesignPresetId, setPendingDesignPresetId] = useState<string | null>(null);
 
-  // Select Template modal state
-  const selectTemplateModalRef = useRef<HTMLElement>(null);
+  // Select Template dialog state
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
   const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
   const templateFetcher = useFetcher();
@@ -647,7 +677,7 @@ export default function ConfigureBundleFlow() {
   // Add-Ons icon picker state
   const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
 
-  // Category accordion state (multi-category system — EB parity)
+  // Category accordion state for the multi-category configure surface
   const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
   const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
 
@@ -670,6 +700,10 @@ export default function ConfigureBundleFlow() {
 
   // Step chip navigation
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+
+  const buildDefaultProductsData = useCallback(() => {
+    return normalizeDefaultProductsData(defaultProductsData);
+  }, [defaultProductsData]);
 
   // Step chip navigation slide animation
   const [slideKey, setSlideKey] = useState(0);
@@ -773,6 +807,25 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleBannerDesktopUrl", bundleBannerDesktopUrl);
       formData.append("bundleBannerMobileUrl", bundleBannerMobileUrl);
       formData.append("bundleLevelCss", bundleLevelCss);
+      formData.append("defaultProductsData", JSON.stringify(buildDefaultProductsData()));
+      formData.append("validateQuantityPerProduct", JSON.stringify({
+        isEnabled: productSlotsEnabled,
+        allowedQuantity: Number.parseInt(maxQtyPerProduct || "1", 10) || 1,
+      }));
+      formData.append("individualSellingPlanSelection", JSON.stringify({
+        isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
+        showFor: "ALL_PRODUCTS",
+      }));
+      formData.append("bundleTextConfig", JSON.stringify({
+        bundleSummary: {
+          title: bundleCartTitle,
+          subTitle: bundleCartSubtitle,
+        },
+      }));
+      formData.append("boxSelection", (bundle as any).boxSelection ? JSON.stringify((bundle as any).boxSelection) : "");
+      formData.append("bundleUpsellConfig", (bundle as any).bundleUpsellConfig ? JSON.stringify((bundle as any).bundleUpsellConfig) : "");
+      formData.append("discountDisplayOverride", (bundle as any).discountDisplayOverride ? JSON.stringify((bundle as any).discountDisplayOverride) : "");
+      formData.append("useSingleStepCategoriesAsBundleSteps", String((bundle as any).useSingleStepCategoriesAsBundleSteps ?? false));
 
       // Submit to server action using fetcher
 
@@ -819,6 +872,13 @@ export default function ConfigureBundleFlow() {
     loadingGif,
     textOverrides,
     textOverridesByLocale,
+    buildDefaultProductsData,
+    productSlotsEnabled,
+    maxQtyPerProduct,
+    individualSellingPlanEnabled,
+    bundleCartTitle,
+    bundleCartSubtitle,
+    bundle,
     shopify
   ]);
 
@@ -895,6 +955,7 @@ export default function ConfigureBundleFlow() {
           originalSdkModeRef.current = sdkMode;
           originalTextOverridesRef.current = textOverrides;
           originalTextOverridesByLocaleRef.current = textOverridesByLocale;
+          originalDefaultProductsDataRef.current = defaultProductsData;
           // Mark state as saved (updates hook baseline ref and resets dirty flag)
           markAsSaved();
 
@@ -968,20 +1029,8 @@ export default function ConfigureBundleFlow() {
     setSdkMode(originalSdkModeRef.current);
     setTextOverrides(originalTextOverridesRef.current);
     setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
+    setDefaultProductsData(originalDefaultProductsDataRef.current);
   }, [hookHandleDiscard]);
-
-  // Navigation handlers with unsaved changes check
-  const handleBackClick = useCallback(() => {
-    if (isDirty && !forceNavigation) {
-      shopify.toast.show("Save or discard your changes before moving to another section.", {
-        isError: true,
-        duration: 5000
-      });
-      void (shopify as any).saveBar?.leaveConfirmation?.();
-      return;
-    }
-    navigate("/app/dashboard");
-  }, [isDirty, forceNavigation, navigate, shopify]);
 
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
@@ -1101,6 +1150,19 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, shopify]);
 
+  // Navigation handlers with unsaved changes check
+  const handleBackClick = useCallback(() => {
+    if (isDirty && !forceNavigation) {
+      shopify.toast.show("Save or discard your changes before moving to another section.", {
+        isError: true,
+        duration: 5000
+      });
+      void (shopify as any).saveBar?.leaveConfirmation?.();
+      return;
+    }
+    navigate("/app/dashboard");
+  }, [isDirty, forceNavigation, navigate, shopify]);
+
   const handleReadinessItemClick = useCallback((key: string) => {
     setReadinessOpen(false);
     switch (key) {
@@ -1182,6 +1244,7 @@ export default function ConfigureBundleFlow() {
   }, [loadAvailablePages, shopify, openPageSelectionModal]);
 
   const handlePageSelection = useCallback(async (template: any) => {
+    let editorWindow: Window | null = null;
     try {
       if (!template || !template.handle) {
         AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
@@ -1189,11 +1252,10 @@ export default function ConfigureBundleFlow() {
         return;
       }
 
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop;
-
       shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
+
+      // Open synchronously from the click event so browsers keep the tab gesture.
+      editorWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
 
       // Create a theme template service instance
       // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
@@ -1217,6 +1279,7 @@ export default function ConfigureBundleFlow() {
         if (!createTemplateResponse.ok) {
           AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
           shopify.toast.show("Failed to prepare product template", { isError: true, duration: 5000 });
+          editorWindow?.close();
           return;
         }
 
@@ -1232,14 +1295,13 @@ export default function ConfigureBundleFlow() {
       if (!apiKey || !blockHandle) {
         AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
         shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
+        editorWindow?.close();
         return;
       }
 
       const placementBlockHandle = activeSection === "bundle_widget"
         ? (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block")
         : blockHandle;
-      const appBlockId = `${apiKey}/${placementBlockHandle}`;
-
 
       // Generate deep link following Shopify's official documentation with bundle ID
       // Official format: template + addAppBlockId + target + bundleId (for auto-population)
@@ -1248,11 +1310,14 @@ export default function ConfigureBundleFlow() {
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
       const pageProductHandle = template.bundleProduct?.handle || bundle.shopifyProductHandle;
-      const pagePreviewParam = pageProductHandle ? `&previewPath=${encodeURIComponent(`/products/${pageProductHandle}`)}` : '';
-      // target=newAppsSection is correct for section-type blocks ("target":"section" in liquid schema).
-      // target=mainSection is only for app blocks embedded inside theme sections — using it
-      // with a section block causes Shopify to misroute and may open the wrong template/product.
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${pagePreviewParam}`;
+      const themeEditorUrl = buildProductPageThemeEditorDeepLink({
+        shop,
+        apiKey,
+        blockHandle: placementBlockHandle,
+        bundleId: bundle.id,
+        productHandle: pageProductHandle,
+        template,
+      });
 
 
       setSelectedPage(template);
@@ -1261,19 +1326,17 @@ export default function ConfigureBundleFlow() {
       // Open theme editor in new window/tab for better workflow
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
 
-      // Open in new window using robust method to prevent app redirect
-      const link = document.createElement('a');
-      link.href = themeEditorUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (editorWindow && !editorWindow.closed) {
+        editorWindow.location.href = themeEditorUrl;
+      } else {
+        window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+      }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
+      editorWindow?.close();
     }
   }, [activeSection, blockHandle, shop, shopify, bundle.id, upsellWidgetDisplayMode, apiKey]);
 
@@ -1301,10 +1364,6 @@ export default function ConfigureBundleFlow() {
   }, [isCollectionsModalOpen]);
 
   useEffect(() => {
-    isSelectTemplateModalOpen ? showPolarisModal(selectTemplateModalRef) : hidePolarisModal(selectTemplateModalRef);
-  }, [isSelectTemplateModalOpen]);
-
-  useEffect(() => {
     isProgressBarMultiLangModalOpen ? showPolarisModal(progressBarMultiLangModalRef) : hidePolarisModal(progressBarMultiLangModalRef);
   }, [isProgressBarMultiLangModalOpen]);
 
@@ -1320,7 +1379,6 @@ export default function ConfigureBundleFlow() {
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
-  useModalHideListener(selectTemplateModalRef, () => { setIsSelectTemplateModalOpen(false); setTemplateModalStep("select"); });
   useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
   useModalHideListener(bundleQuantityMultiLangModalRef, () => setIsBundleQuantityMultiLangModalOpen(false));
   useModalHideListener(discountVariablesModalRef, () => setIsDiscountVariablesModalOpen(false));
@@ -1328,6 +1386,17 @@ export default function ConfigureBundleFlow() {
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
   }, []);
+
+  const closeSelectTemplateDialog = useCallback(() => {
+    setIsSelectTemplateModalOpen(false);
+    setTemplateModalStep("select");
+  }, []);
+
+  const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    closeSelectTemplateDialog();
+  }, [closeSelectTemplateDialog]);
 
   const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
@@ -1354,9 +1423,6 @@ export default function ConfigureBundleFlow() {
 
   return (
     <>
-      <ui-title-bar title={`Configure: ${formState.bundleName}`}>
-        <button variant="breadcrumb" onClick={handleBackClick}>Dashboard</button>
-      </ui-title-bar>
       <div className={productPageBundleStyles.editCanvas}>
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
@@ -1469,8 +1535,6 @@ export default function ConfigureBundleFlow() {
             </s-button>
           </div>
         </div>
-
-        <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
 
         <div className={productPageBundleStyles.editGrid}>
 
@@ -1765,7 +1829,7 @@ export default function ConfigureBundleFlow() {
                                   </s-banner>
                                 )}
 
-                                {/* ── Categories (multi-category accordion — EB parity) ── */}
+                                {/* Categories (multi-category accordion) */}
                     <div className={productPageBundleStyles.card}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Category</h3>
@@ -2277,6 +2341,9 @@ export default function ConfigureBundleFlow() {
                             pricingState.setDiscountType(nextDiscountType);
                             pricingState.setDiscountRules([nextRule]);
                             setRuleMessages({});
+                            setRuleMessagesByLocale({});
+                            setGlobalSuccessMessage("");
+                            setSuccessMessageByLocale({});
                           }}
                         >
                           {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
@@ -2296,7 +2363,7 @@ export default function ConfigureBundleFlow() {
                                     Remove
                                   </s-button>
                                 </div>
-                                <s-stack direction="block" gap="small">
+                                <div className={productPageBundleStyles.bxyRuleBody}>
                                   <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer buys</p>
                                   <s-number-field
                                     label="Minimum quantity of items"
@@ -2316,7 +2383,7 @@ export default function ConfigureBundleFlow() {
                                     })}
                                     min="1"
                                   />
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={productPageBundleStyles.bxyRewardGrid}>
                                     <s-number-field
                                       label="Discount value"
                                       value={String(rule.discountValue ?? 0)}
@@ -2345,8 +2412,8 @@ export default function ConfigureBundleFlow() {
                                       <s-option value="lowest_priced">The lowest priced items</s-option>
                                       <s-option value="latest_added">The latest added items</s-option>
                                     </s-select>
-                                  </s-stack>
-                                </s-stack>
+                                  </div>
+                                </div>
                               </s-stack>
                             </s-section>
                           ))}
@@ -2680,8 +2747,7 @@ export default function ConfigureBundleFlow() {
                                   const localeMessages = discountMessagingMultiLanguageEnabled
                                     ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
                                     : ruleMessages[rule.id];
-                                  const isBxy = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
-                                  const defaultDiscountText = isBxy ? DEFAULT_DISCOUNT_RULE_TEXT_BXY : DEFAULT_DISCOUNT_RULE_TEXT;
+                                  const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType);
                                   return (
                                     <s-section key={rule.id}>
                                       <s-stack direction="block" gap="small">
@@ -2717,8 +2783,7 @@ export default function ConfigureBundleFlow() {
                                     <s-text-field
                                       label="Success Message"
                                       value={(() => {
-                                        const isBxy = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
-                                        const defaultMsg = isBxy ? DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+                                        const defaultMsg = getDefaultDiscountRuleSuccessMessage(pricingState.discountType);
                                         const val = discountMessagingMultiLanguageEnabled
                                           ? (successMessageByLocale[activeDiscountLocale] ?? globalSuccessMessage)
                                           : globalSuccessMessage;
@@ -3198,17 +3263,15 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "bundle_settings" && (() => {
-              const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
-              const selectedDefaultProducts = settingsStep
-                ? ((settingsStep.StepProduct as any[] | undefined) ?? [])
-                : [];
+              const selectedDefaultProducts = defaultProductsData.products ?? [];
+              const defaultProductsEnabled = defaultProductsData.isDefaultProductsEnabled === true;
               const defaultProductCount = selectedDefaultProducts.length;
               const defaultProductSelectionIds = selectedDefaultProducts
-                .map((product: any) => product.productId || product.id)
+                .map((product: any) => product.graphqlId || product.productId || product.id)
                 .filter(Boolean)
                 .map((id: string) => ({ id }));
+              const individualSellingPlanBlocked = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
               const handleDefaultProductPicker = async () => {
-                if (!settingsStep) return;
                 const picked = await (shopify as any).resourcePicker({
                   type: "product",
                   multiple: true,
@@ -3217,19 +3280,15 @@ export default function ConfigureBundleFlow() {
                 });
                 if (!picked) return;
 
-                const defaultProducts = picked.map((product: any) => ({
-                  id: product.id,
-                  title: product.title,
-                  imageUrl: product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null,
-                  variants: product.variants || null,
-                  minQuantity: 1,
-                  maxQuantity: 10,
-                }));
-                const firstVariantId = defaultProducts[0]?.variants?.[0]?.id || defaultProducts[0]?.variants?.[0]?.gid || "";
+                const defaultProducts = picked
+                  .map(buildDefaultProductEntryFromPicker)
+                  .filter((product): product is NonNullable<ReturnType<typeof buildDefaultProductEntryFromPicker>> => Boolean(product));
 
-                stepsState.updateStepField(settingsStep.id, "StepProduct", defaultProducts);
-                stepsState.updateStepField(settingsStep.id, "isDefault", defaultProducts.length > 0);
-                stepsState.updateStepField(settingsStep.id, "defaultVariantId", firstVariantId);
+                setDefaultProductsData((prev) => ({
+                  isDefaultProductsEnabled: true,
+                  defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                  products: defaultProducts,
+                }));
                 markAsDirty();
               };
 
@@ -3240,71 +3299,67 @@ export default function ConfigureBundleFlow() {
                     {/* Pre Selected Product */}
                     <s-section>
                       <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
-                          {settingsStep && (
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <h3 className={productPageBundleStyles.settingTitle}>Pre Selected Product</h3>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
                             <s-switch
-                              accessibilityLabel="Enable pre selected product for active step"
-                              checked={settingsStep.isDefault || undefined}
+                              accessibilityLabel="Enable pre selected product"
+                              checked={defaultProductsEnabled || undefined}
                               onChange={(e: Event) => {
-                                stepsState.updateStepField(settingsStep.id, "isDefault", (e.target as HTMLInputElement).checked);
+                                const checked = (e.target as HTMLInputElement).checked;
+                                setDefaultProductsData((prev) => ({
+                                  ...prev,
+                                  isDefaultProductsEnabled: checked,
+                                  defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                                  products: prev.products ?? [],
+                                }));
                                 markAsDirty();
                               }}
                             />
-                          )}
-                        </s-stack>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Choose products that should be added to bundle by default
-                        </p>
+                          </span>
+                        </div>
                         <s-banner tone="info">
                           Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
                         </s-banner>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          These products will be added to user&apos;s box automatically on the first step.
-                        </p>
                         <s-text-field
                           label="Default products title"
-                          value={textOverrides.defaultProductsTitle ?? ""}
+                          value={defaultProductsData.defaultProductsTitle ?? ""}
                           onInput={(e: Event) => {
-                            setTextOverrides((prev) => ({ ...prev, defaultProductsTitle: (e.target as HTMLInputElement).value }));
+                            const value = (e.target as HTMLInputElement).value;
+                            setDefaultProductsData((prev) => ({ ...prev, defaultProductsTitle: value }));
                             markAsDirty();
                           }}
                           autoComplete="off"
                         />
-                        <s-button
-                          variant="secondary"
-                          icon="globe"
-                          onClick={() => openMultiLanguageModal("Pre Selected Product", [
-                            { key: "defaultProductsTitle", label: "Default products title", fallback: textOverrides.defaultProductsTitle ?? "" },
-                          ])}
-                        >
-                          Multi Language
-                        </s-button>
-                        <s-stack direction="block" gap="small-400">
+                        <div className={productPageBundleStyles.defaultProductsPickerGroup}>
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Choose default products</p>
-                          <s-stack direction="inline" gap="small" alignItems="center">
-                            <s-button variant="primary" disabled={!settingsStep} onClick={handleDefaultProductPicker}>
+                          <div className={productPageBundleStyles.defaultProductsPickerActions}>
+                            <s-button
+                              variant={defaultProductsEnabled ? "primary" : "secondary"}
+                              disabled={!defaultProductsEnabled || undefined}
+                              onClick={handleDefaultProductPicker}
+                            >
                               Browse Products
                             </s-button>
-                            <s-badge tone={defaultProductCount > 0 ? "success" : "info"}>
-                              {defaultProductCount > 0 ? `${defaultProductCount} selected` : "Not set"}
-                            </s-badge>
-                          </s-stack>
-                        </s-stack>
+                            {defaultProductCount > 0 && <s-badge tone="success">{defaultProductCount} selected</s-badge>}
+                          </div>
+                        </div>
                       </s-stack>
                     </s-section>
 
                     {/* Enable Quantity Validation */}
                     <s-section>
                       <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
-                          <s-switch
-                            accessibilityLabel="Enable quantity validation"
-                            checked={productSlotsEnabled || undefined}
-                            onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </s-stack>
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <h3 className={productPageBundleStyles.settingTitle}>Enable Quantity Validation</h3>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Enable quantity validation"
+                              checked={productSlotsEnabled || undefined}
+                              onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                            />
+                          </span>
+                        </div>
                         <s-text-field
                           label="Maximum allowed quantity per product"
                           type="number"
@@ -3314,6 +3369,30 @@ export default function ConfigureBundleFlow() {
                           onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autoComplete="off"
                         />
+                        {individualSellingPlanBlocked && (
+                          <s-banner tone="warning">
+                            {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}
+                          </s-banner>
+                        )}
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <h3 className={`${productPageBundleStyles.settingTitle} ${individualSellingPlanBlocked ? productPageBundleStyles.settingTitleMuted : ""}`}>
+                            Pre-order &amp; Subscription Integration
+                          </h3>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Enable pre-order and subscription integration"
+                              checked={!individualSellingPlanBlocked && individualSellingPlanEnabled || undefined}
+                              disabled={individualSellingPlanBlocked || undefined}
+                              onChange={(e: Event) => {
+                                setIndividualSellingPlanEnabled((e.target as HTMLInputElement).checked);
+                                markAsDirty();
+                              }}
+                            />
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 13, color: "#8c9196" }}>
+                          Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle.
+                        </p>
                       </s-stack>
                     </s-section>
 
@@ -3322,9 +3401,32 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Cart line item discount display</h3>
-                          <s-button variant="secondary" onClick={() => handleSectionChange("discount_pricing")}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const authSearch = window.location.search.replace(/^\?/, "");
+                              const targetHref = authSearch
+                                ? `${PRODUCT_PAGE_EDIT_DEFAULTS_HREF}&${authSearch}`
+                                : PRODUCT_PAGE_EDIT_DEFAULTS_HREF;
+                              window.location.assign(targetHref);
+                            }}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              minHeight: 32,
+                              padding: "0 12px",
+                              borderRadius: 8,
+                              border: "1px solid #c9cccf",
+                              color: "#202223",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              background: "#ffffff",
+                              cursor: "pointer",
+                            }}
+                          >
                             Edit Defaults
-                          </s-button>
+                          </button>
                         </s-stack>
                         <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Shows how much the customer is saving on the bundle in cart</p>
                         {[
@@ -3405,6 +3507,57 @@ export default function ConfigureBundleFlow() {
                       />
                     </s-section>
                   </s-stack>
+                </div>
+              );
+            })()}
+
+            {activeSection === "subscriptions" && (() => {
+              const validation = subscriptionFetcher.data;
+              const validationMessage = validation?.success === false
+                ? validation.error
+                : validation?.isValid === false
+                  ? (validation.message ?? SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE)
+                  : null;
+
+              return (
+                <div data-tour-target="ppb-subscriptions">
+                  <s-section>
+                    <s-stack direction="block" gap="base">
+                      <s-stack direction="inline" alignItems="center" gap="small">
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Subscriptions</h3>
+                        <s-button variant="plain">
+                          How to setup?
+                        </s-button>
+                      </s-stack>
+                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                        Allow customers to purchase the bundle as a subscription
+                      </p>
+
+                      {validationMessage && (
+                        <s-banner tone="warning">
+                          <s-stack direction="block" gap="small-400">
+                            <span>{validationMessage}</span>
+                            <s-button variant="plain">Learn More</s-button>
+                          </s-stack>
+                        </s-banner>
+                      )}
+
+                      <s-stack direction="inline" gap="small" alignItems="center">
+                        <s-button
+                          variant="primary"
+                          loading={subscriptionFetcher.state === "submitting" || undefined}
+                          disabled={subscriptionFetcher.state !== "idle" || undefined}
+                          onClick={() => {
+                            const formData = new FormData();
+                            formData.append("intent", "validateSellingPlanGroups");
+                            subscriptionFetcher.submit(formData, { method: "post" });
+                          }}
+                        >
+                          Get Subscription Plans
+                        </s-button>
+                      </s-stack>
+                    </s-stack>
+                  </s-section>
                 </div>
               );
             })()}
@@ -3926,88 +4079,108 @@ export default function ConfigureBundleFlow() {
         onContinue={closeDiscardModal}
       />
 
-      {/* Select Template — Shopify native modal */}
-      <s-modal ref={selectTemplateModalRef} heading="Customization" size="large">
-        {templateModalStep === "select" ? (() => {
-          const ppbTemplates = [
-            { presetId: "CASCADE",    layoutTemplate: "PDP_INPAGE", label: "Product List",     image: "/productPageThumbnail.png"   },
-            { presetId: "COGNIVE",    layoutTemplate: "PDP_INPAGE", label: "Product Grid",     image: "/fullPageThumbnail.png"       },
-            { presetId: "MODAL",      layoutTemplate: "PDP_MODAL",  label: "Horizontal Slots", image: "/sidePanelThumbnail.png"      },
-            { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL",  label: "Vertical Slots",   image: "/floatingCardThumbnail.png"   },
-          ];
-          return (
-            <>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>Customize your bundle</h2>
-                  <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
-                </div>
-                <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
-                  Customize Colors &amp; Language
-                </s-button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                {ppbTemplates.map((tpl) => {
-                  const isSelected = pendingDesignPresetId === tpl.presetId && pendingDesignTemplate === tpl.layoutTemplate;
-                  return (
-                    <div
-                      key={tpl.presetId}
-                      style={{
-                        border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
-                        borderRadius: 12,
-                        overflow: "hidden",
-                        background: "#f6f6f7",
-                        cursor: isSelected ? "default" : "pointer",
-                      }}
-                      onClick={() => { if (!isSelected) { setPendingDesignTemplate(tpl.layoutTemplate); setPendingDesignPresetId(tpl.presetId); } }}
-                    >
-                      <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
-                        <img src={tpl.image} alt={tpl.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
-                        <h3 style={{ flex: 1, margin: 0, fontSize: 14, fontWeight: 600 }}>{tpl.label}</h3>
-                        <s-button
-                          variant={isSelected ? "primary" : "secondary"}
-                          disabled={isSelected || undefined}
-                          onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setPendingDesignTemplate(tpl.layoutTemplate); setPendingDesignPresetId(tpl.presetId); } }}
-                        >
-                          {isSelected ? "Selected" : "Select"}
-                        </s-button>
-                      </div>
+      {isSelectTemplateModalOpen && (
+        <div
+          className={productPageBundleStyles.templateDialogBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeSelectTemplateDialog();
+          }}
+        >
+          <div
+            className={productPageBundleStyles.templateDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ppb-template-dialog-title"
+            tabIndex={-1}
+            onKeyDown={handleSelectTemplateDialogKeyDown}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className={productPageBundleStyles.templateDialogHeader}>
+              <h2 id="ppb-template-dialog-title" className={productPageBundleStyles.templateDialogHeading}>
+                Customization
+              </h2>
+              <button
+                type="button"
+                className={productPageBundleStyles.templateDialogClose}
+                aria-label="Close customization"
+                onClick={closeSelectTemplateDialog}
+              >
+                <s-icon name="x" />
+              </button>
+            </div>
+            {templateModalStep === "select" ? (
+              <>
+                <div className={productPageBundleStyles.templateDialogBody}>
+                  <div className={productPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={productPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={productPageBundleStyles.templateDialogDescription}>
+                        Choose a design that suits your needs and fits your brand
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-              <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
-                <s-button
-                  variant="primary"
-                  loading={templateFetcher.state === "submitting" || undefined}
-                  onClick={handleTemplateNext}
-                >
-                  Next
-                </s-button>
-              </div>
-            </>
-          );
-        })() : (
-          <>
-            <div style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>View your bundle</h2>
-              <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>View your bundle with your customizations</p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ textAlign: "center", background: "#f6f6f7", borderRadius: 12, padding: "48px 40px", maxWidth: 480, width: "100%" }}>
-                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e3f1eb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                  <s-icon name="check" />
+                    <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                      Customize Colors &amp; Language
+                    </s-button>
+                  </div>
+                  <div className={productPageBundleStyles.templateDialogGrid}>
+                    {productPageTemplateOptions.map((templateOption) => {
+                      const isSelected = pendingDesignPresetId === templateOption.presetId && pendingDesignTemplate === templateOption.layoutTemplate;
+                      return (
+                        <button
+                          key={templateOption.presetId}
+                          type="button"
+                          className={`${productPageBundleStyles.templateOptionCard} ${isSelected ? productPageBundleStyles.templateOptionCardSelected : ""}`}
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            setPendingDesignTemplate(templateOption.layoutTemplate);
+                            setPendingDesignPresetId(templateOption.presetId);
+                          }}
+                        >
+                          <span className={productPageBundleStyles.templateOptionImageFrame}>
+                            <img src={templateOption.image} alt={templateOption.label} className={productPageBundleStyles.templateOptionImage} />
+                          </span>
+                          <span className={productPageBundleStyles.templateOptionFooter}>
+                            <span className={productPageBundleStyles.templateOptionLabel}>{templateOption.label}</span>
+                            <span className={`${productPageBundleStyles.templateOptionAction} ${isSelected ? productPageBundleStyles.templateOptionActionSelected : ""}`}>
+                              {isSelected ? "Selected" : "Select"}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 600 }}>Your bundle is ready</h2>
-                <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6d7175" }}>Preview it now with your customizations</p>
-                <s-button variant="secondary" onClick={() => setIsSelectTemplateModalOpen(false)}>Preview bundle</s-button>
+                <div className={productPageBundleStyles.templateDialogFooter}>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Next
+                  </s-button>
+                </div>
+              </>
+            ) : (
+              <div className={productPageBundleStyles.templateDialogBody}>
+                <div className={productPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={productPageBundleStyles.templateDialogSubheading}>View your bundle</h3>
+                  <p className={productPageBundleStyles.templateDialogDescription}>View your bundle with your customizations</p>
+                </div>
+                <div className={productPageBundleStyles.templateReadyPanel}>
+                  <div className={productPageBundleStyles.templateReadyIcon}>
+                    <s-icon name="check" />
+                  </div>
+                  <h3 className={productPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
+                  <p className={productPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
+                  <s-button variant="secondary" onClick={closeSelectTemplateDialog}>Preview bundle</s-button>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </s-modal>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Bundle?">

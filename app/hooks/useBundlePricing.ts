@@ -11,8 +11,8 @@
 
 import { useState, useCallback } from "react";
 import {
-  DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
-  DEFAULT_DISCOUNT_RULE_TEXT,
+  getDefaultDiscountRuleSuccessMessage,
+  getDefaultDiscountRuleText,
   normalizePricingDisplayOptions,
   normalizePricingRuleMessages,
   serializePricingDisplayOptions,
@@ -213,8 +213,8 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
     setRuleMessages(prev => ({
       ...prev,
       [newRule.id]: {
-        discountText: DEFAULT_DISCOUNT_RULE_TEXT,
-        successMessage: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE
+        discountText: getDefaultDiscountRuleText(discountType),
+        successMessage: getDefaultDiscountRuleSuccessMessage(discountType)
       }
     }));
   }, [discountType, setDiscountRules]);

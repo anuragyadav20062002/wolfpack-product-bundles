@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-05-22
+**Last Updated:** 2026-05-26
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -102,6 +102,7 @@ Delete Confirmation Modal (centered, small)
 
 **Route file:** `app/routes/app/app.design-control-panel/route.tsx`
 **Screenshot:** `screenshots/01-dcp-landing.png`
+**Deep link:** `/app/design-control-panel?modal=product_page&section=cartLineMessaging` opens the Product Page Layout Additional Configurations view directly on Cart Messaging.
 
 ```
 DCP Landing Page
@@ -184,8 +185,32 @@ Triggered by: "Customize" on Product Bundles card
 ```
 PDP DCP Modal (3-column layout — same as FPB except:)
 ├── LEFT: NavigationSidebar (no Bundle Header / Promo Banner / Tier Pills)
+│   └── General [expandable group]
+│       ├── Checkout Button
+│       ├── Toasts
+│       ├── Accessibility
+│       ├── Modal Close Button
+│       ├── Widget Style
+│       └── Cart Messaging
 ├── RIGHT: PreviewPanel — no footer layout toggle (single iframe)
 └── Same Settings Panel + Save Bar structure
+```
+
+Product Page Layout Additional Configurations deep link:
+```
+Additional Configurations
+├── LEFT: App Configurations card
+│   ├── Product Page Layout selector
+│   ├── Configuration
+│   └── CSS & Scripts
+└── RIGHT: Product Page Layout settings
+    ├── Bundle Settings card (read-only visual inventory until storefront proof)
+    └── Cart Messaging card
+        ├── Cart Messaging
+        ├── Bundle Items
+        ├── Original Bundle Price
+        ├── Discount Display
+        └── Discount format
 ```
 
 #### Modal: CSS Guide
@@ -322,13 +347,12 @@ FPB Configure Page
 
 ```
 PPB Configure Page
-├── Sidebar Nav (6 sections — mirrors Easy Bundles hierarchy)
+├── Sidebar Nav (6 sections — clone hierarchy)
 │   ├── [📝] Step Setup              → step_setup section
-│   ├── Free Gift & Add Ons          → free_gift_add_ons section
-│   ├── Messages                     → messages section
 │   ├── Discount & Pricing           → discount_pricing section
 │   ├── [👁] Bundle Visibility       → bundle_visibility section  [Pending badge when widget disabled]
 │   ├── [✏] Bundle Settings         → bundle_settings section
+│   ├── Subscriptions                → subscriptions section
 │   └── [📦] Select Template        → select_template section
 │
 ├── Step Setup
@@ -339,20 +363,6 @@ PPB Configure Page
 │   │   ├── Step conditions
 │   │   └── isFreeGift toggle + addon fields (label, title, icon, displayFree, unlockAfterCompletion)
 │   └── [+ Add Step] button
-│
-├── Free Gift & Add Ons
-│   ├── Empty state: "No add-on steps configured" with [Go to Step Setup] CTA
-│   └── Per-addon-step cards: addonLabel, addonTitle, addonDisplayFree, addonUnlockAfterCompletion
-│
-├── Messages
-│   ├── 7 text override fields + locale selector (existing)
-│   └── Gift Messages sub-section
-│       ├── Toggle: giftMessagesEnabled
-│       ├── Gift product picker (Shopify resource picker → giftMessageProductId)
-│       ├── Sender/Recipient checkbox (giftMessageEnableSenderRecipient)
-│       ├── Mandatory checkbox (giftMessageMandatory)
-│       ├── Send email checkbox (giftMessageSendEmail)
-│       └── Char limit switch + number field (giftMessageEnableLimit + giftMessageCharLimit)
 │
 ├── Discount & Pricing
 │   ├── Enable toggle + discount type selector: Fixed Amount Off / Percentage Off / Fixed Bundle Price / Buy X, get Y
@@ -380,14 +390,27 @@ PPB Configure Page
 │       └── Auto-Select Browsed Product: toggle (autoSelectBrowsedProduct)
 │
 ├── Bundle Settings
-│   ├── Pre-selected Variant (text field)
-│   ├── Product Quantity Limits (maxQtyPerProduct number field)
-│   ├── Product Slots (toggle + icon URL input)
-│   ├── Variant Selector toggle (variantSelectorEnabled)
-│   ├── Add-to-Bundle Button text toggle (showTextOnAddButton)
-│   ├── Cart Line Labels (bundleCartTitle + bundleCartSubtitle)
+│   ├── Pre Selected Product
+│   │   ├── Enable toggle
+│   │   ├── Tip banner
+│   │   ├── Default products title
+│   │   ├── Multi Language
+│   │   └── Browse Products (Shopify resource picker)
+│   ├── Enable Quantity Validation
+│   │   ├── Maximum allowed quantity per product
+│   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
+│   ├── Cart line item discount display
+│   │   └── [Button] "Edit Defaults" → /app/design-control-panel?modal=product_page&section=cartLineMessaging
 │   ├── Bundle Banners (bundleBannerDesktopUrl + bundleBannerMobileUrl)
-│   └── Custom CSS textarea (bundleLevelCss — sanitized via processCss)
+│   ├── Custom CSS textarea (bundleLevelCss — sanitized via processCss)
+│   └── Bundle Status
+│
+├── Subscriptions
+│   ├── Bundle Subscriptions
+│   ├── How to setup?
+│   ├── Text: "Allow customers to purchase the bundle as a subscription"
+│   ├── [Button] "Get Subscription Plans" → POST validateSellingPlanGroups
+│   └── No-common-plan warning when selected products do not share a selling plan group
 │
 ├── Select Template
 │   ├── Heading: "Customize your bundle"

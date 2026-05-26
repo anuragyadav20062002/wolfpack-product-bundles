@@ -38,6 +38,12 @@ import {
 } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { validateTierConfig } from "../../../../lib/tier-config-validator.server";
+import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/category-persistence";
+import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
+import {
+  normalizePricingDisplayOptions,
+  serializeBoxSelectionFromPricingDisplayOptions,
+} from "../../../../lib/pricing-display-options";
 import { SHOPIFY_REST_API_VERSION } from "../../../../constants/api";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
@@ -59,6 +65,94 @@ const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
 // FPB products do not need a theme template — the URL redirect (/products/{handle} →
 // /pages/{pageHandle}) handles routing before the template is ever rendered.
 // We only update the Shopify product status so it stays in sync with the bundle status.
+async function updateFpbProductStatus(admin: ShopifyAdmin, productId: string, shopifyStatus: string) {
+  const response = await admin.graphql(`
+    mutation SyncFpbProductStatus($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        product { id status }
+        userErrors { field message }
+      }
+    }
+  `, { variables: { product: { id: productId, status: shopifyStatus } } });
+
+  return response.json() as Promise<{ data?: Record<string, any>; errors?: unknown[] }>;
+}
+
+async function setFpbParentVariantRequiresComponents(
+  admin: ShopifyAdmin,
+  productId: string,
+  parentVariantId: string,
+  requiresComponents: boolean,
+) {
+  const response = await admin.graphql(`
+    mutation SetFpbParentVariantRequiresComponents($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+        productVariants { id requiresComponents }
+        userErrors { field message code }
+      }
+    }
+  `, {
+    variables: {
+      productId,
+      variants: [{ id: parentVariantId, requiresComponents }],
+    },
+  });
+
+  const data = await response.json() as { data?: Record<string, any>; errors?: unknown[] };
+  return data.data?.productVariantsBulkUpdate?.userErrors ?? [];
+}
+
+function hasUnsupportedBundlePublicationError(userErrors: any[]) {
+  return userErrors.some((error) =>
+    typeof error?.message === "string"
+    && error.message.includes("does not support bundle products")
+  );
+}
+
+async function activateFpbBundleProductWithParentSequence(
+  admin: ShopifyAdmin,
+  productId: string,
+  bundleId: string,
+) {
+  const parentVariantId = await getBundleProductVariantId(admin, productId);
+
+  const disableErrors = await setFpbParentVariantRequiresComponents(admin, productId, parentVariantId, false);
+  if (disableErrors.length > 0) {
+    AppLogger.warn("[PRODUCT_SYNC] Could not temporarily clear FPB parent requiresComponents", {
+      component: "app.bundles.full-page.configure",
+      bundleId, productId, parentVariantId,
+    }, { userErrors: disableErrors });
+    return;
+  }
+
+  const retryData = await updateFpbProductStatus(admin, productId, "ACTIVE");
+  const retryErrors = retryData.data?.productUpdate?.userErrors ?? [];
+  if (retryData.errors?.length || retryErrors.length > 0) {
+    await setFpbParentVariantRequiresComponents(admin, productId, parentVariantId, true);
+    AppLogger.warn("[PRODUCT_SYNC] FPB parent activation still failed after clearing requiresComponents", {
+      component: "app.bundles.full-page.configure",
+      bundleId, productId, parentVariantId,
+    }, { errors: retryData.errors, userErrors: retryErrors });
+    return;
+  }
+
+  const restoreErrors = await setFpbParentVariantRequiresComponents(admin, productId, parentVariantId, true);
+  if (restoreErrors.length > 0) {
+    await updateFpbProductStatus(admin, productId, "DRAFT");
+    await setFpbParentVariantRequiresComponents(admin, productId, parentVariantId, true);
+    AppLogger.warn("[PRODUCT_SYNC] Reverted FPB parent product after requiresComponents restore failed", {
+      component: "app.bundles.full-page.configure",
+      bundleId, productId, parentVariantId,
+    }, { userErrors: restoreErrors });
+    return;
+  }
+
+  AppLogger.info("[PRODUCT_SYNC] FPB bundle parent activated with requiresComponents sequence", {
+    component: "app.bundles.full-page.configure",
+    bundleId, productId, parentVariantId,
+  });
+}
+
 async function syncFpbProductStatus(
   admin: ShopifyAdmin,
   productId: string,
@@ -66,16 +160,7 @@ async function syncFpbProductStatus(
   shopifyStatus: string,
 ) {
   try {
-    const response = await admin.graphql(`
-      mutation SyncFpbProductStatus($id: ID!, $status: ProductStatus!) {
-        productUpdate(input: { id: $id, status: $status }) {
-          product { id status }
-          userErrors { field message }
-        }
-      }
-    `, { variables: { id: productId, status: shopifyStatus } });
-
-    const responseData = await response.json() as { data?: Record<string, any>; errors?: unknown[] };
+    const responseData = await updateFpbProductStatus(admin, productId, shopifyStatus);
 
     if (responseData.errors?.length) {
       AppLogger.warn("[PRODUCT_SYNC] GraphQL transport error updating FPB product status", {
@@ -91,6 +176,9 @@ async function syncFpbProductStatus(
         component: "app.bundles.full-page.configure",
         bundleId, productId, shopifyStatus,
       }, { userErrors });
+      if (shopifyStatus === "ACTIVE" && hasUnsupportedBundlePublicationError(userErrors)) {
+        await activateFpbBundleProductWithParentSequence(admin, productId, bundleId);
+      }
       return;
     }
 
@@ -168,43 +256,8 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       }))
       .filter((product: { productId: string | null }) => Boolean(product.productId));
 
-    // Collect per-category data from StepCategory (new relational model)
-    const stepCategories = Array.isArray(step.StepCategory) ? step.StepCategory : [];
-    const categoriesForMetafield = stepCategories.map((cat: any) => ({
-      name: cat.name || '',
-      products: Array.isArray(cat.products)
-        ? cat.products.map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null }))
-        : [],
-      collections: Array.isArray(cat.collections)
-        ? cat.collections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' }))
-        : [],
-    }));
-
-    // Flatten category products into step.products (backward compat — widget reads step.products)
-    const existingProductIds = new Set(stepProducts.map((p: any) => p.productId));
-    const flatCategoryProducts = stepCategories
-      .flatMap((cat: any) => (Array.isArray(cat.products) ? cat.products : []))
-      .filter((p: any) => p.id && !existingProductIds.has(p.id))
-      .reduce((acc: any[], p: any) => {
-        if (!acc.some((x: any) => x.id === p.id)) acc.push(p);
-        return acc;
-      }, []);
-
-    // Flatten category collections into step.collections (backward compat)
-    const legacyCollections: any[] = Array.isArray(step.collections) ? step.collections : [];
-    const existingCollectionIds = new Set(legacyCollections.map((c: any) => c.id));
-    const flatCategoryCollections = stepCategories
-      .flatMap((cat: any) => (Array.isArray(cat.collections) ? cat.collections : []))
-      .filter((c: any) => c.id && !existingCollectionIds.has(c.id))
-      .reduce((acc: any[], c: any) => {
-        if (!acc.some((x: any) => x.id === c.id)) acc.push(c);
-        return acc;
-      }, []);
-
-    const allCollections = [
-      ...legacyCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
-      ...flatCategoryCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
-    ];
+    const categoriesForMetafield = formatStepCategoriesForRuntime(step);
+    const stepCollections = Array.isArray(step.collections) ? step.collections : [];
 
     return {
       id: step.id,
@@ -219,15 +272,12 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       conditionOperator2: step.conditionOperator2 ?? null,
       conditionValue2: step.conditionValue2 ?? null,
       StepProduct: stepProducts,
-      products: [
-        ...stepProducts.map((product: any) => ({
-          id: product.productId,
-          title: product.title,
-          imageUrl: product.imageUrl,
-        })),
-        ...flatCategoryProducts.map((p: any) => ({ id: p.id, title: p.title || 'Product', imageUrl: p.imageUrl || null })),
-      ],
-      collections: allCollections,
+      products: stepProducts.map((product: any) => ({
+        id: product.productId,
+        title: product.title,
+        imageUrl: product.imageUrl,
+      })),
+      collections: stepCollections.map((c: any) => ({ id: c.id, handle: c.handle, title: c.title || 'Collection' })),
       ...(categoriesForMetafield.length > 0 ? { categories: categoriesForMetafield } : {}),
     };
   });
@@ -306,6 +356,7 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
     type: "cart_transform",
     steps: buildFullPageBundleMetafieldSteps(bundle.steps || []),
     pricing: buildFullPageBundlePricing(bundle.pricing),
+    boxSelection: bundle.boxSelection ?? null,
     updatedAt: new Date().toISOString(),
     ...overrides,
   };
@@ -313,35 +364,41 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
 
 /** Build the base bundle configuration object passed to metafield update functions. */
 function buildFpbBaseConfig(
-  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null },
+  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null; personalizationData?: unknown; boxSelection?: unknown },
   stepsData: any[],
   stepConditionsData: Record<string, any[]>,
   discountData: any,
   bundleParentVariantId: string | null,
+  directBoxSelection: unknown = null,
 ): Record<string, unknown> {
-  const optimizedSteps = (stepsData || []).map((step: any) => ({
-    id: step.id,
-    name: step.name || 'Step',
-    minQuantity: parseInt(step.minQuantity) || 1,
-    maxQuantity: parseInt(step.maxQuantity) || 1,
-    enabled: step.enabled !== false,
-    conditionType: stepConditionsData[step.id]?.[0]?.type || null,
-    conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
-    conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
-    conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
-    conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
-    products: (step.StepProduct || []).map((product: any) => ({
-      id: product.id,
-      title: product.title || product.name || 'Product',
-      imageUrl: product.imageUrl || product.image?.url || null,
-    })),
-    collections: (step.collections || []).map((collection: any) => ({
-      id: collection.id,
-      title: collection.title || 'Collection',
-      handle: collection.handle || null,
-    })),
-    filters: Array.isArray(step.filters) ? step.filters : null,
-  }));
+  const optimizedSteps = (stepsData || []).map((step: any) => {
+    const categoriesForRuntime = formatStepCategoriesForRuntime(step);
+
+    return {
+      id: step.id,
+      name: step.name || 'Step',
+      minQuantity: parseInt(step.minQuantity) || 1,
+      maxQuantity: parseInt(step.maxQuantity) || 1,
+      enabled: step.enabled !== false,
+      conditionType: stepConditionsData[step.id]?.[0]?.type || null,
+      conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
+      conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+      conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
+      conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
+      products: (step.StepProduct || []).map((product: any) => ({
+        id: product.id,
+        title: product.title || product.name || 'Product',
+        imageUrl: product.imageUrl || product.image?.url || null,
+      })),
+      collections: (step.collections || []).map((collection: any) => ({
+        id: collection.id,
+        title: collection.title || 'Collection',
+        handle: collection.handle || null,
+      })),
+      filters: Array.isArray(step.filters) ? step.filters : null,
+      ...(categoriesForRuntime.length > 0 ? { categories: categoriesForRuntime } : {}),
+    };
+  });
 
   const firstRuleId = discountData.discountRules?.[0]?.id;
   const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
@@ -388,6 +445,9 @@ function buildFpbBaseConfig(
       },
     },
     bundleParentVariantId: bundleParentVariantId,
+    boxSelection: updatedBundle.boxSelection ?? directBoxSelection ?? null,
+    bundleTextConfig: (updatedBundle as any).bundleTextConfig ?? null,
+    personalizationData: (updatedBundle as any).personalizationData ?? null,
     shopifyProductId: updatedBundle.shopifyProductId,
     shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
     updatedAt: new Date().toISOString(),
@@ -444,6 +504,10 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const textOverridesByLocaleRaw = formData.get("textOverridesByLocale") as string | null;
     const textOverrides = textOverridesRaw ? JSON.parse(textOverridesRaw) : null;
     const textOverridesByLocale = textOverridesByLocaleRaw ? JSON.parse(textOverridesByLocaleRaw) : null;
+    const bundleTextConfigRaw = formData.get("bundleTextConfig") as string | null;
+    const bundleTextConfig = bundleTextConfigRaw ? JSON.parse(bundleTextConfigRaw) : null;
+    const personalizationDataRaw = formData.get("personalizationData") as string | null;
+    const personalizationData = personalizationDataRaw ? JSON.parse(personalizationDataRaw) : null;
     const upsellWidgetEnabled = formData.get("upsellWidgetEnabled") === "true";
     const upsellWidgetDisplayMode = (formData.get("upsellWidgetDisplayMode") as string | null) ?? "block";
     const upsellWidgetDisplayOn = (formData.get("upsellWidgetDisplayOn") as string | null) ?? "all";
@@ -525,13 +589,36 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       AppLogger.debug("[FIXED_BUNDLE_PRICE] Stored fixed price for runtime calculation:", processedRules);
     }
 
+    const normalizedPricingDisplayOptions = normalizePricingDisplayOptions({
+      rules: discountData.discountRules || [],
+      messages: { displayOptions: discountData.pricingDisplayOptions || null },
+      showProgressBar: discountData.showDiscountProgressBar === true,
+      method: discountData.discountType,
+    });
+    const directBoxSelection = discountData.discountEnabled === true
+      && discountData.discountType !== 'buy_x_get_y'
+      ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
+      : null;
+
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
     if (bundleStatus === BundleStatus.DRAFT && stepsData && stepsData.length > 0) {
-      const hasConfiguredSteps = stepsData.some((step: any) =>
-        (step.StepProduct && step.StepProduct.length > 0) ||
-        (step.collections && step.collections.length > 0)
-      );
+      const hasConfiguredSteps = stepsData.some((step: any) => {
+        const hasCategoryContent = Array.isArray(step.StepCategory)
+          && step.StepCategory.some((category: any) =>
+            (Array.isArray(category.products) && category.products.length > 0) ||
+            (Array.isArray(category.selectedProducts) && category.selectedProducts.length > 0) ||
+            (Array.isArray(category.collections) && category.collections.length > 0) ||
+            (Array.isArray(category.collectionsData) && category.collectionsData.length > 0) ||
+            (Array.isArray(category.collectionsSelectedData) && category.collectionsSelectedData.length > 0)
+          );
+
+        return (
+          (Array.isArray(step.StepProduct) && step.StepProduct.length > 0) ||
+          (Array.isArray(step.collections) && step.collections.length > 0) ||
+          hasCategoryContent
+        );
+      });
       AppLogger.debug("[BUNDLE_CONFIG] Status evaluation:", {
         originalStatus: bundleStatus,
         hasConfiguredSteps,
@@ -586,6 +673,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         searchBarEnabled,
         textOverrides,
         textOverridesByLocale,
+        bundleTextConfig,
+        personalizationData,
+        boxSelection: directBoxSelection,
         upsellWidgetEnabled,
         upsellWidgetDisplayMode,
         upsellWidgetDisplayOn,
@@ -660,12 +750,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 },
                 // Create StepCategory records for merchant-defined categories
                 StepCategory: {
-                  create: Array.isArray(step.StepCategory) ? step.StepCategory.map((cat: any, catIndex: number) => ({
-                    name: cat.name || '',
-                    sortOrder: cat.sortOrder ?? catIndex,
-                    products: Array.isArray(cat.products) ? cat.products : null,
-                    collections: Array.isArray(cat.collections) ? cat.collections : null,
-                  })) : []
+                  create: Array.isArray(step.StepCategory)
+                    ? step.StepCategory.map((cat: Record<string, unknown>, catIndex: number) => buildStepCategoryCreateInput(cat, catIndex))
+                    : []
                 }
               };
             })
@@ -733,7 +820,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       AppLogger.debug(`[BUNDLE_CONFIG] Bundle parent variant ID: ${bundleParentVariantId}`);
 
       const baseConfiguration = buildFpbBaseConfig(
-        updatedBundle, stepsData, stepConditionsData, discountData, bundleParentVariantId
+        updatedBundle, stepsData, stepConditionsData, discountData, bundleParentVariantId, directBoxSelection
       );
 
       const configSize = JSON.stringify(baseConfiguration).length;

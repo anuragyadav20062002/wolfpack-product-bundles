@@ -2,10 +2,11 @@
  * Unit tests — parseBundleDesignTemplate
  *
  * Spec: test-spec/select-template.spec.md
- * Issue: [eb-configure-sections-parity-1]
  */
 
 import { parseBundleDesignTemplate } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/parsers";
+import fs from "node:fs";
+import path from "node:path";
 
 function makeForm(fields: Record<string, string>): FormData {
   const fd = new FormData();
@@ -36,13 +37,13 @@ describe("parseBundleDesignTemplate", () => {
 
   // --- valid FPB presets ---
 
-  it("parses FPB Standard preset", () => {
+  it("parses FPB Standard preset as the audited DEFAULT preset", () => {
     const result = parseBundleDesignTemplate(makeForm({
       bundleDesignTemplate: "FBP_SIDE_FOOTER",
-      bundleDesignPresetId: "STANDARD",
+      bundleDesignPresetId: "DEFAULT",
     }));
     expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
-    expect(result.bundleDesignPresetId).toBe("STANDARD");
+    expect(result.bundleDesignPresetId).toBe("DEFAULT");
   });
 
   it("parses FPB Classic preset", () => {
@@ -116,5 +117,30 @@ describe("parseBundleDesignTemplate", () => {
     const result = parseBundleDesignTemplate(makeForm({ bundleDesignPresetId: "CASCADE" }));
     expect(result.bundleDesignTemplate).toBeNull();
     expect(result.bundleDesignPresetId).toBe("CASCADE");
+  });
+});
+
+describe("select-template route constants", () => {
+  it("submits the full-page Standard card as DEFAULT", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+      "utf8"
+    );
+
+    expect(source).toContain('presetId: "DEFAULT"');
+    expect(source).not.toContain('presetId: "STANDARD"');
+  });
+
+  it("renders the product-page Select Template surface as an app-owned dialog", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      "utf8"
+    );
+
+    expect(source).toContain('role="dialog"');
+    expect(source).toContain('aria-modal="true"');
+    expect(source).toContain('onKeyDown={handleSelectTemplateDialogKeyDown}');
+    expect(source).toContain('className={productPageBundleStyles.templateDialogBackdrop}');
+    expect(source).not.toContain('<s-modal ref={selectTemplateModalRef} heading="Customization"');
   });
 });

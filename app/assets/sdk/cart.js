@@ -7,10 +7,50 @@ function _generateBundleInstanceId(bundleId) {
   return bundleId + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 }
 
+function _formatCartAmount(cents, state) {
+  if (typeof state.formatMoney === 'function') return state.formatMoney(cents);
+  return String(cents);
+}
+
+function _buildCartLineSourceProperties(state, selectedLines) {
+  var retailCents = selectedLines.reduce(function (sum, line) {
+    if (line.step && line.step.isFreeGift) return sum;
+    return sum + ((Number(line.product.price) || 0) * line.quantity);
+  }, 0);
+  var discountCents = Math.max(0, Number(state.discountAmount || 0));
+  var discountPercentage = Number(state.discountPercentage || 0);
+  if (!discountPercentage && retailCents > 0 && discountCents > 0) {
+    discountPercentage = Math.round((discountCents / retailCents) * 100);
+  }
+
+  var displayProperties = {
+    box: '1',
+    items: selectedLines.map(function (line) {
+      return line.quantity + ' x ' + (line.product.title || line.product.id);
+    }).join(', '),
+    retailPrice: _formatCartAmount(retailCents, state),
+  };
+
+  if (discountCents > 0) {
+    var amount = _formatCartAmount(discountCents, state);
+    var percentage = Math.round(discountPercentage) + '%';
+    displayProperties.youSave = {
+      amount: amount,
+      percentage: percentage,
+      amountPercentage: amount + ' (' + percentage + ')',
+    };
+  }
+
+  return {
+    '_bundle_display_properties': JSON.stringify(displayProperties),
+  };
+}
+
 function buildCartItems(state) {
   var bundleInstanceId = _generateBundleInstanceId(state.bundleId);
   var items = [];
   var unavailable = [];
+  var selectedLines = [];
 
   state.steps.forEach(function (step, stepIndex) {
     var stepSelections = state.selections[step.id] || {};
@@ -43,6 +83,7 @@ function buildCartItems(state) {
         quantity: qty,
         properties: properties,
       });
+      selectedLines.push({ product: product, quantity: qty, step: step });
     });
   });
 
@@ -52,6 +93,11 @@ function buildCartItems(state) {
       ' currently unavailable: ' + unavailable.join(', ') + '.'
     );
   }
+
+  var sourceProperties = _buildCartLineSourceProperties(state, selectedLines);
+  items.forEach(function (item) {
+    Object.assign(item.properties, sourceProperties);
+  });
 
   return { items: items, bundleInstanceId: bundleInstanceId };
 }

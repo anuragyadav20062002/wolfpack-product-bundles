@@ -98,6 +98,11 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       steps: {
         include: {
           StepProduct: true,
+          StepCategory: {
+            orderBy: {
+              sortOrder: "asc",
+            },
+          },
         },
         orderBy: {
           position: "asc",

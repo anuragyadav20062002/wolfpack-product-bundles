@@ -5,6 +5,8 @@
  * Issue: [edit-bundle-flow-tests-1]
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import { handleSaveBundle } from "../../../app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
 import {
   updateBundleProductMetafields,
@@ -82,6 +84,14 @@ jest.mock("../../../app/services/theme-template.server", () => ({
 }));
 
 const getDb = () => require("../../../app/db.server").default;
+const configureRouteSource = () =>
+  fs.readFileSync(
+    path.join(
+      process.cwd(),
+      "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx",
+    ),
+    "utf8",
+  );
 
 const MOCK_SESSION = {
   shop: "test-shop.myshopify.com",
@@ -245,6 +255,29 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
   });
 
+  it("auto-activates a draft bundle when a step category has products", async () => {
+    const stepsData = makeStepsData({
+      StepCategory: [
+        {
+          id: "category12345",
+          title: "Category A",
+          products: [
+            { id: "gid://shopify/Product/222", title: "Product B", imageUrl: null },
+          ],
+          collections: [],
+          collectionsSelectedData: [],
+        },
+      ],
+    });
+    const fd = makeFormData({ stepsData: JSON.stringify(stepsData) });
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "active" }),
+      })
+    );
+  });
+
   it("does NOT auto-activate when steps have no products or collections", async () => {
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
     expect(getDb().bundle.update).toHaveBeenCalledWith(
@@ -268,13 +301,37 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
   });
 
   it("creates nested StepCategory records when categories are present", async () => {
+    const categoryProduct = {
+      id: "gid://shopify/Product/222",
+      productId: "222",
+      graphqlId: "gid://shopify/Product/222",
+      handle: "product",
+      title: "P",
+      variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/333" }],
+    };
+    const selectedCollection = {
+      id: "gid://shopify/Collection/444",
+      handle: "frontpage",
+      title: "Home page",
+    };
+    const condition = { type: "quantity", condition: "greaterThanOrEqualTo", value: "01" };
     const stepsData = makeStepsData({
       StepCategory: [
         {
-          name: "Category A",
+          categoryId: "category21087",
+          title: "Category A",
+          subTitle: "Pick FPB products",
+          categoryImg: "https://cdn.example/category-icon.png",
           sortOrder: 0,
-          products: [{ id: "gid://shopify/Product/222", title: "P" }],
+          products: [categoryProduct],
+          selectedProducts: [],
+          collectionsData: [],
+          collectionsSelectedData: [selectedCollection],
           collections: [],
+          categoryBanner: "https://cdn.example/banner.png",
+          conditions: [condition],
+          autoNextStepOnConditionMet: true,
+          multiLangData: { en: { title: "Category A" } },
         },
       ],
     });
@@ -283,7 +340,24 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     const updateCall = getDb().bundle.update.mock.calls[0][0];
     const stepCreate = updateCall.data.steps.create[0];
     expect(stepCreate.StepCategory.create).toHaveLength(1);
-    expect(stepCreate.StepCategory.create[0].name).toBe("Category A");
+    expect(stepCreate.StepCategory.create[0]).toMatchObject({
+      id: "category21087",
+      name: "Category A",
+      title: "Category A",
+      subTitle: "Pick FPB products",
+      categoryImg: "https://cdn.example/category-icon.png",
+      sortOrder: 0,
+      categoryRank: null,
+      products: [categoryProduct],
+      selectedProducts: [],
+      collections: [selectedCollection],
+      collectionsData: [],
+      collectionsSelectedData: [selectedCollection],
+      categoryBanner: "https://cdn.example/banner.png",
+      conditions: [condition],
+      autoNextStepOnConditionMet: true,
+      multiLangData: { en: { title: "Category A" } },
+    });
   });
 
   it("stores fixedBundlePrice on rule when discountType is fixed_bundle_price", async () => {
@@ -348,6 +422,109 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     const updateCall = getDb().bundle.update.mock.calls[0][0];
     expect(updateCall.data.floatingBadgeText).toHaveLength(60);
   });
+
+  it("saves direct bundle summary text config", async () => {
+    const bundleTextConfig = {
+      bundleSummary: {
+        title: "Your Custom Box",
+        subTitle: "Review your selected items",
+      },
+    };
+    const fd = makeFormData({ bundleTextConfig: JSON.stringify(bundleTextConfig) });
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.bundleTextConfig).toEqual(bundleTextConfig);
+  });
+
+  it("saves direct box-selection config from percentage quantity display options", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      showDiscountProgressBar: true,
+      discountMessagingEnabled: true,
+      pricingDisplayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "5% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
+          successText: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+        },
+      },
+    });
+    const fd = makeFormData({ discountData: JSON.stringify(discountData) });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.boxSelection).toEqual({
+      isEnabled: true,
+      validateBoxSelectionQuantity: false,
+      rules: [
+        {
+          ruleId: "rule-2",
+          boxQuantity: 2,
+          boxLabel: "Box of 2",
+          boxSubtext: "5% off",
+          isDefaultSelected: true,
+        },
+      ],
+    });
+  });
+
+  it("clears direct box-selection config when the discount method is Buy X, get Y", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "buy_x_get_y",
+      discountRules: [
+        {
+          id: "rule-bxy",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 100,
+          customerBuys: 2,
+          customerGets: 1,
+        },
+      ],
+      pricingDisplayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-bxy",
+          optionsByRuleId: {
+            "rule-bxy": { label: "Box of 2", subtext: "Free item" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{discountConditionDiff}} product(s)",
+          successText: "Success",
+        },
+      },
+    });
+    const fd = makeFormData({ discountData: JSON.stringify(discountData) });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.boxSelection).toBeNull();
+  });
 });
 
 describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)", () => {
@@ -404,6 +581,93 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
+  it("syncs parent product status with Shopify's current product update mutation", async () => {
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const statusCall = MOCK_ADMIN.graphql.mock.calls.find(([query]) =>
+      String(query).includes("productUpdate")
+    );
+    expect(statusCall).toBeDefined();
+    expect(statusCall?.[1]).toEqual({
+      variables: { product: { id: PRODUCT_ID, status: "ACTIVE" } },
+    });
+  });
+
+  it("activates bundle parent products through a requiresComponents sequence when Shopify rejects unsupported channels", async () => {
+    MOCK_ADMIN.graphql.mockImplementation((query: string, variables: any) => {
+      if (String(query).includes("productUpdate") && variables?.variables?.product?.status === "ACTIVE") {
+        const directStatusCalls = MOCK_ADMIN.graphql.mock.calls.filter(([calledQuery]) =>
+          String(calledQuery).includes("productUpdate")
+        ).length;
+
+        if (directStatusCalls === 1) {
+          return Promise.resolve({
+            json: async () => ({
+              data: {
+                productUpdate: {
+                  product: { id: PRODUCT_ID, status: "DRAFT" },
+                  userErrors: [
+                    {
+                      field: ["resourcePublications", "channelId"],
+                      message: "Resource publications channel ChatGPT does not support bundle products",
+                    },
+                  ],
+                },
+              },
+            }),
+          });
+        }
+      }
+
+      if (String(query).includes("productVariantsBulkUpdate")) {
+        return Promise.resolve({
+          json: async () => ({
+            data: {
+              productVariantsBulkUpdate: {
+                productVariants: [
+                  {
+                    id: "gid://shopify/ProductVariant/999",
+                    requiresComponents: variables.variables.variants[0].requiresComponents,
+                  },
+                ],
+                userErrors: [],
+              },
+            },
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        json: async () => ({
+          data: {
+            productUpdate: {
+              product: { id: PRODUCT_ID, status: "ACTIVE" },
+              userErrors: [],
+            },
+          },
+        }),
+      });
+    });
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const variantUpdates = MOCK_ADMIN.graphql.mock.calls
+      .filter(([query]) => String(query).includes("productVariantsBulkUpdate"))
+      .map(([, options]) => options.variables.variants[0].requiresComponents);
+
+    expect(variantUpdates).toEqual([false, true]);
+  });
+
   it("returns 500 when no products found in any step", async () => {
     getDb().bundle.update.mockResolvedValue(
       makeUpdatedBundle({
@@ -431,6 +695,397 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const body = await res.json();
     expect(body.success).toBe(true);
+  });
+
+  it("keeps StepCategory products under categories in full-page standard config", async () => {
+    const categoryProduct = {
+      id: "gid://shopify/Product/789",
+      title: "Category Product",
+      variants: [{ id: "gid://shopify/ProductVariant/987", title: "Default" }],
+    };
+    const selectedCollection = {
+      id: "gid://shopify/Collection/456",
+      handle: "category-collection",
+      title: "Category Collection",
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            products: [],
+            collections: [],
+            StepProduct: [],
+            StepCategory: [
+              {
+                id: "category98476",
+                name: "Category 1",
+                title: "Category 1",
+                sortOrder: 0,
+                products: [categoryProduct],
+                selectedProducts: [],
+                collections: [],
+                collectionsData: [],
+                collectionsSelectedData: [selectedCollection],
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepsData({
+        StepCategory: [
+          {
+            id: "category98476",
+            title: "Category 1",
+            products: [categoryProduct],
+            collectionsSelectedData: [selectedCollection],
+          },
+        ],
+      })),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    const standardConfig = (convertBundleToStandardMetafields as jest.Mock).mock.calls[0][1];
+    expect(standardConfig.steps[0].products).toEqual([]);
+    expect(standardConfig.steps[0].collections).toEqual([]);
+    expect(standardConfig.steps[0].categories[0].products).toEqual([{
+      id: "gid://shopify/Product/789",
+      title: "Category Product",
+    }]);
+    expect(standardConfig.steps[0].categories[0].collectionsSelectedData).toEqual([selectedCollection]);
+  });
+
+  it("passes direct bundle summary text config into metafield sync", async () => {
+    const bundleTextConfig = {
+      bundleSummary: {
+        title: "Your Custom Box",
+        subTitle: "Review your selected items",
+      },
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        bundleTextConfig,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      bundleTextConfig: JSON.stringify(bundleTextConfig),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({ bundleTextConfig }),
+    );
+  });
+
+  it("persists direct add-ons personalization config and passes it into metafield sync", async () => {
+    const personalizationData = {
+      isPersonalizationEnabled: true,
+      addonProducts: {
+        isEnabled: true,
+        title: "Optional audit extras",
+        type: "MULTI_TIER",
+        tiers: [
+          {
+            tierId: "tier74285",
+            title: "Audit Tier 1",
+            selectedAddonProducts: [
+              {
+                id: "gid://shopify/Product/8322626126020",
+                productId: "8322626126020",
+                graphqlId: "gid://shopify/Product/8322626126020",
+                handle: "14k-dangling-obsidian-earrings",
+                title: "14k Dangling Obsidian Earrings",
+                variants: [
+                  {
+                    variantId: "45038877868228",
+                    variantGraphqlId: "gid://shopify/ProductVariant/45038877868228",
+                    price: "829.00",
+                    variantTitle: "Default Title",
+                  },
+                ],
+              },
+            ],
+            eligibilityCondition: {
+              type: "AMOUNT",
+              value: 1,
+              isValidateEligibilityConditionEnabled: true,
+            },
+            discount: { type: "PERCENTAGE", value: 10 },
+            displayVariantsAsIndividualProducts_addons: false,
+            conditions: [],
+          },
+        ],
+        multiLangData: {},
+        addonsMessaging: {
+          isEnabled: true,
+          tier1: {
+            ineligibleState: "Add product(s) worth at least {{addonsConditionDiff}} {{currencyUnit}} more to claim {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons",
+            eligibleState: "Congrats you are eligible for {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons",
+          },
+        },
+      },
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        personalizationData,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      personalizationData: JSON.stringify(personalizationData),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ personalizationData }),
+      })
+    );
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({ personalizationData }),
+    );
+  });
+
+  it("persists direct message personalization config and passes it into metafield sync", async () => {
+    const personalizationData = {
+      isPersonalizationEnabled: true,
+      giftMessage: {
+        isGiftMessageEnabled: true,
+        isSenderAndRecipientNameEnabled: true,
+        giftMessageCharacterLimit: "120",
+        isGiftMessageMandatory: true,
+        isVideoMessageEnabled: false,
+        isEmailEnabled: false,
+        messageProduct: {
+          isMessageProductEnabled: true,
+          status: "unlisted",
+          product: {
+            id: "gid://shopify/Product/8600867012804",
+            title: "Message",
+            variants: [
+              {
+                id: "gid://shopify/ProductVariant/46177973534916",
+                title: "Message",
+                price: "0.00",
+                taxable: false,
+                inventory_policy: "continue",
+              },
+            ],
+          },
+        },
+      },
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        personalizationData,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      personalizationData: JSON.stringify(personalizationData),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ personalizationData }),
+      })
+    );
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({ personalizationData }),
+    );
+  });
+
+  it("passes direct box-selection config into bundle variant metafield sync", async () => {
+    const boxSelection = {
+      isEnabled: true,
+      validateBoxSelectionQuantity: false,
+      rules: [
+        {
+          ruleId: "rule-2",
+          boxQuantity: 2,
+          boxLabel: "Box of 2",
+          boxSubtext: "5% off",
+          isDefaultSelected: true,
+        },
+      ],
+    };
+    getDb().bundle.update.mockImplementationOnce(async (args: any) =>
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        boxSelection: args.data.boxSelection,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      showDiscountProgressBar: true,
+      pricingDisplayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "5% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
+          successText: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+        },
+      },
+      tierTextByRuleId: {
+        "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
+      },
+    });
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      discountData: JSON.stringify(discountData),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        boxSelection,
+        pricing: expect.objectContaining({
+          messages: expect.objectContaining({
+            tierTextByRuleId: {
+              "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
+            },
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("serializes messages through the direct personalization draft instead of generic copy overrides", () => {
+    const source = configureRouteSource();
+
+    expect(source).toContain("buildGiftMessageDraftFromPersonalizationData");
+    expect(source).toContain("buildPersonalizationDataFromDraft(addonDraft, addonMessages, giftMessageDraft)");
+    expect(source).toContain("giftMessage: buildGiftMessageConfigFromDraft(giftMessageDraft)");
+    expect(source).not.toContain("textOverrides.giftMessageEnabled");
+    expect(source).not.toContain('setMessageOverride("giftMessageEnabled"');
+  });
+
+  it("keeps add-ons discount defaults independent from free-gift display state", () => {
+    const source = configureRouteSource();
+
+    expect(source).toContain("const discountValue = Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;");
+    expect(source).toContain("discountValue: 0,");
+    expect(source).not.toContain("tier?.displayFree ? 100 : 0");
+    expect(source).not.toContain("step.addonDisplayFree !== false ? 100 : 0");
+  });
+
+  it("keeps direct add-ons state independent from paid step data", () => {
+    const source = configureRouteSource();
+
+    expect(source).toContain("buildPersonalizationDataFromDraft(addonDraft, addonMessages, giftMessageDraft)");
+    expect(source).toContain("isFreeGift: false,");
+    expect(source).not.toContain('stepsState.updateStepField(step.id, "isFreeGift"');
+    expect(source).not.toContain("buildPersonalizationDataFromStep(personalizationStep");
   });
 
   it("returns 500 when component metafield update fails (fatal)", async () => {

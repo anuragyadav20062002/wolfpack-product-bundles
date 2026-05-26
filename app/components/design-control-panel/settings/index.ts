@@ -17,6 +17,7 @@ export { ToastsSettings } from "./ToastsSettings";
 export { CustomCssSettings } from "./CustomCssSettings";
 export { PromoBannerSettings } from "./PromoBannerSettings";
 export { TierPillSettings } from "./TierPillSettings";
+export { CartLineMessagingSettings } from "./CartLineMessagingSettings";
 
 // Types
 export type { SettingsComponentProps, SettingsPanelProps } from "./types";

@@ -189,6 +189,7 @@ export function mergeSettings(
     ...stepBarSettings,
     ...generalSettings,
     ...promoBannerSettings,
+    bundleCartLineMessaging: dbSettings.bundleCartLineMessaging ?? defaults.bundleCartLineMessaging,
   };
 }
 

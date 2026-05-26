@@ -18,7 +18,7 @@ Verify that `parseWpbTemplate` correctly parses `wpbLayoutTemplate` and `wpbPres
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 4 | FPB Standard | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "STANDARD" }` | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "STANDARD" }` | |
+| 4 | FPB Standard | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "DEFAULT" }` | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "DEFAULT" }` | Evidence-backed FPB Standard preset |
 | 5 | FPB Classic | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "CLASSIC" }` | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "CLASSIC" }` | |
 | 6 | FPB Compact | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "COMPACT" }` | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "COMPACT" }` | |
 | 7 | FPB Horizontal | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "HORIZONTAL" }` | `{ wpbLayoutTemplate: "FBP_SIDE_FOOTER", wpbPresetId: "HORIZONTAL" }` | |

@@ -40,9 +40,9 @@
 
 /* ── Edit App Canvas ─────────────────────────────────────────── */
 .editCanvas {
-  max-width: 840px;
-  margin: 0 auto;
-  padding: 0 0 88px;
+  max-width: 994px;
+  margin: 0;
+  padding: 0 0 88px 46px;
 }
 
 .canvasHeader {
@@ -50,7 +50,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 18px 0 16px;
+  margin: 22px 0 35px;
 }
 
 .canvasTitleGroup {
@@ -144,8 +144,8 @@
 }
 
 .leftColumn {
-  flex: 0 0 274px;
-  min-width: 274px;
+  flex: 0 0 310px;
+  min-width: 310px;
   position: sticky;
   top: 0;
   max-height: 100vh;
@@ -160,6 +160,44 @@
 
 .mainColumn .card {
   padding: 20px 24px 24px 20px;
+}
+
+.settingTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.settingTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.settingTitleMuted {
+  color: #8c9196;
+}
+
+.settingInlineSwitch {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.defaultProductsPickerGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: -8px;
+}
+
+.defaultProductsPickerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .leftCardHeader {
@@ -644,6 +682,23 @@
   composes: discountRuleHeader from "./bundle-configure-shared.module.css";
 }
 
+.bxyRuleBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bxyRewardGrid {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(220px, 1.25fr);
+  gap: 8px;
+  align-items: end;
+}
+
+.bxyRewardGrid > * {
+  min-width: 0;
+}
+
 .displayOptionsInactive {
   composes: displayOptionsInactive from "./bundle-configure-shared.module.css";
 }
@@ -720,6 +775,208 @@
   composes: messageNote from "./bundle-configure-shared.module.css";
 }
 
+.templateDialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.42);
+}
+
+.templateDialog {
+  width: min(920px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+  outline: none;
+}
+
+.templateDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.templateDialogHeading,
+.templateDialogSubheading,
+.templateReadyTitle {
+  margin: 0;
+  color: #111827;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.templateDialogHeading {
+  font-size: 18px;
+}
+
+.templateDialogSubheading,
+.templateReadyTitle {
+  font-size: 20px;
+}
+
+.templateDialogClose {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #303030;
+  cursor: pointer;
+}
+
+.templateDialogClose:hover,
+.templateDialogClose:focus-visible {
+  background: #f1f1f1;
+  outline: none;
+}
+
+.templateDialogBody {
+  padding: 24px;
+}
+
+.templateDialogIntro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.templateDialogDescription,
+.templateReadyText {
+  margin: 4px 0 0;
+  color: #6d7175;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.templateDialogGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.templateOptionCard {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid #e1e3e5;
+  border-radius: 8px;
+  background: #f6f6f7;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.templateOptionCard:hover,
+.templateOptionCard:focus-visible {
+  border-color: #8c9196;
+  outline: none;
+}
+
+.templateOptionCardSelected {
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 1px #1a1a1a;
+  cursor: default;
+}
+
+.templateOptionImageFrame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+
+.templateOptionImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.templateOptionFooter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.templateOptionLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.templateOptionAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid #babfc3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.templateOptionActionSelected {
+  border-color: #1a1a1a;
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.templateDialogFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 24px;
+}
+
+.templateDialogConfirmHeader {
+  margin-bottom: 24px;
+}
+
+.templateReadyPanel {
+  width: min(480px, 100%);
+  margin: 0 auto;
+  padding: 48px 40px;
+  border-radius: 8px;
+  background: #f6f6f7;
+  text-align: center;
+}
+
+.templateReadyIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: #e3f1eb;
+  color: #008060;
+}
+
 .templateVariableGrid {
   display: flex;
   flex-direction: column;
@@ -732,7 +989,7 @@
   gap: 10px;
 }
 
-/* ── Category Accordion (multi-category system — EB parity) ──── */
+/* ── Category Accordion (multi-category system) ──────────────── */
 .categoryDrag {
   composes: categoryDrag from "./bundle-configure-shared.module.css";
 }
@@ -1077,4 +1334,51 @@
 
 .pendingTooltipCard {
   composes: pendingTooltipCard from "./bundle-configure-shared.module.css";
+}
+
+@media (max-width: 980px) {
+  .editCanvas {
+    max-width: none;
+    padding: 0 12px 88px;
+  }
+
+  .editGrid {
+    flex-direction: column;
+  }
+
+  .leftColumn {
+    position: static;
+    flex: 0 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .bxyRewardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .templateDialogBackdrop {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .templateDialog {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+  }
+
+  .templateDialogIntro {
+    flex-direction: column;
+  }
+
+  .templateDialogGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .templateReadyPanel {
+    padding: 36px 24px;
+  }
 }

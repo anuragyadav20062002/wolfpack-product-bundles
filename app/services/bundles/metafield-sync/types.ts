@@ -32,6 +32,10 @@ export interface MetafieldSizeCheck {
 export interface PriceAdjustment {
   method: string;
   value: number;
+  customerBuys?: number;
+  customerGets?: number;
+  discountType?: string;
+  applyDiscountTo?: string;
   conditions?: {
     type: string;
     operator: string;
@@ -51,6 +55,18 @@ export interface BundleUiConfig {
   bundleType: string;
   shopifyProductId: string | null;
   fullPagePageHandle?: string | null;
+  bundleDesignTemplate?: string | null;
+  bundleDesignPresetId?: string | null;
+  bundleDesignTemplateData?: { templateId: string } | null;
+  defaultProductsData?: Record<string, unknown>;
+  boxSelection?: Record<string, unknown> | null;
+  bundleUpsellConfig?: Record<string, unknown> | null;
+  bundleTextConfig?: Record<string, unknown> | null;
+  personalizationData?: Record<string, unknown> | null;
+  discountDisplayOverride?: Record<string, unknown> | null;
+  individualSellingPlanSelection?: Record<string, unknown>;
+  validateQuantityPerProduct?: Record<string, unknown>;
+  useSingleStepCategoriesAsBundleSteps?: boolean;
   bundleVariantId: string;
   steps: BundleUiStep[];
   pricing: BundleUiPricing | null;

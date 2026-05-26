@@ -30,6 +30,7 @@ import { ModalCloseButtonSettings } from "./ModalCloseButtonSettings";
 import { FPBBadgesSettings } from "./FPBBadgesSettings";
 import { PDPBadgeSettings } from "./PDPBadgeSettings";
 import { StepTimelineSettings } from "./StepTimelineSettings";
+import { CartLineMessagingSettings } from "./CartLineMessagingSettings";
 
 /**
  * Maps each section key to the DesignSettings keys it controls.
@@ -125,6 +126,7 @@ const SECTION_KEYS: Partial<Record<string, Array<keyof DesignSettings>>> = {
     "emptyStateCardBgColor", "emptyStateCardBorderColor",
     "emptyStateTextColor", "emptyStateBorderStyle", "emptySlotBorderStyle",
   ],
+  cartLineMessaging: ["bundleCartLineMessaging"],
   searchInput: [
     "searchInputBgColor", "searchInputBorderColor", "searchInputFocusBorderColor",
     "searchInputTextColor", "searchInputPlaceholderColor",
@@ -336,6 +338,8 @@ export function SettingsPanel({
         return <AccessibilitySettings settings={settings} onUpdate={onUpdate} />;
       case "widgetStyle":
         return <WidgetStyleSettings settings={settings} onUpdate={onUpdate} />;
+      case "cartLineMessaging":
+        return <CartLineMessagingSettings settings={settings} onUpdate={onUpdate} />;
       case "tierPills":
         return <TierPillSettings settings={settings} onUpdate={onUpdate} />;
       case "modalCloseButton":

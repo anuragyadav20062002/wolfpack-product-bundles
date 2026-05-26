@@ -549,14 +549,17 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
       for (const product of bundleContainerProducts) {
         // Check if template exists, create if it doesn't
         const templateResult = await templateService.ensureProductTemplate(product.handle);
+        const templateHandle = templateResult.templatePath === "templates/product.json"
+          ? "product"
+          : `product.${product.handle}`;
 
         bundleSpecificTemplates.push({
-          id: `product.${product.handle}`,
+          id: `bundle-product-${product.handle}`,
           title: `${product.title} (Bundle Container)`,
-          handle: `product.${product.handle}`,
+          handle: templateHandle,
           description: templateResult.created
             ? `NEW TEMPLATE CREATED for ${product.title} - Widget automatically configured!`
-            : `Dedicated template for ${product.title} - Widget will be placed here`,
+            : `Default product template previewed with ${product.title} - Widget will be placed here`,
           recommended: true,
           bundleRelevant: true,
           fileType: templateResult.created ? 'NEW' : 'Existing',

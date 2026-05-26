@@ -19,6 +19,10 @@ const discountMethodOptionsSource = fs.readFileSync(
   path.join(process.cwd(), "app/constants/bundle.ts"),
   "utf8"
 );
+const ppbStylesSource = fs.readFileSync(
+  path.join(process.cwd(), "app/styles/routes/product-page-bundle-configure.module.css"),
+  "utf8"
+);
 
 describe("shared Discount Type live copy and order", () => {
   it("renders Fixed Amount Off first and uses the confirmed Buy X, get Y label", () => {
@@ -57,6 +61,22 @@ describe.each(Object.entries(sources))("%s Discount & Pricing live UI contract",
     expect(source).toContain("pricingState.setDiscountRules([nextRule])");
   });
 
+  it("resets stale success-message state and renders method-specific defaults when discount type changes", () => {
+    expect(source).toContain('setGlobalSuccessMessage("")');
+    expect(source).toContain("setSuccessMessageByLocale({})");
+    expect(source).toContain("getDefaultDiscountRuleSuccessMessage(pricingState.discountType)");
+  });
+
+  it("keeps success-message state in the save callback dependencies", () => {
+    const handleSaveStart = source.indexOf("const handleSave = useCallback");
+    const depsStart = source.indexOf("  }, [", handleSaveStart);
+    const depsEnd = source.indexOf("  ]);", depsStart);
+    const deps = source.slice(depsStart, depsEnd);
+
+    expect(deps).toContain("globalSuccessMessage");
+    expect(deps).toContain("successMessageByLocale");
+  });
+
   it("implements the translated box-label modal contract", () => {
     expect(source).toContain("bundleQuantityMultiLangModalRef");
     expect(source).toContain('id="discount-bundle-quantity-language-modal"');
@@ -93,5 +113,43 @@ describe.each(Object.entries(sources))("%s Discount & Pricing live UI contract",
     expect(quantity).toBeGreaterThan(-1);
     expect(progress).toBeGreaterThan(quantity);
     expect(messaging).toBeGreaterThan(progress);
+  });
+});
+
+describe("product-page Discount & Pricing Admin layout contract", () => {
+  it("uses the Shopify app title row plus the evidence-backed configure header", () => {
+    expect(sources.ppb).toContain("productPageBundleStyles.canvasHeader");
+    expect(sources.ppb).toContain("Configure Bundle Flow");
+    expect(sources.ppb).toContain("Readiness Score");
+    expect(sources.ppb).toContain("Preview Bundle");
+    expect(sources.ppb).not.toContain("<ui-title-bar");
+    expect(sources.ppb).not.toContain("<AppEmbedBanner");
+    expect(sources.ppb).not.toContain("productPageBundleStyles.appHeader");
+    expect(sources.ppb).not.toContain("Product Bundle Builder");
+  });
+
+  it("uses dedicated wrappers for the Buy X, get Y rule body and reward controls row", () => {
+    expect(sources.ppb).toContain("productPageBundleStyles.bxyRuleBody");
+    expect(sources.ppb).toContain("productPageBundleStyles.bxyRewardGrid");
+  });
+
+  it("keeps the Product Page configure canvas left-aligned and wide enough for the evidence-backed two-column shell", () => {
+    expect(ppbStylesSource).toContain("max-width: 994px;");
+    expect(ppbStylesSource).toContain("margin: 0;");
+    expect(ppbStylesSource).not.toContain("margin: 0 auto;");
+    expect(ppbStylesSource).toContain("margin: 22px 0 35px;");
+    expect(ppbStylesSource).toContain("flex: 0 0 310px;");
+    expect(ppbStylesSource).toContain("min-width: 310px;");
+  });
+
+  it("lays out Buy X, get Y reward controls as a three-column row on desktop", () => {
+    expect(ppbStylesSource).toContain(".bxyRewardGrid");
+    expect(ppbStylesSource).toContain("grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(220px, 1.25fr);");
+  });
+
+  it("does not keep unused internal app-header styles in the evidence-backed configure shell", () => {
+    expect(ppbStylesSource).not.toContain(".appHeader");
+    expect(ppbStylesSource).not.toContain(".appBrandBadge");
+    expect(ppbStylesSource).not.toContain(".appHeaderMenu");
   });
 });

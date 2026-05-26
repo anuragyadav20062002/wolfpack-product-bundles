@@ -1,18 +1,19 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useSubmit, useActionData, useNavigation, useNavigate } from "@remix-run/react";
-import { Modal, SaveBar, useAppBridge } from "@shopify/app-bridge-react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import { AppLogger } from "../../../lib/logger";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { prisma } from "../../../db.server";
 
 import { useDesignControlPanelState } from "../../../hooks/useDesignControlPanelState";
 import { BundleType } from "../../../constants/bundle";
 
 import { SettingsPanel } from "../../../components/design-control-panel/settings";
-import { PreviewPanel } from "../../../components/design-control-panel/preview";
+import { PreviewPanel } from "../../../components/design-control-panel/preview/PreviewPanel";
 import { NavigationSidebar } from "../../../components/design-control-panel/NavigationSidebar";
 import { CustomCssCard, CssGuideContent } from "../../../components/design-control-panel/CustomCssCard";
+import { AdditionalConfigurationsView } from "../../../components/design-control-panel/AdditionalConfigurationsView";
 
 import { DEFAULT_SETTINGS, mergeSettings } from "../../../components/design-control-panel/config";
 import { handleSaveSettings } from "./handlers.server";
@@ -22,6 +23,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const { session } = await requireAdminSession(request);
   const shopId = session.shop;
   const appUrl = (process.env.SHOPIFY_APP_URL ?? "").replace(/\/$/, "");
+  const requestUrl = new URL(request.url);
+  const modalParam = requestUrl.searchParams.get("modal");
+  const initialModal = modalParam === BundleType.FULL_PAGE || modalParam === BundleType.PRODUCT_PAGE
+    ? modalParam
+    : null;
+  const initialSection = requestUrl.searchParams.get("section");
 
   const [productPageSettings, fullPageSettings] = await Promise.all([
     prisma.designSettings.findUnique({
@@ -50,16 +57,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     shopId,
     settings,
     previewUrls: { pdp: pdpPreviewUrl, fpb: fpbPreviewUrl },
-    isPaywalled: false
+    isPaywalled: false,
+    initialModal,
+    initialSection,
   });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
-    const { session } = await requireAdminSession(request);
+    const { admin, session } = await requireAdminSession(request);
     const shopId = session.shop;
     const formData = await request.json();
-    return handleSaveSettings(shopId, formData);
+    return handleSaveSettings(shopId, formData, admin);
   } catch (error) {
     AppLogger.error("Error saving design settings", {
       component: "app.design-control-panel",
@@ -180,87 +189,43 @@ function ProductPageSvg() {
 // ─── Route Component ──────────────────────────────────────────────────────────
 
 export default function DesignControlPanel() {
-  const { settings, previewUrls, isPaywalled } = useLoaderData<typeof loader>();
+  const { settings, previewUrls, isPaywalled, initialModal, initialSection } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const shopify = useAppBridge();
+  const parsedInitialModal = initialModal === BundleType.FULL_PAGE || initialModal === BundleType.PRODUCT_PAGE
+    ? initialModal
+    : null;
+  const productPageInitialNavigation = parsedInitialModal === BundleType.PRODUCT_PAGE && initialSection
+    ? { expandedSection: "general", activeSubSection: initialSection }
+    : undefined;
+  const fullPageInitialNavigation = parsedInitialModal === BundleType.FULL_PAGE && initialSection
+    ? { expandedSection: "general", activeSubSection: initialSection }
+    : undefined;
 
   // Separate hook instances — one per bundle type, state fully isolated
-  const fullPageState = useDesignControlPanelState(settings, BundleType.FULL_PAGE);
-  const productPageState = useDesignControlPanelState(settings, BundleType.PRODUCT_PAGE);
+  const fullPageState = useDesignControlPanelState(settings, BundleType.FULL_PAGE, fullPageInitialNavigation);
+  const productPageState = useDesignControlPanelState(settings, BundleType.PRODUCT_PAGE, productPageInitialNavigation);
 
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isLoading = navigation.state === "submitting";
+  const [openModalBundleType, setOpenModalBundleType] = useState<BundleType | null>(parsedInitialModal);
+  const [isCssGuideOpen, setCssGuideOpen] = useState(false);
 
   // Track which bundle type was last submitted (to route actionData to correct state)
-  const lastSavedBundleType = useRef<BundleType>(BundleType.PRODUCT_PAGE);
-
-  // Save bar visibility refs
-  const fullPageSaveBarVisibleRef = useRef(false);
-  const productPageSaveBarVisibleRef = useRef(false);
-  const fullPageSaveBarTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const productPageSaveBarTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // ── Save bar management — full page ──────────────────────────────────────────
-  useEffect(() => {
-    if (fullPageSaveBarTimeoutRef.current) clearTimeout(fullPageSaveBarTimeoutRef.current);
-
-    if (fullPageState.hasUnsavedChanges) {
-      if (!fullPageSaveBarVisibleRef.current) {
-        void shopify.saveBar.show('dcp-full-page-save-bar');
-        fullPageSaveBarVisibleRef.current = true;
-      }
-    } else {
-      fullPageSaveBarTimeoutRef.current = setTimeout(() => {
-        if (!fullPageState.hasUnsavedChanges && fullPageSaveBarVisibleRef.current) {
-          void shopify.saveBar.hide('dcp-full-page-save-bar');
-          fullPageSaveBarVisibleRef.current = false;
-        }
-      }, 100);
-    }
-
-    return () => { if (fullPageSaveBarTimeoutRef.current) clearTimeout(fullPageSaveBarTimeoutRef.current); };
-  }, [fullPageState.hasUnsavedChanges, shopify]);
-
-  // ── Save bar management — product page ───────────────────────────────────────
-  useEffect(() => {
-    if (productPageSaveBarTimeoutRef.current) clearTimeout(productPageSaveBarTimeoutRef.current);
-
-    if (productPageState.hasUnsavedChanges) {
-      if (!productPageSaveBarVisibleRef.current) {
-        void shopify.saveBar.show('dcp-product-page-save-bar');
-        productPageSaveBarVisibleRef.current = true;
-      }
-    } else {
-      productPageSaveBarTimeoutRef.current = setTimeout(() => {
-        if (!productPageState.hasUnsavedChanges && productPageSaveBarVisibleRef.current) {
-          void shopify.saveBar.hide('dcp-product-page-save-bar');
-          productPageSaveBarVisibleRef.current = false;
-        }
-      }, 100);
-    }
-
-    return () => { if (productPageSaveBarTimeoutRef.current) clearTimeout(productPageSaveBarTimeoutRef.current); };
-  }, [productPageState.hasUnsavedChanges, shopify]);
+  const [lastSavedBundleType, setLastSavedBundleType] = useState<BundleType>(BundleType.PRODUCT_PAGE);
 
   // ── Action data handler ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!actionData) return;
 
-    const targetState = lastSavedBundleType.current === BundleType.FULL_PAGE ? fullPageState : productPageState;
-    const saveBarId = lastSavedBundleType.current === BundleType.FULL_PAGE ? 'dcp-full-page-save-bar' : 'dcp-product-page-save-bar';
+    const targetState = lastSavedBundleType === BundleType.FULL_PAGE ? fullPageState : productPageState;
 
     targetState.setToastActive(true);
     targetState.setToastMessage(actionData.message);
     targetState.setToastError(!actionData.success);
 
     if (actionData.success) {
-      void shopify.saveBar.hide(saveBarId);
-      if (lastSavedBundleType.current === BundleType.FULL_PAGE) {
-        fullPageSaveBarVisibleRef.current = false;
-      } else {
-        productPageSaveBarVisibleRef.current = false;
-      }
       targetState.markAsSaved();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,7 +233,7 @@ export default function DesignControlPanel() {
 
   // ── Save handlers ─────────────────────────────────────────────────────────────
   const handleSaveFullPage = useCallback(() => {
-    lastSavedBundleType.current = BundleType.FULL_PAGE;
+    setLastSavedBundleType(BundleType.FULL_PAGE);
     submit(
       { bundleType: BundleType.FULL_PAGE, settings: fullPageState.getSettingsForSave() },
       { method: "post", encType: "application/json" }
@@ -276,7 +241,7 @@ export default function DesignControlPanel() {
   }, [fullPageState, submit]);
 
   const handleSaveProductPage = useCallback(() => {
-    lastSavedBundleType.current = BundleType.PRODUCT_PAGE;
+    setLastSavedBundleType(BundleType.PRODUCT_PAGE);
     submit(
       { bundleType: BundleType.PRODUCT_PAGE, settings: productPageState.getSettingsForSave() },
       { method: "post", encType: "application/json" }
@@ -284,7 +249,7 @@ export default function DesignControlPanel() {
   }, [productPageState, submit]);
 
   const handleSaveCustomCss = useCallback((bundleType: BundleType) => {
-    lastSavedBundleType.current = bundleType;
+    setLastSavedBundleType(bundleType);
     const targetState = bundleType === BundleType.FULL_PAGE ? fullPageState : productPageState;
     submit(
       { bundleType, settings: targetState.getSettingsForSave() },
@@ -294,18 +259,30 @@ export default function DesignControlPanel() {
 
   // ── Modal handlers ────────────────────────────────────────────────────────────
   const handleOpenFullPageModal = useCallback(() => {
-    void shopify.modal.show('dcp-full-page-modal');
-  }, [shopify]);
+    setOpenModalBundleType(BundleType.FULL_PAGE);
+  }, []);
 
   const handleOpenProductPageModal = useCallback(() => {
-    void shopify.modal.show('dcp-product-page-modal');
-  }, [shopify]);
+    setOpenModalBundleType(BundleType.PRODUCT_PAGE);
+  }, []);
 
   const handleOpenCssGuide = useCallback(() => {
-    void shopify.modal.show('css-guide-modal');
-  }, [shopify]);
+    setCssGuideOpen(true);
+  }, []);
 
   const navigate = useNavigate();
+  const activeModalState = openModalBundleType === BundleType.FULL_PAGE ? fullPageState : productPageState;
+  const activeModalDefaults = openModalBundleType === BundleType.FULL_PAGE
+    ? DEFAULT_SETTINGS.full_page
+    : DEFAULT_SETTINGS.product_page;
+  const activeModalPreviewUrl = openModalBundleType === BundleType.FULL_PAGE
+    ? previewUrls.fpb
+    : previewUrls.pdp;
+  const activeModalSave = openModalBundleType === BundleType.FULL_PAGE
+    ? handleSaveFullPage
+    : handleSaveProductPage;
+  const isCartMessagingSection = activeModalState.activeSubSection === "cartLineMessaging";
+  const isAdditionalConfigurationsView = openModalBundleType === BundleType.PRODUCT_PAGE && isCartMessagingSection;
 
   // Replace Toast component with shopify.toast.show()
   useEffect(() => {
@@ -324,173 +301,202 @@ export default function DesignControlPanel() {
 
   return (
     <>
-      <ui-title-bar title="Design Control Panel">
-        <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
-          Dashboard
-        </button>
+      <ui-title-bar title={isAdditionalConfigurationsView ? "Wolfpack Product Bundles" : "Design Control Panel"}>
+        {!isAdditionalConfigurationsView && (
+          <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
+            Dashboard
+          </button>
+        )}
       </ui-title-bar>
 
-      <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
-        <s-stack direction="block" gap="large">
+      {isAdditionalConfigurationsView ? (
+        <AdditionalConfigurationsView
+          settings={productPageState.settings}
+          onUpdate={productPageState.updateSetting}
+          hasUnsavedChanges={productPageState.hasUnsavedChanges}
+          isLoading={isLoading}
+          onBack={() => {
+            setOpenModalBundleType(null);
+            navigate("/app/design-control-panel");
+          }}
+          onDiscard={productPageState.handleDiscard}
+          onSave={handleSaveProductPage}
+        />
+      ) : (
+        <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 4px 88px" }}>
+          <s-stack direction="block" gap="large">
 
-          {isPaywalled && (
-            <s-banner tone="warning" heading="Design Control Panel is a Grow plan feature">
-              <p>
-                Unlock full design customization — colors, typography, hover animations, and
-                custom CSS — by upgrading to the Grow plan for $9.99/month.
-              </p>
-              <s-button slot="primaryAction" href="/app/pricing">Upgrade to Grow</s-button>
-            </s-banner>
-          )}
+            {isPaywalled && (
+              <s-banner tone="warning" heading="Design Control Panel is a Grow plan feature">
+                <p>
+                  Unlock full design customization — colors, typography, hover animations, and
+                  custom CSS — by upgrading to the Grow plan for $9.99/month.
+                </p>
+                <s-button slot="primaryAction" href="/app/pricing">Upgrade to Grow</s-button>
+              </s-banner>
+            )}
 
-          <div className={designControlPanelStyles.landingCardsRow}>
-            <s-section>
-              <div className={designControlPanelStyles.bundleCardInner}>
-                <div className={designControlPanelStyles.bundleCardSvgWrapper}>
-                  <FullPageSvg />
+            <div className={designControlPanelStyles.landingCardsRow}>
+              <s-section>
+                <div className={designControlPanelStyles.bundleCardInner}>
+                  <div className={designControlPanelStyles.bundleCardSvgWrapper}>
+                    <FullPageSvg />
+                  </div>
+                  <s-stack direction="block" gap="small-400">
+                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Landing Page Bundles</h2>
+                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                      Customize storefront UI for full page bundles
+                    </p>
+                  </s-stack>
+                  {isPaywalled ? (
+                    <s-button href="/app/pricing">Upgrade to Customize</s-button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={designControlPanelStyles.primaryActionButton}
+                      onClick={handleOpenFullPageModal}
+                    >
+                      Customize
+                    </button>
+                  )}
                 </div>
-                <s-stack direction="block" gap="small-400">
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Landing Page Bundles</h2>
-                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                    Customize storefront UI for full page bundles
-                  </p>
-                </s-stack>
-                {isPaywalled ? (
-                  <s-button href="/app/pricing">Upgrade to Customize</s-button>
-                ) : (
-                  <s-button variant="primary" onClick={handleOpenFullPageModal}>Customize</s-button>
-                )}
-              </div>
-            </s-section>
+              </s-section>
 
-            <s-section>
-              <div className={designControlPanelStyles.bundleCardInner}>
-                <div className={designControlPanelStyles.bundleCardSvgWrapper} style={{ background: "#F7F7F7" }}>
-                  <ProductPageSvg />
+              <s-section>
+                <div className={designControlPanelStyles.bundleCardInner}>
+                  <div className={designControlPanelStyles.bundleCardSvgWrapper} style={{ background: "#F7F7F7" }}>
+                    <ProductPageSvg />
+                  </div>
+                  <s-stack direction="block" gap="small-400">
+                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Product Bundles</h2>
+                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                      Customize storefront UI for product page bundles
+                    </p>
+                  </s-stack>
+                  {isPaywalled ? (
+                    <s-button href="/app/pricing">Upgrade to Customize</s-button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={designControlPanelStyles.primaryActionButton}
+                      onClick={handleOpenProductPageModal}
+                    >
+                      Customize
+                    </button>
+                  )}
                 </div>
-                <s-stack direction="block" gap="small-400">
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Product Bundles</h2>
-                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                    Customize storefront UI for product page bundles
-                  </p>
-                </s-stack>
-                {isPaywalled ? (
-                  <s-button href="/app/pricing">Upgrade to Customize</s-button>
-                ) : (
-                  <s-button variant="primary" onClick={handleOpenProductPageModal}>Customize</s-button>
-                )}
-              </div>
-            </s-section>
+              </s-section>
+            </div>
+
+            <div style={{ opacity: isPaywalled ? 0.5 : 1, pointerEvents: isPaywalled ? "none" : undefined }}>
+              <CustomCssCard
+                fullPageCss={fullPageState.settings.customCss ?? ""}
+                productPageCss={productPageState.settings.customCss ?? ""}
+                onFullPageCssChange={(v) => fullPageState.updateSetting("customCss", v)}
+                onProductPageCssChange={(v) => productPageState.updateSetting("customCss", v)}
+                onSave={handleSaveCustomCss}
+                onOpenCssGuide={handleOpenCssGuide}
+                isLoading={isLoading}
+              />
+            </div>
+
+          </s-stack>
+        </div>
+      )}
+
+      {openModalBundleType && !isAdditionalConfigurationsView && (
+        <div className={designControlPanelStyles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={designControlPanelStyles.modalHeader}>
+            <h2 className={designControlPanelStyles.modalTitle}>
+              {openModalBundleType === BundleType.FULL_PAGE ? "Landing Page Bundles" : "Product Bundles"}
+            </h2>
+            <button
+              type="button"
+              className={designControlPanelStyles.modalCloseButton}
+              onClick={() => setOpenModalBundleType(null)}
+              aria-label="Close"
+            >
+              X
+            </button>
           </div>
-
-          <div style={{ opacity: isPaywalled ? 0.5 : 1, pointerEvents: isPaywalled ? "none" : undefined }}>
-            <CustomCssCard
-              fullPageCss={fullPageState.settings.customCss ?? ""}
-              productPageCss={productPageState.settings.customCss ?? ""}
-              onFullPageCssChange={(v) => fullPageState.updateSetting("customCss", v)}
-              onProductPageCssChange={(v) => productPageState.updateSetting("customCss", v)}
-              onSave={handleSaveCustomCss}
-              onOpenCssGuide={handleOpenCssGuide}
-              isLoading={isLoading}
+          <div className={designControlPanelStyles.modalContainer}>
+            <NavigationSidebar
+              bundleType={openModalBundleType}
+              expandedSection={activeModalState.expandedSection}
+              activeSubSection={activeModalState.activeSubSection}
+              onToggleSection={activeModalState.toggleSection}
+              onSubSectionClick={activeModalState.handleSubSectionClick}
             />
-          </div>
-
-        </s-stack>
-      </div>
-
-      <Modal id="dcp-full-page-modal" variant="max">
-        <div className={designControlPanelStyles.modalContainer}>
-          <NavigationSidebar
-            bundleType={BundleType.FULL_PAGE}
-            expandedSection={fullPageState.expandedSection}
-            activeSubSection={fullPageState.activeSubSection}
-            onToggleSection={fullPageState.toggleSection}
-            onSubSectionClick={fullPageState.handleSubSectionClick}
-          />
-          <div className={designControlPanelStyles.contentArea}>
-            <div className={designControlPanelStyles.previewPanel}>
-              <div className={designControlPanelStyles.previewWrapper}>
-                <PreviewPanel
-                  settings={fullPageState.settings}
-                  bundleType={BundleType.FULL_PAGE}
-                  previewUrl={previewUrls.fpb}
-                  activeSubSection={fullPageState.activeSubSection}
+            <div className={isCartMessagingSection ? designControlPanelStyles.mainSettingsContentArea : designControlPanelStyles.contentArea}>
+              {!isCartMessagingSection && (
+                <div className={designControlPanelStyles.previewPanel}>
+                  <div className={designControlPanelStyles.previewWrapper}>
+                    <PreviewPanel
+                      settings={activeModalState.settings}
+                      bundleType={openModalBundleType}
+                      previewUrl={activeModalPreviewUrl}
+                      activeSubSection={activeModalState.activeSubSection}
+                    />
+                  </div>
+                </div>
+              )}
+              <div className={isCartMessagingSection ? designControlPanelStyles.mainSettingsPanel : designControlPanelStyles.settingsPanel}>
+                <SettingsPanel
+                  activeSubSection={activeModalState.activeSubSection}
+                  settings={activeModalState.settings}
+                  onUpdate={activeModalState.updateSetting}
+                  onBatchUpdate={activeModalState.updateSettings}
+                  customCssHelpOpen={activeModalState.customCssHelpOpen}
+                  setCustomCssHelpOpen={activeModalState.setCustomCssHelpOpen}
+                  defaultSettings={activeModalDefaults}
                 />
               </div>
             </div>
-            <div className={designControlPanelStyles.settingsPanel}>
-              <SettingsPanel
-                activeSubSection={fullPageState.activeSubSection}
-                settings={fullPageState.settings}
-                onUpdate={fullPageState.updateSetting}
-                onBatchUpdate={fullPageState.updateSettings}
-                customCssHelpOpen={fullPageState.customCssHelpOpen}
-                setCustomCssHelpOpen={fullPageState.setCustomCssHelpOpen}
-                defaultSettings={DEFAULT_SETTINGS.full_page}
-              />
-            </div>
           </div>
-        </div>
-      </Modal>
-
-      <Modal id="dcp-product-page-modal" variant="max">
-        <div className={designControlPanelStyles.modalContainer}>
-          <NavigationSidebar
-            bundleType={BundleType.PRODUCT_PAGE}
-            expandedSection={productPageState.expandedSection}
-            activeSubSection={productPageState.activeSubSection}
-            onToggleSection={productPageState.toggleSection}
-            onSubSectionClick={productPageState.handleSubSectionClick}
-          />
-          <div className={designControlPanelStyles.contentArea}>
-            <div className={designControlPanelStyles.previewPanel}>
-              <div className={designControlPanelStyles.previewWrapper}>
-                <PreviewPanel
-                  settings={productPageState.settings}
-                  bundleType={BundleType.PRODUCT_PAGE}
-                  previewUrl={previewUrls.pdp}
-                  activeSubSection={productPageState.activeSubSection}
-                />
+          {activeModalState.hasUnsavedChanges && (
+            <div className={designControlPanelStyles.modalFooter}>
+              <span className={designControlPanelStyles.unsavedLabel}>Unsaved changes</span>
+              <div className={designControlPanelStyles.modalFooterActions}>
+                <button
+                  type="button"
+                  className={designControlPanelStyles.secondaryActionButton}
+                  onClick={activeModalState.handleDiscard}
+                  disabled={isLoading}
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  className={designControlPanelStyles.primaryActionButton}
+                  onClick={activeModalSave}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Saving...' : 'Save'}
+                </button>
               </div>
             </div>
-            <div className={designControlPanelStyles.settingsPanel}>
-              <SettingsPanel
-                activeSubSection={productPageState.activeSubSection}
-                settings={productPageState.settings}
-                onUpdate={productPageState.updateSetting}
-                onBatchUpdate={productPageState.updateSettings}
-                customCssHelpOpen={productPageState.customCssHelpOpen}
-                setCustomCssHelpOpen={productPageState.setCustomCssHelpOpen}
-                defaultSettings={DEFAULT_SETTINGS.product_page}
-              />
-            </div>
+          )}
+        </div>
+      )}
+
+      {isCssGuideOpen && (
+        <div className={designControlPanelStyles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={designControlPanelStyles.modalHeader}>
+            <h2 className={designControlPanelStyles.modalTitle}>CSS Guide</h2>
+            <button
+              type="button"
+              className={designControlPanelStyles.modalCloseButton}
+              onClick={() => setCssGuideOpen(false)}
+              aria-label="Close"
+            >
+              X
+            </button>
+          </div>
+          <div className={designControlPanelStyles.cssGuideContent}>
+            <CssGuideContent />
           </div>
         </div>
-      </Modal>
-
-      <Modal id="css-guide-modal" variant="max">
-        <div style={{ padding: "20px" }}>
-          <CssGuideContent />
-        </div>
-      </Modal>
-
-      <SaveBar id="dcp-full-page-save-bar">
-        <button variant="primary" onClick={handleSaveFullPage} disabled={isLoading}>
-          {isLoading ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={fullPageState.handleDiscard} disabled={isLoading}>
-          Discard
-        </button>
-      </SaveBar>
-
-      <SaveBar id="dcp-product-page-save-bar">
-        <button variant="primary" onClick={handleSaveProductPage} disabled={isLoading}>
-          {isLoading ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={productPageState.handleDiscard} disabled={isLoading}>
-          Discard
-        </button>
-      </SaveBar>
+      )}
     </>
   );
 }

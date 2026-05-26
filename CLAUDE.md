@@ -409,6 +409,28 @@ python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; 
 
 ---
 
+## 🔗 EB Help Links — Read Before Every Implementation
+
+Before implementing any EB feature, click and read **every** "How to setup" and "Learn More" link visible on any relevant card or feature in the EB app.
+
+**Why:** These links contain precise setup instructions, field explanations, and behavior details that are not visible from the UI alone. Skipping them means implementing based on guesswork.
+
+**Rules:**
+- ✅ Click every help/learn-more link on the relevant card or feature page before writing any code
+- ✅ If the link opens a **popup** (overlay/modal inside the EB app) — read the full popup content before dismissing
+- ✅ If the link opens a **new tab** (external website or docs page) — fetch and read the full page content via `WebFetch`
+- ❌ Do NOT start implementation until all available help links for that feature have been read
+- ❌ Do NOT assume the UI alone is sufficient — help content routinely reveals hidden fields, constraints, and sequencing requirements
+
+**Workflow:**
+1. Navigate to the relevant EB card/page in Chrome DevTools MCP
+2. `take_snapshot()` — identify all "How to setup", "Learn More", "?" or similar link text
+3. Click each link; screenshot and read popup content OR `WebFetch` the opened URL
+4. Document any new facts discovered in `internal docs/EB Implementation Reference.md`
+5. Only then proceed to implementation
+
+---
+
 ## 🎯 EB Implementation Reference — Grounded Truth for Porting
 
 When implementing any feature that mirrors EB behaviour — step/category data shapes, admin API payloads, template IDs, storefront runtime globals, cart add format, box selection enforcement, or text config — **consult `internal docs/EB Implementation Reference.md` first.**
@@ -502,5 +524,5 @@ Always `select_page` to the **iframe target** before `evaluate_script`. For thir
 
 ---
 
-**Last Updated:** 2026-05-22
+**Last Updated:** 2026-05-24
 **Author:** Aditya Awasthi

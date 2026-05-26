@@ -327,6 +327,16 @@ export const PRODUCT_PAGE_DEFAULTS: DesignSettings = {
   stepTimelineInactiveColor: "#9CA3AF",
   stepTimelineCompleteColor: "#000000",
 
+  bundleCartLineMessaging: {
+    isEnabled: true,
+    showBundleContains: true,
+    showOriginalPrice: true,
+    discountDisplay: {
+      isEnabled: true,
+      format: "amount_percentage",
+    },
+  },
+
   // Custom CSS (empty by default)
   customCss: "",
 };

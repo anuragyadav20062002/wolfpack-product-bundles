@@ -141,6 +141,15 @@ export interface DesignSettings {
   freeGiftBadgePosition?: string;        // top-left | top-right | bottom-left | bottom-right
   includedBadgeUrl?: string;             // optional custom image for "Included" badge on default step cards
   includedBadgePosition?: string;        // top-left | top-right | bottom-left | bottom-right
+  bundleCartLineMessaging?: {
+    isEnabled: boolean;
+    showBundleContains: boolean;
+    showOriginalPrice: boolean;
+    discountDisplay: {
+      isEnabled: boolean;
+      format: string;
+    };
+  };
 
   // Pricing Tier Pills (Full-Page Bundles — fpb-tier-selection-1)
   tierPillActiveBgColor?: string;        // active pill background
@@ -156,7 +165,7 @@ export interface DesignSettings {
   tierPillGap?: number;                  // 4–32px gap between pills
 
   // Additional fields
-  [key: string]: string | number | boolean | undefined;
+  [key: string]: string | number | boolean | Record<string, unknown> | undefined;
 }
 
 export interface NavigationItemProps {

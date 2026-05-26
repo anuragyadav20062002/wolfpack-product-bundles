@@ -299,14 +299,40 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
   });
 
   it("creates StepCategory records in DB with correct shape", async () => {
+    const categoryCondition = { type: "quantity", condition: "greaterThanOrEqualTo", value: "01" };
+    const categoryProduct = {
+      id: "gid://shopify/Product/777",
+      productId: "777",
+      graphqlId: "gid://shopify/Product/777",
+      handle: "widget",
+      title: "Widget",
+      variants: [{ variantGraphqlId: "gid://shopify/ProductVariant/888" }],
+    };
+    const selectedCollection = {
+      id: "gid://shopify/Collection/333",
+      handle: "frontpage",
+      title: "Home page",
+      productsCount: 1,
+    };
     const stepsData = [
       makeStep({
         StepCategory: [
           {
+            categoryId: "category98476",
             name: "Cat B",
-            sortOrder: 0,
-            products: [{ id: "gid://shopify/Product/777", title: "Widget" }],
+            title: "Pick audit items",
+            subTitle: "Choose products",
+            categoryRank: 1,
+            conditions: [categoryCondition],
+            autoNextStepOnConditionMet: true,
+            products: [categoryProduct],
             collections: [],
+            collectionsData: [],
+            collectionsSelectedData: [selectedCollection],
+            categoryBanner: "https://cdn.example/category.png",
+            displayVariantsAsIndividualProducts: true,
+            displayVariantsAsSwatches: true,
+            multiLangData: { en: { title: "Pick audit items" } },
           },
         ],
       }),
@@ -319,8 +345,24 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
     const updateCall = getDb().bundle.update.mock.calls[0][0];
     const stepCreate = updateCall.data.steps.create[0];
-    expect(stepCreate.StepCategory.create[0].name).toBe("Cat B");
-    expect(stepCreate.StepCategory.create[0].sortOrder).toBe(0);
+    expect(stepCreate.StepCategory.create[0]).toMatchObject({
+      id: "category98476",
+      name: "Cat B",
+      title: "Pick audit items",
+      subTitle: "Choose products",
+      sortOrder: 1,
+      categoryRank: 1,
+      conditions: [categoryCondition],
+      autoNextStepOnConditionMet: true,
+      products: [categoryProduct],
+      collections: [selectedCollection],
+      collectionsData: [],
+      collectionsSelectedData: [selectedCollection],
+      categoryBanner: "https://cdn.example/category.png",
+      displayVariantsAsIndividualProducts: true,
+      displayVariantsAsSwatches: true,
+      multiLangData: { en: { title: "Pick audit items" } },
+    });
   });
 
   it("returns 500 when a StepProduct has a UUID ID", async () => {
@@ -441,6 +483,107 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error).toMatch(/add products/i);
+  });
+
+  it("accepts category-backed products during metafield validation", async () => {
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [],
+            StepCategory: [
+              {
+                name: "Category A",
+                products: [{ id: "gid://shopify/Product/789", title: "Category Product" }],
+                collections: [],
+              },
+            ],
+            products: [],
+            collections: [],
+          },
+        ],
+      })
+    );
+    const stepsData = [
+      makeStep({
+        StepCategory: [
+          {
+            name: "Category A",
+            sortOrder: 0,
+            products: [{ id: "gid://shopify/Product/789", title: "Category Product" }],
+            collections: [],
+          },
+        ],
+      }),
+    ];
+    const fd = makeFormData({
+      stepsData: JSON.stringify(stepsData),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateComponentProductMetafields).toHaveBeenCalled();
+  });
+
+  it("passes direct Bundle Settings contracts into bundle product metafield sync", async () => {
+    const directContracts = {
+      defaultProductsData: {
+        isDefaultProductsEnabled: false,
+        products: [],
+      },
+      validateQuantityPerProduct: {
+        isEnabled: true,
+        allowedQuantity: 1,
+      },
+      individualSellingPlanSelection: {
+        isEnabled: false,
+        showFor: "ALL_PRODUCTS",
+      },
+      bundleTextConfig: {
+        bundleSummary: {
+          title: "Your Bundle",
+          subTitle: "Review your bundle",
+        },
+      },
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+        ...directContracts,
+      })
+    );
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      defaultProductsData: JSON.stringify(directContracts.defaultProductsData),
+      validateQuantityPerProduct: JSON.stringify(directContracts.validateQuantityPerProduct),
+      individualSellingPlanSelection: JSON.stringify(directContracts.individualSellingPlanSelection),
+      bundleTextConfig: JSON.stringify(directContracts.bundleTextConfig),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining(directContracts),
+    );
   });
 
   it("returns 500 when component metafield update fails (fatal)", async () => {

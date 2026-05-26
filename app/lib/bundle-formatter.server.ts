@@ -9,6 +9,8 @@
  * JSON shape the widget expects.
  */
 
+import { formatStepCategoriesForRuntime } from "./bundle-config/category-runtime";
+
 /** Convert a Shopify GID to its numeric ID for storefront cart operations. */
 function extractNumericId(gid: string): string {
   const match = gid.match(/\/(\d+)$/);
@@ -22,6 +24,18 @@ export interface FormattedBundle {
   status: string;
   bundleType: string;
   fullPageLayout: string | null;
+  bundleDesignTemplate: string | null;
+  bundleDesignPresetId: string | null;
+  bundleDesignTemplateData: { templateId: string } | null;
+  defaultProductsData: Record<string, unknown>;
+  boxSelection: Record<string, unknown> | null;
+  bundleUpsellConfig: Record<string, unknown> | null;
+  bundleTextConfig: Record<string, unknown> | null;
+  personalizationData: Record<string, unknown> | null;
+  discountDisplayOverride: Record<string, unknown> | null;
+  individualSellingPlanSelection: Record<string, unknown>;
+  validateQuantityPerProduct: Record<string, unknown>;
+  useSingleStepCategoriesAsBundleSteps: boolean;
   shopifyProductId: string | null;
   steps: FormattedStep[];
   pricing: FormattedPricing | null;
@@ -38,6 +52,7 @@ export interface FormattedBundle {
 interface FormattedStep {
   id: string;
   name: string;
+  pageTitle: string | null;
   position: number;
   minQuantity: number | null;
   maxQuantity: number | null;
@@ -45,6 +60,7 @@ interface FormattedStep {
   displayVariantsAsIndividual: boolean;
   products: FormattedProduct[];
   collections: unknown[];
+  categories: unknown[];
   conditionType: string | null;
   conditionOperator: string | null;
   conditionValue: string | null;
@@ -87,20 +103,38 @@ interface FormattedPricing {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStepSourceProducts(step: any): any[] {
+  return Array.isArray(step.StepProduct) ? [...step.StepProduct] : [];
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getProductId(product: any): string {
+  return product.productId ?? product.id ?? product.graphqlId ?? "";
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getImageUrl(image: any): string | null {
+  if (!image) return null;
+  if (typeof image === "string") return image;
+  return image.url ?? image.originalSrc ?? image.src ?? null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function formatBundleForWidget(bundle: any): FormattedBundle {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const steps = (bundle.steps ?? []).map((step: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stepProducts = (step.StepProduct ?? []) as any[];
+    const stepProducts = getStepSourceProducts(step);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const productsArray: FormattedProduct[] = stepProducts.map((sp: any) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dbVariants = (sp.variants as any[]) ?? [];
       const firstVariant = dbVariants[0];
+      const productId = getProductId(sp);
 
       return {
-        id: sp.productId,
+        id: productId,
         title: sp.title,
         featuredImage: sp.imageUrl ? { url: sp.imageUrl } : null,
         price: firstVariant?.price ? Math.round(parseFloat(firstVariant.price) * 100) : 0,
@@ -109,23 +143,27 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
           : null,
         available: true,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        variants: dbVariants.map((v: any): FormattedVariant => ({
-          id: extractNumericId(v.id ?? ''),
-          gid: v.id ?? '',
-          title: v.title ?? 'Default Title',
-          price: Math.round(parseFloat(v.price ?? '0') * 100),
-          compareAtPrice: v.compareAtPrice
-            ? Math.round(parseFloat(v.compareAtPrice) * 100)
-            : null,
-          image: v.imageUrl ? { url: v.imageUrl } : (v.image ?? null),
-          available: true,
-        })),
+        variants: dbVariants.map((v: any): FormattedVariant => {
+          const variantImageUrl = getImageUrl(v.imageUrl ?? v.image);
+          return {
+            id: extractNumericId(v.id ?? ''),
+            gid: v.id ?? '',
+            title: v.title ?? 'Default Title',
+            price: Math.round(parseFloat(v.price ?? '0') * 100),
+            compareAtPrice: v.compareAtPrice
+              ? Math.round(parseFloat(v.compareAtPrice) * 100)
+              : null,
+            image: variantImageUrl ? { url: variantImageUrl } : null,
+            available: true,
+          };
+        }),
       };
-    });
+    }).filter((product) => product.id);
 
     return {
       id: step.id,
       name: step.name,
+      pageTitle: step.pageTitle ?? null,
       position: step.position,
       minQuantity: step.minQuantity,
       maxQuantity: step.maxQuantity,
@@ -133,6 +171,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       displayVariantsAsIndividual: step.displayVariantsAsIndividual,
       products: productsArray,
       collections: Array.isArray(step.collections) ? step.collections : [],
+      categories: formatStepCategoriesForRuntime(step),
       conditionType: step.conditionType ?? null,
       conditionOperator: step.conditionOperator ?? null,
       conditionValue: step.conditionValue ?? null,
@@ -154,6 +193,26 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     status: bundle.status,
     bundleType: bundle.bundleType,
     fullPageLayout: bundle.fullPageLayout ?? null,
+    bundleDesignTemplate: bundle.bundleDesignTemplate ?? null,
+    bundleDesignPresetId: bundle.bundleDesignPresetId ?? null,
+    bundleDesignTemplateData: bundle.bundleType === "product_page" && bundle.bundleDesignPresetId
+      ? { templateId: bundle.bundleDesignPresetId }
+      : null,
+    defaultProductsData: (bundle.defaultProductsData as Record<string, unknown> | null) ?? {},
+    boxSelection: (bundle.boxSelection as Record<string, unknown> | null) ?? null,
+    bundleUpsellConfig: (bundle.bundleUpsellConfig as Record<string, unknown> | null) ?? null,
+    bundleTextConfig: (bundle.bundleTextConfig as Record<string, unknown> | null) ?? null,
+    personalizationData: (bundle.personalizationData as Record<string, unknown> | null) ?? null,
+    discountDisplayOverride: (bundle.discountDisplayOverride as Record<string, unknown> | null) ?? null,
+    individualSellingPlanSelection: (bundle.individualSellingPlanSelection as Record<string, unknown> | null) ?? {
+      isEnabled: false,
+      showFor: "ALL_PRODUCTS",
+    },
+    validateQuantityPerProduct: (bundle.validateQuantityPerProduct as Record<string, unknown> | null) ?? {
+      isEnabled: false,
+      allowedQuantity: 1,
+    },
+    useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
     shopifyProductId: bundle.shopifyProductId,
     steps,
     pricing: bundle.pricing

@@ -24,6 +24,160 @@ use crate::types::{ConditionType, Operator, PriceAdjustmentConfig, PricingMethod
 /// Shopify's `percentageDecrease` applied to `originalTotal` yields exactly `targetPrice`.
 /// When there are no free-gift lines, `paid_total == original_total` and all formulas
 /// reduce to the plain discount — no behavioural change.
+fn condition_is_met(
+    price_adjustment: &PriceAdjustmentConfig,
+    paid_total: f64,
+    paid_quantity: i64,
+    presentment_currency_rate: f64,
+) -> bool {
+    if let Some(condition) = &price_adjustment.conditions {
+        let (actual_value, condition_value) = match condition.condition_type {
+            ConditionType::Amount => {
+                if !presentment_currency_rate.is_finite() || presentment_currency_rate <= 0.0 {
+                    return false;
+                }
+                let threshold = (condition.value / 100.0) * presentment_currency_rate;
+                (paid_total, threshold)
+            }
+            ConditionType::Quantity => (paid_quantity as f64, condition.value),
+        };
+
+        let operator = normalize_operator(&condition.operator);
+        match operator {
+            Operator::Gte => actual_value >= condition_value,
+            Operator::Gt  => actual_value > condition_value,
+            Operator::Lte => actual_value <= condition_value,
+            Operator::Lt  => actual_value < condition_value,
+            Operator::Eq  => actual_value >= condition_value,
+        }
+    } else {
+        true
+    }
+}
+
+pub fn rounded_percentage(discount_amount: f64, original_total: f64) -> f64 {
+    if original_total <= 0.0 {
+        return 0.0;
+    }
+
+    let result = (discount_amount / original_total) * 100.0;
+
+    if result.is_finite() {
+        let rounded = (result * 10000.0).round() / 10000.0;
+        rounded.clamp(0.0, 100.0)
+    } else {
+        0.0
+    }
+}
+
+pub fn calculate_selected_addon_discount_amount(
+    line_total: f64,
+    discount_type: Option<&str>,
+    discount_value: Option<&str>,
+) -> f64 {
+    if line_total <= 0.0 {
+        return 0.0;
+    }
+
+    let Some(discount_type) = discount_type else {
+        return 0.0;
+    };
+    let Some(discount_value) = discount_value else {
+        return 0.0;
+    };
+
+    let normalized_type = discount_type.trim().to_ascii_uppercase();
+    if normalized_type != "PERCENTAGE" {
+        return 0.0;
+    }
+
+    let pct = discount_value
+        .trim()
+        .parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())
+        .unwrap_or(0.0)
+        .clamp(0.0, 100.0);
+
+    line_total * pct / 100.0
+}
+
+pub fn calculate_buy_x_get_y_discount_percentage(
+    price_adjustment: &PriceAdjustmentConfig,
+    paid_unit_prices: &[f64],
+    paid_total: f64,
+    original_total: f64,
+    paid_quantity: i64,
+    presentment_currency_rate: f64,
+) -> f64 {
+    if !condition_is_met(
+        price_adjustment,
+        paid_total,
+        paid_quantity,
+        presentment_currency_rate,
+    ) {
+        return 0.0;
+    }
+
+    if original_total <= 0.0 || paid_total <= 0.0 || paid_quantity <= 0 {
+        return 0.0;
+    }
+
+    let customer_buys = price_adjustment.customer_buys.unwrap_or(0).max(0);
+    let customer_gets = price_adjustment.customer_gets.unwrap_or(0).max(0);
+    let offer_size = customer_buys + customer_gets;
+
+    if offer_size <= 0 || customer_gets <= 0 {
+        return 0.0;
+    }
+
+    let discounted_units = (paid_quantity / offer_size) * customer_gets;
+    if discounted_units <= 0 {
+        return 0.0;
+    }
+
+    let mut unit_prices: Vec<f64> = paid_unit_prices
+        .iter()
+        .copied()
+        .filter(|price| price.is_finite() && *price > 0.0)
+        .collect();
+
+    if unit_prices.is_empty() {
+        let average_price = paid_total / paid_quantity as f64;
+        unit_prices = vec![average_price; paid_quantity as usize];
+    }
+
+    match price_adjustment.apply_discount_to.as_deref() {
+        Some("latest_added") => unit_prices.reverse(),
+        _ => unit_prices.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)),
+    }
+
+    let discounted_count = (discounted_units as usize).min(unit_prices.len());
+    let discount_amount = match price_adjustment.discount_type.as_deref() {
+        Some("fixed_amount") | Some("fixed") => {
+            if !presentment_currency_rate.is_finite() || presentment_currency_rate <= 0.0 {
+                return 0.0;
+            }
+            let amount_off = (price_adjustment.value / 100.0) * presentment_currency_rate;
+            unit_prices
+                .iter()
+                .take(discounted_count)
+                .map(|price| amount_off.min(*price))
+                .sum::<f64>()
+        }
+        _ => {
+            let pct = price_adjustment.value.clamp(0.0, 100.0);
+            unit_prices
+                .iter()
+                .take(discounted_count)
+                .map(|price| price * pct / 100.0)
+                .sum::<f64>()
+        }
+    };
+
+    rounded_percentage(discount_amount.min(original_total), original_total)
+}
+
 pub fn calculate_discount_percentage(
     price_adjustment: &PriceAdjustmentConfig,
     paid_total: f64,
@@ -32,38 +186,13 @@ pub fn calculate_discount_percentage(
     paid_quantity: i64,
     presentment_currency_rate: f64,
 ) -> f64 {
-    // -------------------------------------------------------------------------
-    // Condition check (optional)
-    // -------------------------------------------------------------------------
-    if let Some(condition) = &price_adjustment.conditions {
-        let (actual_value, condition_value) = match condition.condition_type {
-            ConditionType::Amount => {
-                // Threshold is stored in base-currency cents. Convert to presentment currency.
-                // Bail out if rate is invalid — wrong threshold silently breaks pricing.
-                if !presentment_currency_rate.is_finite() || presentment_currency_rate <= 0.0 {
-                    return 0.0;
-                }
-                let threshold = (condition.value / 100.0) * presentment_currency_rate;
-                (paid_total, threshold)
-            }
-            ConditionType::Quantity => {
-                (paid_quantity as f64, condition.value)
-            }
-        };
-
-        let operator = normalize_operator(&condition.operator);
-        let meets_condition = match operator {
-            Operator::Gte => actual_value >= condition_value,
-            Operator::Gt  => actual_value > condition_value,
-            Operator::Lte => actual_value <= condition_value,
-            Operator::Lt  => actual_value < condition_value,
-            // equal_to acts as a threshold-once-reached (matches storefront semantics)
-            Operator::Eq  => actual_value >= condition_value,
-        };
-
-        if !meets_condition {
-            return 0.0;
-        }
+    if !condition_is_met(
+        price_adjustment,
+        paid_total,
+        paid_quantity,
+        presentment_currency_rate,
+    ) {
+        return 0.0;
     }
 
     if original_total <= 0.0 {
@@ -107,6 +236,24 @@ pub fn calculate_discount_percentage(
             // set a price that would charge for the free gift. Clamp to paid_total.
             f64::min(fixed_price, paid_total)
         }
+
+        PricingMethod::BuyXGetY => {
+            let average_price = if paid_quantity > 0 {
+                paid_total / paid_quantity as f64
+            } else {
+                0.0
+            };
+            let paid_unit_prices = vec![average_price; paid_quantity.max(0) as usize];
+            let discount_percentage = calculate_buy_x_get_y_discount_percentage(
+                price_adjustment,
+                &paid_unit_prices,
+                paid_total,
+                original_total,
+                paid_quantity,
+                presentment_currency_rate,
+            );
+            return discount_percentage;
+        }
     };
 
     // effectivePct = (1 − targetPrice / originalTotal) × 100
@@ -133,11 +280,11 @@ mod tests {
     use crate::types::{Condition, ConditionType, PriceAdjustmentConfig, PricingMethod};
 
     fn adj(method: PricingMethod, value: f64) -> PriceAdjustmentConfig {
-        PriceAdjustmentConfig { method, value, conditions: None }
+        PriceAdjustmentConfig { method, value, conditions: None, ..Default::default() }
     }
 
     fn adj_with_condition(method: PricingMethod, value: f64, condition: Condition) -> PriceAdjustmentConfig {
-        PriceAdjustmentConfig { method, value, conditions: Some(condition) }
+        PriceAdjustmentConfig { method, value, conditions: Some(condition), ..Default::default() }
     }
 
     /// percentage_off: 20% off paid total of $100
@@ -155,6 +302,55 @@ mod tests {
         let cfg = adj(PricingMethod::PercentageOff, 100.0);
         let pct = calculate_discount_percentage(&cfg, 100.0, 100.0, 1, 1, 1.0);
         assert!((pct - 100.0).abs() < 0.001);
+    }
+
+    /// buy_x_get_y: buy 2, get 1 at 100% off across 3 equal-price items.
+    #[test]
+    fn buy_x_get_y_discounted_quantity() {
+        let cfg = PriceAdjustmentConfig {
+            method: PricingMethod::BuyXGetY,
+            value: 100.0,
+            conditions: Some(Condition {
+                condition_type: ConditionType::Quantity,
+                operator: "gte".to_string(),
+                value: 3.0,
+            }),
+            customer_buys: Some(2),
+            customer_gets: Some(1),
+            discount_type: Some("percentage".to_string()),
+            apply_discount_to: Some("lowest_priced".to_string()),
+        };
+        let pct = calculate_discount_percentage(&cfg, 30.0, 30.0, 3, 3, 1.0);
+        assert!((pct - 33.3333).abs() < 0.001, "expected one of three items free, got {pct}");
+    }
+
+    #[test]
+    fn buy_x_get_y_condition_not_met_returns_zero() {
+        let cfg = PriceAdjustmentConfig {
+            method: PricingMethod::BuyXGetY,
+            value: 100.0,
+            conditions: Some(Condition {
+                condition_type: ConditionType::Quantity,
+                operator: "gte".to_string(),
+                value: 3.0,
+            }),
+            customer_buys: Some(2),
+            customer_gets: Some(1),
+            discount_type: Some("percentage".to_string()),
+            apply_discount_to: Some("lowest_priced".to_string()),
+        };
+        let pct = calculate_discount_percentage(&cfg, 20.0, 20.0, 2, 2, 1.0);
+        assert_eq!(pct, 0.0);
+    }
+
+    #[test]
+    fn selected_addon_percentage_discount_amount() {
+        let amount = calculate_selected_addon_discount_amount(
+            60.0,
+            Some("PERCENTAGE"),
+            Some("10"),
+        );
+        assert!((amount - 6.0).abs() < 0.001);
     }
 
     /// fixed_amount_off: $10 off (1000 cents) from $50 total, rate=1.0

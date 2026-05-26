@@ -23,6 +23,12 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 
 ## Progress Log
 
+### 2026-05-25 20:20 IST - Scoped Discount & Pricing implementation committed
+
+- Created commit `485f9f6b` (`[eb-configure-sections-parity-1] fix: match discount pricing configure behavior`) containing the verified implementation, revised plan, navigation map update, and focused tests.
+- The commit hook rebuilt `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`; these generated files remain outside the scoped commit because they already contained unrelated working-tree modifications.
+- Issue remains `In Progress` until the multi-language modal interactions can be repeated in a store context with configured shop locales; the committed code contract, unit tests, and production build cover their current field structure and modal wiring.
+
 ### 2026-05-25 20:20 IST - Discount & Pricing live-parity implementation verified
 
 - Completed the scoped FPB and PPB Discount & Pricing corrections: confirmed discount-type order and rule structures, Buy X/get Y field layout and persistent notice, Bundle Quantity Options eligibility and localized Box fields, Progress Bar mode/language fields, Discount Messaging Variables behavior, and method-aware Buy X/get Y default messages.

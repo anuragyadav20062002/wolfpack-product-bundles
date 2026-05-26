@@ -10,6 +10,9 @@
  * matching the existing bundle-bottom-sheet.test.ts approach.
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 // ============================================================
 // Types mirroring bundle-widget-product-page.js
 // ============================================================
@@ -80,6 +83,32 @@ function parseBundleConfigDataset(
  */
 function shouldInitAbort(bundleData: Record<string, any> | null): boolean {
   return !bundleData;
+}
+
+/**
+ * Resolves the base URL used by Product Page bundle product/collection hydration.
+ * Direct copy of the decision branch in BundleWidget.resolveStorefrontApiBase().
+ */
+function resolveProductPageStorefrontApiBase(
+  appUrl: string | null | undefined,
+  locationOrigin: string,
+  locationHost: string,
+  shopDomain = ''
+): string {
+  let appHost = '';
+  if (appUrl) {
+    try {
+      appHost = new URL(appUrl).host;
+    } catch {
+      appHost = '';
+    }
+  }
+
+  if (shopDomain && appHost !== locationHost) {
+    return '/apps/product-bundles';
+  }
+
+  return appUrl || locationOrigin;
 }
 
 // ============================================================
@@ -206,5 +235,52 @@ describe('shouldInitAbort — init() early-return guard', () => {
       'bundle-2': { id: 'bundle-2', name: 'B' },
     };
     expect(shouldInitAbort(bundleData)).toBe(false);
+  });
+});
+
+describe('resolveProductPageStorefrontApiBase — storefront hydration URLs', () => {
+  it('uses the Shopify app proxy on storefront pages even when the app URL metafield is stale', () => {
+    const result = resolveProductPageStorefrontApiBase(
+      'https://stale-preview.example',
+      'https://agent-5sfidg3m.myshopify.com',
+      'agent-5sfidg3m.myshopify.com',
+      'agent-5sfidg3m.myshopify.com'
+    );
+
+    expect(result).toBe('/apps/product-bundles');
+  });
+
+  it('keeps the app origin for non-Shopify preview pages with no app URL override', () => {
+    const result = resolveProductPageStorefrontApiBase(
+      null,
+      'https://preview.example',
+      'preview.example'
+    );
+
+    expect(result).toBe('https://preview.example');
+  });
+
+  it('keeps the configured app URL for non-Shopify preview pages', () => {
+    const result = resolveProductPageStorefrontApiBase(
+      'https://current-preview.example',
+      'https://preview.example',
+      'preview.example'
+    );
+
+    expect(result).toBe('https://current-preview.example');
+  });
+});
+
+describe('Product Page widget product-form placement contract', () => {
+  it('relocates the widget container after the product add-to-cart form before rendering', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('_relocateContainerToProductForm');
+    expect(source).toContain('form[action*="/cart/add"]');
+    expect(source).toContain("insertAdjacentElement('afterend', this.container)");
+    expect(source).toContain('bundle-widget-container--product-form-mounted');
   });
 });

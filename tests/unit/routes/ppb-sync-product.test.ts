@@ -71,6 +71,7 @@ jest.mock("../../../app/lib/css-sanitizer", () => ({
 }));
 
 const getDb = () => require("../../../app/db.server").default;
+const getMetafieldSync = () => require("../../../app/services/bundles/metafield-sync.server");
 const getPublishProductToSalesChannels = () =>
   require("../../../app/services/shopify-publications.server").publishProductToSalesChannels;
 
@@ -222,5 +223,88 @@ describe("PPB handleSyncProduct", () => {
       title: "PPB Bundle Product",
       status: "ACTIVE",
     });
+  });
+
+  it("preserves StepCategory products and variants in sync metafield payloads", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle({
+      pricing: {
+        enabled: true,
+        method: "percentage_off",
+        rules: JSON.stringify([]),
+        messages: JSON.stringify({}),
+      },
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          products: [],
+          collections: [],
+          StepProduct: [],
+          StepCategory: [
+            {
+              name: "Category 1",
+              products: [
+                {
+                  id: "gid://shopify/Product/789",
+                  title: "Category Product",
+                  imageUrl: "https://cdn.shopify.com/product.jpg",
+                  variants: [
+                    { id: "gid://shopify/ProductVariant/V789A", title: "Unavailable" },
+                    { id: "gid://shopify/ProductVariant/V789B", title: "Available" },
+                  ],
+                },
+              ],
+              collections: [
+                { id: "gid://shopify/Collection/456", title: "Category Collection", handle: "category-collection" },
+              ],
+            },
+          ],
+        },
+      ],
+    }));
+    const admin = makeAdmin({ ...SHOPIFY_PRODUCT, description: "A PPB bundle" });
+
+    const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    const { updateBundleProductMetafields, updateComponentProductMetafields } = getMetafieldSync();
+    const bundleConfig = updateBundleProductMetafields.mock.calls[0][2];
+    expect(bundleConfig.steps[0].products).toEqual([]);
+    expect(bundleConfig.steps[0].collections).toEqual([]);
+    expect(bundleConfig.steps[0].StepCategory[0].products).toEqual([
+      {
+        id: "gid://shopify/Product/789",
+        title: "Category Product",
+        imageUrl: "https://cdn.shopify.com/product.jpg",
+        variants: [
+          { id: "gid://shopify/ProductVariant/V789A", title: "Unavailable" },
+          { id: "gid://shopify/ProductVariant/V789B", title: "Available" },
+        ],
+      },
+    ]);
+    expect(bundleConfig.steps[0].StepCategory[0].collections).toEqual([
+      { id: "gid://shopify/Collection/456", title: "Category Collection", handle: "category-collection" },
+    ]);
+    expect(updateComponentProductMetafields).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/1",
+      expect.objectContaining({
+        steps: expect.arrayContaining([
+          expect.objectContaining({
+            StepCategory: expect.arrayContaining([
+              expect.objectContaining({
+                products: expect.arrayContaining([
+                  expect.objectContaining({ id: "gid://shopify/Product/789" }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
   });
 });

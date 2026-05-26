@@ -14,11 +14,12 @@ export class PricingCalculator {
   static calculateBundleTotal(selectedProducts, stepProductData, steps = null) {
     let totalPrice = 0;
     let totalQuantity = 0;
+    const unitPrices = [];
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
-      // Skip free gift steps — their retail cost is not charged to the customer.
-      // The cart transform handles making them $0 at checkout via adjusted discount math.
-      if (steps?.[stepIndex]?.isFreeGift) return;
+      // Skip only true free gifts. Optional add-on steps reuse the same
+      // non-blocking step path, but chargeable add-ons still affect totals.
+      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree !== false) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -51,14 +52,48 @@ export class PricingCalculator {
             : (product.price || 0);
           totalPrice += price * quantity;
           totalQuantity += quantity;
+          for (let i = 0; i < quantity; i++) {
+            unitPrices.push(price);
+          }
         }
       });
     });
 
-    return { totalPrice, totalQuantity };
+    return { totalPrice, totalQuantity, unitPrices };
   }
 
-  static calculateDiscount(bundle, totalPrice, totalQuantity) {
+  static getDiscountMethod(bundle) {
+    return bundle?.pricing?.method || BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+  }
+
+  static getRuleConditionType(rule) {
+    return rule?.conditionType || 'quantity';
+  }
+
+  static getRuleConditionOperator(rule) {
+    return rule?.conditionOperator || 'gte';
+  }
+
+  static getRuleConditionValue(rule, discountMethod = BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+    if (
+      discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y &&
+      this.getRuleConditionType(rule) === 'quantity'
+    ) {
+      const customerBuys = Number(rule?.customerBuys || 0);
+      const customerGets = Number(rule?.customerGets || 0);
+      if (customerBuys > 0 && customerGets > 0) {
+        return customerBuys + customerGets;
+      }
+    }
+
+    return Number(rule?.conditionValue ?? 0);
+  }
+
+  static getRuleDiscountValue(rule) {
+    return Number(rule?.discountValue ?? 0);
+  }
+
+  static calculateDiscount(bundle, totalPrice, totalQuantity, unitPrices = []) {
     if (!bundle?.pricing?.enabled || !bundle.pricing.rules?.length) {
       return {
         hasDiscount: false,
@@ -72,13 +107,14 @@ export class PricingCalculator {
 
     const rules = bundle.pricing.rules;
     let bestRule = null;
+    const discountMethod = this.getDiscountMethod(bundle);
 
     for (const rule of rules) {
-      const conditionType = rule.conditionType;
+      const conditionType = this.getRuleConditionType(rule);
       if (!conditionType) continue;
 
-      const conditionOperator = rule.conditionOperator || 'gte';
-      const conditionValue = rule.conditionValue ?? 0;
+      const conditionOperator = this.getRuleConditionOperator(rule);
+      const conditionValue = this.getRuleConditionValue(rule, discountMethod);
 
       let conditionMet = false;
 
@@ -89,7 +125,8 @@ export class PricingCalculator {
       }
 
       if (conditionMet) {
-        if (!bestRule || conditionValue > (bestRule.conditionValue ?? 0)) {
+        const bestConditionValue = this.getRuleConditionValue(bestRule, discountMethod);
+        if (!bestRule || conditionValue > bestConditionValue) {
           bestRule = rule;
         }
       }
@@ -107,8 +144,7 @@ export class PricingCalculator {
     }
 
     let discountAmount = 0;
-    const discountMethod = bundle.pricing?.method || 'percentage_off';
-    const discountValue = bestRule.discountValue ?? 0;
+    const discountValue = this.getRuleDiscountValue(bestRule);
 
     switch (discountMethod) {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
@@ -122,6 +158,14 @@ export class PricingCalculator {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
         // discountValue is fixed bundle price in cents
         discountAmount = Math.max(0, totalPrice - discountValue);
+        break;
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y:
+        discountAmount = this.calculateBuyXGetYDiscountAmount(
+          bestRule,
+          totalPrice,
+          totalQuantity,
+          unitPrices
+        );
         break;
       default:
         discountAmount = 0;
@@ -144,6 +188,47 @@ export class PricingCalculator {
 
 
     return result;
+  }
+
+  static calculateBuyXGetYDiscountAmount(rule, totalPrice, totalQuantity, unitPrices = []) {
+    const customerBuys = Number(rule?.customerBuys || 0);
+    const customerGets = Number(rule?.customerGets || 0);
+    const discountValue = this.getRuleDiscountValue(rule);
+    const discountType = rule?.bxyDiscountType || rule?.discountType || 'percentage';
+    const applyMode = rule?.bxyApplyMode || rule?.applyDiscountTo || 'lowest_priced';
+    const groupSize = customerBuys + customerGets;
+
+    if (customerBuys <= 0 || customerGets <= 0 || groupSize <= 0 || totalQuantity < groupSize) {
+      return 0;
+    }
+
+    const discountedItemCount = Math.min(
+      totalQuantity,
+      Math.floor(totalQuantity / groupSize) * customerGets
+    );
+    if (discountedItemCount <= 0) return 0;
+
+    const averageUnitPrice = totalQuantity > 0 ? totalPrice / totalQuantity : 0;
+    const prices = Array.isArray(unitPrices)
+      ? unitPrices.map(price => Number(price) || 0).filter(price => price > 0)
+      : [];
+
+    while (prices.length < totalQuantity && averageUnitPrice > 0) {
+      prices.push(averageUnitPrice);
+    }
+
+    const discountedPrices = applyMode === 'latest_added'
+      ? prices.slice(-discountedItemCount)
+      : [...prices].sort((a, b) => a - b).slice(0, discountedItemCount);
+
+    const discountAmount = discountedPrices.reduce((sum, price) => {
+      if (discountType === 'fixed_amount') {
+        return sum + Math.min(price, discountValue);
+      }
+      return sum + Math.round(price * (discountValue / 100));
+    }, 0);
+
+    return Math.min(Math.round(discountAmount), totalPrice);
   }
 
   static checkCondition(value, condition, targetValue) {
@@ -193,15 +278,17 @@ export class PricingCalculator {
     if (!bundle?.pricing?.rules?.length) return null;
 
     const rules = [...bundle.pricing.rules].sort((a, b) =>
-      (a.conditionValue ?? 0) - (b.conditionValue ?? 0)
+      this.getRuleConditionValue(a, this.getDiscountMethod(bundle)) -
+      this.getRuleConditionValue(b, this.getDiscountMethod(bundle))
     );
 
     for (const rule of rules) {
-      const conditionType = rule.conditionType;
+      const discountMethod = this.getDiscountMethod(bundle);
+      const conditionType = this.getRuleConditionType(rule);
       if (!conditionType) continue;
 
-      const conditionOperator = rule.conditionOperator || 'gte';
-      const conditionValue = rule.conditionValue ?? 0;
+      const conditionOperator = this.getRuleConditionOperator(rule);
+      const conditionValue = this.getRuleConditionValue(rule, discountMethod);
 
       // Check if this rule is not yet satisfied
       let isRuleSatisfied = false;

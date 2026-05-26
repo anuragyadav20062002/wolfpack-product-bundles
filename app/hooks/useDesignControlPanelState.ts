@@ -40,20 +40,50 @@ export interface DCPNavigationState {
   activeSubSection: string;
 }
 
+export function hasDesignSettingChanged<K extends keyof DesignSettings>(
+  key: K,
+  currentValue: DesignSettings[K],
+  originalValue: DesignSettings[K]
+): boolean {
+  if (key === "productCardsPerRow") {
+    return String(currentValue) !== String(originalValue);
+  }
+
+  if (key === "customCss") {
+    return (currentValue ?? "") !== (originalValue ?? "");
+  }
+
+  if (
+    currentValue !== null
+    && originalValue !== null
+    && typeof currentValue === "object"
+    && typeof originalValue === "object"
+  ) {
+    return JSON.stringify(currentValue) !== JSON.stringify(originalValue);
+  }
+
+  return currentValue !== originalValue;
+}
+
 // ============================================
 // HOOK IMPLEMENTATION
 // ============================================
 
 export function useDesignControlPanelState(
   loaderSettings: LoaderSettings,
-  initialBundleType: BundleType = BundleType.PRODUCT_PAGE
+  initialBundleType: BundleType = BundleType.PRODUCT_PAGE,
+  initialNavigation?: Partial<DCPNavigationState>
 ) {
   // Bundle type selection
   const [selectedBundleType, setSelectedBundleType] = useState<BundleType>(initialBundleType);
 
   // Navigation state
-  const [expandedSection, setExpandedSection] = useState<string | null>("productCard");
-  const [activeSubSection, setActiveSubSection] = useState<string>("productCard");
+  const [expandedSection, setExpandedSection] = useState<string | null>(
+    initialNavigation?.expandedSection ?? "productCard"
+  );
+  const [activeSubSection, setActiveSubSection] = useState<string>(
+    initialNavigation?.activeSubSection ?? "productCard"
+  );
 
   // Original settings from server (for dirty check and discard)
   const [originalSettings, setOriginalSettings] = useState<LoaderSettings>(loaderSettings);
@@ -134,15 +164,7 @@ export function useDesignControlPanelState(
       const currentValue = currentSettings[key];
       const originalValue = original[key];
 
-      // Handle special cases
-      if (key === "productCardsPerRow") {
-        return String(currentValue) !== String(originalValue);
-      }
-      if (key === "customCss") {
-        return (currentValue || "") !== (originalValue || "");
-      }
-
-      return currentValue !== originalValue;
+      return hasDesignSettingChanged(key, currentValue, originalValue);
     });
   }, [currentSettings, originalSettings, selectedBundleType]);
 

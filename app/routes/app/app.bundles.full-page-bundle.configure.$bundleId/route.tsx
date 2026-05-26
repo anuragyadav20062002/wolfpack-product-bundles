@@ -4,10 +4,8 @@ import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-r
 import { AppLogger } from "../../../lib/logger";
 import { slugify, validateSlug } from "../../../lib/slug-utils";
 import {
-  DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
-  DEFAULT_DISCOUNT_RULE_TEXT,
-  DEFAULT_DISCOUNT_RULE_TEXT_BXY,
-  DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY,
+  getDefaultDiscountRuleSuccessMessage,
+  getDefaultDiscountRuleText,
   normalizePricingDisplayOptions,
   normalizePricingRuleMessages,
   serializePricingDisplayOptions,
@@ -230,6 +228,8 @@ const stepSetupChildItems = [
   { id: "free_gift_addons", label: "Free Gift & Add Ons" },
   { id: "messages", label: "Messages" },
 ];
+
+const ADDON_MESSAGE_KEY = "addons-direct";
 
 const bundleVisibilityChildItems = [
   { id: "bundle_widget", label: "Bundle Widget" },
@@ -458,6 +458,225 @@ function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   );
 }
 
+function toNumericShopifyId(id: string | undefined | null): string {
+  if (!id) return "";
+  const match = id.match(/\/(\d+)$/);
+  return match ? match[1] : id;
+}
+
+function toProductGid(product: any): string {
+  return product?.graphqlId || product?.id || (product?.productId ? `gid://shopify/Product/${product.productId}` : "");
+}
+
+function toVariantGid(variant: any): string {
+  return variant?.variantGraphqlId || variant?.id || (variant?.variantId ? `gid://shopify/ProductVariant/${variant.variantId}` : "");
+}
+
+function normalizeAddonPickerProduct(product: any) {
+  const productGid = toProductGid(product);
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const imageUrl = product?.images?.[0]?.originalSrc
+    || product?.images?.[0]?.url
+    || product?.image?.url
+    || product?.imageUrl
+    || null;
+
+  return {
+    id: productGid,
+    productId: toNumericShopifyId(productGid || product?.productId),
+    graphqlId: productGid,
+    handle: product?.handle ?? null,
+    variants: variants.map((variant: any) => {
+      const variantGid = toVariantGid(variant);
+      return {
+        variantId: toNumericShopifyId(variantGid || variant?.variantId),
+        variantGraphqlId: variantGid,
+        inventoryQuantity: typeof variant?.inventoryQuantity === "number" ? variant.inventoryQuantity : null,
+        inventoryPolicy: variant?.inventoryPolicy ?? null,
+        price: String(variant?.price ?? "0"),
+        variantTitle: variant?.title || variant?.variantTitle || "Default Title",
+      };
+    }),
+    hasOnlyDefaultVariant: product?.hasOnlyDefaultVariant ?? variants.length <= 1,
+    images: imageUrl ? [{ originalSrc: imageUrl }] : [],
+    title: product?.title || product?.name || "",
+    tags: Array.isArray(product?.tags) ? product.tags : [],
+  };
+}
+
+function normalizeAddonTier(tier: any, index: number) {
+  const eligibilityType = tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY";
+  const eligibilityValue = Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) || 1;
+  const discountType = tier?.discount?.type || tier?.discountType || "PERCENTAGE";
+  const discountValue = Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;
+
+  return {
+    tierId: tier?.tierId || `tier${index + 1}`,
+    title: tier?.title || `Tier ${index + 1}`,
+    selectedAddonProducts: Array.isArray(tier?.selectedAddonProducts)
+      ? tier.selectedAddonProducts.map(normalizeAddonPickerProduct)
+      : [],
+    eligibilityCondition: {
+      type: eligibilityType,
+      value: eligibilityValue,
+      isValidateEligibilityConditionEnabled: tier?.eligibilityCondition?.isValidateEligibilityConditionEnabled !== false,
+    },
+    discount: {
+      type: discountType,
+      value: discountValue,
+    },
+    displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
+    conditions: Array.isArray(tier?.conditions) ? tier.conditions : [],
+  };
+}
+
+function createDefaultAddonDraftTier(index = 0) {
+  return {
+    tierId: `tier${index + 1}`,
+    title: `Tier ${index + 1}`,
+    selectedAddonProducts: [],
+    eligibilityType: "QUANTITY",
+    eligibilityValue: 1,
+    discountType: "PERCENTAGE",
+    discountValue: 0,
+    displayVariantsAsIndividualProducts_addons: false,
+    displayFree: false,
+  };
+}
+
+function addonTierToDraft(tier: any, index: number) {
+  return {
+    ...createDefaultAddonDraftTier(index),
+    tierId: tier?.tierId || `tier${index + 1}`,
+    title: tier?.title || `Tier ${index + 1}`,
+    selectedAddonProducts: Array.isArray(tier?.selectedAddonProducts) ? tier.selectedAddonProducts : [],
+    eligibilityType: tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY",
+    eligibilityValue: Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) || 1,
+    discountType: tier?.discount?.type || tier?.discountType || "PERCENTAGE",
+    discountValue: Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0,
+    displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
+    displayFree: false,
+  };
+}
+
+function buildAddonDraftFromPersonalizationData(personalizationData: any) {
+  const addonProducts = personalizationData?.addonProducts || {};
+  const tiers = Array.isArray(addonProducts?.tiers) && addonProducts.tiers.length > 0
+    ? addonProducts.tiers.map(addonTierToDraft)
+    : [createDefaultAddonDraftTier()];
+
+  return {
+    isPersonalizationEnabled: personalizationData?.isPersonalizationEnabled === true,
+    personalizeStepText: personalizationData?.personalizeStepText || "",
+    personalizePageSubtext: personalizationData?.personalizePageSubtext || "",
+    stepImage: personalizationData?.stepImage || null,
+    addonProductsEnabled: addonProducts?.isEnabled === true,
+    addonProductsTitle: addonProducts?.title || "",
+    addonTiers: tiers,
+  };
+}
+
+function normalizeGiftMessageProductForPersonalization(product: any) {
+  if (!product) return null;
+  const variants = Array.isArray(product.variants)
+    ? product.variants.map((variant: any) => ({
+        id: variant.id ?? variant.admin_graphql_api_id ?? variant.variantGraphqlId ?? variant.variantId ?? null,
+        title: variant.title ?? variant.variantTitle ?? variant.option1 ?? "Message",
+        price: variant.price ?? "0.00",
+        taxable: variant.taxable ?? false,
+        inventory_policy: variant.inventory_policy ?? variant.inventoryPolicy ?? "continue",
+        admin_graphql_api_id: variant.admin_graphql_api_id ?? variant.id ?? variant.variantGraphqlId ?? null,
+        option1: variant.option1 ?? variant.title ?? variant.variantTitle ?? "Message",
+        variantImage: variant.variantImage ?? variant.image?.url ?? variant.image?.originalSrc ?? variant.image?.src ?? null,
+      }))
+    : [];
+
+  return {
+    ...product,
+    id: product.id ?? product.admin_graphql_api_id ?? product.productId ?? null,
+    title: product.title ?? "Message",
+    handle: product.handle ?? null,
+    admin_graphql_api_id: product.admin_graphql_api_id ?? product.id ?? null,
+    status: product.status ?? "unlisted",
+    variants,
+    images: Array.isArray(product.images) ? product.images : [],
+  };
+}
+
+function buildGiftMessageDraftFromPersonalizationData(personalizationData: any) {
+  const giftMessage = personalizationData?.giftMessage || {};
+  return {
+    isGiftMessageEnabled: giftMessage?.isGiftMessageEnabled === true,
+    isSenderAndRecipientNameEnabled: giftMessage?.isSenderAndRecipientNameEnabled === true,
+    isGiftMessageMandatory: giftMessage?.isGiftMessageMandatory === true,
+    isMessageLimitEnabled: Boolean(giftMessage?.giftMessageCharacterLimit),
+    giftMessageCharacterLimit: giftMessage?.giftMessageCharacterLimit ? String(giftMessage.giftMessageCharacterLimit) : "",
+    messageProduct: giftMessage?.messageProduct || {
+      isMessageProductEnabled: false,
+      status: "unlisted",
+      product: null,
+    },
+  };
+}
+
+function buildGiftMessageConfigFromDraft(giftMessageDraft: any) {
+  if (!giftMessageDraft?.isGiftMessageEnabled) return null;
+
+  const messageProduct = giftMessageDraft.messageProduct || {};
+  return {
+    isGiftMessageEnabled: true,
+    isSenderAndRecipientNameEnabled: giftMessageDraft.isSenderAndRecipientNameEnabled === true,
+    giftMessageCharacterLimit: giftMessageDraft.isMessageLimitEnabled ? String(giftMessageDraft.giftMessageCharacterLimit || "") : "",
+    isGiftMessageMandatory: giftMessageDraft.isGiftMessageMandatory === true,
+    isVideoMessageEnabled: false,
+    isEmailEnabled: false,
+    messageProduct: {
+      isMessageProductEnabled: Boolean(messageProduct.product),
+      status: messageProduct.status || "unlisted",
+      product: messageProduct.product || null,
+    },
+  };
+}
+
+function buildPersonalizationDataFromDraft(
+  addonDraft: any,
+  addonMessages: { discountText?: string; successMessage?: string } | null,
+  giftMessageDraft?: any,
+) {
+  const giftMessage = buildGiftMessageConfigFromDraft(giftMessageDraft);
+  if (!addonDraft?.isPersonalizationEnabled && !giftMessage?.isGiftMessageEnabled) return null;
+
+  const addonTiers = Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
+    ? addonDraft.addonTiers
+    : [createDefaultAddonDraftTier()];
+  const tiers = addonTiers.map(normalizeAddonTier);
+
+  const personalizationData: Record<string, any> = {
+    isPersonalizationEnabled: true,
+    personalizeStepText: addonDraft?.personalizeStepText || "",
+    personalizePageSubtext: addonDraft?.personalizePageSubtext || "",
+    stepImage: addonDraft?.stepImage || null,
+    giftMessage: buildGiftMessageConfigFromDraft(giftMessageDraft),
+    addonProducts: {
+      isEnabled: addonDraft?.addonProductsEnabled === true,
+      title: addonDraft?.addonProductsTitle || "",
+      type: "MULTI_TIER",
+      tiers,
+      multiLangData: {},
+      addonsMessaging: {
+        isEnabled: Boolean(addonMessages?.discountText || addonMessages?.successMessage),
+        tier1: {
+          ineligibleState: addonMessages?.discountText || "",
+          eligibleState: addonMessages?.successMessage || "",
+        },
+      },
+    },
+  };
+
+  if (!giftMessage) delete personalizationData.giftMessage;
+  return personalizationData;
+}
+
 
 export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
@@ -557,6 +776,23 @@ export default function ConfigureBundleFlow() {
     originalValuesRef,
   } = configState;
 
+  const [addonDraft, setAddonDraft] = useState(() =>
+    buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
+  );
+  const originalAddonDraftRef = useRef<any>(addonDraft);
+  const updateAddonDraft = useCallback((updates: Record<string, any>) => {
+    setAddonDraft((current: any) => ({ ...current, ...updates }));
+    markAsDirty();
+  }, [markAsDirty]);
+  const [giftMessageDraft, setGiftMessageDraft] = useState(() =>
+    buildGiftMessageDraftFromPersonalizationData((bundle as any).personalizationData)
+  );
+  const originalGiftMessageDraftRef = useRef<any>(giftMessageDraft);
+  const updateGiftMessageDraft = useCallback((updates: Record<string, any>) => {
+    setGiftMessageDraft((current: any) => ({ ...current, ...updates }));
+    markAsDirty();
+  }, [markAsDirty]);
+
   const shopDomain = useMemo(
     () => (shop.includes('.myshopify.com') ? shop.replace('.myshopify.com', '') : shop),
     [shop]
@@ -642,15 +878,24 @@ export default function ConfigureBundleFlow() {
   const originalCartRedirectToCheckoutRef = useRef<boolean>((bundle as any).cartRedirectToCheckout ?? false);
   const originalAllowQuantityChangesRef = useRef<boolean>((bundle as any).allowQuantityChanges ?? true);
 
+  const directBundleSummary = (
+    ((bundle as any).bundleTextConfig as { bundleSummary?: { title?: string; subTitle?: string } } | null)?.bundleSummary
+  ) ?? {};
+  const initialTextOverrides = {
+    ...(((bundle as any).textOverrides as Record<string, string>) ?? {}),
+    yourBundle: directBundleSummary.title ?? "",
+    reviewBundle: directBundleSummary.subTitle ?? "",
+  };
+
   // Text overrides state (Messages tab)
   const [textOverrides, setTextOverrides] = useState<Record<string, string>>(
-    ((bundle as any).textOverrides as Record<string, string>) ?? {}
+    initialTextOverrides
   );
   const [textOverridesByLocale, setTextOverridesByLocale] = useState<Record<string, Record<string, string>>>(
     ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
   );
   const originalTextOverridesRef = useRef<Record<string, string>>(
-    ((bundle as any).textOverrides as Record<string, string>) ?? {}
+    initialTextOverrides
   );
   const originalTextOverridesByLocaleRef = useRef<Record<string, Record<string, string>>>(
     ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
@@ -991,6 +1236,13 @@ export default function ConfigureBundleFlow() {
       // Merge collections data into steps before saving
       const stepsWithCollections = stepsState.steps.map(step => ({
         ...step,
+        isFreeGift: false,
+        freeGiftName: null,
+        addonLabel: null,
+        addonTitle: null,
+        addonIconUrl: null,
+        addonDisplayFree: false,
+        addonTiers: [],
         collections: selectedCollections[step.id] || step.collections || []
       }));
       const pricingMessages = serializePricingDisplayOptions({
@@ -1043,6 +1295,15 @@ export default function ConfigureBundleFlow() {
       formData.append("searchBarEnabled", String(searchBarEnabled));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
+      formData.append("bundleTextConfig", JSON.stringify({
+        bundleSummary: {
+          title: textOverrides.yourBundle ?? "",
+          subTitle: textOverrides.reviewBundle ?? "",
+        },
+      }));
+      const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || null;
+      const personalizationData = buildPersonalizationDataFromDraft(addonDraft, addonMessages, giftMessageDraft);
+      formData.append("personalizationData", personalizationData ? JSON.stringify(personalizationData) : "");
       formData.append("upsellWidgetEnabled", String(upsellWidgetEnabled));
       formData.append("upsellWidgetDisplayMode", upsellWidgetDisplayMode);
       formData.append("upsellWidgetDisplayOn", upsellWidgetDisplayOn);
@@ -1101,7 +1362,12 @@ export default function ConfigureBundleFlow() {
     searchBarEnabled,
     textOverrides,
     textOverridesByLocale,
+    ruleMessages,
+    addonDraft,
+    giftMessageDraft,
     discountMessagingMultiLanguageEnabled,
+    globalSuccessMessage,
+    successMessageByLocale,
     ruleMessagesByLocale,
     upsellWidgetEnabled,
     upsellWidgetDisplayMode,
@@ -1217,6 +1483,8 @@ export default function ConfigureBundleFlow() {
           originalAllowQuantityChangesRef.current = allowQuantityChanges;
           originalTextOverridesRef.current = textOverrides;
           originalTextOverridesByLocaleRef.current = textOverridesByLocale;
+          originalAddonDraftRef.current = addonDraft;
+          originalGiftMessageDraftRef.current = giftMessageDraft;
           originalDiscountMessagingMultiLanguageEnabledRef.current = discountMessagingMultiLanguageEnabled;
           originalRuleMessagesByLocaleRef.current = ruleMessagesByLocale;
 
@@ -1348,6 +1616,8 @@ export default function ConfigureBundleFlow() {
     setAllowQuantityChanges(originalAllowQuantityChangesRef.current);
     setTextOverrides(originalTextOverridesRef.current);
     setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
+    setAddonDraft(originalAddonDraftRef.current);
+    setGiftMessageDraft(originalGiftMessageDraftRef.current);
     setDiscountMessagingMultiLanguageEnabled(originalDiscountMessagingMultiLanguageEnabledRef.current);
     setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
   }, [bundle.shopifyPageHandle, hookHandleDiscard]);
@@ -1694,9 +1964,6 @@ export default function ConfigureBundleFlow() {
 
   return (
     <>
-      <ui-title-bar title={`Configure: ${formState.bundleName}`}>
-        <button variant="breadcrumb" onClick={handleBackClick}>Dashboard</button>
-      </ui-title-bar>
       <div className={fullPageBundleStyles.editCanvas}>
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
@@ -2023,7 +2290,7 @@ export default function ConfigureBundleFlow() {
                     key={`${step.id}-${slideKey}`}
                     className={slideDir === "forward" ? fullPageBundleStyles.slideForward : slideDir === "backward" ? fullPageBundleStyles.slideBackward : ""}
                   >
-                    {/* ── EB-style Step Setup card ── */}
+                    {/* Step Setup card */}
                     <div className={fullPageBundleStyles.card}>
                       <div className={fullPageBundleStyles.stepSetupHeader}>
                         <div className={fullPageBundleStyles.stepSetupTitleGroup}>
@@ -2102,7 +2369,7 @@ export default function ConfigureBundleFlow() {
                         <div className={fullPageBundleStyles.emptyState}>No category defined yet</div>
                       )}
 
-                      {/* EB-style per-category accordion rows — collapsed by default */}
+                      {/* Per-category accordion rows collapsed by default */}
                       {((step.StepCategory as any[] | undefined) ?? []).map((cat: any, catIndex: number) => {
                         const catKey = `${step.id}__${cat.id ?? catIndex}`;
                         const catActiveTab = categoryActiveTabs[catKey] ?? 0;
@@ -2191,7 +2458,7 @@ export default function ConfigureBundleFlow() {
                             {/* Expandable body — only visible when open */}
                             {isOpen && (
                               <div className={fullPageBundleStyles.categoryAccordionBody}>
-                                {/* Category name input + Multi Language — matches EB body layout */}
+                                {/* Category name input and Multi Language control */}
                                 <div className={fullPageBundleStyles.catNameRow}>
                                   <input
                                     className={fullPageBundleStyles.categoryNameInput}
@@ -2575,11 +2842,10 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "free_gift_addons" && (() => {
-              const step = stepsState.steps[activeTabIndex] || stepsState.steps[0];
-              if (!step) return null;
-              const addonMessages = ruleMessages[`addons-${step.id}`] || {
-                discountText: "",
-                successMessage: "",
+              const savedAddonMessages = (bundle as any).personalizationData?.addonProducts?.addonsMessaging?.tier1 || {};
+              const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || {
+                discountText: savedAddonMessages.ineligibleState || "",
+                successMessage: savedAddonMessages.eligibleState || "",
               };
 
               return (
@@ -2590,35 +2856,28 @@ export default function ConfigureBundleFlow() {
                         <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
                         <s-checkbox
                           accessibilityLabel="Enable add-ons and gifting step"
-                          checked={step.isFreeGift || undefined}
+                          checked={addonDraft.isPersonalizationEnabled || undefined}
                           onChange={(e: Event) => {
                             const checked = (e.target as HTMLInputElement).checked;
-                            stepsState.updateStepField(step.id, "isFreeGift", checked);
-                            if (!checked) {
-                              stepsState.updateStepField(step.id, "addonLabel", null);
-                              stepsState.updateStepField(step.id, "addonTitle", null);
-                              stepsState.updateStepField(step.id, "addonIconUrl", null);
-                            }
-                            markAsDirty();
+                            updateAddonDraft({ isPersonalizationEnabled: checked });
                           }}
                         />
                       </div>
                       <div style={{ marginTop: 16 }} className={fullPageBundleStyles.mediaFieldGrid}>
                         <div className={fullPageBundleStyles.iconColumn}>
                           <div className={fullPageBundleStyles.iconBox}>
-                            {step.addonIconUrl ? (
-                              <img src={step.addonIconUrl} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
+                            {addonDraft.stepImage ? (
+                              <img src={addonDraft.stepImage} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
                             ) : (
                               <div className={fullPageBundleStyles.iconPlaceholder}>Upload file</div>
                             )}
                           </div>
-                          {showIconPickerForStep === `addon-${step.id}` && (
+                          {showIconPickerForStep === "addon-direct" && (
                             <FilePicker
-                              value={step.addonIconUrl ?? null}
+                              value={addonDraft.stepImage ?? null}
                               onChange={(url: string | null) => {
-                                stepsState.updateStepField(step.id, "addonIconUrl", url);
+                                updateAddonDraft({ stepImage: url });
                                 setShowIconPickerForStep(null);
-                                markAsDirty();
                               }}
                               label=""
                               hideCropEditor
@@ -2627,9 +2886,9 @@ export default function ConfigureBundleFlow() {
                           <s-button
                             variant="secondary"
                             icon="upload"
-                            onClick={() => setShowIconPickerForStep(prev => prev === `addon-${step.id}` ? null : `addon-${step.id}`)}
+                            onClick={() => setShowIconPickerForStep(prev => prev === "addon-direct" ? null : "addon-direct")}
                           >
-                            {showIconPickerForStep === `addon-${step.id}` ? "Close picker" : "Replace"}
+                            {showIconPickerForStep === "addon-direct" ? "Close picker" : "Replace"}
                           </s-button>
                         </div>
                         <s-stack direction="block" gap="small">
@@ -2638,22 +2897,19 @@ export default function ConfigureBundleFlow() {
                           </s-button>
                           <s-text-field
                             label="Step Name"
-                            value={step.addonLabel ?? step.freeGiftName ?? ""}
+                            value={addonDraft.personalizeStepText ?? ""}
                             placeholder="Add On"
                             onInput={(e: Event) => {
                               const value = (e.target as HTMLInputElement).value;
-                              stepsState.updateStepField(step.id, "addonLabel", value);
-                              stepsState.updateStepField(step.id, "freeGiftName", value);
-                              markAsDirty();
+                              updateAddonDraft({ personalizeStepText: value });
                             }}
                             autoComplete="off"
                           />
                           <s-text-field
                             label="Step Title"
-                            value={step.addonTitle ?? ""}
+                            value={addonDraft.personalizePageSubtext ?? ""}
                             onInput={(e: Event) => {
-                              stepsState.updateStepField(step.id, "addonTitle", (e.target as HTMLInputElement).value);
-                              markAsDirty();
+                              updateAddonDraft({ personalizePageSubtext: (e.target as HTMLInputElement).value });
                             }}
                             autoComplete="off"
                           />
@@ -2661,59 +2917,61 @@ export default function ConfigureBundleFlow() {
                       </div>
                     </div>
 
-                    <div className={fullPageBundleStyles.card}>
-                      <div className={fullPageBundleStyles.panelHeader}>
-                        <div>
+                    <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsCard}`}>
+                      <div className={fullPageBundleStyles.addonsHeaderLine}>
+                        <div className={fullPageBundleStyles.addonsTitleCluster}>
                           <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons with Bundles</h3>
-                          <p className={fullPageBundleStyles.panelDescription}>
-                            Enable customers to add extra items to their bundles at a discounted price, for free, or at full price.
-                          </p>
-                        </div>
-                        <s-checkbox
-                          accessibilityLabel="Enable add-ons with bundles"
-                          checked={step.addonUnlockAfterCompletion !== false || undefined}
-                          onChange={(e: Event) => {
-                            stepsState.updateStepField(step.id, "addonUnlockAfterCompletion", (e.target as HTMLInputElement).checked);
-                            markAsDirty();
-                          }}
-                        />
-                      </div>
-                      <s-stack direction="block" gap="small" style={{ marginTop: 16 }}>
-                        <s-stack direction="inline" gap="small">
-                          <s-button
-                            variant="secondary"
+                          <label className={fullPageBundleStyles.addonsSwitch}>
+                            <input
+                              type="checkbox"
+                              aria-label="Enable add-ons with bundles"
+                              checked={addonDraft.addonProductsEnabled === true}
+                              onChange={(e: Event) => {
+                                updateAddonDraft({ addonProductsEnabled: (e.target as HTMLInputElement).checked });
+                              }}
+                            />
+                            <span />
+                          </label>
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.addonsHelpButton}
                             onClick={() => window.open("https://wolfpackapps.com", "_blank")}
                           >
                             How to setup?
-                          </s-button>
-                          <s-button variant="secondary" icon="globe" disabled>
+                          </button>
+                        </div>
+                        <div className={fullPageBundleStyles.addonsHeaderActions}>
+                          <button type="button" className={fullPageBundleStyles.addonsLanguageButton} disabled>
                             Multi Language
-                          </s-button>
-                        </s-stack>
+                          </button>
+                        </div>
+                      </div>
+                      <p className={fullPageBundleStyles.panelDescription}>
+                        Enable customers to add extra items to their bundles at a discounted price, for free, or at full price.
+                      </p>
+                      <div className={fullPageBundleStyles.addonsFormStack}>
                         <s-text-field
                           label="Add on Section title"
                           helpText="Will be visible on the storefront"
-                          value={step.freeGiftName ?? ""}
+                          value={addonDraft.addonProductsTitle ?? ""}
                           onInput={(e: Event) => {
-                            stepsState.updateStepField(step.id, "freeGiftName", (e.target as HTMLInputElement).value);
-                            markAsDirty();
+                            updateAddonDraft({ addonProductsTitle: (e.target as HTMLInputElement).value });
                           }}
                           autoComplete="off"
                         />
                         {(() => {
-                          const addonTiers: { displayFree: boolean }[] = Array.isArray(step.addonTiers)
-                            ? (step.addonTiers as { displayFree: boolean }[])
-                            : [{ displayFree: step.addonDisplayFree !== false }];
+                          const addonTiers: any[] = Array.isArray(addonDraft.addonTiers)
+                            ? (addonDraft.addonTiers as any[])
+                            : [createDefaultAddonDraftTier()];
 
-                          const updateAddonTiers = (updated: { displayFree: boolean }[]) => {
-                            stepsState.updateStepField(step.id, "addonTiers", updated);
-                            markAsDirty();
+                          const updateAddonTiers = (updated: any[]) => {
+                            updateAddonDraft({ addonTiers: updated });
                           };
 
                           return (
                             <>
                               {addonTiers.map((tier, idx) => (
-                                <div key={idx} className={fullPageBundleStyles.ruleCard}>
+                                <div key={idx} className={fullPageBundleStyles.addonsTierCard}>
                                   <div className={fullPageBundleStyles.ruleHeader}>
                                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
                                     <s-button
@@ -2728,29 +2986,118 @@ export default function ConfigureBundleFlow() {
                                       Delete
                                     </s-button>
                                   </div>
-                                  <s-checkbox
-                                    label="Display products as free ($0.00)"
-                                    checked={tier.displayFree || undefined}
-                                    onChange={(e: Event) => {
-                                      const updated = addonTiers.map((t, i) =>
-                                        i === idx ? { ...t, displayFree: (e.target as HTMLInputElement).checked } : t
-                                      );
-                                      updateAddonTiers(updated);
-                                    }}
-                                  />
+                                  <s-stack direction="block" gap="small">
+                                    <s-text-field
+                                      label="Tier title"
+                                      value={tier.title ?? `Tier ${idx + 1}`}
+                                      onInput={(e: Event) => {
+                                        const updated = addonTiers.map((t, i) =>
+                                          i === idx ? { ...t, title: (e.target as HTMLInputElement).value } : t
+                                        );
+                                        updateAddonTiers(updated);
+                                      }}
+                                      autoComplete="off"
+                                    />
+                                    <div className={fullPageBundleStyles.addonsProductSelectionRow}>
+                                      <s-button
+                                        variant="primary"
+                                        onClick={async () => {
+                                          const currentProducts = Array.isArray(tier.selectedAddonProducts) ? tier.selectedAddonProducts : [];
+                                          const picked = await (shopify as any).resourcePicker({
+                                            type: "product",
+                                            multiple: true,
+                                            selectionIds: currentProducts.map((p: any) => ({ id: p.graphqlId || p.id })),
+                                          });
+                                          const selection = Array.isArray(picked) ? picked : picked?.selection;
+                                          if (!selection) return;
+                                          const updated = addonTiers.map((t, i) =>
+                                            i === idx ? {
+                                              ...t,
+                                              selectedAddonProducts: selection.map(normalizeAddonPickerProduct),
+                                            } : t
+                                          );
+                                          updateAddonTiers(updated);
+                                        }}
+                                      >
+                                        Add Products
+                                      </s-button>
+                                      {Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0 && (
+                                        <span className={fullPageBundleStyles.addonsSelectedCount}>{tier.selectedAddonProducts.length} Selected</span>
+                                      )}
+                                    </div>
+                                    <s-checkbox
+                                      label="Display Variants as Individual Products"
+                                      checked={tier.displayVariantsAsIndividualProducts_addons === true || undefined}
+                                      onChange={(e: Event) => {
+                                        const updated = addonTiers.map((t, i) =>
+                                          i === idx ? { ...t, displayVariantsAsIndividualProducts_addons: (e.target as HTMLInputElement).checked } : t
+                                        );
+                                        updateAddonTiers(updated);
+                                      }}
+                                    />
+                                    <div className={fullPageBundleStyles.addonsDiscountGrid}>
+                                      <s-select
+                                        label="Discount Based on"
+                                        value={tier.eligibilityType || tier.eligibilityCondition?.type || "QUANTITY"}
+                                        onChange={(e: Event) => {
+                                          const updated = addonTiers.map((t, i) =>
+                                            i === idx ? { ...t, eligibilityType: (e.target as HTMLSelectElement).value } : t
+                                          );
+                                          updateAddonTiers(updated);
+                                        }}
+                                      >
+                                        <s-option value="QUANTITY">Bundle Product Quantity</s-option>
+                                        <s-option value="AMOUNT">Bundle Value</s-option>
+                                      </s-select>
+                                      <s-number-field
+                                        label={(tier.eligibilityType || tier.eligibilityCondition?.type) === "AMOUNT" ? "Value" : "Qty"}
+                                        value={String(tier.eligibilityValue ?? tier.eligibilityCondition?.value ?? 1)}
+                                        onInput={(e: Event) => {
+                                          const updated = addonTiers.map((t, i) =>
+                                            i === idx ? { ...t, eligibilityValue: Number((e.target as HTMLInputElement).value) || 0 } : t
+                                          );
+                                          updateAddonTiers(updated);
+                                        }}
+                                        min="0"
+                                      />
+                                      <s-number-field
+                                        label="Discount on Add-ons"
+                                        value={String(tier.discountValue ?? tier.discount?.value ?? 0)}
+                                        onInput={(e: Event) => {
+                                          const updated = addonTiers.map((t, i) =>
+                                            i === idx ? { ...t, discountType: "PERCENTAGE", discountValue: Number((e.target as HTMLInputElement).value) || 0 } : t
+                                          );
+                                          updateAddonTiers(updated);
+                                        }}
+                                        min="0"
+                                        max="100"
+                                        suffix="%"
+                                      />
+                                    </div>
+                                    <div className={fullPageBundleStyles.addonsTierRules}>
+                                      <h5>Tier Rules</h5>
+                                      <p>Create Rules based on quantity of products added on this tier.</p>
+                                      <p>Note: Rules are only valid on this tier.</p>
+                                      <button type="button" className={fullPageBundleStyles.addonsTierRuleButton}>
+                                        Add Tier Rule
+                                      </button>
+                                    </div>
+                                  </s-stack>
                                 </div>
                               ))}
-                              <s-button
-                                variant="secondary"
-                                icon="plus"
-                                onClick={() => updateAddonTiers([...addonTiers, { displayFree: true }])}
+                              <button
+                                type="button"
+                                className={fullPageBundleStyles.addonsTierButton}
+                                onClick={() => updateAddonTiers([...addonTiers, {
+                                  ...createDefaultAddonDraftTier(addonTiers.length),
+                                }])}
                               >
                                 Add Add Ons Tier
-                              </s-button>
+                              </button>
                             </>
                           );
                         })()}
-                      </s-stack>
+                      </div>
                     </div>
 
                     <div className={fullPageBundleStyles.card}>
@@ -2775,8 +3122,8 @@ export default function ConfigureBundleFlow() {
                             const value = (e.target as HTMLInputElement).value;
                             setRuleMessages(prev => ({
                               ...prev,
-                              [`addons-${step.id}`]: {
-                                ...(prev[`addons-${step.id}`] || addonMessages),
+                              [ADDON_MESSAGE_KEY]: {
+                                ...(prev[ADDON_MESSAGE_KEY] || addonMessages),
                                 discountText: value,
                               },
                             }));
@@ -2791,8 +3138,8 @@ export default function ConfigureBundleFlow() {
                             const value = (e.target as HTMLInputElement).value;
                             setRuleMessages(prev => ({
                               ...prev,
-                              [`addons-${step.id}`]: {
-                                ...(prev[`addons-${step.id}`] || addonMessages),
+                              [ADDON_MESSAGE_KEY]: {
+                                ...(prev[ADDON_MESSAGE_KEY] || addonMessages),
                                 successMessage: value,
                               },
                             }));
@@ -2845,6 +3192,9 @@ export default function ConfigureBundleFlow() {
                         pricingState.setDiscountType(nextDiscountType);
                         pricingState.setDiscountRules([nextRule]);
                         setRuleMessages({});
+                        setRuleMessagesByLocale({});
+                        setGlobalSuccessMessage("");
+                        setSuccessMessageByLocale({});
                       }}
                     >
                       {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
@@ -3251,8 +3601,7 @@ export default function ConfigureBundleFlow() {
                               const localeMessages = discountMessagingMultiLanguageEnabled
                                 ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? normalizedRuleMessages[rule.id])
                                 : normalizedRuleMessages[rule.id];
-                              const isBxy = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
-                              const defaultDiscountText = isBxy ? DEFAULT_DISCOUNT_RULE_TEXT_BXY : DEFAULT_DISCOUNT_RULE_TEXT;
+                              const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType);
                               return (
                                 <s-section key={rule.id}>
                                   <s-stack direction="block" gap="small">
@@ -3288,8 +3637,7 @@ export default function ConfigureBundleFlow() {
                                 <s-text-field
                                   label="Success Message"
                                   value={(() => {
-                                    const isBxy = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
-                                    const defaultMsg = isBxy ? DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+                                    const defaultMsg = getDefaultDiscountRuleSuccessMessage(pricingState.discountType);
                                     const val = discountMessagingMultiLanguageEnabled
                                       ? (successMessageByLocale[activeDiscountLocale] ?? globalSuccessMessage)
                                       : globalSuccessMessage;
@@ -4166,14 +4514,11 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "messages" && (() => {
-              const setMessageOverride = (key: string, value: string) => {
-                setTextOverrides((prev) => ({ ...prev, [key]: value }));
-                markAsDirty();
-              };
-              const isGiftMessageEnabled = textOverrides.giftMessageEnabled === "true";
-              const hasSenderRecipientFields = textOverrides.giftMessageSenderRecipientEnabled === "true";
-              const isGiftMessageRequired = textOverrides.giftMessageRequired === "true";
-              const hasMessageLimit = textOverrides.giftMessageLimitEnabled === "true";
+              const isGiftMessageEnabled = giftMessageDraft.isGiftMessageEnabled === true;
+              const hasSenderRecipientFields = giftMessageDraft.isSenderAndRecipientNameEnabled === true;
+              const isGiftMessageRequired = giftMessageDraft.isGiftMessageMandatory === true;
+              const hasMessageLimit = giftMessageDraft.isMessageLimitEnabled === true;
+              const messageProduct = giftMessageDraft.messageProduct?.product || null;
 
               return (
                 <s-stack direction="block" gap="base">
@@ -4188,7 +4533,7 @@ export default function ConfigureBundleFlow() {
                       <s-checkbox
                         accessibilityLabel="Enable messages"
                         checked={isGiftMessageEnabled || undefined}
-                        onChange={(e: Event) => setMessageOverride("giftMessageEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                        onChange={(e: Event) => updateGiftMessageDraft({ isGiftMessageEnabled: (e.target as HTMLInputElement).checked })}
                       />
                     </div>
 
@@ -4198,7 +4543,7 @@ export default function ConfigureBundleFlow() {
                       </div>
                       <div>
                         <p className={fullPageBundleStyles.messagePreviewTitle}>
-                          {textOverrides.giftMessageProductTitle || "Message"}
+                          {messageProduct?.title || "Message"}
                         </p>
                         <p className={fullPageBundleStyles.messageNote}>
                           Add a message product so shoppers can include a note with the bundle.
@@ -4214,8 +4559,13 @@ export default function ConfigureBundleFlow() {
                             });
                             if (picked && picked.length > 0) {
                               const product = picked[0] as any;
-                              setMessageOverride("giftMessageProductId", product.id ?? "");
-                              setMessageOverride("giftMessageProductTitle", product.title ?? "");
+                              updateGiftMessageDraft({
+                                messageProduct: {
+                                  isMessageProductEnabled: true,
+                                  status: "unlisted",
+                                  product: normalizeGiftMessageProductForPersonalization(product),
+                                },
+                              });
                             }
                           } catch (_) {
                             // user cancelled picker — no-op
@@ -4230,25 +4580,40 @@ export default function ConfigureBundleFlow() {
                       <s-checkbox
                         label="Enable Sender and Recipient Fields"
                         checked={hasSenderRecipientFields || undefined}
-                        onChange={(e: Event) => setMessageOverride("giftMessageSenderRecipientEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                        disabled={!isGiftMessageEnabled || undefined}
+                        onChange={(e: Event) => updateGiftMessageDraft({ isSenderAndRecipientNameEnabled: (e.target as HTMLInputElement).checked })}
                       />
                       <s-checkbox
                         label="Make Gift Message mandatory"
                         checked={isGiftMessageRequired || undefined}
-                        onChange={(e: Event) => setMessageOverride("giftMessageRequired", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                        disabled={!isGiftMessageEnabled || undefined}
+                        onChange={(e: Event) => updateGiftMessageDraft({ isGiftMessageMandatory: (e.target as HTMLInputElement).checked })}
                       />
                       <s-checkbox
                         label="Enable Message Limit (Characters)"
                         checked={hasMessageLimit || undefined}
-                        onChange={(e: Event) => setMessageOverride("giftMessageLimitEnabled", (e.target as HTMLInputElement).checked ? "true" : "false")}
+                        disabled={!isGiftMessageEnabled || undefined}
+                        onChange={(e: Event) => updateGiftMessageDraft({ isMessageLimitEnabled: (e.target as HTMLInputElement).checked })}
                       />
                       <s-number-field
                         label="Enter Message Limit"
-                        value={textOverrides.giftMessageLimit ?? ""}
-                        disabled={!hasMessageLimit}
+                        value={giftMessageDraft.giftMessageCharacterLimit ?? ""}
+                        disabled={!isGiftMessageEnabled || !hasMessageLimit}
                         min={0}
-                        onInput={(e: Event) => setMessageOverride("giftMessageLimit", (e.target as HTMLInputElement).value)}
+                        onInput={(e: Event) => updateGiftMessageDraft({ giftMessageCharacterLimit: (e.target as HTMLInputElement).value })}
                       />
+                      <s-divider />
+                      <s-checkbox
+                        label="Send message through email to the customer"
+                        disabled
+                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, color: "#8c9196" }}>
+                        <span>Customize your email templates here</span>
+                        <s-button variant="secondary" disabled>Customize Emails</s-button>
+                      </div>
+                      <p className={fullPageBundleStyles.messageNote}>
+                        Note: Please reach out to us if you wish to change the domain from where the emails are sent.
+                      </p>
                     </s-stack>
                   </div>
                 </s-stack>
@@ -4467,7 +4832,7 @@ export default function ConfigureBundleFlow() {
       <s-modal ref={selectTemplateModalRef} heading="Customization" size="large">
         {templateModalStep === "select" ? (() => {
           const fpbTemplates = [
-            { presetId: "STANDARD",   label: "Standard Design",   image: "/fullPageThumbnail.png"     },
+            { presetId: "DEFAULT",    label: "Standard Design",   image: "/fullPageThumbnail.png"     },
             { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
             { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
             { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
