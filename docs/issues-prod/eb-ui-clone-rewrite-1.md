@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 05:09 IST
+**Last Updated:** 2026-05-27 05:17 IST
 
 ## Overview
 
@@ -344,6 +344,17 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Committed the generated product metadata slice as `043752c6` with issue prefix `[eb-ui-clone-rewrite-1]`.
 - The commit hook regenerated `graphify-out/GRAPH_REPORT.md`; the only remaining generated delta is the corpus word-count update after trimming hook-added trailing spaces.
 - Next: commit the post-commit issue/graph log, then continue the Product Page exact-media/full-visual proof loop.
+
+### 2026-05-27 05:14 IST - PPB Sync Product runtime rewrite gap started
+- The generated product metadata proof still had stale storefront runtime config because the manual Sync Product path only rewrites bundle-product metafields when `bundle.pricing.enabled` is true.
+- Scope: make Product Page Sync Product rewrite component and bundle-product metafields for every linked product sync, with pricing data included when present and `pricing: null` when absent.
+- Next edit: add RED coverage for no-pricing Sync Product metafield writes, then patch only the sync handler gate.
+
+### 2026-05-27 05:17 IST - PPB Sync Product runtime rewrite verification passed
+- Added RED-to-green coverage in `tests/unit/routes/ppb-sync-product.test.ts` proving Sync Product rewrites both component and bundle-product metafields when pricing is not enabled.
+- Patched Product Page Sync Product and hard Sync Bundle to run DB-authoritative metafield rewrites regardless of pricing state; pricing remains `null` when no pricing row exists.
+- Verification passed: focused Jest, modified-file ESLint with 0 errors, code competitor-reference scan with no matches, `npm run build`, `npm run build:widgets`, `npm run minify:assets css`, graph rebuild with the known graphify extraction warning, and `git diff --check`.
+- Next: commit this scoped runtime-sync slice, then capture deployed/local Admin Sync Product runtime JSON proof before marking the generated-product runtime row green.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

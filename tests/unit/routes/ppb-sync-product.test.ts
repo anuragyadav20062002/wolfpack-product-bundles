@@ -169,6 +169,69 @@ describe("PPB handleSyncProduct", () => {
     expect(body.syncedData.changesDetected).toBe(false);
   });
 
+  it("rewrites runtime metafields during sync even when pricing is not enabled", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle({
+      name: "Runtime Sync Bundle",
+      description: "A PPB bundle",
+      pricing: null,
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          enabled: true,
+          StepProduct: [
+            {
+              id: "gid://shopify/Product/789",
+              title: "Runtime Product",
+              imageUrl: "https://cdn.shopify.com/product.jpg",
+              variants: [{ id: "gid://shopify/ProductVariant/V789", title: "Default Title" }],
+            },
+          ],
+          StepCategory: [],
+        },
+      ],
+    }));
+    const admin = makeAdmin({
+      ...SHOPIFY_PRODUCT,
+      description: "A PPB bundle",
+      handle: "runtime-sync-bundle",
+    });
+
+    const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    const { updateBundleProductMetafields, updateComponentProductMetafields } = getMetafieldSync();
+    const expectedRuntimeConfig = expect.objectContaining({
+      name: "Runtime Sync Bundle",
+      pricing: null,
+      shopifyProduct: expect.objectContaining({
+        id: "gid://shopify/Product/1",
+        handle: "runtime-sync-bundle",
+      }),
+      steps: expect.arrayContaining([
+        expect.objectContaining({
+          StepProduct: expect.arrayContaining([
+            expect.objectContaining({ id: "gid://shopify/Product/789" }),
+          ]),
+        }),
+      ]),
+    });
+    expect(updateComponentProductMetafields).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/1",
+      expectedRuntimeConfig,
+    );
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/1",
+      expectedRuntimeConfig,
+    );
+  });
+
   it("removes stale generated product media references during sync", async () => {
     getDb().bundle.findUnique.mockResolvedValue(makeBundle({ name: "Product Page Fixture" }));
     const admin = {

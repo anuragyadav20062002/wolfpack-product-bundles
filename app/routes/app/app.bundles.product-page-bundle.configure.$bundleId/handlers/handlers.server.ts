@@ -1357,18 +1357,16 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
         });
       }
 
-      // Update metafields with current bundle configuration
-      if (bundle.pricing?.enabled) {
-        await updateSyncMetafields(admin, productId, bundle, {
-          lastSynced: new Date().toISOString(),
-          shopifyProduct: {
-            id: shopifyProduct.id,
-            title: shopifyProduct.title,
-            handle: syncedProductHandle,
-            updatedAt: shopifyProduct.updatedAt
-          }
-        });
-      }
+      // Update metafields with current bundle configuration, even when pricing is off.
+      await updateSyncMetafields(admin, productId, bundle, {
+        lastSynced: new Date().toISOString(),
+        shopifyProduct: {
+          id: shopifyProduct.id,
+          title: shopifyProduct.title,
+          handle: syncedProductHandle,
+          updatedAt: shopifyProduct.updatedAt
+        }
+      });
 
       return json({
         success: true,
@@ -1535,8 +1533,8 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     }
   }
 
-  // Update metafields with current bundle configuration
-  if (productId && bundle.pricing?.enabled) {
+  // Update metafields with current bundle configuration, even when pricing is off.
+  if (productId) {
     await updateSyncMetafields(admin, productId, bundle);
   }
 
@@ -1748,35 +1746,33 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       });
     }
 
-    // 7. Re-run metafield operations from DB-authoritative state
-    if (bundle.pricing) {
-      const bundleConfig = buildSyncBundleConfiguration(bundle, newProductId);
+    // 7. Re-run metafield operations from DB-authoritative state, even when pricing is off.
+    const bundleConfig = buildSyncBundleConfiguration(bundle, newProductId);
 
-      AppLogger.info('[SYNC_BUNDLE] Re-running metafield operations', { bundleId, newProductId });
+    AppLogger.info('[SYNC_BUNDLE] Re-running metafield operations', { bundleId, newProductId });
 
-      const [standardResult, componentResult, variantResult] = await Promise.allSettled([
-        (async () => {
-          const { metafields: standardMetafields } = await convertBundleToStandardMetafields(admin, bundleConfig);
-          if (Object.keys(standardMetafields).length > 0) {
-            await updateProductStandardMetafields(admin, newProductId, standardMetafields);
-          }
-        })(),
-        updateComponentProductMetafields(admin, newProductId, bundleConfig),
-        updateBundleProductMetafields(admin, newProductId, bundleConfig),
-      ]);
+    const [standardResult, componentResult, variantResult] = await Promise.allSettled([
+      (async () => {
+        const { metafields: standardMetafields } = await convertBundleToStandardMetafields(admin, bundleConfig);
+        if (Object.keys(standardMetafields).length > 0) {
+          await updateProductStandardMetafields(admin, newProductId, standardMetafields);
+        }
+      })(),
+      updateComponentProductMetafields(admin, newProductId, bundleConfig),
+      updateBundleProductMetafields(admin, newProductId, bundleConfig),
+    ]);
 
-      if (standardResult.status === 'rejected') {
-        AppLogger.warn('[SYNC_BUNDLE] Standard metafields update failed (non-critical)', { bundleId }, standardResult.reason);
-      }
-      if (componentResult.status === 'rejected') {
-        throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
-      }
-      if (variantResult.status === 'rejected') {
-        throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
-      }
-
-      AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
+    if (standardResult.status === 'rejected') {
+      AppLogger.warn('[SYNC_BUNDLE] Standard metafields update failed (non-critical)', { bundleId }, standardResult.reason);
     }
+    if (componentResult.status === 'rejected') {
+      throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
+    }
+    if (variantResult.status === 'rejected') {
+      throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
+    }
+
+    AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
 
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
     syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
