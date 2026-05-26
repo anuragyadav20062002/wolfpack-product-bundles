@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 02:43 IST
+**Last Updated:** 2026-05-27 02:56 IST
 
 ## Overview
 
@@ -128,6 +128,25 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Captured clean Admin save proof after normalizing Discount & Pricing from BXY to a percentage quantity rule (`>= 2`, `5%`) with discount messaging enabled: `/private/tmp/wpb-ppb-template-fixture-percentage-discount-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-template-fixture-percentage-discount-save-2026-05-27.network-response`.
 - Parsed request proof confirms `stepsData[0].name = "Step 1 - PPB Audit"`, `stepsData[0].pageTitle = "Build audit bundle"`, `discountType = "percentage_off"`, and a quantity rule value of `2` with discount value `5`.
 - Next: commit the verified local patch, deploy SIT with the user-authorized package script, then recapture same-fixture desktop/mobile/runtime proof from the extension CDN.
+
+### 2026-05-27 02:46 IST - SIT deploy completed for modal-slot patch
+- Committed the local PPB modal-slot patch as `1bc273cd` with the required `[eb-ui-clone-rewrite-1]` prefix.
+- Ran the user-authorized SIT package deploy command as `npm run deploy:sit -- --allow-updates`; Shopify released `wolfpack-product-bundles-sit-284`.
+- Next: reload the storefront until the extension CDN serves `window.__BUNDLE_WIDGET_VERSION__ = "2.9.3"`, then capture desktop/mobile/runtime proof for the same PPB Horizontal Slots fixture.
+
+### 2026-05-27 02:48 IST - PPB runtime discount threshold mismatch started
+- Captured post-SIT desktop/mobile proof with widget `2.9.3`: `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-modal-slot-patch-2026-05-27.png`, `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-modal-slot-patch-2026-05-27.json`, `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-modal-slot-patch-2026-05-27.png`, and `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-mobile-after-modal-slot-patch-2026-05-27.json`.
+- Runtime visual markers now prove `PDP_MODAL + MODAL`, `window.__BUNDLE_WIDGET_VERSION__ = "2.9.3"`, native price hidden, modal-slot section/grid, `Product 1`, gray disabled Add Bundle to Cart, and black Buy it now visual.
+- Mismatch: the storefront runtime still serializes the percentage quantity rule as `conditionValue: 0` even though the clean Admin save request submitted `conditionValue: 2`; this blocks the row from green.
+- Next edit: add RED persistence/formatter coverage for the PPB percentage quantity threshold and patch the save/parser/runtime path without compatibility shims.
+
+### 2026-05-27 02:56 IST - PPB runtime discount threshold fix verified
+- Added RED-to-green route coverage proving Product Page percentage quantity rules sync to bundle-product metafields as flat runtime rules with `conditionType: "quantity"`, `conditionValue: 2`, and `discountValue: 5`.
+- Patched the Product Page configure save handler runtime pricing serializer, then reran the focused route Jest suite, modified-file ESLint, full app build, graph rebuild, code competitor-reference scan, and `git diff --check`.
+- Captured clean post-fix Admin save proof at `/private/tmp/wpb-ppb-template-fixture-after-threshold-fix-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-template-fixture-after-threshold-fix-save-2026-05-27.network-response`; the request and response both keep the percentage quantity threshold at `2`.
+- Captured storefront proof with widget `2.9.3`: desktop runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-threshold-fix-desktop-2026-05-27.json`, desktop screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-threshold-fix-2026-05-27.png`, mobile runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-threshold-fix-mobile-2026-05-27.json`, and mobile screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-threshold-fix-2026-05-27.png`.
+- Remaining confirmed gaps: the same save response still returns `bundle.steps[0].pageTitle = null` despite the request sending `pageTitle = "Build audit bundle"`, and the Horizontal Slots measured layout is still wider than the reference (`358-360px` section/grid versus the reference `345px` desktop grid target).
+- Next: commit this threshold fix, then start the next TDD slice for the measured Horizontal Slots geometry and the separate Step Title persistence gap.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

@@ -144,6 +144,33 @@ async function syncBundleProductToShopify(
   }
 }
 
+function buildRuntimePricingRule(rule: any): Record<string, unknown> {
+  const flatRule: Record<string, unknown> = {
+    id: rule.id,
+    conditionType: rule.conditionType || "quantity",
+    conditionValue: Number(rule.conditionValue ?? 0) || 0,
+    discountValue: Number(rule.discountValue ?? 0) || 0,
+  };
+
+  if (rule.fixedBundlePrice !== undefined) {
+    flatRule.fixedBundlePrice = Number(rule.fixedBundlePrice) || 0;
+  }
+  if (rule.customerBuys !== undefined) {
+    flatRule.customerBuys = Number(rule.customerBuys) || 0;
+  }
+  if (rule.customerGets !== undefined) {
+    flatRule.customerGets = Number(rule.customerGets) || 0;
+  }
+  if (rule.bxyDiscountType !== undefined) {
+    flatRule.bxyDiscountType = rule.bxyDiscountType;
+  }
+  if (rule.bxyApplyMode !== undefined) {
+    flatRule.bxyApplyMode = rule.bxyApplyMode;
+  }
+
+  return flatRule;
+}
+
 /** Build the base bundle configuration object passed to metafield update functions. */
 function buildBundleBaseConfig(
   updatedBundle: {
@@ -232,11 +259,7 @@ function buildBundleBaseConfig(
     pricing: {
       enabled: discountData.discountEnabled,
       method: discountData.discountType,
-      rules: (discountData.discountRules || []).map((rule: any) => ({
-        id: rule.id,
-        condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
-        discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
-      })),
+      rules: (discountData.discountRules || []).map(buildRuntimePricingRule),
       display: { showFooter: discountData.showFooter !== false },
       messages: {
         progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',

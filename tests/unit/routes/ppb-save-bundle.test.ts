@@ -586,6 +586,63 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
+  it("passes flat percentage quantity rule thresholds into bundle product metafield sync", async () => {
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-1",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      discountMessagingEnabled: true,
+    });
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      discountData: JSON.stringify(discountData),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        pricing: expect.objectContaining({
+          method: "percentage_off",
+          rules: [
+            expect.objectContaining({
+              id: "rule-1",
+              conditionType: "quantity",
+              conditionValue: 2,
+              discountValue: 5,
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
   it("returns 500 when component metafield update fails (fatal)", async () => {
     (updateComponentProductMetafields as jest.Mock).mockRejectedValueOnce(
       new Error("Fatal component error")
