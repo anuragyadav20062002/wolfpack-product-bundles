@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 03:56 IST
+**Last Updated:** 2026-05-27 04:06 IST
 
 ## Overview
 
@@ -242,6 +242,25 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Verification passed: `npx jest tests/unit/routes/ppb-save-bundle.test.ts tests/unit/routes/bundle-status-section.test.ts tests/unit/routes/bundle-update-status.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build`, code competitor-reference scan with no matches, `git diff --check`, and graph rebuild.
 - Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
 - Next: commit this slice with issue prefix, then continue the Horizontal Slots full visual comparison loop.
+
+### 2026-05-27 03:57 IST - PPB status selector/product sync committed
+- Committed the status selector/product-description sync slice as `45ab687d` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit working tree contains only the required issue-log follow-up plus pre-existing untracked scratch artifacts.
+- Next: resume the Horizontal Slots full visual comparison loop and log the next measured mismatch before editing.
+
+### 2026-05-27 04:00 IST - PPB Horizontal Slots step-title fixture mismatch found
+- Compared EB runtime/screenshot evidence for Horizontal Slots against the current WPB storefront after the product-description sync commit.
+- EB reference renders the horizontal slot title as `Step 1 - PPB Audit`; current WPB live DOM renders `Build audit bundle`.
+- Current WPB widget geometry remains aligned with the prior target: wrapper `345px x 337px`, slot section `345px x 231px`, title row `345px x 21px`, grid `345px x 200px`, and empty slot `104.3125px x 200px`.
+- This is a fixture/configuration mismatch rather than a CSS geometry mismatch. Next: save the Product Page Step Title through Admin as `Step 1 - PPB Audit`, capture save/runtime/desktop/mobile proof, and keep the template row partial until full page-theme/product-media gaps are separately resolved.
+
+### 2026-05-27 04:06 IST - PPB Horizontal Slots step-title fixture proof captured
+- Saved Product Page Step Title through Admin as `Step 1 - PPB Audit`; Admin unsaved proof is `/private/tmp/wpb-ppb-horizontal-slots-step-title-admin-unsaved-2026-05-27.png`.
+- Captured HTTP 200 save proof at `/private/tmp/wpb-ppb-horizontal-slots-step-title-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-horizontal-slots-step-title-save-2026-05-27.network-response`.
+- Request/response both carry `firstStepPageTitle: "Step 1 - PPB Audit"` and response `success: true`; DB proof `/private/tmp/wpb-ppb-horizontal-slots-step-title-db-2026-05-27.json` confirms the same `BundleStep.pageTitle`.
+- Desktop proof `/private/tmp/wpb-ppb-horizontal-slots-step-title-runtime-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-horizontal-slots-step-title-storefront-desktop-2026-05-27.png` shows title text `Step 1 - PPB Audit`, wrapper `345px`, grid `345px`, columns `104.312px 104.312px 104.312px`, and `16px` gap.
+- Mobile proof `/private/tmp/wpb-ppb-horizontal-slots-step-title-runtime-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-horizontal-slots-step-title-storefront-mobile-2026-05-27.png` shows title text `Step 1 - PPB Audit`, wrapper `360px`, grid `360px`, columns `110.656px 110.656px 110.656px`, and `14px` gap.
+- Next: update the evidence manifest and commit the evidence/docs slice, then continue with the remaining full-page product-media/theme fixture differences.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.
