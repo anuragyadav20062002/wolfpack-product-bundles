@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 04:30 IST
+**Last Updated:** 2026-05-27 04:49 IST
 
 ## Overview
 
@@ -286,6 +286,30 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - CSS minification reports the Full Page app-block CSS at `97.6 KB` and Product Page app-block CSS at `54.0 KB`, both under Shopify's `100,000 B` limit.
 - Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
 - Next: commit this scoped product title/media slice with the required issue prefix and continue the Product Page full visual comparison loop from the remaining store-theme/header/media-history gaps.
+
+### 2026-05-27 04:32 IST - PPB generated product title/media committed
+- Committed the generated product title/media slice as `ea51850e` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit hook rebuilt graph output again; after whitespace trim, the only generated graph delta is the corpus word-count line in `graphify-out/GRAPH_REPORT.md`.
+- Next: continue the Product Page visual comparison loop from the remaining generated-product media-history, vendor, and store-theme/header differences.
+
+### 2026-05-27 04:37 IST - PPB generated product media-history gap isolated
+- Captured fresh desktop DOM audits for the reference product page at `/private/tmp/eb-ppb-product-context-audit-desktop-2026-05-27.json` and WPB at `/private/tmp/wpb-ppb-product-context-audit-desktop-2026-05-27.json`.
+- Reference product context has one visible parent product media image in the product gallery; WPB now has the correct first/featured generated media but still renders a second historical `bundle_...png` product media tile.
+- Shopify Admin GraphQL 2026-04 docs confirm `productUpdate(product, media)` adds media, while `fileUpdate.referencesToRemove` is the current non-deprecated way to remove product references from existing media files.
+- Next edit: add RED route/helper coverage that generated Product Page bundle product sync keeps one placeholder media reference and removes stale media references with `fileUpdate`, then patch only the generated product media sync path.
+
+### 2026-05-27 04:44 IST - PPB generated product media cleanup proof captured
+- Added RED-to-green helper and route coverage for generated Product Page product media cleanup: one placeholder media is retained, historical media and duplicate placeholders are removed with `fileUpdate.referencesToRemove`, and both Sync Product and Save paths invoke the cleanup.
+- Patched the Product Page generated-product sync path to fetch current media, add the app-owned placeholder if absent, and remove stale product media references through Shopify's current `fileUpdate` API.
+- Live SIT fixture cleanup proof: `/private/tmp/wpb-ppb-generated-product-media-cleanup-admin-api-2026-05-27.json` shows stale media `gid://shopify/MediaImage/42082654683395` removed with no user errors and one placeholder media node remaining.
+- Desktop proof `/private/tmp/wpb-ppb-media-cleanup-runtime-desktop-2026-05-27.json` plus screenshot `/private/tmp/wpb-ppb-media-cleanup-storefront-desktop-2026-05-27.png` shows one visible product media tile; mobile proof `/private/tmp/wpb-ppb-media-cleanup-runtime-mobile-2026-05-27.json` plus screenshot `/private/tmp/wpb-ppb-media-cleanup-storefront-mobile-2026-05-27.png` shows the same.
+- Next: run focused Jest, modified-file ESLint, app build, widget/minify checks, competitor-reference scan, graph rebuild, then commit this media cleanup slice.
+
+### 2026-05-27 04:49 IST - PPB generated product media cleanup verification passed
+- Verification passed: `npx jest tests/unit/lib/bundle-product-media.test.ts tests/unit/routes/ppb-sync-product.test.ts tests/unit/routes/ppb-save-bundle.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build`, `npm run build:widgets`, `npm run minify:assets css`, code competitor-reference scan with no matches, graph rebuild, and `git diff --check`.
+- CSS minification reports the Full Page app-block CSS at `97.6 KB` and Product Page app-block CSS at `54.0 KB`, both under Shopify's `100,000 B` limit.
+- Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
+- Next: commit this scoped generated-product media cleanup slice, then continue the Product Page visual comparison from exact media artwork and store-theme/header/vendor gaps.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

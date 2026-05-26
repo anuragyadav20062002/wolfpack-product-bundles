@@ -173,6 +173,7 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 5 | Hard reset generated product media | Product Page hard Sync Bundle recreates the Shopify product | recreate uses `productCreate(product: ProductCreateInput!, media: [CreateMediaInput!])` with the generated placeholder image | Existing products need the same direct create contract after a destructive sync. |
 | 6 | Manual bundle product update uses current mutation | Shared update-bundle-product action receives title and image URL | `productUpdate(product: ProductUpdateInput!, media: [CreateMediaInput!])` carries title and optional image media in one current mutation | The old `productUpdate(input: ProductInput!)` path is deprecated and misses the current media argument. |
 | 7 | Admin product card current media | Configure loader fetches a linked generated bundle product | loader queries `featuredMedia`/`media` and Admin state derives the image URL from current Shopify media shape | Storefront media can be fixed while Admin still displays a generic icon unless the loader requests media. |
+| 8 | Generated product stale media cleanup | Product Page generated product has one placeholder media and stale historical media | sync keeps one placeholder media reference and removes stale media product references via `fileUpdate.referencesToRemove` | Reference product page shows one parent media tile; WPB rendered a second historical product media tile. |
 
 ### PPB Select Template Admin
 

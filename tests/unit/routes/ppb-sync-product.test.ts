@@ -166,6 +166,67 @@ describe("PPB handleSyncProduct", () => {
     expect(body.syncedData.changesDetected).toBe(false);
   });
 
+  it("removes stale generated product media references during sync", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle({ name: "Product Page Fixture" }));
+    const admin = {
+      graphql: jest
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              product: {
+                ...SHOPIFY_PRODUCT,
+                title: "Product Page Fixture",
+                description: "A PPB bundle",
+                media: {
+                  nodes: [
+                    {
+                      id: "gid://shopify/MediaImage/current",
+                      alt: "Product Page Fixture - Bundle",
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                    },
+                    {
+                      id: "gid://shopify/MediaImage/old",
+                      alt: "Old Product - Bundle",
+                      image: { url: "https://cdn.shopify.com/files/bundle_old.png" },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              fileUpdate: {
+                files: [{ id: "gid://shopify/MediaImage/old" }],
+                userErrors: [],
+              },
+            },
+          }),
+        }),
+    } as any;
+
+    const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("fileUpdate"),
+      expect.objectContaining({
+        variables: {
+          files: [
+            {
+              id: "gid://shopify/MediaImage/old",
+              referencesToRemove: ["gid://shopify/Product/1"],
+            },
+          ],
+        },
+      }),
+    );
+  });
+
   it("updates DB description when Shopify description differs", async () => {
     getDb().bundle.findUnique.mockResolvedValue(makeBundle({ description: "Old" }));
     const admin = makeAdmin({ ...SHOPIFY_PRODUCT, description: "New PPB description" });

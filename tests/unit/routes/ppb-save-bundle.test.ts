@@ -602,6 +602,75 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
+  it("removes stale generated product media references after save product sync", async () => {
+    MOCK_ADMIN.graphql
+      .mockResolvedValueOnce({
+        json: async () => ({
+          data: {
+            productUpdate: {
+              product: { id: PRODUCT_ID, status: "ACTIVE" },
+              userErrors: [],
+            },
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({
+          data: {
+            product: {
+              id: PRODUCT_ID,
+              media: {
+                nodes: [
+                  {
+                    id: "gid://shopify/MediaImage/current",
+                    alt: "PPB Bundle - Bundle",
+                    image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                  },
+                  {
+                    id: "gid://shopify/MediaImage/old",
+                    alt: "Old Product - Bundle",
+                    image: { url: "https://cdn.shopify.com/files/bundle_old.png" },
+                  },
+                ],
+              },
+            },
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({
+          data: {
+            fileUpdate: {
+              files: [{ id: "gid://shopify/MediaImage/old" }],
+              userErrors: [],
+            },
+          },
+        }),
+      });
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID, handle: "bundle-123" }),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("fileUpdate"),
+      expect.objectContaining({
+        variables: {
+          files: [
+            {
+              id: "gid://shopify/MediaImage/old",
+              referencesToRemove: [PRODUCT_ID],
+            },
+          ],
+        },
+      }),
+    );
+  });
+
   it("returns 500 when no products found in any step (with productId set)", async () => {
     getDb().bundle.update.mockResolvedValue(
       makeUpdatedBundle({

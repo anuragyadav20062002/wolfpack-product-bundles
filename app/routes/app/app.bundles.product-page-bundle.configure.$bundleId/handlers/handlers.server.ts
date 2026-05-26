@@ -42,7 +42,12 @@ import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/cate
 import { formatStepCategoryForRuntime } from "../../../../lib/bundle-config/category-runtime";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
 import { buildBundleProductDescriptionHtml } from "../../../../lib/bundle-product-description.server";
-import { buildBundleProductPlaceholderMediaInput } from "../../../../lib/bundle-product-media.server";
+import {
+  buildBundleProductPlaceholderMediaInput,
+  buildStaleBundleProductMediaReferenceRemovals,
+  hasBundleProductPlaceholderMedia,
+  type BundleProductMediaNode,
+} from "../../../../lib/bundle-product-media.server";
 import { publishProductToSalesChannels } from "../../../../services/shopify-publications.server";
 import {
   deriveCommonSellingPlanGroups,
@@ -62,6 +67,156 @@ export {
 };
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
+
+async function loadBundleProductMediaNodes(
+  admin: ShopifyAdmin,
+  productId: string,
+): Promise<BundleProductMediaNode[]> {
+  const GET_BUNDLE_PRODUCT_MEDIA = `
+    query GetBundleProductMedia($id: ID!) {
+      product(id: $id) {
+        id
+        media(first: 10) {
+          nodes {
+            ... on MediaImage {
+              id
+              alt
+              image {
+                url
+                altText
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(GET_BUNDLE_PRODUCT_MEDIA, {
+    variables: { id: productId },
+  });
+  const data = await response.json() as { data?: { product?: { media?: { nodes?: BundleProductMediaNode[] } } }; errors?: unknown[] };
+  if (data.errors?.length) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to fetch generated product media:", {
+      component: "app.bundles.product-page.configure",
+      productId,
+    }, data.errors);
+    return [];
+  }
+
+  return data.data?.product?.media?.nodes || [];
+}
+
+async function addBundleProductPlaceholderMedia(
+  admin: ShopifyAdmin,
+  productId: string,
+  bundleName: string,
+): Promise<BundleProductMediaNode[]> {
+  const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundleName);
+  if (!mediaInput) {
+    return [];
+  }
+
+  const UPDATE_BUNDLE_PRODUCT_MEDIA = `
+    mutation AddBundleProductMedia($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+      productUpdate(product: $product, media: $media) {
+        product {
+          id
+          media(first: 10) {
+            nodes {
+              ... on MediaImage {
+                id
+                alt
+                image {
+                  url
+                  altText
+                }
+              }
+            }
+          }
+        }
+        userErrors { field message }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(UPDATE_BUNDLE_PRODUCT_MEDIA, {
+    variables: {
+      product: { id: productId },
+      media: mediaInput,
+    },
+  });
+  const data = await response.json() as {
+    data?: { productUpdate?: { product?: { media?: { nodes?: BundleProductMediaNode[] } }; userErrors?: Array<{ field?: string[]; message: string }> } };
+    errors?: unknown[];
+  };
+  const userErrors = data.data?.productUpdate?.userErrors || [];
+
+  if (data.errors?.length || userErrors.length > 0) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to add generated product media:", {
+      component: "app.bundles.product-page.configure",
+      productId,
+    }, { errors: data.errors || userErrors });
+    return [];
+  }
+
+  return data.data?.productUpdate?.product?.media?.nodes || [];
+}
+
+async function removeBundleProductMediaReferences(
+  admin: ShopifyAdmin,
+  files: Array<{ id: string; referencesToRemove: string[] }>,
+): Promise<void> {
+  if (files.length === 0) return;
+
+  const REMOVE_BUNDLE_PRODUCT_MEDIA_REFERENCES = `
+    mutation RemoveBundleProductMediaReferences($files: [FileUpdateInput!]!) {
+      fileUpdate(files: $files) {
+        files { id }
+        userErrors { field message code }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(REMOVE_BUNDLE_PRODUCT_MEDIA_REFERENCES, {
+    variables: { files },
+  });
+  const data = await response.json() as {
+    data?: { fileUpdate?: { userErrors?: Array<{ field?: string[]; message: string; code?: string }> } };
+    errors?: unknown[];
+  };
+  const userErrors = data.data?.fileUpdate?.userErrors || [];
+
+  if (data.errors?.length || userErrors.length > 0) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to remove stale generated product media references:", {
+      component: "app.bundles.product-page.configure",
+      mediaIds: files.map((file) => file.id),
+    }, { errors: data.errors || userErrors });
+  }
+}
+
+async function syncGeneratedBundleProductMedia(
+  admin: ShopifyAdmin,
+  productId: string,
+  bundleName: string,
+  knownMediaNodes?: BundleProductMediaNode[],
+): Promise<void> {
+  try {
+    let mediaNodes = knownMediaNodes || await loadBundleProductMediaNodes(admin, productId);
+    if (!hasBundleProductPlaceholderMedia(mediaNodes, bundleName)) {
+      const updatedMediaNodes = await addBundleProductPlaceholderMedia(admin, productId, bundleName);
+      mediaNodes = updatedMediaNodes.length > 0 ? updatedMediaNodes : mediaNodes;
+    }
+
+    const staleReferences = buildStaleBundleProductMediaReferenceRemovals(productId, mediaNodes, bundleName);
+    await removeBundleProductMediaReferences(admin, staleReferences);
+  } catch (error) {
+    AppLogger.warn("[PRODUCT_SYNC] Generated product media sync failed:", {
+      component: "app.bundles.product-page.configure",
+      productId,
+    }, error as any);
+  }
+}
 
 /** Sync bundle product status to Shopify. Non-fatal — logs errors but does not throw. */
 async function syncBundleProductToShopify(
@@ -139,6 +294,8 @@ async function syncBundleProductToShopify(
         }, unlistedErrors);
       }
     }
+
+    await syncGeneratedBundleProductMedia(admin, shopifyProductId, bundleName);
   } catch (error) {
     AppLogger.error("[PRODUCT_SYNC] Failed to sync product status (exception):", {
       component: "app.bundles.product-page.configure", operation: "sync-product-status",
@@ -1062,6 +1219,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
               nodes {
                 ... on MediaImage {
                   id
+                  alt
                   image {
                     url
                     altText
@@ -1130,6 +1288,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           data: updatedBundle
         });
       }
+
+      await syncGeneratedBundleProductMedia(
+        admin,
+        productId,
+        bundle.name,
+        shopifyProduct.media?.nodes,
+      );
 
       // Update metafields with current bundle configuration
       if (bundle.pricing?.enabled) {
