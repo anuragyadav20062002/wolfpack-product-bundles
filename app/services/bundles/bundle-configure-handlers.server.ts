@@ -108,8 +108,8 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
       AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
       const UPDATE_PRODUCT_STATUS = `
-        mutation UpdateProductStatus($input: ProductInput!) {
-          productUpdate(input: $input) {
+        mutation UpdateProductStatus($product: ProductUpdateInput!) {
+          productUpdate(product: $product) {
             product {
               id
               status
@@ -124,7 +124,7 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
 
       const statusResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
         variables: {
-          input: {
+          product: {
             id: updatedBundle.shopifyProductId,
             status: shopifyStatus,
             descriptionHtml,
@@ -152,7 +152,7 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
         AppLogger.debug(`[PRODUCT_SYNC] Setting product to UNLISTED for campaign bundle`);
         const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
           variables: {
-            input: {
+            product: {
               id: updatedBundle.shopifyProductId,
               status: "UNLISTED",
               descriptionHtml,

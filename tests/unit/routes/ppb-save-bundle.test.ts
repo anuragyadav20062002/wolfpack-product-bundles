@@ -197,6 +197,21 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     expect(body.message).toMatch(/saved successfully/i);
   });
 
+  it("returns 400 before Prisma when bundle status is empty", async () => {
+    const res = await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleStatus: "" })
+    );
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error).toMatch(/invalid bundle status/i);
+    expect(getDb().bundle.update).not.toHaveBeenCalled();
+  });
+
   it("does NOT call metafield services when shopifyProductId is absent", async () => {
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", makeFormData());
     expect(updateBundleProductMetafields).not.toHaveBeenCalled();
@@ -493,6 +508,58 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       MOCK_ADMIN,
       PRODUCT_ID,
       expect.any(Object)
+    );
+  });
+
+  it("syncs stale unlisted bundle product descriptions with the current productUpdate mutation", async () => {
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        status: "unlisted",
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+    const fd = makeFormData({
+      bundleStatus: "unlisted",
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID, handle: "bundle-123" }),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductUpdateInput"),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            id: PRODUCT_ID,
+            status: "ACTIVE",
+            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
+          }),
+        }),
+      }),
+    );
+    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductUpdateInput"),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            id: PRODUCT_ID,
+            status: "UNLISTED",
+            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
+          }),
+        }),
+      }),
     );
   });
 

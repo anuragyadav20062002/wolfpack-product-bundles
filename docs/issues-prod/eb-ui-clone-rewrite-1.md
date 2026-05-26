@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 03:33 IST
+**Last Updated:** 2026-05-27 03:56 IST
 
 ## Overview
 
@@ -212,6 +212,36 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Desktop proof at `/private/tmp/wpb-ppb-horizontal-slot-child-metrics-after-empty-includes-fix-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-empty-includes-fix-2026-05-27.png` shows widget `2.9.6`, `.bundle-includes` display `none`, and grid-to-button gap `14px`.
 - Mobile proof at `/private/tmp/wpb-ppb-horizontal-slot-child-metrics-after-empty-includes-fix-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-empty-includes-fix-2026-05-27.png` shows the same `14px` grid-to-button gap at `390x844`.
 - Next: update the evidence manifest/test spec, rebuild graph output, and commit this spacing slice.
+
+### 2026-05-27 03:36 IST - PPB Horizontal Slots empty includes slice committed
+- Committed the modal-slot empty-includes spacing fix as `fb40abf8` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit working tree contains only pre-existing untracked scratch artifacts plus this issue-log follow-up entry.
+- Next: resume the Horizontal Slots full visual comparison and identify the next measured mismatch from EB/WPB desktop/mobile evidence.
+
+### 2026-05-27 03:39 IST - PPB product description sync mismatch started
+- Horizontal Slots visual comparison now isolates the visible product-page description mismatch: the widget area is aligned, but the generated Shopify product still shows stale merchant setup text instead of the deterministic unlisted troubleshooting description.
+- Re-read Shopify's current Admin GraphQL documentation and local handler code; PPB product sync still uses the deprecated `productUpdate(input: ProductInput!)` shape while the current mutation argument is `product: ProductUpdateInput`.
+- Impact scope: PPB/shared product status-description sync handlers and focused route tests only; storefront widget CSS and Cart Transform are not touched.
+- Next edit: add RED coverage for current `productUpdate(product: ...)` variables and patch the status/description sync path so a save can refresh stale generated bundle-product descriptions.
+
+### 2026-05-27 03:47 IST - PPB status selector serialization gap found
+- Live Admin save proof for the unlisted product-description refresh returned HTTP 500 because the Product Page configure form submitted `bundleStatus=` as an empty string.
+- Network response shows Prisma rejected the empty string before product sync ran, so the next patch must first make the shared status selector serialize a concrete status and make the PPB save handler reject invalid status values before Prisma.
+- Impact scope expands to the shared configure status selector and PPB save boundary validation; storefront widget CSS and Cart Transform remain untouched.
+- Next edit: add RED focused coverage for empty status validation, then patch the selector to use the current Polaris select value contract and the PPB save handler to fail cleanly on invalid status input.
+
+### 2026-05-27 03:55 IST - PPB status selector/product sync proof captured
+- Added focused tests for the shared Admin status selector contract, empty Product Page status validation, and current Shopify `productUpdate(product: ProductUpdateInput!)` payload shape.
+- Patched the shared status selector to submit direct `BundleStatus` values through Polaris `s-select`/`s-option`, patched PPB save validation to reject invalid status before Prisma, and updated both PPB/private and shared product-sync mutations to the current Shopify Admin GraphQL argument shape.
+- Live Admin save proof now returns HTTP 200 with `bundleStatus=unlisted`: `/private/tmp/wpb-ppb-product-status-unlisted-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-product-status-unlisted-save-2026-05-27.network-response`.
+- DB proof `/private/tmp/wpb-ppb-product-status-unlisted-db-2026-05-27.json` confirms `status: "unlisted"` for `cmpfhk3ys0001v0t0w2r3xvls`.
+- Desktop proof `/private/tmp/wpb-ppb-product-status-unlisted-storefront-desktop-2026-05-27.png` plus runtime `/private/tmp/wpb-ppb-product-status-unlisted-runtime-desktop-2026-05-27.json`, and mobile proof `/private/tmp/wpb-ppb-product-status-unlisted-storefront-mobile-2026-05-27.png` plus runtime `/private/tmp/wpb-ppb-product-status-unlisted-runtime-mobile-2026-05-27.json`, show the generated product now renders `Your Bundle is Unlisted`.
+- Next: run required verification, update graph output, and commit this product status-description sync slice before resuming the Horizontal Slots full visual comparison.
+
+### 2026-05-27 03:56 IST - PPB status selector/product sync verification passed
+- Verification passed: `npx jest tests/unit/routes/ppb-save-bundle.test.ts tests/unit/routes/bundle-status-section.test.ts tests/unit/routes/bundle-update-status.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build`, code competitor-reference scan with no matches, `git diff --check`, and graph rebuild.
+- Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
+- Next: commit this slice with issue prefix, then continue the Horizontal Slots full visual comparison loop.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

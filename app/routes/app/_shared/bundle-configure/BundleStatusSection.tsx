@@ -11,6 +11,16 @@ const statusOptions = [...BUNDLE_STATUS_OPTIONS];
  */
 const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => {
   const selectRef = useRef<HTMLElement>(null);
+  const handleChange = (event: Event) => {
+    const nextValue = (
+      (event.currentTarget as HTMLSelectElement | null)?.value ||
+      (event.target as HTMLSelectElement).value
+    ) as BundleStatus;
+
+    if (statusOptions.some((opt) => opt.value === nextValue)) {
+      onChange(nextValue);
+    }
+  };
 
   useEffect(() => {
     if (selectRef.current) {
@@ -25,11 +35,12 @@ const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps
       </h3>
       <s-select
         ref={selectRef}
+        value={status}
         label="Bundle Status"
-        onChange={(e: Event) => onChange((e.target as HTMLSelectElement).value as BundleStatus)}
+        onChange={handleChange}
       >
         {statusOptions.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
         ))}
       </s-select>
     </s-stack>

@@ -162,6 +162,13 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 4 | Bundle Settings heading toggles | Pre Selected Product, Quantity Validation, Subscription Integration cards | toggles sit inline beside section headings instead of pinned to the far right | Captured Bundle Settings evidence. |
 | 5 | Pre Selected Product disabled state | preselected toggle off | no extra helper copy, no Multi Language button, no `Not set` badge, Browse Products disabled | Captured disabled/default state. |
 
+### PPB Product Sync
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Current productUpdate mutation | Product Page save/status sync for an unlisted bundle product | Admin GraphQL call uses `productUpdate(product: ProductUpdateInput!)` with variables under `product`, including `descriptionHtml` and the ACTIVE→UNLISTED sequence | Shopify current docs mark `input: ProductInput` deprecated; stale product descriptions blocked the Horizontal Slots visual fixture. |
+| 2 | Empty status boundary validation | Product Page save payload with `bundleStatus=""` | Save returns a 400 validation error before Prisma update; the Admin selector must submit one of the direct `BundleStatus` values | Live unlisted refresh proof posted an empty status value and Prisma rejected it as HTTP 500. |
+
 ### PPB Select Template Admin
 
 | # | Scenario | Input | Expected Output | Notes |

@@ -88,9 +88,9 @@ describe("handleUpdateBundleStatus", () => {
     const admin = makeAdmin();
     await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("active"));
     expect(admin.graphql).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining("ProductUpdateInput"),
       expect.objectContaining({
-        variables: expect.objectContaining({ input: expect.objectContaining({ status: "ACTIVE" }) }),
+        variables: expect.objectContaining({ product: expect.objectContaining({ status: "ACTIVE" }) }),
       })
     );
   });
@@ -107,10 +107,10 @@ describe("handleUpdateBundleStatus", () => {
     const admin = makeAdmin();
     await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("unlisted"));
     expect(admin.graphql).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining("ProductUpdateInput"),
       expect.objectContaining({
         variables: expect.objectContaining({
-          input: expect.objectContaining({
+          product: expect.objectContaining({
             status: "ACTIVE",
             descriptionHtml: expect.stringContaining("Category:</strong> Visibility"),
           }),
@@ -118,10 +118,10 @@ describe("handleUpdateBundleStatus", () => {
       })
     );
     expect(admin.graphql).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining("ProductUpdateInput"),
       expect.objectContaining({
         variables: expect.objectContaining({
-          input: expect.objectContaining({
+          product: expect.objectContaining({
             status: "UNLISTED",
             descriptionHtml: expect.not.stringContaining("Merchant copy"),
           }),
@@ -140,9 +140,9 @@ describe("handleUpdateBundleStatus", () => {
     const admin = makeAdmin();
     await handleUpdateBundleStatus(admin, MOCK_SESSION, "b1", makeForm("archived"));
     expect(admin.graphql).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining("ProductUpdateInput"),
       expect.objectContaining({
-        variables: expect.objectContaining({ input: expect.objectContaining({ status: "ARCHIVED" }) }),
+        variables: expect.objectContaining({ product: expect.objectContaining({ status: "ARCHIVED" }) }),
       })
     );
   });

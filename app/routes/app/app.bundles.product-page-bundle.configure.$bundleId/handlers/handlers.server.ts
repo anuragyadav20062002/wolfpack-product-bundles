@@ -80,8 +80,8 @@ async function syncBundleProductToShopify(
   AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${shopifyProductId}`);
 
   const UPDATE_PRODUCT_STATUS = `
-    mutation UpdateProductStatus($input: ProductInput!) {
-      productUpdate(input: $input) {
+    mutation UpdateProductStatus($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
         product { id status }
         userErrors { field message }
       }
@@ -91,7 +91,7 @@ async function syncBundleProductToShopify(
   try {
     const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
       variables: {
-        input: {
+        product: {
           id: shopifyProductId,
           status: shopifyStatus,
           descriptionHtml,
@@ -120,7 +120,7 @@ async function syncBundleProductToShopify(
     if (finalStatus === BundleStatus.UNLISTED && statusUserErrors.length === 0) {
       const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
         variables: {
-          input: {
+          product: {
             id: shopifyProductId,
             status: "UNLISTED",
             descriptionHtml,
@@ -636,6 +636,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
+    if (!Object.values(BundleStatus).includes(bundleStatus as BundleStatus)) {
+      return json(
+        { success: false, error: "Invalid bundle status" },
+        { status: 400 }
+      );
+    }
+
     const loadingGifRaw = formData.get("loadingGif") as string;
     const loadingGif = loadingGifRaw || null;
     const showProductPrices = formData.get("showProductPrices") !== "false";
