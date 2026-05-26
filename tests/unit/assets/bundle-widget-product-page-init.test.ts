@@ -284,3 +284,28 @@ describe('Product Page widget product-form placement contract', () => {
     expect(source).toContain('bundle-widget-container--product-form-mounted');
   });
 });
+
+describe('Product Page widget native product price contract', () => {
+  it('hides the native product price in the product form scope before rendering PPB controls', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('_hideNativeProductPrice');
+    expect(source.indexOf('this._relocateContainerToProductForm();')).toBeLessThan(
+      source.indexOf('this._hideNativeProductPrice();'),
+    );
+    expect(source.indexOf('this._hideNativeProductPrice();')).toBeLessThan(
+      source.indexOf('this.setupDOMElements();'),
+    );
+    expect(source).toContain('.product__info-container');
+    expect(source).toContain('[id^="ProductInformation-"]');
+    expect(source).toContain('.product-details');
+    expect(source).toContain('[id^="price-"]');
+    expect(source).toContain('.price.price--large');
+    expect(source).toContain('wpb-native-product-price--hidden');
+    expect(source).toContain('data-wpb-native-product-price-hidden');
+    expect(source).toContain("style.setProperty('display', 'none', 'important')");
+  });
+});

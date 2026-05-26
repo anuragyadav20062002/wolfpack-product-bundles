@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 02:13 IST
+**Last Updated:** 2026-05-27 02:20 IST
 
 ## Overview
 
@@ -96,6 +96,19 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - The commit includes the evidence-gated feature pipeline docs, Admin/storefront/data-contract implementation slices, Cart Transform runtime messaging work, Prisma migrations, generated widget assets, focused tests, and graph outputs.
 - Temporary Chrome/network artifacts and scratch snapshots remain uncommitted.
 - Next: continue the evidence-feedback loop from the remaining PPB storefront visual mismatches and keep manifest rows `partial` until every proof gate is satisfied.
+
+### 2026-05-27 02:16 IST - PPB template native-price mismatch started
+- Compared EB Horizontal Slots desktop reference against the WPB after-placement proof.
+- Fixture mismatch: WPB still has direct preselected/default products enabled and Buy X, get Y state, while the EB template reference is an empty slot state.
+- Code mismatch: WPB leaves the native product price visible above quantity controls, while EB hides the native price on PPB bundle product pages.
+- Next edit: add a RED widget initialization contract for hiding native product price within the product form column, then patch the Product Page widget before recapturing a same-fixture template proof.
+
+### 2026-05-27 02:20 IST - PPB native-price hiding proof captured
+- Added RED-to-green widget init coverage requiring Product Page bundles to hide native product price elements in the product-form column after relocation and before PPB controls render.
+- Patched the Product Page widget to find the native cart form, scope to the surrounding product information block, and mark/hide native price elements with `data-wpb-native-product-price-hidden`.
+- Targeted verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, modified-file ESLint with 0 errors, `npm run build:widgets`, and `git diff --check`.
+- Live Chrome proof on the PPB storefront shows the native `$0.00` price spans hidden and the widget still mounted after the native product form; screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-native-price-hidden-2026-05-27.png`.
+- Remaining PPB template visual gap: recapture on a same-fixture no-default-products/percentage-discount state before comparing slot/card/button pixels.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

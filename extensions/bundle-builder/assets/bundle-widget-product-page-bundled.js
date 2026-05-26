@@ -1875,6 +1875,7 @@ class BundleWidgetProductPage {
       await this._preloadDefaultStepProducts();
 
       this._relocateContainerToProductForm();
+      this._hideNativeProductPrice();
 
       this.setupDOMElements();
 
@@ -2261,17 +2262,7 @@ class BundleWidgetProductPage {
       if (!this.container || typeof document === 'undefined') return;
       if (this.container.dataset.mountedAfterProductForm === 'true') return;
 
-      const selectors = [
-        'form[action*="/cart/add"]',
-        'product-form form',
-        '.product-form form',
-        '[data-type="add-to-cart-form"]',
-        'form[action^="/cart/add"]'
-      ];
-
-      const productForm = selectors
-        .map(selector => document.querySelector(selector))
-        .find(form => form && !form.contains(this.container) && !this.container.contains(form));
+      const productForm = this._findNativeProductForm();
 
       if (!productForm) return;
 
@@ -2281,6 +2272,63 @@ class BundleWidgetProductPage {
 
       this.container.classList.add('bundle-widget-container--product-form-mounted');
       this.container.dataset.mountedAfterProductForm = 'true';
+    } catch (_error) {
+
+    }
+  }
+
+  _findNativeProductForm() {
+    if (typeof document === 'undefined') return null;
+
+    const selectors = [
+      'form[action*="/cart/add"]',
+      'product-form form',
+      '.product-form form',
+      '[data-type="add-to-cart-form"]',
+      'form[action^="/cart/add"]'
+    ];
+
+    return selectors
+      .map(selector => document.querySelector(selector))
+      .find(form => form && !form.contains(this.container) && !this.container.contains(form)) || null;
+  }
+
+  _getNativeProductInfoRoot(productForm) {
+    return productForm?.closest?.(
+      '[id^="ProductInformation-"], .product-details, .group-block-content, .product-information, .product__info-container, .product__info-wrapper, .product__info, product-info, .product'
+    ) || productForm?.parentElement || null;
+  }
+
+  _hideNativeProductPrice() {
+    try {
+      if (!this.container || typeof document === 'undefined') return;
+
+      const productForm = this._findNativeProductForm();
+      if (!productForm) return;
+
+      const root = this._getNativeProductInfoRoot(productForm);
+      if (!root) return;
+
+      const selectors = [
+        '[id^="price-"]',
+        '.price.price--large',
+        '.product__price',
+        '[data-product-price]',
+        '.product-price',
+        '.price'
+      ];
+
+      const priceElements = selectors.flatMap(selector => Array.from(root.querySelectorAll(selector)));
+      const uniquePriceElements = Array.from(new Set(priceElements));
+
+      uniquePriceElements
+        .filter(element => !this.container.contains(element))
+        .filter(element => !element.closest('#bundle-builder-modal'))
+        .forEach(element => {
+          element.classList.add('wpb-native-product-price--hidden');
+          element.setAttribute('data-wpb-native-product-price-hidden', 'true');
+          element.style.setProperty('display', 'none', 'important');
+        });
     } catch (_error) {
 
     }
