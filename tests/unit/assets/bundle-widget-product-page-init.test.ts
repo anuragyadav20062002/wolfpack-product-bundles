@@ -309,3 +309,37 @@ describe('Product Page widget native product price contract', () => {
     expect(source).toContain("style.setProperty('display', 'none', 'important')");
   });
 });
+
+describe('Product Page modal-slot visual contract', () => {
+  it('renders modal-slot empty states with section titles, product slot labels, and the reference-matched button stack', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_isProductPageModalSlotTemplate');
+    expect(source).toContain('_markProductPageTemplate');
+    expect(source).toContain('this.elements.stepsContainer.dataset.ppbTemplateType');
+    expect(source).toContain('this.elements.stepsContainer.dataset.ppbDesignPreset');
+    expect(source).toContain('bw-ppb-modal-slot-section');
+    expect(source).toContain('bw-ppb-modal-slot-title');
+    expect(source).toContain('bw-ppb-modal-slot-grid');
+    expect(source).toContain('const slotNumber = instanceIndex + 1;');
+    expect(source).toMatch(/Product \$\{slotNumber\}/);
+    expect(source).toContain('_createDynamicCheckoutVisual');
+    expect(source).toContain('bw-ppb-dynamic-checkout-visual');
+    expect(source).toContain('Buy it now');
+
+    expect(css).toContain('.bundle-steps[data-ppb-template-type="PDP_MODAL"]');
+    expect(css).toContain('.bw-ppb-modal-slot-grid');
+    expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
+    expect(css).toContain('.bw-ppb-modal-slot-grid .bw-slot-card--empty');
+    expect(css).toContain('border:2px dashed #111111');
+    expect(css).toContain('.bw-ppb-dynamic-checkout-visual');
+    expect(css).toContain('background:#111111');
+  });
+});

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.2
+ * Version : 2.9.3
  * Built   : 2026-05-26
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.2';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.3';
 (function() {
   'use strict';
 
@@ -1878,6 +1878,7 @@ class BundleWidgetProductPage {
       this._hideNativeProductPrice();
 
       this.setupDOMElements();
+      this._markProductPageTemplate();
 
       this.renderUI();
 
@@ -2017,6 +2018,33 @@ class BundleWidgetProductPage {
     this.widgetStyle = 'bottom-sheet';
 
     this.updateMessagesFromBundle();
+  }
+
+  _getProductPageTemplateType() {
+    return this.selectedBundle?.bundleDesignTemplate || '';
+  }
+
+  _getProductPageDesignPreset() {
+    return this.selectedBundle?.bundleDesignPresetId ||
+      this.selectedBundle?.bundleDesignTemplateData?.templateId ||
+      this.selectedBundle?.templateId ||
+      '';
+  }
+
+  _isProductPageModalSlotTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_MODAL';
+  }
+
+  _markProductPageTemplate() {
+    if (!this.container || !this.elements?.stepsContainer || !this.selectedBundle) return;
+
+    const templateType = this._getProductPageTemplateType();
+    const designPreset = this._getProductPageDesignPreset();
+
+    this.container.dataset.ppbTemplateType = templateType;
+    this.container.dataset.ppbDesignPreset = designPreset;
+    this.elements.stepsContainer.dataset.ppbTemplateType = templateType;
+    this.elements.stepsContainer.dataset.ppbDesignPreset = designPreset;
   }
 
   /** Steps that are neither free gift nor default — require user selection */
@@ -2344,6 +2372,7 @@ class BundleWidgetProductPage {
       giftMessageEl: this.container.querySelector('.bw-gift-message') || this._createGiftMessageEl(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
+      dynamicCheckoutVisual: this.container.querySelector('.bw-ppb-dynamic-checkout-visual') || this._createDynamicCheckoutVisual(),
       modal: modalEl,
       bsOverlay: document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay()
     };
@@ -2365,6 +2394,9 @@ class BundleWidgetProductPage {
     }
     if (!this.container.querySelector('.add-bundle-to-cart')) {
       this.container.appendChild(this.elements.addToCartButton);
+    }
+    if (!this.container.querySelector('.bw-ppb-dynamic-checkout-visual')) {
+      this.container.appendChild(this.elements.dynamicCheckoutVisual);
     }
   }
 
@@ -2486,6 +2518,15 @@ class BundleWidgetProductPage {
     return button;
   }
 
+  _createDynamicCheckoutVisual() {
+    const button = document.createElement('div');
+    button.className = 'bw-ppb-dynamic-checkout-visual';
+    button.setAttribute('role', 'button');
+    button.setAttribute('aria-disabled', 'true');
+    button.textContent = 'Buy it now';
+    return button;
+  }
+
   setupTabScrollArrows(modal) {
     const tabsContainer = modal.querySelector('.modal-tabs');
     const leftArrow = modal.querySelector('.tab-arrow-left');
@@ -2529,6 +2570,7 @@ class BundleWidgetProductPage {
   renderSteps() {
 
     this.elements.stepsContainer.innerHTML = '';
+    this._markProductPageTemplate();
 
     if (!this.selectedBundle || !this.selectedBundle.steps) {
       return;
@@ -2633,25 +2675,33 @@ class BundleWidgetProductPage {
 
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
+      const section = this._isProductPageModalSlotTemplate()
+        ? this._createModalSlotStepSection(step)
+        : null;
+      const target = section?.querySelector('.bw-ppb-modal-slot-grid') || this.elements.stepsContainer;
+
+      if (section) {
+        this.elements.stepsContainer.appendChild(section);
+      }
 
       const banner = this._createStepBannerImage(step);
-      if (banner) this.elements.stepsContainer.appendChild(banner);
+      if (banner) target.appendChild(banner);
 
       if (step.isDefault) {
 
         const product = this._getDefaultStepProduct(stepIndex);
         if (product) {
           const card = this.createDefaultProductCard(step, stepIndex, product);
-          this.elements.stepsContainer.appendChild(card);
+          target.appendChild(card);
         } else {
 
           const card = this._createDefaultLoadingCard(step, stepIndex);
-          this.elements.stepsContainer.appendChild(card);
+          target.appendChild(card);
         }
       } else if (step.isFreeGift) {
 
         const card = this.createFreeGiftSlotCard(step, stepIndex);
-        this.elements.stepsContainer.appendChild(card);
+        target.appendChild(card);
       } else {
 
         const stepSelections = this.selectedProducts[stepIndex] || {};
@@ -2667,25 +2717,41 @@ class BundleWidgetProductPage {
                   { product, stepIndex, step, variantId, instanceIndex: i },
                   i
                 );
-                this.elements.stepsContainer.appendChild(card);
+                target.appendChild(card);
               }
             }
           });
 
           if (!this.validateStep(stepIndex)) {
             const totalQty = selectedEntries.reduce((sum, [, qty]) => sum + qty, 0);
-            this.elements.stepsContainer.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
+            target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
           }
         } else {
 
-          const card = this.createEmptyStateCard(step, stepIndex);
-          this.elements.stepsContainer.appendChild(card);
+          const card = this.createEmptyStateCard(step, stepIndex, 0);
+          target.appendChild(card);
         }
       }
     });
   }
 
-  createEmptyStateCard(step, stepIndex) {
+  _createModalSlotStepSection(step) {
+    const section = document.createElement('div');
+    section.className = 'bw-ppb-modal-slot-section';
+
+    const title = document.createElement('div');
+    title.className = 'bw-ppb-modal-slot-title';
+    title.textContent = step.name || '';
+    section.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'bw-ppb-modal-slot-grid';
+    section.appendChild(grid);
+
+    return section;
+  }
+
+  createEmptyStateCard(step, stepIndex, instanceIndex = 0) {
     const stepBox = document.createElement('div');
     stepBox.dataset.stepIndex = stepIndex;
 
@@ -2701,27 +2767,33 @@ class BundleWidgetProductPage {
 
     const iconWrapper = document.createElement('div');
     iconWrapper.className = 'bw-slot-card__plus-icon';
+    const isModalSlotTemplate = this._isProductPageModalSlotTemplate();
     const primaryColor = getComputedStyle(document.documentElement)
       .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
-    iconWrapper.style.cssText = `
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: color-mix(in srgb, ${primaryColor} 8%, transparent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 10px;
-    `;
+    if (isModalSlotTemplate) {
+      iconWrapper.classList.add('bw-slot-card__plus-icon--plain');
+    } else {
+      iconWrapper.style.cssText = `
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: color-mix(in srgb, ${primaryColor} 8%, transparent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+      `;
+    }
     iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
     </svg>`;
-    iconWrapper.style.color = primaryColor;
+    iconWrapper.style.color = isModalSlotTemplate ? '#111111' : primaryColor;
     stepBox.appendChild(iconWrapper);
 
+    const slotNumber = instanceIndex + 1;
     const label = document.createElement('p');
     label.className = 'step-name bw-slot-card__label';
-    label.textContent = step.name || `Step ${stepIndex + 1}`;
+    label.textContent = isModalSlotTemplate ? `Product ${slotNumber}` : step.name || `Step ${stepIndex + 1}`;
     stepBox.appendChild(label);
 
     stepBox.addEventListener('click', () => this.openModal(stepIndex));

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 02:20 IST
+**Last Updated:** 2026-05-27 02:43 IST
 
 ## Overview
 
@@ -109,6 +109,25 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Targeted verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, modified-file ESLint with 0 errors, `npm run build:widgets`, and `git diff --check`.
 - Live Chrome proof on the PPB storefront shows the native `$0.00` price spans hidden and the widget still mounted after the native product form; screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-native-price-hidden-2026-05-27.png`.
 - Remaining PPB template visual gap: recapture on a same-fixture no-default-products/percentage-discount state before comparing slot/card/button pixels.
+
+### 2026-05-27 02:27 IST - PPB horizontal-slot same-fixture mismatch started
+- Captured same-fixture desktop proof after disabling default/preselected products: `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-same-fixture-2026-05-27.png` and runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-same-fixture-2026-05-27.json`.
+- Verified the native price remains hidden and default products are no longer rendered, but the EB reference still differs: EB has a section title, white dashed empty slot labeled `Product 1`, gray disabled Add Bundle to Cart button, and black Buy it now button.
+- WPB currently renders a narrow pill-like empty slot labeled with the step name and a wide orange disabled bundle button.
+- Next edit: add a RED widget source contract for Product Page modal-slot empty-state/button parity, then patch the widget markup/CSS and rebuild bundled assets before recapturing desktop/mobile proof.
+
+### 2026-05-27 02:33 IST - PPB horizontal-slot local patch verified
+- Added RED-to-green widget source coverage for Product Page modal-slot template markers, section title/grid markup, `Product 1` empty-slot label, disabled gray bundle button styling, and black buy-now visual.
+- Patched the Product Page widget to mark `PDP_MODAL` DOM with template datasets, wrap each step in a modal-slot section/grid, label empty slots by slot index, and append the buy-now visual below the bundle button.
+- Rewrote the targeted Product Page CSS for modal-slot empty cards and the modal-slot button stack; bumped `WIDGET_VERSION` to `2.9.3` and regenerated bundled JS/CSS assets.
+- Local verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, modified-file ESLint with 0 errors, `npm run build:widgets`, `npm run minify:assets css`, `npm run build`, code competitor-reference scan, graph rebuild, and `git diff --check`.
+- Remaining proof gap: run the SIT deploy so the extension CDN serves `2.9.3`, then recapture PPB Horizontal Slots desktop/mobile/runtime evidence before marking the row green.
+
+### 2026-05-27 02:43 IST - PPB horizontal-slot fixture normalization proof captured
+- Captured clean Admin save proof for the same PPB template fixture after setting the step title to `Build audit bundle`: `/private/tmp/wpb-ppb-template-fixture-step-title-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-template-fixture-step-title-save-2026-05-27.network-response`.
+- Captured clean Admin save proof after normalizing Discount & Pricing from BXY to a percentage quantity rule (`>= 2`, `5%`) with discount messaging enabled: `/private/tmp/wpb-ppb-template-fixture-percentage-discount-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-template-fixture-percentage-discount-save-2026-05-27.network-response`.
+- Parsed request proof confirms `stepsData[0].name = "Step 1 - PPB Audit"`, `stepsData[0].pageTitle = "Build audit bundle"`, `discountType = "percentage_off"`, and a quantity rule value of `2` with discount value `5`.
+- Next: commit the verified local patch, deploy SIT with the user-authorized package script, then recapture same-fixture desktop/mobile/runtime proof from the extension CDN.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.
