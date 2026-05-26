@@ -5,7 +5,10 @@
  * Issue: [edit-bundle-flow-tests-1]
  */
 
-import { handleSyncProduct } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";
+import {
+  handleSyncBundle,
+  handleSyncProduct,
+} from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";
 
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
@@ -76,6 +79,7 @@ const getPublishProductToSalesChannels = () =>
   require("../../../app/services/shopify-publications.server").publishProductToSalesChannels;
 
 const MOCK_SESSION = { shop: "test-shop.myshopify.com", accessToken: "tok" } as any;
+const ORIGINAL_APP_URL = process.env.SHOPIFY_APP_URL;
 
 const SHOPIFY_PRODUCT = {
   id: "gid://shopify/Product/1",
@@ -136,7 +140,12 @@ function makeAdmin(productData: Record<string, unknown> | null = SHOPIFY_PRODUCT
 
 beforeEach(() => {
   jest.clearAllMocks();
+  process.env.SHOPIFY_APP_URL = "https://app.example.test";
   getDb().bundle.update.mockResolvedValue({});
+});
+
+afterEach(() => {
+  process.env.SHOPIFY_APP_URL = ORIGINAL_APP_URL;
 });
 
 describe("PPB handleSyncProduct", () => {
@@ -211,6 +220,101 @@ describe("PPB handleSyncProduct", () => {
       admin,
       "gid://shopify/Product/NEW",
       "ppb-sync-product-create",
+    );
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductCreateInput"),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            title: "PPB Bundle",
+            handle: "bundle-bundle-1",
+          }),
+          media: [
+            expect.objectContaining({
+              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              alt: "PPB Bundle - Bundle",
+              mediaContentType: "IMAGE",
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("recreates a synced bundle product with the generated placeholder media", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle());
+    const admin = {
+      graphql: jest
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: { productUpdate: { product: { id: "gid://shopify/Product/1", status: "ARCHIVED" }, userErrors: [] } },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: { productDelete: { deletedProductId: "gid://shopify/Product/1", userErrors: [] } },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              productCreate: {
+                product: {
+                  id: "gid://shopify/Product/NEW",
+                  title: "PPB Bundle",
+                  handle: "bundle-bundle-1",
+                  status: "ACTIVE",
+                  variants: { edges: [{ node: { id: "gid://shopify/ProductVariant/NEW" } }] },
+                },
+                userErrors: [],
+              },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              productVariantsBulkUpdate: {
+                productVariants: [{ id: "gid://shopify/ProductVariant/NEW", price: "50.00" }],
+                userErrors: [],
+              },
+            },
+          }),
+        })
+        .mockResolvedValue({
+          json: async () => ({
+            data: {
+              productUpdate: {
+                product: { id: "gid://shopify/Product/NEW", status: "ACTIVE" },
+                userErrors: [],
+              },
+            },
+          }),
+        }),
+    } as any;
+
+    const res = await handleSyncBundle(admin, MOCK_SESSION, "bundle-1");
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(admin.graphql.mock.calls[2][0]).toContain("ProductCreateInput");
+    expect(admin.graphql.mock.calls[2][1]).toEqual(
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            title: "PPB Bundle",
+            handle: "bundle-bundle-1",
+          }),
+          media: [
+            expect.objectContaining({
+              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              alt: "PPB Bundle - Bundle",
+              mediaContentType: "IMAGE",
+            }),
+          ],
+        }),
+      }),
     );
   });
 

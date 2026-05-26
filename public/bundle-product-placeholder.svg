@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="1160" viewBox="0 0 1160 1160">
+  <rect width="1160" height="1160" fill="#ffffff"/>
+  <g opacity="0.18">
+    <rect x="200" y="96" width="250" height="170" rx="8" fill="#f7f9ff"/>
+    <rect x="646" y="116" width="320" height="140" rx="10" fill="#f7f9ff"/>
+    <rect x="96" y="382" width="250" height="128" rx="8" fill="#f8faff"/>
+    <rect x="740" y="506" width="280" height="140" rx="12" fill="#f8faff"/>
+  </g>
+  <g fill="none" stroke="#86a6e7" stroke-linecap="round" stroke-linejoin="round">
+    <g opacity="0.62" stroke-width="24">
+      <circle cx="447" cy="394" r="90"/>
+      <line x1="447" y1="304" x2="447" y2="484"/>
+      <rect x="548" y="300" width="118" height="196" rx="12" fill="#dbe7ff"/>
+      <path d="M552 300h110v-45h-110z" fill="#6c8bc9"/>
+      <path d="M552 350h110" stroke="#ffffff" opacity="0.5"/>
+      <rect x="710" y="370" width="142" height="152" rx="16" fill="#dbe7ff"/>
+      <path d="M720 370h120v-47h-120z" fill="#6c8bc9"/>
+      <path d="M778 434c22 22 38 42 38 63 0 27-21 48-47 48-27 0-47-21-47-48 0-21 34-65 56-63z" fill="#7696d4" stroke-width="8"/>
+      <rect x="238" y="362" width="76" height="238" rx="12" fill="#dbe7ff"/>
+      <path d="M238 362h76v-68h-76z" fill="#6c8bc9"/>
+      <path d="M272 444c17 17 29 30 29 45 0 18-14 33-31 33s-31-15-31-33c0-15 22-44 33-45z" fill="#7696d4" stroke-width="8"/>
+      <rect x="388" y="538" width="80" height="142" rx="12" fill="#dbe7ff"/>
+      <path d="M402 538h52v-38h-52z" fill="#6c8bc9"/>
+      <path d="M426 582c13 12 23 23 23 36 0 15-12 28-27 28s-27-13-27-28c0-13 20-37 31-36z" fill="#7696d4" stroke-width="7"/>
+      <rect x="532" y="533" width="116" height="204" rx="16" fill="#dbe7ff"/>
+      <circle cx="590" cy="594" r="8" fill="#86a6e7"/>
+      <path d="M532 676h116" stroke="#ffffff" opacity="0.55"/>
+      <path d="M702 584h192" stroke-width="18"/>
+      <path d="M724 552v64M856 552v64" stroke-width="14"/>
+      <rect x="665" y="655" width="242" height="114" rx="18" fill="#6c8bc9"/>
+      <circle cx="770" cy="713" r="44" fill="#ffffff" stroke-width="10"/>
+      <circle cx="770" cy="713" r="16" fill="#6c8bc9" stroke-width="0"/>
+      <path d="M928 336l80 80M912 286a78 78 0 1 0 0 156 78 78 0 0 0 0-156z" stroke-width="20"/>
+      <path d="M184 632l-82 82M102 550a78 78 0 1 0 0 156 78 78 0 0 0 0-156z" stroke-width="20"/>
+      <path d="M472 722c28 25 34 62 12 92M550 722c-28 25-34 62-12 92" stroke-width="18"/>
+    </g>
+    <g opacity="0.78" stroke-width="9">
+      <path d="M168 300h42M189 279v42M955 326h42M976 305v42M390 786h42M411 765v42M828 238h42M849 217v42M164 770h42M185 749v42"/>
+    </g>
+  </g>
+  <ellipse cx="570" cy="824" rx="230" ry="26" fill="#b9c9ed" opacity="0.18"/>
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle" fill="#45425e">
+    <text x="580" y="925" font-size="34">
+      <tspan>This </tspan><tspan font-style="italic">placeholder image</tspan><tspan> is automatically assigned to</tspan>
+    </text>
+    <text x="580" y="970" font-size="34">your new bundle builder product.</text>
+    <text x="580" y="1045" font-size="33">
+      <tspan>To replace it, simply </tspan><tspan font-weight="700">edit this product in your Shopify</tspan>
+    </text>
+    <text x="580" y="1090" font-size="33">
+      <tspan font-weight="700">'Products' section</tspan><tspan> and upload your own image.</tspan>
+    </text>
+  </g>
+</svg>

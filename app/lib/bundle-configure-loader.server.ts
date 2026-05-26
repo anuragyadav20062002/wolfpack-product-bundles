@@ -22,6 +22,27 @@ const GET_BUNDLE_PRODUCT = `
       productType
       vendor
       tags
+      featuredMedia {
+        ... on MediaImage {
+          id
+          image {
+            url
+            altText
+          }
+        }
+      }
+      media(first: 5) {
+        nodes {
+          ... on MediaImage {
+            id
+            alt
+            image {
+              url
+              altText
+            }
+          }
+        }
+      }
       variants(first: 1) {
         edges {
           node {

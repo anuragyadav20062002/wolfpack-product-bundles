@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 04:06 IST
+**Last Updated:** 2026-05-27 04:30 IST
 
 ## Overview
 
@@ -261,6 +261,31 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Desktop proof `/private/tmp/wpb-ppb-horizontal-slots-step-title-runtime-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-horizontal-slots-step-title-storefront-desktop-2026-05-27.png` shows title text `Step 1 - PPB Audit`, wrapper `345px`, grid `345px`, columns `104.312px 104.312px 104.312px`, and `16px` gap.
 - Mobile proof `/private/tmp/wpb-ppb-horizontal-slots-step-title-runtime-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-horizontal-slots-step-title-storefront-mobile-2026-05-27.png` shows title text `Step 1 - PPB Audit`, wrapper `360px`, grid `360px`, columns `110.656px 110.656px 110.656px`, and `14px` gap.
 - Next: update the evidence manifest and commit the evidence/docs slice, then continue with the remaining full-page product-media/theme fixture differences.
+
+### 2026-05-27 04:07 IST - PPB Horizontal Slots step-title evidence committed
+- Committed the Horizontal Slots exact title proof as `55b74894` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit working tree contains only this required issue-log follow-up plus pre-existing untracked scratch artifacts.
+- Next: continue the full visual comparison from the remaining product-media/theme fixture gaps.
+
+### 2026-05-27 04:10 IST - PPB generated product media/title gap started
+- Desktop/mobile visual comparison now isolates the generated Shopify product context: EB reference renders title `WPB Complete Audit Product Page 2026-05-25` and the generated placeholder media asset, while the current WPB SIT product renders `Codex PPB 2026-05-21` with the generic `public/bundle.png` media.
+- The widget block itself remains aligned for the measured Horizontal Slots row; the remaining page chrome/header/vendor differences are store-theme context and cannot be claimed as widget parity.
+- Impact scope for the next code slice: generated Product Page bundle product sync/media defaults and focused route/service tests. Storefront widget CSS and Cart Transform are not touched unless live proof shows a new widget-local mismatch.
+- Next: inspect the product creation/sync path, add RED tests for generated PPB product title/media defaults, then patch the sync path without competitor references in code.
+
+### 2026-05-27 04:27 IST - PPB generated product title/media proof captured
+- Added RED-to-green coverage for generated Product Page product title sync, current `productCreate(product: ProductCreateInput!, media: [CreateMediaInput!])`, hard Sync Bundle recreate media, shared product update media, configure-loader media fetching, and Admin product-card media derivation.
+- Patched Product Page save/status sync to include generated product title, Product Page create/recreate paths to attach app-owned generated placeholder media, shared bundle product update to use current `productUpdate(product: ProductUpdateInput!, media: [CreateMediaInput!])`, and configure loader/state to hydrate current Shopify `featuredMedia`.
+- Added app-owned placeholder media assets at `public/bundle-product-placeholder.svg` and `public/bundle-product-placeholder.png`; no third-party image asset is embedded or hotlinked in code.
+- SIT fixture proof: Admin API product update/reorder `/private/tmp/wpb-ppb-generated-product-title-media-admin-api-2026-05-27.json`, DB fixture name proof `/private/tmp/wpb-ppb-generated-product-title-media-db-2026-05-27.json`, Admin screenshot `/private/tmp/wpb-ppb-generated-product-title-media-admin-2026-05-27.png`, desktop runtime `/private/tmp/wpb-ppb-generated-product-title-media-runtime-desktop-2026-05-27.json` plus screenshot `/private/tmp/wpb-ppb-generated-product-title-media-storefront-desktop-2026-05-27.png`, and mobile runtime `/private/tmp/wpb-ppb-generated-product-title-media-runtime-mobile-2026-05-27.json` plus screenshot `/private/tmp/wpb-ppb-generated-product-title-media-storefront-mobile-2026-05-27.png`.
+- Remaining row gap: WPB still uses the agent store theme/header and has a second historical media item in Shopify product media; first/featured media and product title now match the reference fixture.
+- Next: run focused Jest, modified-file ESLint, build, competitor-reference scan, graph rebuild, and commit this generated product title/media slice.
+
+### 2026-05-27 04:30 IST - PPB generated product title/media verification passed
+- Verification passed: focused Jest suite for PPB save/sync/shared product update/configure loader/Admin state helpers, modified-file ESLint with zero errors, `npm run build`, `npm run build:widgets`, `npm run minify:assets css`, code competitor-reference scan with no matches, graph rebuild, and `git diff --check`.
+- CSS minification reports the Full Page app-block CSS at `97.6 KB` and Product Page app-block CSS at `54.0 KB`, both under Shopify's `100,000 B` limit.
+- Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`.
+- Next: commit this scoped product title/media slice with the required issue prefix and continue the Product Page full visual comparison loop from the remaining store-theme/header/media-history gaps.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

@@ -563,6 +563,45 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
+  it("syncs saved bundle names to the generated product title", async () => {
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        name: "Product Page Fixture",
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+    const fd = makeFormData({
+      bundleName: "Product Page Fixture",
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID, handle: "bundle-123" }),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductUpdateInput"),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            id: PRODUCT_ID,
+            title: "Product Page Fixture",
+          }),
+        }),
+      }),
+    );
+  });
+
   it("returns 500 when no products found in any step (with productId set)", async () => {
     getDb().bundle.update.mockResolvedValue(
       makeUpdatedBundle({

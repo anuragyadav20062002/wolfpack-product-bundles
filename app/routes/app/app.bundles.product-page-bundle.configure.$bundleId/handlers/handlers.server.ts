@@ -42,6 +42,7 @@ import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/cate
 import { formatStepCategoryForRuntime } from "../../../../lib/bundle-config/category-runtime";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
 import { buildBundleProductDescriptionHtml } from "../../../../lib/bundle-product-description.server";
+import { buildBundleProductPlaceholderMediaInput } from "../../../../lib/bundle-product-media.server";
 import { publishProductToSalesChannels } from "../../../../services/shopify-publications.server";
 import {
   deriveCommonSellingPlanGroups,
@@ -91,11 +92,12 @@ async function syncBundleProductToShopify(
   try {
     const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
       variables: {
-        product: {
-          id: shopifyProductId,
-          status: shopifyStatus,
-          descriptionHtml,
-        },
+          product: {
+            id: shopifyProductId,
+            title: bundleName,
+            status: shopifyStatus,
+            descriptionHtml,
+          },
       },
     });
     const responseData = await response.json() as { data: Record<string, any>; errors?: unknown[] };
@@ -122,6 +124,7 @@ async function syncBundleProductToShopify(
         variables: {
           product: {
             id: shopifyProductId,
+            title: bundleName,
             status: "UNLISTED",
             descriptionHtml,
           },
@@ -1173,8 +1176,8 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     const bundlePrice = await calculateBundlePrice(admin, bundle);
 
     const CREATE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id
             title
@@ -1196,9 +1199,10 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       }
     `;
 
+    const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
     const response = await admin.graphql(CREATE_PRODUCT, {
       variables: {
-        input: {
+        product: {
           title: bundle.name,
           handle: `bundle-${bundle.id}`,
           productType: "Bundle",
@@ -1210,7 +1214,8 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
             status: bundle.status,
           }),
           tags: ["WP-Bundles"]
-        }
+        },
+        ...(mediaInput ? { media: mediaInput } : {}),
       }
     });
 
@@ -1323,8 +1328,8 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
     // 2. Archive product (Shopify requires ARCHIVED status before deletion)
     const ARCHIVE_PRODUCT = `
-      mutation ArchiveProduct($input: ProductInput!) {
-        productUpdate(input: $input) {
+      mutation ArchiveProduct($product: ProductUpdateInput!) {
+        productUpdate(product: $product) {
           product { id status }
           userErrors { field message }
         }
@@ -1332,7 +1337,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     `;
 
     const archiveResponse = await admin.graphql(ARCHIVE_PRODUCT, {
-      variables: { input: { id: oldProductId, status: 'ARCHIVED' } },
+      variables: { product: { id: oldProductId, status: 'ARCHIVED' } },
     });
     const archiveData = await archiveResponse.json();
 
@@ -1375,8 +1380,8 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const bundlePrice = await calculateBundlePrice(admin, bundle);
 
     const CREATE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id title handle status
             variants(first: 1) { edges { node { id } } }
@@ -1386,9 +1391,10 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       }
     `;
 
+    const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
     const createResponse = await admin.graphql(CREATE_PRODUCT, {
       variables: {
-        input: {
+        product: {
           title: bundle.name,
           handle: `bundle-${bundle.id}`,
           productType: 'Bundle',
@@ -1401,6 +1407,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
           }),
           tags: ['WP-Bundles'],
         },
+        ...(mediaInput ? { media: mediaInput } : {}),
       },
     });
 
