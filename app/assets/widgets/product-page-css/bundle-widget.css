@@ -3071,6 +3071,11 @@ to {
   max-width:345px;
   margin:0}
 
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty {
+  display:none;
+  margin:0;
+  padding:0}
+
 .bundle-steps[data-ppb-template-type="PDP_MODAL"] {
   display:flex;
   flex-direction:column;

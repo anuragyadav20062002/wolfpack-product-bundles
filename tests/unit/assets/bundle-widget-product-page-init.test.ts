@@ -342,6 +342,7 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('grid-template-columns:repeat(3,104.328px)');
     expect(css).toContain('.bw-ppb-modal-slot-grid .bw-slot-card--empty');
     expect(css).toContain('border:2px dashed #111111');
+    expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty');
     expect(css).toContain('.bw-ppb-dynamic-checkout-visual');
     expect(css).toContain('background:#111111');
     expect(css).toContain('width:360px');

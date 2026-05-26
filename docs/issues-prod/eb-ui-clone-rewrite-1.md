@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 03:25 IST
+**Last Updated:** 2026-05-27 03:33 IST
 
 ## Overview
 
@@ -193,6 +193,25 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Desktop storefront proof captured at `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-page-title-render-fix-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-page-title-render-fix-2026-05-27.png`; runtime shows widget `2.9.5`, `PDP_MODAL + MODAL`, `firstStep.pageTitle = "Build audit bundle"`, and rendered title `Build audit bundle`.
 - Mobile storefront proof captured at `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-page-title-render-fix-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-page-title-render-fix-2026-05-27.png`; runtime shows the same persisted/rendered title under the `390x844` viewport.
 - Next: update the evidence manifest/test spec, rebuild the graph, run the code competitor-reference scan, and commit this PPB Step Title slice.
+
+### 2026-05-27 03:28 IST - PPB Step Title slice committed
+- Committed the persistence/metafield/widget render slice as `72967769` with issue prefix `[eb-ui-clone-rewrite-1]`.
+- Post-commit working tree contains only pre-existing untracked scratch artifacts plus this issue-log follow-up entry.
+- Next: continue the evidence loop from the remaining `ppb-template-horizontal-slots` full visual comparison gap or the next blocked PPB template row.
+
+### 2026-05-27 03:30 IST - PPB Horizontal Slots empty includes gap found
+- Compared EB desktop reference `/private/tmp/eb-complete-configure-audit-2026-05-25/ppb-storefront-desktop-template-horizontal-slots-modal.png` with WPB `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-page-title-render-fix-2026-05-27.png`.
+- Live DOM metrics at `/private/tmp/wpb-ppb-horizontal-slot-child-metrics-gap-before-button-2026-05-27.json` show the WPB slot grid bottom at `557.75px` and Add Bundle button top at `614.75px`, a `57px` gap.
+- Root cause is an empty Liquid `.bundle-includes` child rendered as a visible `30px` flex box with `15px` bottom margin between `.bundle-steps` and `.add-bundle-to-cart`.
+- Next edit: add a RED widget CSS source contract for hiding empty `.bundle-includes` only in `PDP_MODAL`, then patch the raw Product Page widget CSS and recapture desktop/mobile proof.
+
+### 2026-05-27 03:33 IST - PPB Horizontal Slots empty includes proof captured
+- Added RED-to-green source coverage for hiding empty `.bundle-includes` only under `#bundle-builder-app[data-ppb-template-type="PDP_MODAL"]`.
+- Patched the raw Product Page widget CSS, bumped `WIDGET_VERSION` to `2.9.6`, rebuilt widget assets, minified CSS, and ran the user-authorized SIT deploy; Shopify released `wolfpack-product-bundles-sit-287`.
+- Verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build:widgets`, `npm run minify:assets css`, `npm run build`, `git diff --check`, and code competitor-reference scan.
+- Desktop proof at `/private/tmp/wpb-ppb-horizontal-slot-child-metrics-after-empty-includes-fix-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-empty-includes-fix-2026-05-27.png` shows widget `2.9.6`, `.bundle-includes` display `none`, and grid-to-button gap `14px`.
+- Mobile proof at `/private/tmp/wpb-ppb-horizontal-slot-child-metrics-after-empty-includes-fix-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-empty-includes-fix-2026-05-27.png` shows the same `14px` grid-to-button gap at `390x844`.
+- Next: update the evidence manifest/test spec, rebuild graph output, and commit this spacing slice.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.
