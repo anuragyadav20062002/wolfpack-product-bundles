@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.4
+ * Version : 2.9.5
  * Built   : 2026-05-26
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.4';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.5';
 (function() {
   'use strict';
 
@@ -2741,7 +2741,7 @@ class BundleWidgetProductPage {
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-modal-slot-title';
-    title.textContent = step.name || '';
+    title.textContent = step.pageTitle || step.name || '';
     section.appendChild(title);
 
     const grid = document.createElement('div');

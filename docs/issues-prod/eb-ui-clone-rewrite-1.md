@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 03:07 IST
+**Last Updated:** 2026-05-27 03:25 IST
 
 ## Overview
 
@@ -168,6 +168,31 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Mobile now measures wrapper/action width `360px`, slot section `360px`, slot grid `360px`, grid gap `14px`, and browser-rounded columns `110.656px 110.656px 110.656px`.
 - Remaining confirmed gap: `firstStep.pageTitle` is still `null` in the runtime and save response despite the Admin request sending `pageTitle = "Build audit bundle"`.
 - Next: add a RED route persistence test for PPB Step Title/pageTitle and patch the save handler/DB include path without compatibility shims.
+
+### 2026-05-27 03:09 IST - PPB Step Title persistence slice started
+- Traced the confirmed `pageTitle` gap: Prisma `Step.pageTitle` exists and the FPB save handler writes it, but the PPB save handler currently omits `pageTitle` from both the step create payload and the runtime step serializer.
+- Next edit: add RED route tests proving PPB saves `stepsData[].pageTitle` to `Step.pageTitle` and preserves it in the bundle-product metafield runtime config, then patch the Product Page save handler.
+
+### 2026-05-27 03:16 IST - PPB Step Title metafield serializer gap found
+- Live Admin save request/response proof after the route patch is captured at `/private/tmp/wpb-ppb-template-fixture-after-page-title-fix-save-2026-05-27.network-request` and `/private/tmp/wpb-ppb-template-fixture-after-page-title-fix-save-2026-05-27.network-response`; the response now includes `bundle.steps[0].pageTitle = "Build audit bundle"`.
+- Storefront reload still omits `pageTitle` from the product-page `bundle_ui_config.steps[]` dataset, so the widget continues using `step.name`.
+- Next edit: add a RED service test for `updateBundleProductMetafields` proving `bundle_ui_config.steps[].pageTitle` pass-through, then patch the shared bundle-product metafield serializer.
+
+### 2026-05-27 03:20 IST - PPB Step Title runtime rendering gap found
+- After the shared metafield serializer patch and a second live save, storefront runtime proof at `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-page-title-metafield-fix-desktop-2026-05-27.json` now includes `firstStep.pageTitle = "Build audit bundle"`.
+- The rendered Product Page modal-slot header still shows `step.name` (`Step 1 - PPB Audit`) because `_createModalSlotStepSection()` reads only `step.name`.
+- Next edit: add a RED widget source contract for Product Page modal-slot titles using `step.pageTitle || step.name`, then patch and rebuild widgets.
+
+### 2026-05-27 03:21 IST - PPB Step Title widget render patch started
+- RED widget source contract is in place at `tests/unit/assets/bundle-widget-product-page-init.test.ts` and currently fails because `_createModalSlotStepSection()` renders only `step.name`.
+- Next edit: patch the Product Page widget to prefer `step.pageTitle`, bump the widget version for the deployable bundle, rebuild, deploy SIT, and recapture desktop/mobile storefront proof.
+
+### 2026-05-27 03:25 IST - PPB Step Title render proof captured
+- Patched the Product Page widget to render modal-slot titles from `step.pageTitle || step.name`, bumped `WIDGET_VERSION` to `2.9.5`, rebuilt widget assets, and ran the user-authorized SIT deploy; Shopify released `wolfpack-product-bundles-sit-286`.
+- Verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, `npx jest tests/unit/routes/ppb-save-bundle.test.ts --runInBand`, `npx jest tests/unit/services/bundle-product-metafield.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build:widgets`, `npm run minify:assets css`, `npm run build`, and `git diff --check`.
+- Desktop storefront proof captured at `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-page-title-render-fix-desktop-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-page-title-render-fix-2026-05-27.png`; runtime shows widget `2.9.5`, `PDP_MODAL + MODAL`, `firstStep.pageTitle = "Build audit bundle"`, and rendered title `Build audit bundle`.
+- Mobile storefront proof captured at `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-page-title-render-fix-mobile-2026-05-27.json` and `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-page-title-render-fix-2026-05-27.png`; runtime shows the same persisted/rendered title under the `390x844` viewport.
+- Next: update the evidence manifest/test spec, rebuild the graph, run the code competitor-reference scan, and commit this PPB Step Title slice.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.

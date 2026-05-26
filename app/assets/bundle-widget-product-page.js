@@ -1089,7 +1089,7 @@ class BundleWidgetProductPage {
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-modal-slot-title';
-    title.textContent = step.name || '';
+    title.textContent = step.pageTitle || step.name || '';
     section.appendChild(title);
 
     const grid = document.createElement('div');

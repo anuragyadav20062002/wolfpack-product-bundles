@@ -147,6 +147,36 @@ describe("updateBundleProductMetafields", () => {
     expect(parsed.steps[0].imageUrl).toBeNull();
   });
 
+  it("passes Product Page Step Title through to bundle_ui_config steps", async () => {
+    const admin = makeAdmin();
+    const config = makeBundleConfig(BundleType.PRODUCT_PAGE, {
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1 - PPB Audit",
+          pageTitle: "Build audit bundle",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          StepProduct: [{ productId: "gid://shopify/Product/123" }],
+          collections: [],
+        },
+      ],
+    });
+
+    await updateBundleProductMetafields(admin, "gid://shopify/Product/999", config);
+
+    const metafields = getMetafieldsSetPayload(admin);
+    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
+
+    expect(parsed.steps[0]).toEqual(
+      expect.objectContaining({
+        name: "Step 1 - PPB Audit",
+        pageTitle: "Build audit bundle",
+      }),
+    );
+  });
+
   it("passes bannerImageUrl through to step map when present", async () => {
     const admin = makeAdmin();
     const config = makeBundleConfig(BundleType.FULL_PAGE, {

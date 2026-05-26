@@ -328,6 +328,7 @@ describe('Product Page modal-slot visual contract', () => {
     expect(source).toContain('bw-ppb-modal-slot-section');
     expect(source).toContain('bw-ppb-modal-slot-title');
     expect(source).toContain('bw-ppb-modal-slot-grid');
+    expect(source).toContain("title.textContent = step.pageTitle || step.name || '';");
     expect(source).toContain('const slotNumber = instanceIndex + 1;');
     expect(source).toMatch(/Product \$\{slotNumber\}/);
     expect(source).toContain('_createDynamicCheckoutVisual');

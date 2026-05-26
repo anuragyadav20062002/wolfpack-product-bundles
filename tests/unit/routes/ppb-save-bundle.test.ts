@@ -98,6 +98,7 @@ const MOCK_ADMIN = {
 function makeStep(
   overrides: Partial<{
     id: string;
+    pageTitle: string;
     StepProduct: any[];
     StepCategory: any[];
     collections: any[];
@@ -106,6 +107,7 @@ function makeStep(
   return {
     id: "step-1",
     name: "Step 1",
+    pageTitle: "",
     minQuantity: "1",
     maxQuantity: "5",
     enabled: true,
@@ -363,6 +365,31 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       displayVariantsAsSwatches: true,
       multiLangData: { en: { title: "Pick audit items" } },
     });
+  });
+
+  it("persists Product Page Step Title to Step.pageTitle", async () => {
+    const stepsData = [
+      makeStep({
+        pageTitle: "Build audit bundle",
+        StepProduct: [
+          { id: "gid://shopify/Product/111", title: "Item A", imageUrl: null },
+        ],
+      }),
+    ];
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ stepsData: JSON.stringify(stepsData) }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.steps.create[0]).toEqual(
+      expect.objectContaining({
+        pageTitle: "Build audit bundle",
+      }),
+    );
   });
 
   it("returns 500 when a StepProduct has a UUID ID", async () => {
@@ -639,6 +666,53 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
             }),
           ],
         }),
+      }),
+    );
+  });
+
+  it("passes saved Product Page Step Title into bundle product metafield sync", async () => {
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1 - PPB Audit",
+            pageTitle: "Build audit bundle",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+      }),
+    );
+    const fd = makeFormData({
+      stepsData: JSON.stringify([
+        makeStep({
+          pageTitle: "Build audit bundle",
+          StepProduct: [
+            { id: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+          ],
+        }),
+      ]),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        steps: [
+          expect.objectContaining({
+            name: "Step 1 - PPB Audit",
+            pageTitle: "Build audit bundle",
+          }),
+        ],
       }),
     );
   });
