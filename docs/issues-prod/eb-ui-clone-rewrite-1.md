@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 03:03 IST
+**Last Updated:** 2026-05-27 03:07 IST
 
 ## Overview
 
@@ -159,6 +159,15 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Patched the raw Product Page widget CSS and bumped `WIDGET_VERSION` to `2.9.4`, then regenerated widget JS and minified CSS assets.
 - Verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand`, modified-file ESLint with zero errors, `npm run build:widgets`, `npm run minify:assets css`, CSS size check (`99936` bytes FPB, `55167` bytes PPB), `npm run build`, graph rebuild, code competitor-reference scan, and `git diff --check`.
 - Next: commit this local geometry slice, run the user-authorized SIT deploy, then recapture desktop/mobile/runtime proof from the extension CDN before updating the manifest row.
+
+### 2026-05-27 03:07 IST - PPB horizontal-slot geometry SIT proof captured
+- Committed the geometry patch as `38cf9801` and ran the user-authorized SIT deploy; Shopify released `wolfpack-product-bundles-sit-285`.
+- Captured desktop proof from the deployed CDN widget `2.9.4`: runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-geometry-fix-desktop-2026-05-27.json` and screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-desktop-after-geometry-fix-2026-05-27.png`.
+- Desktop now measures wrapper/action width `345px`, slot section `345px`, slot grid `345px`, grid gap `16px`, and browser-rounded columns `104.312px 104.312px 104.312px`.
+- Captured mobile proof from the deployed CDN widget `2.9.4`: runtime `/private/tmp/wpb-ppb-template-horizontal-slots-runtime-after-geometry-fix-mobile-2026-05-27.json` and screenshot `/private/tmp/wpb-ppb-template-horizontal-slots-storefront-mobile-after-geometry-fix-2026-05-27.png`.
+- Mobile now measures wrapper/action width `360px`, slot section `360px`, slot grid `360px`, grid gap `14px`, and browser-rounded columns `110.656px 110.656px 110.656px`.
+- Remaining confirmed gap: `firstStep.pageTitle` is still `null` in the runtime and save response despite the Admin request sending `pageTitle = "Build audit bundle"`.
+- Next: add a RED route persistence test for PPB Step Title/pageTitle and patch the save handler/DB include path without compatibility shims.
 
 ### 2026-05-26 02:31 IST - Implementation issue initialized
 - Created the implementation issue before any file modifications for this rewrite.
