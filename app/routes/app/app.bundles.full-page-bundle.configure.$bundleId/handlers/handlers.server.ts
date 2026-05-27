@@ -262,6 +262,8 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
     return {
       id: step.id,
       name: step.name || `Step ${index + 1}`,
+      pageTitle: step.pageTitle ?? null,
+      multiLangData: step.multiLangData ?? {},
       position: step.position ?? index + 1,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
@@ -364,7 +366,7 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
 
 /** Build the base bundle configuration object passed to metafield update functions. */
 function buildFpbBaseConfig(
-  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null; personalizationData?: unknown; boxSelection?: unknown },
+  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null; personalizationData?: unknown; boxSelection?: unknown; bundleUpsellConfig?: unknown },
   stepsData: any[],
   stepConditionsData: Record<string, any[]>,
   discountData: any,
@@ -377,6 +379,8 @@ function buildFpbBaseConfig(
     return {
       id: step.id,
       name: step.name || 'Step',
+      pageTitle: step.pageTitle ?? null,
+      multiLangData: step.multiLangData ?? {},
       minQuantity: parseInt(step.minQuantity) || 1,
       maxQuantity: parseInt(step.maxQuantity) || 1,
       enabled: step.enabled !== false,
@@ -446,6 +450,7 @@ function buildFpbBaseConfig(
     },
     bundleParentVariantId: bundleParentVariantId,
     boxSelection: updatedBundle.boxSelection ?? directBoxSelection ?? null,
+    bundleUpsellConfig: (updatedBundle as any).bundleUpsellConfig ?? null,
     bundleTextConfig: (updatedBundle as any).bundleTextConfig ?? null,
     personalizationData: (updatedBundle as any).personalizationData ?? null,
     shopifyProductId: updatedBundle.shopifyProductId,
@@ -508,6 +513,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleTextConfig = bundleTextConfigRaw ? JSON.parse(bundleTextConfigRaw) : null;
     const personalizationDataRaw = formData.get("personalizationData") as string | null;
     const personalizationData = personalizationDataRaw ? JSON.parse(personalizationDataRaw) : null;
+    const bundleUpsellConfigRaw = formData.get("bundleUpsellConfig") as string | null;
+    const bundleUpsellConfig = bundleUpsellConfigRaw ? JSON.parse(bundleUpsellConfigRaw) : null;
     const upsellWidgetEnabled = formData.get("upsellWidgetEnabled") === "true";
     const upsellWidgetDisplayMode = (formData.get("upsellWidgetDisplayMode") as string | null) ?? "block";
     const upsellWidgetDisplayOn = (formData.get("upsellWidgetDisplayOn") as string | null) ?? "all";
@@ -676,6 +683,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         bundleTextConfig,
         personalizationData,
         boxSelection: directBoxSelection,
+        bundleUpsellConfig,
         upsellWidgetEnabled,
         upsellWidgetDisplayMode,
         upsellWidgetDisplayOn,
@@ -707,6 +715,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
+                multiLangData: step.multiLangData ?? null,
                 // Free gift / add-on step fields
                 isFreeGift: step.isFreeGift === true,
                 freeGiftName: step.freeGiftName || null,

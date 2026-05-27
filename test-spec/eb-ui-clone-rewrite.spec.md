@@ -48,6 +48,37 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 6 | Category-first runtime | category-backed products/collections with empty top-level arrays | runtime keeps category data under `categories` and does not copy it into top-level step `products`/`collections` | No compatibility shims. |
 | 7 | Runtime category compactness | hydrated Admin product objects with variants/images in `StepCategory.products` | metafield/runtime categories keep product references but strip variant and image payload bloat | Admin save payload remains hydrated; storefront runtime hydrates products through app proxy. |
 
+### Step Setup Multi Language Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Step-level Multi Language modal | Step Setup globe button | modal fields are `Step Name` and `Step Title`, and save writes `multiLangData.<locale>.productPageStepText/productPageSubtext` on the step | Live PPB save proof: `/private/tmp/eb-ppb-step-step-multilang-update-2026-05-27.network-request`. |
+| 2 | Category Multi Language modal | Category row Multi Language button | modal fields are `Category Name` and `Category Title`, and save writes `StepCategory[].multiLangData.<locale>.name/title` | Live PPB save proof: `/private/tmp/eb-ppb-step-category-multilang-update-2026-05-27.network-request`. |
+| 3 | Shared Multi Language modal copy | Any implemented Multi Language button using the shared modal | modal renders `Translations`, `Choose language to edit`, `Custom Text`, `Text Settings`, the 38-language list, and `Save and Close` | Live Step Setup screenshots captured outside the worktree. |
+| 4 | Step header action order | FPB/PPB Step Setup header | Multi Language icon renders before clone and delete; FPB has no second step-level Multi Language button below Step Name | EB screenshots: `/private/tmp/eb-complete-configure-audit-2026-05-25/fpb-admin-step-setup-after-save.png`, `/private/tmp/eb-complete-configure-audit-2026-05-25/ppb-admin-step-setup-products-selected.png`. |
+
+### Step Setup Rule Mode Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Category rules gated | Step has one category | Category rules radio is not rendered | Evidence shows category rules after a second category exists. |
+| 2 | Step/category mutual exclusion | Switching to step rules | category `conditions` clear before adding step rules | Evidence keeps step rules and category rules as separate modes. |
+| 3 | Category rules create category conditions | Switching to category rules with two categories | step conditions clear and first category receives a `conditions[]` rule | Live PPB request stores category rules under `productsData1.categories.*.conditions`. |
+| 4 | Category rule edit controls | Active category rules mode | every category gets an accordion row with Rule rows, remove, add, type, condition, value, and auto-next fields | Screenshots: `ppb-admin-category-rules-expanded.png`, `ppb-admin-category-rules-quantity-rule.png`. |
+| 5 | Category condition enum shape | category quantity rule | condition payload uses `condition: "greaterThanOrEqualTo"` instead of the step-rule `operator` key | Raw request proof uses camel-cased `condition` values. |
+
+### Step Setup Variant Display Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | PPB category variant flag | Category checkbox `Display variants as individual products` toggled on | route updates `StepCategory[].displayVariantsAsIndividualProducts=true`, and save/runtime contracts consume that direct key | Product Page Step Setup request stores this flag per category. |
+
+### Step Setup Category Content Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | PPB visible category title | Product Page Step Setup category body | `Category Title` field renders below Category Name / Multi Language, updates `StepCategory[].title`, and Display Variants renders after Products/Collections selection controls | PPB screenshot `ppb-admin-step-setup-products-selected.png`; payload stores `categories.category98476.title: "Pick audit items"`. |
+
 ### FPB Bundle Settings Contracts
 
 | # | Scenario | Input | Expected Output | Notes |
@@ -105,6 +136,17 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 11 | Sidebar step progress presentation | side-footer summary card with step-based progress | sidebar progress renders plain centered discount text, a slim progress track, and tier title/subtext labels on the white card instead of a dark banner block | Footer progress keeps its existing banner structure. |
 | 12 | Standard mobile summary tray | side-footer Standard template on mobile | compact sticky summary tray is visible by default, without modal backdrop/collapsed-only state, and includes discount message, progress, and action button | Matches mobile Standard/fixed-amount evidence before selected-products drawer behavior is marked green. |
 | 13 | Standard mobile product-card density | side-footer Standard template on mobile | product cards use compact image/title/price spacing and a square plus CTA; desktop Standard card CTA remains unchanged | Mobile evidence differs from desktop Standard evidence, so scope stays mobile-only. |
+
+### FPB Bundle Visibility Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Widget direct config serialization | Full Page Bundle Widget enabled with block/button, title, description, button text, image, display targeting, language mode, and browsed-product toggle | Admin save submits current-state `bundleUpsellConfig.widgetConfiguration` with `type:"OFFER_WIDGET"`, image/title/description/buttonText, displayConfiguration, `useLinkProductAsDefaultProduct`, and `languageMode` | Captured save payload uses a direct `bundleUpsellConfig` object. |
+| 2 | Bundle Visibility save/metafield sync | Full Page save carries a direct `bundleUpsellConfig` object | DB update and bundle-product metafield sync receive the same direct object | Storefront upsell runtime reads this direct contract. |
+| 3 | Visibility overview visual shell | Full Page Bundle Visibility overview | route uses custom card/grid/action markers, black Quick Setup Guide actions, bundle-link copy row, and setup panel for Bundle Widget | Non-Polaris controls are allowed for exact clone work. |
+| 4 | Widget targeting picker wiring | Widget display set to specific products or collections | route opens App Bridge product/collection resource pickers with `action:"select"` and writes both selected data and compact page targets into `displayConfiguration` | Help content confirms manual product/collection override behavior. |
+| 5 | Compact visibility picker payload | Full Page Widget targets a specific product/collection from App Bridge picker | route persists compact product/collection references only and never stores full picker objects inside `bundleUpsellConfig` | Product Page proof already showed full picker objects exceed Shopify's 64 KB metafield limit. |
+| 6 | Visibility shell width and top warning | Full Page Bundle Visibility or Bundle Widget selected with app embed disabled | route suppresses the top app-extension warning for visibility surfaces and CSS uses `950px` content canvas, `310px` setup rail, and `39px` header-to-card gap | Captured reference/WPB comparison showed the prior rail and top warning were the visible mismatch. |
 
 ### Cart Messaging
 

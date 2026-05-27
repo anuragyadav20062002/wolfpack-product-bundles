@@ -24,6 +24,7 @@ interface MultiLanguageTextModalProps {
   valuesByLocale: Record<string, Record<string, string>>;
   onActiveLocaleChange: (locale: string) => void;
   onChange: (locale: string, key: string, value: string) => void;
+  onSave?: (valuesByLocale: Record<string, Record<string, string>>) => void;
   onClose: () => void;
 }
 
@@ -52,7 +53,7 @@ const DEFAULT_LOCALES: ShopLocale[] = [
   { locale: "ko", name: "Korean" },
   { locale: "lv", name: "Latvian" },
   { locale: "lt", name: "Lithuanian" },
-  { locale: "nb", name: "Norwegian Bokmal" },
+  { locale: "nb", name: "Norwegian Bokmål" },
   { locale: "pl", name: "Polish" },
   { locale: "pt-BR", name: "Portuguese (BR)" },
   { locale: "pt-PT", name: "Portuguese (PT)" },
@@ -77,6 +78,7 @@ export function MultiLanguageTextModal({
   valuesByLocale,
   onActiveLocaleChange,
   onChange,
+  onSave,
   onClose,
 }: MultiLanguageTextModalProps) {
   const [draftByLocale, setDraftByLocale] = useState<Record<string, Record<string, string>>>({});
@@ -112,14 +114,18 @@ export function MultiLanguageTextModal({
   };
 
   const saveAndClose = () => {
-    fields.forEach((field) => {
-      visibleLocales.forEach((locale) => {
-        const value = draftByLocale[locale.locale]?.[field.key];
-        if (value !== undefined) {
-          onChange(locale.locale, field.key, value);
-        }
+    if (onSave) {
+      onSave(draftByLocale);
+    } else {
+      fields.forEach((field) => {
+        visibleLocales.forEach((locale) => {
+          const value = draftByLocale[locale.locale]?.[field.key];
+          if (value !== undefined) {
+            onChange(locale.locale, field.key, value);
+          }
+        });
       });
-    });
+    }
     onClose();
   };
 
@@ -129,41 +135,54 @@ export function MultiLanguageTextModal({
       onClose={onClose}
       primaryAction={(
         <s-button variant="primary" onClick={saveAndClose}>
-          Save and close
+          Save and Close
         </s-button>
       )}
     >
       <s-stack direction="block" gap="base">
+        <s-stack direction="block" gap="small-100">
+          <s-heading>Translations</s-heading>
+          <s-text tone="subdued">Use the dropdown in this section to specify which language you would like to edit</s-text>
+        </s-stack>
+        <s-heading>Choose language to edit</s-heading>
         <s-select
-          label="Select Language"
+          label="Choose language to edit"
           value={selectedLocale}
           onChange={(event: Event) => onActiveLocaleChange((event.target as HTMLSelectElement).value)}
         >
           {visibleLocales.map((locale) => (
             <s-option key={locale.locale} value={locale.locale}>
-              {locale.name || locale.locale}{locale.primary ? " (default)" : ""}
+              {locale.name || locale.locale}
             </s-option>
           ))}
         </s-select>
 
-        {fields.map((field) => (
-          field.multiline ? (
-            <s-text-area
-              key={field.key}
-              label={field.label}
-              value={localeValues[field.key] ?? field.fallback}
-              onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLTextAreaElement).value)}
-            />
-          ) : (
-            <s-text-field
-              key={field.key}
-              label={field.label}
-              value={localeValues[field.key] ?? field.fallback}
-              autoComplete="off"
-              onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLInputElement).value)}
-            />
-          )
-        ))}
+        <s-stack direction="block" gap="small-100">
+          <s-heading>Custom Text</s-heading>
+          <s-text tone="subdued">Input Text for the Selected Language</s-text>
+        </s-stack>
+        <s-heading>Text Settings</s-heading>
+
+        <s-stack direction="block" gap="base">
+          {fields.map((field) => (
+            field.multiline ? (
+              <s-text-area
+                key={field.key}
+                label={field.label}
+                value={localeValues[field.key] ?? field.fallback}
+                onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLTextAreaElement).value)}
+              />
+            ) : (
+              <s-text-field
+                key={field.key}
+                label={field.label}
+                value={localeValues[field.key] ?? field.fallback}
+                autoComplete="off"
+                onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLInputElement).value)}
+              />
+            )
+          ))}
+        </s-stack>
       </s-stack>
     </LocalAppModal>
   );

@@ -444,6 +444,7 @@ export async function updateBundleProductMetafields(
       id: step.id,
       name: step.name,
       pageTitle: step.pageTitle ?? null,
+      multiLangData: step.multiLangData ?? {},
       position: step.position || 0,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,

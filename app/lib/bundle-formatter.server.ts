@@ -164,6 +164,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       id: step.id,
       name: step.name,
       pageTitle: step.pageTitle ?? null,
+      multiLangData: step.multiLangData ?? {},
       position: step.position,
       minQuantity: step.minQuantity,
       maxQuantity: step.maxQuantity,

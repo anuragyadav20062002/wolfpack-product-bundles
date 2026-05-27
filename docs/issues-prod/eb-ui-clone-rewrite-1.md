@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 06:17 IST
+**Last Updated:** 2026-05-27 08:35 IST
 
 ## Overview
 
@@ -12,6 +12,117 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 08:29 IST - PPB Step Setup category title slice started
+- Re-read the PPB Step Setup evidence: `ppb-admin-step-setup-products-selected.png` shows `Category Name`, a category Multi Language button, then a visible `Category Title` field before the Products/Collections tabs, and the update payload stores `categories.category98476.title: "Pick audit items"`.
+- Current Product Page route wires category `title` through persistence and the category Multi Language modal, but the visible Step Setup category body has no `Category Title` input and renders the `Display variants as individual products` checkbox before the Products/Collections tabs instead of below the product-selection controls.
+- Scope: add a RED route/source contract for the PPB Category Title input and body order, patch only the Product Page Step Setup category body plus CSS needed for the evidenced labels, verify, and commit.
+
+### 2026-05-27 08:32 IST - PPB Step Setup category title slice verified
+- Added `tests/unit/routes/step-setup-category-content-ui-contract.test.ts` to require visible Product Page `Category Name` / category Multi Language / `Category Title` ordering, direct `StepCategory[].title` updates, variant-display placement after product/collection selection controls, and explicit `title: ""` for newly added categories.
+- Patched the Product Page configure route to render the visible Category Title input and moved the category variant-display checkbox below the tabbed product/collection controls. Added local CSS module labels/spacing for the evidenced field stack.
+- Verification passed: focused Step Setup/PPB save Jest suite with 47 tests, TS/TSX modified-file ESLint with 0 errors, code/test competitor-reference scan with no matches, and `npm run build`. The first lint attempt included a CSS module and failed because the repo ESLint config is not configured for `.css`; rerun excluded CSS and the production build covered the CSS module.
+
+### 2026-05-27 08:35 IST - PPB Step Setup category title SIT deploy blocked by Shopify device login
+- Committed the verified category-title slice as `96722a7e`.
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `KTXW-WNQX`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin/save proof for the category-title slice remains pending after an authenticated deploy.
+
+### 2026-05-27 08:20 IST - Step Setup action-order parity slice started
+- Re-read the captured FPB and PPB Step Setup screenshots from `/private/tmp/eb-complete-configure-audit-2026-05-25/`: `fpb-admin-step-setup-after-save.png` and `ppb-admin-step-setup-products-selected.png`.
+- Evidence shows the Step Setup header actions in this order: Multi Language icon, duplicate/clone icon, delete icon. The FPB screenshot also shows no second step-level Multi Language button below the Step Name field; category Multi Language remains beside Category Name.
+- Current FPB and PPB routes render duplicate before the Step Setup language icon, and the FPB route renders an extra step-level Multi Language button below Step Name. Scope: add source-contract coverage, patch only those Step Setup header/body controls, verify, and commit.
+
+### 2026-05-27 08:22 IST - Step Setup action-order parity slice verified
+- Added source-contract coverage to `tests/unit/routes/step-setup-multilanguage-ui-contract.test.ts` for the evidenced Step Setup header action order and for keeping the step-level language action out of the FPB Step Name field body.
+- Patched both configure routes so Step Setup header actions render Multi Language, clone, delete, and removed the extra FPB step-level Multi Language button below Step Name. Category Multi Language remains wired beside Category Name.
+- Verification passed: Step Setup route contract suite with 23 tests, modified-file ESLint with 0 errors, code/test competitor-reference scan with no matches, and `npm run build`.
+
+### 2026-05-27 08:26 IST - Step Setup action-order SIT deploy blocked by Shopify device login
+- Committed the verified action-order slice as `ed5a882c`.
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `XCSQ-VKCV`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin proof for the action-order slice remains pending after an authenticated deploy.
+
+### 2026-05-27 08:09 IST - PPB Step Setup variant flag slice started
+- Re-read the Step Setup evidence and implementation reference for the variant-display control: PPB stores `displayVariantsAsIndividualProducts` per category, and the Product Page Step Setup proof shows Category 1 persisted `displayVariantsAsIndividualProducts: true` while storefront rendered variants as separate cards.
+- Current Product Page route source renders the `Display variants as individual products` checkbox but writes `displayVariantsAsIndividual`, while the persistence/runtime category contracts read `displayVariantsAsIndividualProducts`; this makes the visible Admin control insufficient for the evidenced save payload.
+- Scope for this slice: add RED route/source coverage for the PPB category variant checkbox contract, patch the route to hydrate and update the direct category key, verify focused tests/lint/build/graph, then commit before continuing broader Step Setup visual parity.
+
+### 2026-05-27 08:13 IST - PPB Step Setup variant flag slice verified
+- Added `tests/unit/routes/step-setup-category-variant-ui-contract.test.ts` to require the Product Page category checkbox to hydrate/update `StepCategory[].displayVariantsAsIndividualProducts` directly and to create new categories with explicit `displayVariantsAsIndividualProducts=false` and `displayVariantsAsSwatches=false`.
+- Patched the Product Page configure route so the visible category checkbox no longer writes the unused `displayVariantsAsIndividual` alias.
+- Verification passed: `npx jest tests/unit/routes/step-setup-category-variant-ui-contract.test.ts tests/unit/routes/ppb-save-bundle.test.ts tests/unit/lib/bundle-config-contracts.test.ts --runInBand` with 55 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, graph rebuild via graphify pipx environment, and `git diff --check`.
+
+### 2026-05-27 08:17 IST - PPB Step Setup variant flag SIT deploy blocked by Shopify device login
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `ZKRM-VZDN`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin/save proof for the variant-display Step Setup slice remains pending after an authenticated deploy.
+
+### 2026-05-27 07:50 IST - Step Setup category rules slice started
+- Re-read the Step Setup audit and implementation reference for the evidenced rules behavior: category rules appear only after more than one category exists, step rules and category rules are mutually exclusive, and EB persists category rules inside each category while step-level `conditions.isEnabled` remains false after switching to category rules.
+- Current WPB route source still renders a Category rules radio option unconditionally and handles it by adding step-level conditions, so the visible control is not wired to the evidenced category `conditions` contract.
+- Scope for this slice: add RED contracts for Step Setup rule-mode gating and category-level rule editing, patch both FPB and PPB configure routes to manipulate category `conditions`/`autoNextStepOnConditionMet`, verify with focused tests/lint/build, then commit before continuing the broader Step Setup parity loop.
+
+### 2026-05-27 08:01 IST - Step Setup category rules slice verified
+- Added the RED-to-green route/source contract `tests/unit/routes/step-setup-rule-mode-ui-contract.test.ts` for multi-category gating, step/category mutual exclusion, category-level `conditions[]`, camel-cased category condition operators, and editable no-id persisted category rules.
+- Patched both Full Page and Product Page configure routes so Category rules only appear after more than one category, switching to Category rules clears step rules and creates the first category rule, switching to Step rules clears category rules, and category rule rows edit `type`, `condition`, `value`, and `autoNextStepOnConditionMet`.
+- Added shared category rule accordion styling and the direct `CATEGORY_CONDITION_OPERATOR_OPTIONS` constants matching the captured Admin payload shape.
+- Updated the evidence manifest and test spec while keeping `fpb-step-setup` and `ppb-step-setup` partial until live Admin screenshot, save payload/response, DB/metafield, runtime, desktop, and mobile proof are captured on the same fixture.
+- Verification passed: focused Jest with 104 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan, `git diff --check`, and graph rebuild via the graphify pipx environment.
+
+### 2026-05-27 08:06 IST - Step Setup category rules SIT deploy blocked by Shopify device login
+- Committed the verified category-rules slice as `71c50bb0`.
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `XGRZ-NXRV`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin/save proof for the category-rules slice remains pending after an authenticated deploy.
+
+### 2026-05-27 07:24 IST - Step Setup Multi Language slice verified before commit
+- Added Step Setup Multi Language wiring for both Product Page and Full Page configure routes: step-level buttons now open the evidenced `Step Name` / `Step Title` translation modal, category buttons open `Category Name` / `Category Title`, and both save into direct `multiLangData` contracts.
+- Added `BundleStep.multiLangData` with migration `20260527070100_add_step_multilang_data`; existing category `multiLangData` is now wired from Admin state through save payload, DB, and metafield/runtime formatting.
+- Captured WPB Admin proof outside the worktree: `/private/tmp/wpb-ppb-step-setup-step-multilanguage-modal-2026-05-27.png` and `/private/tmp/wpb-ppb-step-setup-category-multilanguage-modal-2026-05-27.png`.
+- Captured a live save request/response 500 at `/private/tmp/wpb-ppb-step-setup-multilang-save-500-2026-05-27.network-request` and response; the response showed the old running dev preview Prisma client rejected `BundleStep.multiLangData`.
+- Verified the current generated client and SIT database are correct: `npm run generate:prisma`, `npx prisma validate`, generated-client grep for `multiLangData`, `npx prisma migrate status`, and a rollback-only Prisma update probe all passed.
+- Added save-handler assertions for FPB and PPB step translation DB create payloads and bundle-product metafield sync payloads.
+- Verification passed: `npx jest tests/unit/routes/step-setup-multilanguage-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts tests/unit/routes/ppb-save-bundle.test.ts tests/unit/lib/bundle-config-contracts.test.ts --runInBand` with 95 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild.
+- Shopify CLI dev preview restart was blocked by required device login, so clean live save response proof is deferred to post-deploy or a logged-in dev session; the deployed SIT process will start with the regenerated Prisma client.
+
+### 2026-05-27 07:01 IST - Step Setup category Multi Language slice started
+- User requested 100% Step Setup parity plus wiring every implemented Multi Language button like EB, with no assumed implementation facts.
+- Live PPB Step Setup evidence captured the Category Multi Language modal and help surfaces outside the worktree: `/private/tmp/eb-step-flow-how-to-setup-live-2026-05-27.png`, `/private/tmp/eb-categories-how-to-setup-live-2026-05-27.png`, `/private/tmp/eb-rules-learn-more-live-2026-05-27.png`, and `/private/tmp/eb-step-category-multilanguage-modal-live-2026-05-27.png`.
+- Fresh EB save proof captured the category translation persistence shape at `/private/tmp/eb-ppb-step-category-multilang-update-2026-05-27.network-request` and response file: `productsData1.categories.category98476.multiLangData.es.{name,title}`.
+- Scope for this slice: wire the disabled Step Setup category Multi Language buttons in both configure routes to the existing translation modal, persist category `multiLangData` with the evidenced locale-keyed `name`/`title` shape, add focused tests, verify in Chrome, then commit before continuing broader Step Setup visual parity.
+
+### 2026-05-27 06:51 IST - FPB Bundle Visibility visual width pass ready to commit
+- Verification passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts --runInBand` with 40 tests, route/test ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, graph rebuild via the graphify pipx venv, and `git diff --check`.
+- ESLint is not configured to parse `.css` files in this repo's current TypeScript project parser setup, so the CSS change was covered by the source contract test, live Chrome proof, build, and diff check instead of CSS-file ESLint.
+- Next: stage only the FPB visibility route/CSS/test/docs/graph files and commit with the required issue prefix.
+
+### 2026-05-27 06:48 IST - FPB Bundle Visibility visual width pass verified
+- Added the focused visibility source/CSS contract for the reference-width shell: `950px` content canvas, `310px` left rail, `39px` header-to-card gap, and visibility-only suppression of the top app-extension warning.
+- Patched the Full Page configure route/CSS and captured updated embedded Admin proof outside the worktree: `/private/tmp/wpb-fpb-bundle-visibility-overview-header-gap-patch-2026-05-27.png` and `/private/tmp/wpb-fpb-bundle-widget-header-gap-patch-2026-05-27.png`.
+- Focused contract passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts --runInBand`.
+- Next: run the full focused verification stack, rebuild graph outputs, then commit this visual-width follow-up slice.
+
+### 2026-05-27 06:44 IST - FPB Bundle Visibility visual width pass started
+- Compared the committed WPB Bundle Visibility overview screenshot with the captured reference screenshot and confirmed two structural mismatches: WPB's left setup rail is `274px` wide instead of the reference's roughly `310px`, and the top app-extension warning pushes the visibility content down in the disabled-app-embed state.
+- Scope for this follow-up slice: add focused source/CSS contracts for the visibility rail width and visibility-only top-banner suppression, patch the Full Page configure route/CSS, recapture Chrome proof, rerun focused verification, and commit.
+- Next: add the RED test assertions, patch the route/CSS, then verify against the live embedded Admin page.
+
+### 2026-05-27 06:39 IST - FPB Bundle Visibility slice verified before commit
+- Verification passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts --runInBand` with 39 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild via the graphify pipx venv.
+- Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`; trimmed generated trailing whitespace from the report before the final diff check.
+- Next: commit the staged Full Page configure route/server/CSS, route tests, test spec, issue log, evidence manifest, and graph outputs with the required issue prefix.
+
+### 2026-05-27 06:37 IST - FPB Bundle Visibility compact save proof captured
+- Added RED-to-green coverage for the Full Page Bundle Visibility overview/Widget source contract, App Bridge product and collection picker callbacks, compact targeting references, current-state `bundleUpsellConfig` serialization, DB persistence, and bundle-product metafield sync input.
+- Patched the Full Page configure route, save handler, and route stylesheet so Bundle Visibility uses the cloned card shell and Bundle Widget saves the direct upsell-widget contract instead of stale loaded config.
+- Captured Chrome Admin proof outside the worktree: `/private/tmp/wpb-fpb-bundle-visibility-overview-after-clone-css-2026-05-27.png`, `/private/tmp/wpb-fpb-bundle-widget-after-clone-css-2026-05-27.png`, `/private/tmp/wpb-fpb-bundle-widget-specific-collection-compact-before-save-2026-05-27.png`, and `/private/tmp/wpb-fpb-bundle-widget-specific-collection-compact-after-save-2026-05-27.png`.
+- Captured save proof outside the worktree: `/private/tmp/wpb-fpb-bundle-widget-specific-collection-save-compact-200-2026-05-27.network-request` and `/private/tmp/wpb-fpb-bundle-widget-specific-collection-save-compact-200-2026-05-27.network-response`; the response includes `bundleUpsellConfig.widgetConfiguration.displayConfiguration` with compact `Home page` collection references.
+- Direct SIT DB read confirmed `upsellWidgetEnabled=true`, `upsellWidgetDisplayOn="specific_collections"`, and matching compact `bundleUpsellConfig` saved on bundle `cmpfhj2m10000v0t038osl42y`.
+- Next: rerun focused tests/lint/build, rebuild the graph, update the evidence manifest rows, and commit this FPB Bundle Visibility Admin/persistence slice.
+
+### 2026-05-27 06:22 IST - FPB Bundle Visibility visual and direct-contract slice started
+- Continuing the requested Discount & Pricing plus Bundle Visibility clone work after committing the Product Page Bundle Visibility Admin/picker compact persistence slice.
+- Scope for this slice: Full Page Bundle Visibility overview, Bundle Widget Admin surface, product/collection targeting pickers, and direct `bundleUpsellConfig` persistence/metafield wiring for the evidenced upsell widget contract.
+- Next: add RED route/source and save-handler tests, patch the Full Page configure route/CSS/server payload path, run focused verification, then capture Chrome Admin/save proof before committing.
 
 ### 2026-05-27 06:09 IST - PPB Bundle Visibility picker payload gap found
 - Live Chrome save proof for a Widget-specific product target failed with a 500 response because `bundle_ui_config` exceeded Shopify's 64 KB metafield limit (`137,538` bytes) after the route serialized the full App Bridge product picker object.

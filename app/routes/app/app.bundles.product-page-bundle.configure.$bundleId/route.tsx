@@ -14,6 +14,7 @@ import {
 import {
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
+  CATEGORY_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
@@ -250,6 +251,11 @@ type VisibilityDisplayConfiguration = {
   collectionsSelectedData: unknown[];
   showOnSpecificCollectionPages: unknown[];
 };
+
+type StepSetupMultiLanguageTarget =
+  | { type: "text-overrides" }
+  | { type: "step"; stepId: string }
+  | { type: "step-category"; stepId: string; categoryIndex: number };
 
 function asVisibilityArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
@@ -697,6 +703,7 @@ export default function ConfigureBundleFlow() {
   const [multiLanguageFields, setMultiLanguageFields] = useState<MultiLanguageField[]>([]);
   const [multiLanguageTitle, setMultiLanguageTitle] = useState("Multi Language");
   const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
+  const [multiLanguageTarget, setMultiLanguageTarget] = useState<StepSetupMultiLanguageTarget>({ type: "text-overrides" });
 
   // Bundle Visibility — Bundle Widget state (FR-04)
   const savedBundleUpsellConfig = ((bundle as any).bundleUpsellConfig ?? null) as any;
@@ -837,12 +844,44 @@ export default function ConfigureBundleFlow() {
   const [hasPreview, setHasPreview] = useState(false);
   const [productMenuOpen, setProductMenuOpen] = useState(false);
 
+  const defaultMultiLanguageLocale = useCallback(() => (
+    shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  ), [shopLocales]);
+
   const openMultiLanguageModal = useCallback((title: string, fields: MultiLanguageField[]) => {
+    setMultiLanguageTarget({ type: "text-overrides" });
     setMultiLanguageTitle(title);
     setMultiLanguageFields(fields);
-    setTextOverridesLocale(shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en");
+    setTextOverridesLocale(defaultMultiLanguageLocale());
     setIsMultiLanguageModalOpen(true);
-  }, [shopLocales]);
+  }, [defaultMultiLanguageLocale]);
+
+  const openStepMultiLanguageModal = useCallback((stepId: string) => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    if (!step) return;
+    setMultiLanguageTarget({ type: "step", stepId });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields([
+      { key: "productPageStepText", label: "Step Name", fallback: step.name ?? "" },
+      { key: "productPageSubtext", label: "Step Title", fallback: step.pageTitle ?? "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale, stepsState.steps]);
+
+  const openStepCategoryMultiLanguageModal = useCallback((stepId: string, categoryIndex: number) => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    const category = (((step as any)?.StepCategory as any[] | undefined) ?? [])[categoryIndex];
+    if (!category) return;
+    setMultiLanguageTarget({ type: "step-category", stepId, categoryIndex });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields([
+      { key: "name", label: "Category Name", fallback: category.name ?? `Category ${categoryIndex + 1}` },
+      { key: "title", label: "Category Title", fallback: category.title ?? "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale, stepsState.steps]);
 
   const updateLocalizedTextOverride = useCallback((locale: string, key: string, value: string) => {
     setTextOverridesByLocale((prev) => ({
@@ -855,6 +894,49 @@ export default function ConfigureBundleFlow() {
     markAsDirty();
   }, [markAsDirty]);
 
+  const activeMultiLanguageValues = useMemo(() => {
+    if (multiLanguageTarget?.type === "step") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      return (step?.multiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    if (multiLanguageTarget?.type === "step-category") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      const category = (((step as any)?.StepCategory as any[] | undefined) ?? [])[multiLanguageTarget.categoryIndex];
+      return (category?.multiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    return textOverridesByLocale;
+  }, [multiLanguageTarget, stepsState.steps, textOverridesByLocale]);
+
+  const saveStepSetupMultiLanguageValues = useCallback((nextValues: Record<string, Record<string, string>>) => {
+    if (multiLanguageTarget?.type === "step") {
+      stepsState.updateStepField(multiLanguageTarget.stepId, "multiLangData", nextValues);
+      markAsDirty();
+      return;
+    }
+
+    if (multiLanguageTarget?.type === "step-category") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      const categories = (((step as any)?.StepCategory as any[] | undefined) ?? []);
+      const updatedCategories = categories.map((category, index) => (
+        index === multiLanguageTarget.categoryIndex
+          ? {
+              ...category,
+              multiLangData: {
+                ...(category.multiLangData ?? {}),
+                ...nextValues,
+              },
+            }
+          : category
+      ));
+      stepsState.updateStepField(multiLanguageTarget.stepId, "StepCategory", updatedCategories);
+      markAsDirty();
+      return;
+    }
+
+    setTextOverridesByLocale(nextValues);
+    markAsDirty();
+  }, [markAsDirty, multiLanguageTarget, stepsState]);
+
   useEffect(() => {
     setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
   }, [bundle.id]);
@@ -865,6 +947,75 @@ export default function ConfigureBundleFlow() {
   // Category accordion state for the multi-category configure surface
   const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
   const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
+  const [categoryRulesOpen, setCategoryRulesOpen] = useState<Record<string, boolean>>({});
+
+  const getStepCategories = useCallback((stepId: string): any[] => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    return (((step as any)?.StepCategory as any[] | undefined) ?? []);
+  }, [stepsState.steps]);
+
+  const updateStepCategories = useCallback((stepId: string, updater: (categories: any[]) => any[]) => {
+    const categories = getStepCategories(stepId);
+    stepsState.updateStepField(stepId, "StepCategory", updater(categories));
+    markAsDirty();
+  }, [getStepCategories, markAsDirty, stepsState]);
+
+  const clearCategoryConditionRules = useCallback((stepId: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category) => ({
+      ...category,
+      conditions: [],
+      autoNextStepOnConditionMet: false,
+    })));
+  }, [updateStepCategories]);
+
+  const addCategoryConditionRule = useCallback((stepId: string, categoryIndex: number) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: [
+          ...conditions,
+          {
+            id: `category-rule-${Date.now()}`,
+            type: "quantity",
+            condition: "greaterThanOrEqualTo",
+            value: "01",
+          },
+        ],
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const removeCategoryConditionRule = useCallback((stepId: string, categoryIndex: number, ruleId: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: conditions.filter((rule: any, ruleIndex: number) => String(rule.id ?? ruleIndex) !== ruleId),
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const updateCategoryConditionRule = useCallback((stepId: string, categoryIndex: number, ruleId: string, field: string, value: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: conditions.map((rule: any, ruleIndex: number) => (
+          String(rule.id ?? ruleIndex) === ruleId ? { ...rule, [field]: value } : rule
+        )),
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const updateCategoryAutoNextRule = useCallback((stepId: string, categoryIndex: number, enabled: boolean) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => (
+      index === categoryIndex ? { ...category, autoNextStepOnConditionMet: enabled } : category
+    )));
+  }, [updateStepCategories]);
 
   // Template variables modal ref (for Footer Messaging "Show Variables")
   const templateVariablesModalRef = useRef<HTMLElement>(null);
@@ -2074,17 +2225,17 @@ export default function ConfigureBundleFlow() {
                         <div className={productPageBundleStyles.stepSetupActions}>
                           <s-button
                             variant="plain"
+                            icon="globe"
+                            accessibilityLabel="Multi Language"
+                            title="Multi Language"
+                            onClick={() => openStepMultiLanguageModal(step.id)}
+                          />
+                          <s-button
+                            variant="plain"
                             icon="duplicate"
                             accessibilityLabel="Clone current step"
                             title="Clone current step"
                             onClick={() => cloneStep(step.id)}
-                          />
-                          <s-button
-                            variant="plain"
-                            icon="globe"
-                            accessibilityLabel="Multiple language"
-                            title="Multiple language"
-                            disabled={shopLocales.length === 0}
                           />
                           <s-button
                             variant="plain"
@@ -2229,30 +2380,55 @@ export default function ConfigureBundleFlow() {
 
                                         {isOpen && (
                                           <div className={productPageBundleStyles.categoryAccordionBody}>
-                                            <div className={productPageBundleStyles.catNameRow}>
+                                            <div className={productPageBundleStyles.categoryFieldGroup}>
+                                              <label
+                                                className={productPageBundleStyles.categoryFieldLabel}
+                                                htmlFor={`ppb-category-name-${catKey}`}
+                                              >
+                                                Category Name
+                                              </label>
+                                              <div className={productPageBundleStyles.catNameRow}>
+                                                <input
+                                                  id={`ppb-category-name-${catKey}`}
+                                                  className={productPageBundleStyles.categoryNameInput}
+                                                  type="text"
+                                                  value={cat.name ?? ""}
+                                                  placeholder={`Category ${catIndex + 1}`}
+                                                  aria-label="Category name"
+                                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                    const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                      i === catIndex ? { ...c, name: e.target.value } : c
+                                                    );
+                                                    stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                    markAsDirty();
+                                                  }}
+                                                />
+                                                <s-button
+                                                  variant="plain"
+                                                  icon="globe"
+                                                  accessibilityLabel="Multi Language"
+                                                  onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
+                                                >
+                                                  Multi Language
+                                                </s-button>
+                                              </div>
+                                            </div>
+                                            <div className={productPageBundleStyles.categoryFieldGroup}>
+                                              <label
+                                                className={productPageBundleStyles.categoryFieldLabel}
+                                                htmlFor={`ppb-category-title-${catKey}`}
+                                              >
+                                                Category Title
+                                              </label>
                                               <input
+                                                id={`ppb-category-title-${catKey}`}
                                                 className={productPageBundleStyles.categoryNameInput}
                                                 type="text"
-                                                value={cat.name ?? ""}
-                                                placeholder={`Category ${catIndex + 1}`}
-                                                aria-label="Category name"
+                                                value={cat.title ?? ""}
+                                                aria-label="Category title"
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                   const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, name: e.target.value } : c
-                                                  );
-                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
-                                                  markAsDirty();
-                                                }}
-                                              />
-                                              <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language">Multi Language</s-button>
-                                            </div>
-                                            <div style={{ marginBottom: 10 }}>
-                                              <s-checkbox
-                                                label="Display variants as individual products"
-                                                checked={(cat as any).displayVariantsAsIndividual ?? false}
-                                                onChange={(e: Event) => {
-                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, displayVariantsAsIndividual: (e.target as HTMLInputElement).checked } : c
+                                                    i === catIndex ? { ...c, title: e.target.value } : c
                                                   );
                                                   stepsState.updateStepField(step.id, "StepCategory", updated);
                                                   markAsDirty();
@@ -2393,6 +2569,19 @@ export default function ConfigureBundleFlow() {
                                                 )}
                                               </div>
                                             )}
+                                            <div className={productPageBundleStyles.categoryVariantControl}>
+                                              <s-checkbox
+                                                label="Display variants as individual products"
+                                                checked={cat.displayVariantsAsIndividualProducts === true || undefined}
+                                                onChange={(e: Event) => {
+                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                    i === catIndex ? { ...c, displayVariantsAsIndividualProducts: (e.target as HTMLInputElement).checked } : c
+                                                  );
+                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                  markAsDirty();
+                                                }}
+                                              />
+                                            </div>
                                           </div>
                                         )}
                                       </div>
@@ -2406,7 +2595,16 @@ export default function ConfigureBundleFlow() {
                                       const cats = ((step as any).StepCategory as any[]) ?? [];
                                       stepsState.updateStepField(step.id, "StepCategory", [
                                         ...cats,
-                                        { id: `cat-${Date.now()}`, name: "", sortOrder: cats.length, products: [], collections: [] },
+                                        {
+                                          id: `cat-${Date.now()}`,
+                                          name: "",
+                                          title: "",
+                                          sortOrder: cats.length,
+                                          products: [],
+                                          collections: [],
+                                          displayVariantsAsIndividualProducts: false,
+                                          displayVariantsAsSwatches: false,
+                                        },
                                       ]);
                                       markAsDirty();
                                     }}
@@ -2436,114 +2634,236 @@ export default function ConfigureBundleFlow() {
                                     Learn More
                                   </button>
                                   {(() => {
-                                    const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
-                                    const activeRuleMode = ruleCount === 0 ? "none" : "step";
+                                    const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
+                                    const categoryRulesAvailable = stepCategories.length > 1;
+                                    const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
+                                    const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
+                                    const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
                                     const handleRuleModeChange = (nextMode: string) => {
                                       if (nextMode === "none") {
                                         conditionsState.clearStepConditions(step.id);
+                                        clearCategoryConditionRules(step.id);
                                         return;
                                       }
-                                      if ((conditionsState.stepConditions[step.id] || []).length === 0) {
-                                        conditionsState.addConditionRule(step.id);
+                                      if (nextMode === "step") {
+                                        clearCategoryConditionRules(step.id);
+                                        if ((conditionsState.stepConditions[step.id] || []).length === 0) {
+                                          conditionsState.addConditionRule(step.id);
+                                        }
+                                        return;
+                                      }
+                                      if (nextMode === "category" && categoryRulesAvailable) {
+                                        conditionsState.clearStepConditions(step.id);
+                                        if (!hasCategoryRules) {
+                                          addCategoryConditionRule(step.id, 0);
+                                        }
+                                        return;
                                       }
                                     };
+                                    const ruleModeOptions = [
+                                      { label: "No rules", value: "none" },
+                                      { label: "Step rules", value: "step" },
+                                      ...(categoryRulesAvailable ? [{ label: "Category rules", value: "category" }] : []),
+                                    ];
                                     return (
-                                      <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
-                                        {[
-                                          { label: "No rules", value: "none" },
-                                          { label: "Step rules", value: "step" },
-                                          { label: "Category rules", value: "category" },
-                                        ].map(opt => (
-                                          <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+                                      <>
+                                        <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
+                                          {ruleModeOptions.map(opt => (
+                                            <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
                                             <input
                                               type="radio"
-                                              name={`fpb-rule-mode-${step.id}`}
+                                              name={`step-rule-mode-${step.id}`}
                                               value={opt.value}
                                               checked={activeRuleMode === opt.value}
                                               onChange={() => handleRuleModeChange(opt.value)}
                                               style={{ margin: 0 }}
                                             />
                                             {opt.label}
-                                          </label>
-                                        ))}
-                                      </div>
+                                            </label>
+                                          ))}
+                                        </div>
+
+                                        {activeRuleMode === "category" ? (
+                                          <div className={productPageBundleStyles.categoryRulesList}>
+                                            {stepCategories.map((cat: any, catIndex: number) => {
+                                              const catKey = `${step.id}__${cat.id ?? catIndex}`;
+                                              const rules = Array.isArray(cat.conditions) ? cat.conditions : [];
+                                              const isRulesOpen = categoryRulesOpen[catKey] ?? catIndex === 0;
+                                              const categoryLabel = cat.name || cat.title || `Category ${catIndex + 1}`;
+
+                                              return (
+                                                <div key={cat.id ?? catIndex} className={productPageBundleStyles.categoryRuleAccordion}>
+                                                  <button
+                                                    type="button"
+                                                    className={productPageBundleStyles.categoryRuleHeader}
+                                                    aria-expanded={isRulesOpen}
+                                                    onClick={() => setCategoryRulesOpen(prev => ({ ...prev, [catKey]: !isRulesOpen }))}
+                                                  >
+                                                    <span>{categoryLabel} rules</span>
+                                                    <span aria-hidden="true">{isRulesOpen ? "⌃" : "⌄"}</span>
+                                                  </button>
+
+                                                  {isRulesOpen && (
+                                                    <div className={productPageBundleStyles.categoryRuleBody}>
+                                                      <p className={productPageBundleStyles.categoryRuleHelp}>
+                                                        Create Rules based on amount or quantity of products added on this category.
+                                                        <br />
+                                                        Note: Rules are only valid on this category
+                                                      </p>
+
+                                                      <div className={productPageBundleStyles.rulesList}>
+                                                        {rules.map((rule: any, ruleIndex: number) => {
+                                                          const ruleId = String(rule.id ?? ruleIndex);
+                                                          return (
+                                                            <div key={ruleId} className={productPageBundleStyles.categoryRuleBlock}>
+                                                              <div className={productPageBundleStyles.ruleHeader}>
+                                                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                                <s-button
+                                                                  variant="plain"
+                                                                  tone="critical"
+                                                                  onClick={() => removeCategoryConditionRule(step.id, catIndex, ruleId)}
+                                                                >
+                                                                  Remove
+                                                                </s-button>
+                                                              </div>
+                                                              <div className={productPageBundleStyles.ruleFields}>
+                                                                <s-select
+                                                                  label="Type"
+                                                                  value={rule.type ?? "quantity"}
+                                                                  onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                                >
+                                                                  {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                                  ))}
+                                                                </s-select>
+                                                                <s-select
+                                                                  label="Condition"
+                                                                  value={rule.condition ?? rule.operator ?? "greaterThanOrEqualTo"}
+                                                                  onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                                >
+                                                                  {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                                  ))}
+                                                                </s-select>
+                                                                <s-number-field
+                                                                  label="Value"
+                                                                  min={0}
+                                                                  value={rule.value ?? ""}
+                                                                  onInput={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
+                                                                  autoComplete="off"
+                                                                />
+                                                              </div>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+
+                                                      {rules.length === 1 && (
+                                                        <s-checkbox
+                                                          label="Auto Next When rule is met"
+                                                          checked={cat.autoNextStepOnConditionMet === true || undefined}
+                                                          onChange={(e: Event) => updateCategoryAutoNextRule(step.id, catIndex, (e.target as HTMLInputElement).checked)}
+                                                        />
+                                                      )}
+
+                                                      <button
+                                                        type="button"
+                                                        className={productPageBundleStyles.addSectionButton}
+                                                        onClick={() => addCategoryConditionRule(step.id, catIndex)}
+                                                      >
+                                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                                          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                                        </svg>
+                                                        Add Rule
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        ) : (
+                                          <>
+                                            {(conditionsState.stepConditions[step.id] || []).length === 0 ? (
+                                              <div className={productPageBundleStyles.emptyState}>No rules defined yet</div>
+                                            ) : (
+                                              <div className={productPageBundleStyles.rulesList}>
+                                                {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
+                                                  <div key={rule.id} className={productPageBundleStyles.ruleCard}>
+                                                    <div className={productPageBundleStyles.ruleHeader}>
+                                                      <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                      <s-button
+                                                        variant="plain"
+                                                        tone="critical"
+                                                        onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
+                                                      >
+                                                        Remove
+                                                      </s-button>
+                                                    </div>
+                                                    <div className={productPageBundleStyles.ruleFields}>
+                                                      <s-select
+                                                        value={rule.type}
+                                                        label="Type"
+                                                        onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                                      >
+                                                        <s-option value="" disabled>Type</s-option>
+                                                        {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                                          <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                        ))}
+                                                      </s-select>
+                                                      <s-select
+                                                        value={rule.operator}
+                                                        label="Operator"
+                                                        onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                                      >
+                                                        <s-option value="" disabled>Operator</s-option>
+                                                        {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                          <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                        ))}
+                                                      </s-select>
+                                                      <s-number-field
+                                                        label="Value"
+                                                        min={0}
+                                                        placeholder="0"
+                                                        value={rule.value ?? ""}
+                                                        onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
+                                                        autoComplete="off"
+                                                      />
+                                                    </div>
+                                                    {(conditionsState.stepConditions[step.id] || []).length === 1 && (
+                                                      <s-checkbox
+                                                        label="Auto Next When rule is met"
+                                                        checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                                        onChange={(e: Event) => {
+                                                          conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                                        }}
+                                                      />
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                            <button
+                                              type="button"
+                                              className={productPageBundleStyles.addSectionButton}
+                                              onClick={() => {
+                                                if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                                  shopify.toast.show('A step can have at most 2 rules', { isError: false });
+                                                  return;
+                                                }
+                                                conditionsState.addConditionRule(step.id);
+                                              }}
+                                            >
+                                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                                <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                              </svg>
+                                              Add Rule
+                                            </button>
+                                          </>
+                                        )}
+                                      </>
                                     );
                                   })()}
-                                  {(conditionsState.stepConditions[step.id] || []).length === 0 ? (
-                                    <div className={productPageBundleStyles.emptyState}>No rules defined yet</div>
-                                  ) : (
-                                    <div className={productPageBundleStyles.rulesList}>
-                                      {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
-                                        <div key={rule.id} className={productPageBundleStyles.ruleCard}>
-                                          <div className={productPageBundleStyles.ruleHeader}>
-                                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
-                                            <s-button
-                                              variant="plain"
-                                              tone="critical"
-                                              onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
-                                            >
-                                              Remove
-                                            </s-button>
-                                          </div>
-                                          <div className={productPageBundleStyles.ruleFields}>
-                                            <s-select
-                                              value={rule.type}
-                                              label="Type"
-                                              onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
-                                            >
-                                              <s-option value="" disabled>Type</s-option>
-                                              {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                                <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                              ))}
-                                            </s-select>
-                                            <s-select
-                                              value={rule.operator}
-                                              label="Operator"
-                                              onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
-                                            >
-                                              <s-option value="" disabled>Operator</s-option>
-                                              {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                                <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                              ))}
-                                            </s-select>
-                                            <s-number-field
-                                              label="Value"
-                                              min={0}
-                                              placeholder="0"
-                                              value={rule.value ?? ""}
-                                              onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
-                                              autoComplete="off"
-                                            />
-                                          </div>
-                                          {(conditionsState.stepConditions[step.id] || []).length === 1 && (
-                                            <s-checkbox
-                                              label="Auto Next When rule is met"
-                                              checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
-                                              onChange={(e: Event) => {
-                                                conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
-                                              }}
-                                            />
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className={productPageBundleStyles.addSectionButton}
-                                    onClick={() => {
-                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
-                                        shopify.toast.show('A step can have at most 2 rules', { isError: false });
-                                        return;
-                                      }
-                                      conditionsState.addConditionRule(step.id);
-                                    }}
-                                  >
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                                      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                                    </svg>
-                                    Add Rule
-                                  </button>
                                 </div>
 
                     {/* ── Step Config card ── */}
@@ -4804,9 +5124,10 @@ export default function ConfigureBundleFlow() {
         locales={shopLocales}
         activeLocale={textOverridesLocale}
         fields={multiLanguageFields}
-        valuesByLocale={textOverridesByLocale}
+        valuesByLocale={activeMultiLanguageValues}
         onActiveLocaleChange={setTextOverridesLocale}
         onChange={updateLocalizedTextOverride}
+        onSave={saveStepSetupMultiLanguageValues}
         onClose={() => setIsMultiLanguageModalOpen(false)}
       />
 

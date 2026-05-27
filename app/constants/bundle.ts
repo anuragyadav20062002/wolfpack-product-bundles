@@ -70,6 +70,15 @@ export const STEP_CONDITION_OPERATOR_OPTIONS = [
   { label: "is less than or equal to", value: "less_than_or_equal_to" },
 ] as const;
 
+/** Operator options for category condition rules */
+export const CATEGORY_CONDITION_OPERATOR_OPTIONS = [
+  { label: "is equal to", value: "equalTo" },
+  { label: "is greater than", value: "greaterThan" },
+  { label: "is less than", value: "lessThan" },
+  { label: "is greater than or equal to", value: "greaterThanOrEqualTo" },
+  { label: "is less than or equal to", value: "lessThanOrEqualTo" },
+] as const;
+
 // ============================================
 // DISCOUNT RULE OPTIONS
 // ============================================

@@ -114,6 +114,7 @@ const MOCK_ADMIN = {
 function makeStepsData(
   overrides: Partial<{
     id: string;
+    multiLangData: Record<string, Record<string, string>>;
     products: any[];
     StepProduct: any[];
     StepCategory: any[];
@@ -190,6 +191,48 @@ function makeUpdatedBundle(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeBundleUpsellConfig(overrides: Record<string, unknown> = {}) {
+  return {
+    multiLangText: {},
+    widgetConfiguration: {
+      isEnabled: true,
+      type: "OFFER_WIDGET",
+      imageUrl: "https://cdn.example.test/widget.png",
+      title: "Bundle & Save",
+      description: "Complete the look",
+      buttonText: "Buy with Bundle",
+      displayConfiguration: {
+        showOnAllBundleProducts: false,
+        selectedProducts: [
+          {
+            id: "gid://shopify/Product/111",
+            productId: "111",
+            graphqlId: "gid://shopify/Product/111",
+            handle: "gift-card",
+            title: "Gift Card",
+            variants: [],
+          },
+        ],
+        showOnSpecificProductPages: [
+          {
+            productId: "111",
+            graphqlId: "gid://shopify/Product/111",
+            handle: "gift-card",
+            title: "Gift Card",
+            variants: [],
+            images: [],
+          },
+        ],
+        collectionsSelectedData: [],
+        showOnSpecificCollectionPages: [],
+      },
+      useLinkProductAsDefaultProduct: true,
+      languageMode: "MULTIPLE",
+    },
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   MOCK_ADMIN.graphql.mockResolvedValue({
@@ -231,6 +274,22 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
           description: "A test bundle",
         }),
       })
+    );
+  });
+
+  it("persists direct bundleUpsellConfig from current full-page visibility controls", async () => {
+    const bundleUpsellConfig = makeBundleUpsellConfig();
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleUpsellConfig: JSON.stringify(bundleUpsellConfig) }),
+    );
+
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ bundleUpsellConfig }),
+      }),
     );
   });
 
@@ -316,6 +375,12 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     };
     const condition = { type: "quantity", condition: "greaterThanOrEqualTo", value: "01" };
     const stepsData = makeStepsData({
+      multiLangData: {
+        es: {
+          productPageStepText: "Paso auditoria",
+          productPageSubtext: "Construye paquete auditoria",
+        },
+      },
       StepCategory: [
         {
           categoryId: "category21087",
@@ -339,6 +404,12 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const updateCall = getDb().bundle.update.mock.calls[0][0];
     const stepCreate = updateCall.data.steps.create[0];
+    expect(stepCreate.multiLangData).toEqual({
+      es: {
+        productPageStepText: "Paso auditoria",
+        productPageSubtext: "Construye paquete auditoria",
+      },
+    });
     expect(stepCreate.StepCategory.create).toHaveLength(1);
     expect(stepCreate.StepCategory.create[0]).toMatchObject({
       id: "category21087",
@@ -581,6 +652,47 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
+  it("syncs direct full-page bundleUpsellConfig into bundle product metafields", async () => {
+    const bundleUpsellConfig = makeBundleUpsellConfig();
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        bundleUpsellConfig,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      }),
+    );
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({
+        stepsData: JSON.stringify(makeStepWithProduct()),
+        bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+        bundleUpsellConfig: JSON.stringify(bundleUpsellConfig),
+      }),
+    );
+
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({ bundleUpsellConfig }),
+    );
+  });
+
   it("syncs parent product status with Shopify's current product update mutation", async () => {
     const fd = makeFormData({
       stepsData: JSON.stringify(makeStepWithProduct()),
@@ -804,6 +916,65 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       MOCK_ADMIN,
       PRODUCT_ID,
       expect.objectContaining({ bundleTextConfig }),
+    );
+  });
+
+  it("passes step translations into bundle product metafield sync", async () => {
+    const multiLangData = {
+      es: {
+        productPageStepText: "Paso auditoria",
+        productPageSubtext: "Construye paquete auditoria",
+      },
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            multiLangData,
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepsData({
+        multiLangData,
+        StepProduct: [
+          {
+            id: "gid://shopify/Product/456",
+            title: "Component",
+            imageUrl: null,
+          },
+        ],
+      })),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        steps: [
+          expect.objectContaining({
+            name: "Step 1",
+            multiLangData,
+          }),
+        ],
+      }),
     );
   });
 
