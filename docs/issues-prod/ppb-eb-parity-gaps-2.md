@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 22:10 IST
+**Last Updated:** 2026-05-28 22:22 IST
 
 ## Overview
 
@@ -69,6 +69,10 @@ UI parity gaps identified:
   - `window.open(..., "_blank")` for `trycloudflare.com` hosts.
   - `shopify.navigate(...)` for normal Admin contexts.
 - Wired `product_active` readiness action to use the helper.
+
+### 2026-05-28 22:22 IST - FPB Edit Product direct-link parity
+- Reused the new FPB `openProductInAdmin` helper inside the product card `Edit Product` action.
+- Removed duplicated inline admin URL / tunnel check in that handler.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
