@@ -2258,6 +2258,16 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, activeSection, promptSaveBarBeforeNavigation]);
 
+  const openProductInAdmin = useCallback((productId: string) => {
+    const storeHandle = shop?.replace('.myshopify.com', '');
+    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
+    if (window.location.hostname.includes("trycloudflare.com")) {
+      window.open(adminProductUrl, "_blank");
+    } else {
+      shopify.navigate(adminProductUrl);
+    }
+  }, [shop, shopify]);
+
   const handleReadinessItemClick = useCallback((key: string) => {
     setReadinessOpen(false);
     switch (key) {
@@ -2281,15 +2291,14 @@ export default function ConfigureBundleFlow() {
       case "product_active": {
         const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || bundle.shopifyProductId?.split('/').pop();
         if (productId) {
-          const storeHandle = shop?.replace('.myshopify.com', '');
-          shopify.navigate(`https://admin.shopify.com/store/${storeHandle}/products/${productId}`);
+          openProductInAdmin(productId);
         }
         break;
       }
       default:
         break;
     }
-  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle.id, bundle.shopifyProductId, bundleProduct, shop, shopify]);
+  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle.id, bundleProduct, openProductInAdmin]);
 
   const handleTemplatePreview = useCallback(() => {
     void handlePreviewBundle();

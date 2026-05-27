@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 18:20 IST
+**Last Updated:** 2026-05-28 22:10 IST
 
 ## Overview
 
@@ -62,6 +62,13 @@ UI parity gaps identified:
 - Fixed `ReferenceError: Cannot access 'handlePreviewBundle' before initialization` in FPB configure route.
 - Reordered `handleTemplatePreview` so it is declared after `handlePreviewBundle`.
 - Validation: `npx eslint --max-warnings 9999 app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` returned warnings only, no errors.
+
+### 2026-05-28 22:10 IST - FPB readiness admin open parity
+- Aligned FPB readiness `product_active` path with PPB admin-tunnel behavior.
+- Added shared `openProductInAdmin` helper with fallback:
+  - `window.open(..., "_blank")` for `trycloudflare.com` hosts.
+  - `shopify.navigate(...)` for normal Admin contexts.
+- Wired `product_active` readiness action to use the helper.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
