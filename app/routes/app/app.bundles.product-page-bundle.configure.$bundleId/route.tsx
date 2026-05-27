@@ -277,13 +277,125 @@ function buildVisibilityDisplayConfiguration(
   showOnSpecificCollectionPages: unknown[] = [],
 ): VisibilityDisplayConfiguration {
   const showOnAllBundleProducts = displayOn === "all" || displayOn === "all_products";
+  const productPageTargets = showOnSpecificProductPages.length > 0 ? showOnSpecificProductPages : selectedProducts;
+  const collectionPageTargets = showOnSpecificCollectionPages.length > 0 ? showOnSpecificCollectionPages : collectionsSelectedData;
+
   return {
     showOnAllBundleProducts,
-    selectedProducts: displayOn === "specific_products" ? selectedProducts : [],
-    showOnSpecificProductPages: displayOn === "specific_products" ? showOnSpecificProductPages : [],
-    collectionsSelectedData: displayOn === "specific_collections" ? collectionsSelectedData : [],
-    showOnSpecificCollectionPages: displayOn === "specific_collections" ? showOnSpecificCollectionPages : [],
+    selectedProducts: displayOn === "specific_products" ? selectedProducts.map((product) => compactVisibilityProductReference(product)) : [],
+    showOnSpecificProductPages: displayOn === "specific_products" ? productPageTargets.map((product) => compactVisibilityProductPageReference(product)) : [],
+    collectionsSelectedData: displayOn === "specific_collections" ? collectionsSelectedData.map((collection) => compactVisibilityCollectionReference(collection)) : [],
+    showOnSpecificCollectionPages: displayOn === "specific_collections" ? collectionPageTargets.map((collection) => compactVisibilityCollectionPageReference(collection)) : [],
   };
+}
+
+function getVisibilityResourceId(resource: any): string | null {
+  return resource?.graphqlId
+    ?? resource?.admin_graphql_api_id
+    ?? resource?.storefrontId
+    ?? resource?.id
+    ?? null;
+}
+
+function getVisibilityResourceNumericId(resource: any): string {
+  const id = String(resource?.productId ?? resource?.collectionId ?? getVisibilityResourceId(resource) ?? "");
+  return id.includes("/") ? id.split("/").pop() ?? id : id;
+}
+
+function getVisibilityImageUrl(resource: any): string | null {
+  return resource?.imageUrl
+    ?? resource?.featuredImage?.url
+    ?? resource?.image?.url
+    ?? resource?.image?.src
+    ?? resource?.images?.[0]?.originalSrc
+    ?? resource?.images?.[0]?.url
+    ?? resource?.images?.[0]?.src
+    ?? null;
+}
+
+function getVisibilityPickerSelection(picked: any): any[] | null {
+  if (Array.isArray(picked)) return picked;
+  if (Array.isArray(picked?.selection)) return picked.selection;
+  return null;
+}
+
+function buildVisibilitySelectionIds(resources: unknown[]) {
+  return resources
+    .map((resource: any) => getVisibilityResourceId(resource))
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+    .map((id) => ({ id }));
+}
+
+function compactVisibilityImages(resource: any) {
+  const imageUrl = getVisibilityImageUrl(resource);
+  return imageUrl ? [{ originalSrc: imageUrl }] : [];
+}
+
+function compactVisibilityProductReference(product: any) {
+  const graphqlId = getVisibilityResourceId(product);
+  const imageUrl = getVisibilityImageUrl(product);
+
+  return {
+    id: graphqlId,
+    productId: getVisibilityResourceNumericId(product),
+    graphqlId,
+    handle: product?.handle ?? "",
+    title: product?.title ?? "Untitled product",
+    images: compactVisibilityImages(product),
+    imageUrl,
+    variants: [],
+  };
+}
+
+function compactVisibilityProductPageReference(product: any) {
+  const normalized = compactVisibilityProductReference(product);
+  return {
+    productId: normalized.productId,
+    graphqlId: normalized.graphqlId,
+    handle: normalized.handle,
+    variants: normalized.variants,
+    images: normalized.images,
+    title: normalized.title,
+  };
+}
+
+function normalizeVisibilityProductForDisplayConfiguration(product: any) {
+  return compactVisibilityProductReference(product);
+}
+
+function normalizeVisibilityProductPageTarget(product: any) {
+  return compactVisibilityProductPageReference(product);
+}
+
+function compactVisibilityCollectionReference(collection: any) {
+  const graphqlId = getVisibilityResourceId(collection);
+  return {
+    id: graphqlId,
+    collectionId: getVisibilityResourceNumericId(collection),
+    graphqlId,
+    handle: collection?.handle ?? "",
+    title: collection?.title ?? "Untitled collection",
+  };
+}
+
+function compactVisibilityCollectionPageReference(collection: any) {
+  const normalized = compactVisibilityCollectionReference(collection);
+  return {
+    collectionId: normalized.collectionId,
+    graphqlId: normalized.graphqlId,
+    handle: normalized.handle,
+    variants: [],
+    images: [],
+    title: normalized.title,
+  };
+}
+
+function normalizeVisibilityCollectionForDisplayConfiguration(collection: any) {
+  return compactVisibilityCollectionReference(collection);
+}
+
+function normalizeVisibilityCollectionPageTarget(collection: any) {
+  return compactVisibilityCollectionPageReference(collection);
 }
 
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
@@ -601,10 +713,10 @@ export default function ConfigureBundleFlow() {
   const [upsellWidgetDescription, setUpsellWidgetDescription] = useState<string>(savedWidgetConfiguration?.description ?? "");
   const [upsellWidgetButtonText, setUpsellWidgetButtonText] = useState<string>(savedWidgetConfiguration?.buttonText ?? "Buy With Bundle");
   const [upsellWidgetImageUrl, setUpsellWidgetImageUrl] = useState<string>(savedWidgetConfiguration?.imageUrl ?? "");
-  const [upsellWidgetSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.selectedProducts));
-  const [upsellWidgetSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificProductPages));
-  const [upsellWidgetCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.collectionsSelectedData));
-  const [upsellWidgetSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificCollectionPages));
+  const [upsellWidgetSelectedProducts, setUpsellWidgetSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.selectedProducts));
+  const [upsellWidgetSpecificProductPages, setUpsellWidgetSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificProductPages));
+  const [upsellWidgetCollectionsSelectedData, setUpsellWidgetCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.collectionsSelectedData));
+  const [upsellWidgetSpecificCollectionPages, setUpsellWidgetSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificCollectionPages));
   const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>(
     savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
   );
@@ -617,10 +729,10 @@ export default function ConfigureBundleFlow() {
   const [bundleEmbedAddBrowsedProduct, setBundleEmbedAddBrowsedProduct] = useState<boolean>(
     savedUpsellConfiguration?.useLinkProductAsDefaultProduct ?? textOverrides.embedAddBrowsedProduct === "true"
   );
-  const [bundleEmbedSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.selectedProducts));
-  const [bundleEmbedSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificProductPages));
-  const [bundleEmbedCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.collectionsSelectedData));
-  const [bundleEmbedSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificCollectionPages));
+  const [bundleEmbedSelectedProducts, setBundleEmbedSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.selectedProducts));
+  const [bundleEmbedSpecificProductPages, setBundleEmbedSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificProductPages));
+  const [bundleEmbedCollectionsSelectedData, setBundleEmbedCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.collectionsSelectedData));
+  const [bundleEmbedSpecificCollectionPages, setBundleEmbedSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificCollectionPages));
 
   // FR-02: Gift Messages state
   const [giftMessagesEnabled, setGiftMessagesEnabled] = useState<boolean>((bundle as any).giftMessagesEnabled ?? false);
@@ -1360,6 +1472,76 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show("Failed to open page selection", { isError: true, duration: 5000 });
     }
   }, [loadAvailablePages, shopify, openPageSelectionModal]);
+
+  const openVisibilityProductPicker = useCallback(async (target: "widget" | "embed") => {
+    const currentProducts = target === "widget" ? upsellWidgetSelectedProducts : bundleEmbedSelectedProducts;
+    const picked = await (shopify as any).resourcePicker({
+      type: "product",
+      multiple: true,
+      action: "select",
+      selectionIds: buildVisibilitySelectionIds(currentProducts),
+    });
+    const selection = getVisibilityPickerSelection(picked);
+    if (!selection) return;
+
+    const selectedProducts = selection.map(normalizeVisibilityProductForDisplayConfiguration);
+    const pageTargets = selectedProducts.map(normalizeVisibilityProductPageTarget);
+
+    if (target === "widget") {
+      setUpsellWidgetSelectedProducts(selectedProducts);
+      setUpsellWidgetSpecificProductPages(pageTargets);
+    } else {
+      setBundleEmbedSelectedProducts(selectedProducts);
+      setBundleEmbedSpecificProductPages(pageTargets);
+    }
+    markAsDirty();
+  }, [bundleEmbedSelectedProducts, markAsDirty, shopify, upsellWidgetSelectedProducts]);
+
+  const openVisibilityCollectionPicker = useCallback(async (target: "widget" | "embed") => {
+    const currentCollections = target === "widget" ? upsellWidgetCollectionsSelectedData : bundleEmbedCollectionsSelectedData;
+    const picked = await (shopify as any).resourcePicker({
+      type: "collection",
+      multiple: true,
+      action: "select",
+      selectionIds: buildVisibilitySelectionIds(currentCollections),
+    });
+    const selection = getVisibilityPickerSelection(picked);
+    if (!selection) return;
+
+    const collectionsSelectedData = selection.map(normalizeVisibilityCollectionForDisplayConfiguration);
+    const pageTargets = collectionsSelectedData.map(normalizeVisibilityCollectionPageTarget);
+
+    if (target === "widget") {
+      setUpsellWidgetCollectionsSelectedData(collectionsSelectedData);
+      setUpsellWidgetSpecificCollectionPages(pageTargets);
+    } else {
+      setBundleEmbedCollectionsSelectedData(collectionsSelectedData);
+      setBundleEmbedSpecificCollectionPages(pageTargets);
+    }
+    markAsDirty();
+  }, [bundleEmbedCollectionsSelectedData, markAsDirty, shopify, upsellWidgetCollectionsSelectedData]);
+
+  const removeVisibilityProductTarget = useCallback((target: "widget" | "embed", indexToRemove: number) => {
+    if (target === "widget") {
+      setUpsellWidgetSelectedProducts((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setUpsellWidgetSpecificProductPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    } else {
+      setBundleEmbedSelectedProducts((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setBundleEmbedSpecificProductPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }
+    markAsDirty();
+  }, [markAsDirty]);
+
+  const removeVisibilityCollectionTarget = useCallback((target: "widget" | "embed", indexToRemove: number) => {
+    if (target === "widget") {
+      setUpsellWidgetCollectionsSelectedData((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setUpsellWidgetSpecificCollectionPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    } else {
+      setBundleEmbedCollectionsSelectedData((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setBundleEmbedSpecificCollectionPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }
+    markAsDirty();
+  }, [markAsDirty]);
 
   const handlePageSelection = useCallback(async (template: any) => {
     let editorWindow: Window | null = null;
@@ -2942,322 +3124,431 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "bundle_visibility" && (
               <div data-tour-target="ppb-bundle-visibility">
-                <s-stack direction="block" gap="base">
-                  <s-section>
-                    <s-stack direction="inline" gap="base" alignItems="center">
-                      <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>App Embed Status</h3>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          {appEmbedEnabled
-                            ? "Your store is connected and ready. Your bundle can now render on your storefront."
-                            : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
-                        </p>
-                      </s-stack>
-                      <s-badge tone={appEmbedEnabled ? "success" : "warning"}>
-                        {appEmbedEnabled ? "Enabled" : "Not enabled"}
-                      </s-badge>
-                      {!appEmbedEnabled && themeEditorUrl && (
-                        <s-button variant="secondary" onClick={() => window.open(themeEditorUrl, "_blank")}>
-                          Enable here
-                        </s-button>
-                      )}
-                    </s-stack>
-                  </s-section>
+                <div className={productPageBundleStyles.visibilityOverviewStack}>
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <div>
+                      <h3 className={productPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        {appEmbedEnabled
+                          ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                          : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                      </p>
+                    </div>
+                    <div className={appEmbedEnabled ? productPageBundleStyles.visibilityStatusEnabled : productPageBundleStyles.visibilityStatusWarning}>
+                      {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                    </div>
+                    {!appEmbedEnabled && themeEditorUrl && (
+                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => window.open(themeEditorUrl, "_blank")}>
+                        Enable here
+                      </button>
+                    )}
+                  </div>
 
-                  <s-section>
-                    <s-stack direction="block" gap="base">
-                      <s-stack direction="block" gap="small-400">
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Publishing Best Practices</h3>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Pick a placement and follow the quick guide to make your bundle discoverable on your store.
-                        </p>
-                      </s-stack>
-                      <div className={productPageBundleStyles.visibilityGuideGrid}>
-                        {[
-                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/bundleGallery.png" },
-                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/fpb.png" },
-                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/pdp.png" },
-                          { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/productPageThumbnail.png" },
-                        ].map(({ title, desc: description, img }) => (
-                          <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
-                            <div className={productPageBundleStyles.visibilityGuideMedia}>
-                              <img src={img} alt={title} />
-                            </div>
-                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{title}</h4>
-                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175", lineHeight: 1.35 }}>{description}</p>
-                            <s-button variant="secondary" onClick={() => window.open("https://wolfpackapps.com", "_blank")}>Quick Setup Guide</s-button>
-                            <span className={productPageBundleStyles.visibilitySetupTime}>5 min setup</span>
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <div className={productPageBundleStyles.visibilitySectionIntro}>
+                      <h3 className={productPageBundleStyles.visibilityCardTitle}>Publishing Best Practices</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        Pick a placement and follow the quick guide to make your bundle discoverable on your store.
+                      </p>
+                    </div>
+                    <div className={productPageBundleStyles.visibilityGuideGrid}>
+                      {[
+                        { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/current-dashboard-setup-widget.png" },
+                        { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/bundleGallery.png" },
+                        { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/fpb.png" },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/productPageThumbnail.png" },
+                      ].map(({ title, desc: description, img }) => (
+                        <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
+                          <div className={productPageBundleStyles.visibilityGuideMedia}>
+                            <img src={img} alt={title} />
                           </div>
-                        ))}
+                          <div className={productPageBundleStyles.visibilityGuideBody}>
+                            <h4 className={productPageBundleStyles.visibilityGuideTitle}>{title}</h4>
+                            <p className={productPageBundleStyles.visibilityGuideDescription}>{description}</p>
+                            <div className={productPageBundleStyles.visibilityGuideFooter}>
+                              <button type="button" className={productPageBundleStyles.visibilityGuideAction} onClick={() => window.open("https://wolfpackapps.com", "_blank")}>
+                                Quick Setup Guide →
+                              </button>
+                              <span className={productPageBundleStyles.visibilitySetupTime}>5 min setup</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <div className={productPageBundleStyles.visibilitySectionIntro}>
+                      <h3 className={productPageBundleStyles.visibilityCardTitle}>Your Bundle Link</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        Use this link to place your bundle anywhere - theme components, emails, ads, or social bios.
+                      </p>
+                    </div>
+                    {bundle.shopifyProductHandle && shop ? (
+                      <div className={productPageBundleStyles.visibilityLinkRow}>
+                        <input
+                          className={productPageBundleStyles.visibilityTextInput}
+                          aria-label="Bundle link"
+                          value={`https://${shop}/products/${bundle.shopifyProductHandle}`}
+                          disabled
+                          readOnly
+                        />
+                        <button
+                          type="button"
+                          className={productPageBundleStyles.visibilitySecondaryAction}
+                          onClick={() => {
+                            const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
+                            void navigator.clipboard?.writeText(url);
+                            shopify.toast.show("Bundle link copied", { isError: false });
+                          }}
+                        >
+                          Copy Link
+                        </button>
+                        <button
+                          type="button"
+                          className={productPageBundleStyles.visibilityPlainAction}
+                          onClick={() => window.open(`https://${shop}/products/${bundle.shopifyProductHandle}`, "_blank")}
+                        >
+                          View on Storefront
+                        </button>
                       </div>
-                    </s-stack>
-                  </s-section>
+                    ) : (
+                      <p className={productPageBundleStyles.visibilityCardText}>Bundle product not yet linked.</p>
+                    )}
+                  </div>
 
-                  <s-section>
-                    <s-stack direction="block" gap="small">
-                      <s-stack direction="block" gap="small-400">
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your Bundle Link</h3>
-                        <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                          Use this link to place your bundle anywhere - theme components, emails, ads, or social bios.
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <h3 className={productPageBundleStyles.visibilityCardTitle}>Want more placement options?</h3>
+                    <div className={productPageBundleStyles.visibilitySetupPanel}>
+                      <div>
+                        <h4 className={productPageBundleStyles.visibilitySetupTitle}>Bundle Widget</h4>
+                        <p className={productPageBundleStyles.visibilityCardText}>
+                          Add a bundle button to specific product pages.
                         </p>
-                      </s-stack>
-                      {bundle.shopifyProductHandle && shop ? (
-                        <s-stack direction="inline" gap="small">
-                          <s-text-field
-                            label="Bundle link"
-                            value={`https://${shop}/products/${bundle.shopifyProductHandle}`}
-                            disabled
-                            autoComplete="off"
-                          />
-                          <s-button
-                            variant="secondary"
-                            onClick={() => {
-                              const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
-                              void navigator.clipboard?.writeText(url);
-                              shopify.toast.show("Bundle link copied", { isError: false });
-                            }}
-                          >
-                            Copy Link
-                          </s-button>
-                          <s-button
-                            variant="plain"
-                            onClick={() => window.open(`https://${shop}/products/${bundle.shopifyProductHandle}`, "_blank")}
-                          >
-                            View on Storefront
-                          </s-button>
-                        </s-stack>
-                      ) : (
-                        <s-text tone="subdued">Bundle product not yet linked.</s-text>
-                      )}
-                    </s-stack>
-                  </s-section>
-
-                  <s-section>
-                    <s-stack direction="block" gap="base">
-                      <s-stack direction="inline" gap="base" alignItems="center">
-                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Want more placement options?</h3>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Widget</h4>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Add a bundle button to specific product pages.
-                          </p>
-                        </s-stack>
-                        <s-button variant="primary" onClick={() => handleSectionChange("bundle_widget")}>Set up Bundle Widget</s-button>
-                      </s-stack>
-                      <s-stack direction="inline" gap="base" alignItems="center">
-                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Embed</h4>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Embed the full bundle builder directly on a product page.
-                          </p>
-                        </s-stack>
-                        <s-button variant="secondary" onClick={() => handleSectionChange("bundle_embed")}>Set up Bundle Embed</s-button>
-                      </s-stack>
-                    </s-stack>
-                  </s-section>
-                </s-stack>
+                      </div>
+                      <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={() => handleSectionChange("bundle_widget")}>
+                        Set up Bundle Widget
+                      </button>
+                    </div>
+                    <div className={productPageBundleStyles.visibilitySetupPanel}>
+                      <div>
+                        <h4 className={productPageBundleStyles.visibilitySetupTitle}>Bundle Embed</h4>
+                        <p className={productPageBundleStyles.visibilityCardText}>
+                          Embed the full bundle builder directly on a product page.
+                        </p>
+                      </div>
+                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => handleSectionChange("bundle_embed")}>
+                        Set up Bundle Embed
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
             {activeSection === "bundle_widget" && (
               <div data-tour-target="ppb-bundle-widget">
-                <s-stack direction="block" gap="base">
-                  <s-section heading="Product Page Bundle Upsell Widgets">
-                    <s-stack direction="vertical" gap="400">
-                      <s-stack direction="horizontal" gap="300" align-y="center">
-                        <s-switch
-                          checked={upsellWidgetEnabled}
-                          onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
-                        />
-                        <s-text>This will display an upsell block or button on the product pages of your choice.</s-text>
-                      </s-stack>
+                <div className={productPageBundleStyles.visibilityPanel}>
+                  <div className={productPageBundleStyles.visibilityTitleSwitchRow}>
+                    <div>
+                      <h3 className={productPageBundleStyles.visibilityPanelTitle}>Product Page Bundle Upsell Widgets</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        This will display an upsell block or button on the product pages of your choice.
+                      </p>
+                    </div>
+                    <s-switch
+                      checked={upsellWidgetEnabled || undefined}
+                      onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
+                    />
+                  </div>
 
-                      <div className={productPageBundleStyles.widgetPreviewMedia}>
-                        <span className={productPageBundleStyles.widgetPreviewButton}>
-                          {upsellWidgetButtonText}
-                        </span>
+                  <div className={productPageBundleStyles.visibilityPreviewFrame}>
+                    <div className={productPageBundleStyles.visibilityPreviewProduct}>
+                      <div className={productPageBundleStyles.visibilityPreviewThumbnails}>
+                        <span />
+                        <span />
+                        <span />
                       </div>
+                      <div className={productPageBundleStyles.visibilityPreviewImage}>
+                        {upsellWidgetImageUrl ? <img src={upsellWidgetImageUrl} alt="" /> : null}
+                      </div>
+                      <div className={productPageBundleStyles.visibilityPreviewDetails}>
+                        <p className={productPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
+                        <p className={productPageBundleStyles.visibilityPreviewPrice}>$47.97</p>
+                        <div className={productPageBundleStyles.visibilityPreviewNativeButton}>Add to Cart · $47.97</div>
+                        <div className={productPageBundleStyles.visibilityPreviewWidget}>
+                          <span>{upsellWidgetTitle || "Bundle & Save"}</span>
+                          <button type="button">{upsellWidgetButtonText || "Buy With Bundle"}</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={productPageBundleStyles.visibilityRadioBar}>
+                      <label className={productPageBundleStyles.visibilityRadioLabel}>
+                        <input
+                          type="radio"
+                          name="upsellWidgetType"
+                          value="block"
+                          checked={upsellWidgetDisplayMode !== "button"}
+                          onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
+                        />
+                        <span>Offer Upsell Block</span>
+                      </label>
+                      <label className={productPageBundleStyles.visibilityRadioLabel}>
+                        <input
+                          type="radio"
+                          name="upsellWidgetType"
+                          value="button"
+                          checked={upsellWidgetDisplayMode === "button"}
+                          onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
+                        />
+                        <span>Offer Upsell Button</span>
+                      </label>
+                    </div>
+                  </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-text>Display type</s-text>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                          <input
-                            type="radio"
-                            name="upsellWidgetType"
-                            value="block"
-                            checked={upsellWidgetDisplayMode !== "button"}
-                            onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
-                          />
-                          <span style={{ fontSize: 14 }}>Offer Upsell Block</span>
-                        </label>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                          <input
-                            type="radio"
-                            name="upsellWidgetType"
-                            value="button"
-                            checked={upsellWidgetDisplayMode === "button"}
-                            onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
-                          />
-                          <span style={{ fontSize: 14 }}>Offer Upsell Button</span>
-                        </label>
-                        <s-banner tone="info">Select if you want the upsell block or button to appear on product pages.</s-banner>
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilityInfoBanner}>
+                    Select if you want the upsell block or button to appear on product pages.
+                  </div>
 
-                      <s-stack direction="vertical" gap="300">
-                        <s-heading size="small">Widget Settings</s-heading>
-                        <s-stack direction="horizontal" gap="small" align-y="center">
-                          <s-button
-                            variant="secondary"
-                            icon="globe"
-                            disabled
-                          >
-                            Multi Language
-                          </s-button>
-                        </s-stack>
+                  <div className={productPageBundleStyles.visibilityPanelSection}>
+                    <div className={productPageBundleStyles.visibilitySectionHeader}>
+                      <h4 className={productPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
+                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} disabled={!upsellWidgetEnabled}>
+                        Multi language
+                      </button>
+                    </div>
+                    <div className={productPageBundleStyles.visibilitySettingsGrid}>
+                      <div className={productPageBundleStyles.visibilityImagePicker}>
                         <FilePicker
                           label="Upload Image"
                           hideCropEditor
                           value={upsellWidgetImageUrl || null}
                           onChange={(url) => { setUpsellWidgetImageUrl(url ?? ""); markAsDirty(); }}
                         />
-                        <s-text-field
-                          label="Widget Title"
-                          value={upsellWidgetTitle}
-                          onInput={(e: Event) => { setUpsellWidgetTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
-                          autoComplete="off"
-                        />
-                        <s-text-area
-                          label="Widget Description"
-                          value={upsellWidgetDescription}
-                          onInput={(e: Event) => { setUpsellWidgetDescription((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
-                          autoComplete="off"
-                        />
-                        <s-text-field
-                          label="Widget Button Text"
-                          value={upsellWidgetButtonText}
-                          onInput={(e: Event) => { setUpsellWidgetButtonText((e.target as HTMLInputElement).value); markAsDirty(); }}
-                          autoComplete="off"
-                        />
-                      </s-stack>
+                      </div>
+                      <div className={productPageBundleStyles.visibilityFieldStack}>
+                        <label className={productPageBundleStyles.visibilityFieldLabel}>
+                          <span>Widget Title</span>
+                          <input
+                            className={productPageBundleStyles.visibilityTextInput}
+                            value={upsellWidgetTitle}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setUpsellWidgetTitle(e.target.value); markAsDirty(); }}
+                          />
+                        </label>
+                        <label className={productPageBundleStyles.visibilityFieldLabel}>
+                          <span>Widget Description</span>
+                          <textarea
+                            className={productPageBundleStyles.visibilityTextarea}
+                            value={upsellWidgetDescription}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setUpsellWidgetDescription(e.target.value); markAsDirty(); }}
+                          />
+                        </label>
+                        <label className={productPageBundleStyles.visibilityFieldLabel}>
+                          <span>Widget Button Text</span>
+                          <input
+                            className={productPageBundleStyles.visibilityTextInput}
+                            value={upsellWidgetButtonText}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setUpsellWidgetButtonText(e.target.value); markAsDirty(); }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-text>Display Widget on</s-text>
-                        {[
-                          { value: "all",                   label: "All products in bundle"  },
-                          { value: "specific_products",     label: "Specific products"        },
-                          { value: "specific_collections",  label: "Specific collections"     },
-                        ].map(({ value, label }) => (
-                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                            <input
-                              type="radio"
-                              name="widgetDisplayOn"
-                              value={value}
-                              checked={upsellWidgetDisplayOn === value}
-                              onChange={() => { setUpsellWidgetDisplayOn(value); markAsDirty(); }}
-                            />
-                            <span style={{ fontSize: 14 }}>{label}</span>
-                          </label>
-                        ))}
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilityPanelSection}>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Display Widget on</h4>
+                    <div className={productPageBundleStyles.visibilityTargetOptions}>
+                      {[
+                        { value: "all",                   label: "All products in bundle"  },
+                        { value: "specific_products",     label: "Specific products"        },
+                        { value: "specific_collections",  label: "Specific collections"     },
+                      ].map(({ value, label }) => (
+                        <label key={value} className={productPageBundleStyles.visibilityRadioLabel}>
+                          <input
+                            type="radio"
+                            name="widgetDisplayOn"
+                            value={value}
+                            checked={upsellWidgetDisplayOn === value}
+                            onChange={() => { setUpsellWidgetDisplayOn(value); markAsDirty(); }}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {upsellWidgetDisplayOn === "specific_products" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityProductPicker("widget")}>
+                          Select products
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {upsellWidgetSelectedProducts.map((product: any, index) => (
+                            <div key={getVisibilityResourceId(product) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{product.title ?? "Untitled product"}</span>
+                              <button type="button" onClick={() => removeVisibilityProductTarget("widget", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {upsellWidgetDisplayOn === "specific_collections" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityCollectionPicker("widget")}>
+                          Select collections
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {upsellWidgetCollectionsSelectedData.map((collection: any, index) => (
+                            <div key={getVisibilityResourceId(collection) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{collection.title ?? "Untitled collection"}</span>
+                              <button type="button" onClick={() => removeVisibilityCollectionTarget("widget", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                      <s-checkbox
-                        label="Add browsed product to bundle"
-                        checked={autoSelectBrowsedProduct || undefined}
-                        onChange={(e: Event) => { setAutoSelectBrowsedProduct((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      />
+                  <label className={productPageBundleStyles.visibilityCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={autoSelectBrowsedProduct}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setAutoSelectBrowsedProduct(e.target.checked); markAsDirty(); }}
+                    />
+                    <span>Add browsed product to bundle</span>
+                  </label>
+                </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-heading size="small">Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</s-heading>
-                        <s-text size="small" tone="subdued">By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.</s-text>
-                        <s-button
-                          variant="secondary"
-                          onClick={handlePlaceWidget}
-                        >
-                          Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
-                        </s-button>
-                      </s-stack>
-                    </s-stack>
-                  </s-section>
-                </s-stack>
+                <div className={productPageBundleStyles.visibilityPlacementCard}>
+                  <div>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</h4>
+                    <p className={productPageBundleStyles.visibilityCardText}>Place app block on the theme</p>
+                  </div>
+                  <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                    Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
+                  </button>
+                </div>
               </div>
             )}
 
             {activeSection === "bundle_embed" && (
               <div data-tour-target="ppb-bundle-embed">
-                <s-stack direction="block" gap="base">
-                  <s-section heading="Embed Bundle Builder on Product Pages">
-                    <s-stack direction="vertical" gap="400">
-                      <s-stack direction="horizontal" gap="300" align-y="center">
-                        <s-switch
-                          checked={bundleEmbedEnabled}
-                          onChange={(e: Event) => { setBundleEmbedEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                        />
-                        <s-text>Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.</s-text>
-                      </s-stack>
+                <div className={productPageBundleStyles.visibilityPanel}>
+                  <div className={productPageBundleStyles.visibilityTitleSwitchRow}>
+                    <div>
+                      <h3 className={productPageBundleStyles.visibilityPanelTitle}>Embed Bundle Builder on Product Pages</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.
+                      </p>
+                    </div>
+                    <s-switch
+                      checked={bundleEmbedEnabled || undefined}
+                      onChange={(e: Event) => { setBundleEmbedEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    />
+                  </div>
 
-                      <s-stack direction="horizontal" gap="small" align-y="center">
-                        <s-button
-                          variant="secondary"
-                          icon="globe"
-                          onClick={() => openMultiLanguageModal("Bundle Embed", [
-                            { key: "embedTitle", label: "Title", fallback: bundleEmbedTitle },
-                            { key: "embedSubTitle", label: "Sub Title", fallback: bundleEmbedSubTitle, multiline: true },
-                          ])}
-                        >
-                          Multi Language
-                        </s-button>
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilitySectionHeader}>
+                    <span />
+                    <button
+                      type="button"
+                      className={productPageBundleStyles.visibilitySecondaryAction}
+                      onClick={() => openMultiLanguageModal("Bundle Embed", [
+                        { key: "embedTitle", label: "Title", fallback: bundleEmbedTitle },
+                        { key: "embedSubTitle", label: "Sub Title", fallback: bundleEmbedSubTitle, multiline: true },
+                      ])}
+                    >
+                      Multi Language
+                    </button>
+                  </div>
 
-                      <s-text-field
-                        label="Title"
+                  <div className={productPageBundleStyles.visibilityFieldStack}>
+                    <label className={productPageBundleStyles.visibilityFieldLabel}>
+                      <span>Title</span>
+                      <input
+                        className={productPageBundleStyles.visibilityTextInput}
                         value={bundleEmbedTitle}
-                        onInput={(e: Event) => { setBundleEmbedTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
-                        autoComplete="off"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setBundleEmbedTitle(e.target.value); markAsDirty(); }}
                       />
-                      <s-text-field
-                        label="Sub Title"
+                    </label>
+                    <label className={productPageBundleStyles.visibilityFieldLabel}>
+                      <span>Sub Title</span>
+                      <input
+                        className={productPageBundleStyles.visibilityTextInput}
                         value={bundleEmbedSubTitle}
-                        onInput={(e: Event) => { setBundleEmbedSubTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
-                        autoComplete="off"
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setBundleEmbedSubTitle(e.target.value); markAsDirty(); }}
                       />
+                    </label>
+                  </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-text>Display Bundle on</s-text>
-                        {[
-                          { value: "all_products",          label: "All products in bundle"  },
-                          { value: "specific_products",     label: "Specific products"        },
-                          { value: "specific_collections",  label: "Specific collections"     },
-                        ].map(({ value, label }) => (
-                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                            <input
-                              type="radio"
-                              name="embedDisplayOn"
-                              value={value}
-                              checked={bundleEmbedDisplayOn === value}
-                              onChange={() => { setBundleEmbedDisplayOn(value); markAsDirty(); }}
-                            />
-                            <span style={{ fontSize: 14 }}>{label}</span>
-                          </label>
-                        ))}
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilityPanelSection}>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Display Bundle on</h4>
+                    <div className={productPageBundleStyles.visibilityTargetOptions}>
+                      {[
+                        { value: "all_products",          label: "All products in bundle"  },
+                        { value: "specific_products",     label: "Specific products"        },
+                        { value: "specific_collections",  label: "Specific collections"     },
+                      ].map(({ value, label }) => (
+                        <label key={value} className={productPageBundleStyles.visibilityRadioLabel}>
+                          <input
+                            type="radio"
+                            name="embedDisplayOn"
+                            value={value}
+                            checked={bundleEmbedDisplayOn === value}
+                            onChange={() => { setBundleEmbedDisplayOn(value); markAsDirty(); }}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {bundleEmbedDisplayOn === "specific_products" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityProductPicker("embed")}>
+                          Select products
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {bundleEmbedSelectedProducts.map((product: any, index) => (
+                            <div key={getVisibilityResourceId(product) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{product.title ?? "Untitled product"}</span>
+                              <button type="button" onClick={() => removeVisibilityProductTarget("embed", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {bundleEmbedDisplayOn === "specific_collections" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityCollectionPicker("embed")}>
+                          Select collections
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {bundleEmbedCollectionsSelectedData.map((collection: any, index) => (
+                            <div key={getVisibilityResourceId(collection) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{collection.title ?? "Untitled collection"}</span>
+                              <button type="button" onClick={() => removeVisibilityCollectionTarget("embed", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                      <s-checkbox
-                        checked={bundleEmbedAddBrowsedProduct || undefined}
-                        onChange={(e: Event) => { setBundleEmbedAddBrowsedProduct((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      >
-                        Add browsed product to bundle
-                      </s-checkbox>
+                  <label className={productPageBundleStyles.visibilityCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={bundleEmbedAddBrowsedProduct}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setBundleEmbedAddBrowsedProduct(e.target.checked); markAsDirty(); }}
+                    />
+                    <span>Add browsed product to bundle</span>
+                  </label>
+                </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-heading size="small">Put the Bundle Builder at a custom location</s-heading>
-                        <s-text size="small" tone="subdued">Place app block on the theme.</s-text>
-                        <s-button variant="secondary" onClick={handlePlaceWidget}>
-                          Place Block
-                        </s-button>
-                      </s-stack>
-                    </s-stack>
-                  </s-section>
-                </s-stack>
+                <div className={productPageBundleStyles.visibilityPlacementCard}>
+                  <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
+                  <div className={productPageBundleStyles.visibilityPlacementActionRow}>
+                    <span>Place app block on the theme</span>
+                    <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                      Place Block
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

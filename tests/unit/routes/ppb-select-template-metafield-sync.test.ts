@@ -1,7 +1,5 @@
 /**
  * Unit tests -- PPB Select Template metafield sync
- *
- * Spec: test-spec/eb-ui-clone-rewrite.spec.md
  */
 
 import { handleUpdateBundleDesignTemplate } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";

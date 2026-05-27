@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 05:48 IST
+**Last Updated:** 2026-05-27 06:17 IST
 
 ## Overview
 
@@ -12,6 +12,29 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 06:09 IST - PPB Bundle Visibility picker payload gap found
+- Live Chrome save proof for a Widget-specific product target failed with a 500 response because `bundle_ui_config` exceeded Shopify's 64 KB metafield limit (`137,538` bytes) after the route serialized the full App Bridge product picker object.
+- Captured failed save request/response outside the worktree at `/private/tmp/wpb-ppb-bundle-widget-specific-product-save-500-2026-05-27.network-request` and `/private/tmp/wpb-ppb-bundle-widget-specific-product-save-500-2026-05-27.network-response`.
+- Next edit: add a RED source contract requiring compact product/collection visibility references, patch the picker normalizers/build path, rerun focused tests/build, and retry the live save.
+
+### 2026-05-27 06:14 IST - PPB Bundle Widget compact save proof captured
+- Added RED-to-green coverage requiring Bundle Visibility App Bridge picker selections to be compacted before save, with no raw product/collection object spreads in the persisted config path.
+- Patched Product Page Bundle Visibility product/collection normalizers and the save builder so loaded raw selections and new picker selections are rewritten to compact ID/handle/title/image references before `bundleUpsellConfig` is submitted.
+- Retried the same Widget-specific product save in Chrome after a hard reload; the compact request returned 200 with `bundleUpsellConfig` reduced to `1,801` bytes and saved proof at `/private/tmp/wpb-ppb-bundle-widget-specific-product-save-compact-200-2026-05-27.network-request`, `/private/tmp/wpb-ppb-bundle-widget-specific-product-save-compact-200-2026-05-27.network-response`, and `/private/tmp/wpb-ppb-bundle-widget-specific-product-compact-save-2026-05-27.png`.
+- Updated the evidence manifest rows `ppb-visibility` and `ppb-widget` to partial with the new Admin/save proof while keeping storefront/runtime/mobile proof open.
+- Next: run focused PPB visibility/save tests, modified-file lint, build, competitor-reference scan, graph rebuild, and commit this Bundle Visibility Admin/persistence slice.
+
+### 2026-05-27 06:17 IST - PPB Bundle Visibility slice verified before commit
+- Verification passed: `npx jest tests/unit/routes/ppb-bundle-visibility-ui-contract.test.ts tests/unit/routes/ppb-save-bundle.test.ts --runInBand` with 38 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild via the graphify pipx venv.
+- The first graph rebuild command using system `python3` failed because the `graphify` module is not installed there; reran successfully with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python`.
+- Removed a stale test header comment that referenced the docs-only clone issue slug so the code/test competitor-reference scan stays clean.
+- Next: stage the Product Page configure route/CSS, tests, issue log, manifest, test spec, and graph outputs, then commit with the required issue prefix.
+
+### 2026-05-27 05:53 IST - PPB Bundle Visibility visual and picker slice started
+- Continuing the requested Discount & Pricing plus Bundle Visibility clone work from the committed Product Page direct-contract wiring.
+- Scope for this slice: Product Page Bundle Visibility overview, Widget, and Embed Admin surfaces, current-state product/collection targeting controls, and source-level visual markers needed for EB-style card/button/layout parity.
+- Next: re-read the evidence and graph context, add RED route/source tests for the missing visual and picker contracts, patch the route/CSS, verify locally, then capture Chrome proof before committing.
 
 ### 2026-05-27 05:28 IST - Discount & Pricing plus Bundle Visibility parity slice started
 - User requested a 100% EB copy for Discount & Pricing and Bundle Visibility, with permission to use non-Polaris controls where Polaris prevents exact parity.
