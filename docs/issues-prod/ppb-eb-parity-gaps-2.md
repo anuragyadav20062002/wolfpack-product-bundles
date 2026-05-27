@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 16:55 IST
+**Last Updated:** 2026-05-28 17:10 IST
 
 ## Overview
 
@@ -41,6 +41,10 @@ UI parity gaps identified:
 - Replaced collapsed readiness trigger wrapper with a semantic `<button type="button">`.
 - Added button reset styling to keep existing visual treatment while improving native accessibility behavior.
 - Updated overlay interaction contract test to reflect button-based trigger semantics.
+
+### 2026-05-28 17:10 IST - Contract test assertion cleanup
+- Removed brittle assertion patterns in readiness overlay contract test.
+- Test now validates stable trigger semantics (`type`, `data-tour-target`, `aria-label`) without formatting-sensitive matching.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
