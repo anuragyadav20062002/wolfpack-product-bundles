@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 16:35 IST
+**Last Updated:** 2026-05-28 16:45 IST
 
 ## Overview
 
@@ -30,6 +30,12 @@ UI parity gaps identified:
   - Added label/aria support for readiness items.
   - Added button reset styles in `BundleReadinessOverlay.module.css` to keep the same visual treatment.
 - This closes the interaction path gap for Gate item activation via keyboard while waiting on full Chrome E2E pass.
+
+### 2026-05-28 16:45 IST - Add readiness overlay contract test
+- Added `tests/unit/bundle-readiness-overlay-contract.test.ts` to lock keyboard/click contract coverage for:
+  - item rows as buttons with `onClick` + `onKeyDown`
+  - Enter/Space activation path
+  - collapsed trigger role/tab/keyboard behavior
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
