@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:32 IST
+**Last Updated:** 2026-05-27 08:35 IST
 
 ## Overview
 
@@ -22,6 +22,11 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Added `tests/unit/routes/step-setup-category-content-ui-contract.test.ts` to require visible Product Page `Category Name` / category Multi Language / `Category Title` ordering, direct `StepCategory[].title` updates, variant-display placement after product/collection selection controls, and explicit `title: ""` for newly added categories.
 - Patched the Product Page configure route to render the visible Category Title input and moved the category variant-display checkbox below the tabbed product/collection controls. Added local CSS module labels/spacing for the evidenced field stack.
 - Verification passed: focused Step Setup/PPB save Jest suite with 47 tests, TS/TSX modified-file ESLint with 0 errors, code/test competitor-reference scan with no matches, and `npm run build`. The first lint attempt included a CSS module and failed because the repo ESLint config is not configured for `.css`; rerun excluded CSS and the production build covered the CSS module.
+
+### 2026-05-27 08:35 IST - PPB Step Setup category title SIT deploy blocked by Shopify device login
+- Committed the verified category-title slice as `96722a7e`.
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `KTXW-WNQX`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin/save proof for the category-title slice remains pending after an authenticated deploy.
 
 ### 2026-05-27 08:20 IST - Step Setup action-order parity slice started
 - Re-read the captured FPB and PPB Step Setup screenshots from `/private/tmp/eb-complete-configure-audit-2026-05-25/`: `fpb-admin-step-setup-after-save.png` and `ppb-admin-step-setup-products-selected.png`.
