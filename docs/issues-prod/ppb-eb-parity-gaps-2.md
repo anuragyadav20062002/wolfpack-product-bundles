@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-29 00:14 IST
+**Last Updated:** 2026-05-29 00:50 IST
 
 ## Overview
 
@@ -86,6 +86,20 @@ UI parity gaps identified:
 ### 2026-05-29 00:14 IST - PPB type cleanup for admin-open callback path
 - Removed stale `shop` prop from `BundleProductCardProps` since card admin navigation is now callback-driven.
 - Keeps the card contract aligned with helper-based admin navigation only.
+
+### 2026-05-28 05:14 IST - Readiness gate product source fix
+- Fixed readiness gate product detection in PPB/FPB configure routes.
+- `hasProducts` now counts both legacy `StepProduct` and `StepCategory[].products` so "Minimum 3 Products Added" can complete for category-based setup.
+- This aligns gate behavior with current EB-style category flow and removes false incomplete states after category migration.
+
+### 2026-05-28 23:42 IST - FPB Discount Rules row parity (gray rule card)
+- Repaired Full Page configure Discount & Pricing BXY layout to match PPB EB parity shape:
+  - Added FPB `bxyRuleBody` wrapper inside rule cards.
+  - Added FPB `bxyRewardGrid` wrapper for the 3 reward controls (Discount value / Discount type / Apply Discount to).
+  - Added matching FPB CSS declarations (`bxyRuleBody`, `bxyRewardGrid`), so the Discount Rules gray box aligns with EB-style row spacing.
+- Updated files:
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+  - `app/styles/routes/full-page-bundle-configure.module.css`
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 

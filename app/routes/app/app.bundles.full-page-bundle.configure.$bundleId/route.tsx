@@ -1648,9 +1648,13 @@ export default function ConfigureBundleFlow() {
   ]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
-    const hasProducts = stepsState.steps.some((step) =>
-      Array.isArray(step.StepProduct) && step.StepProduct.length > 0
-    );
+    const hasProducts = stepsState.steps.some((step) => {
+      const hasLegacyProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0;
+      const categoryProducts = Array.isArray((step as any).StepCategory)
+        ? ((step as any).StepCategory as any[]).some((category) => Array.isArray(category.products) && category.products.length > 0)
+        : false;
+      return hasLegacyProducts || categoryProducts;
+    });
     const hasBundleVisibility = Boolean(bundle.shopifyPageId || bundle.shopifyPageHandle || formState.bundleStatus === "active");
     const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
 
@@ -4021,7 +4025,7 @@ export default function ConfigureBundleFlow() {
                             </div>
 
                             {pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? (
-                              <s-stack direction="block" gap="small">
+                              <div className={fullPageBundleStyles.bxyRuleBody}>
                                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer buys</p>
                                 <s-number-field
                                   label="Minimum quantity of items"
@@ -4041,7 +4045,7 @@ export default function ConfigureBundleFlow() {
                                   })}
                                   min="1"
                                 />
-                                <s-stack direction="inline" gap="small-100">
+                                <div className={fullPageBundleStyles.bxyRewardGrid}>
                                   <s-number-field
                                     label="Discount value"
                                     value={String(rule.discountValue ?? 0)}
@@ -4070,8 +4074,8 @@ export default function ConfigureBundleFlow() {
                                     <s-option value="lowest_priced">The lowest priced items</s-option>
                                     <s-option value="latest_added">The latest added items</s-option>
                                   </s-select>
-                                </s-stack>
-                              </s-stack>
+                                </div>
+                              </div>
                             ) : (
                               <s-stack direction="block" gap="small-100">
                                 {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
