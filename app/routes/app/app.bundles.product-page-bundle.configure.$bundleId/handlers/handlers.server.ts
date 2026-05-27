@@ -40,6 +40,10 @@ import { BundleStatus, BundleType } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/category-persistence";
 import { formatStepCategoryForRuntime } from "../../../../lib/bundle-config/category-runtime";
+import {
+  normalizePricingDisplayOptions,
+  serializeBoxSelectionFromPricingDisplayOptions,
+} from "../../../../lib/pricing-display-options";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
 import { buildBundleProductDescriptionHtml } from "../../../../lib/bundle-product-description.server";
 import {
@@ -395,6 +399,10 @@ function buildBundleBaseConfig(
     individualSellingPlanSelection?: unknown;
     validateQuantityPerProduct?: unknown;
     useSingleStepCategoriesAsBundleSteps?: boolean | null;
+    pricing?: {
+      displayOptions?: unknown;
+      messages?: unknown;
+    } | null;
   },
   stepsData: any[],
   stepConditionsData: Record<string, any[]>,
@@ -430,8 +438,14 @@ function buildBundleBaseConfig(
     })) : [],
   }));
 
-  const firstRuleId = discountData.discountRules?.[0]?.id;
-  const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+  const savedPricingMessages = safeJsonParse(updatedBundle.pricing?.messages, {});
+  const pricingDisplayOptions = updatedBundle.pricing?.displayOptions
+    ?? discountData.displayOptions
+    ?? savedPricingMessages.displayOptions
+    ?? null;
+  const pricingRuleMessages = savedPricingMessages.ruleMessages ?? discountData.ruleMessages ?? {};
+  const firstRuleId = discountData.discountRules?.[0]?.id ?? Object.keys(pricingRuleMessages)[0];
+  const firstRuleMsg = firstRuleId && pricingRuleMessages?.[firstRuleId];
 
   return {
     bundleId: updatedBundle.id,
@@ -466,10 +480,18 @@ function buildBundleBaseConfig(
       method: discountData.discountType,
       rules: (discountData.discountRules || []).map(buildRuntimePricingRule),
       display: { showFooter: discountData.showFooter !== false },
+      displayOptions: pricingDisplayOptions,
       messages: {
         progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
         qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
         showDiscountMessaging: discountData.discountMessagingEnabled || false,
+        showDiscountDisplay: savedPricingMessages.showDiscountDisplay ?? true,
+        ruleMessages: pricingRuleMessages,
+        successMessage: savedPricingMessages.successMessage ?? discountData.successMessage ?? null,
+        successMessageByLocale: savedPricingMessages.successMessageByLocale ?? discountData.successMessageByLocale ?? null,
+        displayOptions: pricingDisplayOptions,
+        tierTextByRuleId: savedPricingMessages.tierTextByRuleId ?? discountData.tierTextByRuleId ?? null,
+        tierTextByLocaleByRuleId: savedPricingMessages.tierTextByLocaleByRuleId ?? discountData.tierTextByLocaleByRuleId ?? null,
         showInCart: true,
       },
     },
@@ -620,7 +642,14 @@ function buildSyncPricingConfig(pricing: any): Record<string, unknown> | null {
       progress: syncFirstRuleMsg?.discountText || "Add {conditionText} to get {discountText}",
       qualified: syncFirstRuleMsg?.successMessage || "Congratulations! You got {discountText}",
       showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
+      ruleMessages: syncRuleMessages,
+      successMessage: syncMsgs.successMessage ?? null,
+      successMessageByLocale: syncMsgs.successMessageByLocale ?? null,
+      displayOptions: pricing.displayOptions ?? syncMsgs.displayOptions ?? null,
+      tierTextByRuleId: syncMsgs.tierTextByRuleId ?? null,
+      tierTextByLocaleByRuleId: syncMsgs.tierTextByLocaleByRuleId ?? null,
     },
+    displayOptions: pricing.displayOptions ?? syncMsgs.displayOptions ?? null,
   };
 }
 
@@ -926,6 +955,27 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       AppLogger.debug("[FIXED_BUNDLE_PRICE] Stored fixed price for runtime calculation:", processedRules);
     }
 
+    const normalizedPricingDisplayOptions = normalizePricingDisplayOptions({
+      rules: discountData.discountRules || [],
+      messages: { displayOptions: discountData.displayOptions || null },
+      showProgressBar: discountData.displayOptions?.progressBar?.enabled === true,
+      method: discountData.discountType,
+    });
+    const directBoxSelection = discountData.discountEnabled === true
+      && discountData.discountType !== "buy_x_get_y"
+      ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
+      : null;
+    const pricingMessages = {
+      showDiscountDisplay: true,
+      showDiscountMessaging: discountData.discountMessagingEnabled || false,
+      ruleMessages: discountData.ruleMessages || {},
+      successMessage: discountData.successMessage ?? null,
+      successMessageByLocale: discountData.successMessageByLocale ?? null,
+      displayOptions: discountData.displayOptions ?? null,
+      tierTextByRuleId: discountData.tierTextByRuleId ?? null,
+      tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId ?? null,
+    };
+
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
     if (bundleStatus === BundleStatus.DRAFT && stepsData && stepsData.length > 0) {
@@ -979,6 +1029,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
         ...parsePPBBundleSettings(formData),
+        boxSelection: directBoxSelection,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -1059,11 +1110,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
                 displayOptions: discountData.displayOptions ?? null,
-                messages: {
-                  showDiscountDisplay: true,
-                  showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
-                }
+                messages: pricingMessages,
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               },
               update: {
                 enabled: discountData.discountEnabled,
@@ -1071,11 +1119,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
                 displayOptions: discountData.displayOptions ?? null,
-                messages: {
-                  showDiscountDisplay: true,
-                  showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
-                }
+                messages: pricingMessages,
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               }
             }
           }

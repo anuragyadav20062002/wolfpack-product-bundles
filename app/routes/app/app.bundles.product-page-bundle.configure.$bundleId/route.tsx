@@ -560,7 +560,7 @@ export default function ConfigureBundleFlow() {
   const [giftMessageSendEmail, setGiftMessageSendEmail] = useState<boolean>((bundle as any).giftMessageSendEmail ?? false);
 
   // FR-03: Display options state (Quantity Options + Progress Bar)
-  const _savedDisplayOpts = (bundle as any).bundlePricing?.displayOptions ?? {};
+  const _savedDisplayOpts = (bundle as any).pricing?.displayOptions ?? {};
   const savedQuantityOptionsByRuleId = (_savedDisplayOpts?.bundleQuantityOptions?.optionsByRuleId ?? {}) as Record<string, { label?: string; subtext?: string }>;
   const [qtyOptionsEnabled, setQtyOptionsEnabled] = useState<boolean>(_savedDisplayOpts?.bundleQuantityOptions?.enabled === true);
   const [qtyOptionsDefaultRuleId, setQtyOptionsDefaultRuleId] = useState<string | null>(_savedDisplayOpts?.bundleQuantityOptions?.defaultRuleId ?? null);

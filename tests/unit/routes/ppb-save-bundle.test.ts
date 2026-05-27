@@ -455,6 +455,165 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     const pricingRules = updateCall.data.pricing.upsert.create.rules;
     expect(pricingRules[0].fixedBundlePrice).toBe(79);
   });
+
+  it("derives direct boxSelection from Product Page quantity discount display options", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      displayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "5% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{conditionText}} to unlock {{discountText}}",
+          successText: "{{discountText}} unlocked",
+        },
+      },
+    });
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ discountData: JSON.stringify(discountData) }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.boxSelection).toEqual({
+      isEnabled: true,
+      validateBoxSelectionQuantity: false,
+      rules: [
+        {
+          ruleId: "rule-2",
+          boxQuantity: 2,
+          boxLabel: "Box of 2",
+          boxSubtext: "5% off",
+          isDefaultSelected: true,
+        },
+      ],
+    });
+    expect(updateCall.data.pricing.upsert.create.displayOptions).toEqual(discountData.displayOptions);
+  });
+
+  it("clears direct boxSelection for Product Page Buy X, get Y discounts", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "buy_x_get_y",
+      discountRules: [
+        {
+          id: "rule-bxy",
+          conditionType: "quantity",
+          conditionValue: 2,
+          customerBuys: 2,
+          customerGets: 1,
+          discountValue: 100,
+          bxyDiscountType: "percentage",
+          bxyApplyMode: "lowest_priced",
+        },
+      ],
+      displayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-bxy",
+          optionsByRuleId: {
+            "rule-bxy": { label: "Box of 2", subtext: "100% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+      },
+    });
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ discountData: JSON.stringify(discountData) }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.boxSelection).toBeNull();
+  });
+
+  it("persists Product Page discount success, tier, display, and locale message contracts", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        { id: "rule-2", conditionType: "quantity", conditionValue: 2, discountValue: 5 },
+      ],
+      discountMessagingEnabled: true,
+      ruleMessages: {
+        "rule-2": {
+          discountText: "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
+          successMessage: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+        },
+      },
+      successMessage: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+      successMessageByLocale: {
+        fr: "Votre remise est appliquee.",
+      },
+      tierTextByRuleId: {
+        "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
+      },
+      tierTextByLocaleByRuleId: {
+        fr: { "rule-2": { tierText: "Pack de 2", tierSubtext: "Economisez 5%" } },
+      },
+      ruleMessagesByLocale: {
+        fr: {
+          "rule-2": {
+            discountText: "Ajoutez {{discountConditionDiff}} produit(s).",
+            successMessage: "Votre remise est appliquee.",
+          },
+        },
+      },
+      displayOptions: {
+        bundleQuantityOptions: { enabled: false, defaultRuleId: null, optionsByRuleId: {}, optionsByLocaleByRuleId: {} },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{conditionText}} to unlock {{discountText}}",
+          successText: "{{discountText}} unlocked",
+        },
+      },
+    });
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ discountData: JSON.stringify(discountData) }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.pricing.upsert.create.messages).toEqual({
+      showDiscountDisplay: true,
+      showDiscountMessaging: true,
+      ruleMessages: discountData.ruleMessages,
+      successMessage: discountData.successMessage,
+      successMessageByLocale: discountData.successMessageByLocale,
+      displayOptions: discountData.displayOptions,
+      tierTextByRuleId: discountData.tierTextByRuleId,
+      tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId,
+    });
+    expect(updateCall.data.pricing.upsert.create.ruleMessagesByLocale).toEqual(discountData.ruleMessagesByLocale);
+    expect(updateCall.data.pricing.upsert.update.messages).toEqual(updateCall.data.pricing.upsert.create.messages);
+    expect(updateCall.data.pricing.upsert.update.ruleMessagesByLocale).toEqual(discountData.ruleMessagesByLocale);
+  });
 });
 
 describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)", () => {
@@ -956,6 +1115,112 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
               discountValue: 5,
             }),
           ],
+        }),
+      }),
+    );
+  });
+
+  it("passes Product Page BQO and discount display contracts into bundle product metafield sync", async () => {
+    const boxSelection = {
+      isEnabled: true,
+      validateBoxSelectionQuantity: false,
+      rules: [
+        {
+          ruleId: "rule-2",
+          boxQuantity: 2,
+          boxLabel: "Box of 2",
+          boxSubtext: "5% off",
+          isDefaultSelected: true,
+        },
+      ],
+    };
+    const displayOptions = {
+      bundleQuantityOptions: {
+        enabled: true,
+        defaultRuleId: "rule-2",
+        optionsByRuleId: {
+          "rule-2": { label: "Box of 2", subtext: "5% off" },
+        },
+        optionsByLocaleByRuleId: {},
+      },
+      progressBar: {
+        enabled: true,
+        type: "step_based",
+        progressText: "Add {{conditionText}} to unlock {{discountText}}",
+        successText: "{{discountText}} unlocked",
+      },
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        boxSelection,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+        pricing: {
+          enabled: true,
+          method: "percentage_off",
+          rules: [
+            { id: "rule-2", conditionType: "quantity", conditionValue: 2, discountValue: 5 },
+          ],
+          showFooter: true,
+          showProgressBar: true,
+          displayOptions,
+          messages: {
+            showDiscountMessaging: true,
+            ruleMessages: {
+              "rule-2": {
+                discountText: "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!",
+                successMessage: "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.",
+              },
+            },
+            displayOptions,
+            tierTextByRuleId: {
+              "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
+            },
+          },
+        },
+      }),
+    );
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        { id: "rule-2", conditionType: "quantity", conditionValue: 2, discountValue: 5 },
+      ],
+      discountMessagingEnabled: true,
+      displayOptions,
+    });
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      discountData: JSON.stringify(discountData),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        boxSelection,
+        pricing: expect.objectContaining({
+          displayOptions,
+          messages: expect.objectContaining({
+            showDiscountMessaging: true,
+            displayOptions,
+            tierTextByRuleId: {
+              "rule-2": { tierText: "2 Pack", tierSubtext: "Save 5%" },
+            },
+          }),
         }),
       }),
     );

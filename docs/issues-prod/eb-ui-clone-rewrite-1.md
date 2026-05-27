@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 05:24 IST
+**Last Updated:** 2026-05-27 05:41 IST
 
 ## Overview
 
@@ -12,6 +12,17 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 05:28 IST - Discount & Pricing plus Bundle Visibility parity slice started
+- User requested a 100% EB copy for Discount & Pricing and Bundle Visibility, with permission to use non-Polaris controls where Polaris prevents exact parity.
+- Scope: FPB and PPB Admin sections, save payload/DB/metafield wiring, dependency gates, storefront discount/visibility behavior, desktop/mobile/cart proof where relevant.
+- Next: re-read EB reference/audit evidence, inspect current WPB contracts, add RED tests for the missing controls and gates, then implement and commit verified slices.
+
+### 2026-05-27 05:40 IST - PPB Discount display persistence slice green
+- Added Product Page Discount & Pricing TDD coverage for Bundle Quantity Options direct `boxSelection`, BXY `boxSelection` clearing, discount success/tier/locale message persistence, display-options hydration from `bundle.pricing`, and post-save bundle-product metafield sync.
+- Wired the Product Page save handler to persist the direct BQO contract, rich pricing message contract, `ruleMessagesByLocale`, and runtime/metafield `displayOptions` without using a stale pricing alias.
+- Verification passed: `npx jest tests/unit/routes/ppb-save-bundle.test.ts tests/unit/routes/discount-pricing-ui-contract.test.ts --runInBand`; modified-file ESLint passed with 0 errors; competitor-reference scan passed for code/test/runtime paths; `npm run build` passed; graph rebuild completed.
+- Next: commit this persistence slice, then continue with Bundle Visibility and exact Admin visual parity for both FPB and PPB.
 
 ### 2026-05-27 01:31 IST - SIT cart transform deploy authorized
 - User explicitly authorized running the `package.json` SIT deploy command for the Cart Transform function.

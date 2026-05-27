@@ -77,6 +77,16 @@ describe.each(Object.entries(sources))("%s Discount & Pricing live UI contract",
     expect(deps).toContain("successMessageByLocale");
   });
 
+  it("hydrates saved display options from the loaded pricing relation", () => {
+    if (_name === "ppb") {
+      expect(source).toContain("(bundle as any).pricing?.displayOptions");
+      expect(source).not.toContain("(bundle as any).bundlePricing?.displayOptions");
+      return;
+    }
+
+    expect(source).toContain("pricingState.pricingDisplayOptions");
+  });
+
   it("implements the translated box-label modal contract", () => {
     expect(source).toContain("bundleQuantityMultiLangModalRef");
     expect(source).toContain('id="discount-bundle-quantity-language-modal"');
@@ -134,9 +144,14 @@ describe("product-page Discount & Pricing Admin layout contract", () => {
   });
 
   it("keeps the Product Page configure canvas left-aligned and wide enough for the evidence-backed two-column shell", () => {
-    expect(ppbStylesSource).toContain("max-width: 994px;");
-    expect(ppbStylesSource).toContain("margin: 0;");
-    expect(ppbStylesSource).not.toContain("margin: 0 auto;");
+    const editCanvasBlock = ppbStylesSource.slice(
+      ppbStylesSource.indexOf(".editCanvas {"),
+      ppbStylesSource.indexOf("}", ppbStylesSource.indexOf(".editCanvas {")),
+    );
+
+    expect(editCanvasBlock).toContain("max-width: 994px;");
+    expect(editCanvasBlock).toContain("margin: 0;");
+    expect(editCanvasBlock).not.toContain("margin: 0 auto;");
     expect(ppbStylesSource).toContain("margin: 22px 0 35px;");
     expect(ppbStylesSource).toContain("flex: 0 0 310px;");
     expect(ppbStylesSource).toContain("min-width: 310px;");

@@ -190,6 +190,9 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 1 | BXY reward controls row | Product Page Discount & Pricing with Buy X, get Y | Discount value, Discount type, and Apply Discount to share a single three-column row | Captured Admin evidence shows these controls horizontally grouped. |
 | 2 | Product Page edit canvas alignment | Product Page configure shell | left-aligned wider canvas, not centered narrow canvas | Captured Admin evidence starts the setup rail near the app content edge. |
 | 3 | Product Page shell header | Product Page configure shell | Shopify app title row plus Configure Bundle Flow header, readiness score, and preview action; no duplicate bundle-name title row or top placement warning | Bundle Settings evidence shows the default-position shell header. |
+| 4 | Product Page BQO direct persistence | Percentage quantity rule with Bundle Quantity Options enabled | save derives and persists top-level `boxSelection` with rule quantity, label, subtext, default state, and `validateBoxSelectionQuantity:false` | EB persists direct box-selection data; BXY must clear this contract. |
+| 5 | Product Page discount message persistence | Discount Messaging, success copy, tier text, and locale maps | save stores success message, tier text maps, display options, and `ruleMessagesByLocale` in `BundlePricing` | Required for Admin reload and storefront runtime parity. |
+| 6 | Product Page display-options hydration | saved `BundlePricing.displayOptions` | route hydrates BQO/progress state from `bundle.pricing.displayOptions`, not a stale `bundlePricing` alias | Existing source drops saved BQO UI state on reload. |
 
 ### PPB Place Widget
 
