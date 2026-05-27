@@ -156,18 +156,11 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
         </div>
 
         {(!hideCollapsedTrigger || expanded) && (
-          <div
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
             data-tour-target="fpb-readiness-score"
             className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
             onClick={toggle}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                toggle();
-              }
-            }}
             aria-label="Toggle readiness score"
           >
             {donut}
@@ -180,7 +173,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
               </div>
             )}
             {chevron}
-          </div>
+          </button>
         )}
       </div>
     </>

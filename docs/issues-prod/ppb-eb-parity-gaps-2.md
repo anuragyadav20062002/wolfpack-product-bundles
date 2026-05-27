@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 16:45 IST
+**Last Updated:** 2026-05-28 16:55 IST
 
 ## Overview
 
@@ -36,6 +36,11 @@ UI parity gaps identified:
   - item rows as buttons with `onClick` + `onKeyDown`
   - Enter/Space activation path
   - collapsed trigger role/tab/keyboard behavior
+
+### 2026-05-28 16:55 IST - Collapsed trigger semantic cleanup
+- Replaced collapsed readiness trigger wrapper with a semantic `<button type="button">`.
+- Added button reset styling to keep existing visual treatment while improving native accessibility behavior.
+- Updated overlay interaction contract test to reflect button-based trigger semantics.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 

@@ -23,6 +23,8 @@
 
 /* Collapsed trigger — compact pill (gauge + chevron only) */
 .collapsed {
+  appearance: none;
+  font: inherit;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -34,6 +36,9 @@
   user-select: none;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
   transition: box-shadow 0.15s, border-color 0.15s;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
 }
 
 .collapsed:hover {
