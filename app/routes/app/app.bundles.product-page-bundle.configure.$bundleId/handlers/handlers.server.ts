@@ -25,7 +25,7 @@ import {
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
-import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings } from "./parsers";
+import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings, parseBundleDesignTemplate } from "./parsers";
 import {
   normaliseShopifyProductId,
   safeJsonParse,
@@ -38,9 +38,27 @@ import {
 } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
+import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/category-persistence";
+import { formatStepCategoryForRuntime } from "../../../../lib/bundle-config/category-runtime";
+import {
+  normalizePricingDisplayOptions,
+  serializeBoxSelectionFromPricingDisplayOptions,
+} from "../../../../lib/pricing-display-options";
 import { syncThemeColors } from "../../../../services/theme-colors.server";
 import { buildBundleProductDescriptionHtml } from "../../../../lib/bundle-product-description.server";
+import {
+  buildBundleProductMediaFileUpdates,
+  buildBundleProductPlaceholderMediaInput,
+  hasBundleProductPlaceholderMedia,
+  type BundleProductMediaNode,
+} from "../../../../lib/bundle-product-media.server";
+import { buildGeneratedBundleProductMetadata } from "../../../../lib/bundle-product-data.server";
 import { publishProductToSalesChannels } from "../../../../services/shopify-publications.server";
+import {
+  deriveCommonSellingPlanGroups,
+  extractSellingPlanValidationSources,
+  SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
+} from "../../../../lib/bundle-config/product-page-admin-sections";
 
 // Re-export shared handlers so the barrel (index.ts) still works
 export {
@@ -55,6 +73,188 @@ export {
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
+type ProductSyncResult = {
+  handle?: string | null;
+};
+
+type ProductSyncOptions = {
+  shopName?: string | null;
+  mediaNodes?: BundleProductMediaNode[];
+  skipMediaSync?: boolean;
+};
+
+async function loadShopName(admin: ShopifyAdmin): Promise<string | null> {
+  const GET_SHOP_NAME = `
+    query GetShopName {
+      shop {
+        name
+      }
+    }
+  `;
+
+  const response = await admin.graphql(GET_SHOP_NAME);
+  const data = await response.json() as { data?: { shop?: { name?: string | null } }; errors?: unknown[] };
+
+  if (data.errors?.length) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to fetch shop name for generated product vendor:", {
+      component: "app.bundles.product-page.configure",
+    }, data.errors);
+    return null;
+  }
+
+  return data.data?.shop?.name?.trim() || null;
+}
+
+async function loadBundleProductMediaNodes(
+  admin: ShopifyAdmin,
+  productId: string,
+): Promise<BundleProductMediaNode[]> {
+  const GET_BUNDLE_PRODUCT_MEDIA = `
+    query GetBundleProductMedia($id: ID!) {
+      product(id: $id) {
+        id
+        media(first: 10) {
+          nodes {
+            ... on MediaImage {
+              id
+              alt
+              image {
+                url
+                altText
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(GET_BUNDLE_PRODUCT_MEDIA, {
+    variables: { id: productId },
+  });
+  const data = await response.json() as { data?: { product?: { media?: { nodes?: BundleProductMediaNode[] } } }; errors?: unknown[] };
+  if (data.errors?.length) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to fetch generated product media:", {
+      component: "app.bundles.product-page.configure",
+      productId,
+    }, data.errors);
+    return [];
+  }
+
+  return data.data?.product?.media?.nodes || [];
+}
+
+async function addBundleProductPlaceholderMedia(
+  admin: ShopifyAdmin,
+  productId: string,
+  bundleName: string,
+): Promise<BundleProductMediaNode[]> {
+  const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundleName);
+  if (!mediaInput) {
+    return [];
+  }
+
+  const UPDATE_BUNDLE_PRODUCT_MEDIA = `
+    mutation AddBundleProductMedia($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+      productUpdate(product: $product, media: $media) {
+        product {
+          id
+          media(first: 10) {
+            nodes {
+              ... on MediaImage {
+                id
+                alt
+                image {
+                  url
+                  altText
+                }
+              }
+            }
+          }
+        }
+        userErrors { field message }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(UPDATE_BUNDLE_PRODUCT_MEDIA, {
+    variables: {
+      product: { id: productId },
+      media: mediaInput,
+    },
+  });
+  const data = await response.json() as {
+    data?: { productUpdate?: { product?: { media?: { nodes?: BundleProductMediaNode[] } }; userErrors?: Array<{ field?: string[]; message: string }> } };
+    errors?: unknown[];
+  };
+  const userErrors = data.data?.productUpdate?.userErrors || [];
+
+  if (data.errors?.length || userErrors.length > 0) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to add generated product media:", {
+      component: "app.bundles.product-page.configure",
+      productId,
+    }, { errors: data.errors || userErrors });
+    return [];
+  }
+
+  return data.data?.productUpdate?.product?.media?.nodes || [];
+}
+
+async function updateBundleProductMediaFiles(
+  admin: ShopifyAdmin,
+  files: Array<{ id: string; alt?: string; referencesToRemove?: string[] }>,
+): Promise<void> {
+  if (files.length === 0) return;
+
+  const UPDATE_BUNDLE_PRODUCT_MEDIA_FILES = `
+    mutation UpdateBundleProductMediaFiles($files: [FileUpdateInput!]!) {
+      fileUpdate(files: $files) {
+        files { id alt }
+        userErrors { field message code }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(UPDATE_BUNDLE_PRODUCT_MEDIA_FILES, {
+    variables: { files },
+  });
+  const data = await response.json() as {
+    data?: { fileUpdate?: { userErrors?: Array<{ field?: string[]; message: string; code?: string }> } };
+    errors?: unknown[];
+  };
+  const userErrors = data.data?.fileUpdate?.userErrors || [];
+
+  if (data.errors?.length || userErrors.length > 0) {
+    AppLogger.warn("[PRODUCT_SYNC] Failed to update generated product media files:", {
+      component: "app.bundles.product-page.configure",
+      mediaIds: files.map((file) => file.id),
+    }, { errors: data.errors || userErrors });
+  }
+}
+
+async function syncGeneratedBundleProductMedia(
+  admin: ShopifyAdmin,
+  productId: string,
+  bundleName: string,
+  knownMediaNodes?: BundleProductMediaNode[],
+): Promise<void> {
+  try {
+    let mediaNodes = knownMediaNodes || await loadBundleProductMediaNodes(admin, productId);
+    if (!hasBundleProductPlaceholderMedia(mediaNodes, bundleName)) {
+      const updatedMediaNodes = await addBundleProductPlaceholderMedia(admin, productId, bundleName);
+      mediaNodes = updatedMediaNodes.length > 0 ? updatedMediaNodes : mediaNodes;
+    }
+
+    const fileUpdates = buildBundleProductMediaFileUpdates(productId, mediaNodes, bundleName);
+    await updateBundleProductMediaFiles(admin, fileUpdates);
+  } catch (error) {
+    AppLogger.warn("[PRODUCT_SYNC] Generated product media sync failed:", {
+      component: "app.bundles.product-page.configure",
+      productId,
+    }, error as any);
+  }
+}
+
 /** Sync bundle product status to Shopify. Non-fatal — logs errors but does not throw. */
 async function syncBundleProductToShopify(
   admin: ShopifyAdmin,
@@ -63,19 +263,23 @@ async function syncBundleProductToShopify(
   bundleName: string,
   bundleDescription: string | null,
   bundleId: string,
-): Promise<void> {
+  options: ProductSyncOptions = {},
+): Promise<ProductSyncResult> {
   const shopifyStatus = finalStatus === BundleStatus.UNLISTED ? "ACTIVE" : finalStatus.toUpperCase();
   const descriptionHtml = buildBundleProductDescriptionHtml({
     bundleName,
     customDescription: bundleDescription,
     status: finalStatus,
   });
+  const shopName = options.shopName !== undefined ? options.shopName : await loadShopName(admin);
+  const productMetadata = buildGeneratedBundleProductMetadata({ bundleName, shopName });
+  const syncResult: ProductSyncResult = {};
   AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${shopifyProductId}`);
 
   const UPDATE_PRODUCT_STATUS = `
-    mutation UpdateProductStatus($input: ProductInput!) {
-      productUpdate(input: $input) {
-        product { id status }
+    mutation UpdateProductStatus($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        product { id status handle vendor productType }
         userErrors { field message }
       }
     }
@@ -84,11 +288,12 @@ async function syncBundleProductToShopify(
   try {
     const response = await admin.graphql(UPDATE_PRODUCT_STATUS, {
       variables: {
-        input: {
-          id: shopifyProductId,
-          status: shopifyStatus,
-          descriptionHtml,
-        },
+          product: {
+            id: shopifyProductId,
+            ...productMetadata,
+            status: shopifyStatus,
+            descriptionHtml,
+          },
       },
     });
     const responseData = await response.json() as { data: Record<string, any>; errors?: unknown[] };
@@ -104,6 +309,7 @@ async function syncBundleProductToShopify(
         productId: shopifyProductId, targetStatus: shopifyStatus,
       }, { errors: statusUserErrors });
     } else {
+      syncResult.handle = responseData.data?.productUpdate?.product?.handle ?? null;
       AppLogger.info("[PRODUCT_SYNC] Successfully synced product status to Shopify", {
         component: "app.bundles.product-page.configure", productId: shopifyProductId,
         requestedStatus: shopifyStatus, actualStatus: responseData.data?.productUpdate?.product?.status,
@@ -113,8 +319,9 @@ async function syncBundleProductToShopify(
     if (finalStatus === BundleStatus.UNLISTED && statusUserErrors.length === 0) {
       const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
         variables: {
-          input: {
+          product: {
             id: shopifyProductId,
+            ...productMetadata,
             status: "UNLISTED",
             descriptionHtml,
           },
@@ -127,7 +334,13 @@ async function syncBundleProductToShopify(
           component: "app.bundles.product-page.configure",
           productId: shopifyProductId,
         }, unlistedErrors);
+      } else {
+        syncResult.handle = unlistedData.data?.productUpdate?.product?.handle ?? syncResult.handle;
       }
+    }
+
+    if (!options.skipMediaSync) {
+      await syncGeneratedBundleProductMedia(admin, shopifyProductId, bundleName, options.mediaNodes);
     }
   } catch (error) {
     AppLogger.error("[PRODUCT_SYNC] Failed to sync product status (exception):", {
@@ -135,11 +348,62 @@ async function syncBundleProductToShopify(
       productId: shopifyProductId, targetStatus: shopifyStatus, bundleId,
     }, error as any);
   }
+
+  return syncResult;
+}
+
+function buildRuntimePricingRule(rule: any): Record<string, unknown> {
+  const flatRule: Record<string, unknown> = {
+    id: rule.id,
+    conditionType: rule.conditionType || "quantity",
+    conditionValue: Number(rule.conditionValue ?? 0) || 0,
+    discountValue: Number(rule.discountValue ?? 0) || 0,
+  };
+
+  if (rule.fixedBundlePrice !== undefined) {
+    flatRule.fixedBundlePrice = Number(rule.fixedBundlePrice) || 0;
+  }
+  if (rule.customerBuys !== undefined) {
+    flatRule.customerBuys = Number(rule.customerBuys) || 0;
+  }
+  if (rule.customerGets !== undefined) {
+    flatRule.customerGets = Number(rule.customerGets) || 0;
+  }
+  if (rule.bxyDiscountType !== undefined) {
+    flatRule.bxyDiscountType = rule.bxyDiscountType;
+  }
+  if (rule.bxyApplyMode !== undefined) {
+    flatRule.bxyApplyMode = rule.bxyApplyMode;
+  }
+
+  return flatRule;
 }
 
 /** Build the base bundle configuration object passed to metafield update functions. */
 function buildBundleBaseConfig(
-  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; templateName: string | null; shopifyProductId: string | null },
+  updatedBundle: {
+    id: string;
+    name: string;
+    description: string | null;
+    status: string;
+    bundleType: string;
+    templateName: string | null;
+    shopifyProductId: string | null;
+    bundleDesignTemplate?: string | null;
+    bundleDesignPresetId?: string | null;
+    defaultProductsData?: unknown;
+    boxSelection?: unknown;
+    bundleUpsellConfig?: unknown;
+    bundleTextConfig?: unknown;
+    discountDisplayOverride?: unknown;
+    individualSellingPlanSelection?: unknown;
+    validateQuantityPerProduct?: unknown;
+    useSingleStepCategoriesAsBundleSteps?: boolean | null;
+    pricing?: {
+      displayOptions?: unknown;
+      messages?: unknown;
+    } | null;
+  },
   stepsData: any[],
   stepConditionsData: Record<string, any[]>,
   discountData: any,
@@ -148,6 +412,7 @@ function buildBundleBaseConfig(
   const optimizedSteps = (stepsData || []).map((step: any) => ({
     id: step.id,
     name: step.name || 'Step',
+    pageTitle: step.pageTitle ?? null,
     minQuantity: parseInt(step.minQuantity) || 1,
     maxQuantity: parseInt(step.maxQuantity) || 1,
     enabled: step.enabled !== false,
@@ -173,8 +438,14 @@ function buildBundleBaseConfig(
     })) : [],
   }));
 
-  const firstRuleId = discountData.discountRules?.[0]?.id;
-  const firstRuleMsg = firstRuleId && discountData.ruleMessages?.[firstRuleId];
+  const savedPricingMessages = safeJsonParse(updatedBundle.pricing?.messages, {});
+  const pricingDisplayOptions = updatedBundle.pricing?.displayOptions
+    ?? discountData.displayOptions
+    ?? savedPricingMessages.displayOptions
+    ?? null;
+  const pricingRuleMessages = savedPricingMessages.ruleMessages ?? discountData.ruleMessages ?? {};
+  const firstRuleId = discountData.discountRules?.[0]?.id ?? Object.keys(pricingRuleMessages)[0];
+  const firstRuleMsg = firstRuleId && pricingRuleMessages?.[firstRuleId];
 
   return {
     bundleId: updatedBundle.id,
@@ -184,20 +455,43 @@ function buildBundleBaseConfig(
     status: updatedBundle.status,
     bundleType: updatedBundle.bundleType,
     templateName: updatedBundle.templateName,
+    bundleDesignTemplate: updatedBundle.bundleDesignTemplate ?? null,
+    bundleDesignPresetId: updatedBundle.bundleDesignPresetId ?? null,
+    bundleDesignTemplateData: updatedBundle.bundleType === "product_page" && updatedBundle.bundleDesignPresetId
+      ? { templateId: updatedBundle.bundleDesignPresetId }
+      : null,
+    defaultProductsData: updatedBundle.defaultProductsData ?? {},
+    boxSelection: updatedBundle.boxSelection ?? null,
+    bundleUpsellConfig: updatedBundle.bundleUpsellConfig ?? null,
+    bundleTextConfig: updatedBundle.bundleTextConfig ?? null,
+    discountDisplayOverride: updatedBundle.discountDisplayOverride ?? null,
+    individualSellingPlanSelection: updatedBundle.individualSellingPlanSelection ?? {
+      isEnabled: false,
+      showFor: "ALL_PRODUCTS",
+    },
+    validateQuantityPerProduct: updatedBundle.validateQuantityPerProduct ?? {
+      isEnabled: false,
+      allowedQuantity: 1,
+    },
+    useSingleStepCategoriesAsBundleSteps: updatedBundle.useSingleStepCategoriesAsBundleSteps ?? false,
     steps: optimizedSteps,
     pricing: {
       enabled: discountData.discountEnabled,
       method: discountData.discountType,
-      rules: (discountData.discountRules || []).map((rule: any) => ({
-        id: rule.id,
-        condition: rule.condition || { type: rule.conditionType || 'quantity', operator: rule.operator || 'gte', value: rule.value || 0 },
-        discount: rule.discount || { method: discountData.discountType, value: rule.discountValue || rule.value || 0 },
-      })),
+      rules: (discountData.discountRules || []).map(buildRuntimePricingRule),
       display: { showFooter: discountData.showFooter !== false },
+      displayOptions: pricingDisplayOptions,
       messages: {
         progress: firstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
         qualified: firstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
         showDiscountMessaging: discountData.discountMessagingEnabled || false,
+        showDiscountDisplay: savedPricingMessages.showDiscountDisplay ?? true,
+        ruleMessages: pricingRuleMessages,
+        successMessage: savedPricingMessages.successMessage ?? discountData.successMessage ?? null,
+        successMessageByLocale: savedPricingMessages.successMessageByLocale ?? discountData.successMessageByLocale ?? null,
+        displayOptions: pricingDisplayOptions,
+        tierTextByRuleId: savedPricingMessages.tierTextByRuleId ?? discountData.tierTextByRuleId ?? null,
+        tierTextByLocaleByRuleId: savedPricingMessages.tierTextByLocaleByRuleId ?? discountData.tierTextByLocaleByRuleId ?? null,
         showInCart: true,
       },
     },
@@ -207,7 +501,348 @@ function buildBundleBaseConfig(
   };
 }
 
+function normalizeSyncVariants(variants: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(variants)) return [];
+
+  return variants
+    .filter((variant: any) => typeof variant?.id === "string" && variant.id.trim() !== "")
+    .map((variant: any) => {
+      const normalized: Record<string, unknown> = { id: variant.id };
+      if (variant.title !== undefined) normalized.title = variant.title;
+      if (variant.price !== undefined) normalized.price = variant.price;
+      if (variant.image !== undefined) normalized.image = variant.image;
+      if (variant.availableForSale !== undefined) normalized.availableForSale = variant.availableForSale;
+      if (variant.available !== undefined) normalized.availableForSale = variant.available;
+      return normalized;
+    });
+}
+
+function normalizeSyncProduct(product: any): Record<string, unknown> | null {
+  if (!product || typeof product !== "object") return null;
+  const id = product.productId ?? product.id ?? product.graphqlId;
+  if (typeof id !== "string" || id.trim() === "") return null;
+
+  return {
+    id,
+    title: product.title || product.name || "Product",
+    imageUrl: product.imageUrl || product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null,
+    variants: normalizeSyncVariants(product.variants),
+  };
+}
+
+function pushUniqueProduct(target: Array<Record<string, unknown>>, seen: Set<string>, product: any) {
+  const normalized = normalizeSyncProduct(product);
+  if (!normalized) return;
+  const id = normalized.id;
+  if (typeof id !== "string" || seen.has(id)) return;
+  seen.add(id);
+  target.push(normalized);
+}
+
+function normalizeSyncCollection(collection: any): Record<string, unknown> | null {
+  if (!collection || typeof collection !== "object") return null;
+  const id = collection.id ?? collection.collectionId ?? collection.handle;
+  if (typeof id !== "string" || id.trim() === "") return null;
+
+  return {
+    id,
+    title: collection.title || collection.name || "Collection",
+    handle: collection.handle ?? null,
+  };
+}
+
+function pushUniqueCollection(target: Array<Record<string, unknown>>, seen: Set<string>, collection: any) {
+  const normalized = normalizeSyncCollection(collection);
+  if (!normalized) return;
+  const key = typeof normalized.id === "string" ? normalized.id : null;
+  if (!key || seen.has(key)) return;
+  seen.add(key);
+  target.push(normalized);
+}
+
+function normalizeSyncCategories(step: any): Array<Record<string, unknown>> {
+  return (Array.isArray(step.StepCategory) ? step.StepCategory : []).map((category: any, index: number) => {
+    const formatted = formatStepCategoryForRuntime(category, index);
+    return {
+      ...formatted,
+      products: Array.isArray(category.products)
+        ? category.products.map(normalizeSyncProduct).filter(Boolean)
+        : [],
+      collections: Array.isArray(formatted.collections)
+        ? formatted.collections.map(normalizeSyncCollection).filter(Boolean)
+        : [],
+    };
+  });
+}
+
+function buildSyncOptimizedSteps(steps: any[]): Array<Record<string, unknown>> {
+  return (steps || []).map((step: any) => {
+    const products: Array<Record<string, unknown>> = [];
+    const collections: Array<Record<string, unknown>> = [];
+    const seenProductIds = new Set<string>();
+    const seenCollectionIds = new Set<string>();
+
+    for (const product of Array.isArray(step.StepProduct) ? step.StepProduct : []) {
+      pushUniqueProduct(products, seenProductIds, product);
+    }
+    for (const product of Array.isArray(step.products) ? step.products : []) {
+      pushUniqueProduct(products, seenProductIds, product);
+    }
+    for (const collection of Array.isArray(step.collections) ? step.collections : []) {
+      pushUniqueCollection(collections, seenCollectionIds, collection);
+    }
+
+    const categories = normalizeSyncCategories(step);
+
+    return {
+      id: step.id,
+      name: step.name,
+      position: step.position,
+      minQuantity: step.minQuantity || 1,
+      maxQuantity: step.maxQuantity || 1,
+      enabled: step.enabled !== false,
+      conditionType: step.conditionType,
+      conditionOperator: step.conditionOperator,
+      conditionValue: step.conditionValue,
+      conditionOperator2: step.conditionOperator2,
+      conditionValue2: step.conditionValue2,
+      products,
+      collections,
+      StepProduct: Array.isArray(step.StepProduct) ? step.StepProduct : [],
+      StepCategory: categories,
+    };
+  });
+}
+
+function buildSyncPricingConfig(pricing: any): Record<string, unknown> | null {
+  if (!pricing) return null;
+
+  const syncMsgs = safeJsonParse(pricing.messages, {});
+  const syncRuleMessages = syncMsgs.ruleMessages || {};
+  const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
+  const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
+
+  return {
+    enabled: pricing.enabled,
+    method: pricing.method,
+    rules: safeJsonParse(pricing.rules, []).map((rule: any) => {
+      const flat: Record<string, unknown> = {
+        id: rule.id,
+        conditionType: rule.conditionType || rule.type || "quantity",
+        conditionValue: parseFloat(rule.conditionValue ?? rule.value ?? 0) || 0,
+        discountValue: parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0,
+      };
+      if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+      if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+      if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+      if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+      return flat;
+    }),
+    messages: {
+      progress: syncFirstRuleMsg?.discountText || "Add {conditionText} to get {discountText}",
+      qualified: syncFirstRuleMsg?.successMessage || "Congratulations! You got {discountText}",
+      showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
+      ruleMessages: syncRuleMessages,
+      successMessage: syncMsgs.successMessage ?? null,
+      successMessageByLocale: syncMsgs.successMessageByLocale ?? null,
+      displayOptions: pricing.displayOptions ?? syncMsgs.displayOptions ?? null,
+      tierTextByRuleId: syncMsgs.tierTextByRuleId ?? null,
+      tierTextByLocaleByRuleId: syncMsgs.tierTextByLocaleByRuleId ?? null,
+    },
+    displayOptions: pricing.displayOptions ?? syncMsgs.displayOptions ?? null,
+  };
+}
+
+function buildSyncBundleConfiguration(
+  bundle: any,
+  shopifyProductId: string,
+  extra: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const bundleDesignPresetId = bundle.bundleDesignPresetId ?? null;
+
+  return {
+    bundleId: bundle.id,
+    id: bundle.id,
+    name: bundle.name,
+    description: bundle.description || "",
+    status: bundle.status || BundleStatus.ACTIVE,
+    templateName: bundle.templateName || null,
+    bundleType: bundle.bundleType || BundleType.PRODUCT_PAGE,
+    shopifyProductId,
+    type: "cart_transform",
+    bundleDesignTemplate: bundle.bundleDesignTemplate ?? null,
+    bundleDesignPresetId,
+    bundleDesignTemplateData: bundle.bundleType === BundleType.PRODUCT_PAGE && bundleDesignPresetId
+      ? { templateId: bundleDesignPresetId }
+      : null,
+    defaultProductsData: bundle.defaultProductsData ?? {},
+    boxSelection: bundle.boxSelection ?? null,
+    bundleUpsellConfig: bundle.bundleUpsellConfig ?? null,
+    bundleTextConfig: bundle.bundleTextConfig ?? null,
+    personalizationData: bundle.personalizationData ?? null,
+    discountDisplayOverride: bundle.discountDisplayOverride ?? null,
+    individualSellingPlanSelection: bundle.individualSellingPlanSelection ?? {
+      isEnabled: false,
+      showFor: "ALL_PRODUCTS",
+    },
+    validateQuantityPerProduct: bundle.validateQuantityPerProduct ?? {
+      isEnabled: false,
+      allowedQuantity: 1,
+    },
+    useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
+    steps: buildSyncOptimizedSteps(bundle.steps || []),
+    pricing: buildSyncPricingConfig(bundle.pricing),
+    loadingGif: bundle.loadingGif ?? null,
+    floatingBadgeEnabled: bundle.floatingBadgeEnabled ?? false,
+    floatingBadgeText: bundle.floatingBadgeText ?? "",
+    textOverrides: bundle.textOverrides ?? null,
+    textOverridesByLocale: bundle.textOverridesByLocale ?? null,
+    sdkMode: bundle.sdkMode ?? false,
+    giftMessagesEnabled: bundle.giftMessagesEnabled ?? false,
+    giftMessageProductId: bundle.giftMessageProductId ?? null,
+    giftMessageProductTitle: bundle.giftMessageProductTitle ?? null,
+    giftMessageEnableSenderRecipient: bundle.giftMessageEnableSenderRecipient ?? false,
+    giftMessageMandatory: bundle.giftMessageMandatory ?? false,
+    giftMessageEnableLimit: bundle.giftMessageEnableLimit ?? false,
+    giftMessageCharLimit: bundle.giftMessageCharLimit ?? null,
+    giftMessageSendEmail: bundle.giftMessageSendEmail ?? false,
+    updatedAt: new Date().toISOString(),
+    ...extra,
+  };
+}
+
+async function updateSyncMetafields(
+  admin: ShopifyAdmin,
+  productId: string,
+  bundle: any,
+  extra: Record<string, unknown> = {},
+) {
+  const bundleConfiguration = buildSyncBundleConfiguration(bundle, productId, extra);
+  const configSize = JSON.stringify(bundleConfiguration).length;
+  AppLogger.debug("[METAFIELD] Sync optimized configuration size:", {}, `${configSize} chars`);
+
+  const [componentResult, variantResult] = await Promise.allSettled([
+    updateComponentProductMetafields(admin, productId, bundleConfiguration),
+    updateBundleProductMetafields(admin, productId, bundleConfiguration),
+  ]);
+
+  if (componentResult.status === "rejected") {
+    throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
+  }
+  if (variantResult.status === "rejected") {
+    throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
+  }
+
+  return bundleConfiguration;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
+
+async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productIds: string[]) {
+  const products: Array<{
+    id: string;
+    title: string;
+    sellingPlanGroups: { nodes: Array<{ id: string; name: string }> };
+  }> = [];
+
+  const query = `
+    query ProductsWithSellingPlanGroups($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Product {
+          id
+          title
+          sellingPlanGroups(first: 50) {
+            nodes {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  for (let index = 0; index < productIds.length; index += 50) {
+    const ids = productIds.slice(index, index + 50);
+    const response = await admin.graphql(query, { variables: { ids } });
+    const data = await response.json() as {
+      data?: {
+        nodes?: Array<{
+          id?: string;
+          title?: string;
+          sellingPlanGroups?: { nodes?: Array<{ id?: string; name?: string }> };
+        } | null>;
+      };
+    };
+
+    for (const product of data.data?.nodes ?? []) {
+      if (!product?.id) continue;
+      products.push({
+        id: product.id,
+        title: product.title ?? "",
+        sellingPlanGroups: {
+          nodes: (product.sellingPlanGroups?.nodes ?? [])
+            .filter((group): group is { id: string; name: string } => (
+              typeof group?.id === "string" && typeof group?.name === "string"
+            )),
+        },
+      });
+    }
+  }
+
+  return products;
+}
+
+/**
+ * Validate that all product-page bundle products share at least one selling plan group.
+ */
+export async function handleValidateSellingPlanGroups(admin: ShopifyAdmin, session: Session, bundleId: string) {
+  const bundle = await db.bundle.findFirst({
+    where: {
+      id: bundleId,
+      shopId: session.shop,
+      bundleType: BundleType.PRODUCT_PAGE,
+    },
+    include: {
+      steps: {
+        include: {
+          StepProduct: true,
+          StepCategory: true,
+        },
+        orderBy: { position: "asc" },
+      },
+    },
+  });
+
+  if (!bundle) {
+    return json({ success: false, error: ERROR_MESSAGES.BUNDLE_NOT_FOUND }, { status: 404 });
+  }
+
+  const sources = extractSellingPlanValidationSources(bundle);
+  if (sources.collectionIds.length > 0) {
+    return json({
+      success: true,
+      isValid: false,
+      productCount: sources.productIds.length,
+      plans: [],
+      sourceBlocked: "collections",
+      message: null,
+    });
+  }
+
+  const productIds = sources.productIds;
+  const products = await fetchProductsWithSellingPlanGroups(admin, productIds);
+  const plans = deriveCommonSellingPlanGroups(products);
+  const isValid = productIds.length > 0 && products.length === productIds.length && plans.length > 0;
+
+  return json({
+    success: true,
+    isValid,
+    productCount: products.length,
+    plans,
+    message: isValid ? null : SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
+  });
+}
 
 /**
  * Handle saving bundle configuration
@@ -234,6 +869,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const bundleDescription = formData.get("bundleDescription") as string;
     const bundleStatus = formData.get("bundleStatus") as string;
     const templateName = formData.get("templateName") as string || null;
+    if (!Object.values(BundleStatus).includes(bundleStatus as BundleStatus)) {
+      return json(
+        { success: false, error: "Invalid bundle status" },
+        { status: 400 }
+      );
+    }
+
     const loadingGifRaw = formData.get("loadingGif") as string;
     const loadingGif = loadingGifRaw || null;
     const showProductPrices = formData.get("showProductPrices") !== "false";
@@ -313,6 +955,27 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       AppLogger.debug("[FIXED_BUNDLE_PRICE] Stored fixed price for runtime calculation:", processedRules);
     }
 
+    const normalizedPricingDisplayOptions = normalizePricingDisplayOptions({
+      rules: discountData.discountRules || [],
+      messages: { displayOptions: discountData.displayOptions || null },
+      showProgressBar: discountData.displayOptions?.progressBar?.enabled === true,
+      method: discountData.discountType,
+    });
+    const directBoxSelection = discountData.discountEnabled === true
+      && discountData.discountType !== "buy_x_get_y"
+      ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
+      : null;
+    const pricingMessages = {
+      showDiscountDisplay: true,
+      showDiscountMessaging: discountData.discountMessagingEnabled || false,
+      ruleMessages: discountData.ruleMessages || {},
+      successMessage: discountData.successMessage ?? null,
+      successMessageByLocale: discountData.successMessageByLocale ?? null,
+      displayOptions: discountData.displayOptions ?? null,
+      tierTextByRuleId: discountData.tierTextByRuleId ?? null,
+      tierTextByLocaleByRuleId: discountData.tierTextByLocaleByRuleId ?? null,
+    };
+
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
     if (bundleStatus === BundleStatus.DRAFT && stepsData && stepsData.length > 0) {
@@ -366,6 +1029,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
         ...parsePPBBundleSettings(formData),
+        boxSelection: directBoxSelection,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -381,6 +1045,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
 
               return {
                 name: step.name,
+                pageTitle: step.pageTitle ?? null,
                 position: index + 1, // Map stepNumber to position field
                 products: step.products || [],
                 collections: step.collections || [],
@@ -427,12 +1092,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 },
                 // Create StepCategory records for merchant-defined categories
                 StepCategory: {
-                  create: Array.isArray(step.StepCategory) ? step.StepCategory.map((cat: any, catIndex: number) => ({
-                    name: cat.name || '',
-                    sortOrder: cat.sortOrder ?? catIndex,
-                    products: Array.isArray(cat.products) ? cat.products : null,
-                    collections: Array.isArray(cat.collections) ? cat.collections : null,
-                  })) : []
+                  create: Array.isArray(step.StepCategory)
+                    ? step.StepCategory.map((cat: Record<string, unknown>, catIndex: number) => buildStepCategoryCreateInput(cat, catIndex))
+                    : []
                 }
               };
             })
@@ -448,11 +1110,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
                 displayOptions: discountData.displayOptions ?? null,
-                messages: {
-                  showDiscountDisplay: true,
-                  showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
-                }
+                messages: pricingMessages,
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               },
               update: {
                 enabled: discountData.discountEnabled,
@@ -460,11 +1119,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 rules: discountData.discountRules || [],
                 showFooter: discountData.showFooter !== false,
                 displayOptions: discountData.displayOptions ?? null,
-                messages: {
-                  showDiscountDisplay: true,
-                  showDiscountMessaging: discountData.discountMessagingEnabled || false,
-                  ruleMessages: discountData.ruleMessages || {}
-                }
+                messages: pricingMessages,
+                ruleMessagesByLocale: discountData.ruleMessagesByLocale ?? null,
               }
             }
           }
@@ -484,7 +1140,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
       // Sync product status to Shopify
-      await syncBundleProductToShopify(
+      const productSyncResult = await syncBundleProductToShopify(
         admin,
         updatedBundle.shopifyProductId,
         finalStatus,
@@ -492,6 +1148,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         updatedBundle.description,
         bundleId,
       );
+      if (productSyncResult.handle && productSyncResult.handle !== updatedBundle.shopifyProductHandle) {
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: { shopifyProductHandle: productSyncResult.handle },
+        });
+        updatedBundle.shopifyProductHandle = productSyncResult.handle;
+      }
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
@@ -520,7 +1183,11 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       const hasProducts = fullBundleConfig.steps.some((step: any) =>
         (step.StepProduct && step.StepProduct.length > 0) ||
         (step.products && step.products.length > 0) ||
-        (Array.isArray(step.collections) && step.collections.length > 0)
+        (Array.isArray(step.collections) && step.collections.length > 0) ||
+        (Array.isArray(step.StepCategory) && step.StepCategory.some((cat: any) =>
+          (Array.isArray(cat.products) && cat.products.length > 0) ||
+          (Array.isArray(cat.collections) && cat.collections.length > 0)
+        ))
       );
 
       if (!hasProducts) {
@@ -602,7 +1269,13 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       shopId: session.shop
     },
     include: {
-      steps: true,
+      steps: {
+        include: {
+          StepProduct: { orderBy: { position: "asc" } },
+          StepCategory: { orderBy: { sortOrder: "asc" } },
+        },
+        orderBy: { position: "asc" },
+      },
       pricing: true
     }
   });
@@ -642,6 +1315,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
               nodes {
                 ... on MediaImage {
                   id
+                  alt
                   image {
                     url
                     altText
@@ -711,71 +1385,33 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
         });
       }
 
-      // Update metafields with current bundle configuration
-      if (bundle.pricing?.enabled) {
-        // Create optimized configuration with only essential data for functions
-        const optimizedSteps = bundle.steps.map((step: any) => ({
-          id: step.id,
-          name: step.name,
-          position: step.position,
-          minQuantity: step.minQuantity,
-          maxQuantity: step.maxQuantity,
-          enabled: step.enabled,
-          conditionType: step.conditionType,
-          conditionOperator: step.conditionOperator,
-          conditionValue: step.conditionValue,
-          // Store essential product data (IDs, titles, and images)
-          products: (step.products || []).map((product: any) => ({
-            id: product.id,
-            title: product.title || 'Product',
-            imageUrl: product.imageUrl || null
-          })),
-          // Only store essential collection data
-          collections: (step.collections || []).map((collection: any) => ({
-            id: collection.id,
-            title: collection.title || 'Collection'
-          }))
-        }));
-
-        const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
-        const syncRuleMessages = syncMsgs.ruleMessages || {};
-        const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
-        const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
-
-        const bundleConfiguration = {
-          bundleId: bundle.id,
-          name: bundle.name,
-          templateName: bundle.templateName || null,
-          bundleType: bundle.bundleType || BundleType.PRODUCT_PAGE,
-          type: "cart_transform",
-          steps: optimizedSteps,
-          pricing: {
-            enabled: bundle.pricing.enabled,
-            method: bundle.pricing.method,
-            rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
-              id: rule.id,
-              conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
-              value: rule.value || 0, // Keep as decimal - widget will convert to cents
-              discountValue: rule.discountValue || 0,
-              fixedBundlePrice: rule.fixedBundlePrice || 0
-            })),
-            messages: {
-              progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-              qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
-              showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
-            }
-          },
-          lastSynced: new Date().toISOString(),
-          shopifyProduct: {
-            id: shopifyProduct.id,
-            title: shopifyProduct.title,
-            handle: shopifyProduct.handle,
-            updatedAt: shopifyProduct.updatedAt
-          }
-        };
-
-        await updateBundleProductMetafields(admin, productId, bundleConfiguration);
+      const productSyncResult = await syncBundleProductToShopify(
+        admin,
+        productId,
+        bundle.status,
+        bundle.name,
+        bundle.description,
+        bundleId,
+        { mediaNodes: shopifyProduct.media?.nodes },
+      );
+      const syncedProductHandle = productSyncResult.handle || shopifyProduct.handle;
+      if (productSyncResult.handle && productSyncResult.handle !== bundle.shopifyProductHandle) {
+        await db.bundle.update({
+          where: { id: bundleId },
+          data: { shopifyProductHandle: productSyncResult.handle },
+        });
       }
+
+      // Update metafields with current bundle configuration, even when pricing is off.
+      await updateSyncMetafields(admin, productId, bundle, {
+        lastSynced: new Date().toISOString(),
+        shopifyProduct: {
+          id: shopifyProduct.id,
+          title: shopifyProduct.title,
+          handle: syncedProductHandle,
+          updatedAt: shopifyProduct.updatedAt
+        }
+      });
 
       return json({
         success: true,
@@ -809,13 +1445,27 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     const bundlePrice = await calculateBundlePrice(admin, bundle);
 
     const CREATE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
             id
             title
             handle
             status
+            productType
+            vendor
+            media(first: 10) {
+              nodes {
+                ... on MediaImage {
+                  id
+                  alt
+                  image {
+                    url
+                    altText
+                  }
+                }
+              }
+            }
             variants(first: 1) {
               edges {
                 node {
@@ -832,13 +1482,16 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       }
     `;
 
+    const shopName = await loadShopName(admin);
+    const productMetadata = buildGeneratedBundleProductMetadata({
+      bundleName: bundle.name,
+      shopName,
+    });
+    const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
     const response = await admin.graphql(CREATE_PRODUCT, {
       variables: {
-        input: {
-          title: bundle.name,
-          handle: `bundle-${bundle.id}`,
-          productType: "Bundle",
-          vendor: "Bundle Builder",
+        product: {
+          ...productMetadata,
           status: "ACTIVE",
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
@@ -846,7 +1499,8 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
             status: bundle.status,
           }),
           tags: ["WP-Bundles"]
-        }
+        },
+        ...(mediaInput ? { media: mediaInput } : {}),
       }
     });
 
@@ -857,7 +1511,12 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       throw new Error(`Failed to create bundle product: ${error.message}`);
     }
 
-    productId = data.data?.productCreate?.product?.id;
+    const createdProduct = data.data?.productCreate?.product;
+    productId = createdProduct?.id;
+    if (!productId) {
+      throw new Error("Created product has no ID");
+    }
+    const productHandle = createdProduct?.handle || productMetadata.handle;
 
     // Set price and inventory policy on the auto-created default variant
     // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
@@ -885,17 +1544,28 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     // Update bundle with product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: productId, shopifyProductHandle: `bundle-${bundleId}` }
+      data: { shopifyProductId: productId, shopifyProductHandle: productHandle }
     });
     await publishProductToSalesChannels(admin, productId, "ppb-sync-product-create");
-    await syncBundleProductToShopify(
+    const productSyncResult = await syncBundleProductToShopify(
       admin,
       productId,
       bundle.status,
       bundle.name,
       bundle.description,
       bundleId,
+      {
+        shopName,
+        mediaNodes: createdProduct?.media?.nodes,
+        skipMediaSync: true,
+      },
     );
+    if (productSyncResult.handle && productSyncResult.handle !== productHandle) {
+      await db.bundle.update({
+        where: { id: bundleId },
+        data: { shopifyProductHandle: productSyncResult.handle },
+      });
+    }
   } else {
     // Update existing bundle product price if configuration changed
     try {
@@ -908,66 +1578,9 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
     }
   }
 
-  // Update metafields with current bundle configuration
-  if (productId && bundle.pricing?.enabled) {
-    // Create optimized configuration with only essential data for functions
-    const optimizedSteps = (bundle.steps || []).map((step: any) => ({
-      id: step.id,
-      name: step.name,
-      minQuantity: step.minQuantity || 1,
-      maxQuantity: step.maxQuantity || 1,
-      enabled: step.enabled !== false,
-      conditionType: step.conditionType,
-      conditionOperator: step.conditionOperator,
-      conditionValue: step.conditionValue,
-      // Store essential product data (IDs, titles, and images)
-      products: (step.products || []).map((product: any) => ({
-        id: product.id,
-        title: product.title || 'Product',
-        imageUrl: product.imageUrl || null
-      })),
-      // Only store essential collection data
-      collections: (step.collections || []).map((collection: any) => ({
-        id: collection.id,
-        title: collection.title || 'Collection'
-      }))
-    }));
-
-    const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
-    const syncRuleMessages = syncMsgs.ruleMessages || {};
-    const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
-    const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
-
-    const bundleConfiguration = {
-      bundleId: bundle.id,
-      name: bundle.name,
-      templateName: bundle.templateName || null,
-      bundleType: bundle.bundleType || BundleType.PRODUCT_PAGE,
-      type: "cart_transform",
-      steps: optimizedSteps,
-      pricing: {
-        enabled: bundle.pricing.enabled,
-        method: bundle.pricing.method,
-        rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
-          id: rule.id,
-          conditionType: rule.type || 'quantity', // Map type to conditionType (FIXED)
-          value: rule.value || 0, // Keep as decimal - widget will convert to cents
-          discountValue: rule.discountValue || 0,
-          fixedBundlePrice: rule.fixedBundlePrice || 0
-        })),
-        messages: {
-          progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-          qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
-          showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
-        }
-      },
-      updatedAt: new Date().toISOString()
-    };
-
-    const configSize = JSON.stringify(bundleConfiguration).length;
-    AppLogger.debug("[METAFIELD] Sync optimized configuration size:", {}, `${configSize} chars`);
-
-    await updateBundleProductMetafields(admin, productId, bundleConfiguration);
+  // Update metafields with current bundle configuration, even when pricing is off.
+  if (productId) {
+    await updateSyncMetafields(admin, productId, bundle);
   }
 
   return json({
@@ -990,7 +1603,13 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const bundle = await db.bundle.findUnique({
       where: { id: bundleId, shopId: session.shop },
       include: {
-        steps: { include: { StepProduct: true }, orderBy: { position: 'asc' } },
+        steps: {
+          include: {
+            StepProduct: { orderBy: { position: 'asc' } },
+            StepCategory: { orderBy: { sortOrder: 'asc' } },
+          },
+          orderBy: { position: 'asc' },
+        },
         pricing: true,
       },
     });
@@ -1010,8 +1629,8 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
 
     // 2. Archive product (Shopify requires ARCHIVED status before deletion)
     const ARCHIVE_PRODUCT = `
-      mutation ArchiveProduct($input: ProductInput!) {
-        productUpdate(input: $input) {
+      mutation ArchiveProduct($product: ProductUpdateInput!) {
+        productUpdate(product: $product) {
           product { id status }
           userErrors { field message }
         }
@@ -1019,7 +1638,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     `;
 
     const archiveResponse = await admin.graphql(ARCHIVE_PRODUCT, {
-      variables: { input: { id: oldProductId, status: 'ARCHIVED' } },
+      variables: { product: { id: oldProductId, status: 'ARCHIVED' } },
     });
     const archiveData = await archiveResponse.json();
 
@@ -1062,10 +1681,22 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     const bundlePrice = await calculateBundlePrice(admin, bundle);
 
     const CREATE_PRODUCT = `
-      mutation CreateBundleProduct($input: ProductInput!) {
-        productCreate(input: $input) {
+      mutation CreateBundleProduct($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+        productCreate(product: $product, media: $media) {
           product {
-            id title handle status
+            id title handle status productType vendor
+            media(first: 10) {
+              nodes {
+                ... on MediaImage {
+                  id
+                  alt
+                  image {
+                    url
+                    altText
+                  }
+                }
+              }
+            }
             variants(first: 1) { edges { node { id } } }
           }
           userErrors { field message }
@@ -1073,13 +1704,16 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       }
     `;
 
+    const shopName = await loadShopName(admin);
+    const productMetadata = buildGeneratedBundleProductMetadata({
+      bundleName: bundle.name,
+      shopName,
+    });
+    const mediaInput = buildBundleProductPlaceholderMediaInput(process.env.SHOPIFY_APP_URL, bundle.name);
     const createResponse = await admin.graphql(CREATE_PRODUCT, {
       variables: {
-        input: {
-          title: bundle.name,
-          handle: `bundle-${bundle.id}`,
-          productType: 'Bundle',
-          vendor: 'Bundle Builder',
+        product: {
+          ...productMetadata,
           status: 'ACTIVE',
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
@@ -1088,6 +1722,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
           }),
           tags: ['WP-Bundles'],
         },
+        ...(mediaInput ? { media: mediaInput } : {}),
       },
     });
 
@@ -1098,7 +1733,9 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       throw new Error(`Failed to re-create Shopify product: ${err.message}`);
     }
 
-    const newProductId = createData.data?.productCreate?.product?.id;
+    const createdProduct = createData.data?.productCreate?.product;
+    const newProductId = createdProduct?.id;
+    const productHandle = createdProduct?.handle || productMetadata.handle;
 
     // Set price and inventory policy on the auto-created default variant
     // (productVariantUpdate removed in API 2025-10, use productVariantsBulkUpdate)
@@ -1131,96 +1768,56 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
     // 6. Update DB with new product ID and handle
     await db.bundle.update({
       where: { id: bundleId },
-      data: { shopifyProductId: newProductId, shopifyProductHandle: `bundle-${bundleId}` },
+      data: { shopifyProductId: newProductId, shopifyProductHandle: productHandle },
     });
     await publishProductToSalesChannels(admin, newProductId, "ppb-sync-bundle-recreate");
-    await syncBundleProductToShopify(
+    const productSyncResult = await syncBundleProductToShopify(
       admin,
       newProductId,
       bundle.status,
       bundle.name,
       bundle.description,
       bundleId,
+      {
+        shopName,
+        mediaNodes: createdProduct?.media?.nodes,
+        skipMediaSync: true,
+      },
     );
-
-    // 7. Re-run metafield operations from DB-authoritative state
-    if (bundle.pricing) {
-      const optimizedSteps = bundle.steps.map((step: any) => ({
-        id: step.id,
-        name: step.name,
-        minQuantity: step.minQuantity || 1,
-        maxQuantity: step.maxQuantity || 1,
-        enabled: step.enabled !== false,
-        conditionType: step.conditionType,
-        conditionOperator: step.conditionOperator,
-        conditionValue: step.conditionValue,
-        products: (step.StepProduct || []).map((product: any) => ({
-          id: product.productId,
-          title: product.title || 'Product',
-          imageUrl: product.imageUrl || null,
-        })),
-        collections: (step.collections || []).map((collection: any) => ({
-          id: collection.id,
-          title: collection.title || 'Collection',
-        })),
-      }));
-
-      const syncMsgs = safeJsonParse(bundle.pricing.messages, {});
-      const syncRuleMessages = syncMsgs.ruleMessages || {};
-      const syncFirstRuleId = Object.keys(syncRuleMessages)[0];
-      const syncFirstRuleMsg = syncFirstRuleId ? syncRuleMessages[syncFirstRuleId] : null;
-
-      const bundleConfig = {
-        bundleId: bundle.id,
-        name: bundle.name,
-        templateName: bundle.templateName || null,
-        bundleType: bundle.bundleType || BundleType.PRODUCT_PAGE,
-        type: 'cart_transform',
-        steps: optimizedSteps,
-        pricing: {
-          enabled: bundle.pricing.enabled,
-          method: bundle.pricing.method,
-          rules: safeJsonParse(bundle.pricing.rules, []).map((rule: any) => ({
-            id: rule.id,
-            conditionType: rule.type || 'quantity',
-            value: rule.value || 0,
-            discountValue: rule.discountValue || 0,
-            fixedBundlePrice: rule.fixedBundlePrice || 0,
-          })),
-          messages: {
-            progress: syncFirstRuleMsg?.discountText || 'Add {conditionText} to get {discountText}',
-            qualified: syncFirstRuleMsg?.successMessage || 'Congratulations! You got {discountText}',
-            showDiscountMessaging: syncMsgs.showDiscountMessaging || false,
-          },
-        },
-        updatedAt: new Date().toISOString(),
-      };
-
-      AppLogger.info('[SYNC_BUNDLE] Re-running metafield operations', { bundleId, newProductId });
-
-      const [standardResult, componentResult, variantResult] = await Promise.allSettled([
-        (async () => {
-          const { metafields: standardMetafields } = await convertBundleToStandardMetafields(admin, bundleConfig);
-          if (Object.keys(standardMetafields).length > 0) {
-            await updateProductStandardMetafields(admin, newProductId, standardMetafields);
-          }
-        })(),
-        updateComponentProductMetafields(admin, newProductId, bundleConfig),
-        updateBundleProductMetafields(admin, newProductId, bundleConfig),
-      ]);
-
-      if (standardResult.status === 'rejected') {
-        AppLogger.warn('[SYNC_BUNDLE] Standard metafields update failed (non-critical)', { bundleId }, standardResult.reason);
-      }
-      if (componentResult.status === 'rejected') {
-        throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
-      }
-      if (variantResult.status === 'rejected') {
-        throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
-      }
-
-      AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
+    if (productSyncResult.handle && productSyncResult.handle !== productHandle) {
+      await db.bundle.update({
+        where: { id: bundleId },
+        data: { shopifyProductHandle: productSyncResult.handle },
+      });
     }
+
+    // 7. Re-run metafield operations from DB-authoritative state, even when pricing is off.
+    const bundleConfig = buildSyncBundleConfiguration(bundle, newProductId);
+
+    AppLogger.info('[SYNC_BUNDLE] Re-running metafield operations', { bundleId, newProductId });
+
+    const [standardResult, componentResult, variantResult] = await Promise.allSettled([
+      (async () => {
+        const { metafields: standardMetafields } = await convertBundleToStandardMetafields(admin, bundleConfig);
+        if (Object.keys(standardMetafields).length > 0) {
+          await updateProductStandardMetafields(admin, newProductId, standardMetafields);
+        }
+      })(),
+      updateComponentProductMetafields(admin, newProductId, bundleConfig),
+      updateBundleProductMetafields(admin, newProductId, bundleConfig),
+    ]);
+
+    if (standardResult.status === 'rejected') {
+      AppLogger.warn('[SYNC_BUNDLE] Standard metafields update failed (non-critical)', { bundleId }, standardResult.reason);
+    }
+    if (componentResult.status === 'rejected') {
+      throw new Error(`Failed to update component metafields: ${componentResult.reason}`);
+    }
+    if (variantResult.status === 'rejected') {
+      throw new Error(`Failed to update bundle variant metafields: ${variantResult.reason}`);
+    }
+
+    AppLogger.info('[SYNC_BUNDLE] All metafields re-synced successfully', { bundleId });
 
     // Sync theme colors for bundle widget color inheritance (non-critical, silent fail)
     syncThemeColors(admin, session.shop).catch(() => { /* swallowed — syncThemeColors handles logging */ });
@@ -1287,4 +1884,38 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       error: (error as Error).message || "Widget placement validation failed"
     }, { status: 500 });
   }
+}
+
+export async function handleUpdateBundleDesignTemplate(
+  _admin: ShopifyAdmin,
+  session: Session,
+  bundleId: string,
+  formData: FormData
+) {
+  const { bundleDesignTemplate, bundleDesignPresetId } = parseBundleDesignTemplate(formData);
+
+  const updatedBundle = await db.bundle.update({
+    where: { id: bundleId, shopId: session.shop },
+    data: { bundleDesignTemplate, bundleDesignPresetId },
+    include: {
+      steps: {
+        include: {
+          StepProduct: { orderBy: { position: "asc" } },
+          StepCategory: { orderBy: { sortOrder: "asc" } },
+        },
+        orderBy: { position: "asc" },
+      },
+      pricing: true,
+    },
+  });
+
+  if (updatedBundle.shopifyProductId) {
+    await updateSyncMetafields(
+      _admin,
+      updatedBundle.shopifyProductId,
+      updatedBundle,
+    );
+  }
+
+  return json({ success: true });
 }

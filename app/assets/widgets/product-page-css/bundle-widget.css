@@ -3065,3 +3065,163 @@ to {
   grid-template-columns:repeat(2,
 1fr)}
 }
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] {
+  width:345px;
+  max-width:345px;
+  margin:0}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty {
+  display:none;
+  margin:0;
+  padding:0}
+
+.bundle-steps[data-ppb-template-type="PDP_MODAL"] {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:345px;
+  max-width:345px;
+  margin:20px 0 12px;
+  padding:0;
+  align-items:stretch;
+  justify-items:stretch}
+
+.bw-ppb-modal-slot-section {
+  display:grid;
+  grid-template-columns:345px;
+  gap:10px;
+  width:345px;
+  max-width:345px}
+
+.bw-ppb-modal-slot-title {
+  font-size:14px;
+  font-weight:700;
+  line-height:21px;
+  color:#111111;
+  margin:0;
+  text-align:left}
+
+.bw-ppb-modal-slot-grid {
+  display:grid;
+  grid-template-columns:repeat(3,104.328px);
+  gap:16px;
+  width:345px;
+  align-items:start;
+  justify-items:stretch}
+
+.bw-ppb-modal-slot-grid .step-box,
+.bw-ppb-modal-slot-grid .bw-slot-card {
+  width:100%;
+  max-width:none;
+  min-height:0;
+  aspect-ratio:auto;
+  box-sizing:border-box;
+  margin:0}
+
+.bw-ppb-modal-slot-grid .bw-slot-card--empty {
+  border:2px dashed #111111;
+  border-radius:10px;
+  background:#ffffff;
+  height:200px;
+  padding:0 8px;
+  box-shadow:none;
+  color:#111111}
+
+.bw-ppb-modal-slot-grid .bw-slot-card--empty:hover {
+  transform:none;
+  box-shadow:none}
+
+.bw-slot-card__plus-icon--plain {
+  width:32px;
+  height:32px;
+  margin:0 0 24px;
+  color:#111111;
+  background:transparent;
+  border-radius:0}
+
+.bw-slot-card__plus-icon--plain svg {
+  width:28px;
+  height:28px}
+
+.bw-ppb-modal-slot-grid .bw-slot-card__label {
+  color:#111111;
+  font-size:14px;
+  font-weight:700;
+  line-height:18px;
+  margin:0;
+  padding:0;
+  white-space:normal}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart {
+  width:345px;
+  max-width:345px;
+  box-sizing:border-box;
+  height:45px;
+  margin:14px 0 0;
+  border-radius:4px;
+  background:#8a8a8a;
+  color:#ffffff;
+  font-size:16px;
+  font-weight:700;
+  opacity:1;
+  box-shadow:none;
+  transform:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart:disabled,
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart.disabled {
+  background:#8a8a8a;
+  color:#ffffff;
+  opacity:1;
+  cursor:not-allowed;
+  transform:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart:hover {
+  background:#8a8a8a;
+  transform:none}
+
+.bw-ppb-dynamic-checkout-visual {
+  display:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bw-ppb-dynamic-checkout-visual {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:345px;
+  max-width:345px;
+  box-sizing:border-box;
+  height:47px;
+  background:#111111;
+  color:#ffffff;
+  border-radius:0;
+  margin:0 0 20px;
+  font-size:15px;
+  font-weight:700;
+  line-height:1;
+  cursor:default;
+  user-select:none}
+
+@media (max-width:480px) {
+  #bundle-builder-app[data-ppb-template-type="PDP_MODAL"],
+  .bundle-steps[data-ppb-template-type="PDP_MODAL"],
+  .bw-ppb-modal-slot-section {
+  width:360px;
+  max-width:calc(100vw - 30px)}
+
+  .bw-ppb-modal-slot-section {
+  grid-template-columns:minmax(0,1fr)}
+
+  .bw-ppb-modal-slot-grid {
+  width:360px;
+  max-width:calc(100vw - 30px);
+  grid-template-columns:repeat(3,110.66px);
+  gap:14px}
+
+  .bw-ppb-modal-slot-grid .bw-slot-card--empty {
+  height:160px}
+
+  #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart,
+  #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bw-ppb-dynamic-checkout-visual {
+  width:360px;
+  max-width:calc(100vw - 30px)}
+}

@@ -19,6 +19,29 @@ function int(formData: FormData, key: string): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+function jsonObject<T extends Record<string, unknown> | null>(formData: FormData, key: string, defaultVal: T): T {
+  const val = formData.get(key);
+  if (typeof val !== "string" || val.trim() === "") return defaultVal;
+
+  try {
+    const parsed = JSON.parse(val) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as T;
+    }
+  } catch {
+    return defaultVal;
+  }
+
+  return defaultVal;
+}
+
+export function parseBundleDesignTemplate(formData: FormData) {
+  return {
+    bundleDesignTemplate: str(formData, "bundleDesignTemplate"),
+    bundleDesignPresetId: str(formData, "bundleDesignPresetId"),
+  };
+}
+
 export function parsePPBGiftMessages(formData: FormData) {
   const enableLimit = bool(formData, "giftMessageEnableLimit", false);
   return {
@@ -62,5 +85,19 @@ export function parsePPBBundleSettings(formData: FormData) {
     bundleBannerDesktopUrl:      str(formData, "bundleBannerDesktopUrl"),
     bundleBannerMobileUrl:       str(formData, "bundleBannerMobileUrl"),
     bundleLevelCss,
+    defaultProductsData:         jsonObject(formData, "defaultProductsData", {}),
+    boxSelection:                jsonObject(formData, "boxSelection", null),
+    bundleUpsellConfig:          jsonObject(formData, "bundleUpsellConfig", null),
+    bundleTextConfig:            jsonObject(formData, "bundleTextConfig", null),
+    discountDisplayOverride:     jsonObject(formData, "discountDisplayOverride", null),
+    individualSellingPlanSelection: jsonObject(formData, "individualSellingPlanSelection", {
+      isEnabled: false,
+      showFor: "ALL_PRODUCTS",
+    }),
+    validateQuantityPerProduct: jsonObject(formData, "validateQuantityPerProduct", {
+      isEnabled: false,
+      allowedQuantity: 1,
+    }),
+    useSingleStepCategoriesAsBundleSteps: bool(formData, "useSingleStepCategoriesAsBundleSteps", false),
   };
 }

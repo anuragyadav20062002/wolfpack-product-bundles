@@ -14,4 +14,6 @@ export {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
   handleValidateWidgetPlacement,
+  handleUpdateBundleDesignTemplate,
+  handleValidateSellingPlanGroups,
 } from './handlers.server';

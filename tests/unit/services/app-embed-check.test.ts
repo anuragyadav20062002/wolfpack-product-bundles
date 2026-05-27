@@ -45,6 +45,8 @@ function makeSettingsResponse(blocks: Record<string, unknown>) {
 
 const EMBED_KEY =
   "shopify://apps/wolfpack-product-bundles/blocks/bundle-full-page-embed/uid-abc";
+const SINGLE_EMBED_KEY =
+  "shopify://apps/wolfpack-product-bundles/blocks/bundle-app-embed/uid-single";
 
 describe("checkAppEmbedEnabled", () => {
   it("returns true when Wolfpack embed block is present and not disabled", async () => {
@@ -59,6 +61,21 @@ describe("checkAppEmbedEnabled", () => {
 
     expect(result.enabled).toBe(true);
     expect(result.themeId).toBe("gid://shopify/OnlineStoreTheme/123456");
+  });
+
+  it("returns true for the single bundle app embed when scoped by handle", async () => {
+    const admin = makeAdmin([
+      THEME_LIST_RESPONSE,
+      makeSettingsResponse({
+        [SINGLE_EMBED_KEY]: { type: SINGLE_EMBED_KEY, disabled: false },
+      }),
+    ]);
+
+    const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com", {
+      blockHandles: ["bundle-app-embed"],
+    });
+
+    expect(result.enabled).toBe(true);
   });
 
   it("returns true when embed block key is present with no 'disabled' field (defaults to active)", async () => {

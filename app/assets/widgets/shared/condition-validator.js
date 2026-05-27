@@ -128,6 +128,37 @@ const ConditionValidator = (function () {
     return true;
   }
 
+  function getAllowedQuantityPerProduct(validateQuantityPerProduct) {
+    if (!validateQuantityPerProduct || validateQuantityPerProduct.isEnabled !== true) {
+      return null;
+    }
+
+    const allowed = Number(validateQuantityPerProduct.allowedQuantity);
+    if (!Number.isFinite(allowed) || allowed < 1) {
+      return 1;
+    }
+
+    return Math.floor(allowed);
+  }
+
+  function canUpdateProductQuantity(validateQuantityPerProduct, currentQuantity, newQuantity) {
+    const limit = getAllowedQuantityPerProduct(validateQuantityPerProduct);
+    if (limit === null) {
+      return { allowed: true, limit: null };
+    }
+
+    const current = Number(currentQuantity) || 0;
+    const proposed = Number(newQuantity) || 0;
+    if (proposed <= current) {
+      return { allowed: true, limit };
+    }
+
+    return {
+      allowed: proposed <= limit,
+      limit,
+    };
+  }
+
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   /**
@@ -189,6 +220,8 @@ const ConditionValidator = (function () {
     calculateStepTotalAfterUpdate,
     canUpdateQuantity,
     isStepConditionSatisfied,
+    getAllowedQuantityPerProduct,
+    canUpdateProductQuantity,
   };
 }());
 

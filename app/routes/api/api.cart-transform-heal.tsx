@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { createHmac } from "node:crypto";
+import { verifyAppProxyRequest } from "../../lib/app-proxy.server";
 import { AppLogger } from "../../lib/logger";
 import { CartTransformService } from "../../services/cart-transform-service.server";
 import { unauthenticated } from "../../shopify.server";
@@ -20,23 +20,6 @@ function getHealCache(): HealCache {
   };
   globalObject.__wolfpackCartTransformHealCache ??= new Map();
   return globalObject.__wolfpackCartTransformHealCache;
-}
-
-function verifyAppProxyRequest(url: URL): string | null {
-  const apiSecret = process.env.SHOPIFY_API_SECRET;
-  const shop = url.searchParams.get("shop");
-  const signature = url.searchParams.get("signature");
-
-  if (!apiSecret || !shop || !signature) return null;
-
-  const message = [...url.searchParams.entries()]
-    .filter(([key]) => key !== "signature")
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join("&");
-
-  const expected = createHmac("sha256", apiSecret).update(message).digest("hex");
-  return expected === signature ? shop : null;
 }
 
 export async function OPTIONS() {

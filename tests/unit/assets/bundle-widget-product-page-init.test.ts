@@ -10,6 +10,9 @@
  * matching the existing bundle-bottom-sheet.test.ts approach.
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 // ============================================================
 // Types mirroring bundle-widget-product-page.js
 // ============================================================
@@ -80,6 +83,32 @@ function parseBundleConfigDataset(
  */
 function shouldInitAbort(bundleData: Record<string, any> | null): boolean {
   return !bundleData;
+}
+
+/**
+ * Resolves the base URL used by Product Page bundle product/collection hydration.
+ * Direct copy of the decision branch in BundleWidget.resolveStorefrontApiBase().
+ */
+function resolveProductPageStorefrontApiBase(
+  appUrl: string | null | undefined,
+  locationOrigin: string,
+  locationHost: string,
+  shopDomain = ''
+): string {
+  let appHost = '';
+  if (appUrl) {
+    try {
+      appHost = new URL(appUrl).host;
+    } catch {
+      appHost = '';
+    }
+  }
+
+  if (shopDomain && appHost !== locationHost) {
+    return '/apps/product-bundles';
+  }
+
+  return appUrl || locationOrigin;
 }
 
 // ============================================================
@@ -206,5 +235,117 @@ describe('shouldInitAbort — init() early-return guard', () => {
       'bundle-2': { id: 'bundle-2', name: 'B' },
     };
     expect(shouldInitAbort(bundleData)).toBe(false);
+  });
+});
+
+describe('resolveProductPageStorefrontApiBase — storefront hydration URLs', () => {
+  it('uses the Shopify app proxy on storefront pages even when the app URL metafield is stale', () => {
+    const result = resolveProductPageStorefrontApiBase(
+      'https://stale-preview.example',
+      'https://agent-5sfidg3m.myshopify.com',
+      'agent-5sfidg3m.myshopify.com',
+      'agent-5sfidg3m.myshopify.com'
+    );
+
+    expect(result).toBe('/apps/product-bundles');
+  });
+
+  it('keeps the app origin for non-Shopify preview pages with no app URL override', () => {
+    const result = resolveProductPageStorefrontApiBase(
+      null,
+      'https://preview.example',
+      'preview.example'
+    );
+
+    expect(result).toBe('https://preview.example');
+  });
+
+  it('keeps the configured app URL for non-Shopify preview pages', () => {
+    const result = resolveProductPageStorefrontApiBase(
+      'https://current-preview.example',
+      'https://preview.example',
+      'preview.example'
+    );
+
+    expect(result).toBe('https://current-preview.example');
+  });
+});
+
+describe('Product Page widget product-form placement contract', () => {
+  it('relocates the widget container after the product add-to-cart form before rendering', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('_relocateContainerToProductForm');
+    expect(source).toContain('form[action*="/cart/add"]');
+    expect(source).toContain("insertAdjacentElement('afterend', this.container)");
+    expect(source).toContain('bundle-widget-container--product-form-mounted');
+  });
+});
+
+describe('Product Page widget native product price contract', () => {
+  it('hides the native product price in the product form scope before rendering PPB controls', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('_hideNativeProductPrice');
+    expect(source.indexOf('this._relocateContainerToProductForm();')).toBeLessThan(
+      source.indexOf('this._hideNativeProductPrice();'),
+    );
+    expect(source.indexOf('this._hideNativeProductPrice();')).toBeLessThan(
+      source.indexOf('this.setupDOMElements();'),
+    );
+    expect(source).toContain('.product__info-container');
+    expect(source).toContain('[id^="ProductInformation-"]');
+    expect(source).toContain('.product-details');
+    expect(source).toContain('[id^="price-"]');
+    expect(source).toContain('.price.price--large');
+    expect(source).toContain('wpb-native-product-price--hidden');
+    expect(source).toContain('data-wpb-native-product-price-hidden');
+    expect(source).toContain("style.setProperty('display', 'none', 'important')");
+  });
+});
+
+describe('Product Page modal-slot visual contract', () => {
+  it('renders modal-slot empty states with section titles, product slot labels, and the reference-matched button stack', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_isProductPageModalSlotTemplate');
+    expect(source).toContain('_markProductPageTemplate');
+    expect(source).toContain('this.elements.stepsContainer.dataset.ppbTemplateType');
+    expect(source).toContain('this.elements.stepsContainer.dataset.ppbDesignPreset');
+    expect(source).toContain('bw-ppb-modal-slot-section');
+    expect(source).toContain('bw-ppb-modal-slot-title');
+    expect(source).toContain('bw-ppb-modal-slot-grid');
+    expect(source).toContain("title.textContent = step.pageTitle || step.name || '';");
+    expect(source).toContain('const slotNumber = instanceIndex + 1;');
+    expect(source).toMatch(/Product \$\{slotNumber\}/);
+    expect(source).toContain('_createDynamicCheckoutVisual');
+    expect(source).toContain('bw-ppb-dynamic-checkout-visual');
+    expect(source).toContain('Buy it now');
+
+    expect(css).toContain('.bundle-steps[data-ppb-template-type="PDP_MODAL"]');
+    expect(css).toContain('.bw-ppb-modal-slot-grid');
+    expect(css).toContain('width:345px');
+    expect(css).toContain('max-width:345px');
+    expect(css).toContain('grid-template-columns:repeat(3,104.328px)');
+    expect(css).toContain('.bw-ppb-modal-slot-grid .bw-slot-card--empty');
+    expect(css).toContain('border:2px dashed #111111');
+    expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty');
+    expect(css).toContain('.bw-ppb-dynamic-checkout-visual');
+    expect(css).toContain('background:#111111');
+    expect(css).toContain('width:360px');
+    expect(css).toContain('grid-template-columns:repeat(3,110.66px)');
   });
 });

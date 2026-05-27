@@ -1,0 +1,149 @@
+{% comment %}
+  Wolfpack Bundle Builder — Product Page App Block
+  Renders the direct product-page bundle builder for bundle container products.
+{% endcomment %}
+
+{% assign app_namespace = '$app' %}
+{% assign bundle_variant = product.variants.first %}
+{% assign bundle_ui_config = nil %}
+{% assign is_bundle_product = false %}
+
+{% if bundle_variant %}
+  {% assign variant_metafields = bundle_variant.metafields[app_namespace] %}
+  {% if variant_metafields %}
+    {% assign bundle_ui_config_field = variant_metafields['bundle_ui_config'] %}
+    {% if bundle_ui_config_field and bundle_ui_config_field.value %}
+      {% assign bundle_ui_config = bundle_ui_config_field.value %}
+      {% assign is_bundle_product = true %}
+    {% endif %}
+  {% endif %}
+{% endif %}
+
+{% unless is_bundle_product or request.design_mode %}
+  {% break %}
+{% endunless %}
+
+{% assign bundle_id = nil %}
+{% if bundle_ui_config.bundleId %}
+  {% assign bundle_id = bundle_ui_config.bundleId %}
+{% elsif block.settings.bundle_id != blank %}
+  {% assign bundle_id = block.settings.bundle_id %}
+{% endif %}
+
+<div
+  {{ block.shopify_attributes }}
+  id="bundle-builder-app"
+  data-bundle-id="{{ bundle_id }}"
+  data-bundle-type="{% if bundle_ui_config and bundle_ui_config.bundleType %}{{ bundle_ui_config.bundleType }}{% else %}product_page{% endif %}"
+  data-is-bundle-product="{{ is_bundle_product }}"
+  data-is-container-product="{{ is_bundle_product }}"
+  data-container-bundle-id="{{ bundle_id }}"
+  data-bundle-config='{{ bundle_ui_config | json }}'
+  data-hide-default-buttons="{{ is_bundle_product }}"
+  data-show-step-numbers="{{ block.settings.show_step_numbers }}"
+  class="bundle-widget-container"
+>
+  <div class="bundle-steps"></div>
+  <div class="bundle-includes"></div>
+  <button class="add-bundle-to-cart">{{ block.settings.add_to_cart_label }}</button>
+</div>
+
+{% if is_bundle_product and block.settings.hide_native_buttons %}
+<style>
+  .product-form__cart-submit,
+  .product-form__buttons button[name="add"],
+  .btn.product-form__cart-submit,
+  button[name="add"]:not(.bundle-add-to-cart),
+  input[name="add"]:not(.bundle-add-to-cart),
+  form[action*="/cart/add"] button[type="submit"]:not(.bundle-add-to-cart),
+  form[action*="/cart/add"] input[type="submit"]:not(.bundle-add-to-cart),
+  .shopify-payment-button,
+  .dynamic-checkout__content,
+  .additional-checkout-buttons {
+    display: none !important;
+  }
+</style>
+{% endif %}
+
+<script>
+  if (!window.bundleWidgetContext) {
+    window.currentProductId = {{ product.id | json }};
+    window.currentProductHandle = {{ product.handle | json }};
+    window.shopCurrency = {{ shop.currency | json }};
+    window.shopMoneyFormat = {{ shop.money_format | json }};
+    window.shopifyMultiCurrency = {
+      shopBaseCurrency: {{ shop.currency | json }},
+      shopMoneyFormat: {{ shop.money_format | json }},
+      customerCurrency: {{ cart.currency.iso_code | json }},
+      customerMoneyFormat: {{ shop.money_format | json }},
+      isMultiCurrencyEnabled: {% if shop.enabled_currencies.size > 1 %}true{% else %}false{% endif %}
+    };
+    window.bundleWidgetContext = true;
+  }
+</script>
+
+<script>
+  {% assign server_url_field = shop.metafields[app_namespace]['serverUrl'] %}
+  window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+</script>
+
+{% # theme-check-disable RemoteAsset %}
+<link
+  rel="stylesheet"
+  href="{{ shop.url }}/apps/product-bundles/api/design-settings/{{ shop.domain }}?bundleType=product_page"
+  type="text/css"
+>
+{% # theme-check-enable RemoteAsset %}
+
+<link rel="stylesheet" href="{{ 'bundle-widget.css' | asset_url }}">
+
+<script>
+  (function () {
+    var s = document.createElement('script');
+    {% if bundle_ui_config.sdkMode == true %}
+      s.src = '{{ 'wolfpack-bundles-sdk.js' | asset_url }}';
+      var container = document.getElementById('bundle-builder-app');
+      if (container) { container.setAttribute('data-sdk-mode', 'true'); }
+    {% else %}
+      s.src = '{{ 'bundle-widget-product-page-bundled.js' | asset_url }}';
+    {% endif %}
+    s.async = false;
+    document.head.appendChild(s);
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Bundle Builder",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "bundle_id",
+      "label": "Bundle ID",
+      "info": "Optional manual override. Bundle container products resolve this automatically."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_step_numbers",
+      "label": "Show step numbers",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_native_buttons",
+      "label": "Hide native product buttons",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "add_to_cart_label",
+      "label": "Add button label",
+      "default": "Add Bundle to Cart"
+    }
+  ]
+}
+{% endschema %}

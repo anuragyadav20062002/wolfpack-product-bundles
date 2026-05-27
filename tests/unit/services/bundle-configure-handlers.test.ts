@@ -6,6 +6,7 @@
  */
 
 import {
+  handleUpdateBundleProduct,
   normaliseShopifyProductId,
   safeJsonParse,
 } from "../../../app/services/bundles/bundle-configure-handlers.server";
@@ -102,5 +103,55 @@ describe("safeJsonParse", () => {
 
   it("returns the default for undefined input", () => {
     expect(safeJsonParse(undefined, "default")).toBe("default");
+  });
+});
+
+describe("handleUpdateBundleProduct", () => {
+  it("updates title and optional media with the current productUpdate mutation", async () => {
+    const admin = {
+      graphql: jest.fn().mockResolvedValue({
+        json: async () => ({
+          data: {
+            productUpdate: {
+              product: { id: "gid://shopify/Product/1", title: "Product Page Fixture" },
+              userErrors: [],
+            },
+          },
+        }),
+      }),
+    } as any;
+    const formData = new FormData();
+    formData.set("productId", "gid://shopify/Product/1");
+    formData.set("productTitle", "Product Page Fixture");
+    formData.set("productImageUrl", "https://app.example.test/bundle-product-placeholder.png");
+
+    const response = await handleUpdateBundleProduct(
+      admin,
+      { shop: "test-shop.myshopify.com" } as any,
+      "bundle-1",
+      formData,
+    );
+    const body = await response.json();
+
+    expect(body.success).toBe(true);
+    expect(admin.graphql).toHaveBeenCalledTimes(1);
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductUpdateInput"),
+      expect.objectContaining({
+        variables: {
+          product: {
+            id: "gid://shopify/Product/1",
+            title: "Product Page Fixture",
+          },
+          media: [
+            {
+              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              alt: "Product Page Fixture - Bundle",
+              mediaContentType: "IMAGE",
+            },
+          ],
+        },
+      }),
+    );
   });
 });

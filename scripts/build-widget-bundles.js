@@ -36,7 +36,7 @@ const ROOT_DIR = join(__dirname, '..');
 // Verify live version in browser DevTools on the storefront:
 //   console.log(window.__BUNDLE_WIDGET_VERSION__)
 // ---------------------------------------------------------------------------
-const WIDGET_VERSION = '2.9.0';
+const WIDGET_VERSION = '2.9.6';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -49,6 +49,7 @@ const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/template-manager.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/component-generator.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/default-loading-animation.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/loading-overlay.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/variant-selector.js'),
 ];
 

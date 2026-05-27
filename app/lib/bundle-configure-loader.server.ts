@@ -22,6 +22,27 @@ const GET_BUNDLE_PRODUCT = `
       productType
       vendor
       tags
+      featuredMedia {
+        ... on MediaImage {
+          id
+          image {
+            url
+            altText
+          }
+        }
+      }
+      media(first: 5) {
+        nodes {
+          ... on MediaImage {
+            id
+            alt
+            image {
+              url
+              altText
+            }
+          }
+        }
+      }
       variants(first: 1) {
         edges {
           node {
@@ -93,7 +114,7 @@ export async function fetchEmbedData(
   admin: any,
   shop: string,
   apiKey: string,
-  embedBlockHandle = "bundle-full-page-embed",
+  embedBlockHandle = "bundle-app-embed",
 ): Promise<{ appEmbedEnabled: boolean; themeEditorUrl: string | null }> {
   const embedCheck = await checkAppEmbedEnabled(admin, shop, {
     blockHandles: [embedBlockHandle],

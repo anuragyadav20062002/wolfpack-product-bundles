@@ -15,7 +15,8 @@ function getDisplayPrice(state, PricingCalculator, CurrencyManager) {
   var discountInfo = PricingCalculator.calculateDiscount(
     state.bundleData,
     totals.totalPrice,
-    totals.totalQuantity
+    totals.totalQuantity,
+    totals.unitPrices
   );
 
   var original = totals.totalPrice;

@@ -10,9 +10,9 @@ generator client {
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
   // Comment out for development environment
-  provider = "postgresql"
+  provider  = "postgresql"
   // Comment out for production environment
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -49,34 +49,34 @@ enum DiscountImplementationType {
 }
 
 enum BundleType {
-  product_page  // Widget embedded in product page (current implementation)
-  full_page     // Dedicated bundle page (future feature)
+  product_page // Widget embedded in product page (current implementation)
+  full_page // Dedicated bundle page (future feature)
 }
 
 enum FullPageLayout {
-  footer_bottom  // Sticky footer at viewport bottom (default)
-  footer_side    // Sidebar panel to the right of product grid
+  footer_bottom // Sticky footer at viewport bottom (default)
+  footer_side // Sidebar panel to the right of product grid
 }
 
 model Session {
-  id                     String    @id
-  shop                   String
-  state                  String
-  isOnline               Boolean   @default(false)
-  scope                  String?
-  expires                DateTime?
-  accessToken            String
-  storefrontAccessToken  String? // Delegated Storefront API access token
-  userId                 BigInt?
-  firstName              String?
-  lastName               String?
-  email                  String?
-  accountOwner           Boolean   @default(false)
-  locale                 String?
-  collaborator           Boolean?  @default(false)
-  emailVerified          Boolean?  @default(false)
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
+  id                    String    @id
+  shop                  String
+  state                 String
+  isOnline              Boolean   @default(false)
+  scope                 String?
+  expires               DateTime?
+  accessToken           String
+  storefrontAccessToken String? // Delegated Storefront API access token
+  userId                BigInt?
+  firstName             String?
+  lastName              String?
+  email                 String?
+  accountOwner          Boolean   @default(false)
+  locale                String?
+  collaborator          Boolean?  @default(false)
+  emailVerified         Boolean?  @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([shop])
   @@index([shop, expires])
@@ -84,71 +84,83 @@ model Session {
 }
 
 model Bundle {
-  id               String            @id @default(cuid())
-  name             String
-  description      String?
-  shopId           String
-  shopifyProductId     String? // Shopify Product ID (GID) for product-page bundles
-  shopifyProductHandle String? // Shopify Product handle for preview URLs (e.g., "summer-bundle")
-  shopifyPageHandle String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
-  shopifyPageId    String? // Shopify Page ID (GID) for full-page bundles
-  shopifyPreviewPageId     String? // GID of draft preview page (cleared after publishing)
-  shopifyPreviewPageHandle String? // Handle of draft preview page (for reference and cleanup)
-  templateName     String? // Template name for bundle container (e.g., "cart-transform", "product")
-  promoBannerBgImage String? // URL of the promo banner background image (full-page bundles only)
-  promoBannerBgImageCrop String? // JSON {x,y,width} percentages defining the visible crop region
-  loadingGif       String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
-  tierConfig       Json?   // Pricing tier pills config: [{ label, linkedBundleId }] (full-page bundles only)
-  showStepTimeline Boolean? // Admin UI override for step timeline visibility; null = defer to theme editor setting
-  floatingBadgeEnabled Boolean  @default(false) // Show floating dismissible promo badge on storefront
-  floatingBadgeText    String   @default("")    // Badge text (max 60 chars)
+  id                                   String              @id @default(cuid())
+  name                                 String
+  description                          String?
+  shopId                               String
+  shopifyProductId                     String? // Shopify Product ID (GID) for product-page bundles
+  shopifyProductHandle                 String? // Shopify Product handle for preview URLs (e.g., "summer-bundle")
+  shopifyPageHandle                    String? // Shopify Page handle for full-page bundles (e.g., "build-your-bundle")
+  shopifyPageId                        String? // Shopify Page ID (GID) for full-page bundles
+  shopifyPreviewPageId                 String? // GID of draft preview page (cleared after publishing)
+  shopifyPreviewPageHandle             String? // Handle of draft preview page (for reference and cleanup)
+  templateName                         String? // Template name for bundle container (e.g., "cart-transform", "product")
+  promoBannerBgImage                   String? // URL of the promo banner background image (full-page bundles only)
+  promoBannerBgImageCrop               String? // JSON {x,y,width} percentages defining the visible crop region
+  loadingGif                           String? // URL of the loading GIF shown during bundle load, step transitions, and add-to-cart
+  tierConfig                           Json? // Pricing tier pills config: [{ label, linkedBundleId }] (full-page bundles only)
+  showStepTimeline                     Boolean? // Admin UI override for step timeline visibility; null = defer to theme editor setting
+  floatingBadgeEnabled                 Boolean             @default(false) // Show floating dismissible promo badge on storefront
+  floatingBadgeText                    String              @default("") // Badge text (max 60 chars)
   // Per-bundle behavioral settings
-  showProductPrices      Boolean @default(true)  // Show/hide product prices on product cards
-  showCompareAtPrices    Boolean @default(false) // Show compare-at (strike-through) prices
-  cartRedirectToCheckout Boolean @default(false) // Redirect to checkout instead of cart after add
-  allowQuantityChanges   Boolean @default(true)  // Allow customers to change per-product quantity
-  sdkMode                Boolean @default(false) // Load headless SDK instead of pre-built widget (product-page bundles only)
-  searchBarEnabled       Boolean @default(false) // Show search bar in the bundle widget (all bundle types)
+  showProductPrices                    Boolean             @default(true) // Show/hide product prices on product cards
+  showCompareAtPrices                  Boolean             @default(false) // Show compare-at (strike-through) prices
+  cartRedirectToCheckout               Boolean             @default(false) // Redirect to checkout instead of cart after add
+  allowQuantityChanges                 Boolean             @default(true) // Allow customers to change per-product quantity
+  sdkMode                              Boolean             @default(false) // Load headless SDK instead of pre-built widget (product-page bundles only)
+  searchBarEnabled                     Boolean             @default(false) // Show search bar in the bundle widget (all bundle types)
   // Per-bundle text overrides
-  textOverrides          Json?   // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
-  textOverridesByLocale  Json?   // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }
+  textOverrides                        Json? // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
+  textOverridesByLocale                Json? // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }
   // Gift Messages (FR-02)
-  giftMessagesEnabled              Boolean  @default(false)
-  giftMessageProductId             String?
-  giftMessageProductTitle          String?
-  giftMessageEnableSenderRecipient Boolean  @default(false)
-  giftMessageMandatory             Boolean  @default(false)
-  giftMessageEnableLimit           Boolean  @default(false)
-  giftMessageCharLimit             Int?
-  giftMessageSendEmail             Boolean  @default(false)
+  giftMessagesEnabled                  Boolean             @default(false)
+  giftMessageProductId                 String?
+  giftMessageProductTitle              String?
+  giftMessageEnableSenderRecipient     Boolean             @default(false)
+  giftMessageMandatory                 Boolean             @default(false)
+  giftMessageEnableLimit               Boolean             @default(false)
+  giftMessageCharLimit                 Int?
+  giftMessageSendEmail                 Boolean             @default(false)
   // Bundle Visibility — Bundle Widget (FR-04)
-  upsellWidgetEnabled              Boolean  @default(false)
-  upsellWidgetDisplayMode          String?
-  upsellWidgetDisplayOn            String?
-  autoSelectBrowsedProduct         Boolean  @default(false)
+  upsellWidgetEnabled                  Boolean             @default(false)
+  upsellWidgetDisplayMode              String?
+  upsellWidgetDisplayOn                String?
+  autoSelectBrowsedProduct             Boolean             @default(false)
   // Bundle Settings (FR-05)
-  preSelectedProductVariantId      String?
-  maxQtyPerProduct                 Int?
-  productSlotsEnabled              Boolean  @default(false)
-  productSlotIconUrl               String?
-  variantSelectorEnabled           Boolean  @default(true)
-  showTextOnAddButton              Boolean  @default(false)
-  bundleCartTitle                  String?
-  bundleCartSubtitle               String?
-  bundleBannerDesktopUrl           String?
-  bundleBannerMobileUrl            String?
-  bundleLevelCss                   String?
-  bundleType       BundleType        @default(product_page)
-  fullPageLayout   FullPageLayout?   @default(footer_bottom)
-  status           BundleStatus      @default(draft)
-  inventorySyncedAt DateTime?        // Last successful inventory sync timestamp
-  inventoryStaleAt  DateTime?        // Set when webhook indicates component inventory changed
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  steps            BundleStep[]
-  pricing          BundlePricing?
-  analytics        BundleAnalytics[]
-  customFields     BundleCustomField[]
+  preSelectedProductVariantId          String?
+  maxQtyPerProduct                     Int?
+  productSlotsEnabled                  Boolean             @default(false)
+  productSlotIconUrl                   String?
+  variantSelectorEnabled               Boolean             @default(true)
+  showTextOnAddButton                  Boolean             @default(false)
+  bundleCartTitle                      String?
+  bundleCartSubtitle                   String?
+  bundleBannerDesktopUrl               String?
+  bundleBannerMobileUrl                String?
+  bundleLevelCss                       String?
+  defaultProductsData                  Json?
+  boxSelection                         Json?
+  bundleUpsellConfig                   Json?
+  bundleTextConfig                     Json?
+  personalizationData                  Json?
+  discountDisplayOverride              Json?
+  individualSellingPlanSelection       Json?
+  validateQuantityPerProduct           Json?
+  useSingleStepCategoriesAsBundleSteps Boolean             @default(false)
+  // Select Template field names
+  bundleDesignTemplate                 String? // "FBP_SIDE_FOOTER" | "PDP_INPAGE" | "PDP_MODAL"
+  bundleDesignPresetId                 String? // "DEFAULT" | "CLASSIC" | "COMPACT" | "HORIZONTAL" | "CASCADE" | "COGNIVE" | "MODAL" | "SIMPLIFIED"
+  bundleType                           BundleType          @default(product_page)
+  fullPageLayout                       FullPageLayout?     @default(footer_bottom)
+  status                               BundleStatus        @default(draft)
+  inventorySyncedAt                    DateTime? // Last successful inventory sync timestamp
+  inventoryStaleAt                     DateTime? // Set when webhook indicates component inventory changed
+  createdAt                            DateTime            @default(now())
+  updatedAt                            DateTime            @updatedAt
+  steps                                BundleStep[]
+  pricing                              BundlePricing?
+  analytics                            BundleAnalytics[]
+  customFields                         BundleCustomField[]
 
   @@index([shopId])
   @@index([status])
@@ -180,8 +192,8 @@ model BundleStep {
   freeGiftName                String?
   addonLabel                  String?
   addonTitle                  String?
-  addonAddText                String?        // CTA button text when adding an add-on product (storefront)
-  addonReplaceText            String?        // CTA button text when replacing a selected add-on product (storefront)
+  addonAddText                String? // CTA button text when adding an add-on product (storefront)
+  addonReplaceText            String? // CTA button text when replacing a selected add-on product (storefront)
   addonIconUrl                String?
   addonDisplayFree            Boolean        @default(true)
   addonTiers                  Json?
@@ -190,10 +202,10 @@ model BundleStep {
   defaultVariantId            String?
   imageUrl                    String?
   bannerImageUrl              String?
-  timelineIconUrl             String?        // User-uploadable icon for step timeline (separate from bannerImageUrl)
-  pageTitle                   String?        // Page header title shown after the nav bar (full-page bundles)
-  filters                     Json?          // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
-  primaryVariantOption        String?        // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
+  timelineIconUrl             String? // User-uploadable icon for step timeline (separate from bannerImageUrl)
+  pageTitle                   String? // Page header title shown after the nav bar (full-page bundles)
+  filters                     Json? // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
+  primaryVariantOption        String? // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
   bundleId                    String
   bundle                      Bundle         @relation(fields: [bundleId], references: [id], onDelete: Cascade)
   StepProduct                 StepProduct[]
@@ -207,15 +219,28 @@ model BundleStep {
 }
 
 model StepCategory {
-  id          String     @id @default(cuid())
-  stepId      String
-  step        BundleStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
-  name        String     @default("")
-  sortOrder   Int        @default(0)
-  products    Json?      // [{id, title, imageUrl, variants, minQuantity, maxQuantity, position}]
-  collections Json?      // [{id, handle, title}]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                                  String     @id @default(cuid())
+  stepId                              String
+  step                                BundleStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  name                                String     @default("")
+  title                               String?
+  subTitle                            String?
+  sortOrder                           Int        @default(0)
+  categoryRank                        Int?
+  products                            Json? // hydrated picker product objects
+  selectedProducts                    Json? // hydrated picker selected product objects
+  collections                         Json? // hydrated selected collection objects used by current services
+  collectionsData                     Json? // hydrated picker collection source data
+  collectionsSelectedData             Json? // hydrated picker selected collection objects
+  conditions                          Json?
+  categoryBanner                      String?
+  categoryImg                         String?
+  autoNextStepOnConditionMet          Boolean    @default(false)
+  displayVariantsAsIndividualProducts Boolean    @default(false)
+  displayVariantsAsSwatches           Boolean    @default(false)
+  multiLangData                       Json?
+  createdAt                           DateTime   @default(now())
+  updatedAt                           DateTime   @updatedAt
 
   @@index([stepId])
   @@index([stepId, sortOrder])
@@ -242,19 +267,19 @@ model StepProduct {
 }
 
 model BundlePricing {
-  id                     String             @id @default(uuid())
-  bundleId               String             @unique
-  bundle                 Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
-  enabled                Boolean            @default(false)
-  method                 DiscountMethodType @default(percentage_off)
-  rules                  Json? // Stores array of standardized pricing rules with nested condition/discount structure
-  showFooter             Boolean            @default(true)
-  showProgressBar        Boolean            @default(false)
-  messages               Json? // Stores progress and qualified messages with showInCart flag
-  ruleMessagesByLocale   Json? // Stores per-locale rule messages: Record<locale, Record<ruleId, {discountText, successMessage}>>
-  displayOptions         Json? // BundleQuantityOptionsDisplay + PricingProgressBarDisplayOptions (FR-03)
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
+  id                   String             @id @default(uuid())
+  bundleId             String             @unique
+  bundle               Bundle             @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  enabled              Boolean            @default(false)
+  method               DiscountMethodType @default(percentage_off)
+  rules                Json? // Stores array of standardized pricing rules with nested condition/discount structure
+  showFooter           Boolean            @default(true)
+  showProgressBar      Boolean            @default(false)
+  messages             Json? // Stores progress and qualified messages with showInCart flag
+  ruleMessagesByLocale Json? // Stores per-locale rule messages: Record<locale, Record<ruleId, {discountText, successMessage}>>
+  displayOptions       Json? // BundleQuantityOptionsDisplay + PricingProgressBarDisplayOptions (FR-03)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   @@index([bundleId])
 }
@@ -267,7 +292,7 @@ model BundleCustomField {
   fieldType String   @default("text") // text, select, checkbox, number
   required  Boolean  @default(false)
   position  Int      @default(0)
-  options   Json?    // For select fields: ["Option A", "Option B"]
+  options   Json? // For select fields: ["Option A", "Option B"]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -294,9 +319,9 @@ model BundleAnalytics {
 
 // Design Control Panel Settings - Stores visual customization per bundle type
 model DesignSettings {
-  id                    String     @id @default(uuid())
-  shopId                String
-  bundleType            BundleType @default(product_page) // Allows different designs per bundle type
+  id         String     @id @default(uuid())
+  shopId     String
+  bundleType BundleType @default(product_page) // Allows different designs per bundle type
 
   // Product Card Section
   productCardBgColor          String? @default("#FFFFFF")
@@ -316,42 +341,42 @@ model DesignSettings {
   productFinalPriceFontWeight Int?    @default(700)
 
   // Product Card Layout (Phase 1 & 2 - Full Page)
-  productCardWidth            Int?    @default(280) // Fixed card width in pixels
-  productCardHeight           Int?    @default(420) // Fixed card height in pixels
-  productCardSpacing          Int?    @default(20)  // Gap between cards in pixels
-  productCardBorderRadius     Int?    @default(8)   // Card border radius
-  productCardPadding          Int?    @default(12)  // Internal card padding
-  productCardBorderWidth      Int?    @default(1)   // Card border width
-  productCardBorderColor      String? @default("rgba(0,0,0,0.08)") // Card border color
-  productCardShadow           String? @default("0 2px 8px rgba(0,0,0,0.04)") // Base shadow
-  productCardHoverShadow      String? @default("0 8px 24px rgba(0,0,0,0.12)") // Hover shadow
+  productCardWidth        Int?    @default(280) // Fixed card width in pixels
+  productCardHeight       Int?    @default(420) // Fixed card height in pixels
+  productCardSpacing      Int?    @default(20) // Gap between cards in pixels
+  productCardBorderRadius Int?    @default(8) // Card border radius
+  productCardPadding      Int?    @default(12) // Internal card padding
+  productCardBorderWidth  Int?    @default(1) // Card border width
+  productCardBorderColor  String? @default("rgba(0,0,0,0.08)") // Card border color
+  productCardShadow       String? @default("0 2px 8px rgba(0,0,0,0.04)") // Base shadow
+  productCardHoverShadow  String? @default("0 8px 24px rgba(0,0,0,0.12)") // Hover shadow
 
   // Product Image (Phase 5 - Full Page)
-  productImageHeight          Int?    @default(280) // Product image height
-  productImageBorderRadius    Int?    @default(6)   // Image border radius
-  productImageBgColor         String? @default("#F8F8F8") // Image background
+  productImageHeight       Int?    @default(280) // Product image height
+  productImageBorderRadius Int?    @default(6) // Image border radius
+  productImageBgColor      String? @default("#F8F8F8") // Image background
 
   // Product Modal (Phase 4 - Full Page)
-  modalBgColor                String? @default("#FFFFFF") // Modal background
-  modalBorderRadius           Int?    @default(12)  // Modal border radius
-  modalTitleFontSize          Int?    @default(28)  // Modal title size
-  modalTitleFontWeight        Int?    @default(700) // Modal title weight
-  modalPriceFontSize          Int?    @default(22)  // Modal price size
-  modalVariantBorderRadius    Int?    @default(8)   // Variant selector radius
-  modalButtonBgColor          String? @default("#000000") // Add To Box button
-  modalButtonTextColor        String? @default("#FFFFFF") // Button text color
-  modalButtonBorderRadius     Int?    @default(8)   // Button border radius
+  modalBgColor             String? @default("#FFFFFF") // Modal background
+  modalBorderRadius        Int?    @default(12) // Modal border radius
+  modalTitleFontSize       Int?    @default(28) // Modal title size
+  modalTitleFontWeight     Int?    @default(700) // Modal title weight
+  modalPriceFontSize       Int?    @default(22) // Modal price size
+  modalVariantBorderRadius Int?    @default(8) // Variant selector radius
+  modalButtonBgColor       String? @default("#000000") // Add To Box button
+  modalButtonTextColor     String? @default("#FFFFFF") // Button text color
+  modalButtonBorderRadius  Int?    @default(8) // Button border radius
 
   // Button Section
-  buttonBgColor               String? @default("#000000")
-  buttonTextColor             String? @default("#FFFFFF")
-  buttonFontSize              Int?    @default(16)
-  buttonFontWeight            Int?    @default(600)
-  buttonBorderRadius          Int?    @default(8)
-  buttonHoverBgColor          String? @default("#333333")
-  buttonAddToCartText         String? @default("Add to cart")
-  buttonAddedBgColor          String? @default("#10B981")
-  buttonAddedTextColor        String? @default("#FFFFFF")
+  buttonBgColor        String? @default("#000000")
+  buttonTextColor      String? @default("#FFFFFF")
+  buttonFontSize       Int?    @default(16)
+  buttonFontWeight     Int?    @default(600)
+  buttonBorderRadius   Int?    @default(8)
+  buttonHoverBgColor   String? @default("#333333")
+  buttonAddToCartText  String? @default("Add to cart")
+  buttonAddedBgColor   String? @default("#10B981")
+  buttonAddedTextColor String? @default("#FFFFFF")
 
   // Variant Selector
   variantSelectorBgColor      String? @default("#FFFFFF")
@@ -359,25 +384,26 @@ model DesignSettings {
   variantSelectorBorderRadius Int?    @default(8)
 
   // Quantity Selector Section
-  quantitySelectorBgColor     String? @default("#000000")
-  quantitySelectorTextColor   String? @default("#FFFFFF")
-  quantitySelectorFontSize    Int?    @default(16)
-  quantitySelectorBorderRadius Int?   @default(8)
+  quantitySelectorBgColor      String? @default("#000000")
+  quantitySelectorTextColor    String? @default("#FFFFFF")
+  quantitySelectorFontSize     Int?    @default(16)
+  quantitySelectorBorderRadius Int?    @default(8)
 
   // Global Colors Section
-  globalColorsSettings        Json?
+  globalColorsSettings Json?
 
   // Bundle Footer Section
-  footerSettings              Json?
+  footerSettings Json?
 
   // Bundle Step Bar Section
-  stepBarSettings             Json?
+  stepBarSettings Json?
 
   // General Section
-  generalSettings             Json?
+  generalSettings Json?
+  bundleCartLineMessaging Json?
 
   // Promo Banner Section (Full Page)
-  promoBannerSettings         Json?
+  promoBannerSettings Json?
 
   // Search Input Styling
   searchInputBgColor          String? @default("#F8F8F8")
@@ -389,78 +415,78 @@ model DesignSettings {
   searchClearButtonColor      String? @default("#666666")
 
   // Skeleton Loading
-  skeletonBaseBgColor         String? @default("#F0F0F0")
-  skeletonShimmerColor        String? @default("#E8E8E8")
-  skeletonHighlightColor      String? @default("#FFFFFF")
+  skeletonBaseBgColor    String? @default("#F0F0F0")
+  skeletonShimmerColor   String? @default("#E8E8E8")
+  skeletonHighlightColor String? @default("#FFFFFF")
 
   // Card Hover & Transitions
-  productCardHoverTranslateY  Int?    @default(2)
-  productCardTransitionDuration Int?  @default(200)
+  productCardHoverTranslateY    Int? @default(2)
+  productCardTransitionDuration Int? @default(200)
 
   // Tile Quantity Badge
-  tileQuantityBadgeBgColor    String? @default("#000000")
-  tileQuantityBadgeTextColor  String? @default("#FFFFFF")
+  tileQuantityBadgeBgColor   String? @default("#000000")
+  tileQuantityBadgeTextColor String? @default("#FFFFFF")
 
   // Modal Close Button
-  modalCloseButtonColor       String? @default("#777777")
-  modalCloseButtonBgColor     String? @default("rgba(255,255,255,0.9)")
-  modalCloseButtonHoverColor  String? @default("#333333")
+  modalCloseButtonColor      String? @default("#777777")
+  modalCloseButtonBgColor    String? @default("rgba(255,255,255,0.9)")
+  modalCloseButtonHoverColor String? @default("#333333")
 
   // Typography
-  buttonTextTransform         String? @default("none")
-  buttonLetterSpacing         Int?    @default(0)
+  buttonTextTransform String? @default("none")
+  buttonLetterSpacing Int?    @default(0)
 
   // Focus / Accessibility
-  focusOutlineColor           String? @default("#5C6AC4")
-  focusOutlineWidth           Int?    @default(2)
+  focusOutlineColor String? @default("#5C6AC4")
+  focusOutlineWidth Int?    @default(2)
 
   // Toast Notifications (extended customization)
-  toastBorderRadius           Int?    @default(8)
-  toastBorderColor            String? @default("#FFFFFF")
-  toastBorderWidth            Int?    @default(0)
-  toastFontSize               Int?    @default(13)
-  toastFontWeight             Int?    @default(500)
-  toastAnimationDuration      Int?    @default(300)
-  toastBoxShadow              String? @default("0 4px 12px rgba(0, 0, 0, 0.15)")
-  toastEnterFromBottom        Boolean @default(false)
+  toastBorderRadius      Int?    @default(8)
+  toastBorderColor       String? @default("#FFFFFF")
+  toastBorderWidth       Int?    @default(0)
+  toastFontSize          Int?    @default(13)
+  toastFontWeight        Int?    @default(500)
+  toastAnimationDuration Int?    @default(300)
+  toastBoxShadow         String? @default("0 4px 12px rgba(0, 0, 0, 0.15)")
+  toastEnterFromBottom   Boolean @default(false)
 
   // Pricing Tier Pills
-  tierPillActiveBgColor       String? @default("#111111")
-  tierPillActiveTextColor     String? @default("#FFFFFF")
-  tierPillInactiveBgColor     String? @default("#F2FAE6")
-  tierPillInactiveTextColor   String? @default("#333333")
-  tierPillHoverBgColor        String? @default("#DCF5D2")
-  tierPillBorderColor         String? @default("#000000")
-  tierPillBorderRadius        Int?    @default(8)
-  tierPillHeight              Int?    @default(52)
-  tierPillGap                 Int?    @default(12)
-  tierPillFontSize            Int?    @default(14)
-  tierPillFontWeight          Int?    @default(600)
+  tierPillActiveBgColor     String? @default("#111111")
+  tierPillActiveTextColor   String? @default("#FFFFFF")
+  tierPillInactiveBgColor   String? @default("#F2FAE6")
+  tierPillInactiveTextColor String? @default("#333333")
+  tierPillHoverBgColor      String? @default("#DCF5D2")
+  tierPillBorderColor       String? @default("#000000")
+  tierPillBorderRadius      Int?    @default(8)
+  tierPillHeight            Int?    @default(52)
+  tierPillGap               Int?    @default(12)
+  tierPillFontSize          Int?    @default(14)
+  tierPillFontWeight        Int?    @default(600)
 
   // Loading Overlay
-  loadingOverlayBgColor       String? @default("rgba(255,255,255,0.85)")
-  loadingOverlayTextColor     String? @default("#333333")
+  loadingOverlayBgColor   String? @default("rgba(255,255,255,0.85)")
+  loadingOverlayTextColor String? @default("#333333")
 
   // Widget Style & Bottom Sheet
-  widgetStyle                 String? @default("classic")
-  bottomSheetOverlayOpacity   Float?  @default(0.5)
-  bottomSheetAnimationDuration Int?   @default(400)
-  emptySlotBorderStyle        String? @default("dashed")
-  emptySlotBorderColor        String? @default("#007AFF")
-  freeGiftBadgeUrl            String? @default("")
-  freeGiftBadgePosition       String? @default("top-left")
-  includedBadgeUrl            String? @default("")
-  includedBadgePosition       String? @default("top-left")
+  widgetStyle                  String? @default("classic")
+  bottomSheetOverlayOpacity    Float?  @default(0.5)
+  bottomSheetAnimationDuration Int?    @default(400)
+  emptySlotBorderStyle         String? @default("dashed")
+  emptySlotBorderColor         String? @default("#007AFF")
+  freeGiftBadgeUrl             String? @default("")
+  freeGiftBadgePosition        String? @default("top-left")
+  includedBadgeUrl             String? @default("")
+  includedBadgePosition        String? @default("top-left")
 
   // Advanced Settings - Custom CSS
-  customCss                   String?
+  customCss String?
 
   // Cached Shopify theme colors — used as fallback global color anchors when no DCP values set.
   // Populated on install and on Sync Bundle. Null = fall through to hardcoded defaults.
-  themeColors                 Json?
+  themeColors Json?
 
-  createdAt                   DateTime @default(now())
-  updatedAt                   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([shopId, bundleType]) // One design config per shop per bundle type
   @@index([shopId])
@@ -504,32 +530,32 @@ model ComplianceRecord {
 // ==============================================================================
 
 enum SubscriptionStatus {
-  pending      // Subscription created, awaiting merchant approval
-  active       // Subscription active and billing
-  cancelled    // Subscription cancelled
-  frozen       // Shop billing frozen
-  expired      // Subscription expired
-  declined     // Merchant declined subscription
+  pending // Subscription created, awaiting merchant approval
+  active // Subscription active and billing
+  cancelled // Subscription cancelled
+  frozen // Shop billing frozen
+  expired // Subscription expired
+  declined // Merchant declined subscription
 }
 
 enum SubscriptionPlan {
-  free  // Free tier: 3 bundles max
-  grow  // Grow tier: 20 bundles max, $9.99/month
+  free // Free tier: 3 bundles max
+  grow // Grow tier: 20 bundles max, $9.99/month
 }
 
 // Shop model - represents a Shopify store
 model Shop {
-  id                    String         @id @default(uuid())
-  shopDomain            String         @unique // e.g., "mystore.myshopify.com"
-  name                  String?        // Store name
-  email                 String?        // Store contact email
-  installedAt           DateTime       @default(now())
-  uninstalledAt         DateTime?      // Track when app was uninstalled
-  firstCreateTourEligible Boolean      @default(false) // True only for newly installed shops until their first create flow
-  subscriptions         Subscription[] // Subscription history
-  currentSubscriptionId String?        // Current active subscription
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
+  id                      String         @id @default(uuid())
+  shopDomain              String         @unique // e.g., "mystore.myshopify.com"
+  name                    String? // Store name
+  email                   String? // Store contact email
+  installedAt             DateTime       @default(now())
+  uninstalledAt           DateTime? // Track when app was uninstalled
+  firstCreateTourEligible Boolean        @default(false) // True only for newly installed shops until their first create flow
+  subscriptions           Subscription[] // Subscription history
+  currentSubscriptionId   String? // Current active subscription
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
 
   @@index([shopDomain])
   @@index([currentSubscriptionId])
@@ -546,12 +572,12 @@ model Subscription {
   name                  String // Plan display name (e.g., "Grow Plan")
   price                 Float              @default(0) // Monthly price in USD
   currencyCode          String             @default("USD")
-  trialDaysRemaining    Int?               // Null for non-trial subscriptions
-  currentPeriodStart    DateTime?          // Start of current billing period
-  currentPeriodEnd      DateTime?          // End of current billing period
-  cancelledAt           DateTime?          // When subscription was cancelled
-  confirmationUrl       String?            // Shopify confirmation URL
-  returnUrl             String?            // Return URL after approval
+  trialDaysRemaining    Int? // Null for non-trial subscriptions
+  currentPeriodStart    DateTime? // Start of current billing period
+  currentPeriodEnd      DateTime? // End of current billing period
+  cancelledAt           DateTime? // When subscription was cancelled
+  confirmationUrl       String? // Shopify confirmation URL
+  returnUrl             String? // Return URL after approval
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
@@ -563,17 +589,17 @@ model Subscription {
 
 // WebhookEvent model - tracks processed webhooks for idempotency
 model WebhookEvent {
-  id            String   @id @default(uuid())
-  shopDomain    String
-  topic         String // e.g., "APP_SUBSCRIPTIONS_UPDATE"
-  webhookId     String? // Shopify webhook ID if available
-  payload       Json // Full webhook payload
-  processed     Boolean  @default(false)
-  processedAt   DateTime?
-  error         String? // Error message if processing failed
-  retryCount    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String    @id @default(uuid())
+  shopDomain  String
+  topic       String // e.g., "APP_SUBSCRIPTIONS_UPDATE"
+  webhookId   String? // Shopify webhook ID if available
+  payload     Json // Full webhook payload
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  error       String? // Error message if processing failed
+  retryCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@unique([shopDomain, topic, webhookId]) // Prevent duplicate processing
   @@index([shopDomain])
@@ -589,16 +615,16 @@ model WebhookEvent {
 model OrderAttribution {
   id          String   @id @default(uuid())
   shopId      String
-  bundleId    String?  // nullable - may track non-bundle orders too
-  orderId     String   // Shopify order GID
+  bundleId    String? // nullable - may track non-bundle orders too
+  orderId     String // Shopify order GID
   orderNumber String?
   utmSource   String?
   utmMedium   String?
   utmCampaign String?
   utmContent  String?
   utmTerm     String?
-  landingPage String?  // The URL customer landed on
-  revenue     Int      // cents
+  landingPage String? // The URL customer landed on
+  revenue     Int // cents
   currency    String   @default("USD")
   createdAt   DateTime @default(now())
 

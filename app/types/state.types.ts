@@ -377,6 +377,16 @@ export interface StepTimelineSettings {
   stepTimelineCompleteColor: string;
 }
 
+export interface BundleCartLineMessagingSettings {
+  isEnabled: boolean;
+  showBundleContains: boolean;
+  showOriginalPrice: boolean;
+  discountDisplay: {
+    isEnabled: boolean;
+    format: string;
+  };
+}
+
 /**
  * Complete design settings for a bundle type
  */
@@ -401,6 +411,7 @@ export interface DesignSettings extends
   SkeletonSettingsType,
   WidgetStyleSettingsType,
   StepTimelineSettings {
+  bundleCartLineMessaging?: BundleCartLineMessagingSettings;
   customCss: string;
 }
 

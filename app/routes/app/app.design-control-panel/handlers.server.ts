@@ -6,7 +6,9 @@
 
 import { json } from "@remix-run/node";
 import { prisma } from "../../../db.server";
+import type { ShopifyAdmin } from "../../../lib/auth-guards.server";
 import { processCss } from "../../../lib/css-sanitizer";
+import { CartTransformService } from "../../../services/cart-transform-service.server";
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -203,6 +205,7 @@ function buildSettingsData(settings: Record<string, unknown>) {
     bottomSheetAnimationDuration: settings.bottomSheetAnimationDuration,
     emptySlotBorderStyle: settings.emptySlotBorderStyle,
     emptySlotBorderColor: settings.emptySlotBorderColor,
+    bundleCartLineMessaging: settings.bundleCartLineMessaging ?? null,
     // JSON blob columns — built from key lists above
     footerSettings: pick(settings, FOOTER_KEYS),
     stepBarSettings: pick(settings, STEP_BAR_KEYS),
@@ -219,7 +222,8 @@ function buildSettingsData(settings: Record<string, unknown>) {
  */
 export async function handleSaveSettings(
   shopId: string,
-  formData: { bundleType: "product_page" | "full_page"; settings: Record<string, unknown> }
+  formData: { bundleType: "product_page" | "full_page"; settings: Record<string, unknown> },
+  admin?: ShopifyAdmin
 ) {
   const { bundleType, settings } = formData;
 
@@ -251,6 +255,20 @@ export async function handleSaveSettings(
     },
     update: settingsData,
   });
+
+  if (bundleType === "product_page" && admin && settings.bundleCartLineMessaging) {
+    const syncResult = await CartTransformService.syncCartLineMessagingSettings(
+      admin,
+      shopId,
+      settings.bundleCartLineMessaging
+    );
+    if (!syncResult.success) {
+      return json({
+        success: false,
+        message: syncResult.error ?? "Failed to sync cart transform settings",
+      }, { status: 500 });
+    }
+  }
 
   // Build response message with any CSS warnings
   let message = "Design settings saved successfully!";

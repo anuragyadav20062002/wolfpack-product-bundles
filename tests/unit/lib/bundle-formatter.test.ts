@@ -114,6 +114,116 @@ describe("formatBundleForWidget", () => {
     expect(result.steps[0].products).toHaveLength(0);
   });
 
+  it("includes saved step page title for Full Page storefront content", () => {
+    const step = makeStep({ pageTitle: "Choose your jewelry" });
+    const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
+    expect(result.steps[0].pageTitle).toBe("Choose your jewelry");
+  });
+
+  it("keeps category-backed products under categories for storefront runtime", () => {
+    const step = makeStep({
+      StepProduct: [],
+      StepCategory: [
+        {
+          products: [
+            {
+              id: "gid://shopify/Product/9427287703811",
+              title: "123Luxury Armor Matte Case",
+              imageUrl: "https://cdn.shopify.com/category-product.jpg",
+              variants: [
+                {
+                  id: "gid://shopify/ProductVariant/48191691456771",
+                  price: "123.00",
+                  compareAtPrice: "246.00",
+                  title: "Dark Blue / For iphone 6 6S Plus",
+                  availableForSale: true,
+                  image: { originalSrc: "https://cdn.shopify.com/variant.jpg" },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      steps: [step],
+    }) as any);
+
+    expect(result.steps[0].products).toEqual([]);
+    expect(result.steps[0].categories[0].products).toEqual([
+      expect.objectContaining({
+        id: "gid://shopify/Product/9427287703811",
+        title: "123Luxury Armor Matte Case",
+      }),
+    ]);
+  });
+
+  it("preserves hydrated category fields for storefront runtime", () => {
+    const condition = { type: "quantity", condition: "greaterThanOrEqualTo", value: "01" };
+    const selectedCollection = { id: "gid://shopify/Collection/333", handle: "frontpage", title: "Home page" };
+    const categoryProduct = {
+      id: "gid://shopify/Product/9427287703811",
+      title: "123Luxury Armor Matte Case",
+      variants: [{ id: "gid://shopify/ProductVariant/48191691456771", price: "123.00" }],
+    };
+    const step = makeStep({
+      StepCategory: [
+        {
+          id: "category98476",
+          name: "Category 1 Direct Product Category",
+          title: "Pick audit items",
+          subTitle: "Choose audit products",
+          sortOrder: 1,
+          categoryRank: 1,
+          products: [categoryProduct],
+          selectedProducts: [],
+          collections: [selectedCollection],
+          collectionsData: [],
+          collectionsSelectedData: [selectedCollection],
+          conditions: [condition],
+          categoryBanner: "https://cdn.example/category.png",
+          categoryImg: "https://cdn.example/icon.png",
+          autoNextStepOnConditionMet: true,
+          displayVariantsAsIndividualProducts: true,
+          displayVariantsAsSwatches: false,
+          multiLangData: { en: { title: "Pick audit items" } },
+        },
+      ],
+    });
+
+    const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
+
+    expect(result.steps[0].categories).toEqual([
+      {
+        categoryId: "category98476",
+        name: "Category 1 Direct Product Category",
+        title: "Pick audit items",
+        subTitle: "Choose audit products",
+        rank: 1,
+        categoryRank: 1,
+        products: [
+          {
+            id: "gid://shopify/Product/9427287703811",
+            title: "123Luxury Armor Matte Case",
+          },
+        ],
+        selectedProducts: [],
+        collections: [selectedCollection],
+        collectionsData: [],
+        collectionsSelectedData: [selectedCollection],
+        conditions: [condition],
+        categoryBanner: "https://cdn.example/category.png",
+        categoryImg: "https://cdn.example/icon.png",
+        autoNextStepOnConditionMet: true,
+        displayVariantsAsIndividualProducts: true,
+        displayVariantsAsSwatches: false,
+        multiLangData: { en: { title: "Pick audit items" } },
+      },
+    ]);
+  });
+
   it("includes pricing when present", () => {
     const pricing = {
       enabled: true,
@@ -126,6 +236,120 @@ describe("formatBundleForWidget", () => {
     expect(result.pricing).not.toBeNull();
     expect(result.pricing!.method).toBe("percentage_off");
     expect(result.pricing!.rules).toHaveLength(1);
+  });
+
+  it("includes full-page design fields without a product-page template data wrapper", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleDesignTemplate: "FBP_SIDE_FOOTER",
+      bundleDesignPresetId: "DEFAULT",
+    }) as any);
+
+    expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
+    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignTemplateData).toBeNull();
+  });
+
+  it("bridges product-page design preset into runtime template data", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      bundleDesignTemplate: "PDP_INPAGE",
+      bundleDesignPresetId: "CASCADE",
+    }) as any);
+
+    expect(result.bundleDesignTemplate).toBe("PDP_INPAGE");
+    expect(result.bundleDesignPresetId).toBe("CASCADE");
+    expect(result.bundleDesignTemplateData).toEqual({ templateId: "CASCADE" });
+  });
+
+  it("includes direct product-page bundle settings contracts", () => {
+    const defaultProductsData = {
+      isDefaultProductsEnabled: true,
+      defaultProductsTitle: "Preselected audit products",
+      products: [
+        {
+          productId: "8322625700036",
+          graphqlId: "gid://shopify/Product/8322625700036",
+          handle: "18k-bloom-earrings",
+          variants: [
+            {
+              variantId: "45038876459204",
+              variantGraphqlId: "gid://shopify/ProductVariant/45038876459204",
+              inventoryQuantity: 13,
+              price: "579.00",
+            },
+          ],
+          hasOnlyDefaultVariant: true,
+          title: "18k Bloom Earrings",
+          requiredQuantity: 1,
+        },
+      ],
+    };
+    const validateQuantityPerProduct = { isEnabled: true, allowedQuantity: 1 };
+    const individualSellingPlanSelection = { isEnabled: false, showFor: "ALL_PRODUCTS" };
+    const bundleTextConfig = {
+      bundleSummary: {
+        title: "Your Bundle",
+        subTitle: "Review your bundle",
+      },
+    };
+
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      defaultProductsData,
+      validateQuantityPerProduct,
+      individualSellingPlanSelection,
+      bundleTextConfig,
+    }) as any);
+
+    expect(result.defaultProductsData).toEqual(defaultProductsData);
+    expect(result.validateQuantityPerProduct).toEqual(validateQuantityPerProduct);
+    expect(result.individualSellingPlanSelection).toEqual(individualSellingPlanSelection);
+    expect(result.bundleTextConfig).toEqual(bundleTextConfig);
+  });
+
+  it("includes direct full-page add-ons personalization contract", () => {
+    const personalizationData = {
+      isPersonalizationEnabled: true,
+      addonProducts: {
+        isEnabled: true,
+        title: "Optional audit extras",
+        type: "MULTI_TIER",
+        tiers: [
+          {
+            tierId: "tier74285",
+            title: "Audit Tier 1",
+            selectedAddonProducts: [
+              {
+                id: "gid://shopify/Product/8322626126020",
+                productId: "8322626126020",
+                graphqlId: "gid://shopify/Product/8322626126020",
+                title: "14k Dangling Obsidian Earrings",
+              },
+            ],
+            eligibilityCondition: {
+              type: "AMOUNT",
+              value: 1,
+              isValidateEligibilityConditionEnabled: true,
+            },
+            discount: { type: "PERCENTAGE", value: 10 },
+            displayVariantsAsIndividualProducts_addons: false,
+            conditions: [],
+          },
+        ],
+        multiLangData: {},
+        addonsMessaging: {
+          isEnabled: true,
+          tier1: {
+            ineligibleState: "Add product(s) worth at least ##addonsConditionDiff## ##currencyUnit## more to claim ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons",
+            eligibleState: "Congrats you are eligible for ##addonsDiscountValue####addonsDiscountValueUnit## off on Add ons",
+          },
+        },
+      },
+    };
+
+    const result = formatBundleForWidget(makeBundle({ personalizationData }) as any);
+
+    expect(result.personalizationData).toEqual(personalizationData);
   });
 
   it("uses empty array for missing step collections", () => {

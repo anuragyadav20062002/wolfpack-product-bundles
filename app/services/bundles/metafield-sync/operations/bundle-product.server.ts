@@ -10,8 +10,11 @@ import { AppLogger } from "../../../../lib/logger";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
 import { calculateComponentPricing } from "../utils/pricing";
-import type { PriceAdjustment, BundleUiConfig, ComponentPricing } from "../types";
+import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
+import { collectAddonComponentVariants } from "../utils/addon-components";
+import type { BundleUiConfig, ComponentPricing } from "../types";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
+import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
 
 async function ensureBundleParentVariantRequiresComponents(
   admin: ShopifyAdmin,
@@ -47,6 +50,98 @@ async function ensureBundleParentVariantRequiresComponents(
   if (userErrors.length > 0) {
     throw new Error(`Failed to mark bundle parent variant as requiring components: ${userErrors[0].message}`);
   }
+}
+
+function getProductReferenceId(product: any): string | null {
+  if (!product || typeof product !== "object") return null;
+  const id = product.productId ?? product.id ?? product.graphqlId;
+  return typeof id === "string" && id.trim() !== "" ? id : null;
+}
+
+function collectStepProductReferences(step: any): Array<{ id: string }> {
+  const productIds: string[] = [];
+
+  for (const product of Array.isArray(step.StepProduct) ? step.StepProduct : []) {
+    const id = getProductReferenceId(product);
+    if (id && !productIds.includes(id)) productIds.push(id);
+  }
+
+  return productIds.map((id) => ({ id }));
+}
+
+function normalizeShopifyGid(value: unknown, resource: "ProductVariant"): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (raw.startsWith(`gid://shopify/${resource}/`)) return raw;
+  if (/^\d+$/.test(raw)) return `gid://shopify/${resource}/${raw}`;
+  return null;
+}
+
+function getCachedVariantId(variant: any): string | null {
+  return normalizeShopifyGid(
+    variant?.id
+      ?? variant?.variantGraphqlId
+      ?? variant?.graphqlId
+      ?? variant?.variantId,
+    "ProductVariant",
+  );
+}
+
+function parseCachedVariantPriceCents(variant: any): number | null {
+  const value = variant?.priceCents ?? variant?.price;
+  if (value === null || value === undefined || value === "") return null;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+
+  if (typeof value === "number" && Number.isInteger(value) && value >= 1000) {
+    return value;
+  }
+
+  return Math.round(parsed * 100);
+}
+
+function collectCachedStepVariants(
+  steps: any[],
+): Array<{ variantId: string; quantity: number; priceCents: number | null; title?: string }> {
+  const variants: Array<{ variantId: string; quantity: number; priceCents: number | null; title?: string }> = [];
+
+  const appendProductVariants = (product: any, quantity: number) => {
+    const cachedVariants = Array.isArray(product?.variants) ? product.variants : [];
+    for (const variant of cachedVariants) {
+      const variantId = getCachedVariantId(variant);
+      if (!variantId) continue;
+
+      variants.push({
+        variantId,
+        quantity,
+        priceCents: parseCachedVariantPriceCents(variant),
+        title: typeof product?.title === "string" ? product.title : undefined,
+      });
+    }
+  };
+
+  for (const step of Array.isArray(steps) ? steps : []) {
+    const quantity = step.minQuantity || 1;
+
+    for (const stepProduct of Array.isArray(step.StepProduct) ? step.StepProduct : []) {
+      appendProductVariants(stepProduct, quantity);
+    }
+
+    for (const product of Array.isArray(step.products) ? step.products : []) {
+      appendProductVariants(product, quantity);
+    }
+
+    for (const category of Array.isArray(step.StepCategory) ? step.StepCategory : []) {
+      for (const product of Array.isArray(category.products) ? category.products : []) {
+        appendProductVariants(product, quantity);
+      }
+    }
+  }
+
+  return variants;
 }
 
 /**
@@ -230,6 +325,41 @@ export async function updateBundleProductMetafields(
   // Batch fetch all variants WITH PRICES in a single query (for component pricing)
   // Array to collect component data for pricing calculation
   const componentPricingData: Array<{ variantId: string; priceCents: number; quantity: number; title?: string }> = [];
+  const appendComponentVariant = (
+    variantId: string,
+    quantity: number,
+    priceCents: number | null,
+    title?: string,
+  ) => {
+    if (componentReferences.includes(variantId)) return;
+
+    componentReferences.push(variantId);
+    componentQuantities.push(quantity);
+
+    if (priceCents !== null) {
+      componentPricingData.push({
+        variantId,
+        priceCents,
+        quantity,
+        title,
+      });
+    }
+  };
+
+  for (const addonVariant of collectAddonComponentVariants(bundleConfiguration.personalizationData)) {
+    if (addonVariant.variantId) {
+      appendComponentVariant(addonVariant.variantId, 1, addonVariant.priceCents, addonVariant.title);
+      continue;
+    }
+
+    if (addonVariant.productId && !productIdMap.some(item => item.productId === addonVariant.productId)) {
+      productIdMap.push({
+        productId: addonVariant.productId,
+        stepMinQuantity: 1,
+        source: "addonProducts",
+      });
+    }
+  }
 
   if (productIdMap.length > 0) {
     const productIds = productIdMap.map(item => item.productId);
@@ -246,16 +376,7 @@ export async function updateBundleProductMetafields(
       const result = variantResults.get(cleanId);
 
       if (result?.success && result.variantId) {
-        componentReferences.push(result.variantId);
-        componentQuantities.push(item.stepMinQuantity);
-
-        // Collect pricing data for component_pricing calculation
-        componentPricingData.push({
-          variantId: result.variantId,
-          priceCents: result.priceCents || 0,
-          quantity: item.stepMinQuantity,
-          title: result.title
-        });
+        appendComponentVariant(result.variantId, item.stepMinQuantity, result.priceCents || 0, result.title);
       } else {
         AppLogger.warn("Could not get variant for bundle product", {
           component: "metafield-sync",
@@ -267,33 +388,16 @@ export async function updateBundleProductMetafields(
     });
   }
 
-  // Build price_adjustment config (Shopify standard with extensions)
-  const priceAdjustment: PriceAdjustment = {
-    method: bundleConfiguration.pricing?.method || 'percentage_off',
-    value: 0
-  };
-
-  if (bundleConfiguration.pricing?.enabled && bundleConfiguration.pricing?.rules?.length > 0) {
-    const rule = bundleConfiguration.pricing.rules[0];
-
-    // Extract method and value from nested discount structure
-    if (rule.discount) {
-      // Use discount.method if available, otherwise fall back to pricing.method
-      priceAdjustment.method = rule.discount.method || bundleConfiguration.pricing.method;
-      priceAdjustment.value = parseFloat(rule.discount.value) || 0;
-    } else if (typeof rule.discountValue !== 'undefined') {
-      priceAdjustment.value = parseFloat(rule.discountValue) || 0;
-    }
-
-    // Add conditions if present
-    if (rule.condition) {
-      priceAdjustment.conditions = {
-        type: rule.condition.type || 'quantity',
-        operator: rule.condition.operator || 'gte',
-        value: parseFloat(rule.condition.value) || 0
-      };
-    }
+  for (const cachedVariant of collectCachedStepVariants(bundleConfiguration.steps)) {
+    appendComponentVariant(
+      cachedVariant.variantId,
+      cachedVariant.quantity,
+      cachedVariant.priceCents,
+      cachedVariant.title,
+    );
   }
+
+  const priceAdjustment = buildPriceAdjustmentConfig(bundleConfiguration.pricing);
 
   // Calculate per-component pricing for expanded bundle checkout display
   const componentPricing: ComponentPricing[] = calculateComponentPricing(
@@ -314,15 +418,38 @@ export async function updateBundleProductMetafields(
     fullPagePageHandle: bundleConfiguration.bundleType === BundleType.FULL_PAGE
       ? (bundleConfiguration.shopifyPageHandle || null)
       : null,
+    bundleDesignTemplate: bundleConfiguration.bundleDesignTemplate ?? null,
+    bundleDesignPresetId: bundleConfiguration.bundleDesignPresetId ?? null,
+    bundleDesignTemplateData: bundleConfiguration.bundleDesignTemplateData
+      ?? (bundleConfiguration.bundleType === BundleType.PRODUCT_PAGE && bundleConfiguration.bundleDesignPresetId
+        ? { templateId: bundleConfiguration.bundleDesignPresetId }
+        : null),
+    defaultProductsData: bundleConfiguration.defaultProductsData ?? {},
+    boxSelection: bundleConfiguration.boxSelection ?? null,
+    bundleUpsellConfig: bundleConfiguration.bundleUpsellConfig ?? null,
+    bundleTextConfig: bundleConfiguration.bundleTextConfig ?? null,
+    personalizationData: bundleConfiguration.personalizationData ?? null,
+    discountDisplayOverride: bundleConfiguration.discountDisplayOverride ?? null,
+    individualSellingPlanSelection: bundleConfiguration.individualSellingPlanSelection ?? {
+      isEnabled: false,
+      showFor: "ALL_PRODUCTS",
+    },
+    validateQuantityPerProduct: bundleConfiguration.validateQuantityPerProduct ?? {
+      isEnabled: false,
+      allowedQuantity: 1,
+    },
+    useSingleStepCategoriesAsBundleSteps: bundleConfiguration.useSingleStepCategoriesAsBundleSteps ?? false,
     bundleVariantId: bundleVariantId, // Bundle parent variant ID for cart transform EXPAND operation
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
       id: step.id,
       name: step.name,
+      pageTitle: step.pageTitle ?? null,
       position: step.position || 0,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
-      products: (step.StepProduct || []).map((sp: any) => ({ id: sp.productId })).filter((p: { id: string }) => p.id),
+      products: collectStepProductReferences(step),
       collections: Array.isArray(step.collections) ? step.collections : [],
+      categories: formatStepCategoriesForRuntime(step),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue,
@@ -349,20 +476,19 @@ export async function updateBundleProductMetafields(
     pricing: bundleConfiguration.pricing ? {
       enabled: bundleConfiguration.pricing.enabled || false,
       method: bundleConfiguration.pricing.method || 'percentage_off',
-      rules: (bundleConfiguration.pricing.rules || []).map((rule: any) => ({
-        condition: rule.condition ? {
-          type: rule.condition.type || 'quantity',
-          operator: rule.condition.operator || 'gte',
-          value: parseFloat(rule.condition.value) || 0
-        } : null,
-        discount: rule.discount ? {
-          method: rule.discount.method || bundleConfiguration.pricing.method,
-          value: parseFloat(rule.discount.value) || 0
-        } : {
-          method: bundleConfiguration.pricing.method,
-          value: parseFloat(rule.discountValue) || 0
-        }
-      }))
+      rules: (bundleConfiguration.pricing.rules || []).map((rule: any) => {
+        const flat: Record<string, unknown> = {
+          id: rule.id,
+          conditionType: rule.conditionType || rule.condition?.type || 'quantity',
+          conditionValue: parseFloat(rule.conditionValue ?? rule.condition?.value ?? 0) || 0,
+          discountValue: parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0,
+        };
+        if (rule.customerBuys !== undefined) flat.customerBuys = Number(rule.customerBuys);
+        if (rule.customerGets !== undefined) flat.customerGets = Number(rule.customerGets);
+        if (rule.bxyDiscountType !== undefined) flat.bxyDiscountType = rule.bxyDiscountType;
+        if (rule.bxyApplyMode !== undefined) flat.bxyApplyMode = rule.bxyApplyMode;
+        return flat;
+      }),
     } : null,
     messaging: {
       progressTemplate: bundleConfiguration.pricing?.messages?.progress || bundleConfiguration.messaging?.progressTemplate || 'Add {conditionText} to get {discountText}',

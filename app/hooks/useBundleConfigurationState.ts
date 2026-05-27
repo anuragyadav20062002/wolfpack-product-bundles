@@ -47,6 +47,8 @@ export interface BundleProductData {
   handle?: string;
   status: string;
   featuredImage?: { url: string };
+  featuredMedia?: { image?: { url?: string | null } | null } | null;
+  media?: { nodes?: Array<{ image?: { url?: string | null } | null } | null> } | null;
   images?: { originalSrc: string }[];
 }
 
@@ -59,6 +61,16 @@ export interface UseBundleConfigurationProps {
 // ============================================
 // HOOK IMPLEMENTATION
 // ============================================
+
+export function getBundleProductImageUrl(loadedBundleProduct?: any): string {
+  return (
+    loadedBundleProduct?.featuredImage?.url ||
+    loadedBundleProduct?.featuredMedia?.image?.url ||
+    loadedBundleProduct?.media?.nodes?.find((node: any) => node?.image?.url)?.image?.url ||
+    loadedBundleProduct?.images?.[0]?.originalSrc ||
+    ""
+  );
+}
 
 export function useBundleConfigurationState({
   bundle,
@@ -205,10 +217,7 @@ export function useBundleConfigurationState({
   const [bundleProduct, setBundleProductRaw] = useState<any>(loadedBundleProduct || null);
   const [productStatus, setProductStatusRaw] = useState(loadedBundleProduct?.status || "ACTIVE");
   const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
-  const [productImageUrl, setProductImageUrl] = useState(
-    loadedBundleProduct?.featuredImage?.url ||
-    loadedBundleProduct?.images?.[0]?.originalSrc || ""
-  );
+  const [productImageUrl, setProductImageUrl] = useState(getBundleProductImageUrl(loadedBundleProduct));
 
   // Wrapped setters that trigger dirty flag
   const setBundleProduct = useCallback((value: any) => {
@@ -244,8 +253,9 @@ export function useBundleConfigurationState({
     () => normalizePricingRuleMessages({
       rules: Array.isArray(bundle.pricing?.rules) ? bundle.pricing.rules : [],
       messages: bundle.pricing?.messages || {},
+      method: bundle.pricing?.method,
     }),
-    [bundle.pricing?.messages, bundle.pricing?.rules]
+    [bundle.pricing?.messages, bundle.pricing?.method, bundle.pricing?.rules]
   );
 
   const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>(initialRuleMessages);

@@ -20,7 +20,14 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ConditionValidator = require('../../../app/assets/widgets/shared/condition-validator.js');
 
-const { calculateStepTotalAfterUpdate, canUpdateQuantity, isStepConditionSatisfied, OPERATORS } = ConditionValidator;
+const {
+  calculateStepTotalAfterUpdate,
+  canUpdateQuantity,
+  isStepConditionSatisfied,
+  getAllowedQuantityPerProduct,
+  canUpdateProductQuantity,
+  OPERATORS,
+} = ConditionValidator;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -103,6 +110,42 @@ describe('canUpdateQuantity — no condition', () => {
   it('returns null limitText when allowed', () => {
     const step = makeStep(EQ, 2);
     expect(canUpdateQuantity(step, {}, 'A', 1).limitText).toBeNull();
+  });
+});
+
+// ─── canUpdateProductQuantity — per-product validation ───────────────────────
+
+describe('canUpdateProductQuantity — per-product validation', () => {
+  it('returns null limit when quantity validation is disabled', () => {
+    expect(getAllowedQuantityPerProduct({ isEnabled: false, allowedQuantity: 1 })).toBeNull();
+    expect(canUpdateProductQuantity({ isEnabled: false, allowedQuantity: 1 }, 1, 2)).toEqual({
+      allowed: true,
+      limit: null,
+    });
+  });
+
+  it('defaults enabled validation to a max of 1 when allowedQuantity is invalid', () => {
+    expect(getAllowedQuantityPerProduct({ isEnabled: true, allowedQuantity: 0 })).toBe(1);
+    expect(getAllowedQuantityPerProduct({ isEnabled: true, allowedQuantity: 'bad' })).toBe(1);
+  });
+
+  it('allows an increase up to the allowed per-product quantity', () => {
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 2 }, 1, 2)).toEqual({
+      allowed: true,
+      limit: 2,
+    });
+  });
+
+  it('blocks an increase above the allowed per-product quantity', () => {
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 1, 2)).toEqual({
+      allowed: false,
+      limit: 1,
+    });
+  });
+
+  it('always allows decreases and removals', () => {
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 2, 1).allowed).toBe(true);
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 1, 0).allowed).toBe(true);
   });
 });
 

@@ -6,19 +6,15 @@ import { AppLogger } from "../../../lib/logger";
 // Note: Migrated from @shopify/polaris to Polaris web components (s-* and ui-*)
 import {
   DiscountMethod,
-  ConditionType,
-  ConditionOperator,
   type PricingRule,
-  generateRulePreview,
   centsToAmount,
   amountToCents,
+  createNewPricingRule,
 } from "../../../types/pricing";
 import {
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
-  DISCOUNT_CONDITION_TYPE_OPTIONS,
-  DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { useTranslation } from "react-i18next";
@@ -43,11 +39,12 @@ import {
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
   handleValidateWidgetPlacement,
+  handleUpdateBundleDesignTemplate,
+  handleValidateSellingPlanGroups,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
 import type { LoaderData, BundleProductCardProps } from "./types";
-import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import {
   MultiLanguageTextModal,
@@ -66,11 +63,38 @@ import {
 } from "../_shared/bundle-configure/modal-utils";
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
+import {
+  DEFAULT_PROGRESS_BAR_PROGRESS_TEXT,
+  DEFAULT_PROGRESS_BAR_SUCCESS_TEXT,
+  getDefaultDiscountRuleSuccessMessage,
+  getDefaultDiscountRuleText,
+} from "../../../lib/pricing-display-options";
+import {
+  INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE,
+  PRODUCT_PAGE_EDIT_DEFAULTS_HREF,
+  PRODUCT_PAGE_SETUP_ITEMS,
+  SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
+  buildProductPageThemeEditorDeepLink,
+} from "../../../lib/bundle-config/product-page-admin-sections";
+import {
+  buildDefaultProductEntryFromPicker,
+  normalizeDefaultProductsData,
+  type DefaultProductsData,
+} from "../../../lib/bundle-config/default-products";
 
 declare global {
   interface Window {
     shopify?: { config?: { shop?: string } };
   }
+}
+
+interface SubscriptionValidationResponse {
+  success: boolean;
+  isValid?: boolean;
+  productCount?: number;
+  plans?: Array<{ id: string; name: string }>;
+  message?: string | null;
+  error?: string;
 }
 
 // showPolarisModal / hidePolarisModal imported from _shared/bundle-configure/modal-utils
@@ -79,6 +103,14 @@ const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
   ["{{addonsConditionDiff}}", "The remaining quantity a customer needs to add to unlock the add-on discount."],
   ["{{addonsDiscountValue}}", "The numerical value of the add-on discount (e.g. the '10' in 10% off)."],
   ["{{addonsDiscountValueUnit}}", "The unit symbol for the add-on discount (% or $)."],
+];
+
+const DISCOUNT_TEMPLATE_VARIABLES: [string, string][] = [
+  ["{{discountConditionDiff}}", "The remaining quantity or monetary amount a customer needs to add to their cart to unlock the discount."],
+  ["{{discountUnit}}", "The symbol for the discount requirement, such as your store's currency symbol ($) for amount-based rules."],
+  ["{{discountValue}}", "The numerical value of the discount reward itself (e.g., the '10' in a 10% or $10 discount)."],
+  ["{{discountValueUnit}}", "The symbol used for the discount reward, such as the percent sign (%) or the store's currency symbol ($)."],
+  ["{{discountedItems}}", "The quantity of items that will be discounted or given free as part of the \"Get Y\" offer."],
 ];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -125,7 +157,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       ? fetchBundleProduct(admin, bundle.shopifyProductId, bundleId)
       : Promise.resolve(null),
     fetchShopLocales(admin),
-    fetchEmbedData(admin, session.shop, apiKey, "bundle-product-page-embed"),
+    fetchEmbedData(admin, session.shop, apiKey, "bundle-app-embed"),
   ]);
 
   return json({
@@ -178,6 +210,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleValidateWidgetPlacement(admin, session, bundleId);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
+      case "updateBundleDesignTemplate":
+        return await handleUpdateBundleDesignTemplate(admin, session, bundleId, formData);
+      case "validateSellingPlanGroups":
+        return await handleValidateSellingPlanGroups(admin, session, bundleId);
       default:
         return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
@@ -193,17 +229,174 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.product-page-bundle.configure.$bundleId/handlers/
 
 // Static navigation items - moved outside component to prevent recreation on every render
-const bundleSetupItems = [
-  { id: "step_setup",         label: "Step Setup",         iconType: "note"   },
-  { id: "discount_pricing",   label: "Discount & Pricing", iconType: "filter" },
-  { id: "bundle_visibility",  label: "Bundle Visibility",  iconType: "view"   },
-  { id: "bundle_settings",    label: "Bundle Settings",    iconType: "edit"   },
-];
+const bundleSetupItems = PRODUCT_PAGE_SETUP_ITEMS;
 
 const bundleVisibilityChildItems = [
   { id: "bundle_widget", label: "Bundle Widget" },
   { id: "bundle_embed",  label: "Bundle Embed"  },
 ];
+
+const productPageTemplateOptions = [
+  { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/productPageThumbnail.png" },
+  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/fullPageThumbnail.png" },
+  { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/sidePanelThumbnail.png" },
+  { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
+] as const;
+
+type VisibilityDisplayConfiguration = {
+  showOnAllBundleProducts: boolean;
+  selectedProducts: unknown[];
+  showOnSpecificProductPages: unknown[];
+  collectionsSelectedData: unknown[];
+  showOnSpecificCollectionPages: unknown[];
+};
+
+function asVisibilityArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function getVisibilityDisplayTarget(
+  displayConfiguration: Partial<VisibilityDisplayConfiguration> | null | undefined,
+  allValue: string,
+): string {
+  if (!displayConfiguration) return allValue;
+  if (asVisibilityArray(displayConfiguration.collectionsSelectedData).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificCollectionPages).length > 0) {
+    return "specific_collections";
+  }
+  if (asVisibilityArray(displayConfiguration.selectedProducts).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificProductPages).length > 0) {
+    return "specific_products";
+  }
+  return displayConfiguration.showOnAllBundleProducts === false ? "specific_products" : allValue;
+}
+
+function buildVisibilityDisplayConfiguration(
+  displayOn: string | null | undefined,
+  selectedProducts: unknown[] = [],
+  showOnSpecificProductPages: unknown[] = [],
+  collectionsSelectedData: unknown[] = [],
+  showOnSpecificCollectionPages: unknown[] = [],
+): VisibilityDisplayConfiguration {
+  const showOnAllBundleProducts = displayOn === "all" || displayOn === "all_products";
+  const productPageTargets = showOnSpecificProductPages.length > 0 ? showOnSpecificProductPages : selectedProducts;
+  const collectionPageTargets = showOnSpecificCollectionPages.length > 0 ? showOnSpecificCollectionPages : collectionsSelectedData;
+
+  return {
+    showOnAllBundleProducts,
+    selectedProducts: displayOn === "specific_products" ? selectedProducts.map((product) => compactVisibilityProductReference(product)) : [],
+    showOnSpecificProductPages: displayOn === "specific_products" ? productPageTargets.map((product) => compactVisibilityProductPageReference(product)) : [],
+    collectionsSelectedData: displayOn === "specific_collections" ? collectionsSelectedData.map((collection) => compactVisibilityCollectionReference(collection)) : [],
+    showOnSpecificCollectionPages: displayOn === "specific_collections" ? collectionPageTargets.map((collection) => compactVisibilityCollectionPageReference(collection)) : [],
+  };
+}
+
+function getVisibilityResourceId(resource: any): string | null {
+  return resource?.graphqlId
+    ?? resource?.admin_graphql_api_id
+    ?? resource?.storefrontId
+    ?? resource?.id
+    ?? null;
+}
+
+function getVisibilityResourceNumericId(resource: any): string {
+  const id = String(resource?.productId ?? resource?.collectionId ?? getVisibilityResourceId(resource) ?? "");
+  return id.includes("/") ? id.split("/").pop() ?? id : id;
+}
+
+function getVisibilityImageUrl(resource: any): string | null {
+  return resource?.imageUrl
+    ?? resource?.featuredImage?.url
+    ?? resource?.image?.url
+    ?? resource?.image?.src
+    ?? resource?.images?.[0]?.originalSrc
+    ?? resource?.images?.[0]?.url
+    ?? resource?.images?.[0]?.src
+    ?? null;
+}
+
+function getVisibilityPickerSelection(picked: any): any[] | null {
+  if (Array.isArray(picked)) return picked;
+  if (Array.isArray(picked?.selection)) return picked.selection;
+  return null;
+}
+
+function buildVisibilitySelectionIds(resources: unknown[]) {
+  return resources
+    .map((resource: any) => getVisibilityResourceId(resource))
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+    .map((id) => ({ id }));
+}
+
+function compactVisibilityImages(resource: any) {
+  const imageUrl = getVisibilityImageUrl(resource);
+  return imageUrl ? [{ originalSrc: imageUrl }] : [];
+}
+
+function compactVisibilityProductReference(product: any) {
+  const graphqlId = getVisibilityResourceId(product);
+  const imageUrl = getVisibilityImageUrl(product);
+
+  return {
+    id: graphqlId,
+    productId: getVisibilityResourceNumericId(product),
+    graphqlId,
+    handle: product?.handle ?? "",
+    title: product?.title ?? "Untitled product",
+    images: compactVisibilityImages(product),
+    imageUrl,
+    variants: [],
+  };
+}
+
+function compactVisibilityProductPageReference(product: any) {
+  const normalized = compactVisibilityProductReference(product);
+  return {
+    productId: normalized.productId,
+    graphqlId: normalized.graphqlId,
+    handle: normalized.handle,
+    variants: normalized.variants,
+    images: normalized.images,
+    title: normalized.title,
+  };
+}
+
+function normalizeVisibilityProductForDisplayConfiguration(product: any) {
+  return compactVisibilityProductReference(product);
+}
+
+function normalizeVisibilityProductPageTarget(product: any) {
+  return compactVisibilityProductPageReference(product);
+}
+
+function compactVisibilityCollectionReference(collection: any) {
+  const graphqlId = getVisibilityResourceId(collection);
+  return {
+    id: graphqlId,
+    collectionId: getVisibilityResourceNumericId(collection),
+    graphqlId,
+    handle: collection?.handle ?? "",
+    title: collection?.title ?? "Untitled collection",
+  };
+}
+
+function compactVisibilityCollectionPageReference(collection: any) {
+  const normalized = compactVisibilityCollectionReference(collection);
+  return {
+    collectionId: normalized.collectionId,
+    graphqlId: normalized.graphqlId,
+    handle: normalized.handle,
+    variants: [],
+    images: [],
+    title: normalized.title,
+  };
+}
+
+function normalizeVisibilityCollectionForDisplayConfiguration(collection: any) {
+  return compactVisibilityCollectionReference(collection);
+}
+
+function normalizeVisibilityCollectionPageTarget(collection: any) {
+  return compactVisibilityCollectionPageReference(collection);
+}
 
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
@@ -386,6 +579,7 @@ export default function ConfigureBundleFlow() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
+  const subscriptionFetcher = useFetcher<SubscriptionValidationResponse>();
   const revalidator = useRevalidator();
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
@@ -464,7 +658,6 @@ export default function ConfigureBundleFlow() {
     activeSection,
     setActiveSection,
     forceNavigation,
-    setForceNavigation,
 
     // Original values ref
     originalValuesRef,
@@ -506,10 +699,40 @@ export default function ConfigureBundleFlow() {
   const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
 
   // Bundle Visibility — Bundle Widget state (FR-04)
-  const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>((bundle as any).upsellWidgetEnabled ?? false);
+  const savedBundleUpsellConfig = ((bundle as any).bundleUpsellConfig ?? null) as any;
+  const savedWidgetConfiguration = savedBundleUpsellConfig?.widgetConfiguration;
+  const savedUpsellConfiguration = savedBundleUpsellConfig?.upsellConfiguration;
+  const savedWidgetDisplayConfiguration = savedWidgetConfiguration?.displayConfiguration;
+  const savedEmbedDisplayConfiguration = savedUpsellConfiguration?.displayConfiguration;
+  const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
   const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
-  const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>((bundle as any).upsellWidgetDisplayOn ?? "all");
-  const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>((bundle as any).autoSelectBrowsedProduct ?? false);
+  const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>(
+    (bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all")
+  );
+  const [upsellWidgetTitle, setUpsellWidgetTitle] = useState<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
+  const [upsellWidgetDescription, setUpsellWidgetDescription] = useState<string>(savedWidgetConfiguration?.description ?? "");
+  const [upsellWidgetButtonText, setUpsellWidgetButtonText] = useState<string>(savedWidgetConfiguration?.buttonText ?? "Buy With Bundle");
+  const [upsellWidgetImageUrl, setUpsellWidgetImageUrl] = useState<string>(savedWidgetConfiguration?.imageUrl ?? "");
+  const [upsellWidgetSelectedProducts, setUpsellWidgetSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.selectedProducts));
+  const [upsellWidgetSpecificProductPages, setUpsellWidgetSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificProductPages));
+  const [upsellWidgetCollectionsSelectedData, setUpsellWidgetCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.collectionsSelectedData));
+  const [upsellWidgetSpecificCollectionPages, setUpsellWidgetSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificCollectionPages));
+  const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>(
+    savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
+  );
+  const [bundleEmbedEnabled, setBundleEmbedEnabled] = useState<boolean>(savedUpsellConfiguration?.isEnabled ?? textOverrides.bundleEmbedEnabled === "true");
+  const [bundleEmbedTitle, setBundleEmbedTitle] = useState<string>(savedUpsellConfiguration?.title ?? textOverrides.embedTitle ?? "Build Your Bundle & Save More");
+  const [bundleEmbedSubTitle, setBundleEmbedSubTitle] = useState<string>(savedUpsellConfiguration?.subTitle ?? textOverrides.embedSubTitle ?? "");
+  const [bundleEmbedDisplayOn, setBundleEmbedDisplayOn] = useState<string>(
+    textOverrides.embedDisplayOn ?? getVisibilityDisplayTarget(savedEmbedDisplayConfiguration, "all_products")
+  );
+  const [bundleEmbedAddBrowsedProduct, setBundleEmbedAddBrowsedProduct] = useState<boolean>(
+    savedUpsellConfiguration?.useLinkProductAsDefaultProduct ?? textOverrides.embedAddBrowsedProduct === "true"
+  );
+  const [bundleEmbedSelectedProducts, setBundleEmbedSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.selectedProducts));
+  const [bundleEmbedSpecificProductPages, setBundleEmbedSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificProductPages));
+  const [bundleEmbedCollectionsSelectedData, setBundleEmbedCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.collectionsSelectedData));
+  const [bundleEmbedSpecificCollectionPages, setBundleEmbedSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificCollectionPages));
 
   // FR-02: Gift Messages state
   const [giftMessagesEnabled, setGiftMessagesEnabled] = useState<boolean>((bundle as any).giftMessagesEnabled ?? false);
@@ -522,15 +745,56 @@ export default function ConfigureBundleFlow() {
   const [giftMessageSendEmail, setGiftMessageSendEmail] = useState<boolean>((bundle as any).giftMessageSendEmail ?? false);
 
   // FR-03: Display options state (Quantity Options + Progress Bar)
-  const _savedDisplayOpts = (bundle as any).bundlePricing?.displayOptions ?? {};
+  const _savedDisplayOpts = (bundle as any).pricing?.displayOptions ?? {};
+  const savedQuantityOptionsByRuleId = (_savedDisplayOpts?.bundleQuantityOptions?.optionsByRuleId ?? {}) as Record<string, { label?: string; subtext?: string }>;
   const [qtyOptionsEnabled, setQtyOptionsEnabled] = useState<boolean>(_savedDisplayOpts?.bundleQuantityOptions?.enabled === true);
   const [qtyOptionsDefaultRuleId, setQtyOptionsDefaultRuleId] = useState<string | null>(_savedDisplayOpts?.bundleQuantityOptions?.defaultRuleId ?? null);
-  const [qtyRuleLabels, setQtyRuleLabels] = useState<Record<string, string>>({});
-  const [qtyRuleSubtexts, setQtyRuleSubtexts] = useState<Record<string, string>>({});
+  const [qtyRuleLabels, setQtyRuleLabels] = useState<Record<string, string>>(
+    Object.fromEntries(Object.entries(savedQuantityOptionsByRuleId).map(([ruleId, option]) => [ruleId, option.label ?? ""]))
+  );
+  const [qtyRuleSubtexts, setQtyRuleSubtexts] = useState<Record<string, string>>(
+    Object.fromEntries(Object.entries(savedQuantityOptionsByRuleId).map(([ruleId, option]) => [ruleId, option.subtext ?? ""]))
+  );
+  const [qtyRuleTextsByLocaleByRuleId, setQtyRuleTextsByLocaleByRuleId] = useState<Record<string, Record<string, { label: string; subtext: string }>>>(
+    _savedDisplayOpts?.bundleQuantityOptions?.optionsByLocaleByRuleId ?? {}
+  );
   const [progressBarEnabled, setProgressBarEnabled] = useState<boolean>(_savedDisplayOpts?.progressBar?.enabled === true);
   const [progressBarType, setProgressBarType] = useState<string>(_savedDisplayOpts?.progressBar?.type ?? "step_based");
-  const [progressBarProgressText, setProgressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? "Add {{conditionText}} to unlock {{discountText}}");
-  const [progressBarSuccessText, setProgressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? "{{discountText}} unlocked");
+  const [progressBarProgressText] = useState<string>(_savedDisplayOpts?.progressBar?.progressText ?? DEFAULT_PROGRESS_BAR_PROGRESS_TEXT);
+  const [progressBarSuccessText] = useState<string>(_savedDisplayOpts?.progressBar?.successText ?? DEFAULT_PROGRESS_BAR_SUCCESS_TEXT);
+
+  const [tierTextByRuleId, setTierTextByRuleId] = useState<Record<string, { tierText: string; tierSubtext: string }>>(
+    ((bundle as any).pricing?.messages?.tierTextByRuleId as Record<string, { tierText: string; tierSubtext: string }>) ?? {}
+  );
+  const [tierTextByLocaleByRuleId, setTierTextByLocaleByRuleId] = useState<Record<string, Record<string, { tierText: string; tierSubtext: string }>>>(
+    ((bundle as any).pricing?.messages?.tierTextByLocaleByRuleId as Record<string, Record<string, { tierText: string; tierSubtext: string }>>) ?? {}
+  );
+  const progressBarMultiLangModalRef = useRef<HTMLElement>(null);
+  const [isProgressBarMultiLangModalOpen, setIsProgressBarMultiLangModalOpen] = useState(false);
+  const [activeProgressBarLocale, setActiveProgressBarLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+  const bundleQuantityMultiLangModalRef = useRef<HTMLElement>(null);
+  const [isBundleQuantityMultiLangModalOpen, setIsBundleQuantityMultiLangModalOpen] = useState(false);
+  const [activeBundleQuantityLocale, setActiveBundleQuantityLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+
+  const [discountMessagingMultiLanguageEnabled, setDiscountMessagingMultiLanguageEnabled] = useState<boolean>(
+    !!(bundle as any).pricing?.ruleMessagesByLocale
+  );
+  const [ruleMessagesByLocale, setRuleMessagesByLocale] = useState<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
+    ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
+  );
+  const [activeDiscountLocale, setActiveDiscountLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+  const [globalSuccessMessage, setGlobalSuccessMessage] = useState<string>(
+    (bundle as any).pricing?.messages?.successMessage ?? ""
+  );
+  const [successMessageByLocale, setSuccessMessageByLocale] = useState<Record<string, string>>(
+    ((bundle as any).pricing?.messages?.successMessageByLocale as Record<string, string>) ?? {}
+  );
 
   // FR-05: Bundle Settings — new sub-sections
   const [preSelectedProductVariantId, setPreSelectedProductVariantId] = useState<string>((bundle as any).preSelectedProductVariantId ?? "");
@@ -544,6 +808,27 @@ export default function ConfigureBundleFlow() {
   const [bundleBannerDesktopUrl, setBundleBannerDesktopUrl] = useState<string>((bundle as any).bundleBannerDesktopUrl ?? "");
   const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
   const [bundleLevelCss, setBundleLevelCss] = useState<string>((bundle as any).bundleLevelCss ?? "");
+  const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
+  const initialDefaultProductsData = useMemo(
+    () => normalizeDefaultProductsData((bundle as any).defaultProductsData),
+    [bundle]
+  );
+  const [defaultProductsData, setDefaultProductsData] = useState<DefaultProductsData>(initialDefaultProductsData);
+  const originalDefaultProductsDataRef = useRef<DefaultProductsData>(initialDefaultProductsData);
+  const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
+    ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
+  );
+
+  // Select Template state (main = DB-synced; pending = overlay working copy)
+  const [bundleDesignTemplate, setBundleDesignTemplate] = useState<string | null>((bundle as any).bundleDesignTemplate ?? null);
+  const [bundleDesignPresetId, setBundleDesignPresetId] = useState<string | null>((bundle as any).bundleDesignPresetId ?? null);
+  const [pendingDesignTemplate, setPendingDesignTemplate] = useState<string | null>(null);
+  const [pendingDesignPresetId, setPendingDesignPresetId] = useState<string | null>(null);
+
+  // Select Template dialog state
+  const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
+  const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
+  const templateFetcher = useFetcher();
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -577,15 +862,56 @@ export default function ConfigureBundleFlow() {
   // Add-Ons icon picker state
   const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
 
-  // Category accordion state (multi-category system — EB parity)
+  // Category accordion state for the multi-category configure surface
   const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
   const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
 
   // Template variables modal ref (for Footer Messaging "Show Variables")
   const templateVariablesModalRef = useRef<HTMLElement>(null);
+  const discountVariablesModalRef = useRef<HTMLElement>(null);
+  const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
+
+  const bundleQuantityOptionsEligible = pricingState.discountType !== DiscountMethod.BUY_X_GET_Y
+    && pricingState.discountRules.length > 0
+    && pricingState.discountRules.every((rule: PricingRule) => rule.conditionType === "quantity");
+  const displayOptionsInactive = !pricingState.discountEnabled || pricingState.discountRules.length === 0;
+
+  useEffect(() => {
+    if (!bundleQuantityOptionsEligible && qtyOptionsEnabled) {
+      setQtyOptionsEnabled(false);
+      markAsDirty();
+    }
+  }, [bundleQuantityOptionsEligible, qtyOptionsEnabled, markAsDirty]);
 
   // Step chip navigation
   const [activeTabIndex, setActiveTabIndex] = useState(0);
+
+  const buildDefaultProductsData = useCallback(() => {
+    return normalizeDefaultProductsData(defaultProductsData);
+  }, [defaultProductsData]);
+
+  function buildBundleUpsellConfig() {
+    return {
+      multiLangText: savedBundleUpsellConfig?.multiLangText ?? {},
+      widgetConfiguration: {
+        isEnabled: upsellWidgetEnabled,
+        type: "OFFER_WIDGET",
+        imageUrl: upsellWidgetImageUrl,
+        title: upsellWidgetTitle,
+        description: upsellWidgetDescription,
+        buttonText: upsellWidgetButtonText,
+        displayConfiguration: buildVisibilityDisplayConfiguration(upsellWidgetDisplayOn, upsellWidgetSelectedProducts, upsellWidgetSpecificProductPages, upsellWidgetCollectionsSelectedData, upsellWidgetSpecificCollectionPages),
+        useLinkProductAsDefaultProduct: autoSelectBrowsedProduct,
+      },
+      upsellConfiguration: {
+        isEnabled: bundleEmbedEnabled,
+        title: bundleEmbedTitle,
+        subTitle: bundleEmbedSubTitle,
+        displayConfiguration: buildVisibilityDisplayConfiguration(bundleEmbedDisplayOn, bundleEmbedSelectedProducts, bundleEmbedSpecificProductPages, bundleEmbedCollectionsSelectedData, bundleEmbedSpecificCollectionPages),
+        useLinkProductAsDefaultProduct: bundleEmbedAddBrowsedProduct,
+      },
+    };
+  }
 
   // Step chip navigation slide animation
   const [slideKey, setSlideKey] = useState(0);
@@ -614,13 +940,25 @@ export default function ConfigureBundleFlow() {
       }));
 
       formData.append("stepsData", JSON.stringify(stepsWithCollections));
+      const enrichedRuleMessages = Object.fromEntries(
+        Object.entries(ruleMessages).map(([id, msg]) => [
+          id,
+          { ...msg, successMessage: globalSuccessMessage || msg.successMessage },
+        ])
+      );
       formData.append("discountData", JSON.stringify({
         discountEnabled: pricingState.discountEnabled,
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
         showFooter: pricingState.showFooter,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
-        ruleMessages,
+        ruleMessages: enrichedRuleMessages,
+        successMessage: globalSuccessMessage,
+        successMessageByLocale: discountMessagingMultiLanguageEnabled ? successMessageByLocale : null,
+        discountMessagingMultiLanguageEnabled,
+        ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
+        tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
+        tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
         displayOptions: {
           bundleQuantityOptions: {
             enabled: qtyOptionsEnabled,
@@ -628,9 +966,10 @@ export default function ConfigureBundleFlow() {
             optionsByRuleId: Object.fromEntries(
               pricingState.discountRules.map((r: any) => [
                 r.id,
-                { label: qtyRuleLabels[r.id] ?? `Box of ${r.condition?.value ?? ''}`, subtext: qtyRuleSubtexts[r.id] ?? '' },
+                { label: qtyRuleLabels[r.id] ?? `Box of ${r.conditionValue ?? ''}`, subtext: qtyRuleSubtexts[r.id] ?? '' },
               ])
             ),
+            optionsByLocaleByRuleId: qtyRuleTextsByLocaleByRuleId,
           },
           progressBar: {
             enabled: progressBarEnabled,
@@ -676,6 +1015,25 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleBannerDesktopUrl", bundleBannerDesktopUrl);
       formData.append("bundleBannerMobileUrl", bundleBannerMobileUrl);
       formData.append("bundleLevelCss", bundleLevelCss);
+      formData.append("defaultProductsData", JSON.stringify(buildDefaultProductsData()));
+      formData.append("validateQuantityPerProduct", JSON.stringify({
+        isEnabled: productSlotsEnabled,
+        allowedQuantity: Number.parseInt(maxQtyPerProduct || "1", 10) || 1,
+      }));
+      formData.append("individualSellingPlanSelection", JSON.stringify({
+        isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
+        showFor: "ALL_PRODUCTS",
+      }));
+      formData.append("bundleTextConfig", JSON.stringify({
+        bundleSummary: {
+          title: bundleCartTitle,
+          subTitle: bundleCartSubtitle,
+        },
+      }));
+      formData.append("boxSelection", (bundle as any).boxSelection ? JSON.stringify((bundle as any).boxSelection) : "");
+      formData.append("bundleUpsellConfig", JSON.stringify(buildBundleUpsellConfig()));
+      formData.append("discountDisplayOverride", (bundle as any).discountDisplayOverride ? JSON.stringify((bundle as any).discountDisplayOverride) : "");
+      formData.append("useSingleStepCategoriesAsBundleSteps", String((bundle as any).useSingleStepCategoriesAsBundleSteps ?? false));
 
       // Submit to server action using fetcher
 
@@ -700,6 +1058,21 @@ export default function ConfigureBundleFlow() {
     pricingState.showFooter,
     pricingState.discountMessagingEnabled,
     ruleMessages,
+    qtyOptionsEnabled,
+    qtyOptionsDefaultRuleId,
+    qtyRuleLabels,
+    qtyRuleSubtexts,
+    qtyRuleTextsByLocaleByRuleId,
+    progressBarEnabled,
+    progressBarType,
+    progressBarProgressText,
+    progressBarSuccessText,
+    discountMessagingMultiLanguageEnabled,
+    successMessageByLocale,
+    ruleMessagesByLocale,
+    tierTextByRuleId,
+    tierTextByLocaleByRuleId,
+    globalSuccessMessage,
     selectedCollections,
     conditionsState.stepConditions,
     bundleProduct,
@@ -707,6 +1080,35 @@ export default function ConfigureBundleFlow() {
     loadingGif,
     textOverrides,
     textOverridesByLocale,
+    buildDefaultProductsData,
+    savedBundleUpsellConfig,
+    upsellWidgetEnabled,
+    upsellWidgetDisplayMode,
+    upsellWidgetDisplayOn,
+    upsellWidgetTitle,
+    upsellWidgetDescription,
+    upsellWidgetButtonText,
+    upsellWidgetImageUrl,
+    upsellWidgetSelectedProducts,
+    upsellWidgetSpecificProductPages,
+    upsellWidgetCollectionsSelectedData,
+    upsellWidgetSpecificCollectionPages,
+    autoSelectBrowsedProduct,
+    bundleEmbedEnabled,
+    bundleEmbedTitle,
+    bundleEmbedSubTitle,
+    bundleEmbedDisplayOn,
+    bundleEmbedSelectedProducts,
+    bundleEmbedSpecificProductPages,
+    bundleEmbedCollectionsSelectedData,
+    bundleEmbedSpecificCollectionPages,
+    bundleEmbedAddBrowsedProduct,
+    productSlotsEnabled,
+    maxQtyPerProduct,
+    individualSellingPlanEnabled,
+    bundleCartTitle,
+    bundleCartSubtitle,
+    bundle,
     shopify
   ]);
 
@@ -783,6 +1185,7 @@ export default function ConfigureBundleFlow() {
           originalSdkModeRef.current = sdkMode;
           originalTextOverridesRef.current = textOverrides;
           originalTextOverridesByLocaleRef.current = textOverridesByLocale;
+          originalDefaultProductsDataRef.current = defaultProductsData;
           // Mark state as saved (updates hook baseline ref and resets dirty flag)
           markAsSaved();
 
@@ -837,7 +1240,7 @@ export default function ConfigureBundleFlow() {
   }, [fetcher.data, fetcher.state]);
 
   const handleAddToStorefront = useCallback(() => {
-    const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-product-page-embed`;
+    const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
     open(embedLink, '_blank');
     shopify.toast.show(
       "Activate the Wolfpack Bundle embed in Theme Settings to go live.",
@@ -856,20 +1259,8 @@ export default function ConfigureBundleFlow() {
     setSdkMode(originalSdkModeRef.current);
     setTextOverrides(originalTextOverridesRef.current);
     setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
+    setDefaultProductsData(originalDefaultProductsDataRef.current);
   }, [hookHandleDiscard]);
-
-  // Navigation handlers with unsaved changes check
-  const handleBackClick = useCallback(() => {
-    if (isDirty && !forceNavigation) {
-      shopify.toast.show("Save or discard your changes before moving to another section.", {
-        isError: true,
-        duration: 5000
-      });
-      void (shopify as any).saveBar?.leaveConfirmation?.();
-      return;
-    }
-    navigate("/app/dashboard");
-  }, [isDirty, forceNavigation, navigate, shopify]);
 
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
@@ -989,6 +1380,19 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, shopify]);
 
+  // Navigation handlers with unsaved changes check
+  const handleBackClick = useCallback(() => {
+    if (isDirty && !forceNavigation) {
+      shopify.toast.show("Save or discard your changes before moving to another section.", {
+        isError: true,
+        duration: 5000
+      });
+      void (shopify as any).saveBar?.leaveConfirmation?.();
+      return;
+    }
+    navigate("/app/dashboard");
+  }, [isDirty, forceNavigation, navigate, shopify]);
+
   const handleReadinessItemClick = useCallback((key: string) => {
     setReadinessOpen(false);
     switch (key) {
@@ -1069,7 +1473,78 @@ export default function ConfigureBundleFlow() {
     }
   }, [loadAvailablePages, shopify, openPageSelectionModal]);
 
+  const openVisibilityProductPicker = useCallback(async (target: "widget" | "embed") => {
+    const currentProducts = target === "widget" ? upsellWidgetSelectedProducts : bundleEmbedSelectedProducts;
+    const picked = await (shopify as any).resourcePicker({
+      type: "product",
+      multiple: true,
+      action: "select",
+      selectionIds: buildVisibilitySelectionIds(currentProducts),
+    });
+    const selection = getVisibilityPickerSelection(picked);
+    if (!selection) return;
+
+    const selectedProducts = selection.map(normalizeVisibilityProductForDisplayConfiguration);
+    const pageTargets = selectedProducts.map(normalizeVisibilityProductPageTarget);
+
+    if (target === "widget") {
+      setUpsellWidgetSelectedProducts(selectedProducts);
+      setUpsellWidgetSpecificProductPages(pageTargets);
+    } else {
+      setBundleEmbedSelectedProducts(selectedProducts);
+      setBundleEmbedSpecificProductPages(pageTargets);
+    }
+    markAsDirty();
+  }, [bundleEmbedSelectedProducts, markAsDirty, shopify, upsellWidgetSelectedProducts]);
+
+  const openVisibilityCollectionPicker = useCallback(async (target: "widget" | "embed") => {
+    const currentCollections = target === "widget" ? upsellWidgetCollectionsSelectedData : bundleEmbedCollectionsSelectedData;
+    const picked = await (shopify as any).resourcePicker({
+      type: "collection",
+      multiple: true,
+      action: "select",
+      selectionIds: buildVisibilitySelectionIds(currentCollections),
+    });
+    const selection = getVisibilityPickerSelection(picked);
+    if (!selection) return;
+
+    const collectionsSelectedData = selection.map(normalizeVisibilityCollectionForDisplayConfiguration);
+    const pageTargets = collectionsSelectedData.map(normalizeVisibilityCollectionPageTarget);
+
+    if (target === "widget") {
+      setUpsellWidgetCollectionsSelectedData(collectionsSelectedData);
+      setUpsellWidgetSpecificCollectionPages(pageTargets);
+    } else {
+      setBundleEmbedCollectionsSelectedData(collectionsSelectedData);
+      setBundleEmbedSpecificCollectionPages(pageTargets);
+    }
+    markAsDirty();
+  }, [bundleEmbedCollectionsSelectedData, markAsDirty, shopify, upsellWidgetCollectionsSelectedData]);
+
+  const removeVisibilityProductTarget = useCallback((target: "widget" | "embed", indexToRemove: number) => {
+    if (target === "widget") {
+      setUpsellWidgetSelectedProducts((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setUpsellWidgetSpecificProductPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    } else {
+      setBundleEmbedSelectedProducts((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setBundleEmbedSpecificProductPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }
+    markAsDirty();
+  }, [markAsDirty]);
+
+  const removeVisibilityCollectionTarget = useCallback((target: "widget" | "embed", indexToRemove: number) => {
+    if (target === "widget") {
+      setUpsellWidgetCollectionsSelectedData((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setUpsellWidgetSpecificCollectionPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    } else {
+      setBundleEmbedCollectionsSelectedData((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setBundleEmbedSpecificCollectionPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }
+    markAsDirty();
+  }, [markAsDirty]);
+
   const handlePageSelection = useCallback(async (template: any) => {
+    let editorWindow: Window | null = null;
     try {
       if (!template || !template.handle) {
         AppLogger.error('🚨 [THEME_EDITOR] Invalid template object:', {}, template);
@@ -1077,11 +1552,10 @@ export default function ConfigureBundleFlow() {
         return;
       }
 
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop;
-
       shopify.toast.show(`Preparing theme editor for "${template.title}"...`, { isError: false, duration: 3000 });
+
+      // Open synchronously from the click event so browsers keep the tab gesture.
+      editorWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
 
       // Create a theme template service instance
       // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
@@ -1105,6 +1579,7 @@ export default function ConfigureBundleFlow() {
         if (!createTemplateResponse.ok) {
           AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
           shopify.toast.show("Failed to prepare product template", { isError: true, duration: 5000 });
+          editorWindow?.close();
           return;
         }
 
@@ -1120,11 +1595,13 @@ export default function ConfigureBundleFlow() {
       if (!apiKey || !blockHandle) {
         AppLogger.error('🚨 [THEME_EDITOR] Missing app configuration');
         shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
+        editorWindow?.close();
         return;
       }
 
-      const appBlockId = `${apiKey}/${blockHandle}`;
-
+      const placementBlockHandle = activeSection === "bundle_widget"
+        ? (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block")
+        : blockHandle;
 
       // Generate deep link following Shopify's official documentation with bundle ID
       // Official format: template + addAppBlockId + target + bundleId (for auto-population)
@@ -1133,11 +1610,14 @@ export default function ConfigureBundleFlow() {
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
       const pageProductHandle = template.bundleProduct?.handle || bundle.shopifyProductHandle;
-      const pagePreviewParam = pageProductHandle ? `&previewPath=${encodeURIComponent(`/products/${pageProductHandle}`)}` : '';
-      // target=newAppsSection is correct for section-type blocks ("target":"section" in liquid schema).
-      // target=mainSection is only for app blocks embedded inside theme sections — using it
-      // with a section block causes Shopify to misroute and may open the wrong template/product.
-      const themeEditorUrl = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${template.handle}&addAppBlockId=${appBlockId}&target=newAppsSection&bundleId=${bundle.id}${pagePreviewParam}`;
+      const themeEditorUrl = buildProductPageThemeEditorDeepLink({
+        shop,
+        apiKey,
+        blockHandle: placementBlockHandle,
+        bundleId: bundle.id,
+        productHandle: pageProductHandle,
+        template,
+      });
 
 
       setSelectedPage(template);
@@ -1146,21 +1626,19 @@ export default function ConfigureBundleFlow() {
       // Open theme editor in new window/tab for better workflow
       shopify.toast.show(`Opening theme editor for "${template.title}". You'll be able to add the bundle widget to your theme.`, { isError: false, duration: 5000 });
 
-      // Open in new window using robust method to prevent app redirect
-      const link = document.createElement('a');
-      link.href = themeEditorUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (editorWindow && !editorWindow.closed) {
+        editorWindow.location.href = themeEditorUrl;
+      } else {
+        window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+      }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
+      editorWindow?.close();
     }
-  }, [shop, shopify, bundle.id]);
+  }, [activeSection, blockHandle, shop, shopify, bundle.id, upsellWidgetDisplayMode, apiKey]);
 
   // Sync Bundle modal ref
   const syncModalRef = useRef<HTMLElement>(null);
@@ -1185,14 +1663,58 @@ export default function ConfigureBundleFlow() {
     isCollectionsModalOpen ? showPolarisModal(collectionsModalRef) : hidePolarisModal(collectionsModalRef);
   }, [isCollectionsModalOpen]);
 
+  useEffect(() => {
+    isProgressBarMultiLangModalOpen ? showPolarisModal(progressBarMultiLangModalRef) : hidePolarisModal(progressBarMultiLangModalRef);
+  }, [isProgressBarMultiLangModalOpen]);
+
+  useEffect(() => {
+    isBundleQuantityMultiLangModalOpen ? showPolarisModal(bundleQuantityMultiLangModalRef) : hidePolarisModal(bundleQuantityMultiLangModalRef);
+  }, [isBundleQuantityMultiLangModalOpen]);
+
+  useEffect(() => {
+    isDiscountVariablesModalOpen ? showPolarisModal(discountVariablesModalRef) : hidePolarisModal(discountVariablesModalRef);
+  }, [isDiscountVariablesModalOpen]);
+
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
+  useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
+  useModalHideListener(bundleQuantityMultiLangModalRef, () => setIsBundleQuantityMultiLangModalOpen(false));
+  useModalHideListener(discountVariablesModalRef, () => setIsDiscountVariablesModalOpen(false));
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
   }, []);
+
+  const closeSelectTemplateDialog = useCallback(() => {
+    setIsSelectTemplateModalOpen(false);
+    setTemplateModalStep("select");
+  }, []);
+
+  const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape") return;
+    event.stopPropagation();
+    closeSelectTemplateDialog();
+  }, [closeSelectTemplateDialog]);
+
+  const openSelectTemplateModal = useCallback(() => {
+    setPendingDesignTemplate(bundleDesignTemplate);
+    setPendingDesignPresetId(bundleDesignPresetId);
+    setTemplateModalStep("select");
+    setIsSelectTemplateModalOpen(true);
+  }, [bundleDesignTemplate, bundleDesignPresetId]);
+
+  const handleTemplateNext = useCallback(() => {
+    const fd = new FormData();
+    fd.append("intent", "updateBundleDesignTemplate");
+    fd.append("bundleDesignTemplate", pendingDesignTemplate ?? "");
+    fd.append("bundleDesignPresetId", pendingDesignPresetId ?? "");
+    templateFetcher.submit(fd, { method: "POST" });
+    setBundleDesignTemplate(pendingDesignTemplate);
+    setBundleDesignPresetId(pendingDesignPresetId);
+    setTemplateModalStep("confirm");
+  }, [pendingDesignTemplate, pendingDesignPresetId, templateFetcher]);
 
   const handleConfirmDiscard = useCallback(() => {
     closeDiscardModal();
@@ -1201,9 +1723,6 @@ export default function ConfigureBundleFlow() {
 
   return (
     <>
-      <ui-title-bar title={`Configure: ${formState.bundleName}`}>
-        <button variant="breadcrumb" onClick={handleBackClick}>Dashboard</button>
-      </ui-title-bar>
       <div className={productPageBundleStyles.editCanvas}>
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
@@ -1252,7 +1771,33 @@ export default function ConfigureBundleFlow() {
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
-          ruleMessages
+          ruleMessages,
+          discountMessagingMultiLanguageEnabled,
+          ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
+          tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
+          tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
+          displayOptions: {
+            bundleQuantityOptions: {
+              enabled: qtyOptionsEnabled,
+              defaultRuleId: qtyOptionsDefaultRuleId,
+              optionsByRuleId: Object.fromEntries(
+                pricingState.discountRules.map((rule: PricingRule) => [
+                  rule.id,
+                  {
+                    label: qtyRuleLabels[rule.id] ?? `Box of ${rule.conditionValue ?? ""}`,
+                    subtext: qtyRuleSubtexts[rule.id] ?? "",
+                  },
+                ])
+              ),
+              optionsByLocaleByRuleId: qtyRuleTextsByLocaleByRuleId,
+            },
+            progressBar: {
+              enabled: progressBarEnabled,
+              type: progressBarType,
+              progressText: progressBarProgressText,
+              successText: progressBarSuccessText,
+            },
+          },
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
       </form>
@@ -1290,8 +1835,6 @@ export default function ConfigureBundleFlow() {
             </s-button>
           </div>
         </div>
-
-        <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
 
         <div className={productPageBundleStyles.editGrid}>
 
@@ -1411,10 +1954,13 @@ export default function ConfigureBundleFlow() {
                       }
                       return (
                         <div key={item.id}>
+                          {item.id === "select_template" && (
+                            <hr style={{ margin: "8px 0", border: "none", borderTop: "1px solid #e1e3e5" }} />
+                          )}
                           <button
                             type="button"
                             className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
-                            onClick={() => handleSectionChange(item.id)}
+                            onClick={() => { if (item.id === "select_template") { openSelectTemplateModal(); } else { handleSectionChange(item.id); } }}
                           >
                             <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
                               {item.iconType
@@ -1507,11 +2053,10 @@ export default function ConfigureBundleFlow() {
                       <span>Add Step</span>
                     </button>
                   </div>
-                  <div className={productPageBundleStyles.stepSetupDivider} />
-
                   {stepsState.steps.map((step, index) => activeTabIndex === index && (
                     <div
                       key={`${step.id}-${slideKey}`}
+                      style={{ paddingTop: "16px" }}
                       className={slideDir === "forward" ? productPageBundleStyles.slideForward : slideDir === "backward" ? productPageBundleStyles.slideBackward : ""}
                     >
                       <div className={productPageBundleStyles.stepSetupHeader}>
@@ -1584,7 +2129,7 @@ export default function ConfigureBundleFlow() {
                                   </s-banner>
                                 )}
 
-                                {/* ── Categories (multi-category accordion — EB parity) ── */}
+                                {/* Categories (multi-category accordion) */}
                     <div className={productPageBundleStyles.card}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Category</h3>
@@ -1702,21 +2247,6 @@ export default function ConfigureBundleFlow() {
                                               <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language">Multi Language</s-button>
                                             </div>
                                             <div style={{ marginBottom: 10 }}>
-                                              <s-text-field
-                                                label="Category Title"
-                                                placeholder="Visible title on storefront"
-                                                value={(cat as any).title ?? ""}
-                                                onInput={(e: Event) => {
-                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, title: (e.target as HTMLInputElement).value } : c
-                                                  );
-                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
-                                                  markAsDirty();
-                                                }}
-                                                autoComplete="off"
-                                              />
-                                            </div>
-                                            <div style={{ marginBottom: 10 }}>
                                               <s-checkbox
                                                 label="Display variants as individual products"
                                                 checked={(cat as any).displayVariantsAsIndividual ?? false}
@@ -1776,7 +2306,7 @@ export default function ConfigureBundleFlow() {
                                                       markAsDirty();
                                                     }}
                                                   >
-                                                    {catProducts.length > 0 ? "Edit Products" : "Add Products"}
+                                                    Add Products
                                                   </s-button>
                                                   {catProducts.length > 0 && (
                                                     <s-badge tone="success">{catProducts.length} Selected</s-badge>
@@ -1834,7 +2364,7 @@ export default function ConfigureBundleFlow() {
                                                       markAsDirty();
                                                     }}
                                                   >
-                                                    {catCollections.length > 0 ? "Edit Collections" : "Add Collections"}
+                                                    Add Collections
                                                   </s-button>
                                                   {catCollections.length > 0 && (
                                                     <s-badge tone="success">{catCollections.length} Selected</s-badge>
@@ -1894,9 +2424,17 @@ export default function ConfigureBundleFlow() {
                                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Rules Configuration</h3>
                                     <QuestionHelpTooltip tooltipKey="rulesConfiguration" />
                                   </div>
-                                  <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
+                                  <p style={{ margin: "0 0 8px", fontSize: 14, color: "#6d7175" }}>
                                     Apply rules to the entire step or to specific categories to guide your customer's selections.
                                   </p>
+                                  <button
+                                    type="button"
+                                    className={productPageBundleStyles.linkButton}
+                                    style={{ marginBottom: 12, display: "inline-block" }}
+                                    onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                                  >
+                                    Learn More
+                                  </button>
                                   {(() => {
                                     const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
                                     const activeRuleMode = ruleCount === 0 ? "none" : "step";
@@ -1914,6 +2452,7 @@ export default function ConfigureBundleFlow() {
                                         {[
                                           { label: "No rules", value: "none" },
                                           { label: "Step rules", value: "step" },
+                                          { label: "Category rules", value: "category" },
                                         ].map(opt => (
                                           <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
                                             <input
@@ -2071,21 +2610,19 @@ export default function ConfigureBundleFlow() {
               <s-stack direction="block" gap="base">
               <s-section>
                 <s-stack direction="block" gap="base">
-                  <s-stack direction="inline" gap="small">
-                    <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                        Discount &amp; Pricing
-                      </h3>
-                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                        Set up discount rules, applied from lowest to highest.
-                      </p>
+                  <s-stack direction="block" gap="small-400">
+                    <s-stack direction="inline" gap="small" alignItems="center">
+                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Discount &amp; Pricing</h3>
+                      <s-switch
+                        checked={pricingState.discountEnabled || undefined}
+                        onChange={(e: Event) => pricingState.setDiscountEnabled((e.target as HTMLInputElement).checked)}
+                      >
+                        Enable
+                      </s-switch>
                     </s-stack>
-                    <s-switch
-                      checked={pricingState.discountEnabled || undefined}
-                      onChange={(e: Event) => pricingState.setDiscountEnabled((e.target as HTMLInputElement).checked)}
-                    >
-                      Enable
-                    </s-switch>
+                    <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                      Set up discount rules, applied from lowest to highest.
+                    </p>
                   </s-stack>
 
                   <s-banner tone="info">
@@ -2094,360 +2631,332 @@ export default function ConfigureBundleFlow() {
 
                   <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? "auto" : "none" }}>
                     <s-stack direction="block" gap="base">
-                      {/* Discount Type */}
-                      <s-select
-                        label="Discount Type"
-                        value={pricingState.discountType}
-                        onChange={(e: Event) => {
-                          pricingState.setDiscountType((e.target as HTMLSelectElement).value as DiscountMethod);
-                          pricingState.setDiscountRules([]);
-                          setRuleMessages({});
-                        }}
-                      >
-                        {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
-                          <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                        ))}
-                      </s-select>
+                      <div>
+                        <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600 }}>Discount Type</p>
+                        <s-select
+                          value={pricingState.discountType}
+                          onChange={(e: Event) => {
+                            const nextDiscountType = (e.target as HTMLSelectElement).value as DiscountMethod;
+                            const nextRule = createNewPricingRule(nextDiscountType);
+                            pricingState.setDiscountType(nextDiscountType);
+                            pricingState.setDiscountRules([nextRule]);
+                            setRuleMessages({});
+                            setRuleMessagesByLocale({});
+                            setGlobalSuccessMessage("");
+                            setSuccessMessageByLocale({});
+                          }}
+                        >
+                          {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
+                            <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                          ))}
+                        </s-select>
+                      </div>
 
-                      {/* Buy X Get Y rule builder */}
-                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (() => {
-                        const bxyRule = pricingState.discountRules[0];
-                        if (!bxyRule) {
-                          return (
-                            <s-button variant="tertiary" style={{ width: "100%" }} onClick={pricingState.addDiscountRule}>
-                              Configure Buy X Get Y
-                            </s-button>
-                          );
-                        }
-                        return (
-                          <s-section>
-                            <s-stack direction="vertical" gap="300">
-                              <s-heading size="small">Buy X Get Y Configuration</s-heading>
-                              <s-select
-                                label="Buy from step"
-                                helpText="Customer must fill this step to trigger the offer."
-                                onChange={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { buyStepId: (e.target as HTMLSelectElement).value })}
-                              >
-                                <option value="">— select step —</option>
-                                {stepsState.steps.map((s: any) => (
-                                  <option key={s.id} value={s.id} selected={(bxyRule as any).buyStepId === s.id || undefined}>
-                                    {s.name || `Step ${s.position ?? ''}`}
-                                  </option>
-                                ))}
-                              </s-select>
-                              <s-select
-                                label="Get (free gift step)"
-                                helpText="Products in this step are given free when the offer triggers."
-                                onChange={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { getStepId: (e.target as HTMLSelectElement).value })}
-                              >
-                                <option value="">— select step —</option>
-                                {stepsState.steps.map((s: any) => (
-                                  <option key={s.id} value={s.id} selected={(bxyRule as any).getStepId === s.id || undefined}>
-                                    {s.name || `Step ${s.position ?? ''}`}
-                                  </option>
-                                ))}
-                              </s-select>
-                              <s-number-field
-                                label="Free quantity"
-                                helpText="How many items from the get-step are discounted to $0."
-                                min={1}
-                                value={String((bxyRule as any).getQty ?? 1)}
-                                onInput={(e: Event) => pricingState.updateDiscountRule(bxyRule.id, { getQty: Number((e.target as HTMLInputElement).value) || 1 })}
-                              />
-                            </s-stack>
-                          </s-section>
-                        );
-                      })()}
-
-                      {/* Discount Rules (non-BUY_X_GET_Y types) */}
-                      {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
-                      <s-stack direction="block" gap="small">
-                        {pricingState.discountRules.map((rule, index) => (
-                          <s-section key={rule.id}>
-                            <s-stack direction="block" gap="small">
-                              <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: 14, fontWeight: 500 }}>Rule #{index + 1}</span>
-                                <s-button
-                                  variant="plain"
-                                  tone="critical"
-                                  onClick={() => pricingState.removeDiscountRule(rule.id)}
-                                >
-                                  Remove
-                                </s-button>
-                              </s-stack>
-
-                              {/* Condition Section */}
-                              <s-stack direction="block" gap="small-100">
-                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>When:</p>
-                                <s-stack direction="inline" gap="small-100">
-                                  <s-select
-                                    label="Type"
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, type: (e.target as HTMLSelectElement).value as any }
+                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
+                        <s-stack direction="block" gap="small">
+                          {pricingState.discountRules.map((rule, index) => (
+                            <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
+                              <s-stack direction="block" gap="small">
+                                <div className={productPageBundleStyles.discountRuleHeader}>
+                                  <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
+                                  <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
+                                    Remove
+                                  </s-button>
+                                </div>
+                                <div className={productPageBundleStyles.bxyRuleBody}>
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer buys</p>
+                                  <s-number-field
+                                    label="Minimum quantity of items"
+                                    value={String(rule.customerBuys ?? 2)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      customerBuys: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
                                     })}
-                                  >
-                                    {[...DISCOUNT_CONDITION_TYPE_OPTIONS].map(opt => (
-                                      <option key={opt.value} value={opt.value} selected={rule.condition.type === opt.value || undefined}>{opt.label}</option>
-                                    ))}
-                                  </s-select>
-                                  <s-select
-                                    label="Operator"
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, operator: (e.target as HTMLSelectElement).value as any }
-                                    })}
-                                  >
-                                    {[...DISCOUNT_OPERATOR_OPTIONS].map(opt => (
-                                      <option key={opt.value} value={opt.value} selected={rule.condition.operator === opt.value || undefined}>{opt.label}</option>
-                                    ))}
-                                  </s-select>
-                                  <s-text-field
-                                    label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
-                                    value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
-                                    onInput={(e: Event) => {
-                                      const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                      const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
-                                      pricingState.updateDiscountRule(rule.id, {
-                                        condition: { ...rule.condition, value: finalValue }
-                                      });
-                                    }}
-                                    type="number"
-                                    min="0"
-                                    step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
-                                    helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
-                                    autoComplete="off"
+                                    min="1"
                                   />
-                                </s-stack>
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer gets</p>
+                                  <s-number-field
+                                    label="Quantity"
+                                    helpText="Customer must add the quantity of items specified above to their cart"
+                                    value={String(rule.customerGets ?? 1)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      customerGets: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                    })}
+                                    min="1"
+                                  />
+                                  <div className={productPageBundleStyles.bxyRewardGrid}>
+                                    <s-number-field
+                                      label="Discount value"
+                                      value={String(rule.discountValue ?? 0)}
+                                      onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                        discountValue: Number((e.target as HTMLInputElement).value) || 0
+                                      })}
+                                      min="0"
+                                    />
+                                    <s-select
+                                      label="Discount type"
+                                      value={rule.bxyDiscountType ?? 'percentage'}
+                                      onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                        bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
+                                      })}
+                                    >
+                                      <s-option value="percentage">% off</s-option>
+                                      <s-option value="fixed_amount">₹ off</s-option>
+                                    </s-select>
+                                    <s-select
+                                      label="Apply Discount to"
+                                      value={rule.bxyApplyMode ?? 'lowest_priced'}
+                                      onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                        bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
+                                      })}
+                                    >
+                                      <s-option value="lowest_priced">The lowest priced items</s-option>
+                                      <s-option value="latest_added">The latest added items</s-option>
+                                    </s-select>
+                                  </div>
+                                </div>
                               </s-stack>
-
-                              {/* Discount Section */}
-                              <s-stack direction="block" gap="small-100">
-                                <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Apply:</p>
-                                <s-text-field
-                                  label={
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                        'Bundle Price'
-                                  }
-                                  value={String(
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                      centsToAmount(rule.discount.value)
-                                  )}
-                                  onInput={(e: Event) => {
-                                    const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                    pricingState.updateDiscountRule(rule.id, {
-                                      discount: { ...rule.discount, value: finalValue }
-                                    });
-                                  }}
-                                  type="number"
-                                  min="0"
-                                  max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
-                                  step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
-                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
-                                  autoComplete="off"
-                                />
-                              </s-stack>
-
-                              {/* Preview */}
-                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                                Preview: {generateRulePreview(rule)}
-                              </p>
-                            </s-stack>
-                          </s-section>
-                        ))}
-
-                        {pricingState.discountRules.length < 4 ? (
-                          <s-button
-                            variant="secondary"
-                            icon="plus"
-                            style={{ width: "100%" }}
-                            onClick={pricingState.addDiscountRule}
-                          >
-                            Add Rule
-                          </s-button>
-                        ) : (
-                          <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
-                            Maximum 4 discount rules reached
-                          </p>
-                        )}
-                      </s-stack>
+                            </s-section>
+                          ))}
+                          {pricingState.discountRules.length < 4 ? (
+                            <s-button variant="secondary" icon="plus" style={{ width: "100%" }} onClick={pricingState.addDiscountRule}>
+                              Add rule
+                            </s-button>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>Maximum 4 discount rules reached</p>
+                          )}
+                        </s-stack>
                       )}
 
-                      {/* Discount Messaging */}
-                      <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                          <s-stack direction="block" gap="small-400">
-                            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                              Discount Messaging
-                            </h3>
-                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                              Edit how discount messages appear above the subtotal.
-                            </p>
-                          </s-stack>
-                          <s-tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
-                            <s-checkbox
-                              checked={pricingState.discountMessagingEnabled || undefined}
-                              onChange={(e: Event) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
-                            >
-                              Discount Messaging
-                            </s-checkbox>
-                          </s-tooltip>
-                        </s-stack>
-
-                        {/* Variables Helper */}
-                        <details>
-                          <summary className={productPageBundleStyles.helpSummary}>
-                            Show Variables
-                          </summary>
-                          <div className={productPageBundleStyles.helpContainer}>
-                            <div className={productPageBundleStyles.helpItem}>
-                              <strong>Essential (Most Used):</strong><br />
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
-                              <code>{'{{bundleName}}'}</code> - Bundle name
-                            </div>
-                            <div className={productPageBundleStyles.helpItem}>
-                              <strong>Specific:</strong><br />
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
-                              <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
-                            </div>
-                            <div className={productPageBundleStyles.helpItem}>
-                              <strong>Pricing:</strong><br />
-                              <code>{'{{currentAmount}}'}</code> - Current total<br />
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
-                              <code>{'{{savingsAmount}}'}</code> - Amount saved
-                            </div>
-                            <div className={productPageBundleStyles.helpFooter}>
-                              <strong>Quick Examples:</strong><br />
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
-                              🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
-                            </div>
-                          </div>
-                        </details>
-
-                        {/* Dynamic rule-based messaging */}
-                        {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
-                          <s-stack direction="block" gap="small">
-                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <s-stack key={rule.id} direction="block" gap="small">
-                                <s-section>
-                                  <s-stack direction="block" gap="small-100">
-                                    <span style={{ fontSize: 14, fontWeight: 500 }}>Rule #{index + 1} Messages</span>
-                                    <s-text-area
-                                      label="Discount Text"
-                                      value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
-                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'discountText', (e.target as HTMLTextAreaElement).value)}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer is close to qualifying for the discount"
+                      {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
+                        <s-stack direction="block" gap="small">
+                          {pricingState.discountRules.map((rule, index) => (
+                            <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
+                              <s-stack direction="block" gap="small">
+                                <div className={productPageBundleStyles.discountRuleHeader}>
+                                  <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
+                                  <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
+                                    Remove
+                                  </s-button>
+                                </div>
+                                {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
+                                  <s-stack direction="inline" gap="small-100">
+                                    <s-number-field
+                                      label="Number of Products in Bundle"
+                                      value={String(rule.conditionValue ?? 0)}
+                                      onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, { conditionValue: Number((e.target as HTMLInputElement).value) || 0 })}
+                                      min="0"
+                                    />
+                                    <s-number-field
+                                      label="Price"
+                                      value={String(centsToAmount(rule.discountValue))}
+                                      onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, { discountValue: amountToCents(Number((e.target as HTMLInputElement).value) || 0) })}
+                                      min="0"
+                                      prefix="₹"
                                     />
                                   </s-stack>
-                                </s-section>
-
-                                <s-section>
-                                  <s-stack direction="block" gap="small-100">
-                                    <s-text-area
-                                      label="Success Message"
-                                      value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
-                                      onInput={(e: Event) => updateRuleMessage(rule.id, 'successMessage', (e.target as HTMLTextAreaElement).value)}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer qualifies for the discount"
+                                ) : (
+                                  <s-stack direction="inline" gap="small-100">
+                                    <s-select
+                                      label="Discount on"
+                                      value={rule.conditionType ?? 'quantity'}
+                                      onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                        conditionType: (e.target as HTMLSelectElement).value as 'quantity' | 'amount'
+                                      })}
+                                    >
+                                      <s-option value="quantity">Quantity</s-option>
+                                      <s-option value="amount">Amount</s-option>
+                                    </s-select>
+                                    <s-number-field
+                                      label="is greater than or equal to"
+                                      value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
+                                      onInput={(e: Event) => {
+                                        const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        const finalValue = rule.conditionType === 'amount' ? amountToCents(numValue) : numValue;
+                                        pricingState.updateDiscountRule(rule.id, { conditionValue: finalValue });
+                                      }}
+                                      min="0"
+                                      prefix={rule.conditionType === 'amount' ? "₹" : undefined}
+                                    />
+                                    <s-number-field
+                                      label={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "Percentage Off" : "Fixed Amount Off"}
+                                      value={String(pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? rule.discountValue : centsToAmount(rule.discountValue))}
+                                      onInput={(e: Event) => {
+                                        const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
+                                        pricingState.updateDiscountRule(rule.id, { discountValue: finalValue });
+                                      }}
+                                      min="0"
+                                      max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
+                                      suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                      prefix={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
                                     />
                                   </s-stack>
-                                </s-section>
+                                )}
                               </s-stack>
-                            ))}
-                          </s-stack>
-                        )}
-
-                        {/* No rules message */}
-                        {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
-                          <s-section>
-                            <s-stack direction="block" gap="small-100" style={{ alignItems: "center" }}>
-                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
-                                Add discount rules to configure messaging
-                              </p>
-                            </s-stack>
-                          </s-section>
-                        )}
-                      </s-stack>
+                            </s-section>
+                          ))}
+                          {pricingState.discountRules.length < 4 ? (
+                            <s-button variant="secondary" icon="plus" style={{ width: "100%" }} onClick={pricingState.addDiscountRule}>
+                              Add rule
+                            </s-button>
+                          ) : (
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>Maximum 4 discount rules reached</p>
+                          )}
+                        </s-stack>
+                      )}
                     </s-stack>
                   </div>
                 </s-stack>
               </s-section>
 
               <s-section>
-                <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? "auto" : "none" }}>
+                <div className={displayOptionsInactive ? productPageBundleStyles.displayOptionsInactive : undefined}>
                   <s-stack direction="block" gap="small">
                     <s-stack direction="block" gap="small-400">
                       <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Discount Display Options</h4>
-                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                        Choose how discounts are displayed
-                      </p>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Choose how discounts are displayed</p>
                     </s-stack>
 
+                    {/* Bundle Quantity Options — only for non-BXY */}
+                    {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
+                      <div className={productPageBundleStyles.displayOptionRow}>
+                        <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
+                          <s-stack direction="inline" gap="small" alignItems="center">
+                            <div className={productPageBundleStyles.displayOptionText}>
+                              <p className={productPageBundleStyles.displayOptionTitle}>Bundle Quantity Options</p>
+                              <p className={productPageBundleStyles.displayOptionDescription}>Configure this section to enable quantity options.</p>
+                            </div>
+                            <s-switch
+                              checked={qtyOptionsEnabled || undefined}
+                              disabled={!bundleQuantityOptionsEligible || undefined}
+                              onChange={(e: Event) => { setQtyOptionsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                            />
+                          </s-stack>
+                          <s-button
+                            variant="secondary"
+                            icon="globe"
+                            disabled={!qtyOptionsEnabled || shopLocales.length === 0 || undefined}
+                            onClick={() => setIsBundleQuantityMultiLangModalOpen(true)}
+                          >
+                            Multi Language
+                          </s-button>
+                        </s-stack>
+                        <p className={productPageBundleStyles.optionNote}>
+                          <strong>Note:</strong> Bundle Quantity Options can only be enabled when discount rules are based on quantity.
+                        </p>
+                        {qtyOptionsEnabled && (
+                          <div className={productPageBundleStyles.nestedDisplayOptions}>
+                            <s-stack direction="block" gap="small">
+                              {pricingState.discountRules.length === 0 ? (
+                                <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                                  Add quantity-based discount rules to configure bundle quantity options.
+                                </p>
+                              ) : (
+                                <s-stack direction="block" gap="small">
+                                  {pricingState.discountRules.map((r: any, i: number) => (
+                                    <s-section key={r.id}>
+                                      <s-stack direction="block" gap="small-100">
+                                        <s-stack direction="inline" gap="small" alignItems="center">
+                                          <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>Rule #{i + 1}</h5>
+                                          <s-button
+                                            variant="plain"
+                                            accessibilityLabel="Make this rule default"
+                                            onClick={() => { setQtyOptionsDefaultRuleId(r.id); markAsDirty(); }}
+                                          >
+                                            {r.id === qtyOptionsDefaultRuleId ? "\u2605" : "\u2606"} Make this rule default
+                                          </s-button>
+                                        </s-stack>
+                                        <s-stack direction="inline" gap="small">
+                                          <s-text-field
+                                            label="Box Label"
+                                            placeholder={`Box of ${r.conditionValue ?? ""}`}
+                                            value={qtyRuleLabels[r.id] ?? ""}
+                                            onInput={(e: Event) => { setQtyRuleLabels(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                                            autoComplete="off"
+                                          />
+                                          <s-text-field
+                                            label="Box Subtext"
+                                            placeholder="e.g. 20% off"
+                                            value={qtyRuleSubtexts[r.id] ?? ""}
+                                            onInput={(e: Event) => { setQtyRuleSubtexts(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                                            autoComplete="off"
+                                          />
+                                        </s-stack>
+                                      </s-stack>
+                                    </s-section>
+                                  ))}
+                                </s-stack>
+                              )}
+                            </s-stack>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Progress Bar */}
                     <div className={productPageBundleStyles.displayOptionRow}>
-                      <s-stack direction="inline" gap="small" alignItems="center">
-                        <div className={productPageBundleStyles.displayOptionText}>
-                          <p className={productPageBundleStyles.displayOptionTitle}>Bundle Quantity Options</p>
-                          <p className={productPageBundleStyles.displayOptionDescription}>
-                            Configure this section to enable quantity options.
-                          </p>
-                        </div>
-                        <QuestionHelpTooltip tooltipKey="bundleQuantityOptions" />
-                        <s-checkbox
-                          checked={qtyOptionsEnabled || undefined}
-                          onChange={(e: Event) => setQtyOptionsEnabled((e.target as HTMLInputElement).checked)}
-                        />
+                      <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
+                        <s-stack direction="inline" gap="small" alignItems="center">
+                          <div className={productPageBundleStyles.displayOptionText}>
+                            <p className={productPageBundleStyles.displayOptionTitle}>Progress Bar</p>
+                            <p className={productPageBundleStyles.displayOptionDescription}>Edit the progress bar content and settings.</p>
+                          </div>
+                          <s-switch
+                            checked={progressBarEnabled || undefined}
+                            onChange={(e: Event) => { setProgressBarEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                          />
+                        </s-stack>
+                        <s-button
+                          variant="secondary"
+                          icon="globe"
+                          disabled={!progressBarEnabled || progressBarType !== "step_based" || shopLocales.length === 0 || undefined}
+                          onClick={() => setIsProgressBarMultiLangModalOpen(true)}
+                        >
+                          Multi Language
+                        </s-button>
                       </s-stack>
-                      {qtyOptionsEnabled && (
+                      {progressBarEnabled && (
                         <div className={productPageBundleStyles.nestedDisplayOptions}>
                           <s-stack direction="block" gap="small">
-                            <s-button variant="secondary" icon="globe" disabled>
-                              Multi Language
-                            </s-button>
-                            <p className={productPageBundleStyles.optionNote}>
-                              <strong>Note:</strong> Bundle Quantity Options can only be enabled when discount rules are based on quantity.
-                            </p>
-                            {pricingState.discountRules.length === 0 ? (
-                              <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                                Add quantity-based discount rules to configure bundle quantity options.
-                              </p>
-                            ) : (
+                            <s-choice-list
+                              label="Progress bar type"
+                              labelAccessibilityVisibility="exclusive"
+                              values={[progressBarType]}
+                              onChange={(e: Event) => {
+                                const val = ((e.currentTarget as any).values as string[] | undefined)?.[0];
+                                if (val) setProgressBarType(val);
+                              }}
+                            >
+                              <s-choice value="simple">Simple Bar</s-choice>
+                              <s-choice value="step_based">Step-Based Bar</s-choice>
+                            </s-choice-list>
+                            {progressBarType === "step_based" ? (
                               <s-stack direction="block" gap="small">
-                                <s-select
-                                  label="Default quantity option"
-                                  value={qtyOptionsDefaultRuleId ?? ""}
-                                  onChange={(e: Event) => setQtyOptionsDefaultRuleId((e.target as HTMLSelectElement).value || null)}
-                                >
-                                  <s-option value="">None</s-option>
-                                  {pricingState.discountRules.map((r: any, i: number) => (
-                                    <s-option key={r.id} value={r.id}>
-                                      {`Rule #${i + 1} - qty ${r.condition?.value ?? "?"}`}
-                                    </s-option>
-                                  ))}
-                                </s-select>
-                                {pricingState.discountRules.map((r: any, i: number) => (
-                                  <s-section key={r.id}>
+                                {pricingState.discountRules.length === 0 ? (
+                                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+                                ) : pricingState.discountRules.map((rule: any, index: number) => (
+                                  <s-section key={rule.id}>
                                     <s-stack direction="block" gap="small-100">
-                                      <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-                                        Rule #{i + 1}
-                                      </h5>
+                                      <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Rule #{index + 1}</p>
                                       <s-stack direction="inline" gap="small">
                                         <s-text-field
-                                          label="Box Label"
-                                          placeholder={`Box of ${r.condition?.value ?? ""}`}
-                                          value={qtyRuleLabels[r.id] ?? ""}
-                                          onInput={(e: Event) => setQtyRuleLabels(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value }))}
+                                          label="Tier Text"
+                                          value={tierTextByRuleId[rule.id]?.tierText ?? ""}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLInputElement).value;
+                                            setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: val, tierSubtext: prev[rule.id]?.tierSubtext ?? "" } }));
+                                            markAsDirty();
+                                          }}
                                           autoComplete="off"
                                         />
                                         <s-text-field
-                                          label="Box Subtext"
-                                          placeholder="e.g. 20% off"
-                                          value={qtyRuleSubtexts[r.id] ?? ""}
-                                          onInput={(e: Event) => setQtyRuleSubtexts(prev => ({ ...prev, [r.id]: (e.target as HTMLInputElement).value }))}
+                                          label="Tier Subtext"
+                                          value={tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLInputElement).value;
+                                            setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: prev[rule.id]?.tierText ?? "", tierSubtext: val } }));
+                                            markAsDirty();
+                                          }}
                                           autoComplete="off"
                                         />
                                       </s-stack>
@@ -2455,59 +2964,153 @@ export default function ConfigureBundleFlow() {
                                   </s-section>
                                 ))}
                               </s-stack>
-                            )}
+                            ) : null}
                           </s-stack>
                         </div>
                       )}
                     </div>
 
+                    {/* Discount Messaging */}
                     <div className={productPageBundleStyles.displayOptionRow}>
-                      <s-stack direction="inline" gap="small" alignItems="center">
-                        <div className={productPageBundleStyles.displayOptionText}>
-                          <p className={productPageBundleStyles.displayOptionTitle}>Progress Bar</p>
-                          <p className={productPageBundleStyles.displayOptionDescription}>
-                            Edit the progress bar content and settings.
-                          </p>
-                        </div>
-                        <QuestionHelpTooltip tooltipKey="discountProgressBar" />
-                        <s-checkbox
-                          checked={progressBarEnabled || undefined}
-                          onChange={(e: Event) => setProgressBarEnabled((e.target as HTMLInputElement).checked)}
-                        />
+                      <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "space-between" }}>
+                        <s-stack direction="inline" gap="small" alignItems="center">
+                          <div className={productPageBundleStyles.displayOptionText}>
+                            <p className={productPageBundleStyles.displayOptionTitle}>Discount Messaging</p>
+                            <p className={productPageBundleStyles.displayOptionDescription}>Edit how discount messages appear above the subtotal.</p>
+                          </div>
+                          <s-switch
+                            checked={pricingState.discountMessagingEnabled || undefined}
+                            onChange={(e: Event) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
+                          />
+                        </s-stack>
+                        {shopLocales.length > 0 && (
+                          <s-checkbox
+                            label="Enable multi-language"
+                            checked={discountMessagingMultiLanguageEnabled || undefined}
+                            disabled={!pricingState.discountMessagingEnabled || undefined}
+                            onChange={(e: Event) => {
+                              setDiscountMessagingMultiLanguageEnabled((e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
+                          />
+                        )}
                       </s-stack>
-                      {progressBarEnabled && (
+                      {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
+                        <s-banner tone="info">
+                          Discount messaging displays the Total Quantity to Claim Offer (Buy + Get) to ensure customers add their rewards to the cart
+                        </s-banner>
+                      )}
+                      {pricingState.discountMessagingEnabled && (
                         <div className={productPageBundleStyles.nestedDisplayOptions}>
                           <s-stack direction="block" gap="small">
-                            <s-button variant="secondary" icon="globe" disabled>
-                              Multi Language
-                            </s-button>
-                            <s-select
-                              label="Progress bar type"
-                              value={progressBarType}
-                              onChange={(e: Event) => setProgressBarType((e.target as HTMLSelectElement).value)}
-                            >
-                              <s-option value="simple">Simple Bar</s-option>
-                              <s-option value="step_based">Step Based Bar</s-option>
-                            </s-select>
-                            <s-stack direction="inline" gap="small">
-                              <s-text-area
-                                label="Progress Text"
-                                helpText="Shown while customer is working toward a discount. Supports {{conditionText}}, {{discountText}}."
-                                value={progressBarProgressText}
-                                onInput={(e: Event) => setProgressBarProgressText((e.target as HTMLTextAreaElement).value)}
-                                autoComplete="off"
-                              />
-                              <s-text-area
-                                label="Success Text"
-                                helpText="Shown when the discount is unlocked. Supports {{discountText}}."
-                                value={progressBarSuccessText}
-                                onInput={(e: Event) => setProgressBarSuccessText((e.target as HTMLTextAreaElement).value)}
-                                autoComplete="off"
-                              />
-                            </s-stack>
-                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                              {pricingState.discountRules.length} discount milestones available from current rules.
-                            </p>
+                            {discountMessagingMultiLanguageEnabled && shopLocales.length > 0 && (
+                              <s-stack direction="block" gap="small-100">
+                                <s-select
+                                  label="Language"
+                                  value={activeDiscountLocale}
+                                  onChange={(e: Event) => {
+                                    const locale = (e.target as HTMLSelectElement).value;
+                                    setActiveDiscountLocale(locale);
+                                    const primaryLocale = shopLocales.find((l: any) => l.primary)?.locale ?? "en";
+                                    if (locale !== primaryLocale && !ruleMessagesByLocale[locale]) {
+                                      setRuleMessagesByLocale(prev => ({ ...prev, [locale]: ruleMessages }));
+                                      markAsDirty();
+                                    }
+                                  }}
+                                >
+                                  {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                                    <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+                                  ))}
+                                </s-select>
+                                <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Active languages</p>
+                                <s-stack direction="inline" gap="small-100" style={{ flexWrap: "wrap" }}>
+                                  {shopLocales.filter((l: any) => l.primary).map((l: any) => (
+                                    <s-chip key={l.locale}>{l.name}</s-chip>
+                                  ))}
+                                  {Object.keys(ruleMessagesByLocale)
+                                    .filter(locale => !shopLocales.find((l: any) => l.locale === locale && l.primary))
+                                    .map(locale => {
+                                      const locName = shopLocales.find((l: any) => l.locale === locale)?.name ?? locale;
+                                      return <s-chip key={locale}>{locName}</s-chip>;
+                                    })}
+                                </s-stack>
+                              </s-stack>
+                            )}
+                            <div style={{ textAlign: "right" }}>
+                              <s-button variant="plain" onClick={() => setIsDiscountVariablesModalOpen(true)}>
+                                Show Variables
+                              </s-button>
+                            </div>
+                            {pricingState.discountRules.length > 0 ? (
+                              <s-stack direction="block" gap="small">
+                                {pricingState.discountRules.map((rule: any, index: number) => {
+                                  const localeMessages = discountMessagingMultiLanguageEnabled
+                                    ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
+                                    : ruleMessages[rule.id];
+                                  const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType);
+                                  return (
+                                    <s-section key={rule.id}>
+                                      <s-stack direction="block" gap="small">
+                                        <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
+                                        <s-text-field
+                                          label="Discount Text"
+                                          value={localeMessages?.discountText || defaultDiscountText}
+                                          onInput={(e: Event) => {
+                                            const val = (e.target as HTMLInputElement).value;
+                                            if (discountMessagingMultiLanguageEnabled) {
+                                              setRuleMessagesByLocale(prev => ({
+                                                ...prev,
+                                                [activeDiscountLocale]: {
+                                                  ...(prev[activeDiscountLocale] || {}),
+                                                  [rule.id]: { ...(prev[activeDiscountLocale]?.[rule.id] || {}), discountText: val },
+                                                },
+                                              }));
+                                              markAsDirty();
+                                            } else {
+                                              updateRuleMessage(rule.id, "discountText", val);
+                                            }
+                                          }}
+                                          autoComplete="off"
+                                          helpText="This message appears when the customer is close to qualifying for the discount."
+                                        />
+                                      </s-stack>
+                                    </s-section>
+                                  );
+                                })}
+                                <s-section>
+                                  <s-stack direction="block" gap="small">
+                                    <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Success Message</h5>
+                                    <s-text-field
+                                      label="Success Message"
+                                      value={(() => {
+                                        const defaultMsg = getDefaultDiscountRuleSuccessMessage(pricingState.discountType);
+                                        const val = discountMessagingMultiLanguageEnabled
+                                          ? (successMessageByLocale[activeDiscountLocale] ?? globalSuccessMessage)
+                                          : globalSuccessMessage;
+                                        return val || defaultMsg;
+                                      })()}
+                                      onInput={(e: Event) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        if (discountMessagingMultiLanguageEnabled) {
+                                          setSuccessMessageByLocale(prev => ({ ...prev, [activeDiscountLocale]: val }));
+                                        } else {
+                                          setGlobalSuccessMessage(val);
+                                        }
+                                        markAsDirty();
+                                      }}
+                                      autoComplete="off"
+                                      helpText="This message appears when the customer qualifies for the discount."
+                                    />
+                                  </s-stack>
+                                </s-section>
+                              </s-stack>
+                            ) : (
+                              <s-section>
+                                <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                                  Add discount rules to configure messaging.
+                                </p>
+                              </s-section>
+                            )}
                           </s-stack>
                         </div>
                       )}
@@ -2521,313 +3124,431 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "bundle_visibility" && (
               <div data-tour-target="ppb-bundle-visibility">
-                <s-stack direction="block" gap="base">
-                  <s-section>
-                    <s-stack direction="inline" gap="base" alignItems="center">
-                      <s-icon name={appEmbedEnabled ? "check" : "alert-triangle"} />
-                      <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>App Embed Status</h3>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          {appEmbedEnabled
-                            ? "Your store is connected and ready. Your bundle can now render on your storefront."
-                            : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
-                        </p>
-                      </s-stack>
-                      <s-badge tone={appEmbedEnabled ? "success" : "warning"}>
-                        {appEmbedEnabled ? "Enabled" : "Not enabled"}
-                      </s-badge>
-                      {!appEmbedEnabled && themeEditorUrl && (
-                        <s-button variant="secondary" onClick={() => window.open(themeEditorUrl, "_blank")}>
-                          Enable here
-                        </s-button>
-                      )}
-                    </s-stack>
-                  </s-section>
+                <div className={productPageBundleStyles.visibilityOverviewStack}>
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <div>
+                      <h3 className={productPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        {appEmbedEnabled
+                          ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                          : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                      </p>
+                    </div>
+                    <div className={appEmbedEnabled ? productPageBundleStyles.visibilityStatusEnabled : productPageBundleStyles.visibilityStatusWarning}>
+                      {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                    </div>
+                    {!appEmbedEnabled && themeEditorUrl && (
+                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => window.open(themeEditorUrl, "_blank")}>
+                        Enable here
+                      </button>
+                    )}
+                  </div>
 
-                  <s-section>
-                    <s-stack direction="block" gap="base">
-                      <s-stack direction="block" gap="small-400">
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Publishing Best Practices</h3>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Pick a placement and follow the quick guide to make your bundle discoverable on your store.
-                        </p>
-                      </s-stack>
-                      <div className={productPageBundleStyles.visibilityGuideGrid}>
-                        {[
-                          ["Hero Banner", "Add a button to your homepage hero to drive shoppers directly to your bundle."],
-                          ["Navigation Menu", "Add your bundle as a nav link so shoppers can find it from anywhere on your store."],
-                          ["Announcement Banner", "Show your offer in the announcement bar so visitors see it instantly."],
-                          ["Featured Product Card", "Feature your bundle product on your homepage so shoppers find it right away."],
-                        ].map(([title, description]) => (
-                          <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
-                            <div className={productPageBundleStyles.visibilityGuideMedia}>
-                              <s-icon name="image-alt" />
-                            </div>
-                            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{title}</h4>
-                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175", lineHeight: 1.35 }}>{description}</p>
-                            <s-button variant="secondary" onClick={() => window.open("https://wolfpackapps.com", "_blank")}>Quick Setup Guide</s-button>
-                            <span className={productPageBundleStyles.visibilitySetupTime}>5 min setup</span>
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <div className={productPageBundleStyles.visibilitySectionIntro}>
+                      <h3 className={productPageBundleStyles.visibilityCardTitle}>Publishing Best Practices</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        Pick a placement and follow the quick guide to make your bundle discoverable on your store.
+                      </p>
+                    </div>
+                    <div className={productPageBundleStyles.visibilityGuideGrid}>
+                      {[
+                        { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/current-dashboard-setup-widget.png" },
+                        { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/bundleGallery.png" },
+                        { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/fpb.png" },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/productPageThumbnail.png" },
+                      ].map(({ title, desc: description, img }) => (
+                        <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
+                          <div className={productPageBundleStyles.visibilityGuideMedia}>
+                            <img src={img} alt={title} />
                           </div>
-                        ))}
+                          <div className={productPageBundleStyles.visibilityGuideBody}>
+                            <h4 className={productPageBundleStyles.visibilityGuideTitle}>{title}</h4>
+                            <p className={productPageBundleStyles.visibilityGuideDescription}>{description}</p>
+                            <div className={productPageBundleStyles.visibilityGuideFooter}>
+                              <button type="button" className={productPageBundleStyles.visibilityGuideAction} onClick={() => window.open("https://wolfpackapps.com", "_blank")}>
+                                Quick Setup Guide →
+                              </button>
+                              <span className={productPageBundleStyles.visibilitySetupTime}>5 min setup</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <div className={productPageBundleStyles.visibilitySectionIntro}>
+                      <h3 className={productPageBundleStyles.visibilityCardTitle}>Your Bundle Link</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        Use this link to place your bundle anywhere - theme components, emails, ads, or social bios.
+                      </p>
+                    </div>
+                    {bundle.shopifyProductHandle && shop ? (
+                      <div className={productPageBundleStyles.visibilityLinkRow}>
+                        <input
+                          className={productPageBundleStyles.visibilityTextInput}
+                          aria-label="Bundle link"
+                          value={`https://${shop}/products/${bundle.shopifyProductHandle}`}
+                          disabled
+                          readOnly
+                        />
+                        <button
+                          type="button"
+                          className={productPageBundleStyles.visibilitySecondaryAction}
+                          onClick={() => {
+                            const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
+                            void navigator.clipboard?.writeText(url);
+                            shopify.toast.show("Bundle link copied", { isError: false });
+                          }}
+                        >
+                          Copy Link
+                        </button>
+                        <button
+                          type="button"
+                          className={productPageBundleStyles.visibilityPlainAction}
+                          onClick={() => window.open(`https://${shop}/products/${bundle.shopifyProductHandle}`, "_blank")}
+                        >
+                          View on Storefront
+                        </button>
                       </div>
-                    </s-stack>
-                  </s-section>
+                    ) : (
+                      <p className={productPageBundleStyles.visibilityCardText}>Bundle product not yet linked.</p>
+                    )}
+                  </div>
 
-                  <s-section>
-                    <s-stack direction="block" gap="small">
-                      <s-stack direction="inline" gap="small">
-                        <s-icon name="globe" />
-                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your Bundle Link</h3>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Use this link to place your bundle anywhere - theme components, ads, or social bios.
-                          </p>
-                        </s-stack>
-                      </s-stack>
-                      {bundle.shopifyProductHandle && shop ? (
-                        <s-stack direction="inline" gap="small">
-                          <s-text-field
-                            label="Bundle link"
-                            value={`https://${shop}/products/${bundle.shopifyProductHandle}`}
-                            disabled
-                            autoComplete="off"
-                          />
-                          <s-button
-                            variant="secondary"
-                            onClick={() => {
-                              const url = `https://${shop}/products/${bundle.shopifyProductHandle}`;
-                              void navigator.clipboard?.writeText(url);
-                              shopify.toast.show("Bundle link copied", { isError: false });
-                            }}
-                          >
-                            Copy Link
-                          </s-button>
-                          <s-button
-                            variant="plain"
-                            onClick={() => window.open(`https://${shop}/products/${bundle.shopifyProductHandle}`, "_blank")}
-                          >
-                            View on Storefront
-                          </s-button>
-                        </s-stack>
-                      ) : (
-                        <s-text tone="subdued">Bundle product not yet linked.</s-text>
-                      )}
-                    </s-stack>
-                  </s-section>
-
-                  <s-section>
-                    <s-stack direction="block" gap="base">
-                      <s-stack direction="inline" gap="base" alignItems="center">
-                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Want more placement options?</h3>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Widget</h4>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Add a bundle button to specific product pages.
-                          </p>
-                        </s-stack>
-                        <s-button variant="primary" onClick={() => handleSectionChange("bundle_widget")}>Set up Bundle Widget</s-button>
-                      </s-stack>
-                      <s-stack direction="inline" gap="base" alignItems="center">
-                        <s-stack direction="block" gap="small-400" style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Embed</h4>
-                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                            Embed the full bundle builder directly on a product page.
-                          </p>
-                        </s-stack>
-                        <s-button variant="secondary" onClick={() => handleSectionChange("bundle_embed")}>Set up Bundle Embed</s-button>
-                      </s-stack>
-                    </s-stack>
-                  </s-section>
-                </s-stack>
+                  <div className={productPageBundleStyles.visibilityOverviewCard}>
+                    <h3 className={productPageBundleStyles.visibilityCardTitle}>Want more placement options?</h3>
+                    <div className={productPageBundleStyles.visibilitySetupPanel}>
+                      <div>
+                        <h4 className={productPageBundleStyles.visibilitySetupTitle}>Bundle Widget</h4>
+                        <p className={productPageBundleStyles.visibilityCardText}>
+                          Add a bundle button to specific product pages.
+                        </p>
+                      </div>
+                      <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={() => handleSectionChange("bundle_widget")}>
+                        Set up Bundle Widget
+                      </button>
+                    </div>
+                    <div className={productPageBundleStyles.visibilitySetupPanel}>
+                      <div>
+                        <h4 className={productPageBundleStyles.visibilitySetupTitle}>Bundle Embed</h4>
+                        <p className={productPageBundleStyles.visibilityCardText}>
+                          Embed the full bundle builder directly on a product page.
+                        </p>
+                      </div>
+                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => handleSectionChange("bundle_embed")}>
+                        Set up Bundle Embed
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
             {activeSection === "bundle_widget" && (
               <div data-tour-target="ppb-bundle-widget">
-                <s-stack direction="block" gap="base">
-                  <s-section heading="Product Page Bundle Upsell Widgets">
-                    <s-stack direction="vertical" gap="400">
-                      <s-stack direction="horizontal" gap="300" align-y="center">
-                        <s-switch
-                          checked={upsellWidgetEnabled}
-                          onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
-                        />
-                        <s-text>This will display an upsell block or button on the product pages of your choice.</s-text>
-                      </s-stack>
+                <div className={productPageBundleStyles.visibilityPanel}>
+                  <div className={productPageBundleStyles.visibilityTitleSwitchRow}>
+                    <div>
+                      <h3 className={productPageBundleStyles.visibilityPanelTitle}>Product Page Bundle Upsell Widgets</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        This will display an upsell block or button on the product pages of your choice.
+                      </p>
+                    </div>
+                    <s-switch
+                      checked={upsellWidgetEnabled || undefined}
+                      onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
+                    />
+                  </div>
 
-                      <div className={productPageBundleStyles.widgetPreviewMedia}>
-                        <span className={productPageBundleStyles.widgetPreviewButton}>
-                          {textOverrides.widgetButtonText || "Save More With Bundle"}
-                        </span>
+                  <div className={productPageBundleStyles.visibilityPreviewFrame}>
+                    <div className={productPageBundleStyles.visibilityPreviewProduct}>
+                      <div className={productPageBundleStyles.visibilityPreviewThumbnails}>
+                        <span />
+                        <span />
+                        <span />
                       </div>
-
-                      <s-stack direction="vertical" gap="200">
-                        <s-text>Display type</s-text>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                          <input
-                            type="radio"
-                            name="upsellWidgetType"
-                            value="block"
-                            checked={upsellWidgetDisplayMode !== "button"}
-                            onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
-                          />
-                          <span style={{ fontSize: 14 }}>Offer Upsell Block</span>
-                        </label>
-                        <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                          <input
-                            type="radio"
-                            name="upsellWidgetType"
-                            value="button"
-                            checked={upsellWidgetDisplayMode === "button"}
-                            onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
-                          />
-                          <span style={{ fontSize: 14 }}>Offer Upsell Button</span>
-                        </label>
-                        <s-banner tone="info">Select if you want the upsell block or button to appear on product pages.</s-banner>
-                      </s-stack>
-
-                      <s-stack direction="vertical" gap="300">
-                        <s-heading size="small">Widget Settings</s-heading>
-                        <s-stack direction="horizontal" gap="small" align-y="center">
-                          <s-button
-                            variant="secondary"
-                            icon="globe"
-                            disabled
-                          >
-                            Multi Language
-                          </s-button>
-                        </s-stack>
-                        <s-text-field
-                          label="Button Text"
-                          placeholder="Save More With Bundle"
-                          value={textOverrides.widgetButtonText ?? ""}
-                          onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, widgetButtonText: (e.target as HTMLInputElement).value })); markAsDirty(); }}
-                          autoComplete="off"
+                      <div className={productPageBundleStyles.visibilityPreviewImage}>
+                        {upsellWidgetImageUrl ? <img src={upsellWidgetImageUrl} alt="" /> : null}
+                      </div>
+                      <div className={productPageBundleStyles.visibilityPreviewDetails}>
+                        <p className={productPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
+                        <p className={productPageBundleStyles.visibilityPreviewPrice}>$47.97</p>
+                        <div className={productPageBundleStyles.visibilityPreviewNativeButton}>Add to Cart · $47.97</div>
+                        <div className={productPageBundleStyles.visibilityPreviewWidget}>
+                          <span>{upsellWidgetTitle || "Bundle & Save"}</span>
+                          <button type="button">{upsellWidgetButtonText || "Buy With Bundle"}</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={productPageBundleStyles.visibilityRadioBar}>
+                      <label className={productPageBundleStyles.visibilityRadioLabel}>
+                        <input
+                          type="radio"
+                          name="upsellWidgetType"
+                          value="block"
+                          checked={upsellWidgetDisplayMode !== "button"}
+                          onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
                         />
-                      </s-stack>
+                        <span>Offer Upsell Block</span>
+                      </label>
+                      <label className={productPageBundleStyles.visibilityRadioLabel}>
+                        <input
+                          type="radio"
+                          name="upsellWidgetType"
+                          value="button"
+                          checked={upsellWidgetDisplayMode === "button"}
+                          onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
+                        />
+                        <span>Offer Upsell Button</span>
+                      </label>
+                    </div>
+                  </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-text>Display Widget on</s-text>
-                        {[
-                          { value: "all",                   label: "All products in bundle"  },
-                          { value: "specific_products",     label: "Specific products"        },
-                          { value: "specific_collections",  label: "Specific collections"     },
-                        ].map(({ value, label }) => (
-                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                            <input
-                              type="radio"
-                              name="widgetDisplayOn"
-                              value={value}
-                              checked={upsellWidgetDisplayOn === value}
-                              onChange={() => { setUpsellWidgetDisplayOn(value); markAsDirty(); }}
-                            />
-                            <span style={{ fontSize: 14 }}>{label}</span>
-                          </label>
-                        ))}
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilityInfoBanner}>
+                    Select if you want the upsell block or button to appear on product pages.
+                  </div>
 
-                      <s-checkbox
-                        label="Add browsed product to bundle"
-                        checked={autoSelectBrowsedProduct || undefined}
-                        onChange={(e: Event) => { setAutoSelectBrowsedProduct((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      />
+                  <div className={productPageBundleStyles.visibilityPanelSection}>
+                    <div className={productPageBundleStyles.visibilitySectionHeader}>
+                      <h4 className={productPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
+                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} disabled={!upsellWidgetEnabled}>
+                        Multi language
+                      </button>
+                    </div>
+                    <div className={productPageBundleStyles.visibilitySettingsGrid}>
+                      <div className={productPageBundleStyles.visibilityImagePicker}>
+                        <FilePicker
+                          label="Upload Image"
+                          hideCropEditor
+                          value={upsellWidgetImageUrl || null}
+                          onChange={(url) => { setUpsellWidgetImageUrl(url ?? ""); markAsDirty(); }}
+                        />
+                      </div>
+                      <div className={productPageBundleStyles.visibilityFieldStack}>
+                        <label className={productPageBundleStyles.visibilityFieldLabel}>
+                          <span>Widget Title</span>
+                          <input
+                            className={productPageBundleStyles.visibilityTextInput}
+                            value={upsellWidgetTitle}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setUpsellWidgetTitle(e.target.value); markAsDirty(); }}
+                          />
+                        </label>
+                        <label className={productPageBundleStyles.visibilityFieldLabel}>
+                          <span>Widget Description</span>
+                          <textarea
+                            className={productPageBundleStyles.visibilityTextarea}
+                            value={upsellWidgetDescription}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setUpsellWidgetDescription(e.target.value); markAsDirty(); }}
+                          />
+                        </label>
+                        <label className={productPageBundleStyles.visibilityFieldLabel}>
+                          <span>Widget Button Text</span>
+                          <input
+                            className={productPageBundleStyles.visibilityTextInput}
+                            value={upsellWidgetButtonText}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setUpsellWidgetButtonText(e.target.value); markAsDirty(); }}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-heading size="small">Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</s-heading>
-                        <s-text size="small" tone="subdued">By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.</s-text>
-                        <s-button
-                          variant="secondary"
-                          onClick={handlePlaceWidget}
-                        >
-                          Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
-                        </s-button>
-                      </s-stack>
-                    </s-stack>
-                  </s-section>
-                </s-stack>
+                  <div className={productPageBundleStyles.visibilityPanelSection}>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Display Widget on</h4>
+                    <div className={productPageBundleStyles.visibilityTargetOptions}>
+                      {[
+                        { value: "all",                   label: "All products in bundle"  },
+                        { value: "specific_products",     label: "Specific products"        },
+                        { value: "specific_collections",  label: "Specific collections"     },
+                      ].map(({ value, label }) => (
+                        <label key={value} className={productPageBundleStyles.visibilityRadioLabel}>
+                          <input
+                            type="radio"
+                            name="widgetDisplayOn"
+                            value={value}
+                            checked={upsellWidgetDisplayOn === value}
+                            onChange={() => { setUpsellWidgetDisplayOn(value); markAsDirty(); }}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {upsellWidgetDisplayOn === "specific_products" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityProductPicker("widget")}>
+                          Select products
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {upsellWidgetSelectedProducts.map((product: any, index) => (
+                            <div key={getVisibilityResourceId(product) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{product.title ?? "Untitled product"}</span>
+                              <button type="button" onClick={() => removeVisibilityProductTarget("widget", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {upsellWidgetDisplayOn === "specific_collections" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityCollectionPicker("widget")}>
+                          Select collections
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {upsellWidgetCollectionsSelectedData.map((collection: any, index) => (
+                            <div key={getVisibilityResourceId(collection) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{collection.title ?? "Untitled collection"}</span>
+                              <button type="button" onClick={() => removeVisibilityCollectionTarget("widget", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className={productPageBundleStyles.visibilityCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={autoSelectBrowsedProduct}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setAutoSelectBrowsedProduct(e.target.checked); markAsDirty(); }}
+                    />
+                    <span>Add browsed product to bundle</span>
+                  </label>
+                </div>
+
+                <div className={productPageBundleStyles.visibilityPlacementCard}>
+                  <div>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</h4>
+                    <p className={productPageBundleStyles.visibilityCardText}>Place app block on the theme</p>
+                  </div>
+                  <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                    Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
+                  </button>
+                </div>
               </div>
             )}
 
             {activeSection === "bundle_embed" && (
               <div data-tour-target="ppb-bundle-embed">
-                <s-stack direction="block" gap="base">
-                  <s-section heading="Embed Bundle Builder on Product Pages">
-                    <s-stack direction="vertical" gap="400">
-                      <s-stack direction="horizontal" gap="300" align-y="center">
-                        <s-switch
-                          checked={textOverrides.bundleEmbedEnabled === "true"}
-                          onChange={(e: Event) => { setTextOverrides((prev) => ({ ...prev, bundleEmbedEnabled: (e.target as HTMLInputElement).checked ? "true" : "false" })); markAsDirty(); }}
-                        />
-                        <s-text>Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.</s-text>
-                      </s-stack>
+                <div className={productPageBundleStyles.visibilityPanel}>
+                  <div className={productPageBundleStyles.visibilityTitleSwitchRow}>
+                    <div>
+                      <h3 className={productPageBundleStyles.visibilityPanelTitle}>Embed Bundle Builder on Product Pages</h3>
+                      <p className={productPageBundleStyles.visibilityCardText}>
+                        Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.
+                      </p>
+                    </div>
+                    <s-switch
+                      checked={bundleEmbedEnabled || undefined}
+                      onChange={(e: Event) => { setBundleEmbedEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                    />
+                  </div>
 
-                      <s-stack direction="horizontal" gap="small" align-y="center">
-                        <s-button
-                          variant="secondary"
-                          icon="globe"
-                          onClick={() => openMultiLanguageModal("Bundle Embed", [
-                            { key: "embedTitle", label: "Title", fallback: textOverrides.embedTitle ?? "Build Your Bundle & Save More" },
-                            { key: "embedSubTitle", label: "Sub Title", fallback: textOverrides.embedSubTitle ?? "", multiline: true },
-                          ])}
-                        >
-                          Multi Language
-                        </s-button>
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilitySectionHeader}>
+                    <span />
+                    <button
+                      type="button"
+                      className={productPageBundleStyles.visibilitySecondaryAction}
+                      onClick={() => openMultiLanguageModal("Bundle Embed", [
+                        { key: "embedTitle", label: "Title", fallback: bundleEmbedTitle },
+                        { key: "embedSubTitle", label: "Sub Title", fallback: bundleEmbedSubTitle, multiline: true },
+                      ])}
+                    >
+                      Multi Language
+                    </button>
+                  </div>
 
-                      <s-text-field
-                        label="Title"
-                        value={textOverrides.embedTitle ?? "Build Your Bundle & Save More"}
-                        onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
-                        autoComplete="off"
+                  <div className={productPageBundleStyles.visibilityFieldStack}>
+                    <label className={productPageBundleStyles.visibilityFieldLabel}>
+                      <span>Title</span>
+                      <input
+                        className={productPageBundleStyles.visibilityTextInput}
+                        value={bundleEmbedTitle}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setBundleEmbedTitle(e.target.value); markAsDirty(); }}
                       />
-                      <s-text-field
-                        label="Sub Title"
-                        value={textOverrides.embedSubTitle ?? ""}
-                        onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedSubTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
-                        autoComplete="off"
+                    </label>
+                    <label className={productPageBundleStyles.visibilityFieldLabel}>
+                      <span>Sub Title</span>
+                      <input
+                        className={productPageBundleStyles.visibilityTextInput}
+                        value={bundleEmbedSubTitle}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setBundleEmbedSubTitle(e.target.value); markAsDirty(); }}
                       />
+                    </label>
+                  </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-text>Display Bundle on</s-text>
-                        {[
-                          { value: "all_products",          label: "All products in bundle"  },
-                          { value: "specific_products",     label: "Specific products"        },
-                          { value: "specific_collections",  label: "Specific collections"     },
-                        ].map(({ value, label }) => (
-                          <label key={value} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                            <input
-                              type="radio"
-                              name="embedDisplayOn"
-                              value={value}
-                              checked={(textOverrides.embedDisplayOn ?? "all_products") === value}
-                              onChange={() => { setTextOverrides((prev) => ({ ...prev, embedDisplayOn: value })); markAsDirty(); }}
-                            />
-                            <span style={{ fontSize: 14 }}>{label}</span>
-                          </label>
-                        ))}
-                      </s-stack>
+                  <div className={productPageBundleStyles.visibilityPanelSection}>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Display Bundle on</h4>
+                    <div className={productPageBundleStyles.visibilityTargetOptions}>
+                      {[
+                        { value: "all_products",          label: "All products in bundle"  },
+                        { value: "specific_products",     label: "Specific products"        },
+                        { value: "specific_collections",  label: "Specific collections"     },
+                      ].map(({ value, label }) => (
+                        <label key={value} className={productPageBundleStyles.visibilityRadioLabel}>
+                          <input
+                            type="radio"
+                            name="embedDisplayOn"
+                            value={value}
+                            checked={bundleEmbedDisplayOn === value}
+                            onChange={() => { setBundleEmbedDisplayOn(value); markAsDirty(); }}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {bundleEmbedDisplayOn === "specific_products" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityProductPicker("embed")}>
+                          Select products
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {bundleEmbedSelectedProducts.map((product: any, index) => (
+                            <div key={getVisibilityResourceId(product) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{product.title ?? "Untitled product"}</span>
+                              <button type="button" onClick={() => removeVisibilityProductTarget("embed", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {bundleEmbedDisplayOn === "specific_collections" && (
+                      <div className={productPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityCollectionPicker("embed")}>
+                          Select collections
+                        </button>
+                        <div className={productPageBundleStyles.visibilitySelectionList}>
+                          {bundleEmbedCollectionsSelectedData.map((collection: any, index) => (
+                            <div key={getVisibilityResourceId(collection) ?? index} className={productPageBundleStyles.visibilitySelectionItem}>
+                              <span>{collection.title ?? "Untitled collection"}</span>
+                              <button type="button" onClick={() => removeVisibilityCollectionTarget("embed", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                      <s-checkbox
-                        checked={textOverrides.embedAddBrowsedProduct === "true" || undefined}
-                        onChange={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedAddBrowsedProduct: (e.target as HTMLInputElement).checked ? "true" : "false" })); markAsDirty(); }}
-                      >
-                        Add browsed product to bundle
-                      </s-checkbox>
+                  <label className={productPageBundleStyles.visibilityCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={bundleEmbedAddBrowsedProduct}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setBundleEmbedAddBrowsedProduct(e.target.checked); markAsDirty(); }}
+                    />
+                    <span>Add browsed product to bundle</span>
+                  </label>
+                </div>
 
-                      <s-stack direction="vertical" gap="200">
-                        <s-heading size="small">Put the Bundle Builder at a custom location</s-heading>
-                        <s-text size="small" tone="subdued">Place app block on the theme.</s-text>
-                        {themeEditorUrl ? (
-                          <s-button variant="secondary" onClick={() => window.open(themeEditorUrl, "_blank")}>
-                            Place Block
-                          </s-button>
-                        ) : (
-                          <s-button variant="secondary" disabled>Place Block</s-button>
-                        )}
-                      </s-stack>
-                    </s-stack>
-                  </s-section>
-                </s-stack>
+                <div className={productPageBundleStyles.visibilityPlacementCard}>
+                  <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
+                  <div className={productPageBundleStyles.visibilityPlacementActionRow}>
+                    <span>Place app block on the theme</span>
+                    <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                      Place Block
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2968,17 +3689,15 @@ export default function ConfigureBundleFlow() {
             )}
 
             {activeSection === "bundle_settings" && (() => {
-              const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
-              const selectedDefaultProducts = settingsStep
-                ? ((settingsStep.StepProduct as any[] | undefined) ?? [])
-                : [];
+              const selectedDefaultProducts = defaultProductsData.products ?? [];
+              const defaultProductsEnabled = defaultProductsData.isDefaultProductsEnabled === true;
               const defaultProductCount = selectedDefaultProducts.length;
               const defaultProductSelectionIds = selectedDefaultProducts
-                .map((product: any) => product.productId || product.id)
+                .map((product: any) => product.graphqlId || product.productId || product.id)
                 .filter(Boolean)
                 .map((id: string) => ({ id }));
+              const individualSellingPlanBlocked = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
               const handleDefaultProductPicker = async () => {
-                if (!settingsStep) return;
                 const picked = await (shopify as any).resourcePicker({
                   type: "product",
                   multiple: true,
@@ -2987,85 +3706,86 @@ export default function ConfigureBundleFlow() {
                 });
                 if (!picked) return;
 
-                const defaultProducts = picked.map((product: any) => ({
-                  id: product.id,
-                  title: product.title,
-                  imageUrl: product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null,
-                  variants: product.variants || null,
-                  minQuantity: 1,
-                  maxQuantity: 10,
-                }));
-                const firstVariantId = defaultProducts[0]?.variants?.[0]?.id || defaultProducts[0]?.variants?.[0]?.gid || "";
+                const defaultProducts = picked
+                  .map(buildDefaultProductEntryFromPicker)
+                  .filter((product): product is NonNullable<ReturnType<typeof buildDefaultProductEntryFromPicker>> => Boolean(product));
 
-                stepsState.updateStepField(settingsStep.id, "StepProduct", defaultProducts);
-                stepsState.updateStepField(settingsStep.id, "isDefault", defaultProducts.length > 0);
-                stepsState.updateStepField(settingsStep.id, "defaultVariantId", firstVariantId);
+                setDefaultProductsData((prev) => ({
+                  isDefaultProductsEnabled: true,
+                  defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                  products: defaultProducts,
+                }));
                 markAsDirty();
               };
 
               return (
                 <div data-tour-target="ppb-bundle-status">
                   <s-stack direction="block" gap="base">
+
+                    {/* Pre Selected Product */}
                     <s-section>
                       <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
-                          {settingsStep && (
-                            <s-checkbox
-                              accessibilityLabel="Enable pre selected product for active step"
-                              checked={settingsStep.isDefault || undefined}
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <h3 className={productPageBundleStyles.settingTitle}>Pre Selected Product</h3>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Enable pre selected product"
+                              checked={defaultProductsEnabled || undefined}
                               onChange={(e: Event) => {
-                                stepsState.updateStepField(settingsStep.id, "isDefault", (e.target as HTMLInputElement).checked);
+                                const checked = (e.target as HTMLInputElement).checked;
+                                setDefaultProductsData((prev) => ({
+                                  ...prev,
+                                  isDefaultProductsEnabled: checked,
+                                  defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                                  products: prev.products ?? [],
+                                }));
                                 markAsDirty();
                               }}
                             />
-                          )}
-                        </s-stack>
+                          </span>
+                        </div>
                         <s-banner tone="info">
                           Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
                         </s-banner>
                         <s-text-field
                           label="Default products title"
-                          value={textOverrides.defaultProductsTitle ?? ""}
+                          value={defaultProductsData.defaultProductsTitle ?? ""}
                           onInput={(e: Event) => {
-                            setTextOverrides((prev) => ({ ...prev, defaultProductsTitle: (e.target as HTMLInputElement).value }));
+                            const value = (e.target as HTMLInputElement).value;
+                            setDefaultProductsData((prev) => ({ ...prev, defaultProductsTitle: value }));
                             markAsDirty();
                           }}
                           autoComplete="off"
                         />
-                        <s-button
-                          variant="secondary"
-                          icon="globe"
-                          onClick={() => openMultiLanguageModal("Pre Selected Product", [
-                            { key: "defaultProductsTitle", label: "Default products title", fallback: textOverrides.defaultProductsTitle ?? "" },
-                          ])}
-                        >
-                          Multi Language
-                        </s-button>
-                        <s-stack direction="block" gap="small-400">
+                        <div className={productPageBundleStyles.defaultProductsPickerGroup}>
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Choose default products</p>
-                          <s-stack direction="inline" gap="small" alignItems="center">
-                            <s-button variant="primary" disabled={!settingsStep} onClick={handleDefaultProductPicker}>
+                          <div className={productPageBundleStyles.defaultProductsPickerActions}>
+                            <s-button
+                              variant={defaultProductsEnabled ? "primary" : "secondary"}
+                              disabled={!defaultProductsEnabled || undefined}
+                              onClick={handleDefaultProductPicker}
+                            >
                               Browse Products
                             </s-button>
-                            <s-badge tone={defaultProductCount > 0 ? "success" : "info"}>
-                              {defaultProductCount > 0 ? `${defaultProductCount} selected` : "Not set"}
-                            </s-badge>
-                          </s-stack>
-                        </s-stack>
+                            {defaultProductCount > 0 && <s-badge tone="success">{defaultProductCount} selected</s-badge>}
+                          </div>
+                        </div>
                       </s-stack>
                     </s-section>
 
+                    {/* Enable Quantity Validation */}
                     <s-section>
                       <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
-                          <s-switch
-                            accessibilityLabel="Enable quantity validation"
-                            checked={productSlotsEnabled || undefined}
-                            onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </s-stack>
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <h3 className={productPageBundleStyles.settingTitle}>Enable Quantity Validation</h3>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Enable quantity validation"
+                              checked={productSlotsEnabled || undefined}
+                              onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                            />
+                          </span>
+                        </div>
                         <s-text-field
                           label="Maximum allowed quantity per product"
                           type="number"
@@ -3075,26 +3795,71 @@ export default function ConfigureBundleFlow() {
                           onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autoComplete="off"
                         />
+                        {individualSellingPlanBlocked && (
+                          <s-banner tone="warning">
+                            {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}
+                          </s-banner>
+                        )}
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <h3 className={`${productPageBundleStyles.settingTitle} ${individualSellingPlanBlocked ? productPageBundleStyles.settingTitleMuted : ""}`}>
+                            Pre-order &amp; Subscription Integration
+                          </h3>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Enable pre-order and subscription integration"
+                              checked={!individualSellingPlanBlocked && individualSellingPlanEnabled || undefined}
+                              disabled={individualSellingPlanBlocked || undefined}
+                              onChange={(e: Event) => {
+                                setIndividualSellingPlanEnabled((e.target as HTMLInputElement).checked);
+                                markAsDirty();
+                              }}
+                            />
+                          </span>
+                        </div>
+                        <p style={{ margin: 0, fontSize: 13, color: "#8c9196" }}>
+                          Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle.
+                        </p>
                       </s-stack>
                     </s-section>
 
+                    {/* Cart line item discount display */}
                     <s-section>
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Cart line item discount display</h3>
-                          <s-button variant="secondary" onClick={() => handleSectionChange("discount_pricing")}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const authSearch = window.location.search.replace(/^\?/, "");
+                              const targetHref = authSearch
+                                ? `${PRODUCT_PAGE_EDIT_DEFAULTS_HREF}&${authSearch}`
+                                : PRODUCT_PAGE_EDIT_DEFAULTS_HREF;
+                              window.location.assign(targetHref);
+                            }}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              minHeight: 32,
+                              padding: "0 12px",
+                              borderRadius: 8,
+                              border: "1px solid #c9cccf",
+                              color: "#202223",
+                              fontSize: 13,
+                              fontWeight: 600,
+                              textDecoration: "none",
+                              background: "#ffffff",
+                              cursor: "pointer",
+                            }}
+                          >
                             Edit Defaults
-                          </s-button>
+                          </button>
                         </s-stack>
-                        <s-text size="small" tone="subdued">Shows how much the customer is saving on the bundle in cart</s-text>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Shows how much the customer is saving on the bundle in cart</p>
                         {[
                           { value: "defaults", label: "Use app defaults",         description: "Uses the discount format and label configured in your app settings." },
                           { value: "custom",   label: "Customize for this bundle", description: "Set a different discount format or label for this bundle only." },
                         ].map(({ value, label, description }) => (
-                          <label
-                            key={value}
-                            style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}
-                          >
+                          <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
                             <input
                               type="radio"
                               name="cartDiscountDisplay"
@@ -3112,16 +3877,52 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
                     </s-section>
 
+                    {/* Bundle Banner — 2-column side-by-side layout */}
                     <s-section>
                       <s-stack direction="block" gap="small">
-                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Level CSS</h3>
-                        <textarea
-                          value={bundleLevelCss}
-                          placeholder="/* Add custom CSS for this bundle */"
-                          rows={6}
-                          style={{ width: "100%", fontFamily: "monospace", fontSize: 13, padding: "8px 10px", borderRadius: 6, border: "1px solid #c9cccf", resize: "vertical", boxSizing: "border-box" }}
-                          onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
-                        />
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Banner</p>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Upload banner images for desktop and mobile views that will be displayed at the top of your bundle page.</p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                          <div>
+                            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Desktop</p>
+                            <FilePicker
+                              value={bundleBannerDesktopUrl || null}
+                              onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
+                            />
+                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1900x230</span></p>
+                          </div>
+                          <div>
+                            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Mobile</p>
+                            <FilePicker
+                              value={bundleBannerMobileUrl || null}
+                              onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
+                            />
+                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1100x500</span></p>
+                          </div>
+                        </div>
+                      </s-stack>
+                    </s-section>
+
+                    {/* Bundle Level CSS — collapsible */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <button
+                          type="button"
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          onClick={() => setBundleLevelCssExpanded((prev) => !prev)}
+                        >
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Level CSS</h3>
+                          <span style={{ fontSize: 18, color: "#6d7175", display: "inline-block", transform: bundleLevelCssExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+                        </button>
+                        {bundleLevelCssExpanded && (
+                          <textarea
+                            value={bundleLevelCss}
+                            placeholder="/* Add custom CSS for this bundle */"
+                            rows={6}
+                            style={{ width: "100%", fontFamily: "monospace", fontSize: 13, padding: "8px 10px", borderRadius: 6, border: "1px solid #c9cccf", resize: "vertical", boxSizing: "border-box" }}
+                            onInput={(e: Event) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
+                          />
+                        )}
                       </s-stack>
                     </s-section>
 
@@ -3132,6 +3933,57 @@ export default function ConfigureBundleFlow() {
                       />
                     </s-section>
                   </s-stack>
+                </div>
+              );
+            })()}
+
+            {activeSection === "subscriptions" && (() => {
+              const validation = subscriptionFetcher.data;
+              const validationMessage = validation?.success === false
+                ? validation.error
+                : validation?.isValid === false
+                  ? (validation.message ?? SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE)
+                  : null;
+
+              return (
+                <div data-tour-target="ppb-subscriptions">
+                  <s-section>
+                    <s-stack direction="block" gap="base">
+                      <s-stack direction="inline" alignItems="center" gap="small">
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Subscriptions</h3>
+                        <s-button variant="plain">
+                          How to setup?
+                        </s-button>
+                      </s-stack>
+                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                        Allow customers to purchase the bundle as a subscription
+                      </p>
+
+                      {validationMessage && (
+                        <s-banner tone="warning">
+                          <s-stack direction="block" gap="small-400">
+                            <span>{validationMessage}</span>
+                            <s-button variant="plain">Learn More</s-button>
+                          </s-stack>
+                        </s-banner>
+                      )}
+
+                      <s-stack direction="inline" gap="small" alignItems="center">
+                        <s-button
+                          variant="primary"
+                          loading={subscriptionFetcher.state === "submitting" || undefined}
+                          disabled={subscriptionFetcher.state !== "idle" || undefined}
+                          onClick={() => {
+                            const formData = new FormData();
+                            formData.append("intent", "validateSellingPlanGroups");
+                            subscriptionFetcher.submit(formData, { method: "post" });
+                          }}
+                        >
+                          Get Subscription Plans
+                        </s-button>
+                      </s-stack>
+                    </s-stack>
+                  </s-section>
                 </div>
               );
             })()}
@@ -3653,6 +4505,109 @@ export default function ConfigureBundleFlow() {
         onContinue={closeDiscardModal}
       />
 
+      {isSelectTemplateModalOpen && (
+        <div
+          className={productPageBundleStyles.templateDialogBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeSelectTemplateDialog();
+          }}
+        >
+          <div
+            className={productPageBundleStyles.templateDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ppb-template-dialog-title"
+            tabIndex={-1}
+            onKeyDown={handleSelectTemplateDialogKeyDown}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className={productPageBundleStyles.templateDialogHeader}>
+              <h2 id="ppb-template-dialog-title" className={productPageBundleStyles.templateDialogHeading}>
+                Customization
+              </h2>
+              <button
+                type="button"
+                className={productPageBundleStyles.templateDialogClose}
+                aria-label="Close customization"
+                onClick={closeSelectTemplateDialog}
+              >
+                <s-icon name="x" />
+              </button>
+            </div>
+            {templateModalStep === "select" ? (
+              <>
+                <div className={productPageBundleStyles.templateDialogBody}>
+                  <div className={productPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={productPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={productPageBundleStyles.templateDialogDescription}>
+                        Choose a design that suits your needs and fits your brand
+                      </p>
+                    </div>
+                    <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                      Customize Colors &amp; Language
+                    </s-button>
+                  </div>
+                  <div className={productPageBundleStyles.templateDialogGrid}>
+                    {productPageTemplateOptions.map((templateOption) => {
+                      const isSelected = pendingDesignPresetId === templateOption.presetId && pendingDesignTemplate === templateOption.layoutTemplate;
+                      return (
+                        <button
+                          key={templateOption.presetId}
+                          type="button"
+                          className={`${productPageBundleStyles.templateOptionCard} ${isSelected ? productPageBundleStyles.templateOptionCardSelected : ""}`}
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            setPendingDesignTemplate(templateOption.layoutTemplate);
+                            setPendingDesignPresetId(templateOption.presetId);
+                          }}
+                        >
+                          <span className={productPageBundleStyles.templateOptionImageFrame}>
+                            <img src={templateOption.image} alt={templateOption.label} className={productPageBundleStyles.templateOptionImage} />
+                          </span>
+                          <span className={productPageBundleStyles.templateOptionFooter}>
+                            <span className={productPageBundleStyles.templateOptionLabel}>{templateOption.label}</span>
+                            <span className={`${productPageBundleStyles.templateOptionAction} ${isSelected ? productPageBundleStyles.templateOptionActionSelected : ""}`}>
+                              {isSelected ? "Selected" : "Select"}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className={productPageBundleStyles.templateDialogFooter}>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Next
+                  </s-button>
+                </div>
+              </>
+            ) : (
+              <div className={productPageBundleStyles.templateDialogBody}>
+                <div className={productPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={productPageBundleStyles.templateDialogSubheading}>View your bundle</h3>
+                  <p className={productPageBundleStyles.templateDialogDescription}>View your bundle with your customizations</p>
+                </div>
+                <div className={productPageBundleStyles.templateReadyPanel}>
+                  <div className={productPageBundleStyles.templateReadyIcon}>
+                    <s-icon name="check" />
+                  </div>
+                  <h3 className={productPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
+                  <p className={productPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
+                  <s-button variant="secondary" onClick={closeSelectTemplateDialog}>Preview bundle</s-button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Bundle?">
         <s-stack direction="block" gap="small">
@@ -3694,6 +4649,146 @@ export default function ConfigureBundleFlow() {
         >
           Done
         </s-button>
+      </s-modal>
+
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="small">
+        <s-stack direction="block" gap="small">
+          {DISCOUNT_TEMPLATE_VARIABLES.map(([variable, description]) => (
+            <div key={variable} className={productPageBundleStyles.templateVariableItem}>
+              <s-text tone="subdued">{description}</s-text>
+              <s-badge>{variable}</s-badge>
+            </div>
+          ))}
+        </s-stack>
+      </s-modal>
+
+      {/* Bundle Quantity Options Multi Language Modal */}
+      <s-modal id="discount-bundle-quantity-language-modal" ref={bundleQuantityMultiLangModalRef} heading="Customize Text for Multiple Languages">
+        <s-stack direction="block" gap="small">
+          {shopLocales.length > 0 && (
+            <s-select
+              label="Select Language"
+              value={activeBundleQuantityLocale}
+              onChange={(e: Event) => setActiveBundleQuantityLocale((e.target as HTMLSelectElement).value)}
+            >
+              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+              ))}
+            </s-select>
+          )}
+          {pricingState.discountRules.map((rule: PricingRule, index: number) => {
+            const localizedOption = qtyRuleTextsByLocaleByRuleId[activeBundleQuantityLocale]?.[rule.id];
+            return (
+              <s-section key={rule.id}>
+                <s-stack direction="block" gap="small-100">
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</p>
+                  <s-text-field
+                    label="Box Label"
+                    value={localizedOption?.label ?? qtyRuleLabels[rule.id] ?? `Box of ${rule.conditionValue ?? ""}`}
+                    onInput={(e: Event) => {
+                      const label = (e.target as HTMLInputElement).value;
+                      setQtyRuleTextsByLocaleByRuleId((prev) => ({
+                        ...prev,
+                        [activeBundleQuantityLocale]: {
+                          ...(prev[activeBundleQuantityLocale] ?? {}),
+                          [rule.id]: {
+                            label,
+                            subtext: prev[activeBundleQuantityLocale]?.[rule.id]?.subtext ?? qtyRuleSubtexts[rule.id] ?? "",
+                          },
+                        },
+                      }));
+                      markAsDirty();
+                    }}
+                    autoComplete="off"
+                  />
+                  <s-text-field
+                    label="Box Subtext"
+                    value={localizedOption?.subtext ?? qtyRuleSubtexts[rule.id] ?? ""}
+                    onInput={(e: Event) => {
+                      const subtext = (e.target as HTMLInputElement).value;
+                      setQtyRuleTextsByLocaleByRuleId((prev) => ({
+                        ...prev,
+                        [activeBundleQuantityLocale]: {
+                          ...(prev[activeBundleQuantityLocale] ?? {}),
+                          [rule.id]: {
+                            label: prev[activeBundleQuantityLocale]?.[rule.id]?.label ?? qtyRuleLabels[rule.id] ?? `Box of ${rule.conditionValue ?? ""}`,
+                            subtext,
+                          },
+                        },
+                      }));
+                      markAsDirty();
+                    }}
+                    autoComplete="off"
+                  />
+                </s-stack>
+              </s-section>
+            );
+          })}
+        </s-stack>
+        <s-button slot="primaryAction" onClick={() => setIsBundleQuantityMultiLangModalOpen(false)}>Save and close</s-button>
+      </s-modal>
+
+      {/* Progress Bar Multi Language Modal */}
+      <s-modal id="discount-progress-language-modal" ref={progressBarMultiLangModalRef} heading="Customize Text for Multiple Languages">
+        <s-stack direction="block" gap="small">
+          {shopLocales.length > 0 && (
+            <s-select
+              label="Select Language"
+              value={activeProgressBarLocale}
+              onChange={(e: Event) => setActiveProgressBarLocale((e.target as HTMLSelectElement).value)}
+            >
+              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+              ))}
+            </s-select>
+          )}
+          {pricingState.discountRules.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+          ) : pricingState.discountRules.map((rule: any, index: number) => (
+            <s-section key={rule.id}>
+              <s-stack direction="block" gap="small-100">
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</p>
+                <s-stack direction="inline" gap="small">
+                  <s-text-area
+                  label="Tier Text"
+                  value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? ""}
+                  onInput={(e: Event) => {
+                    const val = (e.target as HTMLTextAreaElement).value;
+                    setTierTextByLocaleByRuleId(prev => ({
+                      ...prev,
+                      [activeProgressBarLocale]: {
+                        ...(prev[activeProgressBarLocale] || {}),
+                        [rule.id]: { tierText: val, tierSubtext: prev[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? "" },
+                      },
+                    }));
+                    markAsDirty();
+                  }}
+                  autoComplete="off"
+                  helpText="Short label for this tier (e.g. 'Add 3')"
+                />
+                  <s-text-area
+                  label="Tier Subtext"
+                  value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                  onInput={(e: Event) => {
+                    const val = (e.target as HTMLTextAreaElement).value;
+                    setTierTextByLocaleByRuleId(prev => ({
+                      ...prev,
+                      [activeProgressBarLocale]: {
+                        ...(prev[activeProgressBarLocale] || {}),
+                        [rule.id]: { tierText: prev[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? "", tierSubtext: val },
+                      },
+                    }));
+                    markAsDirty();
+                  }}
+                  autoComplete="off"
+                  helpText="Detail line below tier label (e.g. '1 Product(s) @ 20% off')"
+                  />
+                </s-stack>
+              </s-stack>
+            </s-section>
+          ))}
+        </s-stack>
+        <s-button slot="primaryAction" onClick={() => setIsProgressBarMultiLangModalOpen(false)}>Save and close</s-button>
       </s-modal>
 
       <BundleReadinessOverlay

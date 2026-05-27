@@ -25,6 +25,9 @@
 | [12-strategic-observations.md](12-strategic-observations.md) | Cross-cutting competitive insights and opportunities for Wolfpack |
 | [13-wolfpack-gap-analysis-phases.md](13-wolfpack-gap-analysis-phases.md) | **Wolfpack vs EB critical gap analysis — phased implementation roadmap** |
 | [14-eb-addon-upsell-analysis.md](14-eb-addon-upsell-analysis.md) | **Full end-to-end crawl: Add-Ons, Theme Extension Banner, Readiness Score, all sidebar sections** |
+| [15-single-embed-template-architecture.md](15-single-embed-template-architecture.md) | **How EB-style multi-type, multi-template storefront architecture can work through a single embed/runtime surface** |
+| [16-eb-full-data-flow-investigation.md](16-eb-full-data-flow-investigation.md) | **Primary evidence record — live FPB/PPB Admin + storefront capture (9 phases, all gaps resolved). Distilled reference: `internal docs/EB Implementation Reference.md`** |
+| [17-eb-complete-configure-e2e-audit.md](17-eb-complete-configure-e2e-audit.md) | **Fresh configure-page E2E audit for FPB and PPB: controls, dependencies, help links, save payloads, storefront effects, and template mappings** |
 
 ## Screenshots
 

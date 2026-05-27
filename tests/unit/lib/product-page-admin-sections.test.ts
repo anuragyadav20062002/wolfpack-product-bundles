@@ -1,0 +1,147 @@
+import {
+  INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE,
+  PRODUCT_PAGE_EDIT_DEFAULTS_HREF,
+  PRODUCT_PAGE_SETUP_ITEMS,
+  SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
+  buildProductPageThemeEditorDeepLink,
+  deriveCommonSellingPlanGroups,
+  extractSellingPlanValidationSources,
+  resolveProductPageThemeEditorTemplateHandle,
+} from "../../../app/lib/bundle-config/product-page-admin-sections";
+
+describe("product page admin sections", () => {
+  it("matches the captured product-page setup rail order", () => {
+    expect(PRODUCT_PAGE_SETUP_ITEMS.map((item) => item.id)).toEqual([
+      "step_setup",
+      "discount_pricing",
+      "bundle_visibility",
+      "bundle_settings",
+      "subscriptions",
+      "select_template",
+    ]);
+  });
+
+  it("routes Bundle Settings Edit Defaults to Product Page Layout Additional Configurations", () => {
+    expect(PRODUCT_PAGE_EDIT_DEFAULTS_HREF).toBe("/app/design-control-panel?modal=product_page&section=cartLineMessaging");
+  });
+
+  it("uses the captured no-common-selling-plan validation message", () => {
+    expect(SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE).toBe(
+      "To offer this bundle as a subscription, all of its products must be part of the same subscription plan in your Shopify settings. Please update your product selling plans and try again."
+    );
+  });
+
+  it("uses the captured individual selling plan blocked-state message", () => {
+    expect(INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE).toBe(
+      "Individual selling plans can't be enabled while a bundle-level subscription or BXGY discount is active. Disable it to use individual selling plans."
+    );
+  });
+
+  it("extracts direct, category, default, and collection sources for subscription validation", () => {
+    const sources = extractSellingPlanValidationSources({
+      defaultProductsData: {
+        products: [
+          { graphqlId: "gid://shopify/Product/101" },
+          { productId: "102" },
+        ],
+      },
+      steps: [
+        {
+          products: [{ id: "gid://shopify/Product/201" }],
+          collections: [{ id: "gid://shopify/Collection/301" }],
+          StepProduct: [
+            { productId: "202" },
+            { productId: "gid://shopify/Product/203" },
+          ],
+          StepCategory: [
+            {
+              products: [{ id: "gid://shopify/Product/204" }],
+              collections: [{ id: "302" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(sources.productIds).toEqual([
+      "gid://shopify/Product/101",
+      "gid://shopify/Product/102",
+      "gid://shopify/Product/201",
+      "gid://shopify/Product/202",
+      "gid://shopify/Product/203",
+      "gid://shopify/Product/204",
+    ]);
+    expect(sources.collectionIds).toEqual([
+      "gid://shopify/Collection/301",
+      "gid://shopify/Collection/302",
+    ]);
+  });
+
+  it("returns only selling plan groups shared by every selected product", () => {
+    const common = deriveCommonSellingPlanGroups([
+      {
+        id: "gid://shopify/Product/1",
+        title: "One",
+        sellingPlanGroups: {
+          nodes: [
+            { id: "gid://shopify/SellingPlanGroup/a", name: "Monthly" },
+            { id: "gid://shopify/SellingPlanGroup/b", name: "Weekly" },
+          ],
+        },
+      },
+      {
+        id: "gid://shopify/Product/2",
+        title: "Two",
+        sellingPlanGroups: {
+          nodes: [
+            { id: "gid://shopify/SellingPlanGroup/a", name: "Monthly" },
+            { id: "gid://shopify/SellingPlanGroup/c", name: "Yearly" },
+          ],
+        },
+      },
+    ]);
+
+    expect(common).toEqual([
+      { id: "gid://shopify/SellingPlanGroup/a", name: "Monthly" },
+    ]);
+  });
+
+  it("resolves theme-app-extension bundle recommendations to the default product template", () => {
+    expect(
+      resolveProductPageThemeEditorTemplateHandle({
+        handle: "product.codex-ppb-2026-05-21",
+        fullKey: "theme-app-extension",
+        isBundleContainer: true,
+      })
+    ).toBe("product");
+  });
+
+  it("keeps real product-specific templates when Shopify theme assets prove they exist", () => {
+    expect(
+      resolveProductPageThemeEditorTemplateHandle({
+        handle: "product.custom-bundle",
+        fullKey: "templates/product.custom-bundle.json",
+        isBundleContainer: true,
+      })
+    ).toBe("product.custom-bundle");
+  });
+
+  it("builds the Theme Editor deep link against the real default product template", () => {
+    expect(
+      buildProductPageThemeEditorDeepLink({
+        shop: "agent-5sfidg3m.myshopify.com",
+        apiKey: "app-key",
+        blockHandle: "bundle-product-page",
+        bundleId: "bundle-123",
+        productHandle: "codex-ppb-2026-05-21",
+        template: {
+          handle: "product.codex-ppb-2026-05-21",
+          fullKey: "theme-app-extension",
+          isBundleContainer: true,
+        },
+      })
+    ).toBe(
+      "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
+    );
+  });
+});

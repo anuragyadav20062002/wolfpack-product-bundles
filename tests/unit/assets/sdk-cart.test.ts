@@ -24,6 +24,7 @@ function makeState(overrides: object = {}) {
       [{ variantId: '123456', title: 'Product A', price: 1000, available: true }],
       [{ variantId: '789012', title: 'Product B (Gift)', price: 500, available: true }],
     ],
+    formatMoney: (cents: number) => `$${(cents / 100).toFixed(2)}`,
     ...overrides,
   };
 }
@@ -75,5 +76,32 @@ describe('buildCartItems', () => {
     const state = makeState();
     const { items } = buildCartItems(state);
     expect(items[0].properties['_bundle_id']).toMatch(/^bundle_1_/);
+  });
+
+  it('adds preformatted private source properties for cart-line messaging', () => {
+    const state = makeState({
+      discountAmount: 500,
+      discountPercentage: 25,
+    });
+    const { items } = buildCartItems(state);
+
+    expect(items[0].properties).not.toHaveProperty('_bundle_box');
+    expect(items[0].properties).not.toHaveProperty('_bundle_items');
+    expect(items[0].properties).not.toHaveProperty('_bundle_retail_price');
+    expect(items[0].properties).not.toHaveProperty('_bundle_you_save');
+    expect(items[0].properties).not.toHaveProperty('_bundle_you_save_amount');
+    expect(items[0].properties).not.toHaveProperty('_bundle_you_save_percentage');
+
+    const displayProperties = JSON.parse(items[0].properties['_bundle_display_properties']);
+    expect(displayProperties).toEqual({
+      box: '1',
+      items: '2 x Product A, 1 x Product B (Gift)',
+      retailPrice: '$20.00',
+      youSave: {
+        amount: '$5.00',
+        percentage: '25%',
+        amountPercentage: '$5.00 (25%)',
+      },
+    });
   });
 });

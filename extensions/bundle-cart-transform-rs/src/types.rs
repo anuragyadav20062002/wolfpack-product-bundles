@@ -36,6 +36,7 @@ pub struct MetafieldValue<T> {
 /// Deserialized from `$app:price_adjustment` metafield.
 /// Also embedded inside `ComponentParent.price_adjustment`.
 #[derive(serde::Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct PriceAdjustmentConfig {
     #[serde(default)]
     pub method: PricingMethod,
@@ -43,6 +44,14 @@ pub struct PriceAdjustmentConfig {
     pub value: f64,
     #[serde(default)]
     pub conditions: Option<Condition>,
+    #[serde(default)]
+    pub customer_buys: Option<i64>,
+    #[serde(default)]
+    pub customer_gets: Option<i64>,
+    #[serde(default)]
+    pub discount_type: Option<String>,
+    #[serde(default)]
+    pub apply_discount_to: Option<String>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone, PartialEq, Default)]
@@ -52,6 +61,7 @@ pub enum PricingMethod {
     PercentageOff,
     FixedAmountOff,
     FixedBundlePrice,
+    BuyXGetY,
 }
 
 /// Optional discount threshold condition.
@@ -91,4 +101,78 @@ pub struct ComponentPricingItem {
     pub bundle_price: i64,
     pub discount_percent: f64,
     pub savings_amount: i64,
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CartLineMessagingSettings {
+    #[serde(default = "default_true")]
+    pub is_enabled: bool,
+    #[serde(default = "default_true")]
+    pub show_bundle_contains: bool,
+    #[serde(default = "default_true")]
+    pub show_original_price: bool,
+    #[serde(default)]
+    pub discount_display: CartLineDiscountDisplaySettings,
+}
+
+impl Default for CartLineMessagingSettings {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            show_bundle_contains: true,
+            show_original_price: true,
+            discount_display: CartLineDiscountDisplaySettings::default(),
+        }
+    }
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CartLineDiscountDisplaySettings {
+    #[serde(default = "default_true")]
+    pub is_enabled: bool,
+    #[serde(default = "default_amount_percentage")]
+    pub format: String,
+}
+
+impl Default for CartLineDiscountDisplaySettings {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            format: default_amount_percentage(),
+        }
+    }
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_amount_percentage() -> String {
+    "amount_percentage".to_string()
+}
+
+#[derive(serde::Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CartLineDisplayProperties {
+    #[serde(default, rename = "box")]
+    pub box_label: Option<String>,
+    #[serde(default)]
+    pub items: Option<String>,
+    #[serde(default)]
+    pub retail_price: Option<String>,
+    #[serde(default)]
+    pub you_save: CartLineDisplaySavings,
+}
+
+#[derive(serde::Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CartLineDisplaySavings {
+    #[serde(default)]
+    pub amount: Option<String>,
+    #[serde(default)]
+    pub percentage: Option<String>,
+    #[serde(default)]
+    pub amount_percentage: Option<String>,
 }

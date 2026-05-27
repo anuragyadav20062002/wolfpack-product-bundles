@@ -235,6 +235,96 @@ describe('CartTransformService', () => {
     });
   });
 
+  describe('syncCartLineMessagingSettings', () => {
+    const shopDomain = 'test-shop.myshopify.com';
+
+    it('writes cart-line messaging settings to the cart transform owner metafield', async () => {
+      mockShopifyAdmin.graphql
+        // 1. getRustFunctionId
+        .mockResolvedValueOnce(rustFunctionsMock())
+        // 2. checkExisting — transform already exists pointing to the Rust function
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: {
+            edges: [{
+              node: {
+                id: 'gid://shopify/CartTransform/existing',
+                functionId: MOCK_RUST_FUNCTION_ID
+              }
+            }]
+          }
+        }))
+        // 3. metafieldsSet
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          metafieldsSet: {
+            metafields: [{
+              key: 'bundle_cart_line_messaging',
+              namespace: 'app',
+              value: '{}'
+            }],
+            userErrors: []
+          }
+        }));
+
+      const settings = {
+        isEnabled: true,
+        showBundleContains: false,
+        showOriginalPrice: false,
+        discountDisplay: {
+          isEnabled: false,
+          format: 'amount_percentage'
+        }
+      };
+
+      const result = await CartTransformService.syncCartLineMessagingSettings(
+        mockShopifyAdmin,
+        shopDomain,
+        settings
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.cartTransformId).toBe('gid://shopify/CartTransform/existing');
+      const metafieldsCall = mockShopifyAdmin.graphql.mock.calls[2];
+      expect(metafieldsCall[0]).toContain('metafieldsSet');
+      expect(metafieldsCall[1].variables.metafields).toEqual([{
+        ownerId: 'gid://shopify/CartTransform/existing',
+        namespace: '$app',
+        key: 'bundle_cart_line_messaging',
+        type: 'json',
+        value: JSON.stringify(settings)
+      }]);
+    });
+
+    it('returns a failed result when metafield sync reports user errors', async () => {
+      mockShopifyAdmin.graphql
+        .mockResolvedValueOnce(rustFunctionsMock())
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          cartTransforms: {
+            edges: [{
+              node: {
+                id: 'gid://shopify/CartTransform/existing',
+                functionId: MOCK_RUST_FUNCTION_ID
+              }
+            }]
+          }
+        }))
+        .mockResolvedValueOnce(createMockGraphQLResponse({
+          metafieldsSet: {
+            metafields: [],
+            userErrors: [{ field: ['metafields', '0', 'value'], message: 'Invalid JSON' }]
+          }
+        }));
+
+      const result = await CartTransformService.syncCartLineMessagingSettings(
+        mockShopifyAdmin,
+        shopDomain,
+        { isEnabled: true }
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Invalid JSON');
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle malformed GraphQL responses', async () => {
       mockShopifyAdmin.graphql

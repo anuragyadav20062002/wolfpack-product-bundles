@@ -108,8 +108,8 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
       AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
       const UPDATE_PRODUCT_STATUS = `
-        mutation UpdateProductStatus($input: ProductInput!) {
-          productUpdate(input: $input) {
+        mutation UpdateProductStatus($product: ProductUpdateInput!) {
+          productUpdate(product: $product) {
             product {
               id
               status
@@ -124,7 +124,7 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
 
       const statusResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
         variables: {
-          input: {
+          product: {
             id: updatedBundle.shopifyProductId,
             status: shopifyStatus,
             descriptionHtml,
@@ -152,7 +152,7 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
         AppLogger.debug(`[PRODUCT_SYNC] Setting product to UNLISTED for campaign bundle`);
         const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
           variables: {
-            input: {
+            product: {
               id: updatedBundle.shopifyProductId,
               status: "UNLISTED",
               descriptionHtml,
@@ -203,13 +203,30 @@ export async function handleUpdateBundleProduct(admin: ShopifyAdmin, session: Se
       hasImageUrl: !!productImageUrl
     });
 
-    // Update product title
+    const mediaInput = productImageUrl
+      ? [{
+          originalSource: productImageUrl,
+          alt: `${productTitle || "Bundle"} - Bundle`,
+          mediaContentType: "IMAGE" as const,
+        }]
+      : undefined;
+
+    // Update product title and optional media in one current product mutation.
     const UPDATE_PRODUCT = `
-      mutation UpdateProduct($input: ProductInput!) {
-        productUpdate(input: $input) {
+      mutation UpdateProduct($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+        productUpdate(product: $product, media: $media) {
           product {
             id
             title
+            media(first: 10) {
+              nodes {
+                alt
+                mediaContentType
+                preview {
+                  status
+                }
+              }
+            }
           }
           userErrors {
             field
@@ -221,10 +238,11 @@ export async function handleUpdateBundleProduct(admin: ShopifyAdmin, session: Se
 
     const updateResponse = await admin.graphql(UPDATE_PRODUCT, {
       variables: {
-        input: {
+        product: {
           id: productId,
           title: productTitle
-        }
+        },
+        ...(mediaInput ? { media: mediaInput } : {}),
       }
     });
 
@@ -233,48 +251,6 @@ export async function handleUpdateBundleProduct(admin: ShopifyAdmin, session: Se
     if (updateData.data?.productUpdate?.userErrors?.length > 0) {
       const error = updateData.data.productUpdate.userErrors[0];
       throw new Error(`Failed to update product: ${error.message}`);
-    }
-
-    // Add/update product image if provided (using productCreateMedia - API 2025-04+)
-    if (productImageUrl) {
-      const CREATE_MEDIA = `
-        mutation productCreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
-          productCreateMedia(productId: $productId, media: $media) {
-            media {
-              alt
-              mediaContentType
-              status
-            }
-            mediaUserErrors {
-              field
-              message
-            }
-          }
-        }
-      `;
-
-      const imageResponse = await admin.graphql(CREATE_MEDIA, {
-        variables: {
-          productId: productId,
-          media: [
-            {
-              originalSource: productImageUrl,
-              alt: `${productTitle} - Bundle`,
-              mediaContentType: "IMAGE"
-            }
-          ]
-        }
-      });
-
-      const imageData = await imageResponse.json();
-
-      if (imageData.data?.productCreateMedia?.mediaUserErrors?.length > 0) {
-        const error = imageData.data.productCreateMedia.mediaUserErrors[0];
-        AppLogger.error("[PRODUCT_UPDATE] Image update failed:", {}, error);
-        // Don't fail the entire operation for image update errors
-      } else {
-        AppLogger.debug("[PRODUCT_UPDATE] Image added successfully");
-      }
     }
 
     AppLogger.info("[PRODUCT_UPDATE] Product details updated successfully");
@@ -549,14 +525,17 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
       for (const product of bundleContainerProducts) {
         // Check if template exists, create if it doesn't
         const templateResult = await templateService.ensureProductTemplate(product.handle);
+        const templateHandle = templateResult.templatePath === "templates/product.json"
+          ? "product"
+          : `product.${product.handle}`;
 
         bundleSpecificTemplates.push({
-          id: `product.${product.handle}`,
+          id: `bundle-product-${product.handle}`,
           title: `${product.title} (Bundle Container)`,
-          handle: `product.${product.handle}`,
+          handle: templateHandle,
           description: templateResult.created
             ? `NEW TEMPLATE CREATED for ${product.title} - Widget automatically configured!`
-            : `Dedicated template for ${product.title} - Widget will be placed here`,
+            : `Default product template previewed with ${product.title} - Widget will be placed here`,
           recommended: true,
           bundleRelevant: true,
           fileType: templateResult.created ? 'NEW' : 'Existing',

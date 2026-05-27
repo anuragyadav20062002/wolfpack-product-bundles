@@ -4,6 +4,7 @@ import type { DCPGroup } from './types';
 const PDP_GENERAL_EXTRAS = [
   { key: 'modalCloseButton' as const, label: 'Modal Close Button', description: 'Close button styling in the product detail modal' },
   { key: 'widgetStyle' as const, label: 'Widget Style', description: 'Widget presentation style, overlay, animation, and empty state card styling' },
+  { key: 'cartLineMessaging' as const, label: 'Cart Messaging', description: 'Cart line item bundle properties' },
 ];
 
 const PDP_BADGE_GROUP: DCPGroup = {

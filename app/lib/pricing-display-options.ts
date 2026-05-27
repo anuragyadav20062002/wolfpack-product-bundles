@@ -1,5 +1,4 @@
 import {
-  ConditionType,
   DiscountMethod,
   type PricingDisplayOptions,
   type PricingProgressBarType,
@@ -36,6 +35,7 @@ export interface NormalizedPricingDisplayOptions {
     enabled: boolean;
     defaultRuleId: string | null;
     options: NormalizedBundleQuantityOption[];
+    optionsByLocaleByRuleId: Record<string, Record<string, { label: string; subtext: string }>>;
   };
   progressBar: {
     enabled: boolean;
@@ -46,15 +46,56 @@ export interface NormalizedPricingDisplayOptions {
   };
 }
 
+export interface SerializedBoxSelection {
+  isEnabled: true;
+  validateBoxSelectionQuantity: false;
+  rules: Array<{
+    ruleId: string;
+    boxQuantity: number;
+    boxLabel: string;
+    boxSubtext: string;
+    isDefaultSelected: boolean;
+  }>;
+}
+
 export interface NormalizedRuleMessageInput {
   rules?: PricingRule[] | null;
   messages?: any;
+  method?: DiscountMethod | string;
 }
 
 export const DEFAULT_PROGRESS_BAR_PROGRESS_TEXT = "Add {{conditionText}} to unlock {{discountText}}";
 export const DEFAULT_PROGRESS_BAR_SUCCESS_TEXT = "{{discountText}} unlocked";
 export const DEFAULT_DISCOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValue}}{{discountValueUnit}}!";
 export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValue}}{{discountValueUnit}} discount has been applied to your cart.";
+export const DEFAULT_FIXED_AMOUNT_RULE_TEXT = "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!";
+export const DEFAULT_FIXED_AMOUNT_RULE_SUCCESS_MESSAGE = "Success! Your {{discountValueUnit}}{{discountValue}} discount has been applied to your cart.";
+export const DEFAULT_DISCOUNT_RULE_TEXT_BXY = "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!";
+export const DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY = "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off";
+
+export function getDefaultDiscountRuleText(method?: DiscountMethod | string): string {
+  if (method === DiscountMethod.BUY_X_GET_Y) {
+    return DEFAULT_DISCOUNT_RULE_TEXT_BXY;
+  }
+
+  if (method === DiscountMethod.FIXED_AMOUNT_OFF) {
+    return DEFAULT_FIXED_AMOUNT_RULE_TEXT;
+  }
+
+  return DEFAULT_DISCOUNT_RULE_TEXT;
+}
+
+export function getDefaultDiscountRuleSuccessMessage(method?: DiscountMethod | string): string {
+  if (method === DiscountMethod.BUY_X_GET_Y) {
+    return DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE_BXY;
+  }
+
+  if (method === DiscountMethod.FIXED_AMOUNT_OFF) {
+    return DEFAULT_FIXED_AMOUNT_RULE_SUCCESS_MESSAGE;
+  }
+
+  return DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+}
 
 interface NormalizeInput {
   rules?: PricingRule[] | null;
@@ -62,6 +103,7 @@ interface NormalizeInput {
   showProgressBar?: boolean;
   steps?: PricingDisplayStep[];
   currencySymbol?: string;
+  method?: string;
 }
 
 interface SerializeInput {
@@ -70,11 +112,11 @@ interface SerializeInput {
 }
 
 function isQuantityRule(rule: PricingRule): boolean {
-  return rule.condition?.type === ConditionType.QUANTITY || String(rule.condition?.type) === "quantity";
+  return rule.conditionType === "quantity";
 }
 
 function isAmountRule(rule: PricingRule): boolean {
-  return rule.condition?.type === ConditionType.AMOUNT || String(rule.condition?.type) === "amount";
+  return rule.conditionType === "amount";
 }
 
 function getDisplayOptions(messages: any): Partial<PricingDisplayOptions> {
@@ -83,9 +125,8 @@ function getDisplayOptions(messages: any): Partial<PricingDisplayOptions> {
     : {};
 }
 
-function formatDiscountText(rule: PricingRule, currencySymbol: string): string {
-  const method = rule.discount?.method;
-  const value = Number(rule.discount?.value ?? 0) || 0;
+function formatDiscountText(rule: PricingRule, method: DiscountMethod | string, currencySymbol: string): string {
+  const value = Number(rule.discountValue ?? 0) || 0;
 
   if (method === DiscountMethod.PERCENTAGE_OFF || method === "percentage_off") {
     return `${value}% off`;
@@ -138,28 +179,31 @@ function normalizeTemplate(value: unknown, defaultValue: string): string {
 export function normalizePricingRuleMessages({
   rules = [],
   messages = {},
+  method,
 }: NormalizedRuleMessageInput): Record<string, { discountText: string; successMessage: string }> {
   const safeRules = Array.isArray(rules) ? rules : [];
   const savedRuleMessages = messages && typeof messages === "object" && messages.ruleMessages
     ? messages.ruleMessages
     : {};
+  const defaultDiscountText = getDefaultDiscountRuleText(method);
+  const defaultSuccessMessage = getDefaultDiscountRuleSuccessMessage(method);
 
   return safeRules.reduce<Record<string, { discountText: string; successMessage: string }>>((acc, rule) => {
     const savedMessage = savedRuleMessages?.[rule.id];
     if (!savedMessage || typeof savedMessage !== "object") {
       acc[rule.id] = {
-        discountText: DEFAULT_DISCOUNT_RULE_TEXT,
-        successMessage: DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE,
+        discountText: defaultDiscountText,
+        successMessage: defaultSuccessMessage,
       };
       return acc;
     }
 
     const discountText = typeof savedMessage.discountText === "string" && savedMessage.discountText.trim().length > 0
       ? savedMessage.discountText
-      : DEFAULT_DISCOUNT_RULE_TEXT;
+      : defaultDiscountText;
     const successMessage = typeof savedMessage.successMessage === "string" && savedMessage.successMessage.trim().length > 0
       ? savedMessage.successMessage
-      : DEFAULT_DISCOUNT_RULE_SUCCESS_MESSAGE;
+      : defaultSuccessMessage;
 
     acc[rule.id] = { discountText, successMessage };
     return acc;
@@ -172,14 +216,16 @@ export function normalizePricingDisplayOptions({
   showProgressBar = false,
   steps,
   currencySymbol = "$",
+  method = "percentage_off",
 }: NormalizeInput): NormalizedPricingDisplayOptions {
   const safeRules = Array.isArray(rules) ? rules : [];
   const displayOptions = getDisplayOptions(messages);
   const savedQuantityOptions = displayOptions.bundleQuantityOptions;
   const savedOptionsByRuleId = savedQuantityOptions?.optionsByRuleId || {};
+  const savedOptionsByLocaleByRuleId = savedQuantityOptions?.optionsByLocaleByRuleId || {};
   const quantityRules = safeRules
     .filter(isQuantityRule)
-    .sort((a, b) => (Number(a.condition?.value ?? 0) || 0) - (Number(b.condition?.value ?? 0) || 0));
+    .sort((a, b) => (Number(a.conditionValue ?? 0) || 0) - (Number(b.conditionValue ?? 0) || 0));
   const quantityRuleIds = new Set(quantityRules.map((rule) => rule.id));
   const savedDefaultRuleId = savedQuantityOptions?.defaultRuleId || null;
   const defaultRuleId = savedDefaultRuleId && quantityRuleIds.has(savedDefaultRuleId)
@@ -187,14 +233,14 @@ export function normalizePricingDisplayOptions({
     : quantityRules[0]?.id || null;
 
   const quantityOptions = quantityRules.map((rule) => {
-    const quantity = Number(rule.condition?.value ?? 0) || 0;
+    const quantity = Number(rule.conditionValue ?? 0) || 0;
     const savedOption = savedOptionsByRuleId[rule.id] || {};
 
     return {
       ruleId: rule.id,
       quantity,
       label: savedOption.label || `Box of ${quantity}`,
-      subtext: savedOption.subtext || formatDiscountText(rule, currencySymbol),
+      subtext: savedOption.subtext || formatDiscountText(rule, method, currencySymbol),
       isDefault: rule.id === defaultRuleId,
       compatibility: getCompatibility(quantity, steps),
     };
@@ -203,12 +249,12 @@ export function normalizePricingDisplayOptions({
   const progressOptions = displayOptions.progressBar;
   const milestones = safeRules
     .filter((rule) => isQuantityRule(rule) || isAmountRule(rule))
-    .sort((a, b) => (Number(a.condition?.value ?? 0) || 0) - (Number(b.condition?.value ?? 0) || 0))
+    .sort((a, b) => (Number(a.conditionValue ?? 0) || 0) - (Number(b.conditionValue ?? 0) || 0))
     .map((rule) => ({
       ruleId: rule.id,
       conditionType: isAmountRule(rule) ? "amount" as const : "quantity" as const,
-      value: Number(rule.condition?.value ?? 0) || 0,
-      label: formatDiscountText(rule, currencySymbol),
+      value: Number(rule.conditionValue ?? 0) || 0,
+      label: formatDiscountText(rule, method, currencySymbol),
     }));
 
   return {
@@ -216,6 +262,7 @@ export function normalizePricingDisplayOptions({
       enabled: savedQuantityOptions?.enabled === true,
       defaultRuleId,
       options: quantityOptions,
+      optionsByLocaleByRuleId: savedOptionsByLocaleByRuleId,
     },
     progressBar: {
       enabled: progressOptions?.enabled === true || showProgressBar === true,
@@ -249,6 +296,7 @@ export function serializePricingDisplayOptions({
         enabled: options.bundleQuantityOptions.enabled,
         defaultRuleId: options.bundleQuantityOptions.defaultRuleId,
         optionsByRuleId,
+        optionsByLocaleByRuleId: options.bundleQuantityOptions.optionsByLocaleByRuleId,
       },
       progressBar: {
         enabled: options.progressBar.enabled,
@@ -257,5 +305,29 @@ export function serializePricingDisplayOptions({
         successText: options.progressBar.successText,
       },
     },
+  };
+}
+
+export function serializeBoxSelectionFromPricingDisplayOptions(
+  options: NormalizedPricingDisplayOptions,
+): SerializedBoxSelection | null {
+  if (options.bundleQuantityOptions.enabled !== true) return null;
+
+  const rules = options.bundleQuantityOptions.options
+    .filter((option) => option.quantity > 0)
+    .map((option) => ({
+      ruleId: option.ruleId,
+      boxQuantity: option.quantity,
+      boxLabel: option.label,
+      boxSubtext: option.subtext,
+      isDefaultSelected: option.isDefault,
+    }));
+
+  if (rules.length === 0) return null;
+
+  return {
+    isEnabled: true,
+    validateBoxSelectionQuantity: false,
+    rules,
   };
 }

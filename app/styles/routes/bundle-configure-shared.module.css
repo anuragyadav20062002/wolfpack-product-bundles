@@ -226,13 +226,17 @@
 }
 
 .visibilityGuideMedia {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 74px;
+  height: 120px;
   border-radius: 8px;
   background: #f1f2f4;
-  color: #6b7280;
+  overflow: hidden;
+}
+
+.visibilityGuideMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .widgetPreviewMedia {
@@ -473,6 +477,26 @@
   flex-direction: row;
   align-items: flex-end;
   gap: 8px;
+}
+
+.discountRuleCard {
+  display: block;
+  padding: 12px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #f6f6f7;
+}
+
+.discountRuleHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.displayOptionsInactive {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .emptyState {

@@ -112,15 +112,16 @@ export async function convertBundleToStandardMetafields(
     }
   }
 
-  // Add price adjustment if pricing is configured (NEW nested structure)
+  // Add price adjustment if pricing is configured (flat rule shape)
   if (bundle.pricing && bundle.pricing.enabled && bundle.pricing.rules) {
     const rules = Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : [];
     if (rules.length > 0) {
-      const rule = rules[0]; // Use first rule for simplicity
-      if (bundle.pricing.method === 'percentage_off' && rule.discount?.value) {
-        // For number_decimal metafield type, store as number (not string)
-        // Value is already 0-100 percentage in the new structure
-        standardMetafields.priceAdjustment = parseFloat(rule.discount.value) || 0; // camelCase to match TOML
+      const rule = rules[0];
+      if (bundle.pricing.method === 'percentage_off') {
+        const discountVal = parseFloat(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+        if (discountVal > 0) {
+          standardMetafields.priceAdjustment = discountVal;
+        }
       }
     }
   }

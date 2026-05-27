@@ -40,7 +40,7 @@
 
 /* ── Edit App Canvas ─────────────────────────────────────────── */
 .editCanvas {
-  max-width: 840px;
+  max-width: 940px;
   margin: 0 auto;
   padding: 0 0 88px;
 }
@@ -622,7 +622,7 @@
   min-width: 0;
 }
 
-/* ── EB-style rich help cards ─────────────────────────────────── */
+/* Rich help cards */
 .richHelp {
   --rich-help-layer: 40;
   --rich-help-active-layer: 1000;
@@ -832,7 +832,7 @@
 /* ── Step Chip Navigation ─────────────────────────────────────── */
 .stepFlowCard {
   overflow: visible;
-  padding-bottom: 0;
+  padding-bottom: 8px;
 }
 
 .stepNav {
@@ -842,7 +842,7 @@
   flex-wrap: wrap;
   padding: 12px 24px 16px 20px;
   margin: 12px -24px 0 -20px;
-  border-top: 1px solid #ebecef;
+  border-bottom: 1px solid #ebecef;
 }
 
 .stepChip,
@@ -1092,7 +1092,7 @@
   composes: categoryActions from "./bundle-configure-shared.module.css";
 }
 
-/* EB-style per-category accordion row */
+/* Per-category accordion row */
 .categoryAccordion {
   composes: categoryAccordion from "./bundle-configure-shared.module.css";
 }
@@ -1153,6 +1153,18 @@
   composes: ruleFields from "./bundle-configure-shared.module.css";
 }
 
+.discountRuleCard {
+  composes: discountRuleCard from "./bundle-configure-shared.module.css";
+}
+
+.discountRuleHeader {
+  composes: discountRuleHeader from "./bundle-configure-shared.module.css";
+}
+
+.displayOptionsInactive {
+  composes: displayOptionsInactive from "./bundle-configure-shared.module.css";
+}
+
 .ruleValueInput {
   width: 100%;
   height: 36px;
@@ -1194,6 +1206,215 @@
 
 .panelDescription {
   composes: panelDescription from "./bundle-configure-shared.module.css";
+}
+
+.addonsCard {
+  padding: 16px 16px 18px;
+  border-color: #dedede;
+  border-radius: 8px;
+}
+
+.addonsHeaderLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.addonsTitleCluster {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+}
+
+.addonsHeaderActions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.addonsSwitch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 28px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.addonsSwitch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.addonsSwitch span {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: #8c9196;
+  transition: background 0.15s ease;
+}
+
+.addonsSwitch span::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #ffffff;
+  content: "";
+  transition: transform 0.15s ease;
+}
+
+.addonsSwitch input:checked + span {
+  background: #202223;
+}
+
+.addonsSwitch input:checked + span::after {
+  transform: translateX(12px);
+}
+
+.addonsSwitch input:focus-visible + span {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
+.addonsHelpButton {
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2c6ecb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.addonsHelpButton:hover,
+.addonsHelpButton:focus-visible {
+  color: #1f5199;
+  text-decoration: underline;
+}
+
+.addonsLanguageButton {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid #c9cccf;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.addonsLanguageButton:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.addonsFormStack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.addonsTierCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.addonsProductSelectionRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 28px;
+}
+
+.addonsSelectedCount {
+  color: #2c6ecb;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.addonsDiscountGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 132px;
+  gap: 8px;
+  align-items: end;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.addonsTierRules {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.addonsTierRules h5 {
+  margin: 0 0 4px;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.addonsTierRules p {
+  margin: 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.addonsTierRuleButton,
+.addonsTierButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid #d3d6da;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.addonsTierRuleButton {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.addonsTierRuleButton::before {
+  margin-right: 4px;
+  content: "+";
+}
+
+.addonsTierButton {
+  width: 100%;
 }
 
 .mediaFieldGrid {

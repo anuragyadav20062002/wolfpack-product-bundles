@@ -46,7 +46,8 @@ export const BUNDLE_WIDGET = {
   DISCOUNT_METHODS: {
     PERCENTAGE_OFF: 'percentage_off',
     FIXED_AMOUNT_OFF: 'fixed_amount_off',
-    FIXED_BUNDLE_PRICE: 'fixed_bundle_price'
+    FIXED_BUNDLE_PRICE: 'fixed_bundle_price',
+    BUY_X_GET_Y: 'buy_x_get_y'
   },
 
   // Shared asset URLs

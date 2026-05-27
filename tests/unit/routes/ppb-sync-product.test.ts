@@ -5,7 +5,10 @@
  * Issue: [edit-bundle-flow-tests-1]
  */
 
-import { handleSyncProduct } from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";
+import {
+  handleSyncBundle,
+  handleSyncProduct,
+} from "../../../app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server";
 
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
@@ -71,10 +74,12 @@ jest.mock("../../../app/lib/css-sanitizer", () => ({
 }));
 
 const getDb = () => require("../../../app/db.server").default;
+const getMetafieldSync = () => require("../../../app/services/bundles/metafield-sync.server");
 const getPublishProductToSalesChannels = () =>
   require("../../../app/services/shopify-publications.server").publishProductToSalesChannels;
 
 const MOCK_SESSION = { shop: "test-shop.myshopify.com", accessToken: "tok" } as any;
+const ORIGINAL_APP_URL = process.env.SHOPIFY_APP_URL;
 
 const SHOPIFY_PRODUCT = {
   id: "gid://shopify/Product/1",
@@ -83,8 +88,8 @@ const SHOPIFY_PRODUCT = {
   descriptionHtml: "<p>A PPB bundle</p>",
   handle: "ppb-bundle-product",
   status: "ACTIVE",
-  productType: "Bundle",
-  vendor: "Bundle Builder",
+  productType: "product",
+  vendor: "Test Shop",
   tags: ["WP-Bundles"],
   onlineStoreUrl: null,
   featuredMedia: null,
@@ -115,13 +120,16 @@ function makeAdmin(productData: Record<string, unknown> | null = SHOPIFY_PRODUCT
     graphql: jest.fn().mockResolvedValue({
       json: async () => ({
         data: {
+          shop: { name: "Test Shop" },
           product: productData,
           productCreate: {
             product: {
               id: "gid://shopify/Product/NEW",
               title: "PPB Bundle",
-              handle: "bundle-bundle-1",
+              handle: "ppb-bundle",
               status: "ACTIVE",
+              productType: "product",
+              vendor: "Test Shop",
               variants: { edges: [{ node: { id: "gid://shopify/ProductVariant/NEW" } }] },
             },
             userErrors: [],
@@ -135,7 +143,12 @@ function makeAdmin(productData: Record<string, unknown> | null = SHOPIFY_PRODUCT
 
 beforeEach(() => {
   jest.clearAllMocks();
+  process.env.SHOPIFY_APP_URL = "https://app.example.test";
   getDb().bundle.update.mockResolvedValue({});
+});
+
+afterEach(() => {
+  process.env.SHOPIFY_APP_URL = ORIGINAL_APP_URL;
 });
 
 describe("PPB handleSyncProduct", () => {
@@ -154,6 +167,164 @@ describe("PPB handleSyncProduct", () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.syncedData.changesDetected).toBe(false);
+  });
+
+  it("rewrites runtime metafields during sync even when pricing is not enabled", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle({
+      name: "Runtime Sync Bundle",
+      description: "A PPB bundle",
+      pricing: null,
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          enabled: true,
+          StepProduct: [
+            {
+              id: "gid://shopify/Product/789",
+              title: "Runtime Product",
+              imageUrl: "https://cdn.shopify.com/product.jpg",
+              variants: [{ id: "gid://shopify/ProductVariant/V789", title: "Default Title" }],
+            },
+          ],
+          StepCategory: [],
+        },
+      ],
+    }));
+    const admin = makeAdmin({
+      ...SHOPIFY_PRODUCT,
+      description: "A PPB bundle",
+      handle: "runtime-sync-bundle",
+    });
+
+    const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    const { updateBundleProductMetafields, updateComponentProductMetafields } = getMetafieldSync();
+    const expectedRuntimeConfig = expect.objectContaining({
+      name: "Runtime Sync Bundle",
+      pricing: null,
+      shopifyProduct: expect.objectContaining({
+        id: "gid://shopify/Product/1",
+        handle: "runtime-sync-bundle",
+      }),
+      steps: expect.arrayContaining([
+        expect.objectContaining({
+          StepProduct: expect.arrayContaining([
+            expect.objectContaining({ id: "gid://shopify/Product/789" }),
+          ]),
+        }),
+      ]),
+    });
+    expect(updateComponentProductMetafields).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/1",
+      expectedRuntimeConfig,
+    );
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/1",
+      expectedRuntimeConfig,
+    );
+  });
+
+  it("removes stale generated product media references during sync", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle({ name: "Product Page Fixture" }));
+    const admin = {
+      graphql: jest.fn(async (query: string, variables?: any) => {
+        if (query.includes("GetShopName")) {
+          return {
+            json: async () => ({
+              data: { shop: { name: "Test Shop" } },
+            }),
+          };
+        }
+
+        if (query.includes("UpdateProductStatus")) {
+          return {
+            json: async () => ({
+              data: {
+                productUpdate: {
+                  product: {
+                    id: "gid://shopify/Product/1",
+                    status: variables?.variables?.product?.status || "ACTIVE",
+                    handle: "product-page-fixture",
+                    productType: "product",
+                    vendor: "Test Shop",
+                  },
+                  userErrors: [],
+                },
+              },
+            }),
+          };
+        }
+
+        if (query.includes("fileUpdate")) {
+          return {
+            json: async () => ({
+              data: {
+                fileUpdate: {
+                  files: [{ id: "gid://shopify/MediaImage/old" }],
+                  userErrors: [],
+                },
+              },
+            }),
+          };
+        }
+
+        return {
+          json: async () => ({
+            data: {
+              product: {
+                ...SHOPIFY_PRODUCT,
+                title: "Product Page Fixture",
+                description: "A PPB bundle",
+                media: {
+                  nodes: [
+                    {
+                      id: "gid://shopify/MediaImage/current",
+                      alt: "Product Page Fixture - Bundle",
+                      image: { url: "https://cdn.shopify.com/files/bundle-product-placeholder.png" },
+                    },
+                    {
+                      id: "gid://shopify/MediaImage/old",
+                      alt: "Old Product",
+                      image: { url: "https://cdn.shopify.com/files/bundle_old.png" },
+                    },
+                  ],
+                },
+              },
+            },
+          }),
+        };
+      }),
+    } as any;
+
+    const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("fileUpdate"),
+      expect.objectContaining({
+        variables: {
+          files: [
+            {
+              id: "gid://shopify/MediaImage/current",
+              alt: "",
+            },
+            {
+              id: "gid://shopify/MediaImage/old",
+              referencesToRemove: ["gid://shopify/Product/1"],
+            },
+          ],
+        },
+      }),
+    );
   });
 
   it("updates DB description when Shopify description differs", async () => {
@@ -202,7 +373,7 @@ describe("PPB handleSyncProduct", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           shopifyProductId: "gid://shopify/Product/NEW",
-          shopifyProductHandle: "bundle-bundle-1",
+          shopifyProductHandle: "ppb-bundle",
         }),
       })
     );
@@ -210,6 +381,117 @@ describe("PPB handleSyncProduct", () => {
       admin,
       "gid://shopify/Product/NEW",
       "ppb-sync-product-create",
+    );
+    expect(admin.graphql).toHaveBeenCalledWith(
+      expect.stringContaining("ProductCreateInput"),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            title: "PPB Bundle",
+            handle: "ppb-bundle",
+            productType: "product",
+            vendor: "Test Shop",
+          }),
+          media: [
+            expect.objectContaining({
+              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              alt: "",
+              mediaContentType: "IMAGE",
+            }),
+          ],
+        }),
+      }),
+    );
+  });
+
+  it("recreates a synced bundle product with the generated placeholder media", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle());
+    const admin = {
+      graphql: jest
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: { productUpdate: { product: { id: "gid://shopify/Product/1", status: "ARCHIVED" }, userErrors: [] } },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: { productDelete: { deletedProductId: "gid://shopify/Product/1", userErrors: [] } },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              shop: { name: "Test Shop" },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              productCreate: {
+                product: {
+                  id: "gid://shopify/Product/NEW",
+                  title: "PPB Bundle",
+                  handle: "ppb-bundle",
+                  status: "ACTIVE",
+                  productType: "product",
+                  vendor: "Test Shop",
+                  variants: { edges: [{ node: { id: "gid://shopify/ProductVariant/NEW" } }] },
+                },
+                userErrors: [],
+              },
+            },
+          }),
+        })
+        .mockResolvedValueOnce({
+          json: async () => ({
+            data: {
+              productVariantsBulkUpdate: {
+                productVariants: [{ id: "gid://shopify/ProductVariant/NEW", price: "50.00" }],
+                userErrors: [],
+              },
+            },
+          }),
+        })
+        .mockResolvedValue({
+          json: async () => ({
+            data: {
+              productUpdate: {
+                product: { id: "gid://shopify/Product/NEW", status: "ACTIVE", handle: "ppb-bundle" },
+                userErrors: [],
+              },
+            },
+          }),
+        }),
+    } as any;
+
+    const res = await handleSyncBundle(admin, MOCK_SESSION, "bundle-1");
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    const createProductCall = admin.graphql.mock.calls.find(([query]: [unknown]) =>
+      String(query).includes("ProductCreateInput"),
+    );
+    expect(createProductCall).toBeDefined();
+    expect(createProductCall?.[1]).toEqual(
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            title: "PPB Bundle",
+            handle: "ppb-bundle",
+            productType: "product",
+            vendor: "Test Shop",
+          }),
+          media: [
+            expect.objectContaining({
+              originalSource: "https://app.example.test/bundle-product-placeholder.png",
+              alt: "",
+              mediaContentType: "IMAGE",
+            }),
+          ],
+        }),
+      }),
     );
   });
 
@@ -222,5 +504,88 @@ describe("PPB handleSyncProduct", () => {
       title: "PPB Bundle Product",
       status: "ACTIVE",
     });
+  });
+
+  it("preserves StepCategory products and variants in sync metafield payloads", async () => {
+    getDb().bundle.findUnique.mockResolvedValue(makeBundle({
+      pricing: {
+        enabled: true,
+        method: "percentage_off",
+        rules: JSON.stringify([]),
+        messages: JSON.stringify({}),
+      },
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          products: [],
+          collections: [],
+          StepProduct: [],
+          StepCategory: [
+            {
+              name: "Category 1",
+              products: [
+                {
+                  id: "gid://shopify/Product/789",
+                  title: "Category Product",
+                  imageUrl: "https://cdn.shopify.com/product.jpg",
+                  variants: [
+                    { id: "gid://shopify/ProductVariant/V789A", title: "Unavailable" },
+                    { id: "gid://shopify/ProductVariant/V789B", title: "Available" },
+                  ],
+                },
+              ],
+              collections: [
+                { id: "gid://shopify/Collection/456", title: "Category Collection", handle: "category-collection" },
+              ],
+            },
+          ],
+        },
+      ],
+    }));
+    const admin = makeAdmin({ ...SHOPIFY_PRODUCT, description: "A PPB bundle" });
+
+    const res = await handleSyncProduct(admin, MOCK_SESSION, "bundle-1", new FormData());
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    const { updateBundleProductMetafields, updateComponentProductMetafields } = getMetafieldSync();
+    const bundleConfig = updateBundleProductMetafields.mock.calls[0][2];
+    expect(bundleConfig.steps[0].products).toEqual([]);
+    expect(bundleConfig.steps[0].collections).toEqual([]);
+    expect(bundleConfig.steps[0].StepCategory[0].products).toEqual([
+      {
+        id: "gid://shopify/Product/789",
+        title: "Category Product",
+        imageUrl: "https://cdn.shopify.com/product.jpg",
+        variants: [
+          { id: "gid://shopify/ProductVariant/V789A", title: "Unavailable" },
+          { id: "gid://shopify/ProductVariant/V789B", title: "Available" },
+        ],
+      },
+    ]);
+    expect(bundleConfig.steps[0].StepCategory[0].collections).toEqual([
+      { id: "gid://shopify/Collection/456", title: "Category Collection", handle: "category-collection" },
+    ]);
+    expect(updateComponentProductMetafields).toHaveBeenCalledWith(
+      admin,
+      "gid://shopify/Product/1",
+      expect.objectContaining({
+        steps: expect.arrayContaining([
+          expect.objectContaining({
+            StepCategory: expect.arrayContaining([
+              expect.objectContaining({
+                products: expect.arrayContaining([
+                  expect.objectContaining({ id: "gid://shopify/Product/789" }),
+                ]),
+              }),
+            ]),
+          }),
+        ]),
+      }),
+    );
   });
 });

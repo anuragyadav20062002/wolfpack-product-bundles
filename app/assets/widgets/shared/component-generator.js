@@ -46,6 +46,7 @@ export class ComponentGenerator {
       ? options.variantSelectorHtml
       : (isExpandedVariantCard ? '' : this.renderVariantSelector(product));
     const actionMode = options.actionMode || 'default';
+    const addButtonText = options.addButtonText || '+';
 
     // Render inline quantity controls when item is selected
     const renderInlineQuantityControls = () => {
@@ -64,7 +65,7 @@ export class ComponentGenerator {
       if (actionMode === 'expandingQuantity') {
         return `
           <div class="product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`}
+            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
           </div>
         `;
       }
@@ -72,7 +73,7 @@ export class ComponentGenerator {
       if (isSelected) {
         return renderInlineQuantityControls();
       }
-      return `<button class="product-add-btn" data-product-id="${selectionKey}">+</button>`;
+      return `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
     };
 
     // Render variant badge if this is an expanded variant card

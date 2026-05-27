@@ -62,18 +62,20 @@ export class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    // Extract rule data using nested structure
-    const conditionType = ruleToUse.condition.type;
-    const targetValue = ruleToUse.condition.value;
-    const conditionOperator = ruleToUse.condition.operator;
-    const discountMethod = ruleToUse.discount.method;
-    const rawDiscountValue = ruleToUse.discount.value;
+    const discountMethod = PricingCalculator.getDiscountMethod(bundle);
+    const conditionType = PricingCalculator.getRuleConditionType(ruleToUse);
+    const targetValue = PricingCalculator.getRuleConditionValue(ruleToUse, discountMethod);
+    const conditionOperator = PricingCalculator.getRuleConditionOperator(ruleToUse);
+    const rawDiscountValue = PricingCalculator.getRuleDiscountValue(ruleToUse);
+    const discountedItems = discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y
+      ? String(Number(ruleToUse.customerGets || 0))
+      : (conditionType === 'quantity' ? targetValue.toString() : '0');
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
     // Calculate discount-specific values
-    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
+    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
 
     // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
@@ -91,7 +93,7 @@ export class TemplateManager {
       discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
       discountValue: discountData.discountValue,
       discountValueUnit: discountData.discountValueUnit,
-      discountedItems: conditionType === 'quantity' ? targetValue.toString() : '0',
+      discountedItems,
 
       // Qualification status
       alreadyQualified: conditionData.alreadyQualified || false,
@@ -231,7 +233,7 @@ export class TemplateManager {
     }
   }
 
-  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
+  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, rule = null) {
     if (rawDiscountValue == null) {
       console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
     }
@@ -243,7 +245,7 @@ export class TemplateManager {
         return {
           discountText: `${percentage}% off`,
           discountValue: String(percentage),
-          discountValueUnit: '% off'
+          discountValueUnit: '%'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -257,8 +259,8 @@ export class TemplateManager {
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
           discountText: `${currencyInfo.display.symbol}${amountOff} off`,
-          discountValue: `${currencyInfo.display.symbol}${amountOff}`,
-          discountValueUnit: ' off'
+          discountValue: amountOff,
+          discountValueUnit: currencyInfo.display.symbol
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -274,6 +276,28 @@ export class TemplateManager {
           discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
           discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
           discountValueUnit: ''
+        };
+
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y:
+        if ((rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount') {
+          const convertedBxyAmount = CurrencyManager.convertCurrency(
+            safeValue,
+            currencyInfo.calculation.code,
+            currencyInfo.display.code,
+            currencyInfo.display.rate
+          );
+          const bxyAmountOff = (convertedBxyAmount / 100).toFixed(2);
+          return {
+            discountText: `${currencyInfo.display.symbol}${bxyAmountOff} off`,
+            discountValue: `${currencyInfo.display.symbol}${bxyAmountOff}`,
+            discountValueUnit: ''
+          };
+        }
+        const bxyPercentage = Math.round(safeValue);
+        return {
+          discountText: `${bxyPercentage}% off`,
+          discountValue: String(bxyPercentage),
+          discountValueUnit: '%'
         };
 
       default:

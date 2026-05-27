@@ -315,7 +315,7 @@
 /* ── Product Actions ──────────────────────────────────────────── */
 .productActions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; margin-top: 12px; }
 
-/* ── Category Accordion — EB-style per-category rows ─────────── */
+/* Category accordion per-category rows */
 .categoryAccordion {
   margin-bottom: 8px; border: 1px solid #dfe3e8; border-radius: 8px;
   background: #ffffff; box-shadow: 0 1px 1px rgba(31,41,55,0.04); overflow: hidden;
