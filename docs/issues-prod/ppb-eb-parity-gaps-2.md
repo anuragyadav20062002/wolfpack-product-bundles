@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 23:20 IST
+**Last Updated:** 2026-05-29 00:02 IST
 
 ## Overview
 
@@ -77,6 +77,11 @@ UI parity gaps identified:
 ### 2026-05-28 23:20 IST - PPB/FPB selected-product modal admin-open parity
 - Replaced direct admin URL `open(productUrl, '_blank')` usage in selected-products modals with `openProductInAdmin`.
 - This keeps all product admin navigation in both routes behind the same tunnel-safe helper path.
+
+### 2026-05-29 00:02 IST - PPB legacy card admin-link cleanup
+- Updated PPB `BundleProductCard` fallback component to stop hardcoding admin URLs.
+- `BundleProductCard` now uses a supplied product-open callback and disables the button when absent.
+- Kept helper-driven admin navigation pattern for the live configure paths.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 

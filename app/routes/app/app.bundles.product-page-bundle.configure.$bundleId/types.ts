@@ -56,6 +56,7 @@ export interface BundleProductCardProps {
   productImageUrl: string;
   productTitle: string;
   shop: string;
+  onOpenProduct?: () => void;
   onSync: () => void;
   onSelect: () => void;
 }

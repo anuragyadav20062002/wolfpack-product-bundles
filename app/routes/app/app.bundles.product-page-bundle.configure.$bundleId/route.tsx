@@ -407,7 +407,7 @@ function normalizeVisibilityCollectionPageTarget(collection: any) {
 }
 
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
-const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
+const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, onSync, onSelect, onOpenProduct }: BundleProductCardProps) => (
   <s-section>
     <s-stack direction="block" gap="small">
       <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
@@ -434,10 +434,8 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
             <s-stack direction="inline" gap="small-100" style={{ alignItems: "center", flexWrap: "nowrap" }}>
               <s-button
                 variant="plain"
-                onClick={() => {
-                  const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                  open(productUrl, '_blank');
-                }}
+                onClick={onOpenProduct}
+                disabled={!onOpenProduct}
               >
                 <s-icon name="external-minor" />
                 {productTitle || bundleProduct.title || "Untitled Product"}
