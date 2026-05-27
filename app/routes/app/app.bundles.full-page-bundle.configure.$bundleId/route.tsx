@@ -21,6 +21,7 @@ import {
 import {
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
+  CATEGORY_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
 } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
@@ -1166,6 +1167,75 @@ export default function ConfigureBundleFlow() {
   const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
   // Per-category open/collapsed state: keyed by `${stepId}__${catId}`
   const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
+  const [categoryRulesOpen, setCategoryRulesOpen] = useState<Record<string, boolean>>({});
+
+  const getStepCategories = useCallback((stepId: string): any[] => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    return (((step as any)?.StepCategory as any[] | undefined) ?? []);
+  }, [stepsState.steps]);
+
+  const updateStepCategories = useCallback((stepId: string, updater: (categories: any[]) => any[]) => {
+    const categories = getStepCategories(stepId);
+    stepsState.updateStepField(stepId, "StepCategory", updater(categories));
+    markAsDirty();
+  }, [getStepCategories, markAsDirty, stepsState]);
+
+  const clearCategoryConditionRules = useCallback((stepId: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category) => ({
+      ...category,
+      conditions: [],
+      autoNextStepOnConditionMet: false,
+    })));
+  }, [updateStepCategories]);
+
+  const addCategoryConditionRule = useCallback((stepId: string, categoryIndex: number) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: [
+          ...conditions,
+          {
+            id: `category-rule-${Date.now()}`,
+            type: "quantity",
+            condition: "greaterThanOrEqualTo",
+            value: "01",
+          },
+        ],
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const removeCategoryConditionRule = useCallback((stepId: string, categoryIndex: number, ruleId: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: conditions.filter((rule: any, ruleIndex: number) => String(rule.id ?? ruleIndex) !== ruleId),
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const updateCategoryConditionRule = useCallback((stepId: string, categoryIndex: number, ruleId: string, field: string, value: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: conditions.map((rule: any, ruleIndex: number) => (
+          String(rule.id ?? ruleIndex) === ruleId ? { ...rule, [field]: value } : rule
+        )),
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const updateCategoryAutoNextRule = useCallback((stepId: string, categoryIndex: number, enabled: boolean) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => (
+      index === categoryIndex ? { ...category, autoNextStepOnConditionMet: enabled } : category
+    )));
+  }, [updateStepCategories]);
 
   // Icon picker visibility (tracks which step's picker is open)
   const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
@@ -3022,115 +3092,237 @@ export default function ConfigureBundleFlow() {
                         Learn More
                       </button>
                       {(() => {
-                        const ruleCount = (conditionsState.stepConditions[step.id] || []).length;
-                        const activeRuleMode = ruleCount === 0 ? "none" : "step";
+                        const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
+                        const categoryRulesAvailable = stepCategories.length > 1;
+                        const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
+                        const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
+                        const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
                         const handleRuleModeChange = (nextMode: string) => {
                           if (nextMode === "none") {
                             conditionsState.clearStepConditions(step.id);
+                            clearCategoryConditionRules(step.id);
                             return;
                           }
-                          if ((conditionsState.stepConditions[step.id] || []).length === 0) {
-                            conditionsState.addConditionRule(step.id);
+                          if (nextMode === "step") {
+                            clearCategoryConditionRules(step.id);
+                            if ((conditionsState.stepConditions[step.id] || []).length === 0) {
+                              conditionsState.addConditionRule(step.id);
+                            }
+                            return;
+                          }
+                          if (nextMode === "category" && categoryRulesAvailable) {
+                            conditionsState.clearStepConditions(step.id);
+                            if (!hasCategoryRules) {
+                              addCategoryConditionRule(step.id, 0);
+                            }
+                            return;
                           }
                         };
+                        const ruleModeOptions = [
+                          { label: "No rules", value: "none" },
+                          { label: "Step rules", value: "step" },
+                          ...(categoryRulesAvailable ? [{ label: "Category rules", value: "category" }] : []),
+                        ];
 
                         return (
-                          <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
-                            {[
-                              { label: "No rules", value: "none" },
-                              { label: "Step rules", value: "step" },
-                              { label: "Category rules", value: "category" },
-                            ].map(opt => (
-                              <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+                          <>
+                            <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
+                              {ruleModeOptions.map(opt => (
+                                <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
                                 <input
                                   type="radio"
-                                  name={`fpb-rule-mode-${step.id}`}
+                                  name={`step-rule-mode-${step.id}`}
                                   value={opt.value}
                                   checked={activeRuleMode === opt.value}
                                   onChange={() => handleRuleModeChange(opt.value)}
                                   style={{ margin: 0 }}
                                 />
                                 {opt.label}
-                              </label>
-                            ))}
-                          </div>
+                                </label>
+                              ))}
+                            </div>
+
+                            {activeRuleMode === "category" ? (
+                              <div className={fullPageBundleStyles.categoryRulesList}>
+                                {stepCategories.map((cat: any, catIndex: number) => {
+                                  const catKey = `${step.id}__${cat.id ?? catIndex}`;
+                                  const rules = Array.isArray(cat.conditions) ? cat.conditions : [];
+                                  const isRulesOpen = categoryRulesOpen[catKey] ?? catIndex === 0;
+                                  const categoryLabel = cat.name || cat.title || `Category ${catIndex + 1}`;
+
+                                  return (
+                                    <div key={cat.id ?? catIndex} className={fullPageBundleStyles.categoryRuleAccordion}>
+                                      <button
+                                        type="button"
+                                        className={fullPageBundleStyles.categoryRuleHeader}
+                                        aria-expanded={isRulesOpen}
+                                        onClick={() => setCategoryRulesOpen(prev => ({ ...prev, [catKey]: !isRulesOpen }))}
+                                      >
+                                        <span>{categoryLabel} rules</span>
+                                        <span aria-hidden="true">{isRulesOpen ? "⌃" : "⌄"}</span>
+                                      </button>
+
+                                      {isRulesOpen && (
+                                        <div className={fullPageBundleStyles.categoryRuleBody}>
+                                          <p className={fullPageBundleStyles.categoryRuleHelp}>
+                                            Create Rules based on amount or quantity of products added on this category.
+                                            <br />
+                                            Note: Rules are only valid on this category
+                                          </p>
+
+                                          <div className={fullPageBundleStyles.rulesList}>
+                                            {rules.map((rule: any, ruleIndex: number) => {
+                                              const ruleId = String(rule.id ?? ruleIndex);
+                                              return (
+                                                <div key={ruleId} className={fullPageBundleStyles.categoryRuleBlock}>
+                                                  <div className={fullPageBundleStyles.ruleHeader}>
+                                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                    <s-button
+                                                      variant="plain"
+                                                      tone="critical"
+                                                      onClick={() => removeCategoryConditionRule(step.id, catIndex, ruleId)}
+                                                    >
+                                                      Remove
+                                                    </s-button>
+                                                  </div>
+                                                  <div className={fullPageBundleStyles.ruleFields}>
+                                                    <s-select
+                                                      label="Type"
+                                                      value={rule.type ?? "quantity"}
+                                                      onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                    >
+                                                      {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                                        <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                      ))}
+                                                    </s-select>
+                                                    <s-select
+                                                      label="Condition"
+                                                      value={rule.condition ?? rule.operator ?? "greaterThanOrEqualTo"}
+                                                      onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                    >
+                                                      {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                        <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                      ))}
+                                                    </s-select>
+                                                    <s-number-field
+                                                      label="Value"
+                                                      min={0}
+                                                      value={rule.value ?? ""}
+                                                      onInput={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
+                                                      autoComplete="off"
+                                                    />
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+
+                                          {rules.length === 1 && (
+                                            <s-checkbox
+                                              label="Auto Next When rule is met"
+                                              checked={cat.autoNextStepOnConditionMet === true || undefined}
+                                              onChange={(e: Event) => updateCategoryAutoNextRule(step.id, catIndex, (e.target as HTMLInputElement).checked)}
+                                            />
+                                          )}
+
+                                          <button
+                                            type="button"
+                                            className={fullPageBundleStyles.addSectionButton}
+                                            onClick={() => addCategoryConditionRule(step.id, catIndex)}
+                                          >
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                              <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                            </svg>
+                                            Add Rule
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <>
+                                {(conditionsState.stepConditions[step.id] || []).length === 0 ? (
+                                  <div className={fullPageBundleStyles.emptyState}>No rules defined yet</div>
+                                ) : (
+                                  <div className={fullPageBundleStyles.rulesList}>
+                                    {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
+                                      <div key={rule.id} className={fullPageBundleStyles.ruleCard}>
+                                        <div className={fullPageBundleStyles.ruleHeader}>
+                                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                          <s-button
+                                            variant="plain"
+                                            tone="critical"
+                                            onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
+                                          >
+                                            Remove
+                                          </s-button>
+                                        </div>
+                                        <div className={fullPageBundleStyles.ruleFields}>
+                                          <s-select
+                                            label="Type"
+                                            value={rule.type}
+                                            onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                          >
+                                            <s-option value="" disabled>Type</s-option>
+                                            {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                              <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                            ))}
+                                          </s-select>
+                                          <s-select
+                                            label="Operator"
+                                            value={rule.operator}
+                                            onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                          >
+                                            <s-option value="" disabled>Operator</s-option>
+                                            {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                              <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                            ))}
+                                          </s-select>
+                                          <s-number-field
+                                            label="Value"
+                                            min={0}
+                                            placeholder="0"
+                                            value={rule.value ?? ""}
+                                            onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
+                                            autoComplete="off"
+                                          />
+                                        </div>
+                                        {(conditionsState.stepConditions[step.id] || []).length === 1 && (
+                                          <s-checkbox
+                                            label="Auto Next When rule is met"
+                                            checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                            onChange={(e: Event) => {
+                                              conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.addSectionButton}
+                                  onClick={() => {
+                                    if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                      shopify.toast.show('A step can have at most 2 rules', { isError: false });
+                                      return;
+                                    }
+                                    conditionsState.addConditionRule(step.id);
+                                  }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                  </svg>
+                                  Add Rule
+                                </button>
+                              </>
+                            )}
+                          </>
                         );
                       })()}
-                      {(conditionsState.stepConditions[step.id] || []).length === 0 ? (
-                        <div className={fullPageBundleStyles.emptyState}>No rules defined yet</div>
-                      ) : (
-                        <div className={fullPageBundleStyles.rulesList}>
-                          {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
-                            <div key={rule.id} className={fullPageBundleStyles.ruleCard}>
-                              <div className={fullPageBundleStyles.ruleHeader}>
-                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
-                                <s-button
-                                  variant="plain"
-                                  tone="critical"
-                                  onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
-                                >
-                                  Remove
-                                </s-button>
-                              </div>
-                              <div className={fullPageBundleStyles.ruleFields}>
-                                <s-select
-                                  label="Type"
-                                  value={rule.type}
-                                  onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
-                                >
-                                  <s-option value="" disabled>Type</s-option>
-                                  {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                  ))}
-                                </s-select>
-                                <s-select
-                                  label="Operator"
-                                  value={rule.operator}
-                                  onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
-                                >
-                                  <s-option value="" disabled>Operator</s-option>
-                                  {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                  ))}
-                                </s-select>
-                                <s-number-field
-                                  label="Value"
-                                  min={0}
-                                  placeholder="0"
-                                  value={rule.value ?? ""}
-                                  onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
-                                  autoComplete="off"
-                                />
-                              </div>
-                              {(conditionsState.stepConditions[step.id] || []).length === 1 && (
-                                <s-checkbox
-                                  label="Auto Next When rule is met"
-                                  checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
-                                  onChange={(e: Event) => {
-                                    conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
-                                  }}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        className={fullPageBundleStyles.addSectionButton}
-                        onClick={() => {
-                          if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
-                            shopify.toast.show('A step can have at most 2 rules', { isError: false });
-                            return;
-                          }
-                          conditionsState.addConditionRule(step.id);
-                        }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                        </svg>
-                        Add Rule
-                      </button>
                     </div>
 
                     {/* ── Step Config card ── */}

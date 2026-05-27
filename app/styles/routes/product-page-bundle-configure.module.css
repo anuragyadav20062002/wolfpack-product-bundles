@@ -707,6 +707,30 @@
   composes: rulesList from "./bundle-configure-shared.module.css";
 }
 
+.categoryRulesList {
+  composes: categoryRulesList from "./bundle-configure-shared.module.css";
+}
+
+.categoryRuleAccordion {
+  composes: categoryRuleAccordion from "./bundle-configure-shared.module.css";
+}
+
+.categoryRuleHeader {
+  composes: categoryRuleHeader from "./bundle-configure-shared.module.css";
+}
+
+.categoryRuleBody {
+  composes: categoryRuleBody from "./bundle-configure-shared.module.css";
+}
+
+.categoryRuleHelp {
+  composes: categoryRuleHelp from "./bundle-configure-shared.module.css";
+}
+
+.categoryRuleBlock {
+  composes: categoryRuleBlock from "./bundle-configure-shared.module.css";
+}
+
 .emptyState {
   composes: emptyState from "./bundle-configure-shared.module.css";
 }

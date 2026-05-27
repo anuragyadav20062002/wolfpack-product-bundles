@@ -56,6 +56,16 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 2 | Category Multi Language modal | Category row Multi Language button | modal fields are `Category Name` and `Category Title`, and save writes `StepCategory[].multiLangData.<locale>.name/title` | Live PPB save proof: `/private/tmp/eb-ppb-step-category-multilang-update-2026-05-27.network-request`. |
 | 3 | Shared Multi Language modal copy | Any implemented Multi Language button using the shared modal | modal renders `Translations`, `Choose language to edit`, `Custom Text`, `Text Settings`, the 38-language list, and `Save and Close` | Live Step Setup screenshots captured outside the worktree. |
 
+### Step Setup Rule Mode Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Category rules gated | Step has one category | Category rules radio is not rendered | Evidence shows category rules after a second category exists. |
+| 2 | Step/category mutual exclusion | Switching to step rules | category `conditions` clear before adding step rules | Evidence keeps step rules and category rules as separate modes. |
+| 3 | Category rules create category conditions | Switching to category rules with two categories | step conditions clear and first category receives a `conditions[]` rule | Live PPB request stores category rules under `productsData1.categories.*.conditions`. |
+| 4 | Category rule edit controls | Active category rules mode | every category gets an accordion row with Rule rows, remove, add, type, condition, value, and auto-next fields | Screenshots: `ppb-admin-category-rules-expanded.png`, `ppb-admin-category-rules-quantity-rule.png`. |
+| 5 | Category condition enum shape | category quantity rule | condition payload uses `condition: "greaterThanOrEqualTo"` instead of the step-rule `operator` key | Raw request proof uses camel-cased `condition` values. |
+
 ### FPB Bundle Settings Contracts
 
 | # | Scenario | Input | Expected Output | Notes |

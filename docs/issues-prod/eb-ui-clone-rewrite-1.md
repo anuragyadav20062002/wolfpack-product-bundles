@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 07:24 IST
+**Last Updated:** 2026-05-27 08:01 IST
 
 ## Overview
 
@@ -12,6 +12,18 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 07:50 IST - Step Setup category rules slice started
+- Re-read the Step Setup audit and implementation reference for the evidenced rules behavior: category rules appear only after more than one category exists, step rules and category rules are mutually exclusive, and EB persists category rules inside each category while step-level `conditions.isEnabled` remains false after switching to category rules.
+- Current WPB route source still renders a Category rules radio option unconditionally and handles it by adding step-level conditions, so the visible control is not wired to the evidenced category `conditions` contract.
+- Scope for this slice: add RED contracts for Step Setup rule-mode gating and category-level rule editing, patch both FPB and PPB configure routes to manipulate category `conditions`/`autoNextStepOnConditionMet`, verify with focused tests/lint/build, then commit before continuing the broader Step Setup parity loop.
+
+### 2026-05-27 08:01 IST - Step Setup category rules slice verified
+- Added the RED-to-green route/source contract `tests/unit/routes/step-setup-rule-mode-ui-contract.test.ts` for multi-category gating, step/category mutual exclusion, category-level `conditions[]`, camel-cased category condition operators, and editable no-id persisted category rules.
+- Patched both Full Page and Product Page configure routes so Category rules only appear after more than one category, switching to Category rules clears step rules and creates the first category rule, switching to Step rules clears category rules, and category rule rows edit `type`, `condition`, `value`, and `autoNextStepOnConditionMet`.
+- Added shared category rule accordion styling and the direct `CATEGORY_CONDITION_OPERATOR_OPTIONS` constants matching the captured Admin payload shape.
+- Updated the evidence manifest and test spec while keeping `fpb-step-setup` and `ppb-step-setup` partial until live Admin screenshot, save payload/response, DB/metafield, runtime, desktop, and mobile proof are captured on the same fixture.
+- Verification passed: focused Jest with 104 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan, `git diff --check`, and graph rebuild via the graphify pipx environment.
 
 ### 2026-05-27 07:24 IST - Step Setup Multi Language slice verified before commit
 - Added Step Setup Multi Language wiring for both Product Page and Full Page configure routes: step-level buttons now open the evidenced `Step Name` / `Step Title` translation modal, category buttons open `Category Name` / `Category Title`, and both save into direct `multiLangData` contracts.

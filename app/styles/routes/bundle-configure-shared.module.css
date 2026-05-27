@@ -515,3 +515,62 @@
   gap: 10px;
   margin-bottom: 12px;
 }
+
+.categoryRulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoryRuleAccordion {
+  overflow: hidden;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.categoryRuleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.categoryRuleHeader:hover {
+  background: #f6f6f7;
+}
+
+.categoryRuleHeader[aria-expanded="true"] {
+  border-bottom: 1px solid #edf0f2;
+}
+
+.categoryRuleBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.categoryRuleHelp {
+  margin: 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.categoryRuleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
