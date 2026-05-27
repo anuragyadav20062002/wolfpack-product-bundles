@@ -59,6 +59,16 @@ describe("full-page Bundle Visibility Admin direct contract", () => {
     expect(stylesSource).toContain(".visibilityPlacementCard");
   });
 
+  it("matches the reference visibility shell width and removes the extra top warning on visibility pages", () => {
+    expect(routeSource).toContain("suppressTopAppEmbedBannerForVisibility");
+    expect(routeSource).toContain('activeSection === "bundle_visibility" || activeSection === "bundle_widget"');
+    expect(routeSource).toContain("{!suppressTopAppEmbedBannerForVisibility && (");
+    expect(stylesSource).toContain("max-width: 950px;");
+    expect(stylesSource).toContain("margin: 18px 0 39px;");
+    expect(stylesSource).toContain("flex: 0 0 310px;");
+    expect(stylesSource).toContain("min-width: 310px;");
+  });
+
   it("wires Widget product and collection targeting through App Bridge resource pickers", () => {
     expect(routeSource).toContain("setUpsellWidgetSelectedProducts");
     expect(routeSource).toContain("setUpsellWidgetSpecificProductPages");

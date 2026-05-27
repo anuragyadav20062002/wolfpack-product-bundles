@@ -930,6 +930,7 @@ export default function ConfigureBundleFlow() {
     // Original values ref
     originalValuesRef,
   } = configState;
+  const suppressTopAppEmbedBannerForVisibility = activeSection === "bundle_visibility" || activeSection === "bundle_widget";
 
   const [addonDraft, setAddonDraft] = useState(() =>
     buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
@@ -2326,7 +2327,9 @@ export default function ConfigureBundleFlow() {
           </div>
         </div>
 
-        <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+        {!suppressTopAppEmbedBannerForVisibility && (
+          <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+        )}
 
         <div className={fullPageBundleStyles.editGrid}>
 

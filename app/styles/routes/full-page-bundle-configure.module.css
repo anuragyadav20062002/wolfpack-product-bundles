@@ -40,7 +40,7 @@
 
 /* ── Edit App Canvas ─────────────────────────────────────────── */
 .editCanvas {
-  max-width: 940px;
+  max-width: 950px;
   margin: 0 auto;
   padding: 0 0 88px;
 }
@@ -50,7 +50,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin: 18px 0 16px;
+  margin: 18px 0 39px;
 }
 
 .canvasTitleGroup {
@@ -157,8 +157,8 @@
 }
 
 .leftColumn {
-  flex: 0 0 274px;
-  min-width: 274px;
+  flex: 0 0 310px;
+  min-width: 310px;
   position: sticky;
   top: 0;
   max-height: 100vh;

@@ -115,6 +115,7 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 3 | Visibility overview visual shell | Full Page Bundle Visibility overview | route uses custom card/grid/action markers, black Quick Setup Guide actions, bundle-link copy row, and setup panel for Bundle Widget | Non-Polaris controls are allowed for exact clone work. |
 | 4 | Widget targeting picker wiring | Widget display set to specific products or collections | route opens App Bridge product/collection resource pickers with `action:"select"` and writes both selected data and compact page targets into `displayConfiguration` | Help content confirms manual product/collection override behavior. |
 | 5 | Compact visibility picker payload | Full Page Widget targets a specific product/collection from App Bridge picker | route persists compact product/collection references only and never stores full picker objects inside `bundleUpsellConfig` | Product Page proof already showed full picker objects exceed Shopify's 64 KB metafield limit. |
+| 6 | Visibility shell width and top warning | Full Page Bundle Visibility or Bundle Widget selected with app embed disabled | route suppresses the top app-extension warning for visibility surfaces and CSS uses `950px` content canvas, `310px` setup rail, and `39px` header-to-card gap | Captured reference/WPB comparison showed the prior rail and top warning were the visible mismatch. |
 
 ### Cart Messaging
 

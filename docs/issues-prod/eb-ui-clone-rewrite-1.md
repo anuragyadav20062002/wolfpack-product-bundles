@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 06:39 IST
+**Last Updated:** 2026-05-27 06:51 IST
 
 ## Overview
 
@@ -12,6 +12,22 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 06:51 IST - FPB Bundle Visibility visual width pass ready to commit
+- Verification passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts --runInBand` with 40 tests, route/test ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, graph rebuild via the graphify pipx venv, and `git diff --check`.
+- ESLint is not configured to parse `.css` files in this repo's current TypeScript project parser setup, so the CSS change was covered by the source contract test, live Chrome proof, build, and diff check instead of CSS-file ESLint.
+- Next: stage only the FPB visibility route/CSS/test/docs/graph files and commit with the required issue prefix.
+
+### 2026-05-27 06:48 IST - FPB Bundle Visibility visual width pass verified
+- Added the focused visibility source/CSS contract for the reference-width shell: `950px` content canvas, `310px` left rail, `39px` header-to-card gap, and visibility-only suppression of the top app-extension warning.
+- Patched the Full Page configure route/CSS and captured updated embedded Admin proof outside the worktree: `/private/tmp/wpb-fpb-bundle-visibility-overview-header-gap-patch-2026-05-27.png` and `/private/tmp/wpb-fpb-bundle-widget-header-gap-patch-2026-05-27.png`.
+- Focused contract passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts --runInBand`.
+- Next: run the full focused verification stack, rebuild graph outputs, then commit this visual-width follow-up slice.
+
+### 2026-05-27 06:44 IST - FPB Bundle Visibility visual width pass started
+- Compared the committed WPB Bundle Visibility overview screenshot with the captured reference screenshot and confirmed two structural mismatches: WPB's left setup rail is `274px` wide instead of the reference's roughly `310px`, and the top app-extension warning pushes the visibility content down in the disabled-app-embed state.
+- Scope for this follow-up slice: add focused source/CSS contracts for the visibility rail width and visibility-only top-banner suppression, patch the Full Page configure route/CSS, recapture Chrome proof, rerun focused verification, and commit.
+- Next: add the RED test assertions, patch the route/CSS, then verify against the live embedded Admin page.
 
 ### 2026-05-27 06:39 IST - FPB Bundle Visibility slice verified before commit
 - Verification passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts --runInBand` with 39 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild via the graphify pipx venv.
