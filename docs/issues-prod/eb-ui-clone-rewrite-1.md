@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 05:41 IST
+**Last Updated:** 2026-05-27 05:48 IST
 
 ## Overview
 
@@ -23,6 +23,17 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Wired the Product Page save handler to persist the direct BQO contract, rich pricing message contract, `ruleMessagesByLocale`, and runtime/metafield `displayOptions` without using a stale pricing alias.
 - Verification passed: `npx jest tests/unit/routes/ppb-save-bundle.test.ts tests/unit/routes/discount-pricing-ui-contract.test.ts --runInBand`; modified-file ESLint passed with 0 errors; competitor-reference scan passed for code/test/runtime paths; `npm run build` passed; graph rebuild completed.
 - Next: commit this persistence slice, then continue with Bundle Visibility and exact Admin visual parity for both FPB and PPB.
+
+### 2026-05-27 05:42 IST - Bundle Visibility direct-contract slice started
+- Re-read the captured FPB/PPB Bundle Visibility evidence and current WPB route/parser state.
+- Confirmed the current Product Page save path only sends legacy widget toggles plus the previously loaded `bundleUpsellConfig`, so current Widget/Embed choices do not construct the direct persisted runtime contract.
+- Next: add RED parser/save tests for Product Page Widget and Bundle Embed `bundleUpsellConfig`, then wire save payload and metafield sync before moving to the visual clone layer.
+
+### 2026-05-27 05:48 IST - PPB Bundle Visibility direct-contract slice green
+- Added Product Page Bundle Visibility TDD coverage requiring current Widget/Embed controls to serialize a direct `bundleUpsellConfig` object and blocking stale loaded-config resubmission.
+- Wired the Product Page route to hydrate Widget and Embed state from saved `bundleUpsellConfig`, serialize current widget/embed title, description, image, targeting, and browsed-product state on save, and pass the direct config into DB/metafield sync.
+- Verification passed: `npx jest tests/unit/routes/ppb-bundle-visibility-ui-contract.test.ts tests/unit/routes/ppb-save-bundle.test.ts --runInBand`; modified-file ESLint passed with 0 errors; competitor-reference scan passed for code/test/runtime paths; `npm run build` passed; graph rebuild completed.
+- Next: commit this direct-contract slice, then continue with exact Admin visual parity and picker flows for Bundle Visibility.
 
 ### 2026-05-27 01:31 IST - SIT cart transform deploy authorized
 - User explicitly authorized running the `package.json` SIT deploy command for the Cart Transform function.

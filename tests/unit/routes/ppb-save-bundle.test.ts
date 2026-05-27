@@ -168,6 +168,42 @@ function makeUpdatedBundle(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeBundleUpsellConfig(overrides: Record<string, unknown> = {}) {
+  return {
+    multiLangText: {},
+    widgetConfiguration: {
+      isEnabled: true,
+      type: "OFFER_WIDGET",
+      imageUrl: "https://cdn.example.test/widget.png",
+      title: "Bundle & Save",
+      description: "",
+      buttonText: "Buy With Bundle",
+      displayConfiguration: {
+        showOnAllBundleProducts: true,
+        selectedProducts: [],
+        showOnSpecificProductPages: [],
+        collectionsSelectedData: [],
+        showOnSpecificCollectionPages: [],
+      },
+      useLinkProductAsDefaultProduct: false,
+    },
+    upsellConfiguration: {
+      isEnabled: true,
+      title: "Build Your Bundle & Save More",
+      subTitle: "",
+      displayConfiguration: {
+        showOnAllBundleProducts: true,
+        selectedProducts: [],
+        showOnSpecificProductPages: [],
+        collectionsSelectedData: [],
+        showOnSpecificCollectionPages: [],
+      },
+      useLinkProductAsDefaultProduct: false,
+    },
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   MOCK_ADMIN.graphql.mockResolvedValue({
@@ -613,6 +649,20 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     expect(updateCall.data.pricing.upsert.create.ruleMessagesByLocale).toEqual(discountData.ruleMessagesByLocale);
     expect(updateCall.data.pricing.upsert.update.messages).toEqual(updateCall.data.pricing.upsert.create.messages);
     expect(updateCall.data.pricing.upsert.update.ruleMessagesByLocale).toEqual(discountData.ruleMessagesByLocale);
+  });
+
+  it("persists Product Page direct Bundle Visibility config", async () => {
+    const bundleUpsellConfig = makeBundleUpsellConfig();
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleUpsellConfig: JSON.stringify(bundleUpsellConfig) }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.bundleUpsellConfig).toEqual(bundleUpsellConfig);
   });
 });
 
@@ -1223,6 +1273,40 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
           }),
         }),
       }),
+    );
+  });
+
+  it("passes Product Page direct Bundle Visibility config into bundle product metafield sync", async () => {
+    const bundleUpsellConfig = makeBundleUpsellConfig();
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        bundleUpsellConfig,
+        steps: [
+          {
+            id: "step-db-1",
+            StepProduct: [
+              { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
+            ],
+            StepCategory: [],
+          },
+        ],
+      }),
+    );
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      bundleUpsellConfig: JSON.stringify(bundleUpsellConfig),
+    });
+
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({ bundleUpsellConfig }),
     );
   });
 

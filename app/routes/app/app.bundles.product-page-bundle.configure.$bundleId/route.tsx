@@ -243,6 +243,49 @@ const productPageTemplateOptions = [
   { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
 ] as const;
 
+type VisibilityDisplayConfiguration = {
+  showOnAllBundleProducts: boolean;
+  selectedProducts: unknown[];
+  showOnSpecificProductPages: unknown[];
+  collectionsSelectedData: unknown[];
+  showOnSpecificCollectionPages: unknown[];
+};
+
+function asVisibilityArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function getVisibilityDisplayTarget(
+  displayConfiguration: Partial<VisibilityDisplayConfiguration> | null | undefined,
+  allValue: string,
+): string {
+  if (!displayConfiguration) return allValue;
+  if (asVisibilityArray(displayConfiguration.collectionsSelectedData).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificCollectionPages).length > 0) {
+    return "specific_collections";
+  }
+  if (asVisibilityArray(displayConfiguration.selectedProducts).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificProductPages).length > 0) {
+    return "specific_products";
+  }
+  return displayConfiguration.showOnAllBundleProducts === false ? "specific_products" : allValue;
+}
+
+function buildVisibilityDisplayConfiguration(
+  displayOn: string | null | undefined,
+  selectedProducts: unknown[] = [],
+  showOnSpecificProductPages: unknown[] = [],
+  collectionsSelectedData: unknown[] = [],
+  showOnSpecificCollectionPages: unknown[] = [],
+): VisibilityDisplayConfiguration {
+  const showOnAllBundleProducts = displayOn === "all" || displayOn === "all_products";
+  return {
+    showOnAllBundleProducts,
+    selectedProducts: displayOn === "specific_products" ? selectedProducts : [],
+    showOnSpecificProductPages: displayOn === "specific_products" ? showOnSpecificProductPages : [],
+    collectionsSelectedData: displayOn === "specific_collections" ? collectionsSelectedData : [],
+    showOnSpecificCollectionPages: displayOn === "specific_collections" ? showOnSpecificCollectionPages : [],
+  };
+}
+
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
 const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
   <s-section>
@@ -544,10 +587,40 @@ export default function ConfigureBundleFlow() {
   const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
 
   // Bundle Visibility — Bundle Widget state (FR-04)
-  const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>((bundle as any).upsellWidgetEnabled ?? false);
+  const savedBundleUpsellConfig = ((bundle as any).bundleUpsellConfig ?? null) as any;
+  const savedWidgetConfiguration = savedBundleUpsellConfig?.widgetConfiguration;
+  const savedUpsellConfiguration = savedBundleUpsellConfig?.upsellConfiguration;
+  const savedWidgetDisplayConfiguration = savedWidgetConfiguration?.displayConfiguration;
+  const savedEmbedDisplayConfiguration = savedUpsellConfiguration?.displayConfiguration;
+  const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
   const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
-  const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>((bundle as any).upsellWidgetDisplayOn ?? "all");
-  const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>((bundle as any).autoSelectBrowsedProduct ?? false);
+  const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>(
+    (bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all")
+  );
+  const [upsellWidgetTitle, setUpsellWidgetTitle] = useState<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
+  const [upsellWidgetDescription, setUpsellWidgetDescription] = useState<string>(savedWidgetConfiguration?.description ?? "");
+  const [upsellWidgetButtonText, setUpsellWidgetButtonText] = useState<string>(savedWidgetConfiguration?.buttonText ?? "Buy With Bundle");
+  const [upsellWidgetImageUrl, setUpsellWidgetImageUrl] = useState<string>(savedWidgetConfiguration?.imageUrl ?? "");
+  const [upsellWidgetSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.selectedProducts));
+  const [upsellWidgetSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificProductPages));
+  const [upsellWidgetCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.collectionsSelectedData));
+  const [upsellWidgetSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificCollectionPages));
+  const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>(
+    savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
+  );
+  const [bundleEmbedEnabled, setBundleEmbedEnabled] = useState<boolean>(savedUpsellConfiguration?.isEnabled ?? textOverrides.bundleEmbedEnabled === "true");
+  const [bundleEmbedTitle, setBundleEmbedTitle] = useState<string>(savedUpsellConfiguration?.title ?? textOverrides.embedTitle ?? "Build Your Bundle & Save More");
+  const [bundleEmbedSubTitle, setBundleEmbedSubTitle] = useState<string>(savedUpsellConfiguration?.subTitle ?? textOverrides.embedSubTitle ?? "");
+  const [bundleEmbedDisplayOn, setBundleEmbedDisplayOn] = useState<string>(
+    textOverrides.embedDisplayOn ?? getVisibilityDisplayTarget(savedEmbedDisplayConfiguration, "all_products")
+  );
+  const [bundleEmbedAddBrowsedProduct, setBundleEmbedAddBrowsedProduct] = useState<boolean>(
+    savedUpsellConfiguration?.useLinkProductAsDefaultProduct ?? textOverrides.embedAddBrowsedProduct === "true"
+  );
+  const [bundleEmbedSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.selectedProducts));
+  const [bundleEmbedSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificProductPages));
+  const [bundleEmbedCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.collectionsSelectedData));
+  const [bundleEmbedSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificCollectionPages));
 
   // FR-02: Gift Messages state
   const [giftMessagesEnabled, setGiftMessagesEnabled] = useState<boolean>((bundle as any).giftMessagesEnabled ?? false);
@@ -705,6 +778,29 @@ export default function ConfigureBundleFlow() {
     return normalizeDefaultProductsData(defaultProductsData);
   }, [defaultProductsData]);
 
+  function buildBundleUpsellConfig() {
+    return {
+      multiLangText: savedBundleUpsellConfig?.multiLangText ?? {},
+      widgetConfiguration: {
+        isEnabled: upsellWidgetEnabled,
+        type: "OFFER_WIDGET",
+        imageUrl: upsellWidgetImageUrl,
+        title: upsellWidgetTitle,
+        description: upsellWidgetDescription,
+        buttonText: upsellWidgetButtonText,
+        displayConfiguration: buildVisibilityDisplayConfiguration(upsellWidgetDisplayOn, upsellWidgetSelectedProducts, upsellWidgetSpecificProductPages, upsellWidgetCollectionsSelectedData, upsellWidgetSpecificCollectionPages),
+        useLinkProductAsDefaultProduct: autoSelectBrowsedProduct,
+      },
+      upsellConfiguration: {
+        isEnabled: bundleEmbedEnabled,
+        title: bundleEmbedTitle,
+        subTitle: bundleEmbedSubTitle,
+        displayConfiguration: buildVisibilityDisplayConfiguration(bundleEmbedDisplayOn, bundleEmbedSelectedProducts, bundleEmbedSpecificProductPages, bundleEmbedCollectionsSelectedData, bundleEmbedSpecificCollectionPages),
+        useLinkProductAsDefaultProduct: bundleEmbedAddBrowsedProduct,
+      },
+    };
+  }
+
   // Step chip navigation slide animation
   const [slideKey, setSlideKey] = useState(0);
   const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
@@ -823,7 +919,7 @@ export default function ConfigureBundleFlow() {
         },
       }));
       formData.append("boxSelection", (bundle as any).boxSelection ? JSON.stringify((bundle as any).boxSelection) : "");
-      formData.append("bundleUpsellConfig", (bundle as any).bundleUpsellConfig ? JSON.stringify((bundle as any).bundleUpsellConfig) : "");
+      formData.append("bundleUpsellConfig", JSON.stringify(buildBundleUpsellConfig()));
       formData.append("discountDisplayOverride", (bundle as any).discountDisplayOverride ? JSON.stringify((bundle as any).discountDisplayOverride) : "");
       formData.append("useSingleStepCategoriesAsBundleSteps", String((bundle as any).useSingleStepCategoriesAsBundleSteps ?? false));
 
@@ -873,6 +969,28 @@ export default function ConfigureBundleFlow() {
     textOverrides,
     textOverridesByLocale,
     buildDefaultProductsData,
+    savedBundleUpsellConfig,
+    upsellWidgetEnabled,
+    upsellWidgetDisplayMode,
+    upsellWidgetDisplayOn,
+    upsellWidgetTitle,
+    upsellWidgetDescription,
+    upsellWidgetButtonText,
+    upsellWidgetImageUrl,
+    upsellWidgetSelectedProducts,
+    upsellWidgetSpecificProductPages,
+    upsellWidgetCollectionsSelectedData,
+    upsellWidgetSpecificCollectionPages,
+    autoSelectBrowsedProduct,
+    bundleEmbedEnabled,
+    bundleEmbedTitle,
+    bundleEmbedSubTitle,
+    bundleEmbedDisplayOn,
+    bundleEmbedSelectedProducts,
+    bundleEmbedSpecificProductPages,
+    bundleEmbedCollectionsSelectedData,
+    bundleEmbedSpecificCollectionPages,
+    bundleEmbedAddBrowsedProduct,
     productSlotsEnabled,
     maxQtyPerProduct,
     individualSellingPlanEnabled,
@@ -2956,7 +3074,7 @@ export default function ConfigureBundleFlow() {
 
                       <div className={productPageBundleStyles.widgetPreviewMedia}>
                         <span className={productPageBundleStyles.widgetPreviewButton}>
-                          {textOverrides.widgetButtonText || "Save More With Bundle"}
+                          {upsellWidgetButtonText}
                         </span>
                       </div>
 
@@ -2996,11 +3114,28 @@ export default function ConfigureBundleFlow() {
                             Multi Language
                           </s-button>
                         </s-stack>
+                        <FilePicker
+                          label="Upload Image"
+                          hideCropEditor
+                          value={upsellWidgetImageUrl || null}
+                          onChange={(url) => { setUpsellWidgetImageUrl(url ?? ""); markAsDirty(); }}
+                        />
                         <s-text-field
-                          label="Button Text"
-                          placeholder="Save More With Bundle"
-                          value={textOverrides.widgetButtonText ?? ""}
-                          onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, widgetButtonText: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                          label="Widget Title"
+                          value={upsellWidgetTitle}
+                          onInput={(e: Event) => { setUpsellWidgetTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                        <s-text-area
+                          label="Widget Description"
+                          value={upsellWidgetDescription}
+                          onInput={(e: Event) => { setUpsellWidgetDescription((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
+                          autoComplete="off"
+                        />
+                        <s-text-field
+                          label="Widget Button Text"
+                          value={upsellWidgetButtonText}
+                          onInput={(e: Event) => { setUpsellWidgetButtonText((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autoComplete="off"
                         />
                       </s-stack>
@@ -3054,8 +3189,8 @@ export default function ConfigureBundleFlow() {
                     <s-stack direction="vertical" gap="400">
                       <s-stack direction="horizontal" gap="300" align-y="center">
                         <s-switch
-                          checked={textOverrides.bundleEmbedEnabled === "true"}
-                          onChange={(e: Event) => { setTextOverrides((prev) => ({ ...prev, bundleEmbedEnabled: (e.target as HTMLInputElement).checked ? "true" : "false" })); markAsDirty(); }}
+                          checked={bundleEmbedEnabled}
+                          onChange={(e: Event) => { setBundleEmbedEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
                         />
                         <s-text>Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.</s-text>
                       </s-stack>
@@ -3065,8 +3200,8 @@ export default function ConfigureBundleFlow() {
                           variant="secondary"
                           icon="globe"
                           onClick={() => openMultiLanguageModal("Bundle Embed", [
-                            { key: "embedTitle", label: "Title", fallback: textOverrides.embedTitle ?? "Build Your Bundle & Save More" },
-                            { key: "embedSubTitle", label: "Sub Title", fallback: textOverrides.embedSubTitle ?? "", multiline: true },
+                            { key: "embedTitle", label: "Title", fallback: bundleEmbedTitle },
+                            { key: "embedSubTitle", label: "Sub Title", fallback: bundleEmbedSubTitle, multiline: true },
                           ])}
                         >
                           Multi Language
@@ -3075,14 +3210,14 @@ export default function ConfigureBundleFlow() {
 
                       <s-text-field
                         label="Title"
-                        value={textOverrides.embedTitle ?? "Build Your Bundle & Save More"}
-                        onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                        value={bundleEmbedTitle}
+                        onInput={(e: Event) => { setBundleEmbedTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
                         autoComplete="off"
                       />
                       <s-text-field
                         label="Sub Title"
-                        value={textOverrides.embedSubTitle ?? ""}
-                        onInput={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedSubTitle: (e.target as HTMLInputElement).value })); markAsDirty(); }}
+                        value={bundleEmbedSubTitle}
+                        onInput={(e: Event) => { setBundleEmbedSubTitle((e.target as HTMLInputElement).value); markAsDirty(); }}
                         autoComplete="off"
                       />
 
@@ -3098,8 +3233,8 @@ export default function ConfigureBundleFlow() {
                               type="radio"
                               name="embedDisplayOn"
                               value={value}
-                              checked={(textOverrides.embedDisplayOn ?? "all_products") === value}
-                              onChange={() => { setTextOverrides((prev) => ({ ...prev, embedDisplayOn: value })); markAsDirty(); }}
+                              checked={bundleEmbedDisplayOn === value}
+                              onChange={() => { setBundleEmbedDisplayOn(value); markAsDirty(); }}
                             />
                             <span style={{ fontSize: 14 }}>{label}</span>
                           </label>
@@ -3107,8 +3242,8 @@ export default function ConfigureBundleFlow() {
                       </s-stack>
 
                       <s-checkbox
-                        checked={textOverrides.embedAddBrowsedProduct === "true" || undefined}
-                        onChange={(e: Event) => { setTextOverrides((prev) => ({ ...prev, embedAddBrowsedProduct: (e.target as HTMLInputElement).checked ? "true" : "false" })); markAsDirty(); }}
+                        checked={bundleEmbedAddBrowsedProduct || undefined}
+                        onChange={(e: Event) => { setBundleEmbedAddBrowsedProduct((e.target as HTMLInputElement).checked); markAsDirty(); }}
                       >
                         Add browsed product to bundle
                       </s-checkbox>

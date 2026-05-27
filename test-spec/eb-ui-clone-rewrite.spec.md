@@ -162,6 +162,14 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 4 | Bundle Settings heading toggles | Pre Selected Product, Quantity Validation, Subscription Integration cards | toggles sit inline beside section headings instead of pinned to the far right | Captured Bundle Settings evidence. |
 | 5 | Pre Selected Product disabled state | preselected toggle off | no extra helper copy, no Multi Language button, no `Not set` badge, Browse Products disabled | Captured disabled/default state. |
 
+### PPB Bundle Visibility Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Widget direct config serialization | Product Page Bundle Widget enabled with block/button, title, description, button text, image, display targeting, and browsed-product toggle | Admin save submits current-state `bundleUpsellConfig.widgetConfiguration` with `type:"OFFER_WIDGET"`, image/title/description/buttonText, displayConfiguration, and `useLinkProductAsDefaultProduct` | Current route resubmits the previously loaded config instead of current controls. |
+| 2 | Bundle Embed direct config serialization | Product Page Bundle Embed enabled with title, subtitle, targeting, and browsed-product toggle | Admin save submits current-state `bundleUpsellConfig.upsellConfiguration` with `isEnabled`, title, subTitle, displayConfiguration, and `useLinkProductAsDefaultProduct` | EB persists Widget and Embed branches in one direct object. |
+| 3 | Bundle Visibility save/metafield sync | Product Page save carries a direct `bundleUpsellConfig` object | DB update and bundle-product metafield sync receive the exact direct object | Storefront runtime reads this direct contract. |
+
 ### PPB Product Sync
 
 | # | Scenario | Input | Expected Output | Notes |
