@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:01 IST
+**Last Updated:** 2026-05-27 08:06 IST
 
 ## Overview
 
@@ -24,6 +24,11 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Added shared category rule accordion styling and the direct `CATEGORY_CONDITION_OPERATOR_OPTIONS` constants matching the captured Admin payload shape.
 - Updated the evidence manifest and test spec while keeping `fpb-step-setup` and `ppb-step-setup` partial until live Admin screenshot, save payload/response, DB/metafield, runtime, desktop, and mobile proof are captured on the same fixture.
 - Verification passed: focused Jest with 104 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan, `git diff --check`, and graph rebuild via the graphify pipx environment.
+
+### 2026-05-27 08:06 IST - Step Setup category rules SIT deploy blocked by Shopify device login
+- Committed the verified category-rules slice as `71c50bb0`.
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `XGRZ-NXRV`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin/save proof for the category-rules slice remains pending after an authenticated deploy.
 
 ### 2026-05-27 07:24 IST - Step Setup Multi Language slice verified before commit
 - Added Step Setup Multi Language wiring for both Product Page and Full Page configure routes: step-level buttons now open the evidenced `Step Name` / `Step Title` translation modal, category buttons open `Category Name` / `Category Title`, and both save into direct `multiLangData` contracts.
