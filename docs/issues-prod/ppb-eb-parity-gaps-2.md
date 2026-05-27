@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-29 00:02 IST
+**Last Updated:** 2026-05-29 00:14 IST
 
 ## Overview
 
@@ -82,6 +82,10 @@ UI parity gaps identified:
 - Updated PPB `BundleProductCard` fallback component to stop hardcoding admin URLs.
 - `BundleProductCard` now uses a supplied product-open callback and disables the button when absent.
 - Kept helper-driven admin navigation pattern for the live configure paths.
+
+### 2026-05-29 00:14 IST - PPB type cleanup for admin-open callback path
+- Removed stale `shop` prop from `BundleProductCardProps` since card admin navigation is now callback-driven.
+- Keeps the card contract aligned with helper-based admin navigation only.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
