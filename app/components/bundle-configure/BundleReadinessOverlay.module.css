@@ -125,6 +125,8 @@
 }
 
 .panelItem {
+  appearance: none;
+  font: inherit;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -132,6 +134,9 @@
   border-radius: 8px;
   border: 1px solid #f0f0f0;
   background: #fafafa;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
 }
 
 .panelItemDone {

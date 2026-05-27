@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-19 16:30
+**Last Updated:** 2026-05-28 16:35 IST
 
 ## Overview
 
@@ -22,6 +22,14 @@ UI parity gaps identified:
 - **Gap 2 — Bundle Product Card ⋮ menu**: Both PPB and FPB: replaced "Sync Product" link button in card header with `⋮` icon button (`menu-horizontal`) toggling a state-based dropdown. Dropdown has "Replace Product" (calls `handleBundleProductSelect`) and "Sync Product" (calls `handleSyncProduct`). Backdrop div closes dropdown on outside click.
 - **Gap 3 — Tooltips**: FPB `QuestionHelpTooltip` trigger updated from `?` span to `s-button variant="plain" icon="info"`. `HelpTooltipVisualBlock` simplified to render a gray placeholder rectangle (user to swap in real images). PPB: added `HELP_TOOLTIPS` import + `QuestionHelpTooltip` component; wired up Step Flow heading info button to the tooltip.
 - ESLint: 0 errors on both route files
+
+### 2026-05-28 16:30 IST - Bundle Readiness Overlay keyboard gate hardening
+- Updated `BundleReadinessOverlay` to keep item and collapsed trigger interactions fully accessible:
+  - Switched readiness items to `<button type="button">` with explicit click/keyboard activation (`Enter`/`Space`).
+  - Added `role="button"`, `tabIndex`, and keyboard activation for the collapsed trigger.
+  - Added label/aria support for readiness items.
+  - Added button reset styles in `BundleReadinessOverlay.module.css` to keep the same visual treatment.
+- This closes the interaction path gap for Gate item activation via keyboard while waiting on full Chrome E2E pass.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
@@ -47,4 +55,5 @@ UI parity gaps identified:
 - [x] Gap 1: "Take your bundle live" card visual parity (PPB + FPB)
 - [x] Gap 2: Bundle Product Card ⋮ menu (Replace Product / Sync Product)
 - [x] Gap 3: Tooltip trigger → s-button icon="info"; placeholder visual; PPB Step Flow wired up
+- [x] Readiness Overlay: clickable + keyboard-activatable items and trigger
 - [ ] E2E test in Chrome

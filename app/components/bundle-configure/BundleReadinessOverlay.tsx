@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type KeyboardEvent } from "react";
 import styles from "./BundleReadinessOverlay.module.css";
 
 export interface BundleReadinessItem {
@@ -48,6 +48,23 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
 
   const allDone = items.every((i) => i.done);
 
+  const activateItem = useCallback((key: string) => {
+    if (!onItemClick) return;
+    setExpanded(false);
+    onOpenChange?.(false);
+    onItemClick(key);
+  }, [onItemClick, onOpenChange]);
+
+  const handleItemKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLButtonElement>, key: string) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        activateItem(key);
+      }
+    },
+    [activateItem],
+  );
+
   if (hideCollapsedTrigger && !expanded) return null;
 
   const donut = (
@@ -90,16 +107,15 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
             <div className={styles.panel}>
               <div className={styles.panelItems}>
                 {items.map((item) => (
-                  <div
+                  <button
                     key={item.key}
+                    type="button"
                     className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""} ${onItemClick ? styles.panelItemClickable : ""}`}
                     onClick={() => {
-                      if (onItemClick) {
-                        setExpanded(false);
-                        onOpenChange?.(false);
-                        onItemClick(item.key);
-                      }
+                      activateItem(item.key);
                     }}
+                    onKeyDown={(event) => handleItemKeyDown(event, item.key)}
+                    aria-label={`${item.label} readiness item`}
                   >
                     <div className={styles.itemIndicator}>
                       {item.done ? (
@@ -123,13 +139,13 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                       </span>
                     </div>
                     {onItemClick && (
-                      <div className={styles.itemChevron}>
+                      <div className={styles.itemChevron} aria-hidden="true">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                           <path d="M3 1.5L7 5L3 8.5" stroke="#8c8c8c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     )}
-                  </div>
+                  </button>
                 ))}
               </div>
               <div className={allDone ? styles.statusReady : styles.statusNotReady}>
@@ -141,9 +157,18 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
 
         {(!hideCollapsedTrigger || expanded) && (
           <div
+            role="button"
+            tabIndex={0}
             data-tour-target="fpb-readiness-score"
             className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
             onClick={toggle}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggle();
+              }
+            }}
+            aria-label="Toggle readiness score"
           >
             {donut}
             {expanded && (
