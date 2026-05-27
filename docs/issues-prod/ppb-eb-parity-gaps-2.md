@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 17:10 IST
+**Last Updated:** 2026-05-28 04:57 IST
 
 ## Overview
 
@@ -45,6 +45,11 @@ UI parity gaps identified:
 ### 2026-05-28 17:10 IST - Contract test assertion cleanup
 - Removed brittle assertion patterns in readiness overlay contract test.
 - Test now validates stable trigger semantics (`type`, `data-tour-target`, `aria-label`) without formatting-sensitive matching.
+
+### 2026-05-28 04:57 IST - FPB preview handler crash fix
+- Fixed `ReferenceError: Cannot access 'handlePreviewBundle' before initialization` in FPB configure route.
+- Reordered `handleTemplatePreview` so it is declared after `handlePreviewBundle`.
+- Validation: `npx eslint --max-warnings 9999 app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` returned warnings only, no errors.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 

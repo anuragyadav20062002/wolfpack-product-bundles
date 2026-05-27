@@ -687,7 +687,13 @@ function normalizeAddonTier(tier: any, index: number) {
       value: discountValue,
     },
     displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
-    conditions: Array.isArray(tier?.conditions) ? tier.conditions : [],
+    conditions: Array.isArray(tier?.conditions)
+      ? tier.conditions.map((condition: any) => ({
+        type: condition?.type || "quantity",
+        condition: condition?.condition || "greaterThanOrEqualTo",
+        value: String(condition?.value ?? "01"),
+      }))
+      : [],
   };
 }
 
@@ -702,6 +708,15 @@ function createDefaultAddonDraftTier(index = 0) {
     discountValue: 0,
     displayVariantsAsIndividualProducts_addons: false,
     displayFree: false,
+    conditions: [],
+  };
+}
+
+function createDefaultAddonTierCondition() {
+  return {
+    type: "quantity",
+    condition: "greaterThanOrEqualTo",
+    value: "01",
   };
 }
 
@@ -717,6 +732,13 @@ function addonTierToDraft(tier: any, index: number) {
     discountValue: Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0,
     displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
     displayFree: false,
+    conditions: Array.isArray(tier?.conditions)
+      ? tier.conditions.map((condition: any) => ({
+        type: condition?.type || "quantity",
+        condition: condition?.condition || "greaterThanOrEqualTo",
+        value: String(condition?.value ?? "01"),
+      }))
+      : [],
   };
 }
 
@@ -1250,10 +1272,14 @@ export default function ConfigureBundleFlow() {
   }>({ open: false, onConfirm: null });
 
   // Select Template modal state
-  const selectTemplateModalRef = useRef<HTMLElement>(null);
+  const selectTemplateModalRef = useRef<HTMLDivElement>(null);
+  const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
   const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
   const templateFetcher = useFetcher();
+  const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
+  const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
+  const lastTemplateResponseRef = useRef<unknown>(null);
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -1390,10 +1416,6 @@ export default function ConfigureBundleFlow() {
   }, [isSyncModalOpen]);
 
   useEffect(() => {
-    isSelectTemplateModalOpen ? showPolarisModal(selectTemplateModalRef) : hidePolarisModal(selectTemplateModalRef);
-  }, [isSelectTemplateModalOpen]);
-
-  useEffect(() => {
     isProgressBarMultiLangModalOpen ? showPolarisModal(progressBarMultiLangModalRef) : hidePolarisModal(progressBarMultiLangModalRef);
   }, [isProgressBarMultiLangModalOpen]);
 
@@ -1409,22 +1431,152 @@ export default function ConfigureBundleFlow() {
     setShowDiscardModal(false);
   }, []);
 
+  const closeSelectTemplateModal = useCallback(() => {
+    setIsSelectTemplateModalOpen(false);
+    setTemplateModalStep("select");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
+    requestAnimationFrame(() => {
+      selectTemplateOpenButtonRef.current?.focus();
+    });
+  }, []);
+
+  const getTemplateDialogFocusableElements = useCallback((): HTMLElement[] => {
+    if (!selectTemplateModalRef.current) {
+      return [];
+    }
+
+    return Array.from(
+      selectTemplateModalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => (
+      !element.hasAttribute("disabled")
+      && element.tabIndex >= 0
+      && window.getComputedStyle(element).display !== "none"
+      && window.getComputedStyle(element).visibility !== "hidden"
+    ));
+  }, []);
+
+  const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      closeSelectTemplateModal();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = getTemplateDialogFocusableElements();
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    const activeElementIndex = activeElement ? focusableElements.indexOf(activeElement) : -1;
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+
+    if (activeElementIndex === -1) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+
+    if (event.shiftKey && activeElementIndex === 0) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && activeElementIndex === focusableElements.length - 1) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, [closeSelectTemplateModal, getTemplateDialogFocusableElements]);
+
+  const handleSelectTemplateBackdropClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      closeSelectTemplateModal();
+    }
+  }, [closeSelectTemplateModal]);
+
   const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
     setTemplateModalStep("select");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
     setIsSelectTemplateModalOpen(true);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
 
+  useEffect(() => {
+    if (isSelectTemplateModalOpen) {
+      selectTemplateModalRef.current?.focus();
+    }
+  }, [isSelectTemplateModalOpen]);
+
+  useEffect(() => {
+    const intent = templateFetcher.formData instanceof FormData
+      ? templateFetcher.formData.get("intent")
+      : null;
+
+    if (templateFetcher.state !== "idle" || intent !== "updateBundleDesignTemplate") {
+      return;
+    }
+
+    if (templateFetcher.data == null) {
+      if (lastTemplateRequestRef.current) {
+        setTemplateSaveError("Unable to save template. Please try again.");
+      }
+      return;
+    }
+
+    if (templateFetcher.data === lastTemplateResponseRef.current) {
+      return;
+    }
+
+    lastTemplateResponseRef.current = templateFetcher.data;
+
+    const response = templateFetcher.data as { success?: boolean; error?: string };
+    const request = lastTemplateRequestRef.current;
+
+    if (response.success) {
+      if (request) {
+        setBundleDesignTemplate(request.template);
+        setBundleDesignPresetId(request.presetId);
+        setTemplateModalStep("confirm");
+      }
+      setTemplateSaveError(null);
+      lastTemplateRequestRef.current = null;
+      return;
+    }
+
+    setTemplateSaveError(response.error || "Failed to save template settings.");
+  }, [templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
+
   const handleTemplateNext = useCallback(() => {
+    if (!pendingDesignTemplate || !pendingDesignPresetId) {
+      return;
+    }
+
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = {
+      template: pendingDesignTemplate,
+      presetId: pendingDesignPresetId,
+    };
+    lastTemplateResponseRef.current = null;
+
     const fd = new FormData();
     fd.append("intent", "updateBundleDesignTemplate");
     fd.append("bundleDesignTemplate", pendingDesignTemplate ?? "");
     fd.append("bundleDesignPresetId", pendingDesignPresetId ?? "");
     templateFetcher.submit(fd, { method: "POST" });
-    setBundleDesignTemplate(pendingDesignTemplate);
-    setBundleDesignPresetId(pendingDesignPresetId);
-    setTemplateModalStep("confirm");
   }, [pendingDesignTemplate, pendingDesignPresetId, templateFetcher]);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
@@ -2139,6 +2291,11 @@ export default function ConfigureBundleFlow() {
     }
   }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle.id, bundle.shopifyProductId, bundleProduct, shop, shopify]);
 
+  const handleTemplatePreview = useCallback(() => {
+    void handlePreviewBundle();
+    closeSelectTemplateModal();
+  }, [closeSelectTemplateModal, handlePreviewBundle]);
+
   // Modal handlers for products and collections view
   // handleShowProducts and handleShowCollections removed - modals managed inline
 
@@ -2157,7 +2314,6 @@ export default function ConfigureBundleFlow() {
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
-  useModalHideListener(selectTemplateModalRef, () => { setIsSelectTemplateModalOpen(false); setTemplateModalStep("select"); });
   useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
   useModalHideListener(bundleQuantityMultiLangModalRef, () => setIsBundleQuantityMultiLangModalOpen(false));
   useModalHideListener(discountVariablesModalRef, () => setIsDiscountVariablesModalOpen(false));
@@ -2601,6 +2757,7 @@ export default function ConfigureBundleFlow() {
                               type="button"
                               className={`${fullPageBundleStyles.setupNavItem} ${isActive ? fullPageBundleStyles.setupNavItemActive : ""}`}
                               onClick={() => { if (item.id === "select_template") { openSelectTemplateModal(); } else { handleSectionChange(item.id); } }}
+                              ref={item.id === "select_template" ? selectTemplateOpenButtonRef : undefined}
                             >
                               <span className={fullPageBundleStyles.setupNavIcon} aria-hidden="true">
                                 {item.iconType
@@ -3057,10 +3214,9 @@ export default function ConfigureBundleFlow() {
                       <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
                       <s-checkbox
                         label="Display variants as individual products"
-                        checked={step.displayVariantsAsIndividualProducts || step.displayVariantsAsIndividual || undefined}
+                        checked={step.displayVariantsAsIndividual ?? undefined}
                         onChange={(e: Event) => {
                           const checked = (e.target as HTMLInputElement).checked;
-                          stepsState.updateStepField(step.id, "displayVariantsAsIndividualProducts", checked);
                           stepsState.updateStepField(step.id, "displayVariantsAsIndividual", checked);
                           markAsDirty();
                         }}
@@ -3324,9 +3480,9 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.stepConfigRow}>
                         <div className={fullPageBundleStyles.iconColumn}>
                           <div className={fullPageBundleStyles.iconBox}>
-                            {(step as any).timelineIconUrl ? (
+                            {(step as any).stepImage ? (
                               <img
-                                src={(step as any).timelineIconUrl}
+                                src={(step as any).stepImage}
                                 alt="Step icon"
                                 className={fullPageBundleStyles.iconImg}
                               />
@@ -3342,9 +3498,9 @@ export default function ConfigureBundleFlow() {
                             <FilePicker
                               autoOpen
                               onClose={() => setShowIconPickerForStep(null)}
-                              value={(step as any).timelineIconUrl ?? null}
+                              value={(step as any).stepImage ?? null}
                               onChange={(url: string | null) => {
-                                stepsState.updateStepField(step.id, 'timelineIconUrl', url);
+                                stepsState.updateStepField(step.id, 'stepImage', url);
                                 setShowIconPickerForStep(null);
                                 markAsDirty();
                               }}
@@ -3355,7 +3511,7 @@ export default function ConfigureBundleFlow() {
                           <s-button
                             onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
                           >
-                            {(step as any).timelineIconUrl ? "Replace" : "Upload"}
+                            {(step as any).stepImage ? "Replace" : "Upload"}
                           </s-button>
                         </div>
                         <div className={fullPageBundleStyles.fieldsColumn}>
@@ -3504,6 +3660,46 @@ export default function ConfigureBundleFlow() {
                           const updateAddonTiers = (updated: any[]) => {
                             updateAddonDraft({ addonTiers: updated });
                           };
+                          const getAddonConditions = (tier: any) =>
+                            Array.isArray(tier?.conditions) ? tier.conditions : [];
+                          const addAddonTierCondition = (tierIndex: number) => {
+                            const updated = addonTiers.map((tier, i) => {
+                              if (i !== tierIndex) return tier;
+                              const conditions = getAddonConditions(tier);
+                              const defaultRule = {
+                                ...createDefaultAddonTierCondition(),
+                              };
+                              return {
+                                ...tier,
+                                conditions: [...conditions, defaultRule],
+                              };
+                            });
+                            updateAddonTiers(updated);
+                          };
+                          const removeAddonTierCondition = (tierIndex: number, ruleId: string) => {
+                            const updated = addonTiers.map((tier, i) => {
+                              if (i !== tierIndex) return tier;
+                              const conditions = getAddonConditions(tier);
+                              return {
+                                ...tier,
+                                conditions: conditions.filter((rule: any, idx: number) => String(rule.id ?? idx) !== ruleId),
+                              };
+                            });
+                            updateAddonTiers(updated);
+                          };
+                          const updateAddonTierCondition = (tierIndex: number, ruleId: string, field: string, value: string) => {
+                            const updated = addonTiers.map((tier, i) => {
+                              if (i !== tierIndex) return tier;
+                              const conditions = getAddonConditions(tier);
+                              return {
+                                ...tier,
+                                conditions: conditions.map((rule: any, idx: number) => (
+                                  String(rule.id ?? idx) === ruleId ? { ...rule, [field]: value } : rule
+                                )),
+                              };
+                            });
+                            updateAddonTiers(updated);
+                          };
 
                           return (
                             <>
@@ -3615,7 +3811,63 @@ export default function ConfigureBundleFlow() {
                                       <h5>Tier Rules</h5>
                                       <p>Create Rules based on quantity of products added on this tier.</p>
                                       <p>Note: Rules are only valid on this tier.</p>
-                                      <button type="button" className={fullPageBundleStyles.addonsTierRuleButton}>
+                                      {(getAddonConditions(tier).length === 0) ? (
+                                        <div className={fullPageBundleStyles.emptyState}>No rules defined yet</div>
+                                      ) : (
+                                        <div className={fullPageBundleStyles.rulesList}>
+                                          {getAddonConditions(tier).map((rule: any, ruleIndex: number) => (
+                                            <div key={rule.id || ruleIndex} className={fullPageBundleStyles.ruleCard}>
+                                              <div className={fullPageBundleStyles.ruleHeader}>
+                                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                <s-button
+                                                  variant="plain"
+                                                  tone="critical"
+                                                  onClick={() => removeAddonTierCondition(idx, String(rule.id ?? ruleIndex))}
+                                                >
+                                                  Remove
+                                                </s-button>
+                                              </div>
+                                              <div className={fullPageBundleStyles.ruleFields}>
+                                                <s-select
+                                                  label="Type"
+                                                  value={rule.type || "quantity"}
+                                                  onChange={(e: Event) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "type", (e.target as HTMLSelectElement).value)}
+                                                >
+                                                  <s-option value="quantity">Quantity</s-option>
+                                                  <s-option value="amount">Amount</s-option>
+                                                </s-select>
+                                                <s-select
+                                                  label="Condition"
+                                                  value={rule.condition || "greaterThanOrEqualTo"}
+                                                  onChange={(e: Event) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "condition", (e.target as HTMLSelectElement).value)}
+                                                >
+                                                  {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                  ))}
+                                                </s-select>
+                                                <s-number-field
+                                                  label="Value"
+                                                  value={rule.value ?? ""}
+                                                  onInput={(e: Event) => {
+                                                    updateAddonTierCondition(
+                                                      idx,
+                                                      String(rule.id ?? ruleIndex),
+                                                      "value",
+                                                      (e.target as HTMLInputElement).value
+                                                    );
+                                                  }}
+                                                  autoComplete="off"
+                                                />
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <button
+                                        type="button"
+                                        className={fullPageBundleStyles.addonsTierRuleButton}
+                                        onClick={() => addAddonTierCondition(idx)}
+                                      >
                                         Add Tier Rule
                                       </button>
                                     </div>
@@ -4703,7 +4955,7 @@ export default function ConfigureBundleFlow() {
                               variant="secondary"
                               onClick={() => {
                                 if (settingsStep) {
-                                  stepsState.updateStepField(settingsStep.id, "timelineIconUrl", null);
+                                  stepsState.updateStepField(settingsStep.id, "stepImage", null);
                                   markAsDirty();
                                 }
                               }}
@@ -4726,15 +4978,14 @@ export default function ConfigureBundleFlow() {
                           description="Enable variant selection within the product cards instead of the quick look"
                         >
                           {settingsStep && (
-                            <s-switch
-                              accessibilityLabel="Variant selector"
-                              checked={settingsStep.displayVariantsAsIndividualProducts || settingsStep.displayVariantsAsIndividual || undefined}
-                              onChange={(e: Event) => {
-                                const checked = (e.target as HTMLInputElement).checked;
-                                stepsState.updateStepField(settingsStep.id, "displayVariantsAsIndividualProducts", checked);
-                                stepsState.updateStepField(settingsStep.id, "displayVariantsAsIndividual", checked);
-                                markAsDirty();
-                              }}
+                          <s-switch
+                            accessibilityLabel="Variant selector"
+                            checked={settingsStep.displayVariantsAsIndividual ?? undefined}
+                            onChange={(e: Event) => {
+                              const checked = (e.target as HTMLInputElement).checked;
+                              stepsState.updateStepField(settingsStep.id, "displayVariantsAsIndividual", checked);
+                              markAsDirty();
+                            }}
                             />
                           )}
                         </SettingsRow>
@@ -5477,89 +5728,117 @@ export default function ConfigureBundleFlow() {
         onContinue={closeDiscardModal}
       />
 
-      {/* Select Template — Shopify native modal */}
-      <s-modal ref={selectTemplateModalRef} heading="Customization" size="large">
-        {templateModalStep === "select" ? (() => {
-          const fpbTemplates = [
-            { presetId: "DEFAULT",    label: "Standard Design",   image: "/fullPageThumbnail.png"     },
-            { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
-            { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
-            { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
-          ];
-          const FPB_LAYOUT = "FBP_SIDE_FOOTER";
-          return (
-            <>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 24 }}>
-                <div>
-                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3 }}>Customize your bundle</h2>
-                  <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>Choose a design that suits your needs and fits your brand</p>
-                </div>
-                <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
-                  Customize Colors &amp; Language
-                </s-button>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-                {fpbTemplates.map((tpl) => {
-                  const isSelected = pendingDesignPresetId === tpl.presetId && pendingDesignTemplate === FPB_LAYOUT;
-                  return (
-                    <div
-                      key={tpl.presetId}
-                      style={{
-                        border: isSelected ? "3px solid #1a1a1a" : "2px solid #e1e3e5",
-                        borderRadius: 12,
-                        overflow: "hidden",
-                        background: "#f6f6f7",
-                        cursor: isSelected ? "default" : "pointer",
-                      }}
-                      onClick={() => { if (!isSelected) { setPendingDesignTemplate(FPB_LAYOUT); setPendingDesignPresetId(tpl.presetId); } }}
-                    >
-                      <div style={{ width: "100%", aspectRatio: "4/3", overflow: "hidden" }}>
-                        <img src={tpl.image} alt={tpl.label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", gap: 8, background: "#fff" }}>
-                        <h3 style={{ flex: 1, margin: 0, fontSize: 14, fontWeight: 600 }}>{tpl.label}</h3>
-                        <s-button
-                          variant={isSelected ? "primary" : "secondary"}
-                          disabled={isSelected || undefined}
-                          onClick={(e: Event) => { e.stopPropagation(); if (!isSelected) { setPendingDesignTemplate(FPB_LAYOUT); setPendingDesignPresetId(tpl.presetId); } }}
-                        >
-                          {isSelected ? "Selected" : "Select"}
-                        </s-button>
-                      </div>
+      {isSelectTemplateModalOpen && (
+        <div
+          className={fullPageBundleStyles.templateDialogBackdrop}
+          role="presentation"
+          onMouseDown={handleSelectTemplateBackdropClick}
+          onClick={handleSelectTemplateBackdropClick}
+        >
+          <div
+            className={fullPageBundleStyles.templateDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fpb-template-dialog-title"
+            tabIndex={-1}
+            ref={selectTemplateModalRef}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={handleSelectTemplateDialogKeyDown}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className={fullPageBundleStyles.templateDialogHeader}>
+              <h2 id="fpb-template-dialog-title" className={fullPageBundleStyles.templateDialogHeading}>
+                Customization
+              </h2>
+              <button
+                type="button"
+                className={fullPageBundleStyles.templateDialogClose}
+                aria-label="Close customization"
+                onClick={closeSelectTemplateModal}
+              >
+                <s-icon name="x" />
+              </button>
+            </div>
+            {templateModalStep === "select" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Choose a design that suits your needs and fits your brand
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-              <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end" }}>
-                <s-button
-                  variant="primary"
-                  loading={templateFetcher.state === "submitting" || undefined}
-                  onClick={handleTemplateNext}
-                >
-                  Next
-                </s-button>
-              </div>
-            </>
-          );
-        })() : (
-          <>
-            <div style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>View your bundle</h2>
-              <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6d7175" }}>View your bundle with your customizations</p>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ textAlign: "center", background: "#f6f6f7", borderRadius: 12, padding: "48px 40px", maxWidth: 480, width: "100%" }}>
-                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#e3f1eb", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                  <s-icon name="check" />
+                    <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                      Customize Colors &amp; Language
+                    </s-button>
+                  </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={fullPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
+                  <div className={fullPageBundleStyles.templateDialogGrid}>
+                    {[
+                      { presetId: "DEFAULT",    label: "Standard Design",   image: "/fullPageThumbnail.png"     },
+                      { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
+                      { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
+                      { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
+                    ].map((tpl) => {
+                      const isSelected = pendingDesignPresetId === tpl.presetId && pendingDesignTemplate === "FBP_SIDE_FOOTER";
+                      return (
+                        <button
+                          key={tpl.presetId}
+                          type="button"
+                          className={`${fullPageBundleStyles.templateOptionCard} ${isSelected ? fullPageBundleStyles.templateOptionCardSelected : ""}`}
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            setPendingDesignTemplate("FBP_SIDE_FOOTER");
+                            setPendingDesignPresetId(tpl.presetId);
+                          }}
+                        >
+                          <span className={fullPageBundleStyles.templateOptionImageFrame}>
+                            <img src={tpl.image} alt={tpl.label} className={fullPageBundleStyles.templateOptionImage} />
+                          </span>
+                          <span className={fullPageBundleStyles.templateOptionFooter}>
+                            <span className={fullPageBundleStyles.templateOptionLabel}>{tpl.label}</span>
+                            <span className={`${fullPageBundleStyles.templateOptionAction} ${isSelected ? fullPageBundleStyles.templateOptionActionSelected : ""}`}>
+                              {isSelected ? "Selected" : "Select"}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <h2 style={{ margin: "0 0 8px", fontSize: 20, fontWeight: 600 }}>Your bundle is ready</h2>
-                <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6d7175" }}>Preview it now with your customizations</p>
-                <s-button variant="secondary" onClick={() => setIsSelectTemplateModalOpen(false)}>Preview bundle</s-button>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Next
+                  </s-button>
+                </div>
+              </>
+            ) : (
+              <div className={fullPageBundleStyles.templateDialogBody}>
+                <div className={fullPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={fullPageBundleStyles.templateDialogSubheading}>View your bundle</h3>
+                  <p className={fullPageBundleStyles.templateDialogDescription}>View your bundle with your customizations</p>
+                </div>
+                <div className={fullPageBundleStyles.templateReadyPanel}>
+                  <div className={fullPageBundleStyles.templateReadyIcon}>
+                    <s-icon name="check" />
+                  </div>
+                  <h3 className={fullPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
+                  <p className={fullPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
+                  <s-button variant="secondary" onClick={handleTemplatePreview}>Preview bundle</s-button>
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </s-modal>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sync Bundle Confirmation Modal */}
       <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">
