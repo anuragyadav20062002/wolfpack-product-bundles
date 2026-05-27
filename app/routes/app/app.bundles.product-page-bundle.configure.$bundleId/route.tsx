@@ -2193,10 +2193,10 @@ export default function ConfigureBundleFlow() {
                       className={productPageBundleStyles.bundleProductEditButton}
                       onClick={() => {
                         const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
-                        if (!productId) {
-                          void handleBundleProductSelect();
-                          return;
-                        }
+                          if (!productId) {
+                            void handleBundleProductSelect();
+                            return;
+                          }
                           const storeHandle = shop?.replace('.myshopify.com', '');
                           const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
                           if (window.location.hostname.includes("trycloudflare.com")) {
