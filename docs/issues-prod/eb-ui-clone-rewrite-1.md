@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:13 IST
+**Last Updated:** 2026-05-27 08:17 IST
 
 ## Overview
 
@@ -22,6 +22,10 @@ Emails and Customize Emails are out of scope. Competitor references remain docs-
 - Added `tests/unit/routes/step-setup-category-variant-ui-contract.test.ts` to require the Product Page category checkbox to hydrate/update `StepCategory[].displayVariantsAsIndividualProducts` directly and to create new categories with explicit `displayVariantsAsIndividualProducts=false` and `displayVariantsAsSwatches=false`.
 - Patched the Product Page configure route so the visible category checkbox no longer writes the unused `displayVariantsAsIndividual` alias.
 - Verification passed: `npx jest tests/unit/routes/step-setup-category-variant-ui-contract.test.ts tests/unit/routes/ppb-save-bundle.test.ts tests/unit/lib/bundle-config-contracts.test.ts --runInBand` with 55 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, graph rebuild via graphify pipx environment, and `git diff --check`.
+
+### 2026-05-27 08:17 IST - PPB Step Setup variant flag SIT deploy blocked by Shopify device login
+- Ran the user-authorized package deploy command `npm run deploy:sit -- --allow-updates`; the Rust Cart Transform build completed, then Shopify CLI required device login with user verification code `ZKRM-VZDN`.
+- Terminated the waiting Shopify CLI process because this session cannot complete the browser/device login. No SIT release was created from this attempt, so live Admin/save proof for the variant-display Step Setup slice remains pending after an authenticated deploy.
 
 ### 2026-05-27 07:50 IST - Step Setup category rules slice started
 - Re-read the Step Setup audit and implementation reference for the evidenced rules behavior: category rules appear only after more than one category exists, step rules and category rules are mutually exclusive, and EB persists category rules inside each category while step-level `conditions.isEnabled` remains false after switching to category rules.
