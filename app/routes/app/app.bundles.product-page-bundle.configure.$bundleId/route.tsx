@@ -1584,6 +1584,16 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, shopify]);
 
+  const openProductInAdmin = useCallback((productId: string) => {
+    const storeHandle = shop?.replace('.myshopify.com', '');
+    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
+    if (window.location.hostname.includes("trycloudflare.com")) {
+      window.open(adminProductUrl, "_blank");
+    } else {
+      shopify.navigate(adminProductUrl);
+    }
+  }, [shop, shopify]);
+
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
     if (isDirty && !forceNavigation) {
@@ -1620,15 +1630,14 @@ export default function ConfigureBundleFlow() {
       case "product_active": {
         const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
         if (productId) {
-          const storeHandle = shop?.replace('.myshopify.com', '');
-          shopify.navigate(`https://admin.shopify.com/store/${storeHandle}/products/${productId}`);
+          openProductInAdmin(productId);
         }
         break;
       }
       default:
         break;
     }
-  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle, bundleProduct, shop, shopify]);
+  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle, bundleProduct, openProductInAdmin]);
 
   const handleAddNewStep = useCallback(() => {
     stepsState.addStep();
@@ -2192,18 +2201,12 @@ export default function ConfigureBundleFlow() {
                       type="button"
                       className={productPageBundleStyles.bundleProductEditButton}
                       onClick={() => {
-                        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
+                          const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
                           if (!productId) {
                             void handleBundleProductSelect();
                             return;
                           }
-                          const storeHandle = shop?.replace('.myshopify.com', '');
-                          const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
-                          if (window.location.hostname.includes("trycloudflare.com")) {
-                            window.open(adminProductUrl, "_blank");
-                          } else {
-                            shopify.navigate(adminProductUrl);
-                          }
+                          openProductInAdmin(productId);
                         }}
                       >
                       <s-icon type="edit" />
@@ -4881,11 +4884,8 @@ export default function ConfigureBundleFlow() {
                 </span>
                 <s-section>
                   <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    {selectedProducts.map((product: any, index: number) => {
+                      {selectedProducts.map((product: any, index: number) => {
                       const productId = product.productId || product.id?.split('/').pop();
-                      const productUrl = productId
-                        ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
-                        : undefined;
 
                       return (
                         <li key={product.id || index}>
@@ -4899,8 +4899,11 @@ export default function ConfigureBundleFlow() {
                               <s-stack direction="block">
                                 <s-button
                                   variant="plain"
-                                  onClick={() => productUrl && open(productUrl, '_blank')}
-                                  disabled={!productUrl || undefined}
+                                  onClick={() => {
+                                    if (!productId) return;
+                                    openProductInAdmin(productId);
+                                  }}
+                                  disabled={!productId || undefined}
                                 >
                                   <s-icon name="external-minor" />
                                   {product.title || product.name || 'Unnamed Product'}

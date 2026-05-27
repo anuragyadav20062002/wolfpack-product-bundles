@@ -5615,15 +5615,19 @@ export default function ConfigureBundleFlow() {
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                 {selectedProducts.map((product: any, index: number) => {
                   const productId = product.productId || product.id?.split('/').pop();
-                  const productUrl = productId
-                    ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
-                    : undefined;
                   return (
                     <li key={product.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f2f3" }}>
                       <s-stack direction="inline" gap="small">
                         <img src={product.imageUrl || product.image?.url || "/bundle.png"} alt={product.title || 'Product'} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
                         <s-stack direction="block" gap="small-400">
-                          <s-button variant="plain" disabled={!productUrl || undefined} onClick={() => productUrl && open(productUrl, '_blank')}>
+                          <s-button
+                            variant="plain"
+                            onClick={() => {
+                              if (!productId) return;
+                              openProductInAdmin(productId);
+                            }}
+                            disabled={!productId || undefined}
+                          >
                             {product.title || product.name || 'Unnamed Product'}
                           </s-button>
                           {product.variants && product.variants.length > 0 && (

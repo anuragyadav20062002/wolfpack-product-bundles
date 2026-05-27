@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 22:22 IST
+**Last Updated:** 2026-05-28 23:20 IST
 
 ## Overview
 
@@ -73,6 +73,10 @@ UI parity gaps identified:
 ### 2026-05-28 22:22 IST - FPB Edit Product direct-link parity
 - Reused the new FPB `openProductInAdmin` helper inside the product card `Edit Product` action.
 - Removed duplicated inline admin URL / tunnel check in that handler.
+
+### 2026-05-28 23:20 IST - PPB/FPB selected-product modal admin-open parity
+- Replaced direct admin URL `open(productUrl, '_blank')` usage in selected-products modals with `openProductInAdmin`.
+- This keeps all product admin navigation in both routes behind the same tunnel-safe helper path.
 
 ### 2026-05-19 15:00 - Bundle Readiness Overlay refactor
 
