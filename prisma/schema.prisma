@@ -66,6 +66,8 @@ model Session {
   scope                 String?
   expires               DateTime?
   accessToken           String
+  refreshToken          String?
+  refreshTokenExpiresAt DateTime?
   storefrontAccessToken String? // Delegated Storefront API access token
   userId                BigInt?
   firstName             String?
