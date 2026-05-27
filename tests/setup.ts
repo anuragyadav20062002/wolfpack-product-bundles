@@ -78,7 +78,13 @@ export const mockPrismaClient = {
   },
   session: {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
     create: jest.fn(),
+    upsert: jest.fn(),
+    updateMany: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
     update: jest.fn(),
     delete: jest.fn()
   },
