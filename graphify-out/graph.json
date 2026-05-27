@@ -9064,7 +9064,7 @@
       "label": "handleDefaultProductPicker()",
       "file_type": "code",
       "source_file": "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-      "source_location": "L3980",
+      "source_location": "L3988",
       "id": "route_handledefaultproductpicker",
       "community": 9,
       "norm_label": "handledefaultproductpicker()"
@@ -15541,12 +15541,21 @@
       "norm_label": "makerequest()"
     },
     {
+      "label": "step-setup-category-variant-ui-contract.test.ts",
+      "file_type": "code",
+      "source_file": "tests/unit/routes/step-setup-category-variant-ui-contract.test.ts",
+      "source_location": "L1",
+      "id": "tests_unit_routes_step_setup_category_variant_ui_contract_test_ts",
+      "community": 511,
+      "norm_label": "step-setup-category-variant-ui-contract.test.ts"
+    },
+    {
       "label": "ppb-bundle-visibility-ui-contract.test.ts",
       "file_type": "code",
       "source_file": "tests/unit/routes/ppb-bundle-visibility-ui-contract.test.ts",
       "source_location": "L1",
       "id": "tests_unit_routes_ppb_bundle_visibility_ui_contract_test_ts",
-      "community": 511,
+      "community": 512,
       "norm_label": "ppb-bundle-visibility-ui-contract.test.ts"
     },
     {
@@ -15600,7 +15609,7 @@
       "source_file": "tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts",
       "source_location": "L1",
       "id": "tests_unit_routes_fpb_bundle_visibility_ui_contract_test_ts",
-      "community": 512,
+      "community": 513,
       "norm_label": "fpb-bundle-visibility-ui-contract.test.ts"
     },
     {
@@ -15609,7 +15618,7 @@
       "source_file": "tests/unit/routes/fpb-bundle-settings-direct-contract.test.ts",
       "source_location": "L1",
       "id": "tests_unit_routes_fpb_bundle_settings_direct_contract_test_ts",
-      "community": 513,
+      "community": 514,
       "norm_label": "fpb-bundle-settings-direct-contract.test.ts"
     },
     {
@@ -15672,7 +15681,7 @@
       "source_file": "tests/unit/routes/step-setup-rule-mode-ui-contract.test.ts",
       "source_location": "L1",
       "id": "tests_unit_routes_step_setup_rule_mode_ui_contract_test_ts",
-      "community": 514,
+      "community": 515,
       "norm_label": "step-setup-rule-mode-ui-contract.test.ts"
     },
     {
@@ -15699,7 +15708,7 @@
       "source_file": "tests/unit/services/inventory-webhook.test.ts",
       "source_location": "L1",
       "id": "tests_unit_services_inventory_webhook_test_ts",
-      "community": 515,
+      "community": 516,
       "norm_label": "inventory-webhook.test.ts"
     },
     {
@@ -15735,7 +15744,7 @@
       "source_file": "tests/unit/services/theme-template.test.ts",
       "source_location": "L1",
       "id": "tests_unit_services_theme_template_test_ts",
-      "community": 516,
+      "community": 517,
       "norm_label": "theme-template.test.ts"
     },
     {
@@ -15744,7 +15753,7 @@
       "source_file": "tests/unit/services/order-attribution.test.ts",
       "source_location": "L1",
       "id": "tests_unit_services_order_attribution_test_ts",
-      "community": 517,
+      "community": 518,
       "norm_label": "order-attribution.test.ts"
     },
     {
@@ -15906,7 +15915,7 @@
       "source_file": "tests/unit/services/bundle-configure-handlers.test.ts",
       "source_location": "L1",
       "id": "tests_unit_services_bundle_configure_handlers_test_ts",
-      "community": 518,
+      "community": 519,
       "norm_label": "bundle-configure-handlers.test.ts"
     },
     {
@@ -16077,7 +16086,7 @@
       "source_file": "tests/unit/services/inventory-sync.test.ts",
       "source_location": "L1",
       "id": "tests_unit_services_inventory_sync_test_ts",
-      "community": 519,
+      "community": 520,
       "norm_label": "inventory-sync.test.ts"
     },
     {
@@ -16086,7 +16095,7 @@
       "source_file": "tests/unit/services/metafield-validation.test.ts",
       "source_location": "L1",
       "id": "tests_unit_services_metafield_validation_test_ts",
-      "community": 520,
+      "community": 521,
       "norm_label": "metafield-validation.test.ts"
     },
     {
@@ -21189,7 +21198,7 @@
       "source_file": "extensions/bundle-checkout-ui/shopify.d.ts",
       "source_location": "L1",
       "id": "extensions_bundle_checkout_ui_shopify_d_ts",
-      "community": 521,
+      "community": 522,
       "norm_label": "shopify.d.ts"
     },
     {
@@ -22170,7 +22179,7 @@
       "source_file": "scripts/webhook-worker.ts",
       "source_location": "L1",
       "id": "scripts_webhook_worker_ts",
-      "community": 522,
+      "community": 523,
       "norm_label": "webhook-worker.ts"
     },
     {
@@ -22285,7 +22294,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 523,
+      "community": 524,
       "norm_label": "ad-ready bundles breaking changes",
       "id": "ad_ready_bundles_breaking"
     },
@@ -22337,7 +22346,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 524,
+      "community": 525,
       "norm_label": "bundle inventory sync engine",
       "id": "ad_ready_bundle_inventory_sync"
     },
@@ -22350,7 +22359,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 525,
+      "community": 526,
       "norm_label": "inventory levels update webhook handler",
       "id": "ad_ready_inventory_webhook"
     },
@@ -22428,7 +22437,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 526,
+      "community": 527,
       "norm_label": "inventory management shopify migration",
       "id": "ad_ready_inventory_mgmt"
     },
@@ -22675,7 +22684,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 527,
+      "community": 528,
       "norm_label": "analytics custom date range br",
       "id": "analytics_custom_date_br"
     },
@@ -22688,7 +22697,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 528,
+      "community": 529,
       "norm_label": "analytics custom date range po requirements",
       "id": "analytics_custom_date_po"
     },
@@ -22701,7 +22710,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 529,
+      "community": 530,
       "norm_label": "analytics custom date range sde plan",
       "id": "analytics_custom_date_sde"
     },
@@ -22753,7 +22762,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 530,
+      "community": 531,
       "norm_label": "analytics pixel toggle br",
       "id": "analytics_pixel_toggle_br"
     },
@@ -22779,7 +22788,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 531,
+      "community": 532,
       "norm_label": "analytics pixel toggle sde plan",
       "id": "analytics_pixel_toggle_sde"
     },
@@ -22844,7 +22853,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 532,
+      "community": 533,
       "norm_label": "rationale: option b (action on attribution route) selected for pixel toggle",
       "id": "analytics_pixel_toggle_rationale_option_b"
     },
@@ -22857,7 +22866,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 533,
+      "community": 534,
       "norm_label": "analytics page redesign br",
       "id": "analytics_redesign_br"
     },
@@ -22883,7 +22892,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 534,
+      "community": 535,
       "norm_label": "analytics page redesign sde plan",
       "id": "analytics_redesign_sde"
     },
@@ -23052,7 +23061,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 535,
+      "community": 536,
       "norm_label": "pricing route /app/pricing",
       "id": "app_nav_pricing_route"
     },
@@ -23065,7 +23074,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 536,
+      "community": 537,
       "norm_label": "updates & faqs route /app/events",
       "id": "app_nav_events_route"
     },
@@ -23091,7 +23100,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 537,
+      "community": 538,
       "norm_label": "pdp bundle configure route",
       "id": "app_nav_pdp_configure_route"
     },
@@ -23104,7 +23113,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 538,
+      "community": 539,
       "norm_label": "billing route /app/billing",
       "id": "app_nav_billing_route"
     },
@@ -24053,7 +24062,7 @@
       "captured_at": "2026-01-14",
       "author": null,
       "contributor": null,
-      "community": 539,
+      "community": 540,
       "norm_label": "deployment guide",
       "id": "deployment_doc"
     },
@@ -25366,7 +25375,7 @@
       "captured_at": "2025-01",
       "author": null,
       "contributor": null,
-      "community": 540,
+      "community": 541,
       "norm_label": "step card ui redesign (solid borders, gradient bg, hover states)",
       "id": "pricing_ui_fixes_stepCardUIRedesign"
     },
@@ -25444,7 +25453,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 541,
+      "community": 542,
       "norm_label": "bundle widget complete analysis",
       "id": "bundle_widget_analysis_overview"
     },
@@ -26848,7 +26857,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 542,
+      "community": 543,
       "norm_label": "prompt engineering guide (app recreation)",
       "id": "prompt_engineering_guide"
     },
@@ -27004,7 +27013,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 543,
+      "community": 544,
       "norm_label": "widget version bump 1.6.0 \u2192 1.7.0 for beco footer feature",
       "id": "beco_widget_version_bump"
     },
@@ -27160,7 +27169,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 544,
+      "community": 545,
       "norm_label": "filepicker component for shopify files browse & upload",
       "id": "bundle_images_gifs_file_picker"
     },
@@ -27368,7 +27377,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 545,
+      "community": 546,
       "norm_label": "rationale: rejected single remix layout route for /api/* (heterogeneous auth tiers)",
       "id": "auth_rejected_layout_route"
     },
@@ -27381,7 +27390,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 546,
+      "community": 547,
       "norm_label": "rationale: rejected sub-namespace layout routes (url path changes break external callers)",
       "id": "auth_rejected_sub_namespace"
     },
@@ -27407,7 +27416,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 547,
+      "community": 548,
       "norm_label": "internal_webhook_secret environment variable (used for webhook auth)",
       "id": "internal_webhook_secret_env_var"
     },
@@ -27472,7 +27481,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 548,
+      "community": 549,
       "norm_label": "rationale: reuse shopifypagehandle column (no new db column, zero migration)",
       "id": "shopify_page_handle_reuse"
     },
@@ -27485,7 +27494,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 549,
+      "community": 550,
       "norm_label": "slug collision auto-suffix (appends -2, -3 etc. when handle taken)",
       "id": "slug_collision_auto_suffix"
     },
@@ -27498,7 +27507,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 550,
+      "community": 551,
       "norm_label": "bundle id resolution via custom.bundle_id metafield (primary, unaffected by slug changes)",
       "id": "bundle_id_metafield_primary_resolution"
     },
@@ -32555,7 +32564,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 551,
+      "community": 552,
       "norm_label": "service: app.state.service.ts",
       "id": "app_state_service_ts"
     },
@@ -32737,7 +32746,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 552,
+      "community": 553,
       "norm_label": "concept: widget build pipeline (npm run build:widgets)",
       "id": "concept_widget_build_pipeline"
     },
@@ -34427,7 +34436,7 @@
       "captured_at": "2026-03-27",
       "author": null,
       "contributor": null,
-      "community": 553,
+      "community": 554,
       "norm_label": "dcp audit low priority fixes",
       "id": "dcp_audit_low_fixes_1"
     },
@@ -36975,7 +36984,7 @@
       "captured_at": "2026-02-24",
       "author": null,
       "contributor": null,
-      "community": 554,
+      "community": 555,
       "norm_label": "issue: remove display variants checkbox (remove-display-variants-checkbox-1)",
       "id": "remove_display_variants_checkbox_1"
     },
@@ -37924,7 +37933,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 555,
+      "community": 556,
       "norm_label": "compact array component format",
       "id": "compact_array_format"
     },
@@ -37937,7 +37946,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 556,
+      "community": 557,
       "norm_label": "legacy object component format",
       "id": "legacy_object_format"
     },
@@ -37950,7 +37959,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 557,
+      "community": 558,
       "norm_label": "pricing.messages legacy fallback path",
       "id": "pricing_messages_fallback"
     },
@@ -37963,7 +37972,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 558,
+      "community": 559,
       "norm_label": "messaging top-level metafield key",
       "id": "messaging_top_level_key"
     },
@@ -37989,7 +37998,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 559,
+      "community": 560,
       "norm_label": "loading gif overlay - business requirement",
       "id": "loading_gif_overlay_br"
     },
@@ -38236,7 +38245,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 560,
+      "community": 561,
       "norm_label": "shopify admin files() graphql query",
       "id": "shopify_files_graphql_query"
     },
@@ -38314,7 +38323,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 561,
+      "community": 562,
       "norm_label": "add bundle to cart button",
       "id": "add_to_cart_button"
     },
@@ -38327,7 +38336,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 562,
+      "community": 563,
       "norm_label": "step transition loading state",
       "id": "step_transition_loading"
     },
@@ -55129,7 +55138,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-      "source_location": "L4564",
+      "source_location": "L4572",
       "weight": 1.0,
       "_src": "app_routes_app_app_bundles_product_page_bundle_configure_bundleid_route_tsx",
       "_tgt": "route_async",
@@ -55141,7 +55150,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-      "source_location": "L2602",
+      "source_location": "L2610",
       "weight": 1.0,
       "_src": "app_routes_app_app_bundles_product_page_bundle_configure_bundleid_route_tsx",
       "_tgt": "route_handlerulemodechange",
@@ -55153,7 +55162,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-      "source_location": "L3980",
+      "source_location": "L3988",
       "weight": 1.0,
       "_src": "app_routes_app_app_bundles_product_page_bundle_configure_bundleid_route_tsx",
       "_tgt": "route_handledefaultproductpicker",
@@ -55165,7 +55174,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
-      "source_location": "L4430",
+      "source_location": "L4438",
       "weight": 1.0,
       "_src": "app_routes_app_app_bundles_product_page_bundle_configure_bundleid_route_tsx",
       "_tgt": "route_updateaddontiers",

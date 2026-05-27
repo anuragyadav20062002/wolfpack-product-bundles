@@ -66,6 +66,12 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 4 | Category rule edit controls | Active category rules mode | every category gets an accordion row with Rule rows, remove, add, type, condition, value, and auto-next fields | Screenshots: `ppb-admin-category-rules-expanded.png`, `ppb-admin-category-rules-quantity-rule.png`. |
 | 5 | Category condition enum shape | category quantity rule | condition payload uses `condition: "greaterThanOrEqualTo"` instead of the step-rule `operator` key | Raw request proof uses camel-cased `condition` values. |
 
+### Step Setup Variant Display Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | PPB category variant flag | Category checkbox `Display variants as individual products` toggled on | route updates `StepCategory[].displayVariantsAsIndividualProducts=true`, and save/runtime contracts consume that direct key | Product Page Step Setup request stores this flag per category. |
+
 ### FPB Bundle Settings Contracts
 
 | # | Scenario | Input | Expected Output | Notes |

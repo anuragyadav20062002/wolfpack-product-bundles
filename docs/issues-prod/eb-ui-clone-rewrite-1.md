@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:06 IST
+**Last Updated:** 2026-05-27 08:13 IST
 
 ## Overview
 
@@ -12,6 +12,16 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 08:09 IST - PPB Step Setup variant flag slice started
+- Re-read the Step Setup evidence and implementation reference for the variant-display control: PPB stores `displayVariantsAsIndividualProducts` per category, and the Product Page Step Setup proof shows Category 1 persisted `displayVariantsAsIndividualProducts: true` while storefront rendered variants as separate cards.
+- Current Product Page route source renders the `Display variants as individual products` checkbox but writes `displayVariantsAsIndividual`, while the persistence/runtime category contracts read `displayVariantsAsIndividualProducts`; this makes the visible Admin control insufficient for the evidenced save payload.
+- Scope for this slice: add RED route/source coverage for the PPB category variant checkbox contract, patch the route to hydrate and update the direct category key, verify focused tests/lint/build/graph, then commit before continuing broader Step Setup visual parity.
+
+### 2026-05-27 08:13 IST - PPB Step Setup variant flag slice verified
+- Added `tests/unit/routes/step-setup-category-variant-ui-contract.test.ts` to require the Product Page category checkbox to hydrate/update `StepCategory[].displayVariantsAsIndividualProducts` directly and to create new categories with explicit `displayVariantsAsIndividualProducts=false` and `displayVariantsAsSwatches=false`.
+- Patched the Product Page configure route so the visible category checkbox no longer writes the unused `displayVariantsAsIndividual` alias.
+- Verification passed: `npx jest tests/unit/routes/step-setup-category-variant-ui-contract.test.ts tests/unit/routes/ppb-save-bundle.test.ts tests/unit/lib/bundle-config-contracts.test.ts --runInBand` with 55 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, graph rebuild via graphify pipx environment, and `git diff --check`.
 
 ### 2026-05-27 07:50 IST - Step Setup category rules slice started
 - Re-read the Step Setup audit and implementation reference for the evidenced rules behavior: category rules appear only after more than one category exists, step rules and category rules are mutually exclusive, and EB persists category rules inside each category while step-level `conditions.isEnabled` remains false after switching to category rules.

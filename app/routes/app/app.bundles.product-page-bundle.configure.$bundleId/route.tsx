@@ -2407,10 +2407,10 @@ export default function ConfigureBundleFlow() {
                                             <div style={{ marginBottom: 10 }}>
                                               <s-checkbox
                                                 label="Display variants as individual products"
-                                                checked={(cat as any).displayVariantsAsIndividual ?? false}
+                                                checked={cat.displayVariantsAsIndividualProducts === true || undefined}
                                                 onChange={(e: Event) => {
                                                   const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, displayVariantsAsIndividual: (e.target as HTMLInputElement).checked } : c
+                                                    i === catIndex ? { ...c, displayVariantsAsIndividualProducts: (e.target as HTMLInputElement).checked } : c
                                                   );
                                                   stepsState.updateStepField(step.id, "StepCategory", updated);
                                                   markAsDirty();
@@ -2564,7 +2564,15 @@ export default function ConfigureBundleFlow() {
                                       const cats = ((step as any).StepCategory as any[]) ?? [];
                                       stepsState.updateStepField(step.id, "StepCategory", [
                                         ...cats,
-                                        { id: `cat-${Date.now()}`, name: "", sortOrder: cats.length, products: [], collections: [] },
+                                        {
+                                          id: `cat-${Date.now()}`,
+                                          name: "",
+                                          sortOrder: cats.length,
+                                          products: [],
+                                          collections: [],
+                                          displayVariantsAsIndividualProducts: false,
+                                          displayVariantsAsSwatches: false,
+                                        },
                                       ]);
                                       markAsDirty();
                                     }}
