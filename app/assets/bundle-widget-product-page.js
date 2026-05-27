@@ -281,6 +281,7 @@ class BundleWidgetProductPage {
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
+      currentProductGid: window.currentProductGid,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
@@ -436,7 +437,10 @@ class BundleWidgetProductPage {
     // silently excluded from the cart payload on classic modal style bundles.
     this.selectedBundle.steps.forEach((step, i) => {
       if (step.isDefault && step.defaultVariantId) {
-        this.selectedProducts[i][step.defaultVariantId] = 1;
+        const normalizedDefaultVariantId = this.normalizeSelectionKey(step.defaultVariantId);
+        if (normalizedDefaultVariantId) {
+          this.setSelectedQuantity(i, normalizedDefaultVariantId, 1);
+        }
       }
     });
   }
@@ -503,7 +507,7 @@ class BundleWidgetProductPage {
     if (this.directDefaultProducts.length === 0 || !this.selectedProducts[0]) return;
 
     this.directDefaultProducts.forEach(product => {
-      this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+      this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
     });
   }
 
@@ -551,10 +555,8 @@ class BundleWidgetProductPage {
     const step = this.selectedBundle.steps[stepIndex];
     if (!step?.isDefault || !step.defaultVariantId) return null;
     const products = this.stepProductData[stepIndex] || [];
-    const variantId = String(step.defaultVariantId);
-    return products.find(p =>
-      String(p.variantId || p.id) === variantId
-    ) || products[0] || null;
+    const variantId = this.normalizeSelectionKey(step.defaultVariantId);
+    return this.findProductBySelectionKey(products, variantId) || products[0] || null;
   }
 
   /**
@@ -960,7 +962,7 @@ class BundleWidgetProductPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     products.forEach(product => {
-      const quantity = this.selectedProducts[0]?.[product.variantId] || product.defaultRequiredQuantity || 1;
+      const quantity = this.getSelectedQuantity(0, product.variantId) || product.defaultRequiredQuantity || 1;
       const line = document.createElement('div');
       line.className = 'bw-default-products__line';
       line.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;';
@@ -1058,7 +1060,7 @@ class BundleWidgetProductPage {
         if (selectedEntries.length > 0) {
           const products = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
           selectedEntries.forEach(([variantId, qty]) => {
-            const product = products.find(p => (p.variantId || p.id) === variantId);
+            const product = this.findProductBySelectionKey(products, variantId);
             if (product) {
               for (let i = 0; i < qty; i++) {
                 const card = this.createSelectedProductCard(
@@ -1354,7 +1356,7 @@ class BundleWidgetProductPage {
       // Show selected product for free gift slot
       const products = this.stepProductData[stepIndex] || [];
       const [variantId] = selectedEntries[0];
-      const product = products.find(p => (p.variantId || p.id) === variantId);
+      const product = this.findProductBySelectionKey(products, variantId);
       if (product) {
         // Show filled state for free gift
         stepBox.className = 'step-box step-completed product-card-state bw-slot-card bw-slot-card--filled';
@@ -1457,17 +1459,20 @@ class BundleWidgetProductPage {
   removeProductFromSelection(stepIndex, variantId) {
     // Guard: default products are compulsory — they must always stay in selectedProducts
     const step = this.selectedBundle?.steps[stepIndex];
-    if (step?.isDefault && step?.defaultVariantId === variantId) return;
-    if (this._isDirectDefaultVariant(variantId)) return;
+    const normalizedVariantId = this.normalizeSelectionKey(variantId);
+    if (!normalizedVariantId) return;
 
-    const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
+    if (step?.isDefault && this.normalizeSelectionKey(step.defaultVariantId) === normalizedVariantId) return;
+    if (this._isDirectDefaultVariant(normalizedVariantId)) return;
+
+    const currentQuantity = this.getSelectedQuantity(stepIndex, normalizedVariantId);
 
     if (currentQuantity > 1) {
       // Decrease quantity
-      this.selectedProducts[stepIndex][variantId] = currentQuantity - 1;
+      this.setSelectedQuantity(stepIndex, normalizedVariantId, currentQuantity - 1);
     } else {
       // Remove completely
-      delete this.selectedProducts[stepIndex][variantId];
+      this.setSelectedQuantity(stepIndex, normalizedVariantId, 0);
     }
 
     // Update UI
@@ -1482,18 +1487,8 @@ class BundleWidgetProductPage {
 
   // Full-page bundle layout (horizontal tabs)
   renderFullPageLayout() {
-    // TODO: Implement tabs-based layout for full-page bundles
-    // For now, use the same layout as product-page until custom UI is provided
-
-    // Temporary: Render same as product-page layout
-    // This will be replaced with custom tabs UI later
+    // Current fallback mirrors product-page layout until a dedicated full-page tab UI ships.
     this.renderProductPageLayout();
-
-    // Add visual indicator that this is a full-page bundle
-    const indicator = document.createElement('div');
-    indicator.style.cssText = 'padding: 8px; background: #e3f2fd; border-radius: 4px; margin-bottom: 12px; text-align: center; font-size: 12px; color: #1976d2;';
-    indicator.textContent = 'Full-Page Bundle Mode (Custom layout will be applied)';
-    this.elements.stepsContainer.insertBefore(indicator, this.elements.stepsContainer.firstChild);
   }
 
   clearStepSelections(stepIndex) {
@@ -1501,7 +1496,7 @@ class BundleWidgetProductPage {
     this.selectedProducts[stepIndex] = {};
     if (stepIndex === 0 && this.directDefaultProducts.length > 0) {
       this.directDefaultProducts.forEach(product => {
-        this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+        this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
       });
     }
 
@@ -1549,10 +1544,11 @@ class BundleWidgetProductPage {
     const met = progress >= 1;
 
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
-    const discountText = discountInfo.hasDiscount
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountText = combinedDiscountInfo.hasDiscount
       ? (this.selectedBundle.pricing.method === 'percentage_off'
           ? `${rule.discountValue ?? 0}% off`
-          : CurrencyManager.convertAndFormat(discountInfo.savings, CurrencyManager.getCurrencyInfo()))
+          : CurrencyManager.convertAndFormat(combinedDiscountInfo.savings, CurrencyManager.getCurrencyInfo()))
       : '';
 
     const template = met
@@ -1751,6 +1747,7 @@ class BundleWidgetProductPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const button = this.elements.addToCartButton;
 
@@ -1788,7 +1785,7 @@ class BundleWidgetProductPage {
     } else {
       // All steps valid and products selected - enable button
       const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const formattedPrice = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
+      const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
 
       button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \u2022 ${formattedPrice}`;
 
@@ -1802,8 +1799,8 @@ class BundleWidgetProductPage {
     if (totalPillFinal) {
       if (totalQuantity > 0) {
         const currencyInfo = CurrencyManager.getCurrencyInfo();
-        totalPillFinal.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
-        if (discountInfo.hasDiscount && totalPillStrike) {
+        totalPillFinal.textContent = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
+        if (combinedDiscountInfo.qualifiesForDiscount && totalPillStrike) {
           totalPillStrike.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
         } else if (totalPillStrike) {
           totalPillStrike.textContent = '';
@@ -2009,6 +2006,9 @@ class BundleWidgetProductPage {
       title: v.title,
       price: parseFloat(v.price || '0') * 100,
       compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
       available: v.available === true,
       quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
       currentlyNotInStock: v.currentlyNotInStock === true,
@@ -2045,6 +2045,7 @@ class BundleWidgetProductPage {
               available: variant.available === true,
               quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
               currentlyNotInStock: variant.currentlyNotInStock === true,
+              sellingPlanAllocations: variant.sellingPlanAllocations || [],
               // Preserve parent product data for variant selection in modal
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -2075,18 +2076,19 @@ class BundleWidgetProductPage {
           return opt.name || opt;
         });
 
-        return [{
-          id: this.extractId(product.id),
-          title: product.title,
-          imageUrl,
-          price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
-          variantId: this.extractId(defaultVariant?.id || product.id),
-          available: defaultVariant?.available === true,
-          quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
-          currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
-          // Preserve variants and options for variant selection in modal
-          variants: processedVariants,
+          return [{
+            id: this.extractId(product.id),
+            title: product.title,
+            imageUrl,
+            price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
+            compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+            variantId: this.extractId(defaultVariant?.id || product.id),
+            sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
+            available: defaultVariant?.available === true,
+            quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
+            currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+            // Preserve variants and options for variant selection in modal
+            variants: processedVariants,
           options: processedOptions,
           // Preserve images array for modal gallery
           images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
@@ -2102,7 +2104,7 @@ class BundleWidgetProductPage {
    */
   getVariantAvailable(stepIndex, variantId) {
     const products = this.stepProductData[stepIndex] || [];
-    const product = products.find(p => (p.variantId || p.id) === variantId);
+    const product = this.findProductBySelectionKey(products, variantId);
     if (!product) {
       return { available: null, outOfStock: false, acceptsBackorder: false };
     }
@@ -2112,6 +2114,70 @@ class BundleWidgetProductPage {
       return { available: 0, outOfStock: true, acceptsBackorder: false };
     }
     return { available: qty, outOfStock: false, acceptsBackorder: backorder };
+  }
+
+  findProductBySelectionKey(products, selectionKey) {
+    const normalized = this.normalizeSelectionKey(selectionKey);
+    if (!normalized) return null;
+
+    return products.find((product) => {
+      const ids = [product.variantId, product.id, product.productId];
+      if (Array.isArray(product.variants)) {
+        ids.push(...product.variants.map((variant) => variant.id));
+      }
+
+      return ids.some((id) => this.normalizeSelectionKey(id) === normalized);
+    }) || null;
+  }
+
+  shouldApplyIndividualSellingPlanSelection() {
+    return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
+  }
+
+  shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelection()) {
+      return false;
+    }
+
+    const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
+    if (showFor !== "OOS_PRODUCTS") {
+      return true;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const target = variant ?? product;
+    if (!target) {
+      return false;
+    }
+
+    return target.available === false;
+  }
+
+  getSelectedSellingPlanAllocationId(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
+      return null;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
+    const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
+      ? normalizedProduct.sellingPlanAllocations
+      : [];
+
+    if (allocations.length === 0) {
+      return null;
+    }
+
+    const firstAllocationId = this.extractId(allocations[0]?.id);
+    return firstAllocationId || null;
   }
 
   extractId(idString) {
@@ -2125,6 +2191,198 @@ class BundleWidgetProductPage {
 
     // Handle numeric string
     return idString.toString().split('/').pop();
+  }
+
+  normalizeSelectionKey(variantId) {
+    const normalized = this.extractId(variantId);
+    if (normalized == null) return '';
+    return String(normalized);
+  }
+
+  getSelectedQuantity(stepIndex, variantId) {
+    const selectedProducts = this.selectedProducts[stepIndex] || {};
+    const normalized = this.normalizeSelectionKey(variantId);
+    if (!normalized) return 0;
+
+    if (Object.prototype.hasOwnProperty.call(selectedProducts, normalized)) {
+      return Number(selectedProducts[normalized]) || 0;
+    }
+
+    const alias = Object.entries(selectedProducts).find(([productId]) =>
+      this.normalizeSelectionKey(productId) === normalized
+    );
+    return alias ? Number(alias[1]) || 0 : 0;
+  }
+
+  setSelectedQuantity(stepIndex, variantId, quantity) {
+    const selectedProducts = this.selectedProducts[stepIndex];
+    if (!selectedProducts) return;
+
+    const normalized = this.normalizeSelectionKey(variantId);
+    if (!normalized) return;
+
+    Object.keys(selectedProducts).forEach((productId) => {
+      if (this.normalizeSelectionKey(productId) === normalized) {
+        delete selectedProducts[productId];
+      }
+    });
+
+    if (quantity > 0) {
+      selectedProducts[normalized] = quantity;
+    }
+  }
+
+  getAddonLineDiscount(step) {
+    const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+    const discount = step?.addonDiscount || tier?.discount || {};
+    const type = String(discount.type || '').toUpperCase();
+    const value = Number(discount.value || 0);
+    if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
+    return { type, value: Math.min(100, value) };
+  }
+
+  getAddonProductSelectionKeys(step) {
+    const keys = new Set();
+    const addKey = (value) => {
+      if (value === null || value === undefined || value === '') return;
+      const normalized = this.extractId(value) || value;
+      keys.add(String(normalized));
+    };
+    const products = [
+      ...(Array.isArray(step?.StepProduct) ? step.StepProduct : []),
+      ...(Array.isArray(step?.products) ? step.products : []),
+      ...(Array.isArray(step?.productsData1?.products) ? step.productsData1.products : []),
+    ];
+
+    products.forEach(product => {
+      addKey(product.id);
+      addKey(product.productId);
+      addKey(product.graphqlId);
+      addKey(product.variantId);
+      addKey(product.variantGraphqlId);
+      addKey(product.title);
+      (Array.isArray(product.variants) ? product.variants : []).forEach(variant => {
+        addKey(variant.id);
+        addKey(variant.variantId);
+        addKey(variant.variantGraphqlId);
+        addKey(variant.admin_graphql_api_id);
+        addKey(variant.title);
+      });
+    });
+
+    return keys;
+  }
+
+  calculateSelectedAddonDiscountAmount() {
+    const steps = this.selectedBundle?.steps || [];
+    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
+    const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
+    const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
+
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
+      const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
+        || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
+        || chargeableAddonProductKeys.has(String(item.title || ''))
+        || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
+      if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
+      const step = steps[item.stepIndex];
+      const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
+      if (!addonDiscount) return total;
+
+      const selectedQuantity = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      if (!selectedQuantity || selectedQuantity <= 0 || !Number.isFinite(price) || price <= 0) return total;
+      return total + (price * selectedQuantity * addonDiscount.value / 100);
+    }, 0);
+  }
+
+  getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
+    const baseDiscountAmount = Math.max(0, Number(discountInfo?.discountAmount || 0));
+    const addonDiscountAmount = this.calculateSelectedAddonDiscountAmount();
+    const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);
+    const finalPrice = Math.max(0, totalPrice - combinedDiscountAmount);
+
+    return {
+      ...discountInfo,
+      hasDiscount: combinedDiscountAmount > 0,
+      qualifiesForDiscount: combinedDiscountAmount > 0,
+      discountAmount: combinedDiscountAmount,
+      savings: combinedDiscountAmount,
+      addonDiscountAmount,
+      finalPrice,
+      discountPercentage: totalPrice > 0 ? (combinedDiscountAmount / totalPrice) * 100 : 0,
+    };
+  }
+
+  getAllSelectedProductsData() {
+    const allProducts = [];
+
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
+      const stepSelections = this.selectedProducts[stepIndex] || {};
+      const productsInStep = this.stepProductData[stepIndex] || [];
+
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+          const normalizedVariantId = this.normalizeSelectionKey(variantId);
+          let product = this.findProductBySelectionKey(productsInStep, normalizedVariantId);
+          if (!product && normalizedVariantId) {
+            product = this.findProductBySelectionKey(productsInStep, variantId);
+          }
+
+          let matchedVariant = null;
+          if (!product) {
+            for (const p of productsInStep) {
+              if (p.variants && Array.isArray(p.variants)) {
+                const variant = p.variants.find(v =>
+                  this.normalizeSelectionKey(v.id) === normalizedVariantId
+                  || String(v.id) === String(variantId)
+                );
+                if (variant) {
+                  product = p;
+                  matchedVariant = variant;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (product) {
+            const variantData = matchedVariant || product;
+            const isVariantMatch = !!matchedVariant;
+            const variantTitle = isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title'
+              ? matchedVariant.title
+              : (product.variantTitle && product.variantTitle !== 'Default Title' ? product.variantTitle : '');
+            const imageUrl = isVariantMatch
+              ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
+              : (product.imageUrl || product.image?.src || '');
+            const price = isVariantMatch
+              ? (typeof variantData.price === 'number' ? variantData.price : (parseFloat(variantData.price || '0') * 100))
+              : (product.price || 0);
+
+            allProducts.push({
+              stepIndex,
+              variantId,
+              quantity,
+              title: isVariantMatch
+                ? (variantTitle ? `${product.title} - ${variantTitle}` : product.title)
+                : (product.title || 'Untitled Product'),
+              parentTitle: product.parentTitle || product.title || 'Untitled Product',
+              variantTitle,
+              imageUrl,
+              image: imageUrl,
+              price,
+              productId: product.productId || product.id,
+              isDefault: step.isDefault ?? false,
+              isFreeGift: step.isFreeGift ?? false,
+              addonDisplayFree: step.addonDisplayFree === true,
+            });
+          }
+        }
+      });
+    });
+
+    return allProducts;
   }
 
   // Expand products with multiple variants into separate product entries
@@ -2304,7 +2562,7 @@ class BundleWidgetProductPage {
 
     productGrid.innerHTML = products.map(product => {
       const selectionKey = product.variantId || product.id;
-      const currentQuantity = selectedProducts[selectionKey] || 0;
+      const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
       // Per-variant stock state derived from Storefront API quantityAvailable
@@ -2491,10 +2749,7 @@ class BundleWidgetProductPage {
 
     // Helper to find product by ID
     const findProduct = (productId) => {
-      return this.stepProductData[stepIndex]?.find(p => {
-        const selectionKey = p.variantId || p.id;
-        return selectionKey === productId;
-      });
+      return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
     };
 
     // Quantity button handlers
@@ -2503,7 +2758,7 @@ class BundleWidgetProductPage {
         e.stopPropagation();
         const productId = e.target.dataset.productId;
         const isIncrease = e.target.classList.contains('qty-increase');
-        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+        const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
 
         const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
         this.updateProductSelection(stepIndex, productId, newQuantity);
@@ -2522,7 +2777,7 @@ class BundleWidgetProductPage {
           this.productModal.open(product, step);
         } else {
           // No variants or modal not available - toggle directly
-          const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+          const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
           this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
         }
       }
@@ -2569,9 +2824,9 @@ class BundleWidgetProductPage {
             // Move quantity from old variant to new variant, re-clamping against
             // the new variant's quantityAvailable. If the new variant can't hold
             // the old quantity, reduce it and surface a toast.
-            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
+            const oldQuantity = this.getSelectedQuantity(stepIndex, product.variantId);
             if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][product.variantId];
+              this.setSelectedQuantity(stepIndex, product.variantId, 0);
 
               const newQtyAvail = product.quantityAvailable;
               const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
@@ -2584,7 +2839,7 @@ class BundleWidgetProductPage {
                 ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
               }
               if (migratedQty > 0) {
-                this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+                this.setSelectedQuantity(stepIndex, newVariantId, migratedQty);
               }
             }
 
@@ -2623,8 +2878,9 @@ class BundleWidgetProductPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
+    const selectionKey = this.normalizeSelectionKey(productId);
     let quantity = Math.max(0, newQuantity);
-    const directDefaultRequiredQuantity = this._getDirectDefaultRequiredQuantity(productId);
+    const directDefaultRequiredQuantity = this._getDirectDefaultRequiredQuantity(selectionKey);
     if (directDefaultRequiredQuantity !== null && quantity < directDefaultRequiredQuantity) {
       quantity = directDefaultRequiredQuantity;
     }
@@ -2633,7 +2889,7 @@ class BundleWidgetProductPage {
     // Uses quantityAvailable from the Storefront API (see getVariantAvailable).
     // Adding 0 always allowed (that is a removal).
     if (quantity > 0) {
-      const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
       if (outOfStock) {
         ToastManager.show('This item is out of stock.');
         return;
@@ -2644,7 +2900,7 @@ class BundleWidgetProductPage {
       }
     }
 
-    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
     const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
       this.selectedBundle?.validateQuantityPerProduct,
       currentQuantity,
@@ -2656,19 +2912,14 @@ class BundleWidgetProductPage {
     }
 
     // Validate step conditions
-    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+    if (!this.validateStepCondition(stepIndex, selectionKey, quantity)) {
       return;
     }
 
-    // Update selection
-    if (quantity > 0) {
-      this.selectedProducts[stepIndex][productId] = quantity;
-    } else {
-      delete this.selectedProducts[stepIndex][productId];
-    }
+    this.setSelectedQuantity(stepIndex, selectionKey, quantity);
 
     // Update UI without re-rendering the entire modal (prevents event listener duplication)
-    this.updateProductQuantityDisplay(stepIndex, productId, quantity);
+    this.updateProductQuantityDisplay(stepIndex, selectionKey, quantity);
     this._renderDirectDefaultProducts();
     this.renderModalTabs();
     this.updateModalNavigation();
@@ -2802,12 +3053,13 @@ class BundleWidgetProductPage {
   validateStepCondition(stepIndex, productId, newQuantity) {
     const step = this.selectedBundle.steps[stepIndex];
     const currentSelections = this.selectedProducts[stepIndex] || {};
-    const currentQty = currentSelections[productId] || 0;
+    const currentQty = this.getSelectedQuantity(stepIndex, productId);
+    const normalizedProductId = this.normalizeSelectionKey(productId);
 
     const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
       step,
       currentSelections,
-      productId,
+      normalizedProductId,
       newQuantity,
     );
 
@@ -2865,11 +3117,12 @@ class BundleWidgetProductPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Update modal header text dynamically
-    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
 
     // Update cart badge with total item count
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
@@ -2878,10 +3131,10 @@ class BundleWidgetProductPage {
     }
 
     // Update total prices in the footer pill
-    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+    this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
 
     // Update discount messaging and progress bar
-    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
   }
 
   updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -3094,9 +3347,10 @@ class BundleWidgetProductPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
-    const discountPercentage = discountInfo.discountPercentage
+    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+    const discountPercentage = combinedDiscountInfo.discountPercentage
       || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
 
     const displayProperties = {
@@ -3142,7 +3396,7 @@ class BundleWidgetProductPage {
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+          const product = this.findProductBySelectionKey(productsInStep, variantId);
           if (product) {
             // Check availability before adding to cart
             if (product.available !== true) {
@@ -3154,20 +3408,31 @@ class BundleWidgetProductPage {
             const actualVariantId = variantId;
 
             const step = this.selectedBundle.steps[stepIndex];
+            const addonDiscount = this.getAddonLineDiscount(step);
             const properties = {
               '_bundle_id': bundleInstanceId,
               '_bundle_name': this.selectedBundle.name,
               '_step_index': stepIndex.toString()
-                };
-                if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
-                if (step?.isDefault) properties['_bundle_step_type'] = 'default';
-                if (this._isDirectDefaultVariant(variantId)) properties['_bundle_step_type'] = 'default';
+            };
+            if (addonDiscount && step?.addonDisplayFree !== true) {
+              properties['_bundle_step_type'] = addonDiscount
+                ? `addon:${addonDiscount.type}:${addonDiscount.value}`
+                : 'addon';
+            } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
+              properties['_bundle_step_type'] = 'free_gift';
+            }
+            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+            if (this._isDirectDefaultVariant(variantId)) properties['_bundle_step_type'] = 'default';
 
-                const cartItem = {
+            const cartItem = {
               id: parseInt(this.extractId(actualVariantId)),
               quantity: quantity,
               properties
             };
+            const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
+            if (sellingPlanAllocationId) {
+              cartItem.selling_plan = parseInt(sellingPlanAllocationId);
+            }
 
             cartItems.push(cartItem);
             selectedLines.push({ product, quantity });
