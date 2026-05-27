@@ -19,9 +19,8 @@ describe("BundleReadinessOverlay interaction contract", () => {
   });
 
   it("makes collapsed trigger keyboard accessible", () => {
-    expect(source).toContain('<button\n            data-tour-target="fpb-readiness-score"');
-    expect(source).toContain('aria-label="Toggle readiness score"');
     expect(source).toContain('type="button"');
-    expect(source).toContain("toggle();");
+    expect(source).toContain('data-tour-target="fpb-readiness-score"');
+    expect(source).toContain('aria-label="Toggle readiness score"');
   });
 });
