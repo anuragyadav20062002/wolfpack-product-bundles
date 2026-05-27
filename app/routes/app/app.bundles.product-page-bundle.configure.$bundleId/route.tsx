@@ -2225,17 +2225,17 @@ export default function ConfigureBundleFlow() {
                         <div className={productPageBundleStyles.stepSetupActions}>
                           <s-button
                             variant="plain"
+                            icon="globe"
+                            accessibilityLabel="Multi Language"
+                            title="Multi Language"
+                            onClick={() => openStepMultiLanguageModal(step.id)}
+                          />
+                          <s-button
+                            variant="plain"
                             icon="duplicate"
                             accessibilityLabel="Clone current step"
                             title="Clone current step"
                             onClick={() => cloneStep(step.id)}
-                          />
-                          <s-button
-                            variant="plain"
-                            icon="globe"
-                            accessibilityLabel="Multiple language"
-                            title="Multiple language"
-                            onClick={() => openStepMultiLanguageModal(step.id)}
                           />
                           <s-button
                             variant="plain"

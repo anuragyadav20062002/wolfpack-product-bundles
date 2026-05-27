@@ -23,6 +23,25 @@ const modalSource = fs.readFileSync(
   "utf8",
 );
 
+function getStepSetupHeaderActions(source: string) {
+  const start = source.indexOf("stepSetupActions");
+  expect(start).toBeGreaterThan(-1);
+  const end = source.indexOf("</div>", start);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
+function getStepNameFieldBody(source: string) {
+  const start = source.indexOf('label="Step Name"');
+  expect(start).toBeGreaterThan(-1);
+  const endCandidates = [
+    source.indexOf("{/* ── Category card ── */", start),
+    source.indexOf("Legacy products migration banner", start),
+  ].filter((index) => index > start);
+  expect(endCandidates.length).toBeGreaterThan(0);
+  return source.slice(start, Math.min(...endCandidates));
+}
+
 describe("shared Step Setup Multi Language modal contract", () => {
   it("renders the observed translation headings, helper copy, language list, and action label", () => {
     expect(modalSource).toContain("Translations");
@@ -73,5 +92,23 @@ describe.each(Object.entries(routeSources))("%s Step Setup Multi Language wiring
     expect(source).toContain("multiLangData: {");
     expect(source).toContain("...(category.multiLangData ?? {})");
     expect(source).not.toContain('icon="globe" disabled accessibilityLabel="Multi Language"');
+  });
+
+  it("renders the Step Setup header language action before clone and delete", () => {
+    const actions = getStepSetupHeaderActions(source);
+    const languageIndex = actions.indexOf('icon="globe"');
+    const cloneIndex = actions.indexOf('icon="duplicate"');
+    const deleteIndex = actions.indexOf('icon="delete"');
+
+    expect(actions).toContain('accessibilityLabel="Multi Language"');
+    expect(languageIndex).toBeGreaterThan(-1);
+    expect(cloneIndex).toBeGreaterThan(-1);
+    expect(deleteIndex).toBeGreaterThan(-1);
+    expect(languageIndex).toBeLessThan(cloneIndex);
+    expect(cloneIndex).toBeLessThan(deleteIndex);
+  });
+
+  it("keeps the step-level language action in the header instead of below Step Name", () => {
+    expect(getStepNameFieldBody(source)).not.toContain("openStepMultiLanguageModal(step.id)");
   });
 });

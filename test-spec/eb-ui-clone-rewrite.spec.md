@@ -55,6 +55,7 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 1 | Step-level Multi Language modal | Step Setup globe button | modal fields are `Step Name` and `Step Title`, and save writes `multiLangData.<locale>.productPageStepText/productPageSubtext` on the step | Live PPB save proof: `/private/tmp/eb-ppb-step-step-multilang-update-2026-05-27.network-request`. |
 | 2 | Category Multi Language modal | Category row Multi Language button | modal fields are `Category Name` and `Category Title`, and save writes `StepCategory[].multiLangData.<locale>.name/title` | Live PPB save proof: `/private/tmp/eb-ppb-step-category-multilang-update-2026-05-27.network-request`. |
 | 3 | Shared Multi Language modal copy | Any implemented Multi Language button using the shared modal | modal renders `Translations`, `Choose language to edit`, `Custom Text`, `Text Settings`, the 38-language list, and `Save and Close` | Live Step Setup screenshots captured outside the worktree. |
+| 4 | Step header action order | FPB/PPB Step Setup header | Multi Language icon renders before clone and delete; FPB has no second step-level Multi Language button below Step Name | EB screenshots: `/private/tmp/eb-complete-configure-audit-2026-05-25/fpb-admin-step-setup-after-save.png`, `/private/tmp/eb-complete-configure-audit-2026-05-25/ppb-admin-step-setup-products-selected.png`. |
 
 ### Step Setup Rule Mode Admin
 

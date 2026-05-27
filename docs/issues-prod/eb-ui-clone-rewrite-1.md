@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:17 IST
+**Last Updated:** 2026-05-27 08:22 IST
 
 ## Overview
 
@@ -12,6 +12,16 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 08:20 IST - Step Setup action-order parity slice started
+- Re-read the captured FPB and PPB Step Setup screenshots from `/private/tmp/eb-complete-configure-audit-2026-05-25/`: `fpb-admin-step-setup-after-save.png` and `ppb-admin-step-setup-products-selected.png`.
+- Evidence shows the Step Setup header actions in this order: Multi Language icon, duplicate/clone icon, delete icon. The FPB screenshot also shows no second step-level Multi Language button below the Step Name field; category Multi Language remains beside Category Name.
+- Current FPB and PPB routes render duplicate before the Step Setup language icon, and the FPB route renders an extra step-level Multi Language button below Step Name. Scope: add source-contract coverage, patch only those Step Setup header/body controls, verify, and commit.
+
+### 2026-05-27 08:22 IST - Step Setup action-order parity slice verified
+- Added source-contract coverage to `tests/unit/routes/step-setup-multilanguage-ui-contract.test.ts` for the evidenced Step Setup header action order and for keeping the step-level language action out of the FPB Step Name field body.
+- Patched both configure routes so Step Setup header actions render Multi Language, clone, delete, and removed the extra FPB step-level Multi Language button below Step Name. Category Multi Language remains wired beside Category Name.
+- Verification passed: Step Setup route contract suite with 23 tests, modified-file ESLint with 0 errors, code/test competitor-reference scan with no matches, and `npm run build`.
 
 ### 2026-05-27 08:09 IST - PPB Step Setup variant flag slice started
 - Re-read the Step Setup evidence and implementation reference for the variant-display control: PPB stores `displayVariantsAsIndividualProducts` per category, and the Product Page Step Setup proof shows Category 1 persisted `displayVariantsAsIndividualProducts: true` while storefront rendered variants as separate cards.
