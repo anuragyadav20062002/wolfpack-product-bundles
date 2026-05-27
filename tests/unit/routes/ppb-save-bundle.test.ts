@@ -99,6 +99,7 @@ function makeStep(
   overrides: Partial<{
     id: string;
     pageTitle: string;
+    multiLangData: Record<string, Record<string, string>>;
     StepProduct: any[];
     StepCategory: any[];
     collections: any[];
@@ -418,10 +419,16 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
-  it("persists Product Page Step Title to Step.pageTitle", async () => {
+  it("persists Product Page Step Title and translations to the step record", async () => {
     const stepsData = [
       makeStep({
         pageTitle: "Build audit bundle",
+        multiLangData: {
+          es: {
+            productPageStepText: "Paso auditoria",
+            productPageSubtext: "Construye paquete auditoria",
+          },
+        },
         StepProduct: [
           { id: "gid://shopify/Product/111", title: "Item A", imageUrl: null },
         ],
@@ -439,6 +446,12 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     expect(updateCall.data.steps.create[0]).toEqual(
       expect.objectContaining({
         pageTitle: "Build audit bundle",
+        multiLangData: {
+          es: {
+            productPageStepText: "Paso auditoria",
+            productPageSubtext: "Construye paquete auditoria",
+          },
+        },
       }),
     );
   });
@@ -1310,7 +1323,7 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
-  it("passes saved Product Page Step Title into bundle product metafield sync", async () => {
+  it("passes saved Product Page Step Title and translations into bundle product metafield sync", async () => {
     getDb().bundle.update.mockResolvedValue(
       makeUpdatedBundle({
         shopifyProductId: PRODUCT_ID,
@@ -1319,6 +1332,12 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
             id: "step-db-1",
             name: "Step 1 - PPB Audit",
             pageTitle: "Build audit bundle",
+            multiLangData: {
+              es: {
+                productPageStepText: "Paso auditoria",
+                productPageSubtext: "Construye paquete auditoria",
+              },
+            },
             StepProduct: [
               { productId: "gid://shopify/Product/456", title: "Component", imageUrl: null },
             ],
@@ -1331,6 +1350,12 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       stepsData: JSON.stringify([
         makeStep({
           pageTitle: "Build audit bundle",
+          multiLangData: {
+            es: {
+              productPageStepText: "Paso auditoria",
+              productPageSubtext: "Construye paquete auditoria",
+            },
+          },
           StepProduct: [
             { id: "gid://shopify/Product/456", title: "Component", imageUrl: null },
           ],
@@ -1351,6 +1376,12 @@ describe("PPB handleSaveBundle — with shopifyProductId (triggers metafields)",
           expect.objectContaining({
             name: "Step 1 - PPB Audit",
             pageTitle: "Build audit bundle",
+            multiLangData: {
+              es: {
+                productPageStepText: "Paso auditoria",
+                productPageSubtext: "Construye paquete auditoria",
+              },
+            },
           }),
         ],
       }),

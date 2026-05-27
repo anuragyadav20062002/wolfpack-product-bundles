@@ -1,11 +1,11 @@
 # Graph Report - .  (2026-05-27)
 
 ## Corpus Check
-- 459 files · ~2,512,949 words
+- 460 files · ~2,514,717 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3751 nodes · 5384 edges · 561 communities detected
+- 3752 nodes · 5384 edges · 562 communities detected
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
@@ -571,6 +571,7 @@
 - [[_COMMUNITY_Community 558|Community 558]]
 - [[_COMMUNITY_Community 559|Community 559]]
 - [[_COMMUNITY_Community 560|Community 560]]
+- [[_COMMUNITY_Community 561|Community 561]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `BundleWidgetFullPage` - 179 edges
@@ -712,7 +713,7 @@ Nodes (23): Preview API Route (app/routes/api/api.preview.$type.tsx), Bundle Mod
 
 ### Community 23 - "Community 23"
 Cohesion: 0.1
-Nodes (0):
+Nodes (0): 
 
 ### Community 24 - "Community 24"
 Cohesion: 0.21
@@ -732,7 +733,7 @@ Nodes (10): useAppStateStandalone(), useDesignSetting(), useDesignSettingsState(
 
 ### Community 28 - "Community 28"
 Cohesion: 0.12
-Nodes (0):
+Nodes (0): 
 
 ### Community 29 - "Community 29"
 Cohesion: 0.16
@@ -828,7 +829,7 @@ Nodes (11): Analytics Route /app/attribution, App API Routes Reference, Create B
 
 ### Community 52 - "Community 52"
 Cohesion: 0.2
-Nodes (0):
+Nodes (0): 
 
 ### Community 53 - "Community 53"
 Cohesion: 0.2
@@ -872,7 +873,7 @@ Nodes (8): bool(), int(), jsonObject(), parseBundleDesignTemplate(), parsePPBBun
 
 ### Community 63 - "Community 63"
 Cohesion: 0.22
-Nodes (0):
+Nodes (0): 
 
 ### Community 64 - "Community 64"
 Cohesion: 0.33
@@ -888,7 +889,7 @@ Nodes (9): buildSettingsData() — DCP Settings Handler, DCP Config-Driven Secti
 
 ### Community 67 - "Community 67"
 Cohesion: 0.25
-Nodes (0):
+Nodes (0): 
 
 ### Community 68 - "Community 68"
 Cohesion: 0.29
@@ -900,7 +901,7 @@ Nodes (4): makeDiscountData(), makeFormData(), makeStep(), makeStepWithProduct()
 
 ### Community 70 - "Community 70"
 Cohesion: 0.25
-Nodes (0):
+Nodes (0): 
 
 ### Community 71 - "Community 71"
 Cohesion: 0.29
@@ -936,7 +937,7 @@ Nodes (2): buildBundleSettings(), writeBundleConfigPageMetafield()
 
 ### Community 79 - "Community 79"
 Cohesion: 0.29
-Nodes (0):
+Nodes (0): 
 
 ### Community 80 - "Community 80"
 Cohesion: 0.52
@@ -952,15 +953,15 @@ Nodes (7): Module: auth-guards.server.ts (requireAdminSession, requireAppProxy, 
 
 ### Community 83 - "Community 83"
 Cohesion: 0.33
-Nodes (0):
+Nodes (0): 
 
 ### Community 84 - "Community 84"
 Cohesion: 0.33
-Nodes (0):
+Nodes (0): 
 
 ### Community 85 - "Community 85"
 Cohesion: 0.33
-Nodes (0):
+Nodes (0): 
 
 ### Community 86 - "Community 86"
 Cohesion: 0.6
@@ -1008,7 +1009,7 @@ Nodes (2): bsFindNextIncompleteStep(), validateFn()
 
 ### Community 97 - "Community 97"
 Cohesion: 0.33
-Nodes (0):
+Nodes (0): 
 
 ### Community 98 - "Community 98"
 Cohesion: 0.4
@@ -1016,7 +1017,7 @@ Nodes (2): getDb(), mockFindFirst()
 
 ### Community 99 - "Community 99"
 Cohesion: 0.33
-Nodes (0):
+Nodes (0): 
 
 ### Community 100 - "Community 100"
 Cohesion: 0.33
@@ -1032,7 +1033,7 @@ Nodes (6): app._index.tsx Welcome Landing Screen, FPB Widget Bundle API 404 on S
 
 ### Community 103 - "Community 103"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 104 - "Community 104"
 Cohesion: 0.5
@@ -1040,19 +1041,19 @@ Nodes (2): addTier(), doAddTier()
 
 ### Community 105 - "Community 105"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 106 - "Community 106"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 107 - "Community 107"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 108 - "Community 108"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 109 - "Community 109"
 Cohesion: 0.6
@@ -1068,11 +1069,11 @@ Nodes (4): _bootstrap(), _buildNoOp(), _buildSdk(), _findContainer()
 
 ### Community 112 - "Community 112"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 113 - "Community 113"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 114 - "Community 114"
 Cohesion: 0.6
@@ -1092,7 +1093,7 @@ Nodes (4): calculateBundleInventory(), calculateMinInventory(), setInventoryLeve
 
 ### Community 118 - "Community 118"
 Cohesion: 0.4
-Nodes (0):
+Nodes (0): 
 
 ### Community 119 - "Community 119"
 Cohesion: 0.5
@@ -1108,11 +1109,11 @@ Nodes (2): updateDiscountDisplay(), updateMessaging()
 
 ### Community 122 - "Community 122"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 123 - "Community 123"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 124 - "Community 124"
 Cohesion: 0.83
@@ -1120,7 +1121,7 @@ Nodes (3): processCss(), sanitizeCss(), validateCssSyntax()
 
 ### Community 125 - "Community 125"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 126 - "Community 126"
 Cohesion: 0.67
@@ -1136,7 +1137,7 @@ Nodes (3): buildSettingsData(), handleSaveSettings(), pick()
 
 ### Community 129 - "Community 129"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 130 - "Community 130"
 Cohesion: 0.83
@@ -1148,11 +1149,11 @@ Nodes (2): getHealCache(), loader()
 
 ### Community 132 - "Community 132"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 133 - "Community 133"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 134 - "Community 134"
 Cohesion: 0.67
@@ -1160,11 +1161,11 @@ Nodes (1): WebhookProcessor
 
 ### Community 135 - "Community 135"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 136 - "Community 136"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 137 - "Community 137"
 Cohesion: 0.83
@@ -1172,19 +1173,19 @@ Nodes (3): buildPriceAdjustmentConfig(), toNumber(), toPositiveNumber()
 
 ### Community 138 - "Community 138"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 139 - "Community 139"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 140 - "Community 140"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 141 - "Community 141"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 142 - "Community 142"
 Cohesion: 0.67
@@ -1192,15 +1193,15 @@ Nodes (2): buildFreeBadge(), createFakeElement()
 
 ### Community 143 - "Community 143"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 144 - "Community 144"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 145 - "Community 145"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 146 - "Community 146"
 Cohesion: 0.67
@@ -1208,19 +1209,19 @@ Nodes (2): getDb(), mockFindMany()
 
 ### Community 147 - "Community 147"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 148 - "Community 148"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 149 - "Community 149"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 150 - "Community 150"
 Cohesion: 0.5
-Nodes (0):
+Nodes (0): 
 
 ### Community 151 - "Community 151"
 Cohesion: 0.67
@@ -1268,15 +1269,15 @@ Nodes (4): Fix: Rename 'Images & GIFs' Tab to 'Bundle Assets' (GAP-11), Fix: Ren
 
 ### Community 162 - "Community 162"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 163 - "Community 163"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 164 - "Community 164"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 165 - "Community 165"
 Cohesion: 1.0
@@ -1284,7 +1285,7 @@ Nodes (2): createMergedSettings(), mergeSettings()
 
 ### Community 166 - "Community 166"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 167 - "Community 167"
 Cohesion: 1.0
@@ -1292,15 +1293,15 @@ Nodes (2): getBundleProductImageUrl(), useBundleConfigurationState()
 
 ### Community 168 - "Community 168"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 169 - "Community 169"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 170 - "Community 170"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 171 - "Community 171"
 Cohesion: 1.0
@@ -1308,7 +1309,7 @@ Nodes (2): buildGeneratedBundleProductHandle(), buildGeneratedBundleProductMetad
 
 ### Community 172 - "Community 172"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 173 - "Community 173"
 Cohesion: 1.0
@@ -1316,43 +1317,43 @@ Nodes (2): validateBundle(), validateStep()
 
 ### Community 174 - "Community 174"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 175 - "Community 175"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 176 - "Community 176"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 177 - "Community 177"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 178 - "Community 178"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 179 - "Community 179"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 180 - "Community 180"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 181 - "Community 181"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 182 - "Community 182"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 183 - "Community 183"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 184 - "Community 184"
 Cohesion: 1.0
@@ -1360,43 +1361,43 @@ Nodes (2): loader(), sanitizeBundleType()
 
 ### Community 185 - "Community 185"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 186 - "Community 186"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 187 - "Community 187"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 188 - "Community 188"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 189 - "Community 189"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 190 - "Community 190"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 191 - "Community 191"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 192 - "Community 192"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 193 - "Community 193"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 194 - "Community 194"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 195 - "Community 195"
 Cohesion: 1.0
@@ -1408,103 +1409,103 @@ Nodes (2): discoverSalesChannels(), publishProductToSalesChannels()
 
 ### Community 197 - "Community 197"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 198 - "Community 198"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 199 - "Community 199"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 200 - "Community 200"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 201 - "Community 201"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 202 - "Community 202"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 203 - "Community 203"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 204 - "Community 204"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 205 - "Community 205"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 206 - "Community 206"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 207 - "Community 207"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 208 - "Community 208"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 209 - "Community 209"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 210 - "Community 210"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 211 - "Community 211"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 212 - "Community 212"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 213 - "Community 213"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 214 - "Community 214"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 215 - "Community 215"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 216 - "Community 216"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 217 - "Community 217"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 218 - "Community 218"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 219 - "Community 219"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 220 - "Community 220"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 221 - "Community 221"
 Cohesion: 0.67
-Nodes (0):
+Nodes (0): 
 
 ### Community 222 - "Community 222"
 Cohesion: 1.0
@@ -1576,379 +1577,379 @@ Nodes (3): Script: scripts/bulk-sync-bundles.ts (Backfill component_parents Meta
 
 ### Community 239 - "Community 239"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 240 - "Community 240"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 241 - "Community 241"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 242 - "Community 242"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 243 - "Community 243"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 244 - "Community 244"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 245 - "Community 245"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 246 - "Community 246"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 247 - "Community 247"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 248 - "Community 248"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 249 - "Community 249"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 250 - "Community 250"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 251 - "Community 251"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 252 - "Community 252"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 253 - "Community 253"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 254 - "Community 254"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 255 - "Community 255"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 256 - "Community 256"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 257 - "Community 257"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 258 - "Community 258"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 259 - "Community 259"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 260 - "Community 260"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 261 - "Community 261"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 262 - "Community 262"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 263 - "Community 263"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 264 - "Community 264"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 265 - "Community 265"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 266 - "Community 266"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 267 - "Community 267"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 268 - "Community 268"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 269 - "Community 269"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 270 - "Community 270"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 271 - "Community 271"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 272 - "Community 272"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 273 - "Community 273"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 274 - "Community 274"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 275 - "Community 275"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 276 - "Community 276"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 277 - "Community 277"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 278 - "Community 278"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 279 - "Community 279"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 280 - "Community 280"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 281 - "Community 281"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 282 - "Community 282"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 283 - "Community 283"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 284 - "Community 284"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 285 - "Community 285"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 286 - "Community 286"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 287 - "Community 287"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 288 - "Community 288"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 289 - "Community 289"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 290 - "Community 290"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 291 - "Community 291"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 292 - "Community 292"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 293 - "Community 293"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 294 - "Community 294"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 295 - "Community 295"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 296 - "Community 296"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 297 - "Community 297"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 298 - "Community 298"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 299 - "Community 299"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 300 - "Community 300"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 301 - "Community 301"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 302 - "Community 302"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 303 - "Community 303"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 304 - "Community 304"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 305 - "Community 305"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 306 - "Community 306"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 307 - "Community 307"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 308 - "Community 308"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 309 - "Community 309"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 310 - "Community 310"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 311 - "Community 311"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 312 - "Community 312"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 313 - "Community 313"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 314 - "Community 314"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 315 - "Community 315"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 316 - "Community 316"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 317 - "Community 317"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 318 - "Community 318"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 319 - "Community 319"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 320 - "Community 320"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 321 - "Community 321"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 322 - "Community 322"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 323 - "Community 323"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 324 - "Community 324"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 325 - "Community 325"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 326 - "Community 326"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 327 - "Community 327"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 328 - "Community 328"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 329 - "Community 329"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 330 - "Community 330"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 331 - "Community 331"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 332 - "Community 332"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 333 - "Community 333"
 Cohesion: 1.0
@@ -1956,123 +1957,123 @@ Nodes (1): WidgetInstallationService
 
 ### Community 334 - "Community 334"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 335 - "Community 335"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 336 - "Community 336"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 337 - "Community 337"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 338 - "Community 338"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 339 - "Community 339"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 340 - "Community 340"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 341 - "Community 341"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 342 - "Community 342"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 343 - "Community 343"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 344 - "Community 344"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 345 - "Community 345"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 346 - "Community 346"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 347 - "Community 347"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 348 - "Community 348"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 349 - "Community 349"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 350 - "Community 350"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 351 - "Community 351"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 352 - "Community 352"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 353 - "Community 353"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 354 - "Community 354"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 355 - "Community 355"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 356 - "Community 356"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 357 - "Community 357"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 358 - "Community 358"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 359 - "Community 359"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 360 - "Community 360"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 361 - "Community 361"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 362 - "Community 362"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 363 - "Community 363"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 364 - "Community 364"
 Cohesion: 1.0
@@ -2144,721 +2145,725 @@ Nodes (2): BundleStatus.UNLISTED, Unlisted Bundle API Fix
 
 ### Community 381 - "Community 381"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 382 - "Community 382"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 383 - "Community 383"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 384 - "Community 384"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 385 - "Community 385"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 386 - "Community 386"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 387 - "Community 387"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 388 - "Community 388"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 389 - "Community 389"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 390 - "Community 390"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 391 - "Community 391"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 392 - "Community 392"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 393 - "Community 393"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 394 - "Community 394"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 395 - "Community 395"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 396 - "Community 396"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 397 - "Community 397"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 398 - "Community 398"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 399 - "Community 399"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 400 - "Community 400"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 401 - "Community 401"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 402 - "Community 402"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 403 - "Community 403"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 404 - "Community 404"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 405 - "Community 405"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 406 - "Community 406"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 407 - "Community 407"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 408 - "Community 408"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 409 - "Community 409"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 410 - "Community 410"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 411 - "Community 411"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 412 - "Community 412"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 413 - "Community 413"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 414 - "Community 414"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 415 - "Community 415"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 416 - "Community 416"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 417 - "Community 417"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 418 - "Community 418"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 419 - "Community 419"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 420 - "Community 420"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 421 - "Community 421"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 422 - "Community 422"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 423 - "Community 423"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 424 - "Community 424"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 425 - "Community 425"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 426 - "Community 426"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 427 - "Community 427"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 428 - "Community 428"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 429 - "Community 429"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 430 - "Community 430"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 431 - "Community 431"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 432 - "Community 432"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 433 - "Community 433"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 434 - "Community 434"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 435 - "Community 435"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 436 - "Community 436"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 437 - "Community 437"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 438 - "Community 438"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 439 - "Community 439"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 440 - "Community 440"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 441 - "Community 441"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 442 - "Community 442"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 443 - "Community 443"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 444 - "Community 444"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 445 - "Community 445"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 446 - "Community 446"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 447 - "Community 447"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 448 - "Community 448"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 449 - "Community 449"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 450 - "Community 450"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 451 - "Community 451"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 452 - "Community 452"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 453 - "Community 453"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 454 - "Community 454"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 455 - "Community 455"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 456 - "Community 456"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 457 - "Community 457"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 458 - "Community 458"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 459 - "Community 459"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 460 - "Community 460"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 461 - "Community 461"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 462 - "Community 462"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 463 - "Community 463"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 464 - "Community 464"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 465 - "Community 465"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 466 - "Community 466"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 467 - "Community 467"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 468 - "Community 468"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 469 - "Community 469"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 470 - "Community 470"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 471 - "Community 471"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 472 - "Community 472"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 473 - "Community 473"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 474 - "Community 474"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 475 - "Community 475"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 476 - "Community 476"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 477 - "Community 477"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 478 - "Community 478"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 479 - "Community 479"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 480 - "Community 480"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 481 - "Community 481"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 482 - "Community 482"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 483 - "Community 483"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 484 - "Community 484"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 485 - "Community 485"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 486 - "Community 486"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 487 - "Community 487"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 488 - "Community 488"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 489 - "Community 489"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 490 - "Community 490"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 491 - "Community 491"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 492 - "Community 492"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 493 - "Community 493"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 494 - "Community 494"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 495 - "Community 495"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 496 - "Community 496"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 497 - "Community 497"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 498 - "Community 498"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 499 - "Community 499"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 500 - "Community 500"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 501 - "Community 501"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 502 - "Community 502"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 503 - "Community 503"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 504 - "Community 504"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 505 - "Community 505"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 506 - "Community 506"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 507 - "Community 507"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 508 - "Community 508"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 509 - "Community 509"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 510 - "Community 510"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 511 - "Community 511"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 512 - "Community 512"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 513 - "Community 513"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 514 - "Community 514"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 515 - "Community 515"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 516 - "Community 516"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 517 - "Community 517"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 518 - "Community 518"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 519 - "Community 519"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 520 - "Community 520"
 Cohesion: 1.0
-Nodes (0):
+Nodes (0): 
 
 ### Community 521 - "Community 521"
 Cohesion: 1.0
-Nodes (1): Ad-Ready Bundles Breaking Changes
+Nodes (0): 
 
 ### Community 522 - "Community 522"
 Cohesion: 1.0
-Nodes (1): Bundle Inventory Sync Engine
+Nodes (1): Ad-Ready Bundles Breaking Changes
 
 ### Community 523 - "Community 523"
 Cohesion: 1.0
-Nodes (1): Inventory Levels Update Webhook Handler
+Nodes (1): Bundle Inventory Sync Engine
 
 ### Community 524 - "Community 524"
 Cohesion: 1.0
-Nodes (1): Inventory Management SHOPIFY Migration
+Nodes (1): Inventory Levels Update Webhook Handler
 
 ### Community 525 - "Community 525"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range BR
+Nodes (1): Inventory Management SHOPIFY Migration
 
 ### Community 526 - "Community 526"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range PO Requirements
+Nodes (1): Analytics Custom Date Range BR
 
 ### Community 527 - "Community 527"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range SDE Plan
+Nodes (1): Analytics Custom Date Range PO Requirements
 
 ### Community 528 - "Community 528"
 Cohesion: 1.0
-Nodes (1): Analytics Pixel Toggle BR
+Nodes (1): Analytics Custom Date Range SDE Plan
 
 ### Community 529 - "Community 529"
 Cohesion: 1.0
-Nodes (1): Analytics Pixel Toggle SDE Plan
+Nodes (1): Analytics Pixel Toggle BR
 
 ### Community 530 - "Community 530"
 Cohesion: 1.0
-Nodes (1): Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
+Nodes (1): Analytics Pixel Toggle SDE Plan
 
 ### Community 531 - "Community 531"
 Cohesion: 1.0
-Nodes (1): Analytics Page Redesign BR
+Nodes (1): Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
 
 ### Community 532 - "Community 532"
 Cohesion: 1.0
-Nodes (1): Analytics Page Redesign SDE Plan
+Nodes (1): Analytics Page Redesign BR
 
 ### Community 533 - "Community 533"
 Cohesion: 1.0
-Nodes (1): Pricing Route /app/pricing
+Nodes (1): Analytics Page Redesign SDE Plan
 
 ### Community 534 - "Community 534"
 Cohesion: 1.0
-Nodes (1): Updates & FAQs Route /app/events
+Nodes (1): Pricing Route /app/pricing
 
 ### Community 535 - "Community 535"
 Cohesion: 1.0
-Nodes (1): PDP Bundle Configure Route
+Nodes (1): Updates & FAQs Route /app/events
 
 ### Community 536 - "Community 536"
 Cohesion: 1.0
-Nodes (1): Billing Route /app/billing
+Nodes (1): PDP Bundle Configure Route
 
 ### Community 537 - "Community 537"
 Cohesion: 1.0
-Nodes (1): Deployment Guide
+Nodes (1): Billing Route /app/billing
 
 ### Community 538 - "Community 538"
 Cohesion: 1.0
-Nodes (1): Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)
+Nodes (1): Deployment Guide
 
 ### Community 539 - "Community 539"
 Cohesion: 1.0
-Nodes (1): Bundle Widget Complete Analysis
+Nodes (1): Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)
 
 ### Community 540 - "Community 540"
 Cohesion: 1.0
-Nodes (1): Prompt Engineering Guide (App Recreation)
+Nodes (1): Bundle Widget Complete Analysis
 
 ### Community 541 - "Community 541"
 Cohesion: 1.0
-Nodes (1): Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature
+Nodes (1): Prompt Engineering Guide (App Recreation)
 
 ### Community 542 - "Community 542"
 Cohesion: 1.0
-Nodes (1): FilePicker Component for Shopify Files Browse & Upload
+Nodes (1): Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature
 
 ### Community 543 - "Community 543"
 Cohesion: 1.0
-Nodes (1): Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)
+Nodes (1): FilePicker Component for Shopify Files Browse & Upload
 
 ### Community 544 - "Community 544"
 Cohesion: 1.0
-Nodes (1): Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)
+Nodes (1): Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)
 
 ### Community 545 - "Community 545"
 Cohesion: 1.0
-Nodes (1): INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)
+Nodes (1): Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)
 
 ### Community 546 - "Community 546"
 Cohesion: 1.0
-Nodes (1): Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)
+Nodes (1): INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)
 
 ### Community 547 - "Community 547"
 Cohesion: 1.0
-Nodes (1): Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)
+Nodes (1): Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)
 
 ### Community 548 - "Community 548"
 Cohesion: 1.0
-Nodes (1): Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)
+Nodes (1): Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)
 
 ### Community 549 - "Community 549"
 Cohesion: 1.0
-Nodes (1): Service: app.state.service.ts
+Nodes (1): Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)
 
 ### Community 550 - "Community 550"
 Cohesion: 1.0
-Nodes (1): Concept: Widget Build Pipeline (npm run build:widgets)
+Nodes (1): Service: app.state.service.ts
 
 ### Community 551 - "Community 551"
 Cohesion: 1.0
-Nodes (1): DCP Audit Low Priority Fixes
+Nodes (1): Concept: Widget Build Pipeline (npm run build:widgets)
 
 ### Community 552 - "Community 552"
 Cohesion: 1.0
-Nodes (1): Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)
+Nodes (1): DCP Audit Low Priority Fixes
 
 ### Community 553 - "Community 553"
 Cohesion: 1.0
-Nodes (1): Compact Array Component Format
+Nodes (1): Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)
 
 ### Community 554 - "Community 554"
 Cohesion: 1.0
-Nodes (1): Legacy Object Component Format
+Nodes (1): Compact Array Component Format
 
 ### Community 555 - "Community 555"
 Cohesion: 1.0
-Nodes (1): pricing.messages Legacy Fallback Path
+Nodes (1): Legacy Object Component Format
 
 ### Community 556 - "Community 556"
 Cohesion: 1.0
-Nodes (1): messaging Top-Level Metafield Key
+Nodes (1): pricing.messages Legacy Fallback Path
 
 ### Community 557 - "Community 557"
 Cohesion: 1.0
-Nodes (1): Loading GIF Overlay - Business Requirement
+Nodes (1): messaging Top-Level Metafield Key
 
 ### Community 558 - "Community 558"
 Cohesion: 1.0
-Nodes (1): Shopify Admin files() GraphQL Query
+Nodes (1): Loading GIF Overlay - Business Requirement
 
 ### Community 559 - "Community 559"
 Cohesion: 1.0
-Nodes (1): Add Bundle to Cart Button
+Nodes (1): Shopify Admin files() GraphQL Query
 
 ### Community 560 - "Community 560"
+Cohesion: 1.0
+Nodes (1): Add Bundle to Cart Button
+
+### Community 561 - "Community 561"
 Cohesion: 1.0
 Nodes (1): Step Transition Loading State
 
@@ -3405,109 +3410,111 @@ Nodes (1): Step Transition Loading State
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 508`** (1 nodes): `discount-pricing-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 509`** (1 nodes): `fpb-addons-admin-layout.test.ts`
+- **Thin community `Community 509`** (1 nodes): `step-setup-multilanguage-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 510`** (1 nodes): `ppb-bundle-visibility-ui-contract.test.ts`
+- **Thin community `Community 510`** (1 nodes): `fpb-addons-admin-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 511`** (1 nodes): `fpb-bundle-visibility-ui-contract.test.ts`
+- **Thin community `Community 511`** (1 nodes): `ppb-bundle-visibility-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 512`** (1 nodes): `fpb-bundle-settings-direct-contract.test.ts`
+- **Thin community `Community 512`** (1 nodes): `fpb-bundle-visibility-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 513`** (1 nodes): `inventory-webhook.test.ts`
+- **Thin community `Community 513`** (1 nodes): `fpb-bundle-settings-direct-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 514`** (1 nodes): `theme-template.test.ts`
+- **Thin community `Community 514`** (1 nodes): `inventory-webhook.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 515`** (1 nodes): `order-attribution.test.ts`
+- **Thin community `Community 515`** (1 nodes): `theme-template.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 516`** (1 nodes): `bundle-configure-handlers.test.ts`
+- **Thin community `Community 516`** (1 nodes): `order-attribution.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 517`** (1 nodes): `inventory-sync.test.ts`
+- **Thin community `Community 517`** (1 nodes): `bundle-configure-handlers.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 518`** (1 nodes): `metafield-validation.test.ts`
+- **Thin community `Community 518`** (1 nodes): `inventory-sync.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 519`** (1 nodes): `shopify.d.ts`
+- **Thin community `Community 519`** (1 nodes): `metafield-validation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 520`** (1 nodes): `webhook-worker.ts`
+- **Thin community `Community 520`** (1 nodes): `shopify.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 521`** (1 nodes): `Ad-Ready Bundles Breaking Changes`
+- **Thin community `Community 521`** (1 nodes): `webhook-worker.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 522`** (1 nodes): `Bundle Inventory Sync Engine`
+- **Thin community `Community 522`** (1 nodes): `Ad-Ready Bundles Breaking Changes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 523`** (1 nodes): `Inventory Levels Update Webhook Handler`
+- **Thin community `Community 523`** (1 nodes): `Bundle Inventory Sync Engine`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 524`** (1 nodes): `Inventory Management SHOPIFY Migration`
+- **Thin community `Community 524`** (1 nodes): `Inventory Levels Update Webhook Handler`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 525`** (1 nodes): `Analytics Custom Date Range BR`
+- **Thin community `Community 525`** (1 nodes): `Inventory Management SHOPIFY Migration`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 526`** (1 nodes): `Analytics Custom Date Range PO Requirements`
+- **Thin community `Community 526`** (1 nodes): `Analytics Custom Date Range BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 527`** (1 nodes): `Analytics Custom Date Range SDE Plan`
+- **Thin community `Community 527`** (1 nodes): `Analytics Custom Date Range PO Requirements`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 528`** (1 nodes): `Analytics Pixel Toggle BR`
+- **Thin community `Community 528`** (1 nodes): `Analytics Custom Date Range SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 529`** (1 nodes): `Analytics Pixel Toggle SDE Plan`
+- **Thin community `Community 529`** (1 nodes): `Analytics Pixel Toggle BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 530`** (1 nodes): `Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle`
+- **Thin community `Community 530`** (1 nodes): `Analytics Pixel Toggle SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 531`** (1 nodes): `Analytics Page Redesign BR`
+- **Thin community `Community 531`** (1 nodes): `Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 532`** (1 nodes): `Analytics Page Redesign SDE Plan`
+- **Thin community `Community 532`** (1 nodes): `Analytics Page Redesign BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 533`** (1 nodes): `Pricing Route /app/pricing`
+- **Thin community `Community 533`** (1 nodes): `Analytics Page Redesign SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 534`** (1 nodes): `Updates & FAQs Route /app/events`
+- **Thin community `Community 534`** (1 nodes): `Pricing Route /app/pricing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 535`** (1 nodes): `PDP Bundle Configure Route`
+- **Thin community `Community 535`** (1 nodes): `Updates & FAQs Route /app/events`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 536`** (1 nodes): `Billing Route /app/billing`
+- **Thin community `Community 536`** (1 nodes): `PDP Bundle Configure Route`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 537`** (1 nodes): `Deployment Guide`
+- **Thin community `Community 537`** (1 nodes): `Billing Route /app/billing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 538`** (1 nodes): `Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)`
+- **Thin community `Community 538`** (1 nodes): `Deployment Guide`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 539`** (1 nodes): `Bundle Widget Complete Analysis`
+- **Thin community `Community 539`** (1 nodes): `Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 540`** (1 nodes): `Prompt Engineering Guide (App Recreation)`
+- **Thin community `Community 540`** (1 nodes): `Bundle Widget Complete Analysis`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 541`** (1 nodes): `Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature`
+- **Thin community `Community 541`** (1 nodes): `Prompt Engineering Guide (App Recreation)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 542`** (1 nodes): `FilePicker Component for Shopify Files Browse & Upload`
+- **Thin community `Community 542`** (1 nodes): `Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 543`** (1 nodes): `Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)`
+- **Thin community `Community 543`** (1 nodes): `FilePicker Component for Shopify Files Browse & Upload`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 544`** (1 nodes): `Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)`
+- **Thin community `Community 544`** (1 nodes): `Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 545`** (1 nodes): `INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)`
+- **Thin community `Community 545`** (1 nodes): `Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 546`** (1 nodes): `Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)`
+- **Thin community `Community 546`** (1 nodes): `INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 547`** (1 nodes): `Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)`
+- **Thin community `Community 547`** (1 nodes): `Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 548`** (1 nodes): `Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)`
+- **Thin community `Community 548`** (1 nodes): `Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 549`** (1 nodes): `Service: app.state.service.ts`
+- **Thin community `Community 549`** (1 nodes): `Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 550`** (1 nodes): `Concept: Widget Build Pipeline (npm run build:widgets)`
+- **Thin community `Community 550`** (1 nodes): `Service: app.state.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 551`** (1 nodes): `DCP Audit Low Priority Fixes`
+- **Thin community `Community 551`** (1 nodes): `Concept: Widget Build Pipeline (npm run build:widgets)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 552`** (1 nodes): `Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)`
+- **Thin community `Community 552`** (1 nodes): `DCP Audit Low Priority Fixes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 553`** (1 nodes): `Compact Array Component Format`
+- **Thin community `Community 553`** (1 nodes): `Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 554`** (1 nodes): `Legacy Object Component Format`
+- **Thin community `Community 554`** (1 nodes): `Compact Array Component Format`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 555`** (1 nodes): `pricing.messages Legacy Fallback Path`
+- **Thin community `Community 555`** (1 nodes): `Legacy Object Component Format`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 556`** (1 nodes): `messaging Top-Level Metafield Key`
+- **Thin community `Community 556`** (1 nodes): `pricing.messages Legacy Fallback Path`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 557`** (1 nodes): `Loading GIF Overlay - Business Requirement`
+- **Thin community `Community 557`** (1 nodes): `messaging Top-Level Metafield Key`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 558`** (1 nodes): `Shopify Admin files() GraphQL Query`
+- **Thin community `Community 558`** (1 nodes): `Loading GIF Overlay - Business Requirement`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 559`** (1 nodes): `Add Bundle to Cart Button`
+- **Thin community `Community 559`** (1 nodes): `Shopify Admin files() GraphQL Query`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 560`** (1 nodes): `Step Transition Loading State`
+- **Thin community `Community 560`** (1 nodes): `Add Bundle to Cart Button`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 561`** (1 nodes): `Step Transition Loading State`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 06:51 IST
+**Last Updated:** 2026-05-27 07:24 IST
 
 ## Overview
 
@@ -12,6 +12,22 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 07:24 IST - Step Setup Multi Language slice verified before commit
+- Added Step Setup Multi Language wiring for both Product Page and Full Page configure routes: step-level buttons now open the evidenced `Step Name` / `Step Title` translation modal, category buttons open `Category Name` / `Category Title`, and both save into direct `multiLangData` contracts.
+- Added `BundleStep.multiLangData` with migration `20260527070100_add_step_multilang_data`; existing category `multiLangData` is now wired from Admin state through save payload, DB, and metafield/runtime formatting.
+- Captured WPB Admin proof outside the worktree: `/private/tmp/wpb-ppb-step-setup-step-multilanguage-modal-2026-05-27.png` and `/private/tmp/wpb-ppb-step-setup-category-multilanguage-modal-2026-05-27.png`.
+- Captured a live save request/response 500 at `/private/tmp/wpb-ppb-step-setup-multilang-save-500-2026-05-27.network-request` and response; the response showed the old running dev preview Prisma client rejected `BundleStep.multiLangData`.
+- Verified the current generated client and SIT database are correct: `npm run generate:prisma`, `npx prisma validate`, generated-client grep for `multiLangData`, `npx prisma migrate status`, and a rollback-only Prisma update probe all passed.
+- Added save-handler assertions for FPB and PPB step translation DB create payloads and bundle-product metafield sync payloads.
+- Verification passed: `npx jest tests/unit/routes/step-setup-multilanguage-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts tests/unit/routes/ppb-save-bundle.test.ts tests/unit/lib/bundle-config-contracts.test.ts --runInBand` with 95 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild.
+- Shopify CLI dev preview restart was blocked by required device login, so clean live save response proof is deferred to post-deploy or a logged-in dev session; the deployed SIT process will start with the regenerated Prisma client.
+
+### 2026-05-27 07:01 IST - Step Setup category Multi Language slice started
+- User requested 100% Step Setup parity plus wiring every implemented Multi Language button like EB, with no assumed implementation facts.
+- Live PPB Step Setup evidence captured the Category Multi Language modal and help surfaces outside the worktree: `/private/tmp/eb-step-flow-how-to-setup-live-2026-05-27.png`, `/private/tmp/eb-categories-how-to-setup-live-2026-05-27.png`, `/private/tmp/eb-rules-learn-more-live-2026-05-27.png`, and `/private/tmp/eb-step-category-multilanguage-modal-live-2026-05-27.png`.
+- Fresh EB save proof captured the category translation persistence shape at `/private/tmp/eb-ppb-step-category-multilang-update-2026-05-27.network-request` and response file: `productsData1.categories.category98476.multiLangData.es.{name,title}`.
+- Scope for this slice: wire the disabled Step Setup category Multi Language buttons in both configure routes to the existing translation modal, persist category `multiLangData` with the evidenced locale-keyed `name`/`title` shape, add focused tests, verify in Chrome, then commit before continuing broader Step Setup visual parity.
 
 ### 2026-05-27 06:51 IST - FPB Bundle Visibility visual width pass ready to commit
 - Verification passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts --runInBand` with 40 tests, route/test ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, graph rebuild via the graphify pipx venv, and `git diff --check`.

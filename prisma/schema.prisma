@@ -204,6 +204,7 @@ model BundleStep {
   bannerImageUrl              String?
   timelineIconUrl             String? // User-uploadable icon for step timeline (separate from bannerImageUrl)
   pageTitle                   String? // Page header title shown after the nav bar (full-page bundles)
+  multiLangData               Json?
   filters                     Json? // [{id, type: 'tag'|'option', label}] — customer-facing filter options for this step
   primaryVariantOption        String? // Merchant-chosen option dimension shown as button group on card (e.g. "Size")
   bundleId                    String

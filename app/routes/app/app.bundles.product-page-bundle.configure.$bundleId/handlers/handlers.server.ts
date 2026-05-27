@@ -413,6 +413,7 @@ function buildBundleBaseConfig(
     id: step.id,
     name: step.name || 'Step',
     pageTitle: step.pageTitle ?? null,
+    multiLangData: step.multiLangData ?? {},
     minQuantity: parseInt(step.minQuantity) || 1,
     maxQuantity: parseInt(step.maxQuantity) || 1,
     enabled: step.enabled !== false,
@@ -1046,6 +1047,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
               return {
                 name: step.name,
                 pageTitle: step.pageTitle ?? null,
+                multiLangData: step.multiLangData ?? null,
                 position: index + 1, // Map stepNumber to position field
                 products: step.products || [],
                 collections: step.collections || [],

@@ -48,6 +48,14 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 6 | Category-first runtime | category-backed products/collections with empty top-level arrays | runtime keeps category data under `categories` and does not copy it into top-level step `products`/`collections` | No compatibility shims. |
 | 7 | Runtime category compactness | hydrated Admin product objects with variants/images in `StepCategory.products` | metafield/runtime categories keep product references but strip variant and image payload bloat | Admin save payload remains hydrated; storefront runtime hydrates products through app proxy. |
 
+### Step Setup Multi Language Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Step-level Multi Language modal | Step Setup globe button | modal fields are `Step Name` and `Step Title`, and save writes `multiLangData.<locale>.productPageStepText/productPageSubtext` on the step | Live PPB save proof: `/private/tmp/eb-ppb-step-step-multilang-update-2026-05-27.network-request`. |
+| 2 | Category Multi Language modal | Category row Multi Language button | modal fields are `Category Name` and `Category Title`, and save writes `StepCategory[].multiLangData.<locale>.name/title` | Live PPB save proof: `/private/tmp/eb-ppb-step-category-multilang-update-2026-05-27.network-request`. |
+| 3 | Shared Multi Language modal copy | Any implemented Multi Language button using the shared modal | modal renders `Translations`, `Choose language to edit`, `Custom Text`, `Text Settings`, the 38-language list, and `Save and Close` | Live Step Setup screenshots captured outside the worktree. |
+
 ### FPB Bundle Settings Contracts
 
 | # | Scenario | Input | Expected Output | Notes |

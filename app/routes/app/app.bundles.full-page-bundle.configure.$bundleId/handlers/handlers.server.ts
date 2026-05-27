@@ -262,6 +262,8 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
     return {
       id: step.id,
       name: step.name || `Step ${index + 1}`,
+      pageTitle: step.pageTitle ?? null,
+      multiLangData: step.multiLangData ?? {},
       position: step.position ?? index + 1,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
@@ -377,6 +379,8 @@ function buildFpbBaseConfig(
     return {
       id: step.id,
       name: step.name || 'Step',
+      pageTitle: step.pageTitle ?? null,
+      multiLangData: step.multiLangData ?? {},
       minQuantity: parseInt(step.minQuantity) || 1,
       maxQuantity: parseInt(step.maxQuantity) || 1,
       enabled: step.enabled !== false,
@@ -711,6 +715,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
+                multiLangData: step.multiLangData ?? null,
                 // Free gift / add-on step fields
                 isFreeGift: step.isFreeGift === true,
                 freeGiftName: step.freeGiftName || null,

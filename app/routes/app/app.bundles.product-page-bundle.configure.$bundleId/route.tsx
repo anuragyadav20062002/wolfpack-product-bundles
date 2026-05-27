@@ -251,6 +251,11 @@ type VisibilityDisplayConfiguration = {
   showOnSpecificCollectionPages: unknown[];
 };
 
+type StepSetupMultiLanguageTarget =
+  | { type: "text-overrides" }
+  | { type: "step"; stepId: string }
+  | { type: "step-category"; stepId: string; categoryIndex: number };
+
 function asVisibilityArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
@@ -697,6 +702,7 @@ export default function ConfigureBundleFlow() {
   const [multiLanguageFields, setMultiLanguageFields] = useState<MultiLanguageField[]>([]);
   const [multiLanguageTitle, setMultiLanguageTitle] = useState("Multi Language");
   const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
+  const [multiLanguageTarget, setMultiLanguageTarget] = useState<StepSetupMultiLanguageTarget>({ type: "text-overrides" });
 
   // Bundle Visibility — Bundle Widget state (FR-04)
   const savedBundleUpsellConfig = ((bundle as any).bundleUpsellConfig ?? null) as any;
@@ -837,12 +843,44 @@ export default function ConfigureBundleFlow() {
   const [hasPreview, setHasPreview] = useState(false);
   const [productMenuOpen, setProductMenuOpen] = useState(false);
 
+  const defaultMultiLanguageLocale = useCallback(() => (
+    shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  ), [shopLocales]);
+
   const openMultiLanguageModal = useCallback((title: string, fields: MultiLanguageField[]) => {
+    setMultiLanguageTarget({ type: "text-overrides" });
     setMultiLanguageTitle(title);
     setMultiLanguageFields(fields);
-    setTextOverridesLocale(shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en");
+    setTextOverridesLocale(defaultMultiLanguageLocale());
     setIsMultiLanguageModalOpen(true);
-  }, [shopLocales]);
+  }, [defaultMultiLanguageLocale]);
+
+  const openStepMultiLanguageModal = useCallback((stepId: string) => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    if (!step) return;
+    setMultiLanguageTarget({ type: "step", stepId });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields([
+      { key: "productPageStepText", label: "Step Name", fallback: step.name ?? "" },
+      { key: "productPageSubtext", label: "Step Title", fallback: step.pageTitle ?? "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale, stepsState.steps]);
+
+  const openStepCategoryMultiLanguageModal = useCallback((stepId: string, categoryIndex: number) => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    const category = (((step as any)?.StepCategory as any[] | undefined) ?? [])[categoryIndex];
+    if (!category) return;
+    setMultiLanguageTarget({ type: "step-category", stepId, categoryIndex });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields([
+      { key: "name", label: "Category Name", fallback: category.name ?? `Category ${categoryIndex + 1}` },
+      { key: "title", label: "Category Title", fallback: category.title ?? "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale, stepsState.steps]);
 
   const updateLocalizedTextOverride = useCallback((locale: string, key: string, value: string) => {
     setTextOverridesByLocale((prev) => ({
@@ -854,6 +892,49 @@ export default function ConfigureBundleFlow() {
     }));
     markAsDirty();
   }, [markAsDirty]);
+
+  const activeMultiLanguageValues = useMemo(() => {
+    if (multiLanguageTarget?.type === "step") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      return (step?.multiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    if (multiLanguageTarget?.type === "step-category") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      const category = (((step as any)?.StepCategory as any[] | undefined) ?? [])[multiLanguageTarget.categoryIndex];
+      return (category?.multiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    return textOverridesByLocale;
+  }, [multiLanguageTarget, stepsState.steps, textOverridesByLocale]);
+
+  const saveStepSetupMultiLanguageValues = useCallback((nextValues: Record<string, Record<string, string>>) => {
+    if (multiLanguageTarget?.type === "step") {
+      stepsState.updateStepField(multiLanguageTarget.stepId, "multiLangData", nextValues);
+      markAsDirty();
+      return;
+    }
+
+    if (multiLanguageTarget?.type === "step-category") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      const categories = (((step as any)?.StepCategory as any[] | undefined) ?? []);
+      const updatedCategories = categories.map((category, index) => (
+        index === multiLanguageTarget.categoryIndex
+          ? {
+              ...category,
+              multiLangData: {
+                ...(category.multiLangData ?? {}),
+                ...nextValues,
+              },
+            }
+          : category
+      ));
+      stepsState.updateStepField(multiLanguageTarget.stepId, "StepCategory", updatedCategories);
+      markAsDirty();
+      return;
+    }
+
+    setTextOverridesByLocale(nextValues);
+    markAsDirty();
+  }, [markAsDirty, multiLanguageTarget, stepsState]);
 
   useEffect(() => {
     setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
@@ -2084,7 +2165,7 @@ export default function ConfigureBundleFlow() {
                             icon="globe"
                             accessibilityLabel="Multiple language"
                             title="Multiple language"
-                            disabled={shopLocales.length === 0}
+                            onClick={() => openStepMultiLanguageModal(step.id)}
                           />
                           <s-button
                             variant="plain"
@@ -2244,7 +2325,14 @@ export default function ConfigureBundleFlow() {
                                                   markAsDirty();
                                                 }}
                                               />
-                                              <s-button variant="plain" icon="globe" disabled accessibilityLabel="Multi Language">Multi Language</s-button>
+                                              <s-button
+                                                variant="plain"
+                                                icon="globe"
+                                                accessibilityLabel="Multi Language"
+                                                onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
+                                              >
+                                                Multi Language
+                                              </s-button>
                                             </div>
                                             <div style={{ marginBottom: 10 }}>
                                               <s-checkbox
@@ -4804,9 +4892,10 @@ export default function ConfigureBundleFlow() {
         locales={shopLocales}
         activeLocale={textOverridesLocale}
         fields={multiLanguageFields}
-        valuesByLocale={textOverridesByLocale}
+        valuesByLocale={activeMultiLanguageValues}
         onActiveLocaleChange={setTextOverridesLocale}
         onChange={updateLocalizedTextOverride}
+        onSave={saveStepSetupMultiLanguageValues}
         onClose={() => setIsMultiLanguageModalOpen(false)}
       />
 
