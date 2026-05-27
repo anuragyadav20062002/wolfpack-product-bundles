@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 04:57 IST
+**Last Updated:** 2026-05-28 18:05 IST
 
 ## Overview
 
@@ -45,6 +45,17 @@ UI parity gaps identified:
 ### 2026-05-28 17:10 IST - Contract test assertion cleanup
 - Removed brittle assertion patterns in readiness overlay contract test.
 - Test now validates stable trigger semantics (`type`, `data-tour-target`, `aria-label`) without formatting-sensitive matching.
+
+### 2026-05-28 18:05 IST - Bundle Product Card menu parity
+- Restored FPB menu parity with PPB by adding **Replace Product** as the first action in the FPB menu dropdown.
+- The menu now contains:
+  - `Replace Product` → calls `handleBundleProductSelect()`
+  - `Sync Product` → calls `handleSyncProduct()`
+
+### 2026-05-28 18:12 IST - PPB Edit Product fallback parity
+- Aligned PPB bundle product **Edit Product** action with FPB/App Bridge behavior:
+  - uses `shopify.navigate()` in normal/admin environments,
+  - falls back to `window.open(adminProductUrl, "_blank")` on Cloudflare tunnel hosts where postMessage origin mismatches.
 
 ### 2026-05-28 04:57 IST - FPB preview handler crash fix
 - Fixed `ReferenceError: Cannot access 'handlePreviewBundle' before initialization` in FPB configure route.

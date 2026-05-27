@@ -98,6 +98,8 @@ interface SubscriptionValidationResponse {
   error?: string;
 }
 
+type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
+
 // showPolarisModal / hidePolarisModal imported from _shared/bundle-configure/modal-utils
 
 const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
@@ -825,6 +827,11 @@ export default function ConfigureBundleFlow() {
   const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
     ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
   );
+  const [individualSellingPlanShowFor, setIndividualSellingPlanShowFor] = useState<IndividualSellingPlanShowFor>(
+    ((bundle as any).individualSellingPlanSelection as { showFor?: unknown } | null)?.showFor === "OOS_PRODUCTS"
+      ? "OOS_PRODUCTS"
+      : "ALL_PRODUCTS"
+  );
 
   // Select Template state (main = DB-synced; pending = overlay working copy)
   const [bundleDesignTemplate, setBundleDesignTemplate] = useState<string | null>((bundle as any).bundleDesignTemplate ?? null);
@@ -836,6 +843,11 @@ export default function ConfigureBundleFlow() {
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
   const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
   const templateFetcher = useFetcher();
+  const selectTemplateDialogRef = useRef<HTMLDivElement>(null);
+  const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
+  const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
+  const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
+  const lastTemplateResponseRef = useRef<unknown>(null);
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -1173,7 +1185,7 @@ export default function ConfigureBundleFlow() {
       }));
       formData.append("individualSellingPlanSelection", JSON.stringify({
         isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
-        showFor: "ALL_PRODUCTS",
+        showFor: individualSellingPlanShowFor,
       }));
       formData.append("bundleTextConfig", JSON.stringify({
         bundleSummary: {
@@ -1257,6 +1269,7 @@ export default function ConfigureBundleFlow() {
     productSlotsEnabled,
     maxQtyPerProduct,
     individualSellingPlanEnabled,
+    individualSellingPlanShowFor,
     bundleCartTitle,
     bundleCartSubtitle,
     bundle,
@@ -1389,6 +1402,46 @@ export default function ConfigureBundleFlow() {
       }
     }
   }, [fetcher.data, fetcher.state]);
+
+  useEffect(() => {
+    const intent = templateFetcher.formData instanceof FormData
+      ? templateFetcher.formData.get("intent")
+      : null;
+
+    if (templateFetcher.state !== 'idle' || intent !== 'updateBundleDesignTemplate') {
+      return;
+    }
+
+    if (templateFetcher.data === null || templateFetcher.data === undefined) {
+      if (lastTemplateRequestRef.current) {
+        setTemplateSaveError("Unable to save template. Please try again.");
+      }
+      return;
+    }
+
+    if (templateFetcher.data === lastTemplateResponseRef.current) {
+      return;
+    }
+
+    lastTemplateResponseRef.current = templateFetcher.data;
+
+    const response = templateFetcher.data as { success?: boolean; error?: string };
+    const request = lastTemplateRequestRef.current;
+
+    if (response.success) {
+      if (request) {
+        setBundleDesignTemplate(request.template);
+        setBundleDesignPresetId(request.presetId);
+        setTemplateModalStep("confirm");
+      }
+      setTemplateSaveError(null);
+      lastTemplateRequestRef.current = null;
+      return;
+    }
+
+    const errorMessage = response.error || "Failed to save template settings.";
+    setTemplateSaveError(errorMessage);
+  }, [templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
 
   const handleAddToStorefront = useCallback(() => {
     const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
@@ -1841,31 +1894,116 @@ export default function ConfigureBundleFlow() {
   const closeSelectTemplateDialog = useCallback(() => {
     setIsSelectTemplateModalOpen(false);
     setTemplateModalStep("select");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
+    requestAnimationFrame(() => {
+      selectTemplateOpenButtonRef.current?.focus();
+    });
+  }, []);
+
+  const getSelectTemplateDialogFocusableElements = useCallback((): HTMLElement[] => {
+    if (!selectTemplateDialogRef.current) {
+      return [];
+    }
+
+    return Array.from(
+      selectTemplateDialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => (
+      !element.hasAttribute("disabled")
+      && element.tabIndex >= 0
+      && window.getComputedStyle(element).display !== "none"
+      && window.getComputedStyle(element).visibility !== "hidden"
+    ));
   }, []);
 
   const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape") return;
-    event.stopPropagation();
-    closeSelectTemplateDialog();
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      closeSelectTemplateDialog();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = getSelectTemplateDialogFocusableElements();
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    const activeElementIndex = activeElement ? focusableElements.indexOf(activeElement) : -1;
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+
+    if (activeElementIndex === -1) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+
+    if (event.shiftKey && activeElementIndex === 0) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && activeElementIndex === focusableElements.length - 1) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, [closeSelectTemplateDialog, getSelectTemplateDialogFocusableElements]);
+
+  const handleSelectTemplateBackdropClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      closeSelectTemplateDialog();
+    }
   }, [closeSelectTemplateDialog]);
 
   const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
     setTemplateModalStep("select");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
     setIsSelectTemplateModalOpen(true);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
 
+  useEffect(() => {
+    if (isSelectTemplateModalOpen) {
+      selectTemplateDialogRef.current?.focus();
+    }
+  }, [isSelectTemplateModalOpen]);
+
   const handleTemplateNext = useCallback(() => {
+    if (!pendingDesignTemplate || !pendingDesignPresetId) {
+      return;
+    }
+
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = {
+      template: pendingDesignTemplate,
+      presetId: pendingDesignPresetId,
+    };
+    lastTemplateResponseRef.current = null;
+
     const fd = new FormData();
     fd.append("intent", "updateBundleDesignTemplate");
     fd.append("bundleDesignTemplate", pendingDesignTemplate ?? "");
     fd.append("bundleDesignPresetId", pendingDesignPresetId ?? "");
     templateFetcher.submit(fd, { method: "POST" });
-    setBundleDesignTemplate(pendingDesignTemplate);
-    setBundleDesignPresetId(pendingDesignPresetId);
-    setTemplateModalStep("confirm");
   }, [pendingDesignTemplate, pendingDesignPresetId, templateFetcher]);
+
+  const handleTemplatePreview = useCallback(() => {
+    void handlePreviewBundle();
+    closeSelectTemplateDialog();
+  }, [closeSelectTemplateDialog, handlePreviewBundle]);
 
   const handleConfirmDiscard = useCallback(() => {
     closeDiscardModal();
@@ -2059,10 +2197,15 @@ export default function ConfigureBundleFlow() {
                           void handleBundleProductSelect();
                           return;
                         }
-                        const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
-                        shopify.navigate(productUrl);
-                      }}
-                    >
+                          const storeHandle = shop?.replace('.myshopify.com', '');
+                          const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
+                          if (window.location.hostname.includes("trycloudflare.com")) {
+                            window.open(adminProductUrl, "_blank");
+                          } else {
+                            shopify.navigate(adminProductUrl);
+                          }
+                        }}
+                      >
                       <s-icon type="edit" />
                       <span>Edit Product</span>
                     </button>
@@ -2112,6 +2255,7 @@ export default function ConfigureBundleFlow() {
                             type="button"
                             className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
                             onClick={() => { if (item.id === "select_template") { openSelectTemplateModal(); } else { handleSectionChange(item.id); } }}
+                            ref={item.id === "select_template" ? selectTemplateOpenButtonRef : undefined}
                           >
                             <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
                               {item.iconType
@@ -2872,9 +3016,9 @@ export default function ConfigureBundleFlow() {
                       <div className={productPageBundleStyles.stepConfigRow}>
                         <div className={productPageBundleStyles.iconColumn}>
                           <div className={productPageBundleStyles.iconBox}>
-                                        {(step as any).timelineIconUrl ? (
+                                        {(step as any).stepImage ? (
                                           <img
-                                            src={(step as any).timelineIconUrl}
+                                            src={(step as any).stepImage}
                                             alt="Step icon"
                               className={productPageBundleStyles.iconImg}
                                           />
@@ -2890,9 +3034,9 @@ export default function ConfigureBundleFlow() {
                             <FilePicker
                               autoOpen
                               onClose={() => setShowIconPickerForStep(null)}
-                              value={(step as any).timelineIconUrl ?? null}
+                              value={(step as any).stepImage ?? null}
                               onChange={(url: string | null) => {
-                                stepsState.updateStepField(step.id, 'timelineIconUrl', url);
+                                stepsState.updateStepField(step.id, 'stepImage', url);
                                 setShowIconPickerForStep(null);
                                 markAsDirty();
                               }}
@@ -2900,11 +3044,11 @@ export default function ConfigureBundleFlow() {
                               hideCropEditor
                             />
                           )}
-                                      <s-button
-                            onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
-                                      >
-                                        {(step as any).timelineIconUrl ? "Replace" : "Upload"}
-                                      </s-button>
+                                          <s-button
+                                onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
+                                          >
+                                            {(step as any).stepImage ? "Replace" : "Upload"}
+                                          </s-button>
                                     </div>
                         <div className={productPageBundleStyles.fieldsColumn}>
                                       <s-text-field
@@ -4139,6 +4283,20 @@ export default function ConfigureBundleFlow() {
                         <p style={{ margin: 0, fontSize: 13, color: "#8c9196" }}>
                           Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle.
                         </p>
+                        <s-select
+                          label="Apply to products"
+                          value={individualSellingPlanShowFor}
+                          disabled={individualSellingPlanBlocked || !individualSellingPlanEnabled || undefined}
+                          onChange={(e: Event) => {
+                            setIndividualSellingPlanShowFor(
+                              ((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor)
+                            );
+                            markAsDirty();
+                          }}
+                        >
+                          <s-option value="ALL_PRODUCTS">All products</s-option>
+                          <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
+                        </s-select>
                       </s-stack>
                     </s-section>
 
@@ -4465,7 +4623,7 @@ export default function ConfigureBundleFlow() {
                         {(() => {
                           const addonTiers: { displayFree: boolean }[] = Array.isArray(step.addonTiers)
                             ? (step.addonTiers as { displayFree: boolean }[])
-                            : [{ displayFree: step.addonDisplayFree !== false }];
+                            : [{ displayFree: step.addonDisplayFree === true }];
 
                           const updateAddonTiers = (updated: { displayFree: boolean }[]) => {
                             stepsState.updateStepField(step.id, "addonTiers", updated);
@@ -4492,7 +4650,7 @@ export default function ConfigureBundleFlow() {
                                   </div>
                                   <s-checkbox
                                     label="Display products as free ($0.00)"
-                                    checked={tier.displayFree || undefined}
+                                    checked={tier.displayFree === true}
                                     onChange={(e: Event) => {
                                       const updated = addonTiers.map((t, i) =>
                                         i === idx ? { ...t, displayFree: (e.target as HTMLInputElement).checked } : t
@@ -4829,9 +4987,8 @@ export default function ConfigureBundleFlow() {
         <div
           className={productPageBundleStyles.templateDialogBackdrop}
           role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeSelectTemplateDialog();
-          }}
+          onMouseDown={handleSelectTemplateBackdropClick}
+          onClick={handleSelectTemplateBackdropClick}
         >
           <div
             className={productPageBundleStyles.templateDialog}
@@ -4839,6 +4996,8 @@ export default function ConfigureBundleFlow() {
             aria-modal="true"
             aria-labelledby="ppb-template-dialog-title"
             tabIndex={-1}
+            ref={selectTemplateDialogRef}
+            onClick={(event) => event.stopPropagation()}
             onKeyDown={handleSelectTemplateDialogKeyDown}
             onMouseDown={(event) => event.stopPropagation()}
           >
@@ -4869,6 +5028,9 @@ export default function ConfigureBundleFlow() {
                       Customize Colors &amp; Language
                     </s-button>
                   </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={productPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
                   <div className={productPageBundleStyles.templateDialogGrid}>
                     {productPageTemplateOptions.map((templateOption) => {
                       const isSelected = pendingDesignPresetId === templateOption.presetId && pendingDesignTemplate === templateOption.layoutTemplate;
@@ -4920,7 +5082,7 @@ export default function ConfigureBundleFlow() {
                   </div>
                   <h3 className={productPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
                   <p className={productPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
-                  <s-button variant="secondary" onClick={closeSelectTemplateDialog}>Preview bundle</s-button>
+                  <s-button variant="secondary" onClick={handleTemplatePreview}>Preview bundle</s-button>
                 </div>
               </div>
             )}

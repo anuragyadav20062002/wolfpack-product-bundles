@@ -2665,6 +2665,14 @@ export default function ConfigureBundleFlow() {
                             <button
                               type="button"
                               className={fullPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); void handleBundleProductSelect(); }}
+                            >
+                              <s-icon type="duplicate" />
+                              <span>Replace Product</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.productMenuDropdownItem}
                               onClick={() => { setProductMenuOpen(false); handleSyncProduct(); }}
                             >
                               <s-icon type="duplicate" />
