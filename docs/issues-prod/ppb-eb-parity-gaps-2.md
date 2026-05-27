@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-19
-**Last Updated:** 2026-05-28 18:05 IST
+**Last Updated:** 2026-05-28 18:20 IST
 
 ## Overview
 
@@ -51,6 +51,7 @@ UI parity gaps identified:
 - The menu now contains:
   - `Replace Product` → calls `handleBundleProductSelect()`
   - `Sync Product` → calls `handleSyncProduct()`
+- Set **Replace Product** icon to `edit`, matching the PPB menu icon style.
 
 ### 2026-05-28 18:12 IST - PPB Edit Product fallback parity
 - Aligned PPB bundle product **Edit Product** action with FPB/App Bridge behavior:
