@@ -106,6 +106,16 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 12 | Standard mobile summary tray | side-footer Standard template on mobile | compact sticky summary tray is visible by default, without modal backdrop/collapsed-only state, and includes discount message, progress, and action button | Matches mobile Standard/fixed-amount evidence before selected-products drawer behavior is marked green. |
 | 13 | Standard mobile product-card density | side-footer Standard template on mobile | product cards use compact image/title/price spacing and a square plus CTA; desktop Standard card CTA remains unchanged | Mobile evidence differs from desktop Standard evidence, so scope stays mobile-only. |
 
+### FPB Bundle Visibility Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Widget direct config serialization | Full Page Bundle Widget enabled with block/button, title, description, button text, image, display targeting, language mode, and browsed-product toggle | Admin save submits current-state `bundleUpsellConfig.widgetConfiguration` with `type:"OFFER_WIDGET"`, image/title/description/buttonText, displayConfiguration, `useLinkProductAsDefaultProduct`, and `languageMode` | Captured save payload uses a direct `bundleUpsellConfig` object. |
+| 2 | Bundle Visibility save/metafield sync | Full Page save carries a direct `bundleUpsellConfig` object | DB update and bundle-product metafield sync receive the same direct object | Storefront upsell runtime reads this direct contract. |
+| 3 | Visibility overview visual shell | Full Page Bundle Visibility overview | route uses custom card/grid/action markers, black Quick Setup Guide actions, bundle-link copy row, and setup panel for Bundle Widget | Non-Polaris controls are allowed for exact clone work. |
+| 4 | Widget targeting picker wiring | Widget display set to specific products or collections | route opens App Bridge product/collection resource pickers with `action:"select"` and writes both selected data and compact page targets into `displayConfiguration` | Help content confirms manual product/collection override behavior. |
+| 5 | Compact visibility picker payload | Full Page Widget targets a specific product/collection from App Bridge picker | route persists compact product/collection references only and never stores full picker objects inside `bundleUpsellConfig` | Product Page proof already showed full picker objects exceed Shopify's 64 KB metafield limit. |
+
 ### Cart Messaging
 
 | # | Scenario | Input | Expected Output | Notes |

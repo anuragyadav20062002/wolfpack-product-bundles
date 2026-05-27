@@ -445,6 +445,408 @@
   composes: visibilitySetupTime from "./bundle-configure-shared.module.css";
 }
 
+.visibilityOverviewStack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visibilityOverviewCard,
+.visibilityPanel,
+.visibilityPlacementCard {
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgba(26, 26, 26, 0.04);
+}
+
+.visibilityOverviewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.visibilityPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px;
+}
+
+.visibilityPlacementCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 16px;
+}
+
+.visibilityTitleSwitchRow,
+.visibilitySectionHeader,
+.visibilitySetupPanel,
+.visibilityLinkRow,
+.visibilityGuideFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.visibilityPanelTitle,
+.visibilityCardTitle,
+.visibilitySectionTitle,
+.visibilitySetupTitle,
+.visibilityGuideTitle {
+  margin: 0;
+  color: #303030;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.visibilityPanelTitle {
+  font-size: 15px;
+}
+
+.visibilityCardTitle,
+.visibilitySectionTitle {
+  font-size: 14px;
+}
+
+.visibilitySetupTitle,
+.visibilityGuideTitle {
+  font-size: 13px;
+}
+
+.visibilityCardText,
+.visibilityGuideDescription {
+  margin: 4px 0 0;
+  color: #616161;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.visibilitySectionIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.visibilityStatusEnabled,
+.visibilityStatusWarning {
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.visibilityStatusEnabled {
+  background: #b4f4c4;
+  color: #0c5132;
+}
+
+.visibilityStatusWarning {
+  background: #ffd79d;
+  color: #5f370e;
+}
+
+.visibilityGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.visibilityGuideCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.visibilityGuideMedia {
+  height: 136px;
+  overflow: hidden;
+  background: #f1f1f1;
+}
+
+.visibilityGuideMedia img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visibilityGuideBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.visibilityGuideAction,
+.visibilityPrimaryAction,
+.visibilitySecondaryAction,
+.visibilityPlainAction {
+  min-height: 28px;
+  border: 1px solid #cfcfcf;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.visibilityGuideAction,
+.visibilityPrimaryAction {
+  border-color: #111111;
+  background: #111111;
+  color: #ffffff;
+}
+
+.visibilitySecondaryAction {
+  background: #ffffff;
+  color: #303030;
+}
+
+.visibilitySecondaryAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.visibilityPlainAction {
+  border-color: transparent;
+  background: transparent;
+  color: #303030;
+}
+
+.visibilitySetupPanel {
+  border-top: 1px solid #ebebeb;
+  padding-top: 14px;
+}
+
+.visibilityLinkRow {
+  align-items: flex-end;
+}
+
+.visibilityTextInput,
+.visibilityTextarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #8a8a8a;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #303030;
+  font: inherit;
+  font-size: 13px;
+}
+
+.visibilityTextInput {
+  min-height: 32px;
+  padding: 5px 10px;
+}
+
+.visibilityTextarea {
+  min-height: 58px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.visibilityPreviewFrame {
+  overflow: hidden;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #f1f1f1;
+}
+
+.visibilityPreviewProduct {
+  display: grid;
+  grid-template-columns: 44px minmax(145px, 0.95fr) minmax(180px, 1fr);
+  gap: 12px;
+  width: min(504px, calc(100% - 88px));
+  margin: 50px auto;
+  padding: 28px 32px;
+  background: #ffffff;
+}
+
+.visibilityPreviewThumbnails {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.visibilityPreviewThumbnails span,
+.visibilityPreviewImage {
+  border-radius: 5px;
+  background: linear-gradient(135deg, #ead4cf, #f7eeee);
+}
+
+.visibilityPreviewThumbnails span {
+  width: 34px;
+  height: 34px;
+}
+
+.visibilityPreviewImage {
+  min-height: 160px;
+  overflow: hidden;
+}
+
+.visibilityPreviewImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visibilityPreviewDetails {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  color: #303030;
+}
+
+.visibilityPreviewTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.visibilityPreviewPrice {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.visibilityPreviewNativeButton {
+  border-radius: 3px;
+  background: #222222;
+  color: #ffffff;
+  padding: 7px 10px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.visibilityPreviewWidget {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e1e1e1;
+  border-radius: 4px;
+  padding: 7px;
+  font-size: 10px;
+}
+
+.visibilityPreviewWidget button {
+  border: 0;
+  border-radius: 3px;
+  background: #222222;
+  color: #ffffff;
+  padding: 5px 7px;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.visibilityRadioBar {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  border-top: 1px solid #dedede;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.visibilityRadioLabel,
+.visibilityCheckboxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #303030;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.visibilityRadioLabel input,
+.visibilityCheckboxLabel input {
+  width: 16px;
+  height: 16px;
+  accent-color: #303030;
+}
+
+.visibilityInfoBanner {
+  border-radius: 7px;
+  background: #eaf4ff;
+  color: #21527c;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.visibilityPanelSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visibilitySettingsGrid {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.visibilityImagePicker {
+  min-width: 0;
+}
+
+.visibilityFieldStack,
+.visibilityTargetOptions,
+.visibilityTargetPicker,
+.visibilitySelectionList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.visibilityFieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #303030;
+  font-size: 13px;
+}
+
+.visibilityTargetPicker {
+  margin-left: 25px;
+  padding: 10px 0 0;
+}
+
+.visibilitySelectionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #e4e4e4;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.visibilitySelectionItem button {
+  border: 0;
+  background: transparent;
+  color: #616161;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .settingsRow {
   composes: settingsRow from "./bundle-configure-shared.module.css";
 }

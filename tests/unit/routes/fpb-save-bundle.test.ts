@@ -190,6 +190,48 @@ function makeUpdatedBundle(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeBundleUpsellConfig(overrides: Record<string, unknown> = {}) {
+  return {
+    multiLangText: {},
+    widgetConfiguration: {
+      isEnabled: true,
+      type: "OFFER_WIDGET",
+      imageUrl: "https://cdn.example.test/widget.png",
+      title: "Bundle & Save",
+      description: "Complete the look",
+      buttonText: "Buy with Bundle",
+      displayConfiguration: {
+        showOnAllBundleProducts: false,
+        selectedProducts: [
+          {
+            id: "gid://shopify/Product/111",
+            productId: "111",
+            graphqlId: "gid://shopify/Product/111",
+            handle: "gift-card",
+            title: "Gift Card",
+            variants: [],
+          },
+        ],
+        showOnSpecificProductPages: [
+          {
+            productId: "111",
+            graphqlId: "gid://shopify/Product/111",
+            handle: "gift-card",
+            title: "Gift Card",
+            variants: [],
+            images: [],
+          },
+        ],
+        collectionsSelectedData: [],
+        showOnSpecificCollectionPages: [],
+      },
+      useLinkProductAsDefaultProduct: true,
+      languageMode: "MULTIPLE",
+    },
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   MOCK_ADMIN.graphql.mockResolvedValue({
@@ -231,6 +273,22 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
           description: "A test bundle",
         }),
       })
+    );
+  });
+
+  it("persists direct bundleUpsellConfig from current full-page visibility controls", async () => {
+    const bundleUpsellConfig = makeBundleUpsellConfig();
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ bundleUpsellConfig: JSON.stringify(bundleUpsellConfig) }),
+    );
+
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ bundleUpsellConfig }),
+      }),
     );
   });
 
@@ -578,6 +636,47 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       MOCK_ADMIN,
       PRODUCT_ID,
       expect.any(Object)
+    );
+  });
+
+  it("syncs direct full-page bundleUpsellConfig into bundle product metafields", async () => {
+    const bundleUpsellConfig = makeBundleUpsellConfig();
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        bundleUpsellConfig,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      }),
+    );
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({
+        stepsData: JSON.stringify(makeStepWithProduct()),
+        bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+        bundleUpsellConfig: JSON.stringify(bundleUpsellConfig),
+      }),
+    );
+
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({ bundleUpsellConfig }),
     );
   });
 

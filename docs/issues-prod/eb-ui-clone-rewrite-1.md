@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 06:17 IST
+**Last Updated:** 2026-05-27 06:39 IST
 
 ## Overview
 
@@ -12,6 +12,24 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 06:39 IST - FPB Bundle Visibility slice verified before commit
+- Verification passed: `npx jest tests/unit/routes/fpb-bundle-visibility-ui-contract.test.ts tests/unit/routes/fpb-save-bundle.test.ts --runInBand` with 39 tests, modified-file ESLint with 0 errors, `npm run build`, code/test competitor-reference scan with no matches, `git diff --check`, and graph rebuild via the graphify pipx venv.
+- Graph rebuild updated `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json`; trimmed generated trailing whitespace from the report before the final diff check.
+- Next: commit the staged Full Page configure route/server/CSS, route tests, test spec, issue log, evidence manifest, and graph outputs with the required issue prefix.
+
+### 2026-05-27 06:37 IST - FPB Bundle Visibility compact save proof captured
+- Added RED-to-green coverage for the Full Page Bundle Visibility overview/Widget source contract, App Bridge product and collection picker callbacks, compact targeting references, current-state `bundleUpsellConfig` serialization, DB persistence, and bundle-product metafield sync input.
+- Patched the Full Page configure route, save handler, and route stylesheet so Bundle Visibility uses the cloned card shell and Bundle Widget saves the direct upsell-widget contract instead of stale loaded config.
+- Captured Chrome Admin proof outside the worktree: `/private/tmp/wpb-fpb-bundle-visibility-overview-after-clone-css-2026-05-27.png`, `/private/tmp/wpb-fpb-bundle-widget-after-clone-css-2026-05-27.png`, `/private/tmp/wpb-fpb-bundle-widget-specific-collection-compact-before-save-2026-05-27.png`, and `/private/tmp/wpb-fpb-bundle-widget-specific-collection-compact-after-save-2026-05-27.png`.
+- Captured save proof outside the worktree: `/private/tmp/wpb-fpb-bundle-widget-specific-collection-save-compact-200-2026-05-27.network-request` and `/private/tmp/wpb-fpb-bundle-widget-specific-collection-save-compact-200-2026-05-27.network-response`; the response includes `bundleUpsellConfig.widgetConfiguration.displayConfiguration` with compact `Home page` collection references.
+- Direct SIT DB read confirmed `upsellWidgetEnabled=true`, `upsellWidgetDisplayOn="specific_collections"`, and matching compact `bundleUpsellConfig` saved on bundle `cmpfhj2m10000v0t038osl42y`.
+- Next: rerun focused tests/lint/build, rebuild the graph, update the evidence manifest rows, and commit this FPB Bundle Visibility Admin/persistence slice.
+
+### 2026-05-27 06:22 IST - FPB Bundle Visibility visual and direct-contract slice started
+- Continuing the requested Discount & Pricing plus Bundle Visibility clone work after committing the Product Page Bundle Visibility Admin/picker compact persistence slice.
+- Scope for this slice: Full Page Bundle Visibility overview, Bundle Widget Admin surface, product/collection targeting pickers, and direct `bundleUpsellConfig` persistence/metafield wiring for the evidenced upsell widget contract.
+- Next: add RED route/source and save-handler tests, patch the Full Page configure route/CSS/server payload path, run focused verification, then capture Chrome Admin/save proof before committing.
 
 ### 2026-05-27 06:09 IST - PPB Bundle Visibility picker payload gap found
 - Live Chrome save proof for a Widget-specific product target failed with a 500 response because `bundle_ui_config` exceeded Shopify's 64 KB metafield limit (`137,538` bytes) after the route serialized the full App Bridge product picker object.
