@@ -1482,6 +1482,27 @@
   margin-bottom: 14px;
 }
 
+.categoryFieldGroup {
+  margin-bottom: 14px;
+}
+
+.categoryFieldGroup .catNameRow {
+  margin-bottom: 0;
+}
+
+.categoryFieldLabel {
+  display: block;
+  margin: 0 0 6px;
+  color: #303030;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.categoryVariantControl {
+  margin-top: 12px;
+}
+
 .categoryNameInput {
   composes: categoryNameInput from "./bundle-configure-shared.module.css";
 }

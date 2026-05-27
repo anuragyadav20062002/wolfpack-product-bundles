@@ -73,6 +73,12 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 |---|---|---|---|---|
 | 1 | PPB category variant flag | Category checkbox `Display variants as individual products` toggled on | route updates `StepCategory[].displayVariantsAsIndividualProducts=true`, and save/runtime contracts consume that direct key | Product Page Step Setup request stores this flag per category. |
 
+### Step Setup Category Content Admin
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | PPB visible category title | Product Page Step Setup category body | `Category Title` field renders below Category Name / Multi Language, updates `StepCategory[].title`, and Display Variants renders after Products/Collections selection controls | PPB screenshot `ppb-admin-step-setup-products-selected.png`; payload stores `categories.category98476.title: "Pick audit items"`. |
+
 ### FPB Bundle Settings Contracts
 
 | # | Scenario | Input | Expected Output | Notes |

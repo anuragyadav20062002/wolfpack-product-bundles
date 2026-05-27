@@ -2380,37 +2380,55 @@ export default function ConfigureBundleFlow() {
 
                                         {isOpen && (
                                           <div className={productPageBundleStyles.categoryAccordionBody}>
-                                            <div className={productPageBundleStyles.catNameRow}>
+                                            <div className={productPageBundleStyles.categoryFieldGroup}>
+                                              <label
+                                                className={productPageBundleStyles.categoryFieldLabel}
+                                                htmlFor={`ppb-category-name-${catKey}`}
+                                              >
+                                                Category Name
+                                              </label>
+                                              <div className={productPageBundleStyles.catNameRow}>
+                                                <input
+                                                  id={`ppb-category-name-${catKey}`}
+                                                  className={productPageBundleStyles.categoryNameInput}
+                                                  type="text"
+                                                  value={cat.name ?? ""}
+                                                  placeholder={`Category ${catIndex + 1}`}
+                                                  aria-label="Category name"
+                                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                    const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                      i === catIndex ? { ...c, name: e.target.value } : c
+                                                    );
+                                                    stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                    markAsDirty();
+                                                  }}
+                                                />
+                                                <s-button
+                                                  variant="plain"
+                                                  icon="globe"
+                                                  accessibilityLabel="Multi Language"
+                                                  onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
+                                                >
+                                                  Multi Language
+                                                </s-button>
+                                              </div>
+                                            </div>
+                                            <div className={productPageBundleStyles.categoryFieldGroup}>
+                                              <label
+                                                className={productPageBundleStyles.categoryFieldLabel}
+                                                htmlFor={`ppb-category-title-${catKey}`}
+                                              >
+                                                Category Title
+                                              </label>
                                               <input
+                                                id={`ppb-category-title-${catKey}`}
                                                 className={productPageBundleStyles.categoryNameInput}
                                                 type="text"
-                                                value={cat.name ?? ""}
-                                                placeholder={`Category ${catIndex + 1}`}
-                                                aria-label="Category name"
+                                                value={cat.title ?? ""}
+                                                aria-label="Category title"
                                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                                   const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, name: e.target.value } : c
-                                                  );
-                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
-                                                  markAsDirty();
-                                                }}
-                                              />
-                                              <s-button
-                                                variant="plain"
-                                                icon="globe"
-                                                accessibilityLabel="Multi Language"
-                                                onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
-                                              >
-                                                Multi Language
-                                              </s-button>
-                                            </div>
-                                            <div style={{ marginBottom: 10 }}>
-                                              <s-checkbox
-                                                label="Display variants as individual products"
-                                                checked={cat.displayVariantsAsIndividualProducts === true || undefined}
-                                                onChange={(e: Event) => {
-                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, displayVariantsAsIndividualProducts: (e.target as HTMLInputElement).checked } : c
+                                                    i === catIndex ? { ...c, title: e.target.value } : c
                                                   );
                                                   stepsState.updateStepField(step.id, "StepCategory", updated);
                                                   markAsDirty();
@@ -2551,6 +2569,19 @@ export default function ConfigureBundleFlow() {
                                                 )}
                                               </div>
                                             )}
+                                            <div className={productPageBundleStyles.categoryVariantControl}>
+                                              <s-checkbox
+                                                label="Display variants as individual products"
+                                                checked={cat.displayVariantsAsIndividualProducts === true || undefined}
+                                                onChange={(e: Event) => {
+                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                    i === catIndex ? { ...c, displayVariantsAsIndividualProducts: (e.target as HTMLInputElement).checked } : c
+                                                  );
+                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                  markAsDirty();
+                                                }}
+                                              />
+                                            </div>
                                           </div>
                                         )}
                                       </div>
@@ -2567,6 +2598,7 @@ export default function ConfigureBundleFlow() {
                                         {
                                           id: `cat-${Date.now()}`,
                                           name: "",
+                                          title: "",
                                           sortOrder: cats.length,
                                           products: [],
                                           collections: [],

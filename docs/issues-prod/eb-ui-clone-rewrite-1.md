@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:26 IST
+**Last Updated:** 2026-05-27 08:32 IST
 
 ## Overview
 
@@ -12,6 +12,16 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-27 08:29 IST - PPB Step Setup category title slice started
+- Re-read the PPB Step Setup evidence: `ppb-admin-step-setup-products-selected.png` shows `Category Name`, a category Multi Language button, then a visible `Category Title` field before the Products/Collections tabs, and the update payload stores `categories.category98476.title: "Pick audit items"`.
+- Current Product Page route wires category `title` through persistence and the category Multi Language modal, but the visible Step Setup category body has no `Category Title` input and renders the `Display variants as individual products` checkbox before the Products/Collections tabs instead of below the product-selection controls.
+- Scope: add a RED route/source contract for the PPB Category Title input and body order, patch only the Product Page Step Setup category body plus CSS needed for the evidenced labels, verify, and commit.
+
+### 2026-05-27 08:32 IST - PPB Step Setup category title slice verified
+- Added `tests/unit/routes/step-setup-category-content-ui-contract.test.ts` to require visible Product Page `Category Name` / category Multi Language / `Category Title` ordering, direct `StepCategory[].title` updates, variant-display placement after product/collection selection controls, and explicit `title: ""` for newly added categories.
+- Patched the Product Page configure route to render the visible Category Title input and moved the category variant-display checkbox below the tabbed product/collection controls. Added local CSS module labels/spacing for the evidenced field stack.
+- Verification passed: focused Step Setup/PPB save Jest suite with 47 tests, TS/TSX modified-file ESLint with 0 errors, code/test competitor-reference scan with no matches, and `npm run build`. The first lint attempt included a CSS module and failed because the repo ESLint config is not configured for `.css`; rerun excluded CSS and the production build covered the CSS module.
 
 ### 2026-05-27 08:20 IST - Step Setup action-order parity slice started
 - Re-read the captured FPB and PPB Step Setup screenshots from `/private/tmp/eb-complete-configure-audit-2026-05-25/`: `fpb-admin-step-setup-after-save.png` and `ppb-admin-step-setup-products-selected.png`.
