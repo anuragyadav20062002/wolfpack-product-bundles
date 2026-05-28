@@ -172,6 +172,12 @@ describe("normalizePricingRuleMessages", () => {
     expect(getDefaultDiscountRuleText(DiscountMethod.FIXED_AMOUNT_OFF)).toBe(
       "Add {{discountConditionDiff}} product(s) to save {{discountValueUnit}}{{discountValue}}!"
     );
+    expect(getDefaultDiscountRuleText(DiscountMethod.BUY_X_GET_Y)).toBe(
+      "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!"
+    );
+    expect(getDefaultDiscountRuleText(DiscountMethod.BUY_X_GET_Y, 1)).toBe(
+      "Add {{discountConditionDiff}} more to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!"
+    );
     expect(getDefaultDiscountRuleSuccessMessage(DiscountMethod.FIXED_AMOUNT_OFF)).toBe(
       "Success! Your {{discountValueUnit}}{{discountValue}} discount has been applied to your cart."
     );
@@ -217,12 +223,16 @@ describe("normalizePricingRuleMessages", () => {
 
   it("creates Buy X, get Y message templates when that discount method is active", () => {
     expect(normalizePricingRuleMessages({
-      rules: [quantityRule("rule-bxy", 2, 100)],
+      rules: [quantityRule("rule-bxy-0", 2, 100), quantityRule("rule-bxy-1", 3, 100)],
       messages: {},
       method: DiscountMethod.BUY_X_GET_Y,
     })).toEqual({
-      "rule-bxy": {
+      "rule-bxy-0": {
         discountText: "Add {{discountConditionDiff}} product(s) to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!",
+        successMessage: "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off",
+      },
+      "rule-bxy-1": {
+        discountText: "Add {{discountConditionDiff}} more to get {{discountedItems}} of them at {{discountValue}}{{discountValueUnit}} off!",
         successMessage: "Success! You got {{discountedItems}} product(s) at {{discountValue}}{{discountValueUnit}} off",
       },
     });
