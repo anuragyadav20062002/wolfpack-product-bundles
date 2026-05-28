@@ -1,213 +1,183 @@
-/**
- * Unit Tests for app/lib/cached-session-storage.server.ts
- *
- * TDD — tests written before implementation.
- * Covers: loadSession (hit/miss/expired), storeSession, deleteSession,
- *         deleteSessions, findSessionsByShop, isReady
- */
+import { Session } from "@shopify/shopify-api";
+import { CachedSessionStorage } from "../../../app/lib/cached-session-storage.server";
 
-import { CachedSessionStorage } from '../../../app/lib/cached-session-storage.server';
+jest.mock("../../../app/services/offline-token.server", () => {
+  const actual = jest.requireActual("../../../app/services/offline-token.server");
+  return {
+    ...actual,
+    refreshOfflineSession: jest.fn(),
+  };
+});
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const offlineTokenModule = jest.requireMock("../../../app/services/offline-token.server") as {
+  refreshOfflineSession: jest.Mock;
+};
 
-function makeSession(id = 'offline_test.myshopify.com') {
-  return { id, shop: 'test.myshopify.com', accessToken: 'shpat_test', isOnline: false } as any;
+function buildSession(id = "offline_test.myshopify.com") {
+  return new Session({
+    id,
+    shop: "test.myshopify.com",
+    state: "state",
+    isOnline: false,
+    accessToken: "shpat_test",
+    scope: "read_products",
+  });
 }
 
-function makeInner() {
+function makeRow(overrides: Record<string, unknown> = {}) {
   return {
-    loadSession: jest.fn(),
-    storeSession: jest.fn().mockResolvedValue(true),
-    deleteSession: jest.fn().mockResolvedValue(true),
-    deleteSessions: jest.fn().mockResolvedValue(true),
-    findSessionsByShop: jest.fn().mockResolvedValue([]),
-    isReady: jest.fn().mockResolvedValue(true),
+    id: "offline_test.myshopify.com",
+    shop: "test.myshopify.com",
+    state: "state",
+    isOnline: false,
+    scope: "read_products",
+    expires: null,
+    accessToken: "shpat_test",
+    refreshToken: null,
+    refreshTokenExpiresAt: null,
+    storefrontAccessToken: null,
+    userId: null,
+    firstName: null,
+    lastName: null,
+    email: null,
+    accountOwner: false,
+    locale: null,
+    collaborator: false,
+    emailVerified: false,
+    ...overrides,
   };
 }
 
-// ─── loadSession — cache miss ─────────────────────────────────────────────────
+function makePrisma(row = makeRow()) {
+  return {
+    session: {
+      findUnique: jest.fn().mockResolvedValue(row),
+      upsert: jest.fn().mockResolvedValue(row),
+      delete: jest.fn().mockResolvedValue(undefined),
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      findMany: jest.fn().mockResolvedValue([]),
+      count: jest.fn().mockResolvedValue(1),
+    },
+  };
+}
 
-describe('CachedSessionStorage.loadSession', () => {
-  it('returns undefined and does not cache when DB returns undefined', async () => {
-    const inner = makeInner();
-    inner.loadSession.mockResolvedValue(undefined);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
+describe("CachedSessionStorage.loadSession", () => {
+  it("returns undefined and does not cache when the row is missing", async () => {
+    const prisma = makePrisma(null);
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
 
-    const result = await cache.loadSession('missing-id');
+    const result = await storage.loadSession("missing-id");
 
     expect(result).toBeUndefined();
-    expect(inner.loadSession).toHaveBeenCalledTimes(1);
-
-    // Second call should also hit DB (nothing to cache)
-    await cache.loadSession('missing-id');
-    expect(inner.loadSession).toHaveBeenCalledTimes(2);
+    await storage.loadSession("missing-id");
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(2);
   });
 
-  it('fetches from DB on first call (cache miss) and caches the result', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    inner.loadSession.mockResolvedValue(session);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
+  it("fetches from Prisma once and returns cached result on the second call", async () => {
+    const prisma = makePrisma();
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
 
-    const result = await cache.loadSession(session.id);
+    const first = await storage.loadSession("offline_test.myshopify.com");
+    const second = await storage.loadSession("offline_test.myshopify.com");
 
-    expect(result).toEqual(session);
-    expect(inner.loadSession).toHaveBeenCalledTimes(1);
+    expect(first?.accessToken).toBe("shpat_test");
+    expect(second?.accessToken).toBe("shpat_test");
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(1);
   });
 
-  it('returns cached value on second call without hitting DB', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    inner.loadSession.mockResolvedValue(session);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
+  it("refreshes an expiring offline session before returning it", async () => {
+    const expiresSoon = new Date(Date.now() + 1_000);
+    const refreshExpiresAt = new Date(Date.now() + 60_000);
+    const prisma = makePrisma(
+      makeRow({
+        expires: expiresSoon,
+        refreshToken: "refresh-token",
+        refreshTokenExpiresAt: refreshExpiresAt,
+      }),
+    );
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    const refreshedRow = makeRow({
+      accessToken: "shpat_refreshed",
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+      refreshToken: "refresh-token-2",
+      refreshTokenExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    offlineTokenModule.refreshOfflineSession.mockResolvedValue(refreshedRow);
 
-    await cache.loadSession(session.id);
-    const result = await cache.loadSession(session.id);
+    const result = await storage.loadSession("offline_test.myshopify.com");
 
-    expect(result).toEqual(session);
-    // DB only called once — second returned from cache
-    expect(inner.loadSession).toHaveBeenCalledTimes(1);
-  });
-
-  it('re-fetches from DB when TTL has expired', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    inner.loadSession.mockResolvedValue(session);
-    // Very short TTL (1ms)
-    const cache = new CachedSessionStorage(inner as any, 1);
-
-    await cache.loadSession(session.id);
-    // Wait for TTL to expire
-    await new Promise((r) => setTimeout(r, 10));
-
-    await cache.loadSession(session.id);
-    expect(inner.loadSession).toHaveBeenCalledTimes(2);
+    expect(offlineTokenModule.refreshOfflineSession).toHaveBeenCalledTimes(1);
+    expect(result?.accessToken).toBe("shpat_refreshed");
   });
 });
 
-// ─── storeSession ─────────────────────────────────────────────────────────────
+describe("CachedSessionStorage.storeSession", () => {
+  it("upserts the session row and populates the cache", async () => {
+    const prisma = makePrisma();
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    const session = buildSession();
 
-describe('CachedSessionStorage.storeSession', () => {
-  it('delegates to inner and returns its result', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    const cache = new CachedSessionStorage(inner as any, 60_000);
-
-    const result = await cache.storeSession(session);
+    const result = await storage.storeSession(session);
+    const cached = await storage.loadSession(session.id);
 
     expect(result).toBe(true);
-    expect(inner.storeSession).toHaveBeenCalledWith(session);
-  });
-
-  it('updates cache so subsequent loadSession skips DB', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    inner.loadSession.mockResolvedValue(session);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
-
-    await cache.storeSession(session);
-    const result = await cache.loadSession(session.id);
-
-    expect(result).toEqual(session);
-    // loadSession should not have hit DB — cache populated by storeSession
-    expect(inner.loadSession).not.toHaveBeenCalled();
-  });
-
-  it('overwrites a stale cache entry on re-store', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    const cache = new CachedSessionStorage(inner as any, 60_000);
-
-    await cache.storeSession(session);
-    const updated = { ...session, accessToken: 'shpat_new' };
-    await cache.storeSession(updated as any);
-
-    const result = await cache.loadSession(session.id);
-    expect((result as any).accessToken).toBe('shpat_new');
-    expect(inner.loadSession).not.toHaveBeenCalled();
+    expect(prisma.session.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.session.findUnique).not.toHaveBeenCalled();
+    expect(cached?.accessToken).toBe("shpat_test");
   });
 });
 
-// ─── deleteSession ────────────────────────────────────────────────────────────
+describe("CachedSessionStorage deletes", () => {
+  it("evicts a cached session on deleteSession", async () => {
+    const prisma = makePrisma();
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
 
-describe('CachedSessionStorage.deleteSession', () => {
-  it('evicts cache entry and delegates to inner', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    inner.loadSession.mockResolvedValue(session);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
+    await storage.loadSession("offline_test.myshopify.com");
+    await storage.deleteSession("offline_test.myshopify.com");
+    await storage.loadSession("offline_test.myshopify.com");
 
-    // Populate cache
-    await cache.loadSession(session.id);
-    expect(inner.loadSession).toHaveBeenCalledTimes(1);
+    expect(prisma.session.delete).toHaveBeenCalledWith({
+      where: { id: "offline_test.myshopify.com" },
+    });
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(2);
+  });
 
-    // Delete evicts cache
-    await cache.deleteSession(session.id);
-    expect(inner.deleteSession).toHaveBeenCalledWith(session.id);
+  it("evicts all requested ids on deleteSessions", async () => {
+    const prisma = makePrisma();
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
 
-    // Next loadSession must hit DB again
-    await cache.loadSession(session.id);
-    expect(inner.loadSession).toHaveBeenCalledTimes(2);
+    await storage.loadSession("offline_test.myshopify.com");
+    await storage.deleteSessions(["offline_test.myshopify.com"]);
+    await storage.loadSession("offline_test.myshopify.com");
+
+    expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["offline_test.myshopify.com"] } },
+    });
+    expect(prisma.session.findUnique).toHaveBeenCalledTimes(2);
   });
 });
 
-// ─── deleteSessions ───────────────────────────────────────────────────────────
+describe("CachedSessionStorage passthrough methods", () => {
+  it("loads sessions by shop from Prisma", async () => {
+    const prisma = makePrisma();
+    prisma.session.findMany.mockResolvedValue([makeRow()]);
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
 
-describe('CachedSessionStorage.deleteSessions', () => {
-  it('evicts all specified ids and delegates to inner', async () => {
-    const s1 = makeSession('id-1');
-    const s2 = makeSession('id-2');
-    const inner = makeInner();
-    inner.loadSession
-      .mockResolvedValueOnce(s1)
-      .mockResolvedValueOnce(s2)
-      .mockResolvedValue(undefined);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
+    const result = await storage.findSessionsByShop("test.myshopify.com");
 
-    // Populate cache
-    await cache.loadSession('id-1');
-    await cache.loadSession('id-2');
-    expect(inner.loadSession).toHaveBeenCalledTimes(2);
-
-    await cache.deleteSessions(['id-1', 'id-2']);
-    expect(inner.deleteSessions).toHaveBeenCalledWith(['id-1', 'id-2']);
-
-    // Both must re-hit DB
-    await cache.loadSession('id-1');
-    await cache.loadSession('id-2');
-    expect(inner.loadSession).toHaveBeenCalledTimes(4);
+    expect(result).toHaveLength(1);
+    expect(prisma.session.findMany).toHaveBeenCalledWith({
+      where: { shop: "test.myshopify.com" },
+      take: 25,
+      orderBy: [{ expires: "desc" }],
+    });
   });
-});
 
-// ─── findSessionsByShop ───────────────────────────────────────────────────────
+  it("checks readiness via Prisma", async () => {
+    const prisma = makePrisma();
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
 
-describe('CachedSessionStorage.findSessionsByShop', () => {
-  it('always delegates to inner (not cached)', async () => {
-    const session = makeSession();
-    const inner = makeInner();
-    inner.findSessionsByShop.mockResolvedValue([session]);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
-
-    const result1 = await cache.findSessionsByShop('test.myshopify.com');
-    const result2 = await cache.findSessionsByShop('test.myshopify.com');
-
-    expect(result1).toEqual([session]);
-    expect(result2).toEqual([session]);
-    expect(inner.findSessionsByShop).toHaveBeenCalledTimes(2);
-  });
-});
-
-// ─── isReady ──────────────────────────────────────────────────────────────────
-
-describe('CachedSessionStorage.isReady', () => {
-  it('delegates to inner storage', async () => {
-    const inner = makeInner();
-    inner.isReady.mockResolvedValue(true);
-    const cache = new CachedSessionStorage(inner as any, 60_000);
-
-    const result = await cache.isReady();
-
-    expect(result).toBe(true);
-    expect(inner.isReady).toHaveBeenCalledTimes(1);
+    await expect(storage.isReady()).resolves.toBe(true);
+    expect(prisma.session.count).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,6 +1,8 @@
 // Cart Transform Automatic Activation Service
 import type { authenticate } from "~/shopify.server";
 import { AppLogger } from "../lib/logger";
+import db from "../db.server";
+import { ensureShopHasExpiringOfflineSession } from "./offline-token.server";
 
 type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
 
@@ -321,7 +323,8 @@ export class CartTransformService {
     error?: string;
   }> {
     try {
-      const { unauthenticated } = await import("../shopify.server");
+      const { unauthenticated, sessionStorage } = await import("../shopify.server");
+      await ensureShopHasExpiringOfflineSession(db, shopDomain, sessionStorage);
       const { admin } = await unauthenticated.admin(shopDomain);
 
       const existing = await this.checkExistingCartTransform(admin);
@@ -385,8 +388,6 @@ export class CartTransformService {
       sessionsPurged: number;
     };
   }> {
-    const { default: db } = await import("../db.server");
-
     const sessions = await db.session.findMany({
       where: { isOnline: false },
       select: { shop: true },

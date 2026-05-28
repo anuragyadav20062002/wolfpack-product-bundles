@@ -1,8 +1,11 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import db from "../../db.server";
+import prisma from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
+import { createStorefrontAccessToken } from "../../services/storefront-token.server";
+import { getOfflineSessionForShop } from "../../services/offline-token.server";
+import { sessionStorage } from "../../shopify.server";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
 const CORS_HEADERS = {
@@ -174,10 +177,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Storefront token is created at install time (lifecycle webhook / auth callback).
     // If it is missing here, the install flow is broken — fail clearly and fast.
-    let session = await db.session.findFirst({
-      where: { shop },
-      select: { storefrontAccessToken: true, scope: true }
-    });
+    let session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
 
     if (!session) {
       AppLogger.error("[STOREFRONT_API] No session found for shop", { component: "api.storefront-products", shop });
@@ -211,9 +211,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         AppLogger.info("[STOREFRONT_API] Created storefront token on-demand", { component: "api.storefront-products", shop });
 
         // Refresh session to get the new token
-        session = await db.session.findFirst({
-          where: { shop },
-          select: { storefrontAccessToken: true, accessToken: true }
+        session = await getOfflineSessionForShop(prisma, shop, sessionStorage, {
+          migrateIfNeeded: false,
+          refreshIfNeeded: false,
         });
       } catch (error) {
         AppLogger.error("[STOREFRONT_API] Failed to create token on-demand", { component: "api.storefront-products", shop }, error);

@@ -1,103 +1,223 @@
 /**
- * CachedSessionStorage — in-memory TTL cache wrapping PrismaSessionStorage.
+ * CachedSessionStorage — Prisma-backed Shopify session storage with an in-memory
+ * TTL cache for hot app-proxy/storefront reads.
  *
- * Problem it solves:
- * The Shopify SDK calls `sessionStorage.loadSession(id)` on every storefront
- * App Proxy request to retrieve the shop's offline access token.  With
- * PrismaSessionStorage that is a live Postgres query on every storefront page
- * load — a major contributor to pool exhaustion and 504 gateway timeouts.
- *
- * Solution:
- * Cache the session in memory for `ttlMs` milliseconds (default 10 min).
- * The offline token is essentially static (changes only on app re-install /
- * OAuth re-auth), so 10 min is very safe and eliminates ~99 % of session DB
- * queries on the hot path.
- *
- * Multi-process safety:
- * Each Render instance has its own cache.  A re-install clears only the local
- * process cache; other processes will see a DB miss on their next request and
- * re-populate — acceptable because re-installs are extremely rare.
+ * We own the row mapping here instead of delegating to PrismaSessionStorage so
+ * we can persist Shopify's expiring offline token metadata and refresh tokens
+ * before the SDK serves a stale offline session back to callers.
  */
 
-import type { Session } from "@shopify/shopify-api";
-import type { PrismaSessionStorageInterface } from "@shopify/shopify-app-session-storage-prisma";
+import { Session } from "@shopify/shopify-api";
+import type { PrismaClient } from "@prisma/client";
+import {
+  refreshOfflineSession,
+  shouldRefreshOfflineSession,
+  type OfflineSessionRecord,
+} from "../services/offline-token.server";
 
-const DEFAULT_TTL_MS = 10 * 60 * 1000; // 10 minutes
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // evict expired entries every 5 min
+const DEFAULT_TTL_MS = 10 * 60 * 1000;
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+const READY_RETRIES = 2;
+const READY_RETRY_INTERVAL_MS = 5_000;
+
+type SessionWithRefreshFields = Session & {
+  refreshToken?: string;
+  refreshTokenExpiresAt?: Date;
+};
+
+type SessionRow = OfflineSessionRecord & {
+  storefrontAccessToken: string | null;
+  userId: bigint | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  accountOwner: boolean | null;
+  locale: string | null;
+  collaborator: boolean | null;
+  emailVerified: boolean | null;
+};
 
 interface CacheEntry {
   session: Session;
   expiresAt: number;
 }
 
-export class CachedSessionStorage implements PrismaSessionStorageInterface {
-  private readonly inner: PrismaSessionStorageInterface;
+export class CachedSessionStorage {
+  private readonly prisma: PrismaClient;
   private readonly ttlMs: number;
   private readonly cache = new Map<string, CacheEntry>();
   private readonly cleanupTimer: ReturnType<typeof setInterval>;
 
-  constructor(inner: PrismaSessionStorageInterface, ttlMs = DEFAULT_TTL_MS) {
-    this.inner = inner;
+  constructor(prisma: PrismaClient, ttlMs = DEFAULT_TTL_MS) {
+    this.prisma = prisma;
     this.ttlMs = ttlMs;
 
-    // Periodic cleanup prevents unbounded Map growth in long-running processes
-    this.cleanupTimer = setInterval(
-      () => this.evictExpired(),
-      CLEANUP_INTERVAL_MS,
-    );
-
-    // Don't prevent Node from exiting cleanly
+    this.cleanupTimer = setInterval(() => this.evictExpired(), CLEANUP_INTERVAL_MS);
     if (this.cleanupTimer.unref) {
       this.cleanupTimer.unref();
     }
   }
 
   async loadSession(id: string): Promise<Session | undefined> {
-    const entry = this.cache.get(id);
-    if (entry && entry.expiresAt > Date.now()) {
-      return entry.session;
+    const cached = this.cache.get(id);
+    if (cached && cached.expiresAt > Date.now() && !this.cachedSessionNeedsRefresh(cached.session)) {
+      return cached.session;
     }
 
-    // Cache miss or stale — fetch from DB
-    const session = await this.inner.loadSession(id);
-    if (session) {
-      this.cache.set(id, { session, expiresAt: Date.now() + this.ttlMs });
-    } else {
-      // Remove stale entry if one existed
+    const row = await this.prisma.session.findUnique({ where: { id } });
+    if (!row) {
       this.cache.delete(id);
+      return undefined;
     }
+
+    const hydratedRow = await this.refreshOfflineRowIfNeeded(row);
+    const session = this.rowToSession(hydratedRow);
+    this.cache.set(id, {
+      session,
+      expiresAt: Date.now() + this.ttlMs,
+    });
     return session;
   }
 
   async storeSession(session: Session): Promise<boolean> {
-    const result = await this.inner.storeSession(session);
-    // Keep cache consistent — re-install writes new token here
+    await this.prisma.session.upsert({
+      where: { id: session.id },
+      update: this.sessionToRow(session),
+      create: this.sessionToRow(session),
+    });
+
     this.cache.set(session.id, {
       session,
       expiresAt: Date.now() + this.ttlMs,
     });
-    return result;
+    return true;
   }
 
   async deleteSession(id: string): Promise<boolean> {
     this.cache.delete(id);
-    return this.inner.deleteSession(id);
+
+    try {
+      await this.prisma.session.delete({ where: { id } });
+    } catch {
+      return true;
+    }
+
+    return true;
   }
 
   async deleteSessions(ids: string[]): Promise<boolean> {
     for (const id of ids) {
       this.cache.delete(id);
     }
-    return this.inner.deleteSessions(ids);
+
+    await this.prisma.session.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    return true;
   }
 
-  // findSessionsByShop is used for token rotation / cleanup — always bypass cache
   async findSessionsByShop(shop: string): Promise<Session[]> {
-    return this.inner.findSessionsByShop(shop);
+    const rows = await this.prisma.session.findMany({
+      where: { shop },
+      take: 25,
+      orderBy: [{ expires: "desc" }],
+    });
+
+    return Promise.all(
+      rows.map(async (row) => this.rowToSession(await this.refreshOfflineRowIfNeeded(row))),
+    );
   }
 
   async isReady(): Promise<boolean> {
-    return this.inner.isReady();
+    for (let attempt = 0; attempt < READY_RETRIES; attempt += 1) {
+      try {
+        await this.prisma.session.count();
+        return true;
+      } catch {
+        if (attempt < READY_RETRIES - 1) {
+          await sleep(READY_RETRY_INTERVAL_MS);
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private async refreshOfflineRowIfNeeded(row: SessionRow): Promise<SessionRow> {
+    if (row.isOnline || !shouldRefreshOfflineSession(row)) {
+      return row;
+    }
+
+    return (await refreshOfflineSession(
+      this.prisma,
+      row,
+      this,
+    )) as SessionRow;
+  }
+
+  private cachedSessionNeedsRefresh(session: Session): boolean {
+    if (session.isOnline) return false;
+
+    const offlineSession = session as SessionWithRefreshFields;
+    if (!offlineSession.refreshToken || !offlineSession.expires) {
+      return false;
+    }
+
+    return offlineSession.expires.getTime() <= Date.now() + 5 * 60 * 1000;
+  }
+
+  private sessionToRow(session: Session) {
+    const sessionParams = session.toObject();
+    const offlineSession = session as SessionWithRefreshFields;
+
+    return {
+      id: session.id,
+      shop: session.shop,
+      state: session.state,
+      isOnline: session.isOnline,
+      scope: session.scope || null,
+      expires: session.expires || null,
+      accessToken: session.accessToken || "",
+      refreshToken: offlineSession.refreshToken || null,
+      refreshTokenExpiresAt: offlineSession.refreshTokenExpiresAt || null,
+      userId: sessionParams.onlineAccessInfo?.associated_user.id
+        ? BigInt(sessionParams.onlineAccessInfo.associated_user.id)
+        : null,
+      firstName: sessionParams.onlineAccessInfo?.associated_user.first_name || null,
+      lastName: sessionParams.onlineAccessInfo?.associated_user.last_name || null,
+      email: sessionParams.onlineAccessInfo?.associated_user.email || null,
+      accountOwner: sessionParams.onlineAccessInfo?.associated_user.account_owner || false,
+      locale: sessionParams.onlineAccessInfo?.associated_user.locale || null,
+      collaborator: sessionParams.onlineAccessInfo?.associated_user.collaborator || false,
+      emailVerified: sessionParams.onlineAccessInfo?.associated_user.email_verified || false,
+    };
+  }
+
+  private rowToSession(row: SessionRow): Session {
+    const sessionParams = [
+      ["id", row.id],
+      ["shop", row.shop],
+      ["state", row.state],
+      ["isOnline", row.isOnline],
+      ["accessToken", row.accessToken],
+      ["scope", row.scope],
+      ["expires", row.expires ? row.expires.getTime() : null],
+      ["userId", row.userId ? row.userId.toString() : null],
+      ["firstName", row.firstName],
+      ["lastName", row.lastName],
+      ["email", row.email],
+      ["accountOwner", row.accountOwner],
+      ["locale", row.locale],
+      ["collaborator", row.collaborator],
+      ["emailVerified", row.emailVerified],
+    ].filter((entry): entry is [string, string | number | boolean] => entry[1] !== null);
+
+    const session = Session.fromPropertyArray(sessionParams, true);
+    const offlineSession = session as SessionWithRefreshFields;
+    offlineSession.refreshToken = row.refreshToken || undefined;
+    offlineSession.refreshTokenExpiresAt = row.refreshTokenExpiresAt || undefined;
+    return session;
   }
 
   private evictExpired(): void {
@@ -108,4 +228,8 @@ export class CachedSessionStorage implements PrismaSessionStorageInterface {
       }
     }
   }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
