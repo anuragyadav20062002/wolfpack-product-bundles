@@ -46,9 +46,18 @@ async function main() {
 
     let rowNeedsMigration = false;
 
-    const migratedRules = row.rules.map((rule, index) => {
+    const migratedRules: Array<Record<string, unknown>> = [];
+    let rowFailed = false;
+
+    for (let index = 0; index < row.rules.length; index += 1) {
+      const rule = row.rules[index];
+
       try {
-        const sourceRule = isPricingRuleLike(rule) ? rule : {};
+        if (!isPricingRuleLike(rule)) {
+          throw new Error("rule must be an object");
+        }
+
+        const sourceRule = rule;
         const normalizedRule = needsNestedMigration(sourceRule)
           ? migrateNestedRule(sourceRule)
           : parsePricingRule(sourceRule);
@@ -57,7 +66,7 @@ async function main() {
           rowNeedsMigration = true;
         }
 
-        return {
+        migratedRules.push({
           id: normalizedRule.id,
           conditionType: normalizedRule.conditionType,
           conditionValue: normalizedRule.conditionValue,
@@ -66,17 +75,22 @@ async function main() {
           customerGets: normalizedRule.customerGets,
           bxyDiscountType: normalizedRule.bxyDiscountType,
           bxyApplyMode: normalizedRule.bxyApplyMode,
-        };
+        });
       } catch (error) {
         errors += 1;
+        rowFailed = true;
         console.error(`[pricing-migrate] bundlePricing=${row.id} rule=${index} invalid`, {
           bundleId: row.bundleId,
           rule,
           error: (error as Error).message,
         });
-        throw new Error(`pricing-migrate aborted: invalid rule at bundlePricing ${row.id}`);
+        break;
       }
-    });
+    }
+
+    if (rowFailed) {
+      continue;
+    }
 
     if (!rowNeedsMigration) {
       continue;
