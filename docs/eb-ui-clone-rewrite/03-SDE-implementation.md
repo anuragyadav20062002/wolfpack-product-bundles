@@ -14,7 +14,7 @@
 - [x] Read the Shopify skill entrypoint because this touches embedded Admin, app proxy, Liquid assets, and storefront widgets.
 - [x] Review `internal docs/Architecture/Widget Architecture.md`, `internal docs/Architecture/Database Schema.md`, and `internal docs/Features/Pricing Pipeline.md`.
 - [x] Review graph god nodes and run graph path checks for widget/schema route blast radius.
-- [ ] Create `test-spec/eb-ui-clone-rewrite.spec.md`.
+- [x] Create `test-spec/eb-ui-clone-rewrite.spec.md`.
 - [ ] Add RED tests before implementation code.
 - [ ] Confirm current `WIDGET_VERSION` before widget edits.
 

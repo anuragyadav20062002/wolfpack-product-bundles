@@ -68,7 +68,9 @@
 <script>
   if (!window.bundleWidgetContext) {
     window.currentProductId = {{ product.id | json }};
+    window.currentProductGid = {{ product.admin_graphql_api_id | json }};
     window.currentProductHandle = {{ product.handle | json }};
+    window.currentProductCollections = {{ product.collections | json }};
     window.shopCurrency = {{ shop.currency | json }};
     window.shopMoneyFormat = {{ shop.money_format | json }};
     window.shopifyMultiCurrency = {

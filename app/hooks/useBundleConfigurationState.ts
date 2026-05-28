@@ -136,6 +136,7 @@ export function useBundleConfigurationState({
   const transformedSteps = useMemo(() =>
     (bundle.steps || []).map((step: any) => ({
       ...step,
+      stepImage: step.stepImage ?? step.timelineIconUrl ?? null,
       StepProduct: (step.StepProduct || []).map((sp: any) => ({
         ...sp,
         id: sp.productId,

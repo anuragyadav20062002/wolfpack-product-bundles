@@ -582,25 +582,41 @@
 
 /* Individual discount rule card */
 .discountRuleRow {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  composes: discountRuleCard from "../../../styles/routes/bundle-configure-shared.module.css";
 }
 
 .discountRuleHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  composes: discountRuleHeader from "../../../styles/routes/bundle-configure-shared.module.css";
 }
 
 /* 4-column grid: Condition | Operator | Value | Discount value */
 .discountRuleFields {
   display: grid;
   grid-template-columns: 1fr 1.2fr 90px 90px;
+  gap: 8px;
+  align-items: end;
+}
+
+.bxyRuleBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bxyRewardGrid {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(220px, 1.25fr);
+  gap: 8px;
+  align-items: end;
+}
+
+.bxyRewardGrid > * {
+  min-width: 0;
+}
+
+.fixedBundleRuleBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   align-items: end;
 }
@@ -639,6 +655,14 @@
 @media (max-width: 900px) {
   .discountRuleFields {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .bxyRewardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fixedBundleRuleBody {
+    grid-template-columns: 1fr;
   }
 }
 

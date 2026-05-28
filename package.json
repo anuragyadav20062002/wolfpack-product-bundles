@@ -37,7 +37,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage --collectCoverageFrom='app/**/*.{ts,tsx}' --collectCoverageFrom='extensions/**/*.{ts,tsx}'",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "pre-deploy": "npm test && npm run build"
+    "pre-deploy": "npm test && npm run build",
+    "migrate:pricing-rules": "tsx scripts/migrate-pricing-rules.ts --dry-run"
   },
   "type": "module",
   "engines": {
@@ -52,10 +53,11 @@
     "@remix-run/react": "^2.16.1",
     "@remix-run/serve": "^2.16.1",
     "@shopify/app-bridge-react": "^4.1.6",
+    "@shopify/shopify-api": "^11.14.1",
     "@shopify/polaris": "^12.0.0",
     "@shopify/polaris-icons": "^8.11.1",
-    "@shopify/shopify-app-remix": "^3.7.0",
-    "@shopify/shopify-app-session-storage-prisma": "^6.0.0",
+    "@shopify/shopify-app-remix": "^3.8.5",
+    "@shopify/shopify-app-session-storage-prisma": "^6.0.9",
     "@tailwindcss/postcss": "^4.1.12",
     "autoprefixer": "^10.4.21",
     "crisp-sdk-web": "^1.0.25",

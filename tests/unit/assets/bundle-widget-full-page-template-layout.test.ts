@@ -2,6 +2,17 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 describe("Full Page widget template layout contract", () => {
+  it("passes product GID context through to widget configuration", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+
+    expect(source).toContain("currentProductGid: window.currentProductGid");
+    expect(source).toContain("currentProductId: window.currentProductId");
+    expect(source).toContain("currentProductCollections: window.currentProductCollections");
+  });
+
   it("uses the side-footer layout when the saved FPB template is side-footer", () => {
     const source = readFileSync(
       join(process.cwd(), "app/assets/bundle-widget-full-page.js"),

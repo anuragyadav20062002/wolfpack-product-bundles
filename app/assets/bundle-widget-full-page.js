@@ -184,6 +184,10 @@ class BundleWidgetFullPage {
       // Setup DOM elements
       this.setupDOMElements();
 
+      // Mark template/preset before first render so full-page selectors can
+      // resolve immediately for both render paths.
+      this.applyFullPageDesignPresetMarker();
+
       // Render initial UI (async for full-page bundles to load products)
       await this.renderUI();
 
@@ -352,6 +356,7 @@ class BundleWidgetFullPage {
       discountProgressTextTemplate: null,
       discountProgressSuccessTemplate: null,
       currentProductId: window.currentProductId,
+      currentProductGid: window.currentProductGid,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections,
       tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
@@ -1267,10 +1272,10 @@ class BundleWidgetFullPage {
 
     if (this.selectedBundle?.pricing?.enabled) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
       let discountMessage = '';
-      if (discountInfo.hasDiscount) {
+      if (combinedDiscountInfo.hasDiscount) {
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
@@ -1289,7 +1294,13 @@ class BundleWidgetFullPage {
       }
 
       if (this.config.showDiscountProgressBar) {
-        const progressBar = this._renderDiscountProgress({ placement: "sidebar" });
+        const progressBar = this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
         if (progressBar) {
           progressBar.classList.add('fpb-dp-sidebar');
           sheet.appendChild(progressBar);
@@ -1470,10 +1481,10 @@ class BundleWidgetFullPage {
     // Discount messaging
     if (this.selectedBundle?.pricing?.enabled) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
       let discountMessage = '';
-      if (discountInfo.hasDiscount) {
+      if (combinedDiscountInfo.hasDiscount) {
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
@@ -1492,7 +1503,13 @@ class BundleWidgetFullPage {
       }
 
       if (this.config.showDiscountProgressBar) {
-        const progressBar = this._renderDiscountProgress({ placement: "sidebar" });
+        const progressBar = this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
         if (progressBar) {
           progressBar.classList.add('fpb-dp-sidebar');
           panel.appendChild(progressBar);
@@ -1518,7 +1535,7 @@ class BundleWidgetFullPage {
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
-        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree !== false;
+        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
@@ -1854,8 +1871,8 @@ class BundleWidgetFullPage {
       const tabLabel = entry.label;
       const escapedName = this._escapeHTML(tabLabel) || `Step ${index + 1}`;
 
-      // Icon: addon-uploaded → addonIconUrl, then timelineIconUrl, else default SVG
-      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.timelineIconUrl;
+      // Icon: addon-uploaded, then Step Config image, else default SVG.
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
       const iconContent = uploadedIconUrl
         ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
         : this._getDefaultTimelineIcon(step);
@@ -2736,7 +2753,7 @@ class BundleWidgetFullPage {
     }
 
     // Free gift step: add "Free" badge and override price display to $0.00
-    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree !== false) {
+    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -2939,7 +2956,12 @@ class BundleWidgetFullPage {
 
     // Discount progress bar — visual fill bar at top of card, shown only when toggle is on
     if (this.config.showDiscountProgressBar) {
-      const progressBar = this._renderDiscountProgress();
+      const progressBar = this._renderDiscountProgress({
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
       if (progressBar) this.elements.footer.appendChild(progressBar);
     }
 
@@ -3195,7 +3217,7 @@ class BundleWidgetFullPage {
               price: price,
               isDefault: step.isDefault ?? false,
               isFreeGift: step.isFreeGift ?? false,
-              addonDisplayFree: step.addonDisplayFree !== false,
+              addonDisplayFree: step.addonDisplayFree === true,
             });
           } else {
           }
@@ -3589,11 +3611,11 @@ class BundleWidgetFullPage {
 
   calculateSelectedAddonDiscountAmount() {
     const steps = this.selectedBundle?.steps || [];
-    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree === false && this.getAddonLineDiscount(candidate));
+    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
     const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
     const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
     return this.getAllSelectedProductsData().reduce((total, item) => {
-      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree === false);
+      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
       const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
         || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
         || chargeableAddonProductKeys.has(String(item.title || ''))
@@ -3971,16 +3993,22 @@ class BundleWidgetFullPage {
               properties['_bundle_step_type'] = addonDiscount
                 ? `addon:${addonDiscount.type}:${addonDiscount.value}`
                 : 'addon';
-            } else if (step?.isFreeGift && step?.addonDisplayFree !== false) {
+            } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
               properties['_bundle_step_type'] = 'free_gift';
             }
             if (step?.isDefault) properties['_bundle_step_type'] = 'default';
 
-            items.push({
+            const cartItem = {
               id: numericVariantId,
               quantity: quantity,
               properties
-            });
+            };
+            const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
+            if (sellingPlanAllocationId) {
+              cartItem.selling_plan = parseInt(sellingPlanAllocationId);
+            }
+
+            items.push(cartItem);
             selectedLines.push({ product, quantity });
           }
         });
@@ -4210,19 +4238,20 @@ class BundleWidgetFullPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
       totalQuantity,
-      discountInfo,
+      combinedDiscountInfo,
       currencyInfo
     );
 
     const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-    if (discountInfo.qualifiesForDiscount) {
+    if (combinedDiscountInfo.qualifiesForDiscount) {
       // Success message
       const successMessage = TemplateManager.replaceVariables(
         this.config.successMessageTemplate,
@@ -4325,15 +4354,29 @@ class BundleWidgetFullPage {
   // Used by the FPB floating footer and the sidebar panel (gated by showDiscountProgressBar).
   _renderDiscountProgress(options = {}) {
     const placement = options.placement || "default";
+    const providedCombinedDiscountInfo = options.combinedDiscountInfo;
+    const providedTotalPrice = options.totalPrice;
+    const providedTotalQuantity = options.totalQuantity;
+    const providedUnitPrices = options.unitPrices;
+
     if (!this.selectedBundle?.pricing?.enabled) return null;
 
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle, totalPrice, totalQuantity, unitPrices
+    const { totalPrice, totalQuantity, unitPrices } = typeof providedTotalPrice === 'number' && typeof providedTotalQuantity === 'number'
+      ? {
+          totalPrice: providedTotalPrice,
+          totalQuantity: providedTotalQuantity,
+          unitPrices: providedUnitPrices || []
+        }
+      : PricingCalculator.calculateBundleTotal(
+          this.selectedProducts,
+          this.stepProductData,
+          this.selectedBundle?.steps
+        );
+    const discountInfo = providedCombinedDiscountInfo ?? this.getDiscountInfoWithSelectedAddonDiscount(
+      PricingCalculator.calculateDiscount(
+        this.selectedBundle, totalPrice, totalQuantity, unitPrices
+      ),
+      totalPrice
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
@@ -4401,8 +4444,11 @@ class BundleWidgetFullPage {
       this.stepProductData,
       this.selectedBundle?.steps
     );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle, totalPrice, totalQuantity, unitPrices
+    const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(
+      PricingCalculator.calculateDiscount(
+        this.selectedBundle, totalPrice, totalQuantity, unitPrices
+      ),
+      totalPrice
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
@@ -4473,12 +4519,13 @@ class BundleWidgetFullPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
       totalQuantity,
-      discountInfo,
+      combinedDiscountInfo,
       currencyInfo
     );
 
@@ -4756,6 +4803,9 @@ class BundleWidgetFullPage {
       title: v.title,
       price: parseFloat(v.price || '0') * 100,
       compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
       available: v.available === true,
       quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
       currentlyNotInStock: v.currentlyNotInStock === true,
@@ -4793,6 +4843,7 @@ class BundleWidgetFullPage {
               available: variant.available === true,
               quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
               currentlyNotInStock: variant.currentlyNotInStock === true,
+              sellingPlanAllocations: variant.sellingPlanAllocations || [],
               // Preserve parent product data for variant selection in modal
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -4830,6 +4881,7 @@ class BundleWidgetFullPage {
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
+          sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
           available: defaultVariant?.available === true,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
@@ -4888,6 +4940,56 @@ class BundleWidgetFullPage {
 
     // Handle numeric string
     return idString.toString().split('/').pop();
+  }
+
+  shouldApplyIndividualSellingPlanSelection() {
+    return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
+  }
+
+  shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelection()) {
+      return false;
+    }
+
+    const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
+    if (showFor !== "OOS_PRODUCTS") {
+      return true;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const target = variant ?? product;
+    if (!target) {
+      return false;
+    }
+
+    return target.available === false;
+  }
+
+  getSelectedSellingPlanAllocationId(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
+      return null;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
+    const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
+      ? normalizedProduct.sellingPlanAllocations
+      : [];
+
+    if (allocations.length === 0) {
+      return null;
+    }
+
+    const firstAllocationId = this.extractId(allocations[0]?.id);
+    return firstAllocationId || null;
   }
 
   renderModalTabs() {
@@ -5517,11 +5619,12 @@ class BundleWidgetFullPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Update modal header text dynamically
-    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
 
     // Update cart badge with total item count
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
@@ -5530,10 +5633,10 @@ class BundleWidgetFullPage {
     }
 
     // Update total prices in the footer pill
-    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+    this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
 
     // Update discount messaging and progress bar
-    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
   }
 
   updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -5758,8 +5861,21 @@ class BundleWidgetFullPage {
     return bundle?.fullPageLayout || 'footer_bottom';
   }
 
+  getFullPageTemplate(bundle = this.selectedBundle) {
+    return bundle?.bundleDesignTemplate || 'FBP_SIDE_FOOTER';
+  }
+
   getFullPageDesignPreset(bundle = this.selectedBundle) {
-    return bundle?.bundleDesignPresetId || 'DEFAULT';
+    const rawPresetId =
+      bundle?.bundleDesignPresetId
+      || bundle?.bundleDesignPreset
+      || bundle?.templateId
+      || 'DEFAULT';
+    if (typeof rawPresetId !== 'string') return 'DEFAULT';
+
+    const preset = rawPresetId.trim().toUpperCase();
+    if (preset === 'STANDARD') return 'DEFAULT';
+    return preset || 'DEFAULT';
   }
 
   resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
@@ -5783,8 +5899,16 @@ class BundleWidgetFullPage {
   }
 
   applyFullPageDesignPresetMarker() {
-    if (!this.elements?.stepsContainer) return;
-    this.elements.stepsContainer.dataset.fpbDesignPreset = this.getFullPageDesignPreset();
+    if (!this.container || !this.elements?.stepsContainer) return;
+
+    const fullPageTemplate = this.getFullPageTemplate();
+    const fullPageDesignPreset = this.getFullPageDesignPreset();
+
+    this.container.dataset.fpbTemplateType = fullPageTemplate;
+    this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
+
+    this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
+    this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
     this.elements.stepsContainer.dataset.fpbCardCtaMode = this.resolveFullPageCardCtaMode();
   }
 

@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundles SDK
  * Version : 2.9.6
- * Built   : 2026-05-26
+ * Built   : 2026-05-27
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */

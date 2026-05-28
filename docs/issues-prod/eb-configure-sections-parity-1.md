@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-25 20:20 IST
+**Last Updated:** 2026-05-28 11:09 IST
 
 ## Overview
 
@@ -22,6 +22,48 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 
 ## Progress Log
+
+### 2026-05-28 11:07 IST - Create flow discount rule card/CTA aligned to EB pattern
+
+- Updated create-configure discount rule layout to match EB-like rule card behavior:
+  - Rule header now uses shared spacing so `Rule #N` and `Remove` remain adjacent with no wide separation.
+  - "Add rule" call-to-action now uses lower-case text, secondary variant, plus icon, full-width style, and 4-rule max notice.
+  - Discount rule card now uses shared EB-style discount rule card background/border treatment.
+- Next: verify in create flow and finalize commit under `eb-configure-sections-parity-1`.
+
+### 2026-05-28 11:09 IST - Create flow amount-threshold formatting aligned to EB
+
+- Standardized create-configure discount rule amount fields to EB parity behavior:
+  - Added currency `prefix="₹"` for amount-based discount-threshold input.
+  - Removed extra helper text on threshold and discount value amount fields.
+
+### 2026-05-28 11:02 IST - Discount & Pricing rule cards aligned to EB gray style containers
+
+- Matched EB-style gray rule-card treatment in Discount & Pricing (`discountRuleCard`) for both FPB and PPB configure surfaces.
+- Added `className={...discountRuleCard}` to all per-rule sections in Bundle Quantity Options and Progress Bar (Step-Based).
+- Added `className={...discountRuleCard}` to per-rule Discount Messaging sections for `Discount Text` and `Success Message`.
+- Scope: only FPB/PPB Discount & Pricing UI parity UI-structure styling; no behavioral logic changes in this pass.
+- Next: run full parity verification and commit these UI-style updates with an issue-prefixed commit message.
+
+### 2026-05-28 10:54 IST - BXY discount messaging defaults made rule-order aware
+
+- Added rule-order-aware `Buy X, get Y` default text generation in `app/lib/pricing-display-options.ts` so only the first BXY tier uses the existing base default while later tiers use the `... more to get ...` text.
+- Passed the discount method and rule index through live form hydration (`app/hooks/useBundlePricing.ts`, `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`) so newly created and existing BXY tiers receive the correct defaults.
+- Added/updated unit assertions in `tests/unit/lib/pricing-display-options.test.ts` for `getDefaultDiscountRuleText` and `normalizePricingRuleMessages` to lock the first-vs-subsequent BXY wording behavior.
+
+### 2026-05-28 11:05 IST - Added one-time nested pricing rule migration script
+
+- Added `scripts/migrate-pricing-rules.ts` to migrate stored nested pricing rules to flat format used by current admin code.
+- Script supports `--dry-run` mode and only writes `BundlePricing.rules` when migration is needed.
+- Migration uses `migrateNestedRule` + `parsePricingRule` from `app/lib/pricing-rule-parser.ts` to validate and normalize output.
+- Added `npm run migrate:pricing-rules` as a convenience entrypoint for dry-run execution.
+
+### 2026-05-28 10:58 IST - Bulk parity completion + storefront/template/SDK follow-up committed in-progress
+
+- Completed a large in-progress batch across Discount & Pricing parity, configure route behavior, template parity, widget/template runtime, shared hooks/services, unit coverage, and evidence docs.
+- Updated issue log and supporting evidence in `docs/issues-prod/select-template-1.md`, `docs/issues-prod/discount-pricing-eb-parity-plan.md`, and `docs/eb-ui-clone-rewrite/*.md`.
+- Rebuilt/generated assets and related graph outputs were included in the working set for this batch.
+- Next: continue from same issue scope with remaining parity polish and final verification pass after this handoff.
 
 ### 2026-05-25 20:20 IST - Scoped Discount & Pricing implementation committed
 
@@ -414,7 +456,7 @@ Files changed:
   - [x] Progress Bar Step-Based: per-rule Tier Text + Tier Subtext fields (FPB + PPB)
   - [x] Progress Bar Multi Language modal (s-modal, language dropdown, per-rule tier texts) (FPB + PPB)
   - [x] Discount Messaging: dropdown + chips language selector (FPB + PPB)
-  - [ ] Update BXY default text constants
+  - [x] Update BXY default text constants
   - [ ] Widget JS update + rebuild (bundle-widget-full-page.js, bundle-widget-product-page.js, pricing-calculator.js)
-  - [ ] Data migration script: nested → flat format for existing DB records
+  - [x] Data migration script: nested → flat format for existing DB records
   - [ ] Lint + tests + commit

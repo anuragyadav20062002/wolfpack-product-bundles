@@ -98,6 +98,8 @@ interface SubscriptionValidationResponse {
   error?: string;
 }
 
+type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
+
 // showPolarisModal / hidePolarisModal imported from _shared/bundle-configure/modal-utils
 
 const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
@@ -243,6 +245,8 @@ const productPageTemplateOptions = [
   { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/sidePanelThumbnail.png" },
   { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
 ] as const;
+
+const PPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=product_page&section=globalColors";
 
 type VisibilityDisplayConfiguration = {
   showOnAllBundleProducts: boolean;
@@ -405,7 +409,7 @@ function normalizeVisibilityCollectionPageTarget(collection: any) {
 }
 
 // Memoized Bundle Product Card component to prevent unnecessary re-renders
-const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, shop, onSync, onSelect }: BundleProductCardProps) => (
+const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, onSync, onSelect, onOpenProduct }: BundleProductCardProps) => (
   <s-section>
     <s-stack direction="block" gap="small">
       <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
@@ -432,10 +436,8 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
             <s-stack direction="inline" gap="small-100" style={{ alignItems: "center", flexWrap: "nowrap" }}>
               <s-button
                 variant="plain"
-                onClick={() => {
-                  const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                  open(productUrl, '_blank');
-                }}
+                onClick={onOpenProduct}
+                disabled={!onOpenProduct}
               >
                 <s-icon name="external-minor" />
                 {productTitle || bundleProduct.title || "Untitled Product"}
@@ -825,6 +827,11 @@ export default function ConfigureBundleFlow() {
   const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
     ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
   );
+  const [individualSellingPlanShowFor, setIndividualSellingPlanShowFor] = useState<IndividualSellingPlanShowFor>(
+    ((bundle as any).individualSellingPlanSelection as { showFor?: unknown } | null)?.showFor === "OOS_PRODUCTS"
+      ? "OOS_PRODUCTS"
+      : "ALL_PRODUCTS"
+  );
 
   // Select Template state (main = DB-synced; pending = overlay working copy)
   const [bundleDesignTemplate, setBundleDesignTemplate] = useState<string | null>((bundle as any).bundleDesignTemplate ?? null);
@@ -836,6 +843,11 @@ export default function ConfigureBundleFlow() {
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
   const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
   const templateFetcher = useFetcher();
+  const selectTemplateDialogRef = useRef<HTMLDivElement>(null);
+  const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
+  const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
+  const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
+  const lastTemplateResponseRef = useRef<unknown>(null);
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -1173,7 +1185,7 @@ export default function ConfigureBundleFlow() {
       }));
       formData.append("individualSellingPlanSelection", JSON.stringify({
         isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
-        showFor: "ALL_PRODUCTS",
+        showFor: individualSellingPlanShowFor,
       }));
       formData.append("bundleTextConfig", JSON.stringify({
         bundleSummary: {
@@ -1257,6 +1269,7 @@ export default function ConfigureBundleFlow() {
     productSlotsEnabled,
     maxQtyPerProduct,
     individualSellingPlanEnabled,
+    individualSellingPlanShowFor,
     bundleCartTitle,
     bundleCartSubtitle,
     bundle,
@@ -1390,6 +1403,46 @@ export default function ConfigureBundleFlow() {
     }
   }, [fetcher.data, fetcher.state]);
 
+  useEffect(() => {
+    const intent = templateFetcher.formData instanceof FormData
+      ? templateFetcher.formData.get("intent")
+      : null;
+
+    if (templateFetcher.state !== 'idle' || intent !== 'updateBundleDesignTemplate') {
+      return;
+    }
+
+    if (templateFetcher.data === null || templateFetcher.data === undefined) {
+      if (lastTemplateRequestRef.current) {
+        setTemplateSaveError("Unable to save template. Please try again.");
+      }
+      return;
+    }
+
+    if (templateFetcher.data === lastTemplateResponseRef.current) {
+      return;
+    }
+
+    lastTemplateResponseRef.current = templateFetcher.data;
+
+    const response = templateFetcher.data as { success?: boolean; error?: string };
+    const request = lastTemplateRequestRef.current;
+
+    if (response.success) {
+      if (request) {
+        setBundleDesignTemplate(request.template);
+        setBundleDesignPresetId(request.presetId);
+        setTemplateModalStep("confirm");
+      }
+      setTemplateSaveError(null);
+      lastTemplateRequestRef.current = null;
+      return;
+    }
+
+    const errorMessage = response.error || "Failed to save template settings.";
+    setTemplateSaveError(errorMessage);
+  }, [templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
+
   const handleAddToStorefront = useCallback(() => {
     const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
     open(embedLink, '_blank');
@@ -1488,9 +1541,16 @@ export default function ConfigureBundleFlow() {
   }, [isDirty, bundle, bundleProduct, shop, shopify]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
-    const hasProducts = stepsState.steps.some((step) =>
-      Array.isArray(step.StepProduct) && step.StepProduct.length > 0
-    );
+    const hasProducts = stepsState.steps.reduce((totalProducts, step) => {
+      const legacyProducts = Array.isArray(step.StepProduct) ? step.StepProduct.length : 0;
+      const categoryProductCount = Array.isArray((step as any).StepCategory)
+        ? ((step as any).StepCategory as any[]).reduce(
+            (count: number, category: any) => count + (Array.isArray(category?.products) ? category.products.length : 0),
+            0,
+          )
+        : 0;
+      return totalProducts + legacyProducts + categoryProductCount;
+    }, 0) >= 3;
     const widgetPlaced = upsellWidgetEnabled;
     const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
 
@@ -1531,6 +1591,16 @@ export default function ConfigureBundleFlow() {
     setActiveSection(section);
   }, [isDirty, shopify]);
 
+  const openProductInAdmin = useCallback((productId: string) => {
+    const storeHandle = shop?.replace('.myshopify.com', '');
+    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
+    if (window.location.hostname.includes("trycloudflare.com")) {
+      window.open(adminProductUrl, "_blank");
+    } else {
+      shopify.navigate(adminProductUrl);
+    }
+  }, [shop, shopify]);
+
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
     if (isDirty && !forceNavigation) {
@@ -1567,15 +1637,14 @@ export default function ConfigureBundleFlow() {
       case "product_active": {
         const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
         if (productId) {
-          const storeHandle = shop?.replace('.myshopify.com', '');
-          shopify.navigate(`https://admin.shopify.com/store/${storeHandle}/products/${productId}`);
+          openProductInAdmin(productId);
         }
         break;
       }
       default:
         break;
     }
-  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle, bundleProduct, shop, shopify]);
+  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle, bundleProduct, openProductInAdmin]);
 
   const handleAddNewStep = useCallback(() => {
     stepsState.addStep();
@@ -1841,31 +1910,120 @@ export default function ConfigureBundleFlow() {
   const closeSelectTemplateDialog = useCallback(() => {
     setIsSelectTemplateModalOpen(false);
     setTemplateModalStep("select");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
+    requestAnimationFrame(() => {
+      selectTemplateOpenButtonRef.current?.focus();
+    });
+  }, []);
+
+  const getSelectTemplateDialogFocusableElements = useCallback((): HTMLElement[] => {
+    if (!selectTemplateDialogRef.current) {
+      return [];
+    }
+
+    return Array.from(
+      selectTemplateDialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => (
+      !element.hasAttribute("disabled")
+      && element.tabIndex >= 0
+      && window.getComputedStyle(element).display !== "none"
+      && window.getComputedStyle(element).visibility !== "hidden"
+    ));
   }, []);
 
   const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Escape") return;
-    event.stopPropagation();
-    closeSelectTemplateDialog();
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      closeSelectTemplateDialog();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = getSelectTemplateDialogFocusableElements();
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    const activeElementIndex = activeElement ? focusableElements.indexOf(activeElement) : -1;
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+
+    if (activeElementIndex === -1) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+
+    if (event.shiftKey && activeElementIndex === 0) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && activeElementIndex === focusableElements.length - 1) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, [closeSelectTemplateDialog, getSelectTemplateDialogFocusableElements]);
+
+  const handleSelectTemplateBackdropClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      closeSelectTemplateDialog();
+    }
   }, [closeSelectTemplateDialog]);
 
   const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
     setTemplateModalStep("select");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
     setIsSelectTemplateModalOpen(true);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
 
+  const openDesignControlPanel = useCallback(() => {
+    navigate(PPB_DESIGN_CONTROL_PANEL_URL);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isSelectTemplateModalOpen) {
+      selectTemplateDialogRef.current?.focus();
+    }
+  }, [isSelectTemplateModalOpen]);
+
   const handleTemplateNext = useCallback(() => {
+    if (!pendingDesignTemplate || !pendingDesignPresetId) {
+      return;
+    }
+
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = {
+      template: pendingDesignTemplate,
+      presetId: pendingDesignPresetId,
+    };
+    lastTemplateResponseRef.current = null;
+
     const fd = new FormData();
     fd.append("intent", "updateBundleDesignTemplate");
     fd.append("bundleDesignTemplate", pendingDesignTemplate ?? "");
     fd.append("bundleDesignPresetId", pendingDesignPresetId ?? "");
     templateFetcher.submit(fd, { method: "POST" });
-    setBundleDesignTemplate(pendingDesignTemplate);
-    setBundleDesignPresetId(pendingDesignPresetId);
-    setTemplateModalStep("confirm");
   }, [pendingDesignTemplate, pendingDesignPresetId, templateFetcher]);
+
+  const handleTemplatePreview = useCallback(() => {
+    void handlePreviewBundle();
+    closeSelectTemplateDialog();
+  }, [closeSelectTemplateDialog, handlePreviewBundle]);
 
   const handleConfirmDiscard = useCallback(() => {
     closeDiscardModal();
@@ -2054,15 +2212,14 @@ export default function ConfigureBundleFlow() {
                       type="button"
                       className={productPageBundleStyles.bundleProductEditButton}
                       onClick={() => {
-                        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
-                        if (!productId) {
-                          void handleBundleProductSelect();
-                          return;
-                        }
-                        const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`;
-                        shopify.navigate(productUrl);
-                      }}
-                    >
+                          const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
+                          if (!productId) {
+                            void handleBundleProductSelect();
+                            return;
+                          }
+                          openProductInAdmin(productId);
+                        }}
+                      >
                       <s-icon type="edit" />
                       <span>Edit Product</span>
                     </button>
@@ -2112,6 +2269,7 @@ export default function ConfigureBundleFlow() {
                             type="button"
                             className={`${productPageBundleStyles.setupNavItem} ${isActive ? productPageBundleStyles.setupNavItemActive : ""}`}
                             onClick={() => { if (item.id === "select_template") { openSelectTemplateModal(); } else { handleSectionChange(item.id); } }}
+                            ref={item.id === "select_template" ? selectTemplateOpenButtonRef : undefined}
                           >
                             <span className={productPageBundleStyles.setupNavIcon} aria-hidden="true">
                               {item.iconType
@@ -2872,9 +3030,9 @@ export default function ConfigureBundleFlow() {
                       <div className={productPageBundleStyles.stepConfigRow}>
                         <div className={productPageBundleStyles.iconColumn}>
                           <div className={productPageBundleStyles.iconBox}>
-                                        {(step as any).timelineIconUrl ? (
+                                        {(step as any).stepImage ? (
                                           <img
-                                            src={(step as any).timelineIconUrl}
+                                            src={(step as any).stepImage}
                                             alt="Step icon"
                               className={productPageBundleStyles.iconImg}
                                           />
@@ -2890,9 +3048,9 @@ export default function ConfigureBundleFlow() {
                             <FilePicker
                               autoOpen
                               onClose={() => setShowIconPickerForStep(null)}
-                              value={(step as any).timelineIconUrl ?? null}
+                              value={(step as any).stepImage ?? null}
                               onChange={(url: string | null) => {
-                                stepsState.updateStepField(step.id, 'timelineIconUrl', url);
+                                stepsState.updateStepField(step.id, 'stepImage', url);
                                 setShowIconPickerForStep(null);
                                 markAsDirty();
                               }}
@@ -2900,11 +3058,11 @@ export default function ConfigureBundleFlow() {
                               hideCropEditor
                             />
                           )}
-                                      <s-button
-                            onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
-                                      >
-                                        {(step as any).timelineIconUrl ? "Replace" : "Upload"}
-                                      </s-button>
+                                          <s-button
+                                onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
+                                          >
+                                            {(step as any).stepImage ? "Replace" : "Upload"}
+                                          </s-button>
                                     </div>
                         <div className={productPageBundleStyles.fieldsColumn}>
                                       <s-text-field
@@ -2978,7 +3136,9 @@ export default function ConfigureBundleFlow() {
                             <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                               <s-stack direction="block" gap="small">
                                 <div className={productPageBundleStyles.discountRuleHeader}>
-                                  <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
+                                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                    Rule #{index + 1}
+                                  </h4>
                                   <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
@@ -3003,25 +3163,40 @@ export default function ConfigureBundleFlow() {
                                     })}
                                     min="1"
                                   />
-                                  <div className={productPageBundleStyles.bxyRewardGrid}>
-                                    <s-number-field
-                                      label="Discount value"
-                                      value={String(rule.discountValue ?? 0)}
-                                      onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                        discountValue: Number((e.target as HTMLInputElement).value) || 0
-                                      })}
-                                      min="0"
-                                    />
-                                    <s-select
-                                      label="Discount type"
-                                      value={rule.bxyDiscountType ?? 'percentage'}
-                                      onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                        bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
-                                      })}
-                                    >
-                                      <s-option value="percentage">% off</s-option>
-                                      <s-option value="fixed_amount">₹ off</s-option>
-                                    </s-select>
+                                <div className={productPageBundleStyles.bxyRewardGrid}>
+                                  <s-number-field
+                                    label="Discount value"
+                                    value={String(rule.discountValue ?? 0)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      discountValue: (() => {
+                                        const nextValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        return (rule.bxyDiscountType ?? 'percentage') === 'percentage'
+                                          ? Math.min(100, Math.max(0, nextValue))
+                                          : Math.max(0, nextValue);
+                                      })()
+                                    })}
+                                    min="0"
+                                    suffix={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "%" : undefined}
+                                    prefix={(rule.bxyDiscountType ?? "percentage") === "fixed_amount" ? "₹" : undefined}
+                                    max={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "100" : undefined}
+                                  />
+                                  <s-select
+                                    label="Discount type"
+                                    value={rule.bxyDiscountType ?? 'percentage'}
+                                    onChange={(e: Event) => {
+                                      const bxyDiscountType = (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount';
+                                      const currentValue = Number(rule.discountValue ?? 0) || 0;
+                                      pricingState.updateDiscountRule(rule.id, {
+                                        bxyDiscountType,
+                                        discountValue: bxyDiscountType === 'percentage'
+                                          ? Math.min(100, Math.max(0, currentValue))
+                                          : Math.max(0, currentValue),
+                                      });
+                                    }}
+                                  >
+                                    <s-option value="percentage">% off</s-option>
+                                    <s-option value="fixed_amount">₹ off</s-option>
+                                  </s-select>
                                     <s-select
                                       label="Apply Discount to"
                                       value={rule.bxyApplyMode ?? 'lowest_priced'}
@@ -3053,7 +3228,9 @@ export default function ConfigureBundleFlow() {
                             <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                               <s-stack direction="block" gap="small">
                                 <div className={productPageBundleStyles.discountRuleHeader}>
-                                  <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
+                                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                    Rule #{index + 1}
+                                  </h4>
                                   <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
@@ -3102,8 +3279,13 @@ export default function ConfigureBundleFlow() {
                                       value={String(pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? rule.discountValue : centsToAmount(rule.discountValue))}
                                       onInput={(e: Event) => {
                                         const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                        pricingState.updateDiscountRule(rule.id, { discountValue: finalValue });
+                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? numValue
+                                          : amountToCents(Math.max(0, numValue));
+                                        const safeValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? Math.min(100, Math.max(0, finalValue))
+                                          : finalValue;
+                                        pricingState.updateDiscountRule(rule.id, { discountValue: safeValue });
                                       }}
                                       min="0"
                                       max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
@@ -3174,7 +3356,7 @@ export default function ConfigureBundleFlow() {
                               ) : (
                                 <s-stack direction="block" gap="small">
                                   {pricingState.discountRules.map((r: any, i: number) => (
-                                    <s-section key={r.id}>
+                                    <s-section key={r.id} className={productPageBundleStyles.discountRuleCard}>
                                       <s-stack direction="block" gap="small-100">
                                         <s-stack direction="inline" gap="small" alignItems="center">
                                           <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>Rule #{i + 1}</h5>
@@ -3255,7 +3437,7 @@ export default function ConfigureBundleFlow() {
                                 {pricingState.discountRules.length === 0 ? (
                                   <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
                                 ) : pricingState.discountRules.map((rule: any, index: number) => (
-                                  <s-section key={rule.id}>
+                                  <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                                     <s-stack direction="block" gap="small-100">
                                       <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Rule #{index + 1}</p>
                                       <s-stack direction="inline" gap="small">
@@ -3361,15 +3543,15 @@ export default function ConfigureBundleFlow() {
                                 Show Variables
                               </s-button>
                             </div>
-                            {pricingState.discountRules.length > 0 ? (
-                              <s-stack direction="block" gap="small">
-                                {pricingState.discountRules.map((rule: any, index: number) => {
-                                  const localeMessages = discountMessagingMultiLanguageEnabled
-                                    ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
-                                    : ruleMessages[rule.id];
-                                  const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType);
-                                  return (
-                                    <s-section key={rule.id}>
+                                {pricingState.discountRules.length > 0 ? (
+                                  <s-stack direction="block" gap="small">
+                                    {pricingState.discountRules.map((rule: any, index: number) => {
+                                      const localeMessages = discountMessagingMultiLanguageEnabled
+                                        ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
+                                        : ruleMessages[rule.id];
+                                      const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType, index);
+                                      return (
+                                    <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                                       <s-stack direction="block" gap="small">
                                         <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
                                         <s-text-field
@@ -3397,7 +3579,7 @@ export default function ConfigureBundleFlow() {
                                     </s-section>
                                   );
                                 })}
-                                <s-section>
+                                    <s-section className={productPageBundleStyles.discountRuleCard}>
                                   <s-stack direction="block" gap="small">
                                     <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Success Message</h5>
                                     <s-text-field
@@ -4139,6 +4321,20 @@ export default function ConfigureBundleFlow() {
                         <p style={{ margin: 0, fontSize: 13, color: "#8c9196" }}>
                           Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle.
                         </p>
+                        <s-select
+                          label="Apply to products"
+                          value={individualSellingPlanShowFor}
+                          disabled={individualSellingPlanBlocked || !individualSellingPlanEnabled || undefined}
+                          onChange={(e: Event) => {
+                            setIndividualSellingPlanShowFor(
+                              ((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor)
+                            );
+                            markAsDirty();
+                          }}
+                        >
+                          <s-option value="ALL_PRODUCTS">All products</s-option>
+                          <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
+                        </s-select>
                       </s-stack>
                     </s-section>
 
@@ -4465,7 +4661,7 @@ export default function ConfigureBundleFlow() {
                         {(() => {
                           const addonTiers: { displayFree: boolean }[] = Array.isArray(step.addonTiers)
                             ? (step.addonTiers as { displayFree: boolean }[])
-                            : [{ displayFree: step.addonDisplayFree !== false }];
+                            : [{ displayFree: step.addonDisplayFree === true }];
 
                           const updateAddonTiers = (updated: { displayFree: boolean }[]) => {
                             stepsState.updateStepField(step.id, "addonTiers", updated);
@@ -4492,7 +4688,7 @@ export default function ConfigureBundleFlow() {
                                   </div>
                                   <s-checkbox
                                     label="Display products as free ($0.00)"
-                                    checked={tier.displayFree || undefined}
+                                    checked={tier.displayFree === true}
                                     onChange={(e: Event) => {
                                       const updated = addonTiers.map((t, i) =>
                                         i === idx ? { ...t, displayFree: (e.target as HTMLInputElement).checked } : t
@@ -4723,11 +4919,8 @@ export default function ConfigureBundleFlow() {
                 </span>
                 <s-section>
                   <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    {selectedProducts.map((product: any, index: number) => {
+                      {selectedProducts.map((product: any, index: number) => {
                       const productId = product.productId || product.id?.split('/').pop();
-                      const productUrl = productId
-                        ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
-                        : undefined;
 
                       return (
                         <li key={product.id || index}>
@@ -4741,8 +4934,11 @@ export default function ConfigureBundleFlow() {
                               <s-stack direction="block">
                                 <s-button
                                   variant="plain"
-                                  onClick={() => productUrl && open(productUrl, '_blank')}
-                                  disabled={!productUrl || undefined}
+                                  onClick={() => {
+                                    if (!productId) return;
+                                    openProductInAdmin(productId);
+                                  }}
+                                  disabled={!productId || undefined}
                                 >
                                   <s-icon name="external-minor" />
                                   {product.title || product.name || 'Unnamed Product'}
@@ -4829,9 +5025,8 @@ export default function ConfigureBundleFlow() {
         <div
           className={productPageBundleStyles.templateDialogBackdrop}
           role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeSelectTemplateDialog();
-          }}
+          onMouseDown={handleSelectTemplateBackdropClick}
+          onClick={handleSelectTemplateBackdropClick}
         >
           <div
             className={productPageBundleStyles.templateDialog}
@@ -4839,6 +5034,8 @@ export default function ConfigureBundleFlow() {
             aria-modal="true"
             aria-labelledby="ppb-template-dialog-title"
             tabIndex={-1}
+            ref={selectTemplateDialogRef}
+            onClick={(event) => event.stopPropagation()}
             onKeyDown={handleSelectTemplateDialogKeyDown}
             onMouseDown={(event) => event.stopPropagation()}
           >
@@ -4858,17 +5055,20 @@ export default function ConfigureBundleFlow() {
             {templateModalStep === "select" ? (
               <>
                 <div className={productPageBundleStyles.templateDialogBody}>
-                  <div className={productPageBundleStyles.templateDialogIntro}>
-                    <div>
-                      <h3 className={productPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
-                      <p className={productPageBundleStyles.templateDialogDescription}>
-                        Choose a design that suits your needs and fits your brand
-                      </p>
-                    </div>
-                    <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                    <div className={productPageBundleStyles.templateDialogIntro}>
+                      <div>
+                        <h3 className={productPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                        <p className={productPageBundleStyles.templateDialogDescription}>
+                          Choose a design that suits your needs and fits your brand
+                        </p>
+                      </div>
+                    <s-button variant="secondary" onClick={openDesignControlPanel}>
                       Customize Colors &amp; Language
                     </s-button>
                   </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={productPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
                   <div className={productPageBundleStyles.templateDialogGrid}>
                     {productPageTemplateOptions.map((templateOption) => {
                       const isSelected = pendingDesignPresetId === templateOption.presetId && pendingDesignTemplate === templateOption.layoutTemplate;
@@ -4920,7 +5120,7 @@ export default function ConfigureBundleFlow() {
                   </div>
                   <h3 className={productPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
                   <p className={productPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
-                  <s-button variant="secondary" onClick={closeSelectTemplateDialog}>Preview bundle</s-button>
+                  <s-button variant="secondary" onClick={handleTemplatePreview}>Preview bundle</s-button>
                 </div>
               </div>
             )}

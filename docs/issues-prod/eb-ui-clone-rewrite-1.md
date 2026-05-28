@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** High
 **Created:** 2026-05-26
-**Last Updated:** 2026-05-27 08:35 IST
+**Last Updated:** 2026-05-28 15:32 IST
 
 ## Overview
 
@@ -12,6 +12,361 @@ Rewrite the Full Page Bundle and Product Page Bundle configure/Admin UI plus the
 Emails and Customize Emails are out of scope. Competitor references remain docs-only and must not appear in application code identifiers, comments, or filenames.
 
 ## Progress Log
+
+### 2026-05-28 10:42 IST - PPB individual subscription plan ID passthrough (storefront endpoint + both runtime widgets)
+- Added Storefront API hydration fields for variant-level `sellingPlanAllocations` in
+  `app/routes/api/api.storefront-products.tsx`.
+- Added normalization passthrough for `sellingPlanAllocations` in:
+  - `app/assets/bundle-widget-product-page.js`
+  - `app/assets/bundle-widget-full-page.js`
+- Added cart-runtime selection helper and emitted `selling_plan` in bundle line items when
+  `selectedBundle.individualSellingPlanSelection.isEnabled === true`.
+- This unlocks the storefront/cart leg of:
+  - `ppb-subscriptions`
+  - `ppb-individual-selling-plan-selection`
+  as partial blockers for evidence capture are now reduced to final UI/selection behavior.
+- Next: live screenshot/eval to verify subscription controls and cart payload keys map to EB for both PPB Admin-triggered variants.
+
+### 2026-05-28 15:32 IST - PPB product-page mixed ID selection-key hardening
+- Replaced raw `(variantId || id)` selection lookups with normalized matching in
+  `app/assets/bundle-widget-product-page.js`:
+  - `_getDefaultStepProduct`
+  - `renderSteps` summary card path
+  - free-gift card summary path
+  - `getVariantAvailable`
+  - `getAllSelectedProductsData`
+  - `buildCartItems`
+  - modal product-event `findProduct` helper path
+- Added reusable `findProductBySelectionKey()` selector helper inside
+  `app/assets/bundle-widget-product-page.js` and reused it across the above paths.
+- Added source-contract coverage for the new mixed-format path in
+  `tests/unit/assets/bundle-widget-product-page-products.test.ts`.
+- This is a parity-hardening checkpoint slice; next step is final storefront/Admin evidence collection for PPB subscription and mixed-id fixture flows.
+
+### 2026-05-28 00:24 IST - PPB individual selling-plan showFor control hardening
+- Added `individualSellingPlanShowFor` state to the PPB Bundle Settings route to load, edit, and persist
+  `individualSellingPlanSelection.showFor`.
+- Replaced hardcoded `"ALL_PRODUCTS"` with user-selected value in the route save payload.
+- Hardened parser normalization in
+  `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/parsers.ts` to coerce unsupported
+  `showFor` values to `"ALL_PRODUCTS"` (keeps contract integrity).
+- Updated storefront widgets to apply `showFor` gating:
+  - both runtime widgets now only apply per-line selling-plan IDs when show mode allows that product.
+- Added parser tests for:
+  - explicit `OOS_PRODUCTS` persistence,
+  - invalid-value normalization fallback to `ALL_PRODUCTS`.
+- Remaining for this slice: live Admin/Storefront proof of PPB `showFor` UX and cart payload with mixed stock-state products.
+
+### 2026-05-28 10:02 IST - PPB Subscriptions validation collection-source continuation
+- Implemented collection-backed subscription validation in
+  `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/handlers/handlers.server.ts`:
+  - added collection-to-product expansion in `handleValidateSellingPlanGroups`,
+  - changed validation to validate direct + collection-backed products together,
+  - removed hard block when collection sources are present.
+- Added source-contract tests in
+  `tests/unit/routes/ppb-subscriptions-validation.test.ts` for:
+  - validation success with shared selling-plan groups across direct and collection-backed products,
+  - validation failure when collection-backed product groups do not overlap direct products.
+- This remains a partial-confidence parity slice until we complete:
+  - full plan-widget persistence settings,
+  - storefront subscription UI wiring,
+  - and cart selling-plan runtime proof.
+- Next: commit this slice and continue PPB subscription parity in the next iteration.
+
+### 2026-05-28 00:13 IST - Full-page context contract checkpoint prepared for commit
+- Added full-page widget context contract slice to the incremental checkpoint:
+  - `app/assets/bundle-widget-full-page.js` now includes `currentProductGid` parity context and config extraction.
+  - `tests/unit/assets/bundle-widget-full-page-template-layout.test.ts` now asserts full-page context pass-through contract (`currentProductGid`, `currentProductId`, `currentProductCollections`).
+- This is an incremental commit candidate for the EB-parity loop; next step is to commit this minimal slice and continue the next manifest-blocked evidence gap.
+
+### 2026-05-28 03:22 IST - PPB specific targeting resilience for admin GID input
+- Added product-page liquid context propagation of `window.currentProductGid` from `product.admin_graphql_api_id` in
+  `extensions/bundle-builder/blocks/bundle-product-page.liquid`.
+- Wired `currentProductGid` into
+  `app/assets/bundle-widget-product-page.js` and consumed it inside the PPB visibility matcher in
+  `app/assets/widgets/shared/bundle-data-manager.js`.
+- Expanded visibility unit coverage in `tests/unit/assets/bundle-data-manager.test.ts` for:
+  - matching specific product targeting by `admin_graphql_api_id`,
+  - matching specific collection targeting by `admin_graphql_api_id`.
+- Next: capture fresh storefront evidence for this slice and stage an incremental commit once git index-write is available.
+
+### 2026-05-28 03:48 IST - Full-page widget targeting context symmetry
+- Mirrored full-page GID handling by adding `currentProductGid: window.currentProductGid` to
+  `app/assets/bundle-widget-full-page.js` parse/config extraction.
+- Added source-level lock in
+  `tests/unit/assets/bundle-widget-full-page-template-layout.test.ts` to ensure the full-page widget passes
+  `currentProductGid`, `currentProductId`, and `currentProductCollections` to selection/visibility context.
+- This keeps PPB/F PB targeting matcher input parity as both widgets consume the same canonical fields.
+- Next: generate a fresh same-configuration storefront/Admin proof for visibility behavior with this slice.
+
+### 2026-05-28 00:17 IST - Shared clone payload helper + contract tests
+- Added `buildClonedStepPayload` export in [app/hooks/useSharedBundleHandlers.ts](app/hooks/useSharedBundleHandlers.ts) to enforce deep-copy + id-rename behavior for cloned steps without duplicating logic.
+- Added [tests/unit/hooks/useSharedBundleHandlers.test.ts](tests/unit/hooks/useSharedBundleHandlers.test.ts) to assert:
+  - cloned step id and name (`(Copy)`) are rewritten,
+  - `StepProduct` and `StepCategory` arrays and nested arrays/objects are not shared by reference,
+  - cloned category IDs are regenerated from a clone timestamp,
+  - mutation of source nested objects does not affect cloned copies.
+- Next: stage this slice as an independent checkpoint commit when index-write/deploy permissions allow and continue the next proof-blocked parity row.
+
+### 2026-05-28 00:39 IST - Clone helper validation pass
+- Ran focused slice validation:
+  - `npx jest tests/unit/hooks/useSharedBundleHandlers.test.ts --runInBand` ✅
+- Result: both clone-isolation contract tests passed.
+- Ran targeted lint for touched files:
+  - `npx eslint --max-warnings 9999 app/hooks/useSharedBundleHandlers.ts tests/unit/hooks/useSharedBundleHandlers.test.ts`
+- Result: 0 errors, warnings only (existing hook-typed `any` warning surface unchanged in this file).
+- Next: continue with next parity slice once index-write permissions allow commit.
+
+### 2026-05-28 01:06 IST - Clone payload deep-copy hardening
+- Hardened `buildClonedStepPayload` in [app/hooks/useSharedBundleHandlers.ts](app/hooks/useSharedBundleHandlers.ts) with a recursive clone path (`cloneValue`) so nested objects are copied by value, not by reference.
+- Expanded [tests/unit/hooks/useSharedBundleHandlers.test.ts](tests/unit/hooks/useSharedBundleHandlers.test.ts) to lock nested `multiLangData` isolation at both step-product and step-category levels.
+- This removes a remaining reference-leak path where nested dictionaries inside `multiLangData` could still be shared between source and clone.
+- Next: run focused verification for this slice in an unblocked environment, then move to the next manifest blocker.
+
+### 2026-05-28 01:20 IST - PPB archived status sync contract added
+- Added `syncs archived bundle product status directly with Shopify ARCHIVED` in
+  [tests/unit/routes/ppb-save-bundle.test.ts](tests/unit/routes/ppb-save-bundle.test.ts) to lock the PPB save flow when `bundleStatus=archived`.
+- The new contract checks:
+  - DB persists `status: "archived"` during `handleSaveBundle`,
+  - Shopify `productUpdate` sends `status: "ARCHIVED"` for archived status,
+  - description text remains carried through as part of the status sync payload.
+- This closes a direct parity gap in the PPB status path after active/draft/unlisted coverage was already present.
+
+### 2026-05-28 01:38 IST - Status mapping/order contract hardening
+- Added mapping/order assertions for shared status handling in:
+  - [tests/unit/services/bundle-configure-handlers.test.ts](tests/unit/services/bundle-configure-handlers.test.ts): explicit `getShopifyStatusFromBundleStatus` matrix for `active`, `draft`, `archived`, `unlisted`.
+  - [tests/unit/routes/bundle-status-section.test.ts](tests/unit/routes/bundle-status-section.test.ts): explicit canonical status-label/value order assertion for shared selector contract.
+- This reduces parity risk where admin status UI/Shopify sync order or wording drifts away from the evidence-backed manifest.
+
+### 2026-05-28 02:44 IST - PPB specific-product/collection targeting runtime foundation
+- Added runtime visibility gating for PPB widget render using `BundleDataManager._evaluateWidgetVisibility(...)` and `bundleUpsellConfig.widgetConfiguration.displayConfiguration`.
+- Added unit coverage for specific-products/specific-collections matching in [tests/unit/assets/bundle-data-manager.test.ts](tests/unit/assets/bundle-data-manager.test.ts).
+- Added product collection context passing in [extensions/bundle-builder/blocks/bundle-product-page.liquid](extensions/bundle-builder/blocks/bundle-product-page.liquid) via `window.currentProductCollections`.
+- Next: capture fresh storefront/admin evidence and validate the same in Chrome for `ppb-specific-targeting` before marking manifest gates green.
+
+### 2026-05-27 23:54 IST - Incremental checkpoint commit assembly
+- Captured and preserved the current EB clone rewrite working-tree slice (admin parity, add-ons contract hardening, template modal interactions, FPB status bridge, and product/settings sync slices) as an explicit checkpoint for commit sequencing.
+- Added this checkpoint entry before staging to satisfy the incremental-completion workflow and preserve task traceability across the next parity iteration.
+- Next: continue with remaining partial/blocked manifest rows, with one commit per meaningful parity slice once `.git` index-write is available.
+
+### 2026-05-27 23:59 IST - Shared handler deep-clone hardening for step cloning
+- Hardened step cloning in `app/hooks/useSharedBundleHandlers.ts` so cloned steps receive deep-copied `StepProduct` and `StepCategory` payloads, new category IDs, and cloned nested arrays/objects for products, collections, and rules.
+- This closes a data-isolation edge in clone flows that could leak nested references between source and cloned rows during PPB/FPB step duplication.
+- Next: verify this clone hardening during next configured store fixture run and promote to a committed checkpoint once `.git` index-write is available.
+
+### 2026-05-28 00:00 IST - Product-page widget full-page fallback cleanup
+- Removed temporary placeholder UI text in `app/assets/bundle-widget-product-page.js` and bundled runtime `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` from the `renderFullPageLayout()` fallback path.
+- The fallback now intentionally renders a deterministic product-page layout without debug messaging, preventing stray non-evidence-facing UI from shipping while the full-page tabs path is intentionally deferred.
+- Updated `docs/eb-ui-clone-rewrite/03-SDE-implementation.md` to mark `test-spec/eb-ui-clone-rewrite.spec.md` checklist item as done.
+- Current gate: continue full parity implementation in an environment with writable `.git` for commit staging and deploy verification.
+
+### 2026-05-28 00:10 IST - Add-on free-charge runtime/persistence strictness aligned
+- Hardened remaining add-on persistence/runtime/UI seams to preserve strict add-on free semantics across FPB/PPB:
+  - DB/runtime/metafield source: store `addonDisplayFree` as strict `=== true` in `bundle-product.server.ts`.
+  - Save handlers: `app.bundles.full-page-bundle.configure.$bundleId` and `app.bundles.product-page-bundle.configure.$bundleId` now persist `addonDisplayFree: step.addonDisplayFree === true`.
+  - Shared pricing calculator: strict-skip condition for free-gift totals now requires `addonDisplayFree === true` to remain excluded.
+  - PPB route UI fallback now initializes and renders tier `displayFree` with strict boolean fallback/checks (`=== true`).
+- Added `tests/unit/routes/addons-free-display-contract.test.ts` to lock these source contracts and prevent regressions.
+- Next: run focused verification for touched routes/widgets in an unblocked environment, then stage and commit this slice under issue key.
+
+### 2026-05-28 00:33 IST - Bundle Status source-contract hardening
+- Added stronger source-contract coverage for `BundleStatusSection`:
+  - Asserted the section renders via Polaris `<s-select>` + `<s-option>` map-backed options with `opt.label`.
+  - Added explicit canonical status value sequence lock (`active`, `draft`, `archived`, `unlisted`) in `tests/unit/routes/bundle-status-section.test.ts`.
+  - Added assertion that the shared status contract still contains `Unlisted (Ad Campaigns)` for parity-sensitive admin-facing labeling.
+- This is a low-risk, isolated contract slice and can be committed independently while broader EB parity evidence gaps remain.
+
+### 2026-05-28 00:58 IST - FPB status-sync contract and full-page mapping parity
+- Aligned FPB save-path status sync with shared status contract:
+  - Exported `getShopifyStatusFromBundleStatus` from `bundle-configure-handlers.server.ts`.
+  - Updated `syncFpbProductStatus` in `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` to use canonical mapping and `buildBundleProductDescriptionHtml`.
+  - Added unlisted campaign path for FPB: product status now goes ACTIVE then UNLISTED with unchanged campaign description.
+  - Added `finalStatus === BundleStatus.UNLISTED` dual-write guard plus logging for both states.
+  - Kept the existing unsupported publications recovery flow intact for plain ACTIVE status.
+- Updated FPB save regression tests in `tests/unit/routes/fpb-save-bundle.test.ts`:
+  - Made status assertion resilient to canonical description payload.
+  - Added unlisted-status test covering ACTIVE→UNLISTED call order.
+- Added this as a ready-to-commit incremental checkpoint once git index write access is available.
+
+### 2026-05-27 23:51 IST - Incremental checkpoint commit assembly
+- Collected and aligned EB clone implementation changes currently in working tree for a single incremental checkpoint commit under `[eb-ui-clone-rewrite-1]`.
+- Updated this issue log before commit with current checkpoint status and a follow-up next-step note.
+
+### 2026-05-27 23:44 IST - Add-on free-charge semantics unified
+- Aligned remaining FPB and PPB add-on rendering/cart branches to the same chargeability rule used by total/savings logic:
+  - free-gift price/badge/tagging now uses strict `addonDisplayFree === true` checks where visible free behavior is rendered.
+  - chargeable add-ons use strict `addonDisplayFree !== true` checks consistently for discount aggregation and `_bundle_step_type=addon:*` selection.
+  - source `getAllSelectedProductsData()` now stores `addonDisplayFree` as strict boolean (`step.addonDisplayFree === true`) so chargeability derivation is correct when source data omits the flag.
+- Updated add-on contract tests:
+  - `tests/unit/assets/bundle-widget-full-page-addons.test.ts`
+  - `tests/unit/assets/bundle-widget-product-page-addons.test.ts`
+- Next: re-run focused tests/lint in a session that can execute verification, then request commit once git index write access is available.
+
+### 2026-05-27 23:43 IST - Add-on chargeability check parity hardening
+- Fixed remaining add-on discount chargeability branch in both storefront runtime helpers:
+  - `app/assets/bundle-widget-full-page.js`: changed `addonDisplayFree` checks from `=== false` to `!== true` for chargeable step/item detection in `calculateSelectedAddonDiscountAmount()`.
+  - `app/assets/bundle-widget-product-page.js`: same `addonDisplayFree` detection hardening in the equivalent helper.
+- Updated `tests/unit/assets/bundle-widget-full-page-addons.test.ts` and `tests/unit/assets/bundle-widget-product-page-addons.test.ts` to reflect the `!== true` contract and ensure selected add-on discount coverage is source-contract locked.
+- Next: validate same-fixture parity in live store behavior for add-on chargeability when `addonDisplayFree` is undefined.
+
+### 2026-05-27 20:11 IST - PPB generated product media alt normalization
+- Applied evidence-backed metadata normalization in generated Product Page product sync so app-owned placeholder media alt is kept null (null in Shopify product JSON) instead of empty string where stale text exists.
+- Updated `app/lib/bundle-product-media.server.ts`:
+  - `getBundleProductPlaceholderAlt` now returns `null`.
+  - `buildBundleProductPlaceholderMediaInput` now sends `alt: null` with `originalSource`.
+  - `buildBundleProductMediaFileUpdates` now clears stale placeholder alt values with `alt: null`.
+- Extended unit coverage in `tests/unit/lib/bundle-product-media.test.ts` for null placeholder alt and null-alt cleanup.
+- Updated Sync Product helper assertions in `tests/unit/routes/ppb-sync-product.test.ts` to match null alt normalization during create/recreate and media-file updates.
+- Next: run Sync Product in the same evidence fixture and capture a fresh product JSON proof showing placeholder alt as null after sync on the latest fixture store.
+
+### 2026-05-27 23:20 IST - PPB product-page selection key normalization hardening
+- Hardened `app/assets/bundle-widget-product-page.js` against duplicate-step slot forks caused by mixed variant key formats:
+  - Introduced normalized selection-key helpers for all mutation/read paths.
+  - Default product seeding now writes via normalized keys.
+  - Product quantity lookups, plus/minus handlers, and add-to-cart payload reads now route through normalized selectors.
+  - Variant switch path now migrates selected quantity between normalized keys to avoid stale duplicate state.
+- This lock keeps `updateProductSelection`/`validateStepCondition`/default init in a single normalized key path so PPB product-page flows remain stable after close/reopen.
+- Next: stage and commit this slice before moving to the next parity gap.
+
+### 2026-05-27 23:34 IST - PPB product-page selection normalization cleanup pass
+- Extended hardening for stale/default variant key alias cleanup in additional PPB selection mutators:
+  - `_renderDirectDefaultProducts` now reads quantities via `getSelectedQuantity(0, product.variantId)`.
+  - `removeProductFromSelection` now normalizes the variant key once and routes through `getSelectedQuantity`/`setSelectedQuantity`.
+  - `clearStepSelections` now restores direct-default variants using `setSelectedQuantity`.
+- Added regression-source assertions in `tests/unit/assets/bundle-widget-product-page-products.test.ts` for:
+  - shared normalizer + normalized read/write contract,
+  - direct-default product rendering path, and
+  - normalized default guard behavior in remove flow.
+- This reduces key-format divergence risk beyond modal open/reopen and keeps the same PPB slice in a single normalized state path.
+
+### 2026-05-27 23:46 IST - PPB default variant seed path unified
+- Replaced the remaining direct `selectedProducts[stepIndex][variantId] = quantity` default seeding assignment in `app/assets/bundle-widget-product-page.js` with `setSelectedQuantity(...)` to keep default initialization on the same normalized helper path used by mutation/read code.
+- This removes a final mixed-key seeding hotspot in `initializeDataStructures()`, so default product defaults remain stable across mixed GraphQL/global/local variant ID formats during rebuild/reopen flows.
+
+### 2026-05-27 23:59 IST - EB clone rewrite checkpoint commit prep
+- Added an incremental checkpoint entry point capturing the current PPB/FPB parity slice work currently in the working tree:
+  - admin route/widget/asset updates in PPB and FPB configure/runtime areas,
+  - PPB product selection state normalization and selection-key canonicalization,
+  - generated media-alt/metadata cleanup, select-template dialog hardening, and add-on runtime/message parity contracts,
+  - updated manifest/evidence tracking and test spec updates associated with these slices.
+- Commit is intended as an incremental checkpoint before continuing the next evidence-blocked parity gap loop; several rows in the manifest remain `partial` until same-fixture live evidence is refreshed.
+- Commit attempt is currently blocked in this workspace because writing `.git/index.lock` is disallowed here; no commit was created yet.
+
+### 2026-05-27 23:58 IST - Select Template modal interaction hardening
+- Hardened PPB and FPB custom Select Template dialogs:
+  - added select-template trigger refs to restore focus on close for both App-owned dialogs;
+  - added inner dialog click stop-propagation to avoid backdrop close re-entrance;
+  - wired preview-step button to existing `handlePreviewBundle` path via `handleTemplatePreview`.
+- Added source-contract checks in `tests/unit/routes/select-template.test.ts` for ref wiring, focus return, preview handler binding, and stop-propagation.
+
+### 2026-05-27 22:25 IST - FPB Add-ons combined discount parity iteration (product-page storefront)
+- `app/assets/bundle-widget-product-page.js` now applies selected add-on discount to combined UI totals and cart-line source properties:
+  - Added product-page-only add-on discount helpers mirroring full-page behavior:
+    - `getAddonLineDiscount`
+    - `getAddonProductSelectionKeys`
+    - `calculateSelectedAddonDiscountAmount`
+    - `getDiscountInfoWithSelectedAddonDiscount`
+    - `getAllSelectedProductsData`
+  - Re-routed summary/inline totals (`renderFooter`, modal footer pricing/messaging, add-to-cart button) to combined base + selected add-on discount.
+  - Updated cart payload line properties to emit combined `youSave` values from selected bundle state.
+  - Added chargeable add-on `_bundle_step_type` payload tagging (`addon:PERCENTAGE:<value>`) for selected add-on step lines.
+- Next: capture same-fixture product-page live storefront proof for combined discount message/ATC and save/cart transform response; then continue remaining parity slices.
+
+### 2026-05-27 23:05 IST - PPB product-page add-on contract coverage added
+- Added `tests/unit/assets/bundle-widget-product-page-addons.test.ts` to mirror full-page add-on discount contracts for Product Page runtime:
+  - add-on helper/function path coverage (`getAddonLineDiscount`, helper-product selection mapping, combined discount calculation)
+  - add-on label/config path coverage from step-level runtime config
+  - chargeable add-on cart payload path (`_bundle_step_type = addon:PERCENTAGE:<value>`)
+  - combined base + selected add-on discount helper usage
+  - cart source properties (`youSave` object) and modal/footer discount/message call paths.
+- This test slice keeps `fpb-addons` and `ppb-template-horizontal-slots` parity slices locked on source-contract behavior until live same-fixture evidence and final screenshot/copy capture are completed.
+
+### 2026-05-27 22:08 IST - FPB Add-ons tier condition value normalization
+- Normalized FPB add-on tier rule serialization to force `conditions[].value` into string form from all load/save paths (`normalizeAddonTier`, `addonTierToDraft`), preventing numeric/string drift in persistence.
+- Added source-contract assertion coverage for the explicit `String(condition?.value ?? "01")` normalization path in `tests/unit/routes/fpb-addons-admin-layout.test.ts`.
+- The `fpb-addons` row stays `partial` until a final same-fixture Admin visual proof is captured.
+
+### 2026-05-27 21:31 IST - FPB Add-ons tier condition persistence cleanup
+- Fixed the remaining FPB tier-rule parity gap in `buildPersonalizationDataFromDraft` / `addonTierToDraft` by preserving conditions on load and serializing them as the EB contract shape (`type`, `condition`, `value`) when building `personalizationData.addonProducts.tiers`.
+- Updated `createDefaultAddonTierCondition` and default tier state so add-on tier condition rows are created/persisted without UI-only identity fields.
+- Added route-source contract coverage in `tests/unit/routes/fpb-addons-admin-layout.test.ts` for the tier-condition wiring markers.
+
+### 2026-05-27 21:11 IST - FPB Add-ons Tier Rule wiring started
+- The previous add-ons slice had a non-functional `Add Tier Rule` button and no persisted tier-condition fields.
+- In-progress patch now targets:
+  - Add-tier rule CRUD inside the existing `addonDraft.addonTiers[idx].conditions`.
+  - Rule controls for condition type, operator, and value with per-row remove.
+  - `Add Tier Rule` now creates a default rule row so data can be captured in live save/runtime payload and serialized through `buildPersonalizationDataFromDraft`.
+- Scope remains admin-visual parity + functional parity for tier rules; full parity still requires final measured same-fixture EB/WPB add-ons admin/evidence capture.
+
+### 2026-05-27 19:48 IST - PPB Select Template dialog interaction hardening
+- Added app-owned Select Template dialog interaction hardening in `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`:
+  - Added an explicit `selectTemplateDialogRef` and focus-on-open behavior so the dialog container receives focus when shown.
+  - Added shared `handleSelectTemplateBackdropClick` handlers for both `onMouseDown` and `onClick` to close on backdrop interaction in cross-frame conditions.
+  - Kept keyboard close behavior on `Escape` and preserved the confirm-step flow for template persistence.
+- Added focused route-source assertions in `tests/unit/routes/select-template.test.ts` for the dialog ref, focus effect, and backdrop close contract.
+- This hardens parity for the evidence-backed requirement that PPB Select Template uses a React-owned, accessible dialog overlay instead of `s-modal`.
+- Next: capture live same-fixture PPB Admin evidence for template close/select and dialog step transition behavior before marking template rows green.
+
+### 2026-05-27 20:10 IST - FPB Select Template dialog parity hardening
+- Added route-level parity hardening for `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`:
+  - Replaced the Shopify-native `s-modal` Select Template shell with the same app-owned `role="dialog"` pattern used for PPB to avoid cross-frame close/select variance.
+  - Added focus-on-open behavior, Escape-key close, and backdrop close handling for same-friction interaction parity.
+  - Preserved existing save action flow and Confirm step behavior while keeping template payload unchanged.
+- Added route-source assertions in `tests/unit/routes/select-template.test.ts` for the full-page app-owned dialog contract and explicit `s-modal` removal.
+- Added template dialog styles in `app/styles/routes/full-page-bundle-configure.module.css` using the same shell geometry as the PPB custom dialog surface.
+- Next: capture same-fixture FPB Admin evidence for full-page Select Template close/select flow in embedded mode before updating manifest rows.
+
+### 2026-05-27 20:23 IST - Select Template dialog focus-trap hardening
+- Added keyboard focus-loop handling for both app-owned Select Template dialogs:
+  - Added `Tab` and `Shift+Tab` handling in both route handlers to keep focus inside the dialog shell.
+  - Added shared focusable-element collection and wrap-around behavior in both Select Template custom modals.
+- Extended source-level assertions in `tests/unit/routes/select-template.test.ts` for the new focus-trap contract.
+- Next: collect same-fixture embedded modal evidence for Tab/Shift+Tab behavior and close/select transitions before manifest status updates.
+
+### 2026-05-27 20:37 IST - Select Template focus-trap edge-case fix
+- Updated both Select Template key handlers to handle cases where the active element is no longer a dialog child (e.g., stray focus landing on Shopify chrome) by forcing focus back to the first dialog control before wrap checks.
+- Added fallback source assertions in `tests/unit/routes/select-template.test.ts` for the focus-index/escape fallback branch used by the trap.
+- This is now blocked only by same-fixture live evidence that proves no focus escape in real embedded interaction (Tab/Shift+Tab + Escape + backdrop/close) after this patch.
+
+### 2026-05-27 18:37 IST - FPB add-ons combined discount UI messaging slice
+- Found remaining UI mismatch after the previous add-ons cart merge work: visible FPB side-panel tray, sidebar, progress bar, and modal paths were still using base discount values while cart properties already emitted combined base + selected add-on totals.
+- Updated `app/assets/bundle-widget-full-page.js` to flow `combinedDiscountInfo` into:
+  - compact mobile tray discount message/progress
+  - full-page side panel discount message/progress
+  - full-page footer progress and banner calculations
+  - modal header/progress/total calculations
+  - `_renderDiscountProgress` callsites and fallback calculations when passed externally
+- Added source-contract coverage in `tests/unit/assets/bundle-widget-full-page-addons.test.ts` to lock combined discount messaging usage across summary tray/sidebar/modal and progress paths.
+- Verification run completed: `node --check app/assets/bundle-widget-full-page.js`, `npx jest tests/unit/assets/bundle-widget-full-page-addons.test.ts --runInBand` (9 passing), `npx eslint --max-warnings 9999 tests/unit/assets/bundle-widget-full-page-addons.test.ts` (0 errors, 6 warnings), and `npm run build:widgets`.
+- Remaining required work: same-fixture modal/footer desktop/mobile add-ons proof and final manifest row sign-off for `fpb-addons` still needs capture after live flow verification.
+
+### 2026-05-27 18:45 IST - Step Config image public contract boundary cleanup
+- Aligned `formatBundleForWidget`/`BundleUiConfig` typing so public step runtime payload uses `steps[].stepImage` as the contract key and does not surface `timelineIconUrl`.
+- Updated client hydration boundary in `useBundleConfigurationState` to prefer `step.stepImage` and fall back to `step.timelineIconUrl` only for DB-compatibility.
+- Updated bundle metafield writer (`updateBundleProductMetafields`) to emit `stepImage` in the public runtime contract while retaining `timelineIconUrl` DB write compatibility upstream.
+- Added a follow-up local check target: confirm `bundle-formatter`/route tests remain green for Step Config image contract and no public payload asserts depend on `timelineIconUrl` keys.
+
+### 2026-05-27 19:24 IST - FPB Step Setup variants-toggle contract cleanup
+- Added FPB Step Setup source and save-contract coverage for the step-level `Display variants as individual products` toggle:
+  - `tests/unit/routes/step-setup-category-variant-ui-contract.test.ts` now asserts full-page route wiring uses canonical `displayVariantsAsIndividual` for checkbox state and update.
+  - `tests/unit/routes/fpb-save-bundle.test.ts` now asserts the persisted DB step payload carries `displayVariantsAsIndividual` from submitted FPB `stepsData`.
+- Updated `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` and `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server.ts` to persist and mutate the canonical step-level variants field only (no legacy `displayVariantsAsIndividualProducts` writeback in FPB step state).
+
+### 2026-05-27 08:47 IST - Step Setup Step Config image contract slice started
+- Re-read the PPB Step Setup evidence: `/private/tmp/eb-complete-configure-audit-2026-05-25/network-3647-ppb-step-config-upload-save.network-request` persists the uploaded Step Config image as `productsData1.stepImage`, after `/api/utility/uploadImages` returns `data.uploadImgUrl`.
+- Current WPB configure routes write the uploaded image into an internal `timelineIconUrl` field and the optimized metafield/runtime payload builders omit the evidenced `stepImage` key, so the Admin control can save without producing the EB-equivalent runtime contract.
+- Scope: add RED contracts for Step Config upload using `stepImage`, patch both configure routes plus save/metafield formatting to emit the direct `stepImage` key while storing through the existing DB field, verify focused tests/lint/build/graph, then commit and retry the authorized SIT deploy.
+
+### 2026-05-27 09:03 IST - Step Setup Step Config image contract slice verified
+- Added route/source, save-handler, formatter, bundle-product-metafield, and full-page widget source coverage proving Step Config uploads use direct `stepImage` in Admin state and public runtime/metafield payloads while persisting through the existing step image storage field.
+- Patched FPB and PPB configure routes to preview/upload/replace from `stepImage`, mapped DB-loaded step images into Admin state, saved `stepImage` into the existing storage column, removed public `timelineIconUrl` from bundle-product/formatter payloads, and rebuilt the full-page widget bundle.
+- Advisor check confirmed this should stay a boundary mapping, not schema churn: public Admin/runtime contract is `stepImage`; the existing DB field remains internal storage.
+- Verification passed: focused Jest suite with 104 tests, modified-file ESLint with 0 errors, code/test competitor-reference scan with no matches, `node --check app/assets/bundle-widget-full-page.js`, `npm run build:widgets`, `npm run build`, graph rebuild with known warnings, and `git diff --check`. Raw widget JS is excluded by the repo TS ESLint project; a `--no-ignore` lint attempt failed on that project-scope limitation, so syntax/build/source-contract checks cover the raw widget file.
+
+### 2026-05-27 09:05 IST - Step Config image commit/deploy blocked by git sandbox
+- Attempted to stage the verified Step Config image slice for commit. Sandboxed `git add` failed because it could not create `.git/index.lock`, and the required escalation was rejected by the execution environment usage limiter.
+- No commit was created and no SIT deploy was run from this slice. Next required action is to rerun the same staging/commit/deploy steps in an environment that can write the Git index.
 
 ### 2026-05-27 08:29 IST - PPB Step Setup category title slice started
 - Re-read the PPB Step Setup evidence: `ppb-admin-step-setup-products-selected.png` shows `Category Name`, a category Multi Language button, then a visible `Category Title` field before the Products/Collections tabs, and the update payload stores `categories.category98476.title: "Pick audit items"`.

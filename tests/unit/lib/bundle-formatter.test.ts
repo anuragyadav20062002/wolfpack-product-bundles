@@ -120,6 +120,22 @@ describe("formatBundleForWidget", () => {
     expect(result.steps[0].pageTitle).toBe("Choose your jewelry");
   });
 
+  it("maps stored Step Config image to public stepImage only", () => {
+    const step = makeStep({ timelineIconUrl: "https://cdn.example.test/step.png" });
+    const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
+    expect(result.steps[0].stepImage).toBe("https://cdn.example.test/step.png");
+    expect(result.steps[0]).not.toHaveProperty("timelineIconUrl");
+  });
+
+  it("prefers direct stepImage when both stepImage and timelineIconUrl are present", () => {
+    const step = makeStep({
+      stepImage: "https://cdn.example.test/step-direct.png",
+      timelineIconUrl: "https://cdn.example.test/step-legacy.png",
+    });
+    const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
+    expect(result.steps[0].stepImage).toBe("https://cdn.example.test/step-direct.png");
+  });
+
   it("keeps category-backed products under categories for storefront runtime", () => {
     const step = makeStep({
       StepProduct: [],

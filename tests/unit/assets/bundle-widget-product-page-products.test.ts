@@ -198,3 +198,53 @@ describe('Product Page widget category hydration contract', () => {
     expect(source).toContain('category.collectionsSelectedData');
   });
 });
+
+describe('Product Page widget selection-key normalization contract', () => {
+  it('uses a shared selection-key normalizer for update paths', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('normalizeSelectionKey(variantId)');
+    expect(source).toContain('getSelectedQuantity(stepIndex, selectionKey);');
+    expect(source).toContain('this.setSelectedQuantity(stepIndex, selectionKey, quantity);');
+    expect(source).toContain('this.setSelectedQuantity(stepIndex, normalizedVariantId, 0);');
+    expect(source).toContain('const normalized = this.normalizeSelectionKey(variantId);');
+    expect(source).toContain('if (Object.prototype.hasOwnProperty.call(selectedProducts, normalized))');
+  });
+
+  it('reads direct default variant quantities through normalized lookup in the summary renderer', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('this._renderDirectDefaultProducts()');
+    expect(source).toContain('const quantity = this.getSelectedQuantity(0, product.variantId)');
+    expect(source).toContain('this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);');
+  });
+
+  it('keeps default-product guard checks normalized in removeProductFromSelection', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('if (step?.isDefault && this.normalizeSelectionKey(step.defaultVariantId) === normalizedVariantId) return;');
+    expect(source).toContain('const currentQuantity = this.getSelectedQuantity(stepIndex, normalizedVariantId);');
+    expect(source).toContain('this.setSelectedQuantity(stepIndex, normalizedVariantId, currentQuantity - 1);');
+  });
+
+  it('normalizes selection IDs when matching selected products for summary/cart payload paths', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('findProductBySelectionKey(productsInStep, normalizedVariantId);');
+    expect(source).toContain('findProductBySelectionKey(products, variantId);');
+    expect(source).toContain('getVariantAvailable(stepIndex, variantId) {');
+    expect(source).toContain('findProductBySelectionKey(products, variantId);');
+  });
+});

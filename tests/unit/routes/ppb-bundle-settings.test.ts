@@ -201,6 +201,28 @@ describe("parsePPBBundleSettings", () => {
     expect(result.individualSellingPlanSelection).toEqual(individualSellingPlanSelection);
   });
 
+  it("parses individual selling-plan showFor as OOS only when explicitly provided", () => {
+    const result = parsePPBBundleSettings(makeForm({
+      individualSellingPlanSelection: JSON.stringify({ isEnabled: true, showFor: "OOS_PRODUCTS" }),
+    }));
+
+    expect(result.individualSellingPlanSelection).toEqual({
+      isEnabled: true,
+      showFor: "OOS_PRODUCTS",
+    });
+  });
+
+  it("normalizes invalid selling-plan showFor values back to ALL_PRODUCTS", () => {
+    const result = parsePPBBundleSettings(makeForm({
+      individualSellingPlanSelection: JSON.stringify({ isEnabled: true, showFor: "INVALID_VALUE" }),
+    }));
+
+    expect(result.individualSellingPlanSelection).toEqual({
+      isEnabled: true,
+      showFor: "ALL_PRODUCTS",
+    });
+  });
+
   it("parses direct bundle summary text contract", () => {
     const bundleTextConfig = {
       bundleSummary: {

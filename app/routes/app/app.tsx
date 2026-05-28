@@ -3,18 +3,29 @@ import { Outlet, useLoaderData, useRouteError, isRouteErrorResponse, useSearchPa
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { authenticate } from "../../shopify.server";
+import { authenticate, sessionStorage } from "../../shopify.server";
+import prisma from "../../db.server";
 import { ErrorPage } from "../../components/ErrorPage";
 import { I18nextProvider } from "react-i18next";
 import { useEffect } from "react";
 import { i18n, isSupportedLocale } from "../../i18n/config";
 import { getPolarisLocale } from "../../i18n/polaris-locales.server";
 import { MantleTracker } from "../../components/MantleTracker";
+import { ensureShopHasExpiringOfflineSession } from "../../services/offline-token.server";
+import { AppLogger } from "../../lib/logger";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  try {
+    await ensureShopHasExpiringOfflineSession(prisma, session.shop, sessionStorage);
+  } catch (error) {
+    AppLogger.error("Failed to ensure expiring offline session during app load", {
+      component: "app.app",
+      shop: session.shop,
+    }, error);
+  }
   const url = new URL(request.url);
   const rawLocale = url.searchParams.get("locale") ?? "en";
   const locale = isSupportedLocale(rawLocale) ? rawLocale : "en";

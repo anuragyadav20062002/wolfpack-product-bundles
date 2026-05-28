@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
  * Version : 2.9.6
- * Built   : 2026-05-26
+ * Built   : 2026-05-27
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -3725,10 +3725,10 @@ class BundleWidgetFullPage {
 
     if (this.selectedBundle?.pricing?.enabled) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
       let discountMessage = '';
-      if (discountInfo.hasDiscount) {
+      if (combinedDiscountInfo.hasDiscount) {
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
@@ -3747,7 +3747,13 @@ class BundleWidgetFullPage {
       }
 
       if (this.config.showDiscountProgressBar) {
-        const progressBar = this._renderDiscountProgress({ placement: "sidebar" });
+        const progressBar = this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
         if (progressBar) {
           progressBar.classList.add('fpb-dp-sidebar');
           sheet.appendChild(progressBar);
@@ -3924,10 +3930,10 @@ class BundleWidgetFullPage {
 
     if (this.selectedBundle?.pricing?.enabled) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
       let discountMessage = '';
-      if (discountInfo.hasDiscount) {
+      if (combinedDiscountInfo.hasDiscount) {
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
@@ -3946,7 +3952,13 @@ class BundleWidgetFullPage {
       }
 
       if (this.config.showDiscountProgressBar) {
-        const progressBar = this._renderDiscountProgress({ placement: "sidebar" });
+        const progressBar = this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
         if (progressBar) {
           progressBar.classList.add('fpb-dp-sidebar');
           panel.appendChild(progressBar);
@@ -4298,7 +4310,7 @@ class BundleWidgetFullPage {
       const tabLabel = entry.label;
       const escapedName = this._escapeHTML(tabLabel) || `Step ${index + 1}`;
 
-      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.timelineIconUrl;
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
       const iconContent = uploadedIconUrl
         ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
         : this._getDefaultTimelineIcon(step);
@@ -5303,7 +5315,12 @@ class BundleWidgetFullPage {
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
     if (this.config.showDiscountProgressBar) {
-      const progressBar = this._renderDiscountProgress();
+      const progressBar = this._renderDiscountProgress({
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
       if (progressBar) this.elements.footer.appendChild(progressBar);
     }
 
@@ -6500,19 +6517,20 @@ class BundleWidgetFullPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
       totalQuantity,
-      discountInfo,
+      combinedDiscountInfo,
       currencyInfo
     );
 
     const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-    if (discountInfo.qualifiesForDiscount) {
+    if (combinedDiscountInfo.qualifiesForDiscount) {
 
       const successMessage = TemplateManager.replaceVariables(
         this.config.successMessageTemplate,
@@ -6613,15 +6631,29 @@ class BundleWidgetFullPage {
 
   _renderDiscountProgress(options = {}) {
     const placement = options.placement || "default";
+    const providedCombinedDiscountInfo = options.combinedDiscountInfo;
+    const providedTotalPrice = options.totalPrice;
+    const providedTotalQuantity = options.totalQuantity;
+    const providedUnitPrices = options.unitPrices;
+
     if (!this.selectedBundle?.pricing?.enabled) return null;
 
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle, totalPrice, totalQuantity, unitPrices
+    const { totalPrice, totalQuantity, unitPrices } = typeof providedTotalPrice === 'number' && typeof providedTotalQuantity === 'number'
+      ? {
+          totalPrice: providedTotalPrice,
+          totalQuantity: providedTotalQuantity,
+          unitPrices: providedUnitPrices || []
+        }
+      : PricingCalculator.calculateBundleTotal(
+          this.selectedProducts,
+          this.stepProductData,
+          this.selectedBundle?.steps
+        );
+    const discountInfo = providedCombinedDiscountInfo ?? this.getDiscountInfoWithSelectedAddonDiscount(
+      PricingCalculator.calculateDiscount(
+        this.selectedBundle, totalPrice, totalQuantity, unitPrices
+      ),
+      totalPrice
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
@@ -6687,8 +6719,11 @@ class BundleWidgetFullPage {
       this.stepProductData,
       this.selectedBundle?.steps
     );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle, totalPrice, totalQuantity, unitPrices
+    const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(
+      PricingCalculator.calculateDiscount(
+        this.selectedBundle, totalPrice, totalQuantity, unitPrices
+      ),
+      totalPrice
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
@@ -6753,12 +6788,13 @@ class BundleWidgetFullPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
       totalQuantity,
-      discountInfo,
+      combinedDiscountInfo,
       currencyInfo
     );
 
@@ -7706,19 +7742,20 @@ class BundleWidgetFullPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
 
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
     if (cartBadge) {
       cartBadge.textContent = totalQuantity.toString();
     }
 
-    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+    this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
 
-    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
   }
 
   updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {

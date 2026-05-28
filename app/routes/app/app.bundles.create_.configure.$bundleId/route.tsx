@@ -24,6 +24,7 @@ import {
   DiscountMethod,
   amountToCents,
   centsToAmount,
+  createNewPricingRule,
 } from "../../../types/pricing";
 import { useBundlePricing } from "../../../hooks/useBundlePricing";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
@@ -1889,10 +1890,9 @@ export default function WizardConfigureStep() {
                     <s-select
                       label="Discount Type"
                       onChange={(e: Event) => {
-                        pricing.changeDiscountType(
-                          (e.target as HTMLSelectElement).value as DiscountMethod
-                        );
-                        pricing.setDiscountRules([]);
+                        const nextType = (e.target as HTMLSelectElement).value as DiscountMethod;
+                        pricing.changeDiscountType(nextType);
+                        pricing.setDiscountRules([createNewPricingRule(nextType)]);
                       }}
                     >
                       <s-option
@@ -1916,75 +1916,117 @@ export default function WizardConfigureStep() {
                     </s-select>
 
                     {/* Discount Rules */}
-                    {pricing.discountRules.length > 0 && (
+                      {pricing.discountRules.length > 0 && (
                       <div className={styles.rulesList}>
                         {pricing.discountRules.map((rule, index) => (
                           <div key={rule.id} className={styles.discountRuleRow}>
                             <div className={styles.discountRuleHeader}>
-                              <s-text>Rule {index + 1}</s-text>
+                              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                Rule #{index + 1}
+                              </h4>
                               <s-button
-                                variant="tertiary"
+                                variant="plain"
                                 tone="critical"
-                                icon="delete"
-                                accessibilityLabel="Remove rule"
+                                accessibilityLabel={`Remove rule ${index + 1}`}
                                 onClick={() =>
                                   pricing.removeDiscountRule(rule.id)
                                 }
-                              />
+                              >
+                                Remove
+                              </s-button>
                             </div>
                             <div className={styles.discountRuleFields}>
                               {pricing.discountType === DiscountMethod.BUY_X_GET_Y ? (
-                                <>
+                                <div className={styles.bxyRuleBody}>
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer buys</p>
                                   <s-number-field
-                                    label="Customer buys"
+                                    label="Minimum quantity of items"
                                     value={String(rule.customerBuys ?? 2)}
                                     min="1"
                                     onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
                                       customerBuys: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
                                     })}
                                   />
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer gets</p>
                                   <s-number-field
-                                    label="Customer gets"
+                                    label="Quantity"
                                     value={String(rule.customerGets ?? 1)}
                                     min="1"
+                                    helpText="Customer must add the quantity of items specified above to their cart"
                                     onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
                                       customerGets: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
                                     })}
                                   />
+                                <div className={styles.bxyRewardGrid}>
                                   <s-number-field
                                     label="Discount value"
                                     value={String(rule.discountValue ?? 0)}
                                     min="0"
                                     suffix={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "%" : undefined}
+                                    prefix={(rule.bxyDiscountType ?? 'percentage') === 'fixed_amount' ? "₹" : undefined}
+                                    max={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "100" : undefined}
                                     onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
-                                      discountValue: Number((e.target as HTMLInputElement).value) || 0
+                                      discountValue: (() => {
+                                        const nextValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        return (rule.bxyDiscountType ?? 'percentage') === 'percentage'
+                                          ? Math.min(100, Math.max(0, nextValue))
+                                          : Math.max(0, nextValue);
+                                      })()
                                     })}
                                   />
                                   <s-select
                                     label="Discount type"
                                     value={rule.bxyDiscountType ?? 'percentage'}
-                                    onChange={(e: Event) => pricing.updateDiscountRule(rule.id, {
-                                      bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
-                                    })}
+                                    onChange={(e: Event) => {
+                                      const bxyDiscountType = (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount';
+                                      const currentValue = Number(rule.discountValue ?? 0) || 0;
+                                      pricing.updateDiscountRule(rule.id, {
+                                        bxyDiscountType,
+                                        discountValue: bxyDiscountType === 'percentage'
+                                          ? Math.min(100, Math.max(0, currentValue))
+                                          : Math.max(0, currentValue),
+                                      });
+                                    }}
                                   >
-                                    <s-option value="percentage">% Off</s-option>
-                                    <s-option value="fixed_amount">Fixed Amount Off</s-option>
+                                    <s-option value="percentage">% off</s-option>
+                                    <s-option value="fixed_amount">₹ off</s-option>
                                   </s-select>
-                                  <s-select
-                                    label="Apply discount to"
-                                    value={rule.bxyApplyMode ?? 'lowest_priced'}
-                                    onChange={(e: Event) => pricing.updateDiscountRule(rule.id, {
-                                      bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
+                                    <s-select
+                                      label="Apply Discount to"
+                                      value={rule.bxyApplyMode ?? 'lowest_priced'}
+                                      onChange={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                        bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
+                                      })}
+                                    >
+                                      <s-option value="lowest_priced">The lowest priced items</s-option>
+                                      <s-option value="latest_added">The latest added items</s-option>
+                                    </s-select>
+                                  </div>
+                                </div>
+                              ) : pricing.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
+                                <div className={styles.fixedBundleRuleBody}>
+                                  <s-number-field
+                                    label="Number of Products in Bundle"
+                                    value={String(rule.conditionValue ?? 0)}
+                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                      conditionValue: Number((e.target as HTMLInputElement).value) || 0
                                     })}
-                                  >
-                                    <s-option value="lowest_priced">Lowest Priced</s-option>
-                                    <s-option value="latest_added">Latest Added</s-option>
-                                  </s-select>
-                                </>
+                                    min="0"
+                                  />
+                                  <s-number-field
+                                    label="Price"
+                                    value={String(centsToAmount(rule.discountValue))}
+                                    min="0"
+                                    prefix="₹"
+                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                      discountValue: amountToCents(Number((e.target as HTMLInputElement).value) || 0)
+                                    })}
+                                  />
+                                </div>
                               ) : (
                                 <>
                                   <s-select
-                                    label="Condition type"
+                                    label="Discount on"
                                     value={rule.conditionType ?? 'quantity'}
                                     onChange={(e: Event) => pricing.updateDiscountRule(rule.id, {
                                       conditionType: (e.target as HTMLSelectElement).value as 'quantity' | 'amount'
@@ -1994,10 +2036,10 @@ export default function WizardConfigureStep() {
                                     <s-option value="amount">Amount</s-option>
                                   </s-select>
                                   <s-number-field
-                                    label={rule.conditionType === 'amount' ? "Minimum amount" : "Minimum quantity"}
+                                    label={"is greater than or equal to"}
                                     value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
                                     min="0"
-                                    helpText={rule.conditionType === 'amount' ? "Amount in shop's currency" : undefined}
+                                    prefix={rule.conditionType === 'amount' ? "₹" : undefined}
                                     onInput={(e: Event) => {
                                       const num = Number((e.target as HTMLInputElement).value) || 0;
                                       pricing.updateDiscountRule(rule.id, {
@@ -2005,24 +2047,27 @@ export default function WizardConfigureStep() {
                                       });
                                     }}
                                   />
-                                  <s-number-field
-                                    label={
-                                      pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "% Off" :
-                                        pricing.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? "Bundle Price" :
-                                          "Amount Off"
-                                    }
-                                    value={String(
-                                      pricing.discountType === DiscountMethod.PERCENTAGE_OFF
-                                        ? rule.discountValue
-                                        : centsToAmount(rule.discountValue)
-                                    )}
-                                    min="0"
-                                    suffix={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                    helpText={pricing.discountType !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
-                                    onInput={(e: Event) => {
+                                    <s-number-field
+                                      label={
+                                        pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "Percentage Off" :
+                                          pricing.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? "Bundle Price" :
+                                            "Fixed Amount Off"
+                                      }
+                                      value={String(
+                                        pricing.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? rule.discountValue
+                                          : centsToAmount(rule.discountValue)
+                                      )}
+                                      min="0"
+                                      max={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
+                                      suffix={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                      prefix={pricing.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
+                                      onInput={(e: Event) => {
                                       const num = Number((e.target as HTMLInputElement).value) || 0;
                                       pricing.updateDiscountRule(rule.id, {
-                                        discountValue: pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? num : amountToCents(num)
+                                        discountValue: pricing.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? Math.min(100, Math.max(0, num))
+                                          : amountToCents(Math.max(0, num))
                                       });
                                     }}
                                   />
@@ -2034,17 +2079,22 @@ export default function WizardConfigureStep() {
                       </div>
                     )}
 
-                    {pricing.discountRules.length < 4 && (
-                      <s-button
-                        icon="plus"
-                        variant="primary"
-                        onClick={pricing.addDiscountRule}
-                      >
-                        Add Rule
-                      </s-button>
-                    )}
+                      {pricing.discountRules.length < 4 ? (
+                        <s-button
+                          icon="plus"
+                          variant="secondary"
+                          style={{ width: "100%" }}
+                          onClick={pricing.addDiscountRule}
+                        >
+                          Add rule
+                        </s-button>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                          Maximum 4 discount rules reached
+                        </p>
+                      )}
+                    </div>
                   </div>
-              </div>
 
               {/* Discount Display Options */}
               <div

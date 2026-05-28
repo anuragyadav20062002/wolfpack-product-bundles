@@ -70,7 +70,7 @@ interface FormattedStep {
   freeGiftName: string | null;
   isDefault: boolean;
   defaultVariantId: string | null;
-  timelineIconUrl: string | null;
+  stepImage: string | null;
   primaryVariantOption: string | null;
 }
 
@@ -182,7 +182,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       freeGiftName: step.freeGiftName ?? null,
       isDefault: step.isDefault ?? false,
       defaultVariantId: step.defaultVariantId ?? null,
-      timelineIconUrl: step.timelineIconUrl ?? null,
+      stepImage: step.stepImage ?? step.timelineIconUrl ?? null,
       primaryVariantOption: step.primaryVariantOption ?? null,
     };
   });

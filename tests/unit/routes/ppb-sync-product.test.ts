@@ -315,7 +315,7 @@ describe("PPB handleSyncProduct", () => {
           files: [
             {
               id: "gid://shopify/MediaImage/current",
-              alt: "",
+              alt: null,
             },
             {
               id: "gid://shopify/MediaImage/old",
@@ -395,7 +395,7 @@ describe("PPB handleSyncProduct", () => {
           media: [
             expect.objectContaining({
               originalSource: "https://app.example.test/bundle-product-placeholder.png",
-              alt: "",
+              alt: null,
               mediaContentType: "IMAGE",
             }),
           ],
@@ -486,7 +486,7 @@ describe("PPB handleSyncProduct", () => {
           media: [
             expect.objectContaining({
               originalSource: "https://app.example.test/bundle-product-placeholder.png",
-              alt: "",
+              alt: null,
               mediaContentType: "IMAGE",
             }),
           ],

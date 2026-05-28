@@ -1,8 +1,11 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import db from "../../db.server";
+import prisma from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
+import { createStorefrontAccessToken } from "../../services/storefront-token.server";
+import { getOfflineSessionForShop } from "../../services/offline-token.server";
+import { sessionStorage } from "../../shopify.server";
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
 const CORS_HEADERS = {
@@ -51,6 +54,15 @@ async function fetchAllVariants(
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
+                sellingPlanAllocations(first: 100) {
+                  edges {
+                    node {
+                      id
+                      priceAdjustments { price { amount currencyCode } }
+                      sellingPlan { id name }
+                    }
+                  }
+                }
               }
             }
           }
@@ -66,6 +78,15 @@ async function fetchAllVariants(
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
+                sellingPlanAllocations(first: 100) {
+                  edges {
+                    node {
+                      id
+                      priceAdjustments { price { amount currencyCode } }
+                      sellingPlan { id name }
+                    }
+                  }
+                }
               }
             }
           }
@@ -156,10 +177,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Storefront token is created at install time (lifecycle webhook / auth callback).
     // If it is missing here, the install flow is broken — fail clearly and fast.
-    let session = await db.session.findFirst({
-      where: { shop },
-      select: { storefrontAccessToken: true, scope: true }
-    });
+    let session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
 
     if (!session) {
       AppLogger.error("[STOREFRONT_API] No session found for shop", { component: "api.storefront-products", shop });
@@ -193,9 +211,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         AppLogger.info("[STOREFRONT_API] Created storefront token on-demand", { component: "api.storefront-products", shop });
 
         // Refresh session to get the new token
-        session = await db.session.findFirst({
-          where: { shop },
-          select: { storefrontAccessToken: true, accessToken: true }
+        session = await getOfflineSessionForShop(prisma, shop, sessionStorage, {
+          migrateIfNeeded: false,
+          refreshIfNeeded: false,
         });
       } catch (error) {
         AppLogger.error("[STOREFRONT_API] Failed to create token on-demand", { component: "api.storefront-products", shop }, error);
@@ -263,13 +281,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
             handle: product.handle,
             imageUrl: product.featuredImage?.url || '',
             variants: variantEdges.map((edge: any) => ({
-              id: edge.node.id,
-              title: edge.node.title,
-              price: edge.node.price?.amount || '0',
-              compareAtPrice: edge.node.compareAtPrice?.amount || null,
-              available: edge.node.availableForSale,
-              // Numeric stock level; null when scope ungranted or variant is untracked.
-              // Widget treats null as "unlimited / do not clamp".
+                id: edge.node.id,
+                title: edge.node.title,
+                price: edge.node.price?.amount || '0',
+                compareAtPrice: edge.node.compareAtPrice?.amount || null,
+                sellingPlanAllocations: (edge.node.sellingPlanAllocations?.edges || [])
+                  .map((allocationEdge: any) => allocationEdge?.node)
+                  .filter((allocation: any) => Boolean(allocation)),
+                available: edge.node.availableForSale,
+                // Numeric stock level; null when scope ungranted or variant is untracked.
+                // Widget treats null as "unlimited / do not clamp".
               quantityAvailable: typeof edge.node.quantityAvailable === 'number'
                 ? edge.node.quantityAvailable
                 : null,

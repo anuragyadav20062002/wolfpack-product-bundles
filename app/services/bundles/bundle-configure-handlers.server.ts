@@ -72,20 +72,29 @@ export const safeJsonParse = (value: any, defaultValue: any = []) => {
   return defaultValue;
 };
 
+export function getShopifyStatusFromBundleStatus(status: BundleStatus): string {
+  return status === BundleStatus.UNLISTED ? "ACTIVE" : status.toUpperCase();
+}
+
 // ─── Shared Handlers ─────────────────────────────────────────────────────────
 
 /**
  * Handle updating bundle status (active/inactive) and syncing to Shopify product
  */
 export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Session, bundleId: string, formData: FormData) {
-  const status = formData.get("status") as string;
+  const status = formData.get("status") as string | null;
+  if (!Object.values(BundleStatus).includes(status as BundleStatus)) {
+    return json({ success: false, error: "Invalid bundle status" }, { status: 400 });
+  }
+
+  const finalStatus = status as BundleStatus;
 
   const updatedBundle = await db.bundle.update({
     where: {
       id: bundleId,
       shopId: session.shop
     },
-    data: { status: status as any },
+    data: { status: finalStatus },
     include: {
       steps: true,
       pricing: true
@@ -99,11 +108,11 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
       // "unlisted" → Shopify "ACTIVE" first, then set to "UNLISTED" (API 2025-10+)
       // "archived" → Shopify "ARCHIVED"
       // Other statuses map directly via toUpperCase()
-      const shopifyStatus = status === "unlisted" ? "ACTIVE" : status.toUpperCase();
+      const shopifyStatus = getShopifyStatusFromBundleStatus(finalStatus);
       const descriptionHtml = buildBundleProductDescriptionHtml({
         bundleName: updatedBundle.name,
         customDescription: updatedBundle.description,
-        status,
+        status: finalStatus,
       });
       AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
 
@@ -148,7 +157,7 @@ export async function handleUpdateBundleStatus(admin: ShopifyAdmin, session: Ses
 
       // For UNLISTED campaign bundles: product must be ACTIVE first, then set to UNLISTED
       // UNLISTED hides from storefront search/collections/sitemap but keeps direct URL + channel feeds
-      if (status === "unlisted" && statusUserErrors.length === 0) {
+      if (finalStatus === BundleStatus.UNLISTED && statusUserErrors.length === 0) {
         AppLogger.debug(`[PRODUCT_SYNC] Setting product to UNLISTED for campaign bundle`);
         const unlistedResponse = await admin.graphql(UPDATE_PRODUCT_STATUS, {
           variables: {

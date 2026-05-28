@@ -142,5 +142,55 @@ describe("select-template route constants", () => {
     expect(source).toContain('onKeyDown={handleSelectTemplateDialogKeyDown}');
     expect(source).toContain('className={productPageBundleStyles.templateDialogBackdrop}');
     expect(source).not.toContain('<s-modal ref={selectTemplateModalRef} heading="Customization"');
+    expect(source).toContain('const selectTemplateDialogRef = useRef<HTMLDivElement>(null);');
+    expect(source).toContain('const handleSelectTemplateBackdropClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {');
+    expect(source).toContain('onMouseDown={handleSelectTemplateBackdropClick}');
+    expect(source).toContain('onClick={handleSelectTemplateBackdropClick}');
+    expect(source).toContain('const getSelectTemplateDialogFocusableElements = useCallback((): HTMLElement[] => {');
+    expect(source).toContain('const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {');
+    expect(source).toContain('if (event.key === "Escape")');
+    expect(source).toContain('if (event.key !== "Tab")');
+    expect(source).toContain('if (focusableElements.length === 0) {');
+    expect(source).toContain('const activeElementIndex = activeElement ? focusableElements.indexOf(activeElement) : -1;');
+    expect(source).toContain('if (activeElementIndex === -1) {');
+    expect(source).toContain('if (event.shiftKey && activeElementIndex === 0) {');
+    expect(source).toContain('ref={selectTemplateDialogRef}');
+    expect(source).toContain('const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);');
+    expect(source).toContain('ref={item.id === "select_template" ? selectTemplateOpenButtonRef : undefined}');
+    expect(source).toContain('const handleTemplatePreview = useCallback(() => {');
+    expect(source).toContain('onClick={handleTemplatePreview}');
+    expect(source).toContain('selectTemplateOpenButtonRef.current?.focus();');
+    expect(source).toContain('onClick={(event) => event.stopPropagation()}');
+    expect(source).toContain('useEffect(() => {\n    if (isSelectTemplateModalOpen) {\n      selectTemplateDialogRef.current?.focus();\n    }\n  }, [isSelectTemplateModalOpen]);');
+  });
+
+  it("renders the full-page Select Template surface as an app-owned dialog", () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
+      "utf8"
+    );
+
+    expect(source).toContain('const selectTemplateModalRef = useRef<HTMLDivElement>(null);');
+    expect(source).toContain('const getTemplateDialogFocusableElements = useCallback((): HTMLElement[] => {');
+    expect(source).toContain('const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {');
+    expect(source).toContain('if (event.key === "Escape")');
+    expect(source).toContain('if (event.key !== "Tab")');
+    expect(source).toContain('if (focusableElements.length === 0) {');
+    expect(source).toContain('const activeElementIndex = activeElement ? focusableElements.indexOf(activeElement) : -1;');
+    expect(source).toContain('if (activeElementIndex === -1) {');
+    expect(source).toContain('if (event.shiftKey && activeElementIndex === 0) {');
+    expect(source).toContain('const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);');
+    expect(source).toContain('ref={item.id === "select_template" ? selectTemplateOpenButtonRef : undefined}');
+    expect(source).toContain('const handleTemplatePreview = useCallback(() => {');
+    expect(source).toContain('onClick={handleTemplatePreview}');
+    expect(source).toContain('selectTemplateOpenButtonRef.current?.focus();');
+    expect(source).toContain('onClick={(event) => event.stopPropagation()}');
+    expect(source).toContain('const handleSelectTemplateBackdropClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {');
+    expect(source).toContain('className={fullPageBundleStyles.templateDialogBackdrop}');
+    expect(source).toContain('role="dialog"');
+    expect(source).toContain('aria-labelledby="fpb-template-dialog-title"');
+    expect(source).toContain('<div\n          className={fullPageBundleStyles.templateDialog}');
+    expect(source).toContain('className={fullPageBundleStyles.templateDialogFooter}');
+    expect(source).not.toContain('<s-modal ref={selectTemplateModalRef} heading="Customization" size="large">');
   });
 });

@@ -3,7 +3,7 @@ const BUNDLE_PRODUCT_PLACEHOLDER_IMAGE_FILENAME = "bundle-product-placeholder.";
 
 type ProductMediaInput = {
   originalSource: string;
-  alt: string;
+  alt: string | null;
   mediaContentType: "IMAGE";
 };
 
@@ -18,12 +18,12 @@ export type BundleProductMediaNode = {
 
 type FileUpdateInput = {
   id: string;
-  alt?: string;
+  alt?: string | null;
   referencesToRemove?: string[];
 };
 
-export function getBundleProductPlaceholderAlt(_bundleName: string): string {
-  return "";
+export function getBundleProductPlaceholderAlt(_bundleName: string): null {
+  return null;
 }
 
 export function buildBundleProductPlaceholderMediaInput(
@@ -106,8 +106,12 @@ export function buildBundleProductMediaFileUpdates(
 
     if (isBundleProductPlaceholderMedia(mediaNode, bundleName) && !placeholderKept) {
       placeholderKept = true;
-      const currentAlt = mediaNode.alt ?? mediaNode.image?.altText ?? "";
-      return currentAlt === "" ? [] : [{ id: mediaNode.id, alt: "" }];
+      const currentAlt = mediaNode.alt ?? mediaNode.image?.altText;
+      if (!currentAlt) {
+        return [];
+      }
+
+      return [{ id: mediaNode.id, alt: getBundleProductPlaceholderAlt(bundleName) }];
     }
 
     return [{ id: mediaNode.id, referencesToRemove: [productId] }];

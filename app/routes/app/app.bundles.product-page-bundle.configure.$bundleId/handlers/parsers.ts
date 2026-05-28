@@ -35,6 +35,22 @@ function jsonObject<T extends Record<string, unknown> | null>(formData: FormData
   return defaultVal;
 }
 
+function normalizeSellingPlanSelectionShowFor(value: unknown): "ALL_PRODUCTS" | "OOS_PRODUCTS" {
+  return value === "OOS_PRODUCTS" ? "OOS_PRODUCTS" : "ALL_PRODUCTS";
+}
+
+function normalizeIndividualSellingPlanSelection(formData: FormData) {
+  const raw = jsonObject(formData, "individualSellingPlanSelection", {
+    isEnabled: false,
+    showFor: "ALL_PRODUCTS",
+  });
+
+  const isEnabled = raw?.isEnabled === true;
+  const showFor = normalizeSellingPlanSelectionShowFor((raw as { showFor?: unknown } | null)?.showFor);
+
+  return { isEnabled, showFor };
+}
+
 export function parseBundleDesignTemplate(formData: FormData) {
   return {
     bundleDesignTemplate: str(formData, "bundleDesignTemplate"),
@@ -90,10 +106,7 @@ export function parsePPBBundleSettings(formData: FormData) {
     bundleUpsellConfig:          jsonObject(formData, "bundleUpsellConfig", null),
     bundleTextConfig:            jsonObject(formData, "bundleTextConfig", null),
     discountDisplayOverride:     jsonObject(formData, "discountDisplayOverride", null),
-    individualSellingPlanSelection: jsonObject(formData, "individualSellingPlanSelection", {
-      isEnabled: false,
-      showFor: "ALL_PRODUCTS",
-    }),
+    individualSellingPlanSelection: normalizeIndividualSellingPlanSelection(formData),
     validateQuantityPerProduct: jsonObject(formData, "validateQuantityPerProduct", {
       isEnabled: false,
       allowedQuantity: 1,
