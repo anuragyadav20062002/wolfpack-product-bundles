@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-04-30
-**Last Updated:** 2026-04-30 00:00
+**Last Updated:** 2026-05-28 11:04 IST
 
 ## Overview
 
@@ -32,6 +32,16 @@ Modelled on EasyBundles' UX. EasyBundles screenshots saved at `public/eb-readine
 - [ ] Phase 3 — Update `PPB_TOUR_STEPS` after PPB UI revamp
 
 ## Progress Log
+
+### 2026-05-28 11:04 IST - Admin readiness gate threshold aligned with "Minimum 3 Products Added"
+
+- Updated FPB and PPB readiness gates so the product gate uses a true product-count threshold:
+  - `hasProducts` now sums configured products across all steps and categories.
+  - The gate only passes when total configured products `>= 3`, matching the readiness label.
+- Files:
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+- Next: run embedded Admin verification for readiness score changes.
 
 ### 2026-04-30 00:00 - Phase 0: Remove dashboard setup overlay
 

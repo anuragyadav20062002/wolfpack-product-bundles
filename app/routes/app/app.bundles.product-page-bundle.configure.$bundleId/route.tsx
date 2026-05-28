@@ -1541,13 +1541,16 @@ export default function ConfigureBundleFlow() {
   }, [isDirty, bundle, bundleProduct, shop, shopify]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
-    const hasProducts = stepsState.steps.some((step) => {
-      const hasLegacyProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0;
-      const categoryProducts = Array.isArray((step as any).StepCategory)
-        ? ((step as any).StepCategory as any[]).some((category) => Array.isArray(category.products) && category.products.length > 0)
-        : false;
-      return hasLegacyProducts || categoryProducts;
-    });
+    const hasProducts = stepsState.steps.reduce((totalProducts, step) => {
+      const legacyProducts = Array.isArray(step.StepProduct) ? step.StepProduct.length : 0;
+      const categoryProductCount = Array.isArray((step as any).StepCategory)
+        ? ((step as any).StepCategory as any[]).reduce(
+            (count: number, category: any) => count + (Array.isArray(category?.products) ? category.products.length : 0),
+            0,
+          )
+        : 0;
+      return totalProducts + legacyProducts + categoryProductCount;
+    }, 0) >= 3;
     const widgetPlaced = upsellWidgetEnabled;
     const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
 
