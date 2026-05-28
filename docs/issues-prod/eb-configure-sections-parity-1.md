@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-28 10:54 IST
+**Last Updated:** 2026-05-28 11:05 IST
 
 ## Overview
 
@@ -28,6 +28,12 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - Added rule-order-aware `Buy X, get Y` default text generation in `app/lib/pricing-display-options.ts` so only the first BXY tier uses the existing base default while later tiers use the `... more to get ...` text.
 - Passed the discount method and rule index through live form hydration (`app/hooks/useBundlePricing.ts`, `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`, `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`) so newly created and existing BXY tiers receive the correct defaults.
 - Added/updated unit assertions in `tests/unit/lib/pricing-display-options.test.ts` for `getDefaultDiscountRuleText` and `normalizePricingRuleMessages` to lock the first-vs-subsequent BXY wording behavior.
+
+### 2026-05-28 11:05 IST - Added one-time nested pricing rule migration script
+
+- Added `scripts/migrate-pricing-rules.ts` to migrate stored nested pricing rules to flat format used by current admin code.
+- Script supports `--dry-run` by default and only writes `BundlePricing.rules` when migration is needed.
+- Migration uses `migrateNestedRule` + `parsePricingRule` from `app/lib/pricing-rule-parser.ts` to validate and normalize output.
 
 ### 2026-05-25 20:20 IST - Scoped Discount & Pricing implementation committed
 
@@ -422,5 +428,5 @@ Files changed:
   - [x] Discount Messaging: dropdown + chips language selector (FPB + PPB)
   - [x] Update BXY default text constants
   - [ ] Widget JS update + rebuild (bundle-widget-full-page.js, bundle-widget-product-page.js, pricing-calculator.js)
-  - [ ] Data migration script: nested → flat format for existing DB records
+  - [x] Data migration script: nested → flat format for existing DB records
   - [ ] Lint + tests + commit
