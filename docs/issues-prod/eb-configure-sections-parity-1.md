@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-28 10:58 IST
+**Last Updated:** 2026-05-28 11:02 IST
 
 ## Overview
 
@@ -22,6 +22,14 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 
 ## Progress Log
+
+### 2026-05-28 11:02 IST - Discount & Pricing rule cards aligned to EB gray style containers
+
+- Matched EB-style gray rule-card treatment in Discount & Pricing (`discountRuleCard`) for both FPB and PPB configure surfaces.
+- Added `className={...discountRuleCard}` to all per-rule sections in Bundle Quantity Options and Progress Bar (Step-Based).
+- Added `className={...discountRuleCard}` to per-rule Discount Messaging sections for `Discount Text` and `Success Message`.
+- Scope: only FPB/PPB Discount & Pricing UI parity UI-structure styling; no behavioral logic changes in this pass.
+- Next: run full parity verification and commit these UI-style updates with an issue-prefixed commit message.
 
 ### 2026-05-28 10:54 IST - BXY discount messaging defaults made rule-order aware
 

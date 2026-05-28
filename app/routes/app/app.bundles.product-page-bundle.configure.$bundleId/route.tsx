@@ -3353,7 +3353,7 @@ export default function ConfigureBundleFlow() {
                               ) : (
                                 <s-stack direction="block" gap="small">
                                   {pricingState.discountRules.map((r: any, i: number) => (
-                                    <s-section key={r.id}>
+                                    <s-section key={r.id} className={productPageBundleStyles.discountRuleCard}>
                                       <s-stack direction="block" gap="small-100">
                                         <s-stack direction="inline" gap="small" alignItems="center">
                                           <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>Rule #{i + 1}</h5>
@@ -3434,7 +3434,7 @@ export default function ConfigureBundleFlow() {
                                 {pricingState.discountRules.length === 0 ? (
                                   <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
                                 ) : pricingState.discountRules.map((rule: any, index: number) => (
-                                  <s-section key={rule.id}>
+                                  <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                                     <s-stack direction="block" gap="small-100">
                                       <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Rule #{index + 1}</p>
                                       <s-stack direction="inline" gap="small">
@@ -3548,7 +3548,7 @@ export default function ConfigureBundleFlow() {
                                         : ruleMessages[rule.id];
                                       const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType, index);
                                       return (
-                                    <s-section key={rule.id}>
+                                    <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                                       <s-stack direction="block" gap="small">
                                         <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
                                         <s-text-field
@@ -3576,7 +3576,7 @@ export default function ConfigureBundleFlow() {
                                     </s-section>
                                   );
                                 })}
-                                <s-section>
+                                    <s-section className={productPageBundleStyles.discountRuleCard}>
                                   <s-stack direction="block" gap="small">
                                     <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Success Message</h5>
                                     <s-text-field
