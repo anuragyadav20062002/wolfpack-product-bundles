@@ -19,7 +19,7 @@ export class PricingCalculator {
     selectedProducts.forEach((stepSelections, stepIndex) => {
       // Skip only true free gifts. Optional add-on steps reuse the same
       // non-blocking step path, but chargeable add-ons still affect totals.
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree !== false) return;
+      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 

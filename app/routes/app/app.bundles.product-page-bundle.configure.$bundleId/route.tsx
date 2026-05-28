@@ -246,6 +246,8 @@ const productPageTemplateOptions = [
   { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
 ] as const;
 
+const PPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=product_page&section=globalColors";
+
 type VisibilityDisplayConfiguration = {
   showOnAllBundleProducts: boolean;
   selectedProducts: unknown[];
@@ -1539,9 +1541,13 @@ export default function ConfigureBundleFlow() {
   }, [isDirty, bundle, bundleProduct, shop, shopify]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
-    const hasProducts = stepsState.steps.some((step) =>
-      Array.isArray(step.StepProduct) && step.StepProduct.length > 0
-    );
+    const hasProducts = stepsState.steps.some((step) => {
+      const hasLegacyProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0;
+      const categoryProducts = Array.isArray((step as any).StepCategory)
+        ? ((step as any).StepCategory as any[]).some((category) => Array.isArray(category.products) && category.products.length > 0)
+        : false;
+      return hasLegacyProducts || categoryProducts;
+    });
     const widgetPlaced = upsellWidgetEnabled;
     const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
 
@@ -1981,6 +1987,10 @@ export default function ConfigureBundleFlow() {
     lastTemplateResponseRef.current = null;
     setIsSelectTemplateModalOpen(true);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
+
+  const openDesignControlPanel = useCallback(() => {
+    navigate(PPB_DESIGN_CONTROL_PANEL_URL);
+  }, [navigate]);
 
   useEffect(() => {
     if (isSelectTemplateModalOpen) {
@@ -3123,7 +3133,9 @@ export default function ConfigureBundleFlow() {
                             <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                               <s-stack direction="block" gap="small">
                                 <div className={productPageBundleStyles.discountRuleHeader}>
-                                  <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
+                                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                    Rule #{index + 1}
+                                  </h4>
                                   <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
@@ -3148,25 +3160,40 @@ export default function ConfigureBundleFlow() {
                                     })}
                                     min="1"
                                   />
-                                  <div className={productPageBundleStyles.bxyRewardGrid}>
-                                    <s-number-field
-                                      label="Discount value"
-                                      value={String(rule.discountValue ?? 0)}
-                                      onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                        discountValue: Number((e.target as HTMLInputElement).value) || 0
-                                      })}
-                                      min="0"
-                                    />
-                                    <s-select
-                                      label="Discount type"
-                                      value={rule.bxyDiscountType ?? 'percentage'}
-                                      onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                        bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
-                                      })}
-                                    >
-                                      <s-option value="percentage">% off</s-option>
-                                      <s-option value="fixed_amount">₹ off</s-option>
-                                    </s-select>
+                                <div className={productPageBundleStyles.bxyRewardGrid}>
+                                  <s-number-field
+                                    label="Discount value"
+                                    value={String(rule.discountValue ?? 0)}
+                                    onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
+                                      discountValue: (() => {
+                                        const nextValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        return (rule.bxyDiscountType ?? 'percentage') === 'percentage'
+                                          ? Math.min(100, Math.max(0, nextValue))
+                                          : Math.max(0, nextValue);
+                                      })()
+                                    })}
+                                    min="0"
+                                    suffix={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "%" : undefined}
+                                    prefix={(rule.bxyDiscountType ?? "percentage") === "fixed_amount" ? "₹" : undefined}
+                                    max={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "100" : undefined}
+                                  />
+                                  <s-select
+                                    label="Discount type"
+                                    value={rule.bxyDiscountType ?? 'percentage'}
+                                    onChange={(e: Event) => {
+                                      const bxyDiscountType = (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount';
+                                      const currentValue = Number(rule.discountValue ?? 0) || 0;
+                                      pricingState.updateDiscountRule(rule.id, {
+                                        bxyDiscountType,
+                                        discountValue: bxyDiscountType === 'percentage'
+                                          ? Math.min(100, Math.max(0, currentValue))
+                                          : Math.max(0, currentValue),
+                                      });
+                                    }}
+                                  >
+                                    <s-option value="percentage">% off</s-option>
+                                    <s-option value="fixed_amount">₹ off</s-option>
+                                  </s-select>
                                     <s-select
                                       label="Apply Discount to"
                                       value={rule.bxyApplyMode ?? 'lowest_priced'}
@@ -3198,7 +3225,9 @@ export default function ConfigureBundleFlow() {
                             <s-section key={rule.id} className={productPageBundleStyles.discountRuleCard}>
                               <s-stack direction="block" gap="small">
                                 <div className={productPageBundleStyles.discountRuleHeader}>
-                                  <span style={{ fontSize: 14, fontWeight: 600 }}>Rule #{index + 1}</span>
+                                  <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                    Rule #{index + 1}
+                                  </h4>
                                   <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
@@ -3247,8 +3276,13 @@ export default function ConfigureBundleFlow() {
                                       value={String(pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? rule.discountValue : centsToAmount(rule.discountValue))}
                                       onInput={(e: Event) => {
                                         const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                        pricingState.updateDiscountRule(rule.id, { discountValue: finalValue });
+                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? numValue
+                                          : amountToCents(Math.max(0, numValue));
+                                        const safeValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? Math.min(100, Math.max(0, finalValue))
+                                          : finalValue;
+                                        pricingState.updateDiscountRule(rule.id, { discountValue: safeValue });
                                       }}
                                       min="0"
                                       max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
@@ -3506,14 +3540,14 @@ export default function ConfigureBundleFlow() {
                                 Show Variables
                               </s-button>
                             </div>
-                            {pricingState.discountRules.length > 0 ? (
-                              <s-stack direction="block" gap="small">
-                                {pricingState.discountRules.map((rule: any, index: number) => {
-                                  const localeMessages = discountMessagingMultiLanguageEnabled
-                                    ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
-                                    : ruleMessages[rule.id];
-                                  const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType);
-                                  return (
+                                {pricingState.discountRules.length > 0 ? (
+                                  <s-stack direction="block" gap="small">
+                                    {pricingState.discountRules.map((rule: any, index: number) => {
+                                      const localeMessages = discountMessagingMultiLanguageEnabled
+                                        ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? ruleMessages[rule.id])
+                                        : ruleMessages[rule.id];
+                                      const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType, index);
+                                      return (
                                     <s-section key={rule.id}>
                                       <s-stack direction="block" gap="small">
                                         <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
@@ -5018,14 +5052,14 @@ export default function ConfigureBundleFlow() {
             {templateModalStep === "select" ? (
               <>
                 <div className={productPageBundleStyles.templateDialogBody}>
-                  <div className={productPageBundleStyles.templateDialogIntro}>
-                    <div>
-                      <h3 className={productPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
-                      <p className={productPageBundleStyles.templateDialogDescription}>
-                        Choose a design that suits your needs and fits your brand
-                      </p>
-                    </div>
-                    <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                    <div className={productPageBundleStyles.templateDialogIntro}>
+                      <div>
+                        <h3 className={productPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                        <p className={productPageBundleStyles.templateDialogDescription}>
+                          Choose a design that suits your needs and fits your brand
+                        </p>
+                      </div>
+                    <s-button variant="secondary" onClick={openDesignControlPanel}>
                       Customize Colors &amp; Language
                     </s-button>
                   </div>

@@ -13,6 +13,66 @@ import { useState, useCallback } from "react";
 import { AppLogger } from "../lib/logger";
 import { ERROR_MESSAGES } from "../constants/errors";
 
+const cloneValue = (value: any) => {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => cloneValue(entry));
+  }
+
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+
+  return JSON.parse(JSON.stringify(value));
+};
+
+const cloneArrayObjects = (items?: any[] | null) => {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items.map((item) => cloneValue(item));
+};
+
+export function buildClonedStepPayload(stepToClone: any, cloneTimestamp: number) {
+  const clonedStepProducts = Array.isArray(stepToClone.StepProduct)
+    ? stepToClone.StepProduct.map((product: any) => ({
+      ...product,
+      variants: cloneArrayObjects(product?.variants),
+      selectedProducts: cloneArrayObjects(product?.selectedProducts),
+      collections: cloneArrayObjects(product?.collections),
+      collectionsData: cloneArrayObjects(product?.collectionsData),
+      collectionsSelectedData: cloneArrayObjects(product?.collectionsSelectedData),
+      multiLangData: cloneValue(product?.multiLangData),
+    }))
+    : [];
+
+  const clonedStepCategories = Array.isArray(stepToClone.StepCategory)
+    ? stepToClone.StepCategory.map((category: any, categoryIndex: number) => ({
+      ...category,
+      id: `cat-${cloneTimestamp}-${categoryIndex}`,
+      products: cloneArrayObjects(category?.products),
+      selectedProducts: cloneArrayObjects(category?.selectedProducts),
+      collections: cloneArrayObjects(category?.collections),
+      collectionsData: cloneArrayObjects(category?.collectionsData),
+      collectionsSelectedData: cloneArrayObjects(category?.collectionsSelectedData),
+      conditions: cloneArrayObjects(category?.conditions),
+      multiLangData: cloneValue(category?.multiLangData),
+    }))
+    : [];
+
+  return {
+    ...stepToClone,
+    id: `step-${cloneTimestamp}`,
+    name: `${stepToClone.name} (Copy)`,
+    StepProduct: clonedStepProducts,
+    StepCategory: clonedStepCategories,
+  };
+}
+
 export interface SharedBundleHandlersParams {
   // From useBundleConfigurationState
   stepsState: {
@@ -266,12 +326,8 @@ export function useSharedBundleHandlers(params: SharedBundleHandlersParams) {
   const cloneStep = useCallback((stepId: string) => {
     const stepToClone = stepsState.steps.find(step => step.id === stepId);
     if (stepToClone) {
-      const newStep = {
-        ...stepToClone,
-        id: `step-${Date.now()}`,
-        name: `${stepToClone.name} (Copy)`,
-        StepProduct: stepToClone.StepProduct || []
-      };
+      const cloneTimestamp = Date.now();
+      const newStep = buildClonedStepPayload(stepToClone, cloneTimestamp);
       stepsState.setSteps(prev => {
         const stepIndex = prev.findIndex(step => step.id === stepId);
         const newSteps = [...prev];

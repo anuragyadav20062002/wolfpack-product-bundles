@@ -207,17 +207,18 @@ export function useBundlePricing({ initialPricing, onStateChange }: UseBundlePri
   // Add a new discount rule
   const addDiscountRule = useCallback(() => {
     const newRule = createNewPricingRule(discountType);
+    const ruleIndex = discountRules.length;
     setDiscountRules(prev => [...prev, newRule]);
 
     // Initialize messaging for new rule
     setRuleMessages(prev => ({
       ...prev,
       [newRule.id]: {
-        discountText: getDefaultDiscountRuleText(discountType),
+        discountText: getDefaultDiscountRuleText(discountType, ruleIndex),
         successMessage: getDefaultDiscountRuleSuccessMessage(discountType)
       }
     }));
-  }, [discountType, setDiscountRules]);
+  }, [discountRules, discountType, setDiscountRules]);
 
   // Remove a discount rule
   const removeDiscountRule = useCallback((ruleId: string) => {

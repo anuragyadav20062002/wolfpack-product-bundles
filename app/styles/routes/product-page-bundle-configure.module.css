@@ -40,9 +40,9 @@
 
 /* ── Edit App Canvas ─────────────────────────────────────────── */
 .editCanvas {
-  max-width: 994px;
-  margin: 0;
-  padding: 0 0 88px 46px;
+  max-width: 950px;
+  margin: 0 auto;
+  padding: 0 0 88px;
 }
 
 .canvasHeader {
@@ -1296,6 +1296,13 @@
   color: #6d7175;
   font-size: 14px;
   line-height: 1.4;
+}
+
+.templateDialogError {
+  margin: -6px 0 16px;
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .templateDialogGrid {

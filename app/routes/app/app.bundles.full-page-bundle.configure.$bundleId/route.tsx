@@ -77,6 +77,15 @@ import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers"
 // Types - extracted to separate module for better organization
 import type { LoaderData } from "./types";
 
+const fullPageTemplateOptions = [
+  { presetId: "DEFAULT",    label: "Standard Design",   image: "/fullPageThumbnail.png"     },
+  { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
+  { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
+  { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
+] as const;
+
+const FPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=full_page&section=globalColors";
+
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
@@ -1514,6 +1523,10 @@ export default function ConfigureBundleFlow() {
     lastTemplateResponseRef.current = null;
     setIsSelectTemplateModalOpen(true);
   }, [bundleDesignTemplate, bundleDesignPresetId]);
+
+  const openDesignControlPanel = useCallback(() => {
+    navigate(FPB_DESIGN_CONTROL_PANEL_URL);
+  }, [navigate]);
 
   useEffect(() => {
     if (isSelectTemplateModalOpen) {
@@ -4050,16 +4063,31 @@ export default function ConfigureBundleFlow() {
                                     label="Discount value"
                                     value={String(rule.discountValue ?? 0)}
                                     onInput={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      discountValue: Number((e.target as HTMLInputElement).value) || 0
+                                      discountValue: (() => {
+                                        const nextValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        return (rule.bxyDiscountType ?? 'percentage') === 'percentage'
+                                          ? Math.min(100, Math.max(0, nextValue))
+                                          : Math.max(0, nextValue);
+                                      })()
                                     })}
                                     min="0"
+                                    suffix={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "%" : undefined}
+                                    prefix={(rule.bxyDiscountType ?? "percentage") === "fixed_amount" ? "₹" : undefined}
+                                    max={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "100" : undefined}
                                   />
                                   <s-select
                                     label="Discount type"
                                     value={rule.bxyDiscountType ?? 'percentage'}
-                                    onChange={(e: Event) => pricingState.updateDiscountRule(rule.id, {
-                                      bxyDiscountType: (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount'
-                                    })}
+                                    onChange={(e: Event) => {
+                                      const bxyDiscountType = (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount';
+                                      const currentValue = Number(rule.discountValue ?? 0) || 0;
+                                      pricingState.updateDiscountRule(rule.id, {
+                                        bxyDiscountType,
+                                        discountValue: bxyDiscountType === 'percentage'
+                                          ? Math.min(100, Math.max(0, currentValue))
+                                          : Math.max(0, currentValue),
+                                      });
+                                    }}
                                   >
                                     <s-option value="percentage">% off</s-option>
                                     <s-option value="fixed_amount">₹ off</s-option>
@@ -4122,8 +4150,15 @@ export default function ConfigureBundleFlow() {
                                       value={String(pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? rule.discountValue : centsToAmount(rule.discountValue))}
                                       onInput={(e: Event) => {
                                         const numValue = Number((e.target as HTMLInputElement).value) || 0;
-                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                        pricingState.updateDiscountRule(rule.id, { discountValue: finalValue });
+                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? numValue
+                                          : amountToCents(Math.max(0, numValue));
+                                        const safeValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? Math.min(100, Math.max(0, finalValue))
+                                          : finalValue;
+                                        pricingState.updateDiscountRule(rule.id, {
+                                          discountValue: safeValue,
+                                        });
                                       }}
                                       min="0"
                                       max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
@@ -4397,14 +4432,14 @@ export default function ConfigureBundleFlow() {
                             Show Variables
                           </s-button>
                         </div>
-                        {pricingState.discountRules.length > 0 ? (
-                          <s-stack direction="block" gap="small">
-                            {pricingState.discountRules.map((rule: any, index: number) => {
-                              const localeMessages = discountMessagingMultiLanguageEnabled
-                                ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? normalizedRuleMessages[rule.id])
-                                : normalizedRuleMessages[rule.id];
-                              const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType);
-                              return (
+                                {pricingState.discountRules.length > 0 ? (
+                                  <s-stack direction="block" gap="small">
+                                    {pricingState.discountRules.map((rule: any, index: number) => {
+                                      const localeMessages = discountMessagingMultiLanguageEnabled
+                                        ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? normalizedRuleMessages[rule.id])
+                                        : normalizedRuleMessages[rule.id];
+                                      const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType, index);
+                                      return (
                                 <s-section key={rule.id}>
                                   <s-stack direction="block" gap="small">
                                     <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
@@ -5786,7 +5821,7 @@ export default function ConfigureBundleFlow() {
                         Choose a design that suits your needs and fits your brand
                       </p>
                     </div>
-                    <s-button variant="secondary" onClick={() => navigate("/app/design-control-panel")}>
+                    <s-button variant="secondary" onClick={openDesignControlPanel}>
                       Customize Colors &amp; Language
                     </s-button>
                   </div>
@@ -5794,12 +5829,7 @@ export default function ConfigureBundleFlow() {
                     <p role="alert" className={fullPageBundleStyles.templateDialogError}>{templateSaveError}</p>
                   ) : null}
                   <div className={fullPageBundleStyles.templateDialogGrid}>
-                    {[
-                      { presetId: "DEFAULT",    label: "Standard Design",   image: "/fullPageThumbnail.png"     },
-                      { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
-                      { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
-                      { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
-                    ].map((tpl) => {
+                    {fullPageTemplateOptions.map((tpl) => {
                       const isSelected = pendingDesignPresetId === tpl.presetId && pendingDesignTemplate === "FBP_SIDE_FOOTER";
                       return (
                         <button

@@ -605,6 +605,30 @@
   align-items: end;
 }
 
+.bxyRuleBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bxyRewardGrid {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) minmax(220px, 1.25fr);
+  gap: 8px;
+  align-items: end;
+}
+
+.bxyRewardGrid > * {
+  min-width: 0;
+}
+
+.fixedBundleRuleBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
 /* Display option toggle row */
 .displayOptionRow {
   display: flex;
@@ -639,6 +663,14 @@
 @media (max-width: 900px) {
   .discountRuleFields {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .bxyRewardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fixedBundleRuleBody {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -35,6 +35,8 @@ import {
   handleGetThemeTemplates,
   handleGetCurrentTheme,
   handleEnsureBundleTemplates,
+  getShopifyStatusFromBundleStatus,
+  buildBundleProductDescriptionHtml,
 } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { validateTierConfig } from "../../../../lib/tier-config-validator.server";
@@ -65,7 +67,12 @@ const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
 // FPB products do not need a theme template — the URL redirect (/products/{handle} →
 // /pages/{pageHandle}) handles routing before the template is ever rendered.
 // We only update the Shopify product status so it stays in sync with the bundle status.
-async function updateFpbProductStatus(admin: ShopifyAdmin, productId: string, shopifyStatus: string) {
+async function updateFpbProductStatus(
+  admin: ShopifyAdmin,
+  productId: string,
+  shopifyStatus: string,
+  descriptionHtml?: string,
+) {
   const response = await admin.graphql(`
     mutation SyncFpbProductStatus($product: ProductUpdateInput!) {
       productUpdate(product: $product) {
@@ -73,7 +80,15 @@ async function updateFpbProductStatus(admin: ShopifyAdmin, productId: string, sh
         userErrors { field message }
       }
     }
-  `, { variables: { product: { id: productId, status: shopifyStatus } } });
+  `, {
+    variables: {
+      product: {
+        id: productId,
+        status: shopifyStatus,
+        ...(descriptionHtml ? { descriptionHtml } : {}),
+      },
+    },
+  });
 
   return response.json() as Promise<{ data?: Record<string, any>; errors?: unknown[] }>;
 }
@@ -157,10 +172,24 @@ async function syncFpbProductStatus(
   admin: ShopifyAdmin,
   productId: string,
   bundleId: string,
-  shopifyStatus: string,
+  finalStatus: BundleStatus,
+  bundleName: string,
+  bundleDescription: string | null,
 ) {
   try {
-    const responseData = await updateFpbProductStatus(admin, productId, shopifyStatus);
+    const shopifyStatus = getShopifyStatusFromBundleStatus(finalStatus);
+    const descriptionHtml = buildBundleProductDescriptionHtml({
+      bundleName,
+      customDescription: bundleDescription,
+      status: finalStatus,
+    });
+
+    const responseData = await updateFpbProductStatus(
+      admin,
+      productId,
+      shopifyStatus,
+      descriptionHtml,
+    );
 
     if (responseData.errors?.length) {
       AppLogger.warn("[PRODUCT_SYNC] GraphQL transport error updating FPB product status", {
@@ -176,9 +205,34 @@ async function syncFpbProductStatus(
         component: "app.bundles.full-page.configure",
         bundleId, productId, shopifyStatus,
       }, { userErrors });
-      if (shopifyStatus === "ACTIVE" && hasUnsupportedBundlePublicationError(userErrors)) {
+      if (shopifyStatus === "ACTIVE" && finalStatus === BundleStatus.ACTIVE && hasUnsupportedBundlePublicationError(userErrors)) {
         await activateFpbBundleProductWithParentSequence(admin, productId, bundleId);
       }
+      return;
+    }
+
+    if (finalStatus === BundleStatus.UNLISTED) {
+      const unlistedResponseData = await updateFpbProductStatus(admin, productId, "UNLISTED", descriptionHtml);
+      const unlistedErrors = unlistedResponseData.data?.productUpdate?.userErrors ?? [];
+      if (unlistedResponseData.errors?.length) {
+        AppLogger.warn("[PRODUCT_SYNC] GraphQL transport error updating FPB product status to UNLISTED", {
+          component: "app.bundles.full-page.configure",
+          bundleId, productId,
+        }, unlistedResponseData.errors);
+        return;
+      }
+      if (unlistedErrors.length > 0) {
+        AppLogger.warn("[PRODUCT_SYNC] Shopify errors updating FPB product status to UNLISTED", {
+          component: "app.bundles.full-page.configure",
+          bundleId, productId,
+        }, { userErrors: unlistedErrors });
+        return;
+      }
+      AppLogger.info("[PRODUCT_SYNC] FPB product status synced to UNLISTED", {
+        component: "app.bundles.full-page.configure",
+        bundleId,
+        productId,
+      });
       return;
     }
 
@@ -190,7 +244,7 @@ async function syncFpbProductStatus(
   } catch (error) {
     AppLogger.warn("[PRODUCT_SYNC] Failed to sync FPB product status (non-fatal)", {
       component: "app.bundles.full-page.configure",
-      bundleId, productId, shopifyStatus,
+      bundleId, productId, shopifyStatus: getShopifyStatusFromBundleStatus(finalStatus),
     }, error as Error);
   }
 }
@@ -264,6 +318,7 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       name: step.name || `Step ${index + 1}`,
       pageTitle: step.pageTitle ?? null,
       multiLangData: step.multiLangData ?? {},
+      stepImage: step.stepImage ?? step.timelineIconUrl ?? null,
       position: step.position ?? index + 1,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
@@ -381,6 +436,7 @@ function buildFpbBaseConfig(
       name: step.name || 'Step',
       pageTitle: step.pageTitle ?? null,
       multiLangData: step.multiLangData ?? {},
+      stepImage: step.stepImage ?? null,
       minQuantity: parseInt(step.minQuantity) || 1,
       maxQuantity: parseInt(step.maxQuantity) || 1,
       enabled: step.enabled !== false,
@@ -711,7 +767,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 position: index + 1, // Map stepNumber to position field
                 products: step.products || [],
                 collections: step.collections || [],
-                displayVariantsAsIndividual: step.displayVariantsAsIndividualProducts || false,
+                displayVariantsAsIndividual: step.displayVariantsAsIndividual ?? false,
                 minQuantity: parseInt(step.minQuantity) || 1,
                 maxQuantity: parseInt(step.maxQuantity) || 1,
                 enabled: step.enabled !== false, // Default to true unless explicitly false
@@ -724,7 +780,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 addonAddText: step.addonAddText ?? null,
                 addonReplaceText: step.addonReplaceText ?? null,
                 addonIconUrl: step.addonIconUrl ?? null,
-                addonDisplayFree: step.addonDisplayFree !== false,
+                addonDisplayFree: step.addonDisplayFree === true,
                 addonTiers: Array.isArray(step.addonTiers) ? step.addonTiers : null,
                 addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,
                 isDefault: step.isDefault === true,
@@ -732,7 +788,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 // Step image fields
                 imageUrl: step.imageUrl ?? null,
                 bannerImageUrl: step.bannerImageUrl ?? null,
-                timelineIconUrl: step.timelineIconUrl ?? null,
+                timelineIconUrl: step.stepImage ?? null,
                 pageTitle: step.pageTitle ?? null,
                 // Category filter tabs configured by merchant
                 filters: Array.isArray(step.filters) ? step.filters : null,
@@ -820,9 +876,15 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
 
     // If bundle has a Shopify product, update its metafields (needed for cart transform even without discounts)
     if (updatedBundle.shopifyProductId) {
-      const shopifyStatus = finalStatus.toUpperCase();
-      AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${shopifyStatus}' to product ${updatedBundle.shopifyProductId}`);
-      await syncFpbProductStatus(admin, updatedBundle.shopifyProductId, bundleId, shopifyStatus);
+      AppLogger.debug(`[PRODUCT_SYNC] Syncing status '${finalStatus}' to product ${updatedBundle.shopifyProductId}`);
+      await syncFpbProductStatus(
+        admin,
+        updatedBundle.shopifyProductId,
+        bundleId,
+        finalStatus as BundleStatus,
+        updatedBundle.name,
+        updatedBundle.description || "",
+      );
 
       // Get the bundle product's first variant ID for cart transform merge operations
       const bundleParentVariantId = await getBundleProductVariantId(admin, updatedBundle.shopifyProductId);
@@ -839,7 +901,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       // This validation must fail the save operation if not met
       const fullBundleConfig = {
         ...baseConfiguration,
-        steps: updatedBundle.steps  // Use database steps with StepProduct array
+        steps: updatedBundle.steps.map((step: any) => {
+          const { timelineIconUrl, ...publicStep } = step;
+          return {
+            ...publicStep,
+            stepImage: timelineIconUrl ?? null,
+          };
+        })
       };
 
       if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {
@@ -1632,7 +1700,14 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
 
     if (bundle.shopifyProductId) {
       try {
-        await syncFpbProductStatus(admin, bundle.shopifyProductId, bundleId, 'ACTIVE');
+        await syncFpbProductStatus(
+          admin,
+          bundle.shopifyProductId,
+          bundleId,
+          BundleStatus.ACTIVE,
+          bundle.name,
+          bundle.description || null,
+        );
         await updateBundleProductMetafields(
           admin,
           bundle.shopifyProductId,

@@ -147,6 +147,32 @@ describe("updateBundleProductMetafields", () => {
     expect(parsed.steps[0].imageUrl).toBeNull();
   });
 
+  it("maps stored Step Config image to public stepImage only", async () => {
+    const admin = makeAdmin();
+    const config = makeBundleConfig(BundleType.FULL_PAGE, {
+      steps: [
+        {
+          id: "step-1",
+          name: "Step 1",
+          position: 0,
+          minQuantity: 1,
+          maxQuantity: 1,
+          StepProduct: [{ productId: "gid://shopify/Product/123" }],
+          collections: [],
+          timelineIconUrl: "https://cdn.example.test/step.png",
+        },
+      ],
+    });
+
+    await updateBundleProductMetafields(admin, "gid://shopify/Product/999", config);
+
+    const metafields = getMetafieldsSetPayload(admin);
+    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
+
+    expect(parsed.steps[0].stepImage).toBe("https://cdn.example.test/step.png");
+    expect(parsed.steps[0]).not.toHaveProperty("timelineIconUrl");
+  });
+
   it("passes Product Page Step Title through to bundle_ui_config steps", async () => {
     const admin = makeAdmin();
     const config = makeBundleConfig(BundleType.PRODUCT_PAGE, {

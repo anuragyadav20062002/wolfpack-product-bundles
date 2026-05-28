@@ -414,6 +414,7 @@ function buildBundleBaseConfig(
     name: step.name || 'Step',
     pageTitle: step.pageTitle ?? null,
     multiLangData: step.multiLangData ?? {},
+    stepImage: step.stepImage ?? null,
     minQuantity: parseInt(step.minQuantity) || 1,
     maxQuantity: parseInt(step.maxQuantity) || 1,
     enabled: step.enabled !== false,
@@ -599,6 +600,7 @@ function buildSyncOptimizedSteps(steps: any[]): Array<Record<string, unknown>> {
       id: step.id,
       name: step.name,
       position: step.position,
+      stepImage: step.timelineIconUrl ?? null,
       minQuantity: step.minQuantity || 1,
       maxQuantity: step.maxQuantity || 1,
       enabled: step.enabled !== false,
@@ -794,6 +796,56 @@ async function fetchProductsWithSellingPlanGroups(admin: ShopifyAdmin, productId
   return products;
 }
 
+async function fetchCollectionProductIds(admin: ShopifyAdmin, collectionIds: string[]) {
+  const products: string[] = [];
+  const seen = new Set<string>();
+
+  const query = `
+    query CollectionProductsForSellingPlanValidation($ids: [ID!]!) {
+      nodes(ids: $ids) {
+        ... on Collection {
+          products(first: 250) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  for (let index = 0; index < collectionIds.length; index += 50) {
+    const ids = collectionIds.slice(index, index + 50);
+    const response = await admin.graphql(query, { variables: { ids } });
+    const data = await response.json() as {
+      data?: {
+        nodes?: Array<{
+          id?: string;
+          products?: {
+            edges?: Array<{ node?: { id?: string } }>;
+          };
+        }>;
+      };
+    };
+
+    for (const collection of data.data?.nodes ?? []) {
+      if (!collection) continue;
+      const edges = collection?.products?.edges ?? [];
+      for (const edge of edges) {
+        const productId = edge.node?.id;
+        if (typeof productId !== "string" || productId.trim() === "") continue;
+        if (seen.has(productId)) continue;
+        seen.add(productId);
+        products.push(productId);
+      }
+    }
+  }
+
+  return products;
+}
+
 /**
  * Validate that all product-page bundle products share at least one selling plan group.
  */
@@ -820,18 +872,19 @@ export async function handleValidateSellingPlanGroups(admin: ShopifyAdmin, sessi
   }
 
   const sources = extractSellingPlanValidationSources(bundle);
-  if (sources.collectionIds.length > 0) {
+  const collectionProductIds = await fetchCollectionProductIds(admin, sources.collectionIds);
+  const allProductIds = Array.from(new Set([...sources.productIds, ...collectionProductIds]));
+  if (allProductIds.length === 0) {
     return json({
       success: true,
       isValid: false,
-      productCount: sources.productIds.length,
+      productCount: 0,
       plans: [],
-      sourceBlocked: "collections",
-      message: null,
+      message: SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
     });
   }
 
-  const productIds = sources.productIds;
+  const productIds = allProductIds;
   const products = await fetchProductsWithSellingPlanGroups(admin, productIds);
   const plans = deriveCommonSellingPlanGroups(products);
   const isValid = productIds.length > 0 && products.length === productIds.length && plans.length > 0;
@@ -1063,7 +1116,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 addonAddText: step.addonAddText ?? null,
                 addonReplaceText: step.addonReplaceText ?? null,
                 addonIconUrl: step.addonIconUrl ?? null,
-                addonDisplayFree: step.addonDisplayFree !== false,
+                addonDisplayFree: step.addonDisplayFree === true,
                 addonUnlockAfterCompletion: step.addonUnlockAfterCompletion !== false,
                 isDefault: step.isDefault === true,
                 defaultVariantId: step.defaultVariantId || null,
@@ -1076,7 +1129,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 filters: Array.isArray(step.filters) ? step.filters : null,
                 imageUrl: step.imageUrl ?? null,
                 bannerImageUrl: step.bannerImageUrl ?? null,
-                timelineIconUrl: step.timelineIconUrl ?? null,
+                timelineIconUrl: step.stepImage ?? null,
                 // Create StepProduct records for selected products
                 StepProduct: {
                   create: (step.StepProduct || []).map((product: any, productIndex: number) => {
@@ -1173,7 +1226,13 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       // This validation must fail the save operation if not met
       const fullBundleConfig = {
         ...baseConfiguration,
-        steps: updatedBundle.steps  // Use database steps with StepProduct array
+        steps: updatedBundle.steps.map((step: any) => {
+          const { timelineIconUrl, ...publicStep } = step;
+          return {
+            ...publicStep,
+            stepImage: timelineIconUrl ?? null,
+          };
+        })
       };
 
       if (!fullBundleConfig.steps || fullBundleConfig.steps.length === 0) {

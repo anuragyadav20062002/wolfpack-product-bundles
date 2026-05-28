@@ -57,6 +57,14 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 3 | Shared Multi Language modal copy | Any implemented Multi Language button using the shared modal | modal renders `Translations`, `Choose language to edit`, `Custom Text`, `Text Settings`, the 38-language list, and `Save and Close` | Live Step Setup screenshots captured outside the worktree. |
 | 4 | Step header action order | FPB/PPB Step Setup header | Multi Language icon renders before clone and delete; FPB has no second step-level Multi Language button below Step Name | EB screenshots: `/private/tmp/eb-complete-configure-audit-2026-05-25/fpb-admin-step-setup-after-save.png`, `/private/tmp/eb-complete-configure-audit-2026-05-25/ppb-admin-step-setup-products-selected.png`. |
 
+### Step Setup Step Config Image
+
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Step Config upload Admin state | Upload image through Step Config picker | route writes the uploaded URL to the direct `stepImage` key and previews/replaces from `stepImage` | PPB upload save proof stores `productsData1.stepImage`. |
+| 2 | Step Config save persistence | Save step with `stepImage` | handler stores the uploaded URL through the step image storage field and sends `steps[].stepImage` to bundle-product metafield sync | DB column remains the existing storage field; runtime contract uses the evidenced key. |
+| 3 | Runtime/metafield config | Saved step has image URL | optimized runtime/metafield steps emit `stepImage` for FPB and PPB | Evidence: `network-3647-ppb-step-config-upload-save.network-request`. |
+
 ### Step Setup Rule Mode Admin
 
 | # | Scenario | Input | Expected Output | Notes |

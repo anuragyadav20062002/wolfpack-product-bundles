@@ -114,6 +114,7 @@ const MOCK_ADMIN = {
 function makeStepsData(
   overrides: Partial<{
     id: string;
+    stepImage: string | null;
     multiLangData: Record<string, Record<string, string>>;
     products: any[];
     StepProduct: any[];
@@ -431,6 +432,31 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
+  it("persists the canonical step-level variants-as-individual selector", async () => {
+    const stepsData = makeStepsData({
+      displayVariantsAsIndividual: true,
+      StepProduct: [
+        {
+          id: "gid://shopify/Product/222",
+          title: "Item A",
+          imageUrl: null,
+        },
+      ],
+    });
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ stepsData: JSON.stringify(stepsData) }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.steps.create[0]).toMatchObject({
+      displayVariantsAsIndividual: true,
+    });
+  });
+
   it("stores fixedBundlePrice on rule when discountType is fixed_bundle_price", async () => {
     const discountData = makeDiscountData({
       discountEnabled: true,
@@ -705,9 +731,65 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       String(query).includes("productUpdate")
     );
     expect(statusCall).toBeDefined();
-    expect(statusCall?.[1]).toEqual({
-      variables: { product: { id: PRODUCT_ID, status: "ACTIVE" } },
+    expect(statusCall?.[1]).toEqual(
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            id: PRODUCT_ID,
+            status: "ACTIVE",
+            descriptionHtml: expect.any(String),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it("syncs parent product status to ACTIVE then UNLISTED for unlisted status", async () => {
+    const unlistedStatuses: string[] = [];
+    MOCK_ADMIN.graphql.mockImplementation(async (query: string, variables: any) => {
+      if (String(query).includes("productUpdate")) {
+        unlistedStatuses.push(String(variables?.variables?.product?.status));
+      }
+      return Promise.resolve({
+        json: async () => ({
+          data: {
+            productUpdate: {
+              product: { id: PRODUCT_ID, status: variables?.variables?.product?.status },
+              userErrors: [],
+            },
+          },
+        }),
+      });
     });
+
+    const fd = makeFormData({
+      bundleStatus: "unlisted",
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+
+    const res = await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      fd,
+    );
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(unlistedStatuses).toEqual(["ACTIVE", "UNLISTED"]);
+    expect(MOCK_ADMIN.graphql).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        variables: expect.objectContaining({
+          product: expect.objectContaining({
+            id: PRODUCT_ID,
+            status: "UNLISTED",
+            descriptionHtml: expect.stringContaining("Your Bundle is Unlisted"),
+          }),
+        }),
+      }),
+    );
   });
 
   it("activates bundle parent products through a requiresComponents sequence when Shopify rejects unsupported channels", async () => {
@@ -972,6 +1054,64 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
           expect.objectContaining({
             name: "Step 1",
             multiLangData,
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("persists Step Config image and passes stepImage into bundle product metafield sync", async () => {
+    const stepImage = "https://cdn.example.test/fpb-step-config.png";
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            timelineIconUrl: stepImage,
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepsData({
+        stepImage,
+        StepProduct: [
+          {
+            id: "gid://shopify/Product/456",
+            title: "Component",
+            imageUrl: null,
+          },
+        ],
+      })),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    const metafieldConfig = (updateBundleProductMetafields as jest.Mock).mock.calls[0][2];
+
+    expect(body.success).toBe(true);
+    expect(updateCall.data.steps.create[0].timelineIconUrl).toBe(stepImage);
+    expect(metafieldConfig.steps[0]).not.toHaveProperty("timelineIconUrl");
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        steps: [
+          expect.objectContaining({
+            name: "Step 1",
+            stepImage,
           }),
         ],
       }),

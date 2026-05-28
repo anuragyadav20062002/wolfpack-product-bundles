@@ -344,14 +344,31 @@ class BundleWidgetProductPage {
   }
 
   _getProductPageDesignPreset() {
-    return this.selectedBundle?.bundleDesignPresetId ||
-      this.selectedBundle?.bundleDesignTemplateData?.templateId ||
-      this.selectedBundle?.templateId ||
-      '';
+    const templateType = this._getProductPageTemplateType();
+    const rawPresetId = this.selectedBundle?.bundleDesignTemplateData?.templateId
+      || this.selectedBundle?.bundleDesignPresetId
+      || this.selectedBundle?.templateId;
+    const preset = typeof rawPresetId === "string" ? rawPresetId.trim().toUpperCase() : '';
+
+    if (preset) {
+      return preset;
+    }
+
+    return templateType === 'PDP_MODAL' ? 'MODAL' : 'CASCADE';
   }
 
   _isProductPageModalSlotTemplate() {
     return this._getProductPageTemplateType() === 'PDP_MODAL';
+  }
+
+  _isProductPageCogniveTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_INPAGE'
+      && this._getProductPageDesignPreset() === 'COGNIVE';
+  }
+
+  _isProductPageSimplifiedTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_MODAL'
+      && this._getProductPageDesignPreset() === 'SIMPLIFIED';
   }
 
   _markProductPageTemplate() {
@@ -1026,8 +1043,13 @@ class BundleWidgetProductPage {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
       const section = this._isProductPageModalSlotTemplate()
         ? this._createModalSlotStepSection(step)
+        : this._isProductPageCogniveTemplate()
+          ? this._createInpageStepSection(step)
         : null;
-      const target = section?.querySelector('.bw-ppb-modal-slot-grid') || this.elements.stepsContainer;
+      const target =
+        section?.querySelector('.bw-ppb-modal-slot-grid')
+        || section?.querySelector('.bw-ppb-inpage-step-grid')
+        || this.elements.stepsContainer;
 
       if (section) {
         this.elements.stepsContainer.appendChild(section);
@@ -1087,7 +1109,9 @@ class BundleWidgetProductPage {
 
   _createModalSlotStepSection(step) {
     const section = document.createElement('div');
-    section.className = 'bw-ppb-modal-slot-section';
+    const isSimplified = this._isProductPageSimplifiedTemplate();
+
+    section.className = `bw-ppb-modal-slot-section${isSimplified ? ' bw-ppb-modal-slot-section--simplified' : ''}`;
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-modal-slot-title';
@@ -1095,7 +1119,23 @@ class BundleWidgetProductPage {
     section.appendChild(title);
 
     const grid = document.createElement('div');
-    grid.className = 'bw-ppb-modal-slot-grid';
+    grid.className = `bw-ppb-modal-slot-grid${isSimplified ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
+    section.appendChild(grid);
+
+    return section;
+  }
+
+  _createInpageStepSection(step) {
+    const section = document.createElement('div');
+    section.className = 'bw-ppb-inpage-step-section';
+
+    const title = document.createElement('div');
+    title.className = 'bw-ppb-inpage-step-title';
+    title.textContent = step.pageTitle || step.name || '';
+    section.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'bw-ppb-inpage-step-grid';
     section.appendChild(grid);
 
     return section;

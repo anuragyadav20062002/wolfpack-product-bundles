@@ -27,4 +27,14 @@ describe("Full Page Add-ons Admin layout", () => {
       expect(cssSource).toContain(`.${marker}`);
     });
   });
+
+  it("wires add-on tier rule contract hooks", () => {
+    expect(routeSource).toContain("getAddonConditions = (tier: any) =>");
+    expect(routeSource).toContain("addAddonTierCondition");
+    expect(routeSource).toContain("removeAddonTierCondition");
+    expect(routeSource).toContain("updateAddonTierCondition");
+    expect(routeSource).toContain("createDefaultAddonTierCondition");
+    expect(routeSource).toContain("value: String(condition?.value ?? \"01\")");
+    expect(routeSource).toContain("conditions: Array.isArray(tier?.conditions)");
+  });
 });

@@ -50,7 +50,7 @@ describe("Full Page widget direct Add-ons contract", () => {
       "utf8",
     );
 
-    expect(source).toContain("step?.isFreeGift && step?.addonDisplayFree !== false");
+    expect(source).toContain("step?.isFreeGift && step?.addonDisplayFree === true");
     expect(source).not.toContain("if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';");
   });
 
@@ -80,12 +80,12 @@ describe("Full Page widget direct Add-ons contract", () => {
     expect(source).toContain("const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);");
     expect(source).toContain("return this.getAllSelectedProductsData().reduce((total, item) => {");
     expect(source).toContain("const step = steps[item.stepIndex];");
-    expect(source).toContain("const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree === false && this.getAddonLineDiscount(candidate));");
+    expect(source).toContain("const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));");
     expect(source).toContain("const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);");
     expect(source).toContain("const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);");
     expect(source).toContain("getAddonProductSelectionKeys(step)");
     expect(source).toContain("chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))");
-    expect(source).toContain("const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree === false);");
+    expect(source).toContain("const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);");
     expect(source).toContain("const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))");
     expect(source).toContain("if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;");
     expect(source).not.toContain("const discountPercentage = discountInfo.discountPercentage\n      ||");
@@ -102,6 +102,22 @@ describe("Full Page widget direct Add-ons contract", () => {
     expect(source).toContain("const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;");
     expect(source).toContain("totalPrice, finalPrice, combinedDiscountInfo, currencyInfo, isLastStep");
     expect(source).toContain("${combinedDiscountInfo.hasDiscount ? `<span class=\"side-panel-total-original\">");
+  });
+
+  it("uses combined discount for FPB summary tray, progress, and modal messaging paths", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+
+    expect(source).toContain("combinedDiscountInfo.hasDiscount");
+    expect(source).toContain("const progressBar = this._renderDiscountProgress({");
+    expect(source).toContain("combinedDiscountInfo,");
+    expect(source).toContain("const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(");
+    expect(source).toContain("this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo");
+    expect(source).toContain("this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);");
+    expect(source).toContain("this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);");
+    expect(source).toContain("this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);");
   });
 
   it("counts chargeable add-ons in bundle totals while skipping true free gifts", () => {

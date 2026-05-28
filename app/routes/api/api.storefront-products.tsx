@@ -51,6 +51,15 @@ async function fetchAllVariants(
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
+                sellingPlanAllocations(first: 100) {
+                  edges {
+                    node {
+                      id
+                      priceAdjustments { price { amount currencyCode } }
+                      sellingPlan { id name }
+                    }
+                  }
+                }
               }
             }
           }
@@ -66,6 +75,15 @@ async function fetchAllVariants(
                 price { amount currencyCode }
                 compareAtPrice { amount currencyCode }
                 image { url }
+                sellingPlanAllocations(first: 100) {
+                  edges {
+                    node {
+                      id
+                      priceAdjustments { price { amount currencyCode } }
+                      sellingPlan { id name }
+                    }
+                  }
+                }
               }
             }
           }
@@ -263,13 +281,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
             handle: product.handle,
             imageUrl: product.featuredImage?.url || '',
             variants: variantEdges.map((edge: any) => ({
-              id: edge.node.id,
-              title: edge.node.title,
-              price: edge.node.price?.amount || '0',
-              compareAtPrice: edge.node.compareAtPrice?.amount || null,
-              available: edge.node.availableForSale,
-              // Numeric stock level; null when scope ungranted or variant is untracked.
-              // Widget treats null as "unlimited / do not clamp".
+                id: edge.node.id,
+                title: edge.node.title,
+                price: edge.node.price?.amount || '0',
+                compareAtPrice: edge.node.compareAtPrice?.amount || null,
+                sellingPlanAllocations: (edge.node.sellingPlanAllocations?.edges || [])
+                  .map((allocationEdge: any) => allocationEdge?.node)
+                  .filter((allocation: any) => Boolean(allocation)),
+                available: edge.node.availableForSale,
+                // Numeric stock level; null when scope ungranted or variant is untracked.
+                // Widget treats null as "unlimited / do not clamp".
               quantityAvailable: typeof edge.node.quantityAvailable === 'number'
                 ? edge.node.quantityAvailable
                 : null,

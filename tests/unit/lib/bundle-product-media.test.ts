@@ -6,8 +6,8 @@ import {
 
 describe("bundle product media helpers", () => {
   it("builds an empty generated placeholder alt text", () => {
-    expect(getBundleProductPlaceholderAlt("Product Page Fixture")).toBe("");
-    expect(getBundleProductPlaceholderAlt("")).toBe("");
+    expect(getBundleProductPlaceholderAlt("Product Page Fixture")).toBe(null);
+    expect(getBundleProductPlaceholderAlt("")).toBe(null);
   });
 
   it("removes historical media and duplicate placeholders while keeping the first placeholder", () => {
@@ -45,7 +45,7 @@ describe("bundle product media helpers", () => {
     ]);
   });
 
-  it("updates stale placeholder alt text and removes historical media in one file batch", () => {
+  it("clears stale placeholder alt text and removes historical media in one file batch", () => {
     const updates = buildBundleProductMediaFileUpdates(
       "gid://shopify/Product/123",
       [
@@ -66,7 +66,7 @@ describe("bundle product media helpers", () => {
     expect(updates).toEqual([
       {
         id: "gid://shopify/MediaImage/current",
-        alt: "",
+        alt: null,
       },
       {
         id: "gid://shopify/MediaImage/old",

@@ -1,9 +1,9 @@
 # Issue: Select Template Nav Section — FPB + PPB
 **Issue ID:** select-template-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🟡 Medium
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-23 05:00
+**Last Updated:** 2026-05-27 19:20
 
 ## Overview
 Add a "Select template" nav section to both FPB and PPB configure pages. Merchants can choose from 4 visual layout presets per bundle type. Mirrors EB's Customization overlay (captured 2026-05-23 via Chrome DevTools MCP). Persists `wpbLayoutTemplate` + `wpbPresetId` to `Bundle` DB model.
@@ -15,6 +15,24 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - `test-spec/select-template.spec.md`
 
 ## Progress Log
+
+### 2026-05-27 18:54 - PPB Select Template response-gated confirm + inline save error
+- PPB template dialog flow: `handleTemplateNext` now submits template changes without pre-advancing to confirm state.
+- Added response gating via dedicated `templateFetcher` effect in `route.tsx`:
+  - Wait for `intent === "updateBundleDesignTemplate"` + idle state.
+  - On success: applies `bundleDesignTemplate`/`bundleDesignPresetId` and moves to `confirm`.
+  - On failure/empty payload: surface inline modal error and stay on select step.
+- Added dialog-level error state reset on open/close and added `templateDialogError` style.
+- This change targets the partial-failure loop where route/transport errors moved UI into confirm despite not persisting.
+
+### 2026-05-27 19:20 - Extend response-gated template save parity to FPB
+- Applied the same response-gated `updateBundleDesignTemplate` behavior in FPB configure:
+  - Added template-save state/error refs (`templateSaveError`, `lastTemplateRequestRef`, `lastTemplateResponseRef`).
+  - Added `templateFetcher` idle-response effect to only transition `templateModalStep` on success and keep modal in select state on failure.
+  - On open/close, template dialog now clears stale request/error state.
+  - `Next` is now disabled when no pending preset exists and no longer optimistically updates template state.
+- Added inline save error rendering inside FPB template modal and shared-close handler for clean resets.
+- Kept `updateBundleDesignTemplate` backend flow unchanged (already returns `{ success: true }` or error) so UI now matches server truth before entering confirm.
 
 ### 2026-05-23 05:00 - UI redesign — EB parity, paint-brush icon, HR separator
 - FPB + PPB: changed `select_template` nav icon from `product` → `paint-brush-flat`
