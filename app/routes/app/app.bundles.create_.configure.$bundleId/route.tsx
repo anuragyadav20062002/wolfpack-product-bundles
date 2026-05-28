@@ -2039,7 +2039,7 @@ export default function WizardConfigureStep() {
                                     label={"is greater than or equal to"}
                                     value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
                                     min="0"
-                                    helpText={rule.conditionType === 'amount' ? "Amount in shop's currency" : undefined}
+                                    prefix={rule.conditionType === 'amount' ? "₹" : undefined}
                                     onInput={(e: Event) => {
                                       const num = Number((e.target as HTMLInputElement).value) || 0;
                                       pricing.updateDiscountRule(rule.id, {
@@ -2062,7 +2062,6 @@ export default function WizardConfigureStep() {
                                       max={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
                                       suffix={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
                                       prefix={pricing.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
-                                      helpText={pricing.discountType !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
                                       onInput={(e: Event) => {
                                       const num = Number((e.target as HTMLInputElement).value) || 0;
                                       pricing.updateDiscountRule(rule.id, {

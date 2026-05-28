@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-28 11:07 IST
+**Last Updated:** 2026-05-28 11:09 IST
 
 ## Overview
 
@@ -30,6 +30,12 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
   - "Add rule" call-to-action now uses lower-case text, secondary variant, plus icon, full-width style, and 4-rule max notice.
   - Discount rule card now uses shared EB-style discount rule card background/border treatment.
 - Next: verify in create flow and finalize commit under `eb-configure-sections-parity-1`.
+
+### 2026-05-28 11:09 IST - Create flow amount-threshold formatting aligned to EB
+
+- Standardized create-configure discount rule amount fields to EB parity behavior:
+  - Added currency `prefix="₹"` for amount-based discount-threshold input.
+  - Removed extra helper text on threshold and discount value amount fields.
 
 ### 2026-05-28 11:02 IST - Discount & Pricing rule cards aligned to EB gray style containers
 
