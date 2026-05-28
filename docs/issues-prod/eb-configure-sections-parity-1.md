@@ -32,7 +32,7 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 ### 2026-05-28 11:05 IST - Added one-time nested pricing rule migration script
 
 - Added `scripts/migrate-pricing-rules.ts` to migrate stored nested pricing rules to flat format used by current admin code.
-- Script supports `--dry-run` by default and only writes `BundlePricing.rules` when migration is needed.
+- Script supports `--dry-run` mode and only writes `BundlePricing.rules` when migration is needed.
 - Migration uses `migrateNestedRule` + `parsePricingRule` from `app/lib/pricing-rule-parser.ts` to validate and normalize output.
 - Added `npm run migrate:pricing-rules` as a convenience entrypoint for dry-run execution.
 
