@@ -582,19 +582,11 @@
 
 /* Individual discount rule card */
 .discountRuleRow {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  composes: discountRuleCard from "../../../styles/routes/bundle-configure-shared.module.css";
 }
 
 .discountRuleHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  composes: discountRuleHeader from "../../../styles/routes/bundle-configure-shared.module.css";
 }
 
 /* 4-column grid: Condition | Operator | Value | Discount value */

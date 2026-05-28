@@ -4,7 +4,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-28 11:02 IST
+**Last Updated:** 2026-05-28 11:07 IST
 
 ## Overview
 
@@ -22,6 +22,14 @@ Done section-by-section, FPB+PPB together per section. Screenshots taken at each
 - `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 
 ## Progress Log
+
+### 2026-05-28 11:07 IST - Create flow discount rule card/CTA aligned to EB pattern
+
+- Updated create-configure discount rule layout to match EB-like rule card behavior:
+  - Rule header now uses shared spacing so `Rule #N` and `Remove` remain adjacent with no wide separation.
+  - "Add rule" call-to-action now uses lower-case text, secondary variant, plus icon, full-width style, and 4-rule max notice.
+  - Discount rule card now uses shared EB-style discount rule card background/border treatment.
+- Next: verify in create flow and finalize commit under `eb-configure-sections-parity-1`.
 
 ### 2026-05-28 11:02 IST - Discount & Pricing rule cards aligned to EB gray style containers
 

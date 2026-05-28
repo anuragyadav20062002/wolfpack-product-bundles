@@ -1916,7 +1916,7 @@ export default function WizardConfigureStep() {
                     </s-select>
 
                     {/* Discount Rules */}
-                    {pricing.discountRules.length > 0 && (
+                      {pricing.discountRules.length > 0 && (
                       <div className={styles.rulesList}>
                         {pricing.discountRules.map((rule, index) => (
                           <div key={rule.id} className={styles.discountRuleRow}>
@@ -2080,17 +2080,22 @@ export default function WizardConfigureStep() {
                       </div>
                     )}
 
-                    {pricing.discountRules.length < 4 && (
-                      <s-button
-                        icon="plus"
-                        variant="primary"
-                        onClick={pricing.addDiscountRule}
-                      >
-                        Add Rule
-                      </s-button>
-                    )}
+                      {pricing.discountRules.length < 4 ? (
+                        <s-button
+                          icon="plus"
+                          variant="secondary"
+                          style={{ width: "100%" }}
+                          onClick={pricing.addDiscountRule}
+                        >
+                          Add rule
+                        </s-button>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                          Maximum 4 discount rules reached
+                        </p>
+                      )}
+                    </div>
                   </div>
-              </div>
 
               {/* Discount Display Options */}
               <div
