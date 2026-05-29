@@ -63,6 +63,18 @@ Reason: widget JS source changed; theme app extension assets need to push for th
 
 `extensions/bundle-builder/assets/bundle-widget-full-page.css` after minification is **99,936 bytes** — already within 64 bytes of Shopify's 100,000-byte app-block asset limit. Even a minimal CLASSIC + COMPACT addition (~300 bytes) pushes the file over the limit, and the minifier script exits non-zero. Need to trim existing CSS elsewhere as a prerequisite. Out of scope for this session — open as a follow-up commit titled e.g. `[feedback-jun26-3b] chore: reclaim FPB CSS byte budget for preset overrides`.
 
+### 3c notes — PPB COGNIVE approach diverges from EB
+
+EB's COGNIVE implementation (doc 16 lines 1132–1140) repositions the body wrapper after the currently selected step via JS:
+
+```js
+stepEl?.after(bodyWrapper);
+```
+
+Wolfpack PPB's COGNIVE preset is purely CSS-driven (`#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }`). All steps render in a flat 3-col grid simultaneously rather than having the body float to the active step.
+
+This is a semantic difference, not a strict bug. Whether to port EB's repositioning behavior depends on whether the merchant-facing outcome is acceptable as-is. **Requires live side-by-side visual comparison on the storefront** — defer to 3d.
+
 ## Progress Log
 
 ### 2026-05-29 — Phase 3a complete
