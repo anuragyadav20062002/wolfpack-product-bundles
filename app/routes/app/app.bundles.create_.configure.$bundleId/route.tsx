@@ -33,6 +33,7 @@ import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../compo
 import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
 import { buildWizardPreviewUrl } from "../../../lib/wizard-preview-url";
+import { parseConditionValue } from "../../../lib/parse-condition-value";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { StepSummary } from "./StepSummary";
@@ -589,9 +590,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         ws.collections && ws.collections.length > 0 ? (ws.collections as any) : null,
       conditionType: c1?.conditionType || null,
       conditionOperator: c1?.conditionOperator || null,
-      conditionValue: c1?.conditionValue ? parseInt(c1.conditionValue, 10) : null,
+      conditionValue: parseConditionValue(c1?.conditionValue),
       conditionOperator2: c2?.conditionOperator || null,
-      conditionValue2: c2?.conditionValue ? parseInt(c2.conditionValue, 10) : null,
+      conditionValue2: parseConditionValue(c2?.conditionValue),
       filters: ws.filters && ws.filters.length > 0 ? (ws.filters as any) : null,
     };
 

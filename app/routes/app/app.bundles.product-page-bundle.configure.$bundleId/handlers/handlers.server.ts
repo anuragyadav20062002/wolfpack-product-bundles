@@ -24,6 +24,7 @@ import {
   updateProductStandardMetafields,
 } from "../../../../services/bundles/standard-metafields.server";
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
+import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
 import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings, parseBundleDesignTemplate } from "./parsers";
 import {
@@ -420,9 +421,9 @@ function buildBundleBaseConfig(
     enabled: step.enabled !== false,
     conditionType: stepConditionsData[step.id]?.[0]?.type || null,
     conditionOperator: stepConditionsData[step.id]?.[0]?.operator || null,
-    conditionValue: stepConditionsData[step.id]?.[0]?.value ? parseInt(stepConditionsData[step.id][0].value) || null : null,
+    conditionValue: parseConditionValue(stepConditionsData[step.id]?.[0]?.value),
     conditionOperator2: stepConditionsData[step.id]?.[1]?.operator || null,
-    conditionValue2: stepConditionsData[step.id]?.[1]?.value ? parseInt(stepConditionsData[step.id][1].value) || null : null,
+    conditionValue2: parseConditionValue(stepConditionsData[step.id]?.[1]?.value),
     products: (step.StepProduct || []).map((product: any) => ({
       id: product.id,
       title: product.title || product.name || 'Product',
@@ -1123,9 +1124,9 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
                 // Apply condition data if available
                 conditionType: firstCondition?.type || null,
                 conditionOperator: firstCondition?.operator || null,
-                conditionValue: firstCondition?.value ? parseInt(firstCondition.value) || null : null,
+                conditionValue: parseConditionValue(firstCondition?.value),
                 conditionOperator2: secondCondition?.operator || null,
-                conditionValue2: secondCondition?.value ? parseInt(secondCondition.value) || null : null,
+                conditionValue2: parseConditionValue(secondCondition?.value),
                 filters: Array.isArray(step.filters) ? step.filters : null,
                 imageUrl: step.imageUrl ?? null,
                 bannerImageUrl: step.bannerImageUrl ?? null,
