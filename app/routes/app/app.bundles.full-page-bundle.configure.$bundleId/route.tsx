@@ -61,6 +61,7 @@ import {
 } from "./handlers";
 
 import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
+import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
 import {
   fetchBundleProduct,
   fetchShopLocales,
@@ -2665,6 +2666,13 @@ export default function ConfigureBundleFlow() {
 
         {!suppressTopAppEmbedBannerForVisibility && (
           <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+        )}
+
+        {!parentProductActive && (
+          <UnlistedBundleBanner
+            shop={shop}
+            bundleProductId={bundleProduct?.id ?? bundle.shopifyProductId ?? null}
+          />
         )}
 
         <div className={fullPageBundleStyles.editGrid}>

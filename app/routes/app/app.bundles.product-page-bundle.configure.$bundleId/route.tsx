@@ -27,6 +27,7 @@ import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
+import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -2144,6 +2145,13 @@ export default function ConfigureBundleFlow() {
             </s-button>
           </div>
         </div>
+
+        {String(productStatus || loadedBundleProduct?.status || "").toLowerCase() !== "active" && (
+          <UnlistedBundleBanner
+            shop={shop}
+            bundleProductId={loadedBundleProduct?.id ?? (bundle as any).shopifyProductId ?? null}
+          />
+        )}
 
         <div className={productPageBundleStyles.editGrid}>
 
