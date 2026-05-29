@@ -923,6 +923,10 @@ class BundleWidgetFullPage {
     const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
 
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      // Wire the preset + template data attributes so the preset-scoped CSS
+      // rules in bundle-widget-full-page.css activate.
+      FullPagePreset.markContainer(this.container, this.selectedBundle);
+
       // Full-page bundle: Render with tabs layout (async to load products)
       const layout = this.resolveFullPageLayout();
       if (layout === 'footer_side') {
