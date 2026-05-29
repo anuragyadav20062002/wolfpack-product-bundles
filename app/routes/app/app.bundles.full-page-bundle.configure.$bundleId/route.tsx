@@ -2211,7 +2211,15 @@ export default function ConfigureBundleFlow() {
         ? shop.replace('.myshopify.com', '')
         : shop.split('.')[0];
 
-      const pageUrl = `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
+      // When the theme app extension is enabled AND the bundle is active or
+      // unlisted, open the Shopify Page URL so the merchant sees the live
+      // storefront experience. Otherwise keep the app-proxy URL as the
+      // canonical preview destination.
+      const bundleStatus = String((bundle as any).status ?? "").toLowerCase();
+      const liveEligible = appEmbedEnabled && (bundleStatus === "active" || bundleStatus === "unlisted");
+      const pageUrl = liveEligible
+        ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
+        : `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
 
 
       open(pageUrl, '_blank');
@@ -2276,7 +2284,7 @@ export default function ConfigureBundleFlow() {
       });
     }
     });
-  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate]);
+  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate, appEmbedEnabled]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (section === activeSection) return;

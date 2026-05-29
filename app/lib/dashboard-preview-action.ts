@@ -4,6 +4,14 @@ export type DashboardPreviewInput = {
   shopifyProductHandle: string | null;
   shopifyPageHandle: string | null;
   shop: string;
+  /**
+   * Optional. When true AND bundleStatus is "active" | "unlisted" AND a
+   * shopifyPageHandle is set, FPB Preview opens the Shopify Page URL
+   * instead of the app-proxy URL. Defaults to false (preserves the
+   * helper's original behavior).
+   */
+  appEmbedEnabled?: boolean;
+  bundleStatus?: "active" | "draft" | "unlisted" | "archived" | string;
 };
 
 export type DashboardPreviewAction =
@@ -18,8 +26,17 @@ export function decideDashboardPreviewAction(
   input: DashboardPreviewInput,
 ): DashboardPreviewAction {
   const shop = normalizeShop(input.shop);
+  const status = (input.bundleStatus ?? "").toLowerCase();
+  const liveEligible = input.appEmbedEnabled === true && (status === "active" || status === "unlisted");
 
   if (input.bundleType === "full_page") {
+    if (liveEligible && input.shopifyPageHandle) {
+      return {
+        kind: "open_url",
+        url: `https://${shop}/pages/${input.shopifyPageHandle}`,
+      };
+    }
+
     const url = `https://${shop}/apps/product-bundles/wpb/${input.bundleId}`;
     if (!input.shopifyPageHandle) {
       // Proxy URL works regardless; kick off Shopify Page creation in the

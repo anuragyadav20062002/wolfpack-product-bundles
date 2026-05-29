@@ -336,6 +336,8 @@ export default function Dashboard() {
         shopifyProductHandle: bundle.shopifyProductHandle,
         shopifyPageHandle: bundle.shopifyPageHandle,
         shop,
+        appEmbedEnabled,
+        bundleStatus: bundle.status,
       });
 
       if (action.kind === "error") {
@@ -353,7 +355,7 @@ export default function Dashboard() {
 
       window.open(action.url, "_blank", "noopener,noreferrer");
     });
-  }, [shop, shopify, fetcher, enablePreviewGate]);
+  }, [shop, shopify, fetcher, enablePreviewGate, appEmbedEnabled]);
 
   const getStatusDisplay = (status: string) => {
     const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';

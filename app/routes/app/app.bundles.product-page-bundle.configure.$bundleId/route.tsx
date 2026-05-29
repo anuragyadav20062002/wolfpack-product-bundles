@@ -30,6 +30,7 @@ import productPageBundleStyles from "../../../styles/routes/product-page-bundle-
 import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
 import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -1486,35 +1487,22 @@ export default function ConfigureBundleFlow() {
     }
 
     enablePreviewGate.requestPreview(() => {
-    // Try different URL construction methods
-    let productUrl = null;
-    const productHandle = bundle.shopifyProductHandle;
+    // Pick the URL via the shared helper. When the theme app extension is
+    // enabled AND the bundle is active or unlisted, this returns the live
+    // storefront URL so the merchant sees the customer-facing experience;
+    // otherwise it falls back to Shopify's draft preview URL.
+    const bundleStatusForPreview = String((bundle as any).status ?? "").toLowerCase();
+    let productUrl = pickPpbPreviewUrl({
+      appEmbedEnabled,
+      bundleStatus: bundleStatusForPreview,
+      productHandle: bundle.shopifyProductHandle,
+      bundleProduct,
+      shop,
+    });
 
-    if (bundleProduct) {
-
-      // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
-      if (bundleProduct.onlineStorePreviewUrl) {
-        productUrl = bundleProduct.onlineStorePreviewUrl;
-      }
-      // Method 2: Fallback to onlineStoreUrl if preview URL not available
-      else if (bundleProduct.onlineStoreUrl) {
-        productUrl = bundleProduct.onlineStoreUrl;
-      }
-    }
-
-    // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
-    if (!productUrl && productHandle) {
-      if (shop.includes('shopifypreview.com')) {
-        productUrl = `https://${shop}/products/${productHandle}`;
-      } else {
-        const shopDomain = shop.includes('.myshopify.com')
-          ? shop.replace('.myshopify.com', '')
-          : shop;
-        productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
-      }
-    }
-    // Method 4: Fallback - Extract ID and use admin URL
-    else if (!productUrl && bundleProduct?.id) {
+    // Final fallback: admin product page link so the merchant has somewhere
+    // to land when the storefront URL can't be constructed.
+    if (!productUrl && bundleProduct?.id) {
       const productId = bundleProduct.id.includes('gid://shopify/Product/')
         ? bundleProduct.id.split('/').pop()
         : bundleProduct.id;
@@ -1549,7 +1537,7 @@ export default function ConfigureBundleFlow() {
       });
     }
     });
-  }, [isDirty, bundle, bundleProduct, shop, shopify, formState.templateName, enablePreviewGate]);
+  }, [isDirty, bundle, bundleProduct, shop, shopify, formState.templateName, enablePreviewGate, appEmbedEnabled]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
     const hasProducts = stepsState.steps.reduce((totalProducts, step) => {
