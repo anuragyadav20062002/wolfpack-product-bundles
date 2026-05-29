@@ -397,15 +397,20 @@
 .previewButtonWrap { display: block; width: 100%; margin-top: 4px; }
 .previewButtonWrap s-button { display: block; width: 100%; }
 
-.addRuleWrap { display: block; width: 100%; }
-.addRuleWrap s-button { display: block; width: 100%; }
+.addRuleWrap { display: flex; justify-content: flex-end; }
 
 /* ── Wizard Footer ───────────────────────────────────────────── */
+/* padding-right reserves space for the Crisp chat bubble (bottom-right of viewport) */
 .wizardFooter {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  padding-right: 96px;
   padding-bottom: 40px;
+}
+
+.wizardFooter s-button {
+  min-height: 44px;
 }
 
 /* ── Multi-Language Modal ─────────────────────────────────────── */
