@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.6
- * Built   : 2026-05-27
+ * Version : 2.9.7
+ * Built   : 2026-05-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.6';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.7';
 (function() {
   'use strict';
 
@@ -58,8 +58,68 @@ const ConditionValidator = (function () {
     return { allowed: true, limitText: null };
   }
 
+  function _normalizeOperator(operator) {
+    if (typeof operator !== 'string' || operator.length === 0) return operator;
+    if (operator.indexOf('_') !== -1) return operator;
+    return operator.replace(/([A-Z])/g, '_$1').toLowerCase();
+  }
+
+  function _sumQuantities(selections) {
+    let total = 0;
+    if (!selections) return total;
+    for (const qty of Object.values(selections)) {
+      total += Number(qty) || 0;
+    }
+    return total;
+  }
+
+  function _collectCategoryProductIds(category) {
+    const ids = new Set();
+    const products = Array.isArray(category && category.products) ? category.products : [];
+    for (const product of products) {
+      const id = product && (product.id || product.productId || product.graphqlId);
+      if (id != null && id !== '') ids.add(String(id));
+    }
+    return ids;
+  }
+
+  function evaluateCategoryRules(category, stepSelections) {
+    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    if (rules.length === 0) return true;
+
+    const productIds = _collectCategoryProductIds(category);
+    const selections = stepSelections || {};
+    let categoryTotal = 0;
+    for (const pid of Object.keys(selections)) {
+      if (productIds.has(String(pid))) {
+        categoryTotal += Number(selections[pid]) || 0;
+      }
+    }
+
+    for (const rule of rules) {
+      const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
+      const value = Number(rule && rule.value);
+      if (!Number.isFinite(value)) continue;
+      if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
+    }
+    return true;
+  }
+
+  function _isCategoryRuleMode(step) {
+    const categories = Array.isArray(step && step.categories) ? step.categories : [];
+    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+  }
+
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+
+    if (_isCategoryRuleMode(step)) {
+      const categories = Array.isArray(step.categories) ? step.categories : [];
+      for (const cat of categories) {
+        if (!evaluateCategoryRules(cat, currentSelections)) return false;
+      }
+      return true;
+    }
 
     const selections = currentSelections || {};
     let total = 0;
@@ -163,6 +223,7 @@ const ConditionValidator = (function () {
     calculateStepTotalAfterUpdate,
     canUpdateQuantity,
     isStepConditionSatisfied,
+    evaluateCategoryRules,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
   };
@@ -369,6 +430,140 @@ class BundleDataManager {
     return bundles.filter(bundle => bundle.status === 'active');
   }
 
+  static _normalizeId(value) {
+    if (value === null || value === undefined) {
+      return [];
+    }
+
+    const output = [];
+
+    const candidates = Array.isArray(value) ? value : [value];
+
+    candidates.forEach((candidate) => {
+      if (candidate === null || candidate === undefined) {
+        return;
+      }
+
+      const token = String(candidate).trim();
+      if (!token) {
+        return;
+      }
+
+      output.push(token.toLowerCase());
+
+      if (token.includes('/')) {
+        output.push(token.split('/').pop().toLowerCase());
+      }
+    });
+
+    return output;
+  }
+
+  static _buildTargetIdentifierSet(resources) {
+    if (!Array.isArray(resources)) {
+      return new Set();
+    }
+
+    const identifiers = new Set();
+
+    resources.forEach((resource) => {
+      if (!resource || typeof resource !== 'object') {
+        return;
+      }
+
+      this._normalizeId(resource.id).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.graphqlId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.admin_graphql_api_id).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.productId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.collectionId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.handle).forEach((value) => identifiers.add(value));
+    });
+
+    return identifiers;
+  }
+
+  static _buildCurrentCollectionIdentifierSet(currentProductCollections) {
+    if (!Array.isArray(currentProductCollections) || currentProductCollections.length === 0) {
+      return new Set();
+    }
+
+    const identifiers = new Set();
+
+    currentProductCollections.forEach((collection) => {
+      if (collection && typeof collection === 'object') {
+        this._normalizeId(collection.id).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.graphqlId).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.admin_graphql_api_id).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.collectionId).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.handle).forEach((value) => identifiers.add(value));
+        return;
+      }
+
+      this._normalizeId(collection).forEach((value) => identifiers.add(value));
+    });
+
+    return identifiers;
+  }
+
+  static _evaluateWidgetVisibility(bundle, config) {
+    if (!bundle || typeof bundle !== 'object') {
+      return false;
+    }
+
+    const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
+    if (!visibility || typeof visibility !== 'object') {
+      return true;
+    }
+
+    const hasCollections = Array.isArray(visibility.collectionsSelectedData) && visibility.collectionsSelectedData.length > 0 ||
+      Array.isArray(visibility.showOnSpecificCollectionPages) && visibility.showOnSpecificCollectionPages.length > 0;
+    const hasProducts = Array.isArray(visibility.selectedProducts) && visibility.selectedProducts.length > 0 ||
+      Array.isArray(visibility.showOnSpecificProductPages) && visibility.showOnSpecificProductPages.length > 0;
+
+    const targeting = hasCollections
+      ? 'specific_collections'
+      : hasProducts
+        ? 'specific_products'
+        : visibility.showOnAllBundleProducts === false
+          ? 'specific_products'
+          : 'all';
+
+    if (targeting === 'all') {
+      return true;
+    }
+
+    const currentProductId = config.currentProductId ? String(config.currentProductId).trim() : null;
+    const currentProductGid = currentProductId ? `gid://shopify/Product/${currentProductId}` : null;
+
+    const currentProductIdSet = new Set([
+      ...this._normalizeId(currentProductId),
+      ...this._normalizeId(currentProductGid),
+      ...this._normalizeId(config.currentProductId),
+      ...this._normalizeId(config.currentProductHandle),
+      ...this._normalizeId(config.currentProductGid),
+    ]);
+
+    if (currentProductIdSet.size === 0) {
+      return false;
+    }
+
+    if (targeting === 'specific_products') {
+      const targetSet = this._buildTargetIdentifierSet([
+        ...(Array.isArray(visibility.selectedProducts) ? visibility.selectedProducts : []),
+        ...(Array.isArray(visibility.showOnSpecificProductPages) ? visibility.showOnSpecificProductPages : []),
+      ]);
+      return [...currentProductIdSet].some((value) => targetSet.has(value));
+    }
+
+    const collectionTargetSet = this._buildTargetIdentifierSet([
+      ...(Array.isArray(visibility.collectionsSelectedData) ? visibility.collectionsSelectedData : []),
+      ...(Array.isArray(visibility.showOnSpecificCollectionPages) ? visibility.showOnSpecificCollectionPages : []),
+    ]);
+    const currentCollectionSet = this._buildCurrentCollectionIdentifierSet(config.currentProductCollections || []);
+
+    return [...collectionTargetSet].some((value) => currentCollectionSet.has(value));
+  }
+
   static getProductPageBundles(bundles) {
     return bundles.filter(bundle =>
       bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE
@@ -441,6 +636,9 @@ class BundleDataManager {
     for (const bundle of bundles) {
       if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
           bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+        if (!this._evaluateWidgetVisibility(bundle, config)) {
+          continue;
+        }
 
         if (config.bundleId && bundle.id === config.bundleId) {
           return bundle;
@@ -494,7 +692,7 @@ class PricingCalculator {
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
 
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree !== false) return;
+      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -1969,6 +2167,7 @@ class BundleWidgetProductPage {
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
       currentProductId: window.currentProductId,
+      currentProductGid: window.currentProductGid,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections
     };
@@ -2025,14 +2224,31 @@ class BundleWidgetProductPage {
   }
 
   _getProductPageDesignPreset() {
-    return this.selectedBundle?.bundleDesignPresetId ||
-      this.selectedBundle?.bundleDesignTemplateData?.templateId ||
-      this.selectedBundle?.templateId ||
-      '';
+    const templateType = this._getProductPageTemplateType();
+    const rawPresetId = this.selectedBundle?.bundleDesignTemplateData?.templateId
+      || this.selectedBundle?.bundleDesignPresetId
+      || this.selectedBundle?.templateId;
+    const preset = typeof rawPresetId === "string" ? rawPresetId.trim().toUpperCase() : '';
+
+    if (preset) {
+      return preset;
+    }
+
+    return templateType === 'PDP_MODAL' ? 'MODAL' : 'CASCADE';
   }
 
   _isProductPageModalSlotTemplate() {
     return this._getProductPageTemplateType() === 'PDP_MODAL';
+  }
+
+  _isProductPageCogniveTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_INPAGE'
+      && this._getProductPageDesignPreset() === 'COGNIVE';
+  }
+
+  _isProductPageSimplifiedTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_MODAL'
+      && this._getProductPageDesignPreset() === 'SIMPLIFIED';
   }
 
   _markProductPageTemplate() {
@@ -2108,7 +2324,10 @@ class BundleWidgetProductPage {
 
     this.selectedBundle.steps.forEach((step, i) => {
       if (step.isDefault && step.defaultVariantId) {
-        this.selectedProducts[i][step.defaultVariantId] = 1;
+        const normalizedDefaultVariantId = this.normalizeSelectionKey(step.defaultVariantId);
+        if (normalizedDefaultVariantId) {
+          this.setSelectedQuantity(i, normalizedDefaultVariantId, 1);
+        }
       }
     });
   }
@@ -2175,7 +2394,7 @@ class BundleWidgetProductPage {
     if (this.directDefaultProducts.length === 0 || !this.selectedProducts[0]) return;
 
     this.directDefaultProducts.forEach(product => {
-      this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+      this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
     });
   }
 
@@ -2223,10 +2442,8 @@ class BundleWidgetProductPage {
     const step = this.selectedBundle.steps[stepIndex];
     if (!step?.isDefault || !step.defaultVariantId) return null;
     const products = this.stepProductData[stepIndex] || [];
-    const variantId = String(step.defaultVariantId);
-    return products.find(p =>
-      String(p.variantId || p.id) === variantId
-    ) || products[0] || null;
+    const variantId = this.normalizeSelectionKey(step.defaultVariantId);
+    return this.findProductBySelectionKey(products, variantId) || products[0] || null;
   }
 
   /**
@@ -2616,7 +2833,7 @@ class BundleWidgetProductPage {
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     products.forEach(product => {
-      const quantity = this.selectedProducts[0]?.[product.variantId] || product.defaultRequiredQuantity || 1;
+      const quantity = this.getSelectedQuantity(0, product.variantId) || product.defaultRequiredQuantity || 1;
       const line = document.createElement('div');
       line.className = 'bw-default-products__line';
       line.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;';
@@ -2677,8 +2894,13 @@ class BundleWidgetProductPage {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
       const section = this._isProductPageModalSlotTemplate()
         ? this._createModalSlotStepSection(step)
+        : this._isProductPageCogniveTemplate()
+          ? this._createInpageStepSection(step)
         : null;
-      const target = section?.querySelector('.bw-ppb-modal-slot-grid') || this.elements.stepsContainer;
+      const target =
+        section?.querySelector('.bw-ppb-modal-slot-grid')
+        || section?.querySelector('.bw-ppb-inpage-step-grid')
+        || this.elements.stepsContainer;
 
       if (section) {
         this.elements.stepsContainer.appendChild(section);
@@ -2710,7 +2932,7 @@ class BundleWidgetProductPage {
         if (selectedEntries.length > 0) {
           const products = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
           selectedEntries.forEach(([variantId, qty]) => {
-            const product = products.find(p => (p.variantId || p.id) === variantId);
+            const product = this.findProductBySelectionKey(products, variantId);
             if (product) {
               for (let i = 0; i < qty; i++) {
                 const card = this.createSelectedProductCard(
@@ -2737,7 +2959,9 @@ class BundleWidgetProductPage {
 
   _createModalSlotStepSection(step) {
     const section = document.createElement('div');
-    section.className = 'bw-ppb-modal-slot-section';
+    const isSimplified = this._isProductPageSimplifiedTemplate();
+
+    section.className = `bw-ppb-modal-slot-section${isSimplified ? ' bw-ppb-modal-slot-section--simplified' : ''}`;
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-modal-slot-title';
@@ -2745,7 +2969,23 @@ class BundleWidgetProductPage {
     section.appendChild(title);
 
     const grid = document.createElement('div');
-    grid.className = 'bw-ppb-modal-slot-grid';
+    grid.className = `bw-ppb-modal-slot-grid${isSimplified ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
+    section.appendChild(grid);
+
+    return section;
+  }
+
+  _createInpageStepSection(step) {
+    const section = document.createElement('div');
+    section.className = 'bw-ppb-inpage-step-section';
+
+    const title = document.createElement('div');
+    title.className = 'bw-ppb-inpage-step-title';
+    title.textContent = step.pageTitle || step.name || '';
+    section.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'bw-ppb-inpage-step-grid';
     section.appendChild(grid);
 
     return section;
@@ -2985,7 +3225,7 @@ class BundleWidgetProductPage {
 
       const products = this.stepProductData[stepIndex] || [];
       const [variantId] = selectedEntries[0];
-      const product = products.find(p => (p.variantId || p.id) === variantId);
+      const product = this.findProductBySelectionKey(products, variantId);
       if (product) {
 
         stepBox.className = 'step-box step-completed product-card-state bw-slot-card bw-slot-card--filled';
@@ -3083,17 +3323,20 @@ class BundleWidgetProductPage {
   removeProductFromSelection(stepIndex, variantId) {
 
     const step = this.selectedBundle?.steps[stepIndex];
-    if (step?.isDefault && step?.defaultVariantId === variantId) return;
-    if (this._isDirectDefaultVariant(variantId)) return;
+    const normalizedVariantId = this.normalizeSelectionKey(variantId);
+    if (!normalizedVariantId) return;
 
-    const currentQuantity = this.selectedProducts[stepIndex][variantId] || 0;
+    if (step?.isDefault && this.normalizeSelectionKey(step.defaultVariantId) === normalizedVariantId) return;
+    if (this._isDirectDefaultVariant(normalizedVariantId)) return;
+
+    const currentQuantity = this.getSelectedQuantity(stepIndex, normalizedVariantId);
 
     if (currentQuantity > 1) {
 
-      this.selectedProducts[stepIndex][variantId] = currentQuantity - 1;
+      this.setSelectedQuantity(stepIndex, normalizedVariantId, currentQuantity - 1);
     } else {
 
-      delete this.selectedProducts[stepIndex][variantId];
+      this.setSelectedQuantity(stepIndex, normalizedVariantId, 0);
     }
 
     this.renderSteps();
@@ -3114,7 +3357,7 @@ class BundleWidgetProductPage {
     this.selectedProducts[stepIndex] = {};
     if (stepIndex === 0 && this.directDefaultProducts.length > 0) {
       this.directDefaultProducts.forEach(product => {
-        this.selectedProducts[0][product.variantId] = product.defaultRequiredQuantity || 1;
+        this.setSelectedQuantity(0, product.variantId, product.defaultRequiredQuantity || 1);
       });
     }
 
@@ -3159,10 +3402,11 @@ class BundleWidgetProductPage {
     const met = progress >= 1;
 
     const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
-    const discountText = discountInfo.hasDiscount
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountText = combinedDiscountInfo.hasDiscount
       ? (this.selectedBundle.pricing.method === 'percentage_off'
           ? `${rule.discountValue ?? 0}% off`
-          : CurrencyManager.convertAndFormat(discountInfo.savings, CurrencyManager.getCurrencyInfo()))
+          : CurrencyManager.convertAndFormat(combinedDiscountInfo.savings, CurrencyManager.getCurrencyInfo()))
       : '';
 
     const template = met
@@ -3361,6 +3605,7 @@ class BundleWidgetProductPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const button = this.elements.addToCartButton;
 
@@ -3394,7 +3639,7 @@ class BundleWidgetProductPage {
     } else {
 
       const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const formattedPrice = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
+      const formattedPrice = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
 
       button.textContent = `${this._resolveText('addToCartButton', 'Add Bundle to Cart')} \u2022 ${formattedPrice}`;
 
@@ -3407,8 +3652,8 @@ class BundleWidgetProductPage {
     if (totalPillFinal) {
       if (totalQuantity > 0) {
         const currencyInfo = CurrencyManager.getCurrencyInfo();
-        totalPillFinal.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
-        if (discountInfo.hasDiscount && totalPillStrike) {
+        totalPillFinal.textContent = CurrencyManager.convertAndFormat(combinedDiscountInfo.finalPrice, currencyInfo);
+        if (combinedDiscountInfo.qualifiesForDiscount && totalPillStrike) {
           totalPillStrike.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
         } else if (totalPillStrike) {
           totalPillStrike.textContent = '';
@@ -3598,6 +3843,9 @@ class BundleWidgetProductPage {
       title: v.title,
       price: parseFloat(v.price || '0') * 100,
       compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
       available: v.available === true,
       quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
       currentlyNotInStock: v.currentlyNotInStock === true,
@@ -3633,6 +3881,7 @@ class BundleWidgetProductPage {
               available: variant.available === true,
               quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
               currentlyNotInStock: variant.currentlyNotInStock === true,
+              sellingPlanAllocations: variant.sellingPlanAllocations || [],
 
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -3659,18 +3908,19 @@ class BundleWidgetProductPage {
           return opt.name || opt;
         });
 
-        return [{
-          id: this.extractId(product.id),
-          title: product.title,
-          imageUrl,
-          price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
-          variantId: this.extractId(defaultVariant?.id || product.id),
-          available: defaultVariant?.available === true,
-          quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
-          currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+          return [{
+            id: this.extractId(product.id),
+            title: product.title,
+            imageUrl,
+            price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
+            compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+            variantId: this.extractId(defaultVariant?.id || product.id),
+            sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
+            available: defaultVariant?.available === true,
+            quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
+            currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
 
-          variants: processedVariants,
+            variants: processedVariants,
           options: processedOptions,
 
           images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
@@ -3686,7 +3936,7 @@ class BundleWidgetProductPage {
    */
   getVariantAvailable(stepIndex, variantId) {
     const products = this.stepProductData[stepIndex] || [];
-    const product = products.find(p => (p.variantId || p.id) === variantId);
+    const product = this.findProductBySelectionKey(products, variantId);
     if (!product) {
       return { available: null, outOfStock: false, acceptsBackorder: false };
     }
@@ -3698,6 +3948,70 @@ class BundleWidgetProductPage {
     return { available: qty, outOfStock: false, acceptsBackorder: backorder };
   }
 
+  findProductBySelectionKey(products, selectionKey) {
+    const normalized = this.normalizeSelectionKey(selectionKey);
+    if (!normalized) return null;
+
+    return products.find((product) => {
+      const ids = [product.variantId, product.id, product.productId];
+      if (Array.isArray(product.variants)) {
+        ids.push(...product.variants.map((variant) => variant.id));
+      }
+
+      return ids.some((id) => this.normalizeSelectionKey(id) === normalized);
+    }) || null;
+  }
+
+  shouldApplyIndividualSellingPlanSelection() {
+    return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
+  }
+
+  shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelection()) {
+      return false;
+    }
+
+    const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
+    if (showFor !== "OOS_PRODUCTS") {
+      return true;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const target = variant ?? product;
+    if (!target) {
+      return false;
+    }
+
+    return target.available === false;
+  }
+
+  getSelectedSellingPlanAllocationId(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
+      return null;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
+    const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
+      ? normalizedProduct.sellingPlanAllocations
+      : [];
+
+    if (allocations.length === 0) {
+      return null;
+    }
+
+    const firstAllocationId = this.extractId(allocations[0]?.id);
+    return firstAllocationId || null;
+  }
+
   extractId(idString) {
     if (!idString) return null;
 
@@ -3707,6 +4021,198 @@ class BundleWidgetProductPage {
     }
 
     return idString.toString().split('/').pop();
+  }
+
+  normalizeSelectionKey(variantId) {
+    const normalized = this.extractId(variantId);
+    if (normalized == null) return '';
+    return String(normalized);
+  }
+
+  getSelectedQuantity(stepIndex, variantId) {
+    const selectedProducts = this.selectedProducts[stepIndex] || {};
+    const normalized = this.normalizeSelectionKey(variantId);
+    if (!normalized) return 0;
+
+    if (Object.prototype.hasOwnProperty.call(selectedProducts, normalized)) {
+      return Number(selectedProducts[normalized]) || 0;
+    }
+
+    const alias = Object.entries(selectedProducts).find(([productId]) =>
+      this.normalizeSelectionKey(productId) === normalized
+    );
+    return alias ? Number(alias[1]) || 0 : 0;
+  }
+
+  setSelectedQuantity(stepIndex, variantId, quantity) {
+    const selectedProducts = this.selectedProducts[stepIndex];
+    if (!selectedProducts) return;
+
+    const normalized = this.normalizeSelectionKey(variantId);
+    if (!normalized) return;
+
+    Object.keys(selectedProducts).forEach((productId) => {
+      if (this.normalizeSelectionKey(productId) === normalized) {
+        delete selectedProducts[productId];
+      }
+    });
+
+    if (quantity > 0) {
+      selectedProducts[normalized] = quantity;
+    }
+  }
+
+  getAddonLineDiscount(step) {
+    const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+    const discount = step?.addonDiscount || tier?.discount || {};
+    const type = String(discount.type || '').toUpperCase();
+    const value = Number(discount.value || 0);
+    if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
+    return { type, value: Math.min(100, value) };
+  }
+
+  getAddonProductSelectionKeys(step) {
+    const keys = new Set();
+    const addKey = (value) => {
+      if (value === null || value === undefined || value === '') return;
+      const normalized = this.extractId(value) || value;
+      keys.add(String(normalized));
+    };
+    const products = [
+      ...(Array.isArray(step?.StepProduct) ? step.StepProduct : []),
+      ...(Array.isArray(step?.products) ? step.products : []),
+      ...(Array.isArray(step?.productsData1?.products) ? step.productsData1.products : []),
+    ];
+
+    products.forEach(product => {
+      addKey(product.id);
+      addKey(product.productId);
+      addKey(product.graphqlId);
+      addKey(product.variantId);
+      addKey(product.variantGraphqlId);
+      addKey(product.title);
+      (Array.isArray(product.variants) ? product.variants : []).forEach(variant => {
+        addKey(variant.id);
+        addKey(variant.variantId);
+        addKey(variant.variantGraphqlId);
+        addKey(variant.admin_graphql_api_id);
+        addKey(variant.title);
+      });
+    });
+
+    return keys;
+  }
+
+  calculateSelectedAddonDiscountAmount() {
+    const steps = this.selectedBundle?.steps || [];
+    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
+    const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
+    const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
+
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
+      const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
+        || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
+        || chargeableAddonProductKeys.has(String(item.title || ''))
+        || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
+      if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
+      const step = steps[item.stepIndex];
+      const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
+      if (!addonDiscount) return total;
+
+      const selectedQuantity = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      if (!selectedQuantity || selectedQuantity <= 0 || !Number.isFinite(price) || price <= 0) return total;
+      return total + (price * selectedQuantity * addonDiscount.value / 100);
+    }, 0);
+  }
+
+  getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
+    const baseDiscountAmount = Math.max(0, Number(discountInfo?.discountAmount || 0));
+    const addonDiscountAmount = this.calculateSelectedAddonDiscountAmount();
+    const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);
+    const finalPrice = Math.max(0, totalPrice - combinedDiscountAmount);
+
+    return {
+      ...discountInfo,
+      hasDiscount: combinedDiscountAmount > 0,
+      qualifiesForDiscount: combinedDiscountAmount > 0,
+      discountAmount: combinedDiscountAmount,
+      savings: combinedDiscountAmount,
+      addonDiscountAmount,
+      finalPrice,
+      discountPercentage: totalPrice > 0 ? (combinedDiscountAmount / totalPrice) * 100 : 0,
+    };
+  }
+
+  getAllSelectedProductsData() {
+    const allProducts = [];
+
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
+      const stepSelections = this.selectedProducts[stepIndex] || {};
+      const productsInStep = this.stepProductData[stepIndex] || [];
+
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+          const normalizedVariantId = this.normalizeSelectionKey(variantId);
+          let product = this.findProductBySelectionKey(productsInStep, normalizedVariantId);
+          if (!product && normalizedVariantId) {
+            product = this.findProductBySelectionKey(productsInStep, variantId);
+          }
+
+          let matchedVariant = null;
+          if (!product) {
+            for (const p of productsInStep) {
+              if (p.variants && Array.isArray(p.variants)) {
+                const variant = p.variants.find(v =>
+                  this.normalizeSelectionKey(v.id) === normalizedVariantId
+                  || String(v.id) === String(variantId)
+                );
+                if (variant) {
+                  product = p;
+                  matchedVariant = variant;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (product) {
+            const variantData = matchedVariant || product;
+            const isVariantMatch = !!matchedVariant;
+            const variantTitle = isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title'
+              ? matchedVariant.title
+              : (product.variantTitle && product.variantTitle !== 'Default Title' ? product.variantTitle : '');
+            const imageUrl = isVariantMatch
+              ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
+              : (product.imageUrl || product.image?.src || '');
+            const price = isVariantMatch
+              ? (typeof variantData.price === 'number' ? variantData.price : (parseFloat(variantData.price || '0') * 100))
+              : (product.price || 0);
+
+            allProducts.push({
+              stepIndex,
+              variantId,
+              quantity,
+              title: isVariantMatch
+                ? (variantTitle ? `${product.title} - ${variantTitle}` : product.title)
+                : (product.title || 'Untitled Product'),
+              parentTitle: product.parentTitle || product.title || 'Untitled Product',
+              variantTitle,
+              imageUrl,
+              image: imageUrl,
+              price,
+              productId: product.productId || product.id,
+              isDefault: step.isDefault ?? false,
+              isFreeGift: step.isFreeGift ?? false,
+              addonDisplayFree: step.addonDisplayFree === true,
+            });
+          }
+        }
+      });
+    });
+
+    return allProducts;
   }
 
   expandProductsByVariant(products) {
@@ -3872,7 +4378,7 @@ class BundleWidgetProductPage {
 
     productGrid.innerHTML = products.map(product => {
       const selectionKey = product.variantId || product.id;
-      const currentQuantity = selectedProducts[selectionKey] || 0;
+      const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
       const currencyInfo = CurrencyManager.getCurrencyInfo();
 
       const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
@@ -4044,10 +4550,7 @@ class BundleWidgetProductPage {
     const step = this.selectedBundle.steps[stepIndex];
 
     const findProduct = (productId) => {
-      return this.stepProductData[stepIndex]?.find(p => {
-        const selectionKey = p.variantId || p.id;
-        return selectionKey === productId;
-      });
+      return this.findProductBySelectionKey(this.stepProductData[stepIndex] || [], productId);
     };
 
     newProductGrid.addEventListener('click', (e) => {
@@ -4055,7 +4558,7 @@ class BundleWidgetProductPage {
         e.stopPropagation();
         const productId = e.target.dataset.productId;
         const isIncrease = e.target.classList.contains('qty-increase');
-        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+        const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
 
         const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
         this.updateProductSelection(stepIndex, productId, newQuantity);
@@ -4072,7 +4575,7 @@ class BundleWidgetProductPage {
           this.productModal.open(product, step);
         } else {
 
-          const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+          const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
           this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
         }
       }
@@ -4112,9 +4615,9 @@ class BundleWidgetProductPage {
               : null;
             product.currentlyNotInStock = variantData.currentlyNotInStock === true;
 
-            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
+            const oldQuantity = this.getSelectedQuantity(stepIndex, product.variantId);
             if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][product.variantId];
+              this.setSelectedQuantity(stepIndex, product.variantId, 0);
 
               const newQtyAvail = product.quantityAvailable;
               const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
@@ -4127,7 +4630,7 @@ class BundleWidgetProductPage {
                 ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
               }
               if (migratedQty > 0) {
-                this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+                this.setSelectedQuantity(stepIndex, newVariantId, migratedQty);
               }
             }
 
@@ -4161,14 +4664,15 @@ class BundleWidgetProductPage {
     });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
+    const selectionKey = this.normalizeSelectionKey(productId);
     let quantity = Math.max(0, newQuantity);
-    const directDefaultRequiredQuantity = this._getDirectDefaultRequiredQuantity(productId);
+    const directDefaultRequiredQuantity = this._getDirectDefaultRequiredQuantity(selectionKey);
     if (directDefaultRequiredQuantity !== null && quantity < directDefaultRequiredQuantity) {
       quantity = directDefaultRequiredQuantity;
     }
 
     if (quantity > 0) {
-      const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
       if (outOfStock) {
         ToastManager.show('This item is out of stock.');
         return;
@@ -4179,7 +4683,7 @@ class BundleWidgetProductPage {
       }
     }
 
-    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
     const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
       this.selectedBundle?.validateQuantityPerProduct,
       currentQuantity,
@@ -4190,17 +4694,13 @@ class BundleWidgetProductPage {
       return;
     }
 
-    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+    if (!this.validateStepCondition(stepIndex, selectionKey, quantity)) {
       return;
     }
 
-    if (quantity > 0) {
-      this.selectedProducts[stepIndex][productId] = quantity;
-    } else {
-      delete this.selectedProducts[stepIndex][productId];
-    }
+    this.setSelectedQuantity(stepIndex, selectionKey, quantity);
 
-    this.updateProductQuantityDisplay(stepIndex, productId, quantity);
+    this.updateProductQuantityDisplay(stepIndex, selectionKey, quantity);
     this._renderDirectDefaultProducts();
     this.renderModalTabs();
     this.updateModalNavigation();
@@ -4320,12 +4820,13 @@ class BundleWidgetProductPage {
   validateStepCondition(stepIndex, productId, newQuantity) {
     const step = this.selectedBundle.steps[stepIndex];
     const currentSelections = this.selectedProducts[stepIndex] || {};
-    const currentQty = currentSelections[productId] || 0;
+    const currentQty = this.getSelectedQuantity(stepIndex, productId);
+    const normalizedProductId = this.normalizeSelectionKey(productId);
 
     const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
       step,
       currentSelections,
-      productId,
+      normalizedProductId,
       newQuantity,
     );
 
@@ -4380,19 +4881,20 @@ class BundleWidgetProductPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
-    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
 
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
     if (cartBadge) {
       cartBadge.textContent = totalQuantity.toString();
     }
 
-    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+    this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
 
-    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
   }
 
   updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -4584,9 +5086,10 @@ class BundleWidgetProductPage {
       totalQuantity,
       unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const discountAmount = Math.max(0, Number(discountInfo.discountAmount || 0));
-    const discountPercentage = discountInfo.discountPercentage
+    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+    const discountPercentage = combinedDiscountInfo.discountPercentage
       || (totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0);
 
     const displayProperties = {
@@ -4625,7 +5128,7 @@ class BundleWidgetProductPage {
 
       Object.entries(stepSelections).forEach(([variantId, quantity]) => {
         if (quantity > 0) {
-          const product = productsInStep.find(p => (p.variantId || p.id) === variantId);
+          const product = this.findProductBySelectionKey(productsInStep, variantId);
           if (product) {
 
             if (product.available !== true) {
@@ -4636,20 +5139,31 @@ class BundleWidgetProductPage {
             const actualVariantId = variantId;
 
             const step = this.selectedBundle.steps[stepIndex];
+            const addonDiscount = this.getAddonLineDiscount(step);
             const properties = {
               '_bundle_id': bundleInstanceId,
               '_bundle_name': this.selectedBundle.name,
               '_step_index': stepIndex.toString()
-                };
-                if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
-                if (step?.isDefault) properties['_bundle_step_type'] = 'default';
-                if (this._isDirectDefaultVariant(variantId)) properties['_bundle_step_type'] = 'default';
+            };
+            if (addonDiscount && step?.addonDisplayFree !== true) {
+              properties['_bundle_step_type'] = addonDiscount
+                ? `addon:${addonDiscount.type}:${addonDiscount.value}`
+                : 'addon';
+            } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
+              properties['_bundle_step_type'] = 'free_gift';
+            }
+            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+            if (this._isDirectDefaultVariant(variantId)) properties['_bundle_step_type'] = 'default';
 
-                const cartItem = {
+            const cartItem = {
               id: parseInt(this.extractId(actualVariantId)),
               quantity: quantity,
               properties
             };
+            const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
+            if (sellingPlanAllocationId) {
+              cartItem.selling_plan = parseInt(sellingPlanAllocationId);
+            }
 
             cartItems.push(cartItem);
             selectedLines.push({ product, quantity });

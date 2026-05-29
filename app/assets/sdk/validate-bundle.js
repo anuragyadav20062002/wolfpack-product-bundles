@@ -1,5 +1,14 @@
 'use strict';
 
+function _stepIsCategoryRuleMode(step) {
+  var categories = Array.isArray(step && step.categories) ? step.categories : [];
+  for (var i = 0; i < categories.length; i++) {
+    var c = categories[i];
+    if (c && Array.isArray(c.conditions) && c.conditions.length > 0) return true;
+  }
+  return false;
+}
+
 function validateStep(stepId, state, ConditionValidator) {
   var step = state.steps.find(function (s) { return s.id === stepId; });
   if (!step) {
@@ -8,6 +17,13 @@ function validateStep(stepId, state, ConditionValidator) {
   var selections = state.selections[stepId] || {};
   var valid = ConditionValidator.isStepConditionSatisfied(step, selections);
   if (valid) return { valid: true, message: '' };
+
+  // Category-rule mode: surface a generic message. Per-category specifics
+  // are a follow-up; today the widget only needs to know the step is
+  // unmet so the ATC can be blocked.
+  if (_stepIsCategoryRuleMode(step)) {
+    return { valid: false, message: 'Selection requirements not met for this step.' };
+  }
 
   var condVal = step.conditionValue;
   var op = step.conditionOperator || 'equal_to';

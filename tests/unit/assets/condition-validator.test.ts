@@ -634,3 +634,98 @@ describe('Regression: reported bug scenarios', () => {
     expect(isStepConditionSatisfied(step, { A: 1, B: 1, C: 1 })).toBe(true);
   });
 });
+
+// ─── Category-mode rules (category-rules-2) ──────────────────────────────────
+
+describe('isStepConditionSatisfied — category mode', () => {
+  function makeCategory(name: string, productIds: string[], rules: any[] = []) {
+    return {
+      categoryId: `cat-${name}`,
+      name,
+      products: productIds.map(id => ({ id })),
+      conditions: rules,
+    };
+  }
+
+  it('single category with snake_case operator — rule met', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', operator: 'greater_than_or_equal_to', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1, p2: 1 })).toBe(true);
+  });
+
+  it('single category with EB-style camelCase operator — rule met', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1, p2: 1 })).toBe(true);
+  });
+
+  it('single category — rule not met when not enough selections in that category', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(false);
+  });
+
+  it('two categories — both must be satisfied', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }]),
+        makeCategory('B', ['p3', 'p4'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1, p3: 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(false); // B unsatisfied
+    expect(isStepConditionSatisfied(step, { p3: 1 })).toBe(false); // A unsatisfied
+  });
+
+  it('categories without conditions do not gate the step', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }]),
+        makeCategory('B', ['p2']), // no conditions
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p2: 1 })).toBe(false); // A unsatisfied; B doesn't compensate
+  });
+
+  it('selections outside the category do not count toward its rule', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    // p2 isn't in category A, so it doesn't help A reach its quantity threshold.
+    expect(isStepConditionSatisfied(step, { p1: 1, p2: 5 })).toBe(false);
+    expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(true);
+  });
+
+  it('falls through to step-level check when no category has conditions', () => {
+    const step = {
+      ...makeStep(GTE, 3),
+      categories: [makeCategory('A', ['p1'])], // no conditions
+    };
+    // Step-level rule kicks in: total >= 3
+    expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(false);
+    expect(isStepConditionSatisfied(step, { p1: 3 })).toBe(true);
+  });
+
+  it('LESS_THAN_OR_EQUAL_TO works in category mode', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1'], [{ type: 'quantity', condition: 'lessThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p1: 3 })).toBe(false);
+  });
+});
