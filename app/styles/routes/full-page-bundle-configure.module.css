@@ -1772,6 +1772,14 @@
   composes: discountRuleHeader from "./bundle-configure-shared.module.css";
 }
 
+.discountFieldsRow {
+  composes: discountFieldsRow from "./bundle-configure-shared.module.css";
+}
+
+.discountFieldsRowPair {
+  composes: discountFieldsRowPair from "./bundle-configure-shared.module.css";
+}
+
 .bxyRuleBody {
   display: flex;
   flex-direction: column;

@@ -4110,7 +4110,7 @@ export default function ConfigureBundleFlow() {
                             ) : (
                               <s-stack direction="block" gap="small-100">
                                 {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={fullPageBundleStyles.discountFieldsRowPair}>
                                     <s-number-field
                                       label="Number of Products in Bundle"
                                       value={String(rule.conditionValue ?? 0)}
@@ -4124,9 +4124,9 @@ export default function ConfigureBundleFlow() {
                                       min="0"
                                       prefix="₹"
                                     />
-                                  </s-stack>
+                                  </div>
                                 ) : (
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={fullPageBundleStyles.discountFieldsRow}>
                                     <s-select
                                       label="Discount on"
                                       value={rule.conditionType ?? 'quantity'}
@@ -4168,7 +4168,7 @@ export default function ConfigureBundleFlow() {
                                       suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
                                       prefix={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
                                     />
-                                  </s-stack>
+                                  </div>
                                 )}
                               </s-stack>
                             )}
