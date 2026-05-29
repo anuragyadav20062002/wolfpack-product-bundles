@@ -13,6 +13,8 @@ import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
+import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
+import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
 import "../../../i18n/config";
 
 import {
@@ -154,6 +156,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
   if (intent === "cloneBundle") return handleCloneBundle(admin, session, formData);
   if (intent === "deleteBundle") return handleDeleteBundle(admin, session, formData);
+  if (intent === "createPreviewPage") {
+    const bundleId = String(formData.get("bundleId") || "");
+    if (!bundleId) return json({ success: false, error: "Missing bundleId" }, { status: 400 });
+    return handleCreatePreviewPage(admin, session, bundleId);
+  }
   return json({ error: "Unknown action" }, { status: 400 });
 };
 
@@ -179,11 +186,10 @@ const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPrev
         variant="tertiary"
         interestFor={`tooltip-preview-${bundleId}`}
         onClick={() => onPreview(bundle)}
-        disabled={!bundle.previewHandle || undefined}
         accessibilityLabel={t("dashboard.actions.previewBundle")}
       />
       <s-tooltip id={`tooltip-preview-${bundleId}`}>
-        {bundle.previewHandle ? t("dashboard.actions.previewBundle") : t("dashboard.actions.previewUnavailable")}
+        {t("dashboard.actions.previewBundle")}
       </s-tooltip>
 
       <s-button
@@ -313,14 +319,29 @@ export default function Dashboard() {
   }, [closeDeleteModal]);
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
-    if (!bundle.previewHandle) return;
-    const previewBase = `https://${shop}`;
-    if (bundle.bundleType === BundleType.PRODUCT_PAGE) {
-      window.open(`${previewBase}/products/${bundle.previewHandle}`, '_blank');
-    } else {
-      window.open(`${previewBase}/apps/product-bundles/wpb/${bundle.previewHandle}`, '_blank');
+    const action = decideDashboardPreviewAction({
+      bundleType: bundle.bundleType as "full_page" | "product_page",
+      bundleId: bundle.id,
+      shopifyProductHandle: bundle.shopifyProductHandle,
+      shopifyPageHandle: bundle.shopifyPageHandle,
+      shop,
+    });
+
+    if (action.kind === "error") {
+      shopify.toast.show(action.toast, { isError: true });
+      return;
     }
-  }, [shop]);
+
+    if (action.kind === "create_page_then_open") {
+      const formData = new FormData();
+      formData.append("intent", "createPreviewPage");
+      formData.append("bundleId", bundle.id);
+      fetcherIntentRef.current = "createPreviewPage";
+      fetcher.submit(formData, { method: "post" });
+    }
+
+    window.open(action.url, "_blank", "noopener,noreferrer");
+  }, [shop, shopify, fetcher]);
 
   const getStatusDisplay = (status: string) => {
     const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';
