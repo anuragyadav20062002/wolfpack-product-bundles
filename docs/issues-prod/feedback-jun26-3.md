@@ -55,9 +55,13 @@ Reason: widget JS source changed; theme app extension assets need to push for th
 ## Phases Checklist
 
 - [x] 3a — Wire FPB preset data attribute (this commit)
-- [ ] 3b — Add CSS rules for CLASSIC + COMPACT presets
+- [ ] 3b — Add CSS rules for CLASSIC + COMPACT presets **[BLOCKED: byte budget]**
 - [ ] 3c — Verify + port any missing PPB template behaviors (COGNIVE repositioning)
 - [ ] 3d — e2e visual verification on Wolfpack SIT for all 8 combinations
+
+### 3b blocker — minified CSS byte budget
+
+`extensions/bundle-builder/assets/bundle-widget-full-page.css` after minification is **99,936 bytes** — already within 64 bytes of Shopify's 100,000-byte app-block asset limit. Even a minimal CLASSIC + COMPACT addition (~300 bytes) pushes the file over the limit, and the minifier script exits non-zero. Need to trim existing CSS elsewhere as a prerequisite. Out of scope for this session — open as a follow-up commit titled e.g. `[feedback-jun26-3b] chore: reclaim FPB CSS byte budget for preset overrides`.
 
 ## Progress Log
 
