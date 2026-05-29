@@ -61,6 +61,9 @@ import {
 } from "./handlers";
 
 import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
+import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import {
   fetchBundleProduct,
   fetchShopLocales,
@@ -2177,6 +2180,12 @@ export default function ConfigureBundleFlow() {
     navigate("/app/dashboard");
   }, [isDirty, forceNavigation, navigate, promptSaveBarBeforeNavigation]);
 
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
       // Show user-friendly message about unsaved changes
@@ -2187,6 +2196,7 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
+    enablePreviewGate.requestPreview(() => {
     // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
     if (bundle.bundleType === 'full_page') {
       if (!bundle.shopifyPageHandle) {
@@ -2201,7 +2211,15 @@ export default function ConfigureBundleFlow() {
         ? shop.replace('.myshopify.com', '')
         : shop.split('.')[0];
 
-      const pageUrl = `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
+      // When the theme app extension is enabled AND the bundle is active or
+      // unlisted, open the Shopify Page URL so the merchant sees the live
+      // storefront experience. Otherwise keep the app-proxy URL as the
+      // canonical preview destination.
+      const bundleStatus = String((bundle as any).status ?? "").toLowerCase();
+      const liveEligible = appEmbedEnabled && (bundleStatus === "active" || bundleStatus === "unlisted");
+      const pageUrl = liveEligible
+        ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
+        : `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
 
 
       open(pageUrl, '_blank');
@@ -2265,7 +2283,8 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [isDirty, bundle, bundleProduct, shop, shopify]);
+    });
+  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate, appEmbedEnabled]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (section === activeSection) return;
@@ -2665,6 +2684,13 @@ export default function ConfigureBundleFlow() {
 
         {!suppressTopAppEmbedBannerForVisibility && (
           <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+        )}
+
+        {!parentProductActive && (
+          <UnlistedBundleBanner
+            shop={shop}
+            bundleProductId={bundleProduct?.id ?? bundle.shopifyProductId ?? null}
+          />
         )}
 
         <div className={fullPageBundleStyles.editGrid}>
@@ -4110,7 +4136,7 @@ export default function ConfigureBundleFlow() {
                             ) : (
                               <s-stack direction="block" gap="small-100">
                                 {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={fullPageBundleStyles.discountFieldsRowPair}>
                                     <s-number-field
                                       label="Number of Products in Bundle"
                                       value={String(rule.conditionValue ?? 0)}
@@ -4124,9 +4150,9 @@ export default function ConfigureBundleFlow() {
                                       min="0"
                                       prefix="₹"
                                     />
-                                  </s-stack>
+                                  </div>
                                 ) : (
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={fullPageBundleStyles.discountFieldsRow}>
                                     <s-select
                                       label="Discount on"
                                       value={rule.conditionType ?? 'quantity'}
@@ -4168,7 +4194,7 @@ export default function ConfigureBundleFlow() {
                                       suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
                                       prefix={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
                                     />
-                                  </s-stack>
+                                  </div>
                                 )}
                               </s-stack>
                             )}
@@ -6016,6 +6042,8 @@ export default function ConfigureBundleFlow() {
         </s-stack>
         <s-button slot="primaryAction" onClick={() => setIsProgressBarMultiLangModalOpen(false)}>Save and close</s-button>
       </s-modal>
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
 
       </div>
     </>

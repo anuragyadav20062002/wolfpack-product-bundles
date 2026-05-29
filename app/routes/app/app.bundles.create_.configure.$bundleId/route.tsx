@@ -32,6 +32,9 @@ import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGui
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
+import { buildWizardPreviewUrl } from "../../../lib/wizard-preview-url";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { StepSummary } from "./StepSummary";
 import styles from "./wizard-configure.module.css";
 
@@ -329,6 +332,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   } catch {}
 
   let appEmbedEnabled = false;
+  let themeEditorUrl: string | null = null;
   try {
     const { checkAppEmbedEnabled } = await import(
       "../../../services/theme/app-embed-check.server"
@@ -337,6 +341,11 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       blockHandles: ["bundle-app-embed"],
     });
     appEmbedEnabled = result.enabled;
+    if (result.themeId) {
+      const apiKey = process.env.SHOPIFY_API_KEY || "";
+      const themeIdShort = result.themeId.split("/").pop();
+      themeEditorUrl = `https://${session.shop}/admin/themes/${themeIdShort}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`;
+    }
   } catch {}
 
   let parentProductActive = false;
@@ -376,7 +385,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       loadingGif: bundle.loadingGif ?? null,
       tierConfig: (bundle.tierConfig as Array<{ label: string; linkedBundleId: string }> | null) ?? [],
       shopifyProductId: bundle.shopifyProductId,
+      shopifyProductHandle: bundle.shopifyProductHandle,
       shopifyPageId: bundle.shopifyPageId,
+      shopifyPageHandle: bundle.shopifyPageHandle,
       textOverridesByLocale: (bundle.textOverridesByLocale as any) ?? {},
       steps: bundle.steps as any[],
       customFields: bundle.customFields.map((cf) => ({
@@ -408,6 +419,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     configureUrl: `/app/bundles/${routeBase}/configure/${bundle.id}`,
     shopLocales,
     shop: session.shop,
+    themeEditorUrl,
     fpbBundles,
     showFirstLoadTour,
   });
@@ -631,7 +643,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function WizardConfigureStep() {
-  const { bundle, readiness, shopLocales, shop, fpbBundles, showFirstLoadTour } =
+  const { bundle, readiness, shopLocales, shop, themeEditorUrl, fpbBundles, showFirstLoadTour } =
     useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
@@ -1315,6 +1327,41 @@ export default function WizardConfigureStep() {
     navigate,
   ]);
 
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled: readiness.appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
+  const handleWizardPreview = useCallback(() => {
+    enablePreviewGate.requestPreview(() => {
+      const result = buildWizardPreviewUrl({
+        shop,
+        bundleId: bundle.id,
+        bundleType: bundle.bundleType as "full_page" | "product_page",
+        productHandle: bundle.shopifyProductHandle,
+        pageHandle: bundle.shopifyPageHandle,
+      });
+
+      if (result.kind === "error") {
+        shopify.toast.show("Save the bundle first to generate a preview URL.", { isError: true });
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+      }
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    });
+  }, [
+    enablePreviewGate,
+    shop,
+    bundle.id,
+    bundle.bundleType,
+    bundle.shopifyProductHandle,
+    bundle.shopifyPageHandle,
+  ]);
+
   // ── Locale helpers ─────────────────────────────────────────────
   const getTranslation = (locale: string) =>
     textOverridesByLocale?.[locale]?.[`step_${currentIdx}_name`] ?? "";
@@ -1808,12 +1855,7 @@ export default function WizardConfigureStep() {
                   filtersCount={filtersCount}
                   searchBarEnabled={searchBarEnabled}
                   customFieldsCount={customFieldsCount}
-                  onPreview={() => {
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
-                    }
-                    shopify.toast.show("Opening preview…");
-                  }}
+                  onPreview={handleWizardPreview}
                 />
 
                 <s-banner tone="info" heading="PRO TIP">
@@ -1824,6 +1866,9 @@ export default function WizardConfigureStep() {
                 <div className={styles.wizardFooter}>
                   <s-button variant="secondary" onClick={handleBack}>
                     Back
+                  </s-button>
+                  <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
+                    Preview
                   </s-button>
                   <s-button
                     variant="primary"
@@ -2177,6 +2222,9 @@ export default function WizardConfigureStep() {
               <s-button variant="secondary" onClick={handleBack}>
                 Back
               </s-button>
+              <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
+                Preview
+              </s-button>
               <s-button
                 variant="primary"
                 loading={isSubmitting || undefined}
@@ -2323,6 +2371,9 @@ export default function WizardConfigureStep() {
             <div className={styles.wizardFooter}>
               <s-button variant="secondary" onClick={handleBack}>
                 Back
+              </s-button>
+              <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
+                Preview
               </s-button>
               <s-button
                 variant="primary"
@@ -2493,6 +2544,9 @@ export default function WizardConfigureStep() {
               <s-button variant="secondary" onClick={handleBack}>
                 Back
               </s-button>
+              <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
+                Preview
+              </s-button>
               <s-button
                 variant="primary"
                 loading={isSubmitting || undefined}
@@ -2504,6 +2558,8 @@ export default function WizardConfigureStep() {
           </div>
         )}
       </div>
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
 
       {/* Multi-Language Modal */}
       <s-modal

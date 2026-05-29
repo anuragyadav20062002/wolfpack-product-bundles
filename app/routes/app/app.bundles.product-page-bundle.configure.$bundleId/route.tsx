@@ -27,6 +27,10 @@ import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
+import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import { pickPpbPreviewUrl } from "../../../lib/ppb-preview-url";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -1466,6 +1470,12 @@ export default function ConfigureBundleFlow() {
     setDefaultProductsData(originalDefaultProductsDataRef.current);
   }, [hookHandleDiscard]);
 
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
       // Show user-friendly message about unsaved changes
@@ -1476,35 +1486,23 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // Try different URL construction methods
-    let productUrl = null;
-    const productHandle = bundle.shopifyProductHandle;
+    enablePreviewGate.requestPreview(() => {
+    // Pick the URL via the shared helper. When the theme app extension is
+    // enabled AND the bundle is active or unlisted, this returns the live
+    // storefront URL so the merchant sees the customer-facing experience;
+    // otherwise it falls back to Shopify's draft preview URL.
+    const bundleStatusForPreview = String((bundle as any).status ?? "").toLowerCase();
+    let productUrl = pickPpbPreviewUrl({
+      appEmbedEnabled,
+      bundleStatus: bundleStatusForPreview,
+      productHandle: bundle.shopifyProductHandle,
+      bundleProduct,
+      shop,
+    });
 
-    if (bundleProduct) {
-
-      // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
-      if (bundleProduct.onlineStorePreviewUrl) {
-        productUrl = bundleProduct.onlineStorePreviewUrl;
-      }
-      // Method 2: Fallback to onlineStoreUrl if preview URL not available
-      else if (bundleProduct.onlineStoreUrl) {
-        productUrl = bundleProduct.onlineStoreUrl;
-      }
-    }
-
-    // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
-    if (!productUrl && productHandle) {
-      if (shop.includes('shopifypreview.com')) {
-        productUrl = `https://${shop}/products/${productHandle}`;
-      } else {
-        const shopDomain = shop.includes('.myshopify.com')
-          ? shop.replace('.myshopify.com', '')
-          : shop;
-        productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
-      }
-    }
-    // Method 4: Fallback - Extract ID and use admin URL
-    else if (!productUrl && bundleProduct?.id) {
+    // Final fallback: admin product page link so the merchant has somewhere
+    // to land when the storefront URL can't be constructed.
+    if (!productUrl && bundleProduct?.id) {
       const productId = bundleProduct.id.includes('gid://shopify/Product/')
         ? bundleProduct.id.split('/').pop()
         : bundleProduct.id;
@@ -1538,7 +1536,8 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [isDirty, bundle, bundleProduct, shop, shopify]);
+    });
+  }, [isDirty, bundle, bundleProduct, shop, shopify, formState.templateName, enablePreviewGate, appEmbedEnabled]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
     const hasProducts = stepsState.steps.reduce((totalProducts, step) => {
@@ -2144,6 +2143,13 @@ export default function ConfigureBundleFlow() {
             </s-button>
           </div>
         </div>
+
+        {String(productStatus || loadedBundleProduct?.status || "").toLowerCase() !== "active" && (
+          <UnlistedBundleBanner
+            shop={shop}
+            bundleProductId={loadedBundleProduct?.id ?? (bundle as any).shopifyProductId ?? null}
+          />
+        )}
 
         <div className={productPageBundleStyles.editGrid}>
 
@@ -3236,7 +3242,7 @@ export default function ConfigureBundleFlow() {
                                   </s-button>
                                 </div>
                                 {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={productPageBundleStyles.discountFieldsRowPair}>
                                     <s-number-field
                                       label="Number of Products in Bundle"
                                       value={String(rule.conditionValue ?? 0)}
@@ -3250,9 +3256,9 @@ export default function ConfigureBundleFlow() {
                                       min="0"
                                       prefix="₹"
                                     />
-                                  </s-stack>
+                                  </div>
                                 ) : (
-                                  <s-stack direction="inline" gap="small-100">
+                                  <div className={productPageBundleStyles.discountFieldsRow}>
                                     <s-select
                                       label="Discount on"
                                       value={rule.conditionType ?? 'quantity'}
@@ -3292,7 +3298,7 @@ export default function ConfigureBundleFlow() {
                                       suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
                                       prefix={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
                                     />
-                                  </s-stack>
+                                  </div>
                                 )}
                               </s-stack>
                             </s-section>
@@ -5330,6 +5336,8 @@ export default function ConfigureBundleFlow() {
         onSave={saveStepSetupMultiLanguageValues}
         onClose={() => setIsMultiLanguageModalOpen(false)}
       />
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
 
       </div>
     </>

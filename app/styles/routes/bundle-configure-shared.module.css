@@ -487,6 +487,29 @@
   background: #f6f6f7;
 }
 
+/* Three-column row for Percentage Off / Fixed Amount Off rule fields. */
+.discountFieldsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+/* Two-column row for Fixed Bundle Price rule fields (number of products + price). */
+.discountFieldsRowPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+@media (max-width: 700px) {
+  .discountFieldsRow,
+  .discountFieldsRowPair {
+    grid-template-columns: 1fr;
+  }
+}
+
 .discountRuleHeader {
   display: flex;
   align-items: center;

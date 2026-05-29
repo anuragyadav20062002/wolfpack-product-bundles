@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.6
- * Built   : 2026-05-27
+ * Version : 2.9.7
+ * Built   : 2026-05-29
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.6';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.7';
 (function() {
   'use strict';
 
@@ -58,8 +58,68 @@ const ConditionValidator = (function () {
     return { allowed: true, limitText: null };
   }
 
+  function _normalizeOperator(operator) {
+    if (typeof operator !== 'string' || operator.length === 0) return operator;
+    if (operator.indexOf('_') !== -1) return operator;
+    return operator.replace(/([A-Z])/g, '_$1').toLowerCase();
+  }
+
+  function _sumQuantities(selections) {
+    let total = 0;
+    if (!selections) return total;
+    for (const qty of Object.values(selections)) {
+      total += Number(qty) || 0;
+    }
+    return total;
+  }
+
+  function _collectCategoryProductIds(category) {
+    const ids = new Set();
+    const products = Array.isArray(category && category.products) ? category.products : [];
+    for (const product of products) {
+      const id = product && (product.id || product.productId || product.graphqlId);
+      if (id != null && id !== '') ids.add(String(id));
+    }
+    return ids;
+  }
+
+  function evaluateCategoryRules(category, stepSelections) {
+    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    if (rules.length === 0) return true;
+
+    const productIds = _collectCategoryProductIds(category);
+    const selections = stepSelections || {};
+    let categoryTotal = 0;
+    for (const pid of Object.keys(selections)) {
+      if (productIds.has(String(pid))) {
+        categoryTotal += Number(selections[pid]) || 0;
+      }
+    }
+
+    for (const rule of rules) {
+      const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
+      const value = Number(rule && rule.value);
+      if (!Number.isFinite(value)) continue;
+      if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
+    }
+    return true;
+  }
+
+  function _isCategoryRuleMode(step) {
+    const categories = Array.isArray(step && step.categories) ? step.categories : [];
+    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+  }
+
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+
+    if (_isCategoryRuleMode(step)) {
+      const categories = Array.isArray(step.categories) ? step.categories : [];
+      for (const cat of categories) {
+        if (!evaluateCategoryRules(cat, currentSelections)) return false;
+      }
+      return true;
+    }
 
     const selections = currentSelections || {};
     let total = 0;
@@ -163,6 +223,7 @@ const ConditionValidator = (function () {
     calculateStepTotalAfterUpdate,
     canUpdateQuantity,
     isStepConditionSatisfied,
+    evaluateCategoryRules,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
   };
@@ -369,6 +430,140 @@ class BundleDataManager {
     return bundles.filter(bundle => bundle.status === 'active');
   }
 
+  static _normalizeId(value) {
+    if (value === null || value === undefined) {
+      return [];
+    }
+
+    const output = [];
+
+    const candidates = Array.isArray(value) ? value : [value];
+
+    candidates.forEach((candidate) => {
+      if (candidate === null || candidate === undefined) {
+        return;
+      }
+
+      const token = String(candidate).trim();
+      if (!token) {
+        return;
+      }
+
+      output.push(token.toLowerCase());
+
+      if (token.includes('/')) {
+        output.push(token.split('/').pop().toLowerCase());
+      }
+    });
+
+    return output;
+  }
+
+  static _buildTargetIdentifierSet(resources) {
+    if (!Array.isArray(resources)) {
+      return new Set();
+    }
+
+    const identifiers = new Set();
+
+    resources.forEach((resource) => {
+      if (!resource || typeof resource !== 'object') {
+        return;
+      }
+
+      this._normalizeId(resource.id).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.graphqlId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.admin_graphql_api_id).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.productId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.collectionId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.handle).forEach((value) => identifiers.add(value));
+    });
+
+    return identifiers;
+  }
+
+  static _buildCurrentCollectionIdentifierSet(currentProductCollections) {
+    if (!Array.isArray(currentProductCollections) || currentProductCollections.length === 0) {
+      return new Set();
+    }
+
+    const identifiers = new Set();
+
+    currentProductCollections.forEach((collection) => {
+      if (collection && typeof collection === 'object') {
+        this._normalizeId(collection.id).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.graphqlId).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.admin_graphql_api_id).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.collectionId).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.handle).forEach((value) => identifiers.add(value));
+        return;
+      }
+
+      this._normalizeId(collection).forEach((value) => identifiers.add(value));
+    });
+
+    return identifiers;
+  }
+
+  static _evaluateWidgetVisibility(bundle, config) {
+    if (!bundle || typeof bundle !== 'object') {
+      return false;
+    }
+
+    const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
+    if (!visibility || typeof visibility !== 'object') {
+      return true;
+    }
+
+    const hasCollections = Array.isArray(visibility.collectionsSelectedData) && visibility.collectionsSelectedData.length > 0 ||
+      Array.isArray(visibility.showOnSpecificCollectionPages) && visibility.showOnSpecificCollectionPages.length > 0;
+    const hasProducts = Array.isArray(visibility.selectedProducts) && visibility.selectedProducts.length > 0 ||
+      Array.isArray(visibility.showOnSpecificProductPages) && visibility.showOnSpecificProductPages.length > 0;
+
+    const targeting = hasCollections
+      ? 'specific_collections'
+      : hasProducts
+        ? 'specific_products'
+        : visibility.showOnAllBundleProducts === false
+          ? 'specific_products'
+          : 'all';
+
+    if (targeting === 'all') {
+      return true;
+    }
+
+    const currentProductId = config.currentProductId ? String(config.currentProductId).trim() : null;
+    const currentProductGid = currentProductId ? `gid://shopify/Product/${currentProductId}` : null;
+
+    const currentProductIdSet = new Set([
+      ...this._normalizeId(currentProductId),
+      ...this._normalizeId(currentProductGid),
+      ...this._normalizeId(config.currentProductId),
+      ...this._normalizeId(config.currentProductHandle),
+      ...this._normalizeId(config.currentProductGid),
+    ]);
+
+    if (currentProductIdSet.size === 0) {
+      return false;
+    }
+
+    if (targeting === 'specific_products') {
+      const targetSet = this._buildTargetIdentifierSet([
+        ...(Array.isArray(visibility.selectedProducts) ? visibility.selectedProducts : []),
+        ...(Array.isArray(visibility.showOnSpecificProductPages) ? visibility.showOnSpecificProductPages : []),
+      ]);
+      return [...currentProductIdSet].some((value) => targetSet.has(value));
+    }
+
+    const collectionTargetSet = this._buildTargetIdentifierSet([
+      ...(Array.isArray(visibility.collectionsSelectedData) ? visibility.collectionsSelectedData : []),
+      ...(Array.isArray(visibility.showOnSpecificCollectionPages) ? visibility.showOnSpecificCollectionPages : []),
+    ]);
+    const currentCollectionSet = this._buildCurrentCollectionIdentifierSet(config.currentProductCollections || []);
+
+    return [...collectionTargetSet].some((value) => currentCollectionSet.has(value));
+  }
+
   static getProductPageBundles(bundles) {
     return bundles.filter(bundle =>
       bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE
@@ -441,6 +636,9 @@ class BundleDataManager {
     for (const bundle of bundles) {
       if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
           bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+        if (!this._evaluateWidgetVisibility(bundle, config)) {
+          continue;
+        }
 
         if (config.bundleId && bundle.id === config.bundleId) {
           return bundle;
@@ -494,7 +692,7 @@ class PricingCalculator {
 
     selectedProducts.forEach((stepSelections, stepIndex) => {
 
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree !== false) return;
+      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -2726,6 +2924,8 @@ class BundleWidgetFullPage {
 
       this.setupDOMElements();
 
+      this.applyFullPageDesignPresetMarker();
+
       await this.renderUI();
 
       this.hideLoadingOverlay();
@@ -2881,6 +3081,7 @@ class BundleWidgetFullPage {
       discountProgressTextTemplate: null,
       discountProgressSuccessTemplate: null,
       currentProductId: window.currentProductId,
+      currentProductGid: window.currentProductGid,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections,
       tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
@@ -3982,7 +4183,7 @@ class BundleWidgetFullPage {
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
-        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree !== false;
+        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
@@ -5130,7 +5331,7 @@ class BundleWidgetFullPage {
       }
     }
 
-    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree !== false) {
+    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -5559,7 +5760,7 @@ class BundleWidgetFullPage {
               price: price,
               isDefault: step.isDefault ?? false,
               isFreeGift: step.isFreeGift ?? false,
-              addonDisplayFree: step.addonDisplayFree !== false,
+              addonDisplayFree: step.addonDisplayFree === true,
             });
           } else {
           }
@@ -5923,11 +6124,11 @@ class BundleWidgetFullPage {
 
   calculateSelectedAddonDiscountAmount() {
     const steps = this.selectedBundle?.steps || [];
-    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree === false && this.getAddonLineDiscount(candidate));
+    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
     const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
     const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
     return this.getAllSelectedProductsData().reduce((total, item) => {
-      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree === false);
+      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
       const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
         || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
         || chargeableAddonProductKeys.has(String(item.title || ''))
@@ -6291,16 +6492,22 @@ class BundleWidgetFullPage {
               properties['_bundle_step_type'] = addonDiscount
                 ? `addon:${addonDiscount.type}:${addonDiscount.value}`
                 : 'addon';
-            } else if (step?.isFreeGift && step?.addonDisplayFree !== false) {
+            } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
               properties['_bundle_step_type'] = 'free_gift';
             }
             if (step?.isDefault) properties['_bundle_step_type'] = 'default';
 
-            items.push({
+            const cartItem = {
               id: numericVariantId,
               quantity: quantity,
               properties
-            });
+            };
+            const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
+            if (sellingPlanAllocationId) {
+              cartItem.selling_plan = parseInt(sellingPlanAllocationId);
+            }
+
+            items.push(cartItem);
             selectedLines.push({ product, quantity });
           }
         });
@@ -7047,6 +7254,9 @@ class BundleWidgetFullPage {
       title: v.title,
       price: parseFloat(v.price || '0') * 100,
       compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
       available: v.available === true,
       quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
       currentlyNotInStock: v.currentlyNotInStock === true,
@@ -7082,6 +7292,7 @@ class BundleWidgetFullPage {
               available: variant.available === true,
               quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
               currentlyNotInStock: variant.currentlyNotInStock === true,
+              sellingPlanAllocations: variant.sellingPlanAllocations || [],
 
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -7115,6 +7326,7 @@ class BundleWidgetFullPage {
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
+          sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
           available: defaultVariant?.available === true,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
@@ -7171,6 +7383,56 @@ class BundleWidgetFullPage {
     }
 
     return idString.toString().split('/').pop();
+  }
+
+  shouldApplyIndividualSellingPlanSelection() {
+    return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
+  }
+
+  shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelection()) {
+      return false;
+    }
+
+    const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
+    if (showFor !== "OOS_PRODUCTS") {
+      return true;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const target = variant ?? product;
+    if (!target) {
+      return false;
+    }
+
+    return target.available === false;
+  }
+
+  getSelectedSellingPlanAllocationId(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
+      return null;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
+    const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
+      ? normalizedProduct.sellingPlanAllocations
+      : [];
+
+    if (allocations.length === 0) {
+      return null;
+    }
+
+    const firstAllocationId = this.extractId(allocations[0]?.id);
+    return firstAllocationId || null;
   }
 
   renderModalTabs() {
@@ -7932,8 +8194,21 @@ class BundleWidgetFullPage {
     return bundle?.fullPageLayout || 'footer_bottom';
   }
 
+  getFullPageTemplate(bundle = this.selectedBundle) {
+    return bundle?.bundleDesignTemplate || 'FBP_SIDE_FOOTER';
+  }
+
   getFullPageDesignPreset(bundle = this.selectedBundle) {
-    return bundle?.bundleDesignPresetId || 'DEFAULT';
+    const rawPresetId =
+      bundle?.bundleDesignPresetId
+      || bundle?.bundleDesignPreset
+      || bundle?.templateId
+      || 'DEFAULT';
+    if (typeof rawPresetId !== 'string') return 'DEFAULT';
+
+    const preset = rawPresetId.trim().toUpperCase();
+    if (preset === 'STANDARD') return 'DEFAULT';
+    return preset || 'DEFAULT';
   }
 
   resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
@@ -7957,8 +8232,16 @@ class BundleWidgetFullPage {
   }
 
   applyFullPageDesignPresetMarker() {
-    if (!this.elements?.stepsContainer) return;
-    this.elements.stepsContainer.dataset.fpbDesignPreset = this.getFullPageDesignPreset();
+    if (!this.container || !this.elements?.stepsContainer) return;
+
+    const fullPageTemplate = this.getFullPageTemplate();
+    const fullPageDesignPreset = this.getFullPageDesignPreset();
+
+    this.container.dataset.fpbTemplateType = fullPageTemplate;
+    this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
+
+    this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
+    this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
     this.elements.stepsContainer.dataset.fpbCardCtaMode = this.resolveFullPageCardCtaMode();
   }
 

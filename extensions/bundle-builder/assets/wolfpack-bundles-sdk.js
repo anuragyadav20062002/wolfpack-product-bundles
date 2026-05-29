@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 2.9.6
- * Built   : 2026-05-27
+ * Version : 2.9.7
+ * Built   : 2026-05-29
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.6';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.7';
 (function (window) {
   'use strict';
 
@@ -107,6 +107,71 @@ const ConditionValidator = (function () {
   }
 
   /**
+   * Normalize an operator name. The validator accepts both Wolfpack-style
+   * snake_case (`greater_than_or_equal_to`) and EB-style camelCase
+   * (`greaterThanOrEqualTo`) so the same evaluator works against step rules
+   * (snake_case) and category rules (camelCase, persisted from the admin
+   * UI's CATEGORY_CONDITION_OPERATOR_OPTIONS).
+   */
+  function _normalizeOperator(operator) {
+    if (typeof operator !== 'string' || operator.length === 0) return operator;
+    if (operator.indexOf('_') !== -1) return operator;
+    return operator.replace(/([A-Z])/g, '_$1').toLowerCase();
+  }
+
+  function _sumQuantities(selections) {
+    let total = 0;
+    if (!selections) return total;
+    for (const qty of Object.values(selections)) {
+      total += Number(qty) || 0;
+    }
+    return total;
+  }
+
+  function _collectCategoryProductIds(category) {
+    const ids = new Set();
+    const products = Array.isArray(category && category.products) ? category.products : [];
+    for (const product of products) {
+      const id = product && (product.id || product.productId || product.graphqlId);
+      if (id != null && id !== '') ids.add(String(id));
+    }
+    return ids;
+  }
+
+  /**
+   * Evaluate whether a single category's rules are satisfied by the current
+   * step selections. Categories with no `conditions` are always satisfied.
+   *
+   * Used by `isStepConditionSatisfied` in category-rule mode.
+   */
+  function evaluateCategoryRules(category, stepSelections) {
+    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    if (rules.length === 0) return true;
+
+    const productIds = _collectCategoryProductIds(category);
+    const selections = stepSelections || {};
+    let categoryTotal = 0;
+    for (const pid of Object.keys(selections)) {
+      if (productIds.has(String(pid))) {
+        categoryTotal += Number(selections[pid]) || 0;
+      }
+    }
+
+    for (const rule of rules) {
+      const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
+      const value = Number(rule && rule.value);
+      if (!Number.isFinite(value)) continue;
+      if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
+    }
+    return true;
+  }
+
+  function _isCategoryRuleMode(step) {
+    const categories = Array.isArray(step && step.categories) ? step.categories : [];
+    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+  }
+
+  /**
    * Check whether a step's current selection fully satisfies its condition(s).
    * Called at navigation time (Next / Add to Cart) to gate step completion.
    *
@@ -118,6 +183,18 @@ const ConditionValidator = (function () {
    */
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+
+    // Category-rule mode: when any category has non-empty `conditions`, the
+    // step is satisfied when every category with conditions is independently
+    // satisfied. Step-level conditions are ignored in this mode (mutually
+    // exclusive with category rules per the admin UI).
+    if (_isCategoryRuleMode(step)) {
+      const categories = Array.isArray(step.categories) ? step.categories : [];
+      for (const cat of categories) {
+        if (!evaluateCategoryRules(cat, currentSelections)) return false;
+      }
+      return true;
+    }
 
     const selections = currentSelections || {};
     let total = 0;
@@ -234,6 +311,7 @@ const ConditionValidator = (function () {
     calculateStepTotalAfterUpdate,
     canUpdateQuantity,
     isStepConditionSatisfied,
+    evaluateCategoryRules,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
   };
@@ -489,6 +567,140 @@ class BundleDataManager {
     return bundles.filter(bundle => bundle.status === 'active');
   }
 
+  static _normalizeId(value) {
+    if (value === null || value === undefined) {
+      return [];
+    }
+
+    const output = [];
+
+    const candidates = Array.isArray(value) ? value : [value];
+
+    candidates.forEach((candidate) => {
+      if (candidate === null || candidate === undefined) {
+        return;
+      }
+
+      const token = String(candidate).trim();
+      if (!token) {
+        return;
+      }
+
+      output.push(token.toLowerCase());
+
+      if (token.includes('/')) {
+        output.push(token.split('/').pop().toLowerCase());
+      }
+    });
+
+    return output;
+  }
+
+  static _buildTargetIdentifierSet(resources) {
+    if (!Array.isArray(resources)) {
+      return new Set();
+    }
+
+    const identifiers = new Set();
+
+    resources.forEach((resource) => {
+      if (!resource || typeof resource !== 'object') {
+        return;
+      }
+
+      this._normalizeId(resource.id).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.graphqlId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.admin_graphql_api_id).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.productId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.collectionId).forEach((value) => identifiers.add(value));
+      this._normalizeId(resource.handle).forEach((value) => identifiers.add(value));
+    });
+
+    return identifiers;
+  }
+
+  static _buildCurrentCollectionIdentifierSet(currentProductCollections) {
+    if (!Array.isArray(currentProductCollections) || currentProductCollections.length === 0) {
+      return new Set();
+    }
+
+    const identifiers = new Set();
+
+    currentProductCollections.forEach((collection) => {
+      if (collection && typeof collection === 'object') {
+        this._normalizeId(collection.id).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.graphqlId).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.admin_graphql_api_id).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.collectionId).forEach((value) => identifiers.add(value));
+        this._normalizeId(collection.handle).forEach((value) => identifiers.add(value));
+        return;
+      }
+
+      this._normalizeId(collection).forEach((value) => identifiers.add(value));
+    });
+
+    return identifiers;
+  }
+
+  static _evaluateWidgetVisibility(bundle, config) {
+    if (!bundle || typeof bundle !== 'object') {
+      return false;
+    }
+
+    const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
+    if (!visibility || typeof visibility !== 'object') {
+      return true;
+    }
+
+    const hasCollections = Array.isArray(visibility.collectionsSelectedData) && visibility.collectionsSelectedData.length > 0 ||
+      Array.isArray(visibility.showOnSpecificCollectionPages) && visibility.showOnSpecificCollectionPages.length > 0;
+    const hasProducts = Array.isArray(visibility.selectedProducts) && visibility.selectedProducts.length > 0 ||
+      Array.isArray(visibility.showOnSpecificProductPages) && visibility.showOnSpecificProductPages.length > 0;
+
+    const targeting = hasCollections
+      ? 'specific_collections'
+      : hasProducts
+        ? 'specific_products'
+        : visibility.showOnAllBundleProducts === false
+          ? 'specific_products'
+          : 'all';
+
+    if (targeting === 'all') {
+      return true;
+    }
+
+    const currentProductId = config.currentProductId ? String(config.currentProductId).trim() : null;
+    const currentProductGid = currentProductId ? `gid://shopify/Product/${currentProductId}` : null;
+
+    const currentProductIdSet = new Set([
+      ...this._normalizeId(currentProductId),
+      ...this._normalizeId(currentProductGid),
+      ...this._normalizeId(config.currentProductId),
+      ...this._normalizeId(config.currentProductHandle),
+      ...this._normalizeId(config.currentProductGid),
+    ]);
+
+    if (currentProductIdSet.size === 0) {
+      return false;
+    }
+
+    if (targeting === 'specific_products') {
+      const targetSet = this._buildTargetIdentifierSet([
+        ...(Array.isArray(visibility.selectedProducts) ? visibility.selectedProducts : []),
+        ...(Array.isArray(visibility.showOnSpecificProductPages) ? visibility.showOnSpecificProductPages : []),
+      ]);
+      return [...currentProductIdSet].some((value) => targetSet.has(value));
+    }
+
+    const collectionTargetSet = this._buildTargetIdentifierSet([
+      ...(Array.isArray(visibility.collectionsSelectedData) ? visibility.collectionsSelectedData : []),
+      ...(Array.isArray(visibility.showOnSpecificCollectionPages) ? visibility.showOnSpecificCollectionPages : []),
+    ]);
+    const currentCollectionSet = this._buildCurrentCollectionIdentifierSet(config.currentProductCollections || []);
+
+    return [...collectionTargetSet].some((value) => currentCollectionSet.has(value));
+  }
+
   static getProductPageBundles(bundles) {
     return bundles.filter(bundle =>
       bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE
@@ -562,6 +774,10 @@ class BundleDataManager {
     for (const bundle of bundles) {
       if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE ||
           bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+        if (!this._evaluateWidgetVisibility(bundle, config)) {
+          continue;
+        }
+
         // Priority 1: Manual bundle ID
         if (config.bundleId && bundle.id === config.bundleId) {
           return bundle;
@@ -631,7 +847,7 @@ class PricingCalculator {
     selectedProducts.forEach((stepSelections, stepIndex) => {
       // Skip only true free gifts. Optional add-on steps reuse the same
       // non-blocking step path, but chargeable add-ons still affect totals.
-      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree !== false) return;
+      if (steps?.[stepIndex]?.isFreeGift && steps?.[stepIndex]?.addonDisplayFree === true) return;
 
       const productsInStep = stepProductData[stepIndex] || [];
 
@@ -2294,6 +2510,15 @@ function addBundleToCart(state, validateBundleFn, emitFn) {
 
 
 
+function _stepIsCategoryRuleMode(step) {
+  var categories = Array.isArray(step && step.categories) ? step.categories : [];
+  for (var i = 0; i < categories.length; i++) {
+    var c = categories[i];
+    if (c && Array.isArray(c.conditions) && c.conditions.length > 0) return true;
+  }
+  return false;
+}
+
 function validateStep(stepId, state, ConditionValidator) {
   var step = state.steps.find(function (s) { return s.id === stepId; });
   if (!step) {
@@ -2302,6 +2527,13 @@ function validateStep(stepId, state, ConditionValidator) {
   var selections = state.selections[stepId] || {};
   var valid = ConditionValidator.isStepConditionSatisfied(step, selections);
   if (valid) return { valid: true, message: '' };
+
+  // Category-rule mode: surface a generic message. Per-category specifics
+  // are a follow-up; today the widget only needs to know the step is
+  // unmet so the ATC can be blocked.
+  if (_stepIsCategoryRuleMode(step)) {
+    return { valid: false, message: 'Selection requirements not met for this step.' };
+  }
 
   var condVal = step.conditionValue;
   var op = step.conditionOperator || 'equal_to';
