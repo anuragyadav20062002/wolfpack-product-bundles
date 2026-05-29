@@ -36,10 +36,9 @@ describe("CREATE wizard Preview handler", () => {
     expect(source).toContain("handleWizardPreview");
   });
 
-  it("gates the handler on appEmbedEnabled", () => {
-    const handlerSlice = source.slice(source.indexOf("handleWizardPreview"));
-    expect(handlerSlice).toContain("appEmbedEnabled");
-    expect(handlerSlice).toContain("themeEditorUrl");
+  it("gates preview via the useEnablePreviewGate hook so the modal triggers when the app embed is off", () => {
+    expect(source).toContain("useEnablePreviewGate");
+    expect(source).toMatch(/enablePreviewGate\.requestPreview\(/);
   });
 });
 

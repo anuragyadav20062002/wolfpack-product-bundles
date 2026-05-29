@@ -33,6 +33,8 @@ import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../compo
 import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
 import { buildWizardPreviewUrl } from "../../../lib/wizard-preview-url";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { StepSummary } from "./StepSummary";
 import styles from "./wizard-configure.module.css";
 
@@ -1325,37 +1327,34 @@ export default function WizardConfigureStep() {
     navigate,
   ]);
 
-  const handleWizardPreview = useCallback(() => {
-    if (!readiness.appEmbedEnabled) {
-      if (themeEditorUrl) {
-        window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
-        shopify.toast.show("Enable the theme app extension, then return here to preview.");
-      } else {
-        shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true });
-      }
-      return;
-    }
-
-    const result = buildWizardPreviewUrl({
-      shop,
-      bundleId: bundle.id,
-      bundleType: bundle.bundleType as "full_page" | "product_page",
-      productHandle: bundle.shopifyProductHandle,
-      pageHandle: bundle.shopifyPageHandle,
-    });
-
-    if (result.kind === "error") {
-      shopify.toast.show("Save the bundle first to generate a preview URL.", { isError: true });
-      return;
-    }
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
-    }
-    window.open(result.url, "_blank", "noopener,noreferrer");
-  }, [
-    readiness.appEmbedEnabled,
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled: readiness.appEmbedEnabled,
     themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
+  const handleWizardPreview = useCallback(() => {
+    enablePreviewGate.requestPreview(() => {
+      const result = buildWizardPreviewUrl({
+        shop,
+        bundleId: bundle.id,
+        bundleType: bundle.bundleType as "full_page" | "product_page",
+        productHandle: bundle.shopifyProductHandle,
+        pageHandle: bundle.shopifyPageHandle,
+      });
+
+      if (result.kind === "error") {
+        shopify.toast.show("Save the bundle first to generate a preview URL.", { isError: true });
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+      }
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    });
+  }, [
+    enablePreviewGate,
     shop,
     bundle.id,
     bundle.bundleType,
@@ -2559,6 +2558,8 @@ export default function WizardConfigureStep() {
           </div>
         )}
       </div>
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
 
       {/* Multi-Language Modal */}
       <s-modal

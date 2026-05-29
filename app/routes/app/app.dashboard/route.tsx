@@ -15,6 +15,8 @@ import { useTranslation } from "react-i18next";
 import { getBundleWizardConfigurePath, getBundleEditPath } from "../../../lib/bundle-navigation";
 import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-action";
 import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import "../../../i18n/config";
 
 import {
@@ -80,6 +82,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const themeEditorUrl = embedCheck.themeId
     ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`
     : null;
+  const appEmbedEnabled = embedCheck.enabled;
 
   let subscriptionInfo = null;
   try {
@@ -147,6 +150,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       canCreateBundle: subscriptionInfo.canCreateBundle,
     } : null,
     themeEditorUrl,
+    appEmbedEnabled,
   });
 };
 
@@ -213,7 +217,7 @@ const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPrev
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl, themeEditorUrl } = useLoaderData<typeof loader>();
+  const { bundles, subscription, shop, proxyHealthy, appUrl, themeEditorUrl, appEmbedEnabled } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
@@ -318,30 +322,38 @@ export default function Dashboard() {
     };
   }, [closeDeleteModal]);
 
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
-    const action = decideDashboardPreviewAction({
-      bundleType: bundle.bundleType as "full_page" | "product_page",
-      bundleId: bundle.id,
-      shopifyProductHandle: bundle.shopifyProductHandle,
-      shopifyPageHandle: bundle.shopifyPageHandle,
-      shop,
+    enablePreviewGate.requestPreview(() => {
+      const action = decideDashboardPreviewAction({
+        bundleType: bundle.bundleType as "full_page" | "product_page",
+        bundleId: bundle.id,
+        shopifyProductHandle: bundle.shopifyProductHandle,
+        shopifyPageHandle: bundle.shopifyPageHandle,
+        shop,
+      });
+
+      if (action.kind === "error") {
+        shopify.toast.show(action.toast, { isError: true });
+        return;
+      }
+
+      if (action.kind === "create_page_then_open") {
+        const formData = new FormData();
+        formData.append("intent", "createPreviewPage");
+        formData.append("bundleId", bundle.id);
+        fetcherIntentRef.current = "createPreviewPage";
+        fetcher.submit(formData, { method: "post" });
+      }
+
+      window.open(action.url, "_blank", "noopener,noreferrer");
     });
-
-    if (action.kind === "error") {
-      shopify.toast.show(action.toast, { isError: true });
-      return;
-    }
-
-    if (action.kind === "create_page_then_open") {
-      const formData = new FormData();
-      formData.append("intent", "createPreviewPage");
-      formData.append("bundleId", bundle.id);
-      fetcherIntentRef.current = "createPreviewPage";
-      fetcher.submit(formData, { method: "post" });
-    }
-
-    window.open(action.url, "_blank", "noopener,noreferrer");
-  }, [shop, shopify, fetcher]);
+  }, [shop, shopify, fetcher, enablePreviewGate]);
 
   const getStatusDisplay = (status: string) => {
     const tone = STATUS_TONE_MAP[status as keyof typeof STATUS_TONE_MAP] ?? 'info';
@@ -739,6 +751,8 @@ export default function Dashboard() {
 
         </div>
       </div>
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
     </>
   );
 }

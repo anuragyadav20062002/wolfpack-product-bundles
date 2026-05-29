@@ -62,6 +62,8 @@ import {
 
 import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
 import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import {
   fetchBundleProduct,
   fetchShopLocales,
@@ -2178,6 +2180,12 @@ export default function ConfigureBundleFlow() {
     navigate("/app/dashboard");
   }, [isDirty, forceNavigation, navigate, promptSaveBarBeforeNavigation]);
 
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
       // Show user-friendly message about unsaved changes
@@ -2188,6 +2196,7 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
+    enablePreviewGate.requestPreview(() => {
     // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
     if (bundle.bundleType === 'full_page') {
       if (!bundle.shopifyPageHandle) {
@@ -2266,7 +2275,8 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [isDirty, bundle, bundleProduct, shop, shopify]);
+    });
+  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (section === activeSection) return;
@@ -6024,6 +6034,8 @@ export default function ConfigureBundleFlow() {
         </s-stack>
         <s-button slot="primaryAction" onClick={() => setIsProgressBarMultiLangModalOpen(false)}>Save and close</s-button>
       </s-modal>
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
 
       </div>
     </>

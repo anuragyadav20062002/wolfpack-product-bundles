@@ -28,6 +28,8 @@ import db from "../../../db.server";
 import { useBundleConfigurationState } from "../../../hooks/useBundleConfigurationState";
 import productPageBundleStyles from "../../../styles/routes/product-page-bundle-configure.module.css";
 import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 
 // Action handlers - extracted to separate module for better organization
 import {
@@ -1467,6 +1469,12 @@ export default function ConfigureBundleFlow() {
     setDefaultProductsData(originalDefaultProductsDataRef.current);
   }, [hookHandleDiscard]);
 
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+  });
+
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
       // Show user-friendly message about unsaved changes
@@ -1477,6 +1485,7 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
+    enablePreviewGate.requestPreview(() => {
     // Try different URL construction methods
     let productUrl = null;
     const productHandle = bundle.shopifyProductHandle;
@@ -1539,7 +1548,8 @@ export default function ConfigureBundleFlow() {
         duration: 5000
       });
     }
-  }, [isDirty, bundle, bundleProduct, shop, shopify]);
+    });
+  }, [isDirty, bundle, bundleProduct, shop, shopify, formState.templateName, enablePreviewGate]);
 
   const readinessItems = useMemo<BundleReadinessItem[]>(() => {
     const hasProducts = stepsState.steps.reduce((totalProducts, step) => {
@@ -5338,6 +5348,8 @@ export default function ConfigureBundleFlow() {
         onSave={saveStepSetupMultiLanguageValues}
         onClose={() => setIsMultiLanguageModalOpen(false)}
       />
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
 
       </div>
     </>
