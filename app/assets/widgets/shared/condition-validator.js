@@ -118,8 +118,12 @@ const ConditionValidator = (function () {
     const ids = new Set();
     const products = Array.isArray(category && category.products) ? category.products : [];
     for (const product of products) {
-      const id = product && (product.id || product.productId || product.graphqlId);
-      if (id != null && id !== '') ids.add(String(id));
+      const raw = product && (product.id || product.productId || product.graphqlId);
+      if (raw == null || raw === '') continue;
+      // Strip GID prefix (e.g. "gid://shopify/Product/123" → "123") so that the
+      // Set matches numeric IDs used as widget selection keys.
+      const id = String(raw).replace(/^gid:\/\/shopify\/[^/]+\//, '');
+      if (id) ids.add(id);
     }
     return ids;
   }
@@ -298,6 +302,7 @@ const ConditionValidator = (function () {
     canUpdateQuantity,
     isStepConditionSatisfied,
     evaluateCategoryRules,
+    isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
   };

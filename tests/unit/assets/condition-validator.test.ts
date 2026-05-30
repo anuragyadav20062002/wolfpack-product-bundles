@@ -728,4 +728,22 @@ describe('isStepConditionSatisfied — category mode', () => {
     expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(true);
     expect(isStepConditionSatisfied(step, { p1: 3 })).toBe(false);
   });
+
+  it('GID-format product ID in category matches numeric product ID selection key (regression: category-rules-3)', () => {
+    // Runtime category products arrive with GID ids from compactProductReference.
+    // After widget translates variant→product ID and validator strips the GID,
+    // both sides resolve to the same numeric product ID.
+    const step = {
+      categories: [
+        {
+          categoryId: 'cat-1',
+          products: [{ id: 'gid://shopify/Product/9427287703811', title: 'Test Product' }],
+          conditions: [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }],
+        },
+      ],
+    };
+    // Selection key is numeric product ID (widget translates variant ID → product ID before calling validator)
+    expect(isStepConditionSatisfied(step, { '9427287703811': 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { '9427287703811': 0 })).toBe(false);
+  });
 });

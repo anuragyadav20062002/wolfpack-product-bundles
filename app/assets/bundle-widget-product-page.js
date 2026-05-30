@@ -3116,6 +3116,21 @@ class BundleWidgetProductPage {
   validateStep(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
     const currentSelections = this.selectedProducts[stepIndex] || {};
+
+    // In category-rule mode, selection keys are numeric variant IDs but
+    // category product IDs are numeric product IDs (GID-stripped). Translate
+    // each variant-ID key → its parent product ID before the validator runs.
+    if (ConditionValidator.isCategoryRuleMode(step)) {
+      const products = this.stepProductData[stepIndex] || [];
+      const translated = {};
+      for (const [selKey, qty] of Object.entries(currentSelections)) {
+        const product = this.findProductBySelectionKey(products, selKey);
+        const productId = String((product && (product.parentProductId || product.id)) || selKey);
+        translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      }
+      return ConditionValidator.isStepConditionSatisfied(step, translated);
+    }
+
     return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
   }
 
