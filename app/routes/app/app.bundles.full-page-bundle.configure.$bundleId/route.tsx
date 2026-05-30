@@ -2686,7 +2686,7 @@ export default function ConfigureBundleFlow() {
           <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
         )}
 
-        {!parentProductActive && (
+        {String((bundleProduct as any)?.status || "").toLowerCase() !== "active" && (
           <UnlistedBundleBanner
             shop={shop}
             bundleProductId={bundleProduct?.id ?? bundle.shopifyProductId ?? null}
