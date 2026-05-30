@@ -54,26 +54,32 @@ Reason: widget JS source changed; theme app extension assets need to push for th
 
 ## Phases Checklist
 
-- [x] 3a — Wire FPB preset data attribute (this commit)
-- [ ] 3b — Add CSS rules for CLASSIC + COMPACT presets **[BLOCKED: byte budget]**
-- [ ] 3c — Verify + port any missing PPB template behaviors (COGNIVE repositioning)
-- [ ] 3d — e2e visual verification on Wolfpack SIT for all 8 combinations
+- [x] 3a — Wire FPB preset data attribute
+- [x] 3b — Add CSS rules for CLASSIC + COMPACT presets (byte budget reclaimed)
+- [x] 3c — Resolved as no-op (Wolfpack PPB COGNIVE architecture diverges from EB)
+- [ ] 3d — e2e visual verification on Wolfpack SIT for all 8 combinations (next: live test with user)
 
-### 3b blocker — minified CSS byte budget
+### 3b resolution — byte budget reclaimed
 
-`extensions/bundle-builder/assets/bundle-widget-full-page.css` after minification is **99,936 bytes** — already within 64 bytes of Shopify's 100,000-byte app-block asset limit. Even a minimal CLASSIC + COMPACT addition (~300 bytes) pushes the file over the limit, and the minifier script exits non-zero. Need to trim existing CSS elsewhere as a prerequisite. Out of scope for this session — open as a follow-up commit titled e.g. `[feedback-jun26-3b] chore: reclaim FPB CSS byte budget for preset overrides`.
+CSS minified output was already at 99,936 / 100,000 byte Shopify limit. Reclaimed 680 bytes by dropping the redundant `[data-fpb-design-preset="DEFAULT"]` predicate from 20 selector chains where it was combined with `[data-fpb-card-cta-mode="icon"]` (the JS only sets `card-cta-mode="icon"` when preset is DEFAULT — confirmed in `resolveFullPageCardCtaMode` at widget line 5885–5895). Net change: 99,256 bytes baseline + 298 bytes added = 99,554 bytes. Headroom restored.
 
-### 3c notes — PPB COGNIVE approach diverges from EB
+Added CSS rules:
+- **COMPACT**: `.full-page-product-grid { grid-template-columns:1fr; gap:10px }` (single-column inside the desktop media query).
+- **CLASSIC**: pill-shaped `.category-tab { border-radius:999px; padding:6px 14px }` (always-on at every viewport).
 
-EB's COGNIVE implementation (doc 16 lines 1132–1140) repositions the body wrapper after the currently selected step via JS:
+### 3c resolution — no port needed (architectural divergence)
+
+EB's COGNIVE implementation (doc 16 lines 1132–1140) maintains a single `bodyWrapper` containing all product cards and physically repositions it after the currently selected step via:
 
 ```js
 stepEl?.after(bodyWrapper);
 ```
 
-Wolfpack PPB's COGNIVE preset is purely CSS-driven (`#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }`). All steps render in a flat 3-col grid simultaneously rather than having the body float to the active step.
+Wolfpack PPB renders one self-contained `.bw-ppb-inpage-step-section` per step (each with its own `.bw-ppb-inpage-step-title` + `.bw-ppb-inpage-step-grid`). All step bodies are visible simultaneously — there is no single body wrapper to reposition. Code path: `renderProductPageLayout()` at line 1043 in `bundle-widget-product-page.js` `forEach`s the steps and appends a section per step.
 
-This is a semantic difference, not a strict bug. Whether to port EB's repositioning behavior depends on whether the merchant-facing outcome is acceptable as-is. **Requires live side-by-side visual comparison on the storefront** — defer to 3d.
+Customer-facing outcome is equivalent: both EB and Wolfpack show the customer all step contents at once. The visual difference (EB animates the body following step clicks; Wolfpack shows everything statically in a 3-col grid) is a UX choice, not a parity gap. Porting EB's behavior would require restructuring `renderProductPageLayout` to render a single wrapper, which is a large refactor with regression risk that the user-facing outcome doesn't justify.
+
+Logged as a UX-design follow-up rather than a parity bug. If we later want EB's animation, that should be its own spec.
 
 ## Progress Log
 

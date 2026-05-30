@@ -17,6 +17,9 @@ import { BundleStatus, BundleType, FullPageLayout } from "../../constants/bundle
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 import { buildBundleProductDescriptionHtml } from "../../lib/bundle-product-description.server";
 
+// Re-export so route handlers can import it from this barrel file.
+export { buildBundleProductDescriptionHtml };
+
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
 /**
