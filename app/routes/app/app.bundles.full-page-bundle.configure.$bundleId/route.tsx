@@ -2800,7 +2800,8 @@ export default function ConfigureBundleFlow() {
                           statusBadge = pricingState.discountEnabled ? null : { label: 'None' };
                         }
                         if (item.id === 'bundle_visibility') {
-                          statusBadge = bundle.shopifyPageHandle ? { label: 'Complete', tone: 'success' } : { label: 'Pending', tone: 'warning' };
+                          const isOptimised = Boolean(bundle.shopifyPageHandle) || upsellWidgetEnabled;
+                          statusBadge = isOptimised ? { label: 'Optimised', tone: 'success' } : { label: 'Pending', tone: 'warning' };
                         }
                         return (
                           <div key={item.id}>

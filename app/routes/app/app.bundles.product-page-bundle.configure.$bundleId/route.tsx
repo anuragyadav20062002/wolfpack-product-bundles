@@ -2263,7 +2263,7 @@ export default function ConfigureBundleFlow() {
                         statusBadge = pricingState.discountEnabled ? null : { label: "None" };
                       }
                       if (item.id === "bundle_visibility") {
-                        statusBadge = !appEmbedEnabled ? { label: "Pending", tone: "warning" } : null;
+                        statusBadge = appEmbedEnabled ? { label: "Optimised", tone: "success" } : { label: "Pending", tone: "warning" };
                       }
                       return (
                         <div key={item.id}>
