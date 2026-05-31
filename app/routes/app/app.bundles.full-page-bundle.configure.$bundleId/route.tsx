@@ -1538,11 +1538,9 @@ export default function ConfigureBundleFlow() {
   }, [isSelectTemplateModalOpen]);
 
   useEffect(() => {
-    const intent = templateFetcher.formData instanceof FormData
-      ? templateFetcher.formData.get("intent")
-      : null;
-
-    if (templateFetcher.state !== "idle" || intent !== "updateBundleDesignTemplate") {
+    // formData is cleared by the time state returns to 'idle', so guard
+    // using the request ref set at submit time instead.
+    if (templateFetcher.state !== "idle" || !lastTemplateRequestRef.current) {
       return;
     }
 

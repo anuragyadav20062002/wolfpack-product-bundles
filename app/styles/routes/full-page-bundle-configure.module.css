@@ -1021,19 +1021,20 @@
   inset: 0;
   z-index: 2147483000;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  align-items: stretch;
+  justify-content: stretch;
   background: rgba(17, 24, 39, 0.42);
 }
 
 .templateDialog {
-  width: min(920px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
-  overflow: auto;
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  border-radius: 0;
   background: #ffffff;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
   outline: none;
 }
 
@@ -1084,6 +1085,8 @@
 }
 
 .templateDialogBody {
+  flex: 1;
+  overflow-y: auto;
   padding: 24px;
 }
 

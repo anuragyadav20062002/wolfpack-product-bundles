@@ -1,9 +1,9 @@
 # Issue: Select Template Nav Section — FPB + PPB
 **Issue ID:** select-template-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-05-23
-**Last Updated:** 2026-05-27 19:20
+**Last Updated:** 2026-05-31
 
 ## Overview
 Add a "Select template" nav section to both FPB and PPB configure pages. Merchants can choose from 4 visual layout presets per bundle type. Mirrors EB's Customization overlay (captured 2026-05-23 via Chrome DevTools MCP). Persists `wpbLayoutTemplate` + `wpbPresetId` to `Bundle` DB model.
@@ -15,6 +15,32 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - `test-spec/select-template.spec.md`
 
 ## Progress Log
+
+### 2026-05-31 — Full-viewport modal CSS + formData null bug fix + e2e verification complete
+
+**Full-viewport modal CSS (PPB + FPB):**
+- Changed template dialog from centered overlay to full-viewport (100vw × 100dvh, border-radius 0) matching EB's Customization overlay on both PPB and FPB configure routes.
+- Applied to `app/styles/routes/product-page-bundle-configure.module.css` and `app/styles/routes/full-page-bundle-configure.module.css`.
+
+**`useFetcher.formData` null bug fix (PPB + FPB):**
+- Root cause: Remix clears `fetcher.formData` when state returns to `idle`. The idle effect was guarding with `formData instanceof FormData`, which always returned false at idle → confirm step never rendered.
+- Fix: replaced the guard with `!lastTemplateRequestRef.current` (a ref set at submit time, cleared on success/error) in both `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx` and `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`.
+
+**E2E verification — all 8 templates confirmed:**
+
+PPB (bundle `cmpfhk3ys0001v0t0w2r3xvls`):
+- CASCADE → DB + storefront `data-ppb-template-type="PDP_INPAGE"`, `data-ppb-design-preset="CASCADE"` ✓
+- COGNIVE → DB + storefront `data-ppb-template-type="PDP_INPAGE"`, `data-ppb-design-preset="COGNIVE"` ✓
+- MODAL → DB + storefront `data-ppb-template-type="PDP_MODAL"`, `data-ppb-design-preset="MODAL"` ✓
+- SIMPLIFIED → DB + storefront `data-ppb-template-type="PDP_MODAL"`, `data-ppb-design-preset="SIMPLIFIED"` ✓
+
+FPB (bundle `cmpfhj2m10000v0t038osl42y`):
+- DEFAULT → DB `bundleDesignTemplate:"FBP_SIDE_FOOTER"`, `bundleDesignPresetId:"DEFAULT"` ✓
+- CLASSIC → DB `bundleDesignTemplate:"FBP_SIDE_FOOTER"`, `bundleDesignPresetId:"CLASSIC"` ✓
+- COMPACT → DB `bundleDesignTemplate:"FBP_SIDE_FOOTER"`, `bundleDesignPresetId:"COMPACT"` ✓
+- HORIZONTAL → DB `bundleDesignTemplate:"FBP_SIDE_FOOTER"`, `bundleDesignPresetId:"HORIZONTAL"` ✓
+
+All 8 templates: admin modal → Next → confirm step ("Your bundle is ready") → DB verified. Feature fully end-to-end validated.
 
 ### 2026-05-27 18:54 - PPB Select Template response-gated confirm + inline save error
 - PPB template dialog flow: `handleTemplateNext` now submits template changes without pre-advancing to confirm state.
@@ -78,3 +104,6 @@ Add a "Select template" nav section to both FPB and PPB configure pages. Merchan
 - [x] Phase 7: Nav map update
 - [x] Phase 8: Lint + final commit
 - [x] Phase 9: UI redesign — EB parity (icon, HR, card design)
+- [x] Phase 10: Full-viewport modal CSS (PPB + FPB)
+- [x] Phase 11: Fix useFetcher.formData null bug — ref-based guard in both route.tsx files
+- [x] Phase 12: E2E verification — all 8 templates (4 PPB + 4 FPB) confirmed admin → DB → storefront
