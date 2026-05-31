@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 17:00
+**Last Updated:** 2026-06-01 17:30
 
 ## Overview
 Change the Bundle Visibility sidebar badge label from "Complete" (FPB) / null (PPB) to "Optimised" to match EB exactly.
@@ -57,5 +57,5 @@ EB shows App Embed = Enabled BUT Bundle Visibility = Pending — confirming App 
 - [x] Add visible black border to placement cards (FPB + PPB)
 - [x] Both Pending/Optimised badges show same tooltip on hover; visible when section is active
 - [ ] User to provide custom placement card images to replace current ones
-- [ ] App Embed Status card badge inline with title/description
-- [ ] Placement card body (description + button) uniform height across all 4 cards
+- [x] App Embed Status card badge inline with title/description (visibilityCardHeaderRow)
+- [x] Placement card description flex: 1 — uniform body height across all 4 cards

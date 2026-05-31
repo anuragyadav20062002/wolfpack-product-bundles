@@ -4552,22 +4552,24 @@ export default function ConfigureBundleFlow() {
                 {activeSection === "bundle_visibility" && (
                   <div className={fullPageBundleStyles.visibilityOverviewStack}>
                     <div className={fullPageBundleStyles.visibilityOverviewCard}>
-                      <div>
-                        <h3 className={fullPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
-                        <p className={fullPageBundleStyles.visibilityCardText}>
-                        {appEmbedEnabled
-                          ? "Your store is connected and ready. Your bundle can now render on your storefront."
-                          : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
-                        </p>
+                      <div className={fullPageBundleStyles.visibilityCardHeaderRow}>
+                        <div>
+                          <h3 className={fullPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
+                          <p className={fullPageBundleStyles.visibilityCardText}>
+                            {appEmbedEnabled
+                              ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                              : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                          </p>
+                        </div>
+                        <div className={appEmbedEnabled ? fullPageBundleStyles.visibilityStatusEnabled : fullPageBundleStyles.visibilityStatusWarning}>
+                          {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                        </div>
                       </div>
-                      <div className={appEmbedEnabled ? fullPageBundleStyles.visibilityStatusEnabled : fullPageBundleStyles.visibilityStatusWarning}>
-                        {appEmbedEnabled ? "Enabled" : "Not enabled"}
-                      </div>
-                    {!appEmbedEnabled && themeEditorUrl && (
+                      {!appEmbedEnabled && themeEditorUrl && (
                         <button type="button" className={fullPageBundleStyles.visibilitySecondaryAction} onClick={() => window.open(themeEditorUrl, "_blank")}>
-                        Enable here
+                          Enable here
                         </button>
-                    )}
+                      )}
                     </div>
 
                     <div className={fullPageBundleStyles.visibilityOverviewCard}>

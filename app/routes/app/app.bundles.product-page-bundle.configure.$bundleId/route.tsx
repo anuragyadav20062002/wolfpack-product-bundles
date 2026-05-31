@@ -3637,16 +3637,18 @@ export default function ConfigureBundleFlow() {
               <div data-tour-target="ppb-bundle-visibility">
                 <div className={productPageBundleStyles.visibilityOverviewStack}>
                   <div className={productPageBundleStyles.visibilityOverviewCard}>
-                    <div>
-                      <h3 className={productPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
-                      <p className={productPageBundleStyles.visibilityCardText}>
-                        {appEmbedEnabled
-                          ? "Your store is connected and ready. Your bundle can now render on your storefront."
-                          : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
-                      </p>
-                    </div>
-                    <div className={appEmbedEnabled ? productPageBundleStyles.visibilityStatusEnabled : productPageBundleStyles.visibilityStatusWarning}>
-                      {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                    <div className={productPageBundleStyles.visibilityCardHeaderRow}>
+                      <div>
+                        <h3 className={productPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
+                        <p className={productPageBundleStyles.visibilityCardText}>
+                          {appEmbedEnabled
+                            ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                            : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                        </p>
+                      </div>
+                      <div className={appEmbedEnabled ? productPageBundleStyles.visibilityStatusEnabled : productPageBundleStyles.visibilityStatusWarning}>
+                        {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                      </div>
                     </div>
                     {!appEmbedEnabled && themeEditorUrl && (
                       <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => window.open(themeEditorUrl, "_blank")}>
