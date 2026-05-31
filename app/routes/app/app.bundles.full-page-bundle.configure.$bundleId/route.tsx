@@ -5825,6 +5825,7 @@ export default function ConfigureBundleFlow() {
             onKeyDown={handleSelectTemplateDialogKeyDown}
             onMouseDown={(event) => event.stopPropagation()}
           >
+            <div className={fullPageBundleStyles.templateDialogHandle} aria-hidden="true" />
             <div className={fullPageBundleStyles.templateDialogHeader}>
               <h2 id="fpb-template-dialog-title" className={fullPageBundleStyles.templateDialogHeading}>
                 Customization
@@ -5835,7 +5836,9 @@ export default function ConfigureBundleFlow() {
                 aria-label="Close customization"
                 onClick={closeSelectTemplateModal}
               >
-                <s-icon name="x" />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
               </button>
             </div>
             {templateModalStep === "select" ? (
