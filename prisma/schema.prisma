@@ -557,6 +557,9 @@ model Shop {
   firstCreateTourEligible Boolean        @default(false) // True only for newly installed shops until their first create flow
   subscriptions           Subscription[] // Subscription history
   currentSubscriptionId   String? // Current active subscription
+  appEmbedEnabled         Boolean? // Cached app embed block status (refreshed every 5 min)
+  appEmbedCheckedAt       DateTime? // When appEmbedEnabled was last fetched from Shopify
+  appEmbedThemeId         String? // Cached theme GID for building theme editor URLs
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
 
