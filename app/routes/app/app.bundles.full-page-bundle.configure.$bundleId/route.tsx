@@ -4579,9 +4579,9 @@ export default function ConfigureBundleFlow() {
                       </div>
                       <div className={fullPageBundleStyles.visibilityGuideGrid}>
                         {[
-                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/current-dashboard-setup-widget.png" },
-                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/bundleGallery.png" },
-                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/fpb.png" },
+                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
+                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
+                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
                           { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/productPageThumbnail.png" },
                         ].map(({ title, desc: description, img }) => (
                           <div key={title} className={fullPageBundleStyles.visibilityGuideCard}>

@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 15:30
+**Last Updated:** 2026-06-01 16:00
 
 ## Overview
 Change the Bundle Visibility sidebar badge label from "Complete" (FPB) / null (PPB) to "Optimised" to match EB exactly.
@@ -43,4 +43,7 @@ EB shows App Embed = Enabled BUT Bundle Visibility = Pending — confirming App 
 - [x] Update FPB badge: "Complete" → "Optimised", add upsellWidgetEnabled OR condition
 - [x] Update PPB badge: null → "Optimised" when appEmbedEnabled
 - [x] Lint modified files — zero new errors
-- [ ] Commit
+- [x] Commit badge change
+- [x] Fix placement card images: Hero-Banner.png, Navigation-Menu.png, Announcement-Bar.png in both FPB + PPB
+- [x] Remove stray "→" from PPB Quick Setup Guide button text
+- [ ] User to provide custom placement card images to replace current ones
