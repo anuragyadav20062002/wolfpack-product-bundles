@@ -3783,7 +3783,10 @@ export default function ConfigureBundleFlow() {
                         <span />
                       </div>
                       <div className={productPageBundleStyles.visibilityPreviewImage}>
-                        {upsellWidgetImageUrl ? <img src={upsellWidgetImageUrl} alt="" /> : null}
+                        <img
+                          src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                          alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                        />
                       </div>
                       <div className={productPageBundleStyles.visibilityPreviewDetails}>
                         <p className={productPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
@@ -3826,8 +3829,16 @@ export default function ConfigureBundleFlow() {
                   <div className={productPageBundleStyles.visibilityPanelSection}>
                     <div className={productPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={productPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
-                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} disabled={!upsellWidgetEnabled}>
-                        Multi language
+                      <button
+                        type="button"
+                        className={productPageBundleStyles.visibilitySecondaryAction}
+                        onClick={() => openMultiLanguageModal("Bundle Widget", [
+                          { key: "widgetTitle", label: "Widget Title", fallback: upsellWidgetTitle },
+                          { key: "widgetDescription", label: "Widget Description", fallback: upsellWidgetDescription, multiline: true },
+                          { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
+                        ])}
+                      >
+                        Multi Language
                       </button>
                     </div>
                     <div className={productPageBundleStyles.visibilitySettingsGrid}>
@@ -3933,7 +3944,9 @@ export default function ConfigureBundleFlow() {
                 <div className={productPageBundleStyles.visibilityPlacementCard}>
                   <div>
                     <h4 className={productPageBundleStyles.visibilitySectionTitle}>Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</h4>
-                    <p className={productPageBundleStyles.visibilityCardText}>Place app block on the theme</p>
+                    <p className={productPageBundleStyles.visibilityCardText}>
+                      By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
                   </div>
                   <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
                     Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
@@ -4054,13 +4067,15 @@ export default function ConfigureBundleFlow() {
                 </div>
 
                 <div className={productPageBundleStyles.visibilityPlacementCard}>
-                  <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
-                  <div className={productPageBundleStyles.visibilityPlacementActionRow}>
-                    <span>Place app block on the theme</span>
-                    <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
-                      Place Block
-                    </button>
+                  <div>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
+                    <p className={productPageBundleStyles.visibilityCardText}>
+                      By default, the bundle builder is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
                   </div>
+                  <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                    Place Block
+                  </button>
                 </div>
               </div>
             )}

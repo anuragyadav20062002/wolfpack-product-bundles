@@ -5324,7 +5324,10 @@ export default function ConfigureBundleFlow() {
                         <span />
                       </div>
                       <div className={fullPageBundleStyles.visibilityPreviewImage}>
-                        {upsellWidgetImageUrl ? <img src={upsellWidgetImageUrl} alt="" /> : null}
+                        <img
+                          src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                          alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                        />
                       </div>
                       <div className={fullPageBundleStyles.visibilityPreviewDetails}>
                         <p className={fullPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
@@ -5378,46 +5381,20 @@ export default function ConfigureBundleFlow() {
                         Multi Language
                       </button>
                     </div>
-                    <div className={fullPageBundleStyles.visibilitySettingsGrid}>
-                      <div className={fullPageBundleStyles.visibilityImagePicker}>
-                        <FilePicker
-                          label="Upload Image"
-                          hideCropEditor
-                          value={upsellWidgetImageUrl || null}
-                          onChange={(url) => { setUpsellWidgetImageUrl(url ?? ""); markAsDirty(); }}
+                    <div className={fullPageBundleStyles.visibilityFieldStack}>
+                      <label className={fullPageBundleStyles.visibilityFieldLabel}>
+                        <span>Widget Button Text</span>
+                        <input
+                          className={fullPageBundleStyles.visibilityTextInput}
+                          value={upsellWidgetButtonText}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const value = e.target.value;
+                            setUpsellWidgetButtonText(value);
+                            setTextOverrides((prev) => ({ ...prev, widgetButtonText: value }));
+                            markAsDirty();
+                          }}
                         />
-                      </div>
-                      <div className={fullPageBundleStyles.visibilityFieldStack}>
-                        <label className={fullPageBundleStyles.visibilityFieldLabel}>
-                          <span>Widget Title</span>
-                          <input
-                            className={fullPageBundleStyles.visibilityTextInput}
-                            value={upsellWidgetTitle}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setUpsellWidgetTitle(e.target.value); markAsDirty(); }}
-                          />
-                        </label>
-                        <label className={fullPageBundleStyles.visibilityFieldLabel}>
-                          <span>Widget Description</span>
-                          <textarea
-                            className={fullPageBundleStyles.visibilityTextarea}
-                            value={upsellWidgetDescription}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => { setUpsellWidgetDescription(e.target.value); markAsDirty(); }}
-                          />
-                        </label>
-                        <label className={fullPageBundleStyles.visibilityFieldLabel}>
-                          <span>Widget Button Text</span>
-                          <input
-                            className={fullPageBundleStyles.visibilityTextInput}
-                            value={upsellWidgetButtonText}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                              const value = e.target.value;
-                              setUpsellWidgetButtonText(value);
-                              setTextOverrides((prev) => ({ ...prev, widgetButtonText: value }));
-                              markAsDirty();
-                            }}
-                          />
-                        </label>
-                      </div>
+                      </label>
                     </div>
                   </div>
 
@@ -5486,7 +5463,9 @@ export default function ConfigureBundleFlow() {
                 <div className={fullPageBundleStyles.visibilityPlacementCard}>
                   <div>
                     <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</h4>
-                    <p className={fullPageBundleStyles.visibilityCardText}>Place app block on the theme</p>
+                    <p className={fullPageBundleStyles.visibilityCardText}>
+                      By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
                   </div>
                   <button type="button" className={fullPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
                     Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
