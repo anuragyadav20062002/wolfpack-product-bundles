@@ -3388,31 +3388,35 @@ export default function ConfigureBundleFlow() {
                                                       Remove
                                                     </s-button>
                                                   </div>
-                                                  <div className={fullPageBundleStyles.ruleFields}>
-                                                    <s-select
-                                                      label="Type"
+                                                  <div className={fullPageBundleStyles.categoryRuleFields}>
+                                                    <select
+                                                      className={fullPageBundleStyles.ruleInlineSelect}
                                                       value={rule.type ?? "quantity"}
-                                                      onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                      onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                      aria-label="Type"
                                                     >
                                                       {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                                        <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                       ))}
-                                                    </s-select>
-                                                    <s-select
-                                                      label="Condition"
+                                                    </select>
+                                                    <select
+                                                      className={fullPageBundleStyles.ruleInlineSelect}
                                                       value={rule.condition ?? rule.operator ?? "greaterThanOrEqualTo"}
-                                                      onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                      onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                      aria-label="Condition"
                                                     >
                                                       {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                                        <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                       ))}
-                                                    </s-select>
-                                                    <s-number-field
-                                                      label="Value"
+                                                    </select>
+                                                    <input
+                                                      type="number"
+                                                      className={fullPageBundleStyles.ruleInlineNumber}
                                                       min={0}
                                                       value={rule.value ?? ""}
-                                                      onInput={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
+                                                      onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
                                                       autoComplete="off"
+                                                      aria-label="Value"
                                                     />
                                                   </div>
                                                 </div>

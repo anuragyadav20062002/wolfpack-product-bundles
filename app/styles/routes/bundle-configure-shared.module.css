@@ -597,3 +597,51 @@
   flex-direction: column;
   gap: 10px;
 }
+
+/* Inline unlabelled rule fields row — EB-style, no Polaris labels */
+.categoryRuleFields {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.ruleInlineSelect {
+  height: 32px;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #c9cccf;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #202223;
+  padding: 0 4px 0 8px;
+  cursor: pointer;
+}
+
+.ruleInlineSelect:focus {
+  outline: 2px solid #005bd3;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.ruleInlineNumber {
+  height: 32px;
+  width: 72px;
+  flex-shrink: 0;
+  border: 1px solid #c9cccf;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #202223;
+  padding: 0 6px;
+  text-align: left;
+}
+
+.ruleInlineNumber:focus {
+  outline: 2px solid #005bd3;
+  outline-offset: 1px;
+  border-color: transparent;
+}

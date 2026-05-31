@@ -2140,6 +2140,18 @@
   composes: categoryRuleBlock from "./bundle-configure-shared.module.css";
 }
 
+.categoryRuleFields {
+  composes: categoryRuleFields from "./bundle-configure-shared.module.css";
+}
+
+.ruleInlineSelect {
+  composes: ruleInlineSelect from "./bundle-configure-shared.module.css";
+}
+
+.ruleInlineNumber {
+  composes: ruleInlineNumber from "./bundle-configure-shared.module.css";
+}
+
 .ruleRow {
   display: grid;
   grid-template-columns: 1fr 1fr 80px 40px;

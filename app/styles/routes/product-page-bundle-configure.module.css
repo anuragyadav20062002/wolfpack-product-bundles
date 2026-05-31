@@ -739,6 +739,18 @@
   composes: categoryRuleBlock from "./bundle-configure-shared.module.css";
 }
 
+.categoryRuleFields {
+  composes: categoryRuleFields from "./bundle-configure-shared.module.css";
+}
+
+.ruleInlineSelect {
+  composes: ruleInlineSelect from "./bundle-configure-shared.module.css";
+}
+
+.ruleInlineNumber {
+  composes: ruleInlineNumber from "./bundle-configure-shared.module.css";
+}
+
 .emptyState {
   composes: emptyState from "./bundle-configure-shared.module.css";
 }
