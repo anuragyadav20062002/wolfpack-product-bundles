@@ -897,7 +897,7 @@
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #e3e3e3;
+  border: 1px solid #000000;
   border-radius: 8px;
   background: #ffffff;
 }
@@ -1847,6 +1847,10 @@
 /* ── Pending badge inline info icon ──────────────────────────── */
 .pendingBadge {
   composes: pendingBadge from "./bundle-configure-shared.module.css";
+}
+
+.optimisedBadge {
+  composes: optimisedBadge from "./bundle-configure-shared.module.css";
 }
 
 .pendingTooltipCard {

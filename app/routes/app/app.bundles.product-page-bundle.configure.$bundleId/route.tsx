@@ -536,9 +536,9 @@ function QuestionHelpTooltip({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   );
 }
 
-function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
+function VisibilityBadge({ isOptimised }: { isOptimised: boolean }) {
   const { t } = useTranslation();
-  const description = t(`tooltips.${tooltipKey}.description`);
+  const description = t(`tooltips.bundleVisibilityPending.description`);
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; right: number } | null>(null);
 
@@ -553,16 +553,16 @@ function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   return (
     <span
       ref={wrapperRef}
-      className={productPageBundleStyles.pendingBadge}
+      className={isOptimised ? productPageBundleStyles.optimisedBadge : productPageBundleStyles.pendingBadge}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
       onBlur={hideTooltip}
       tabIndex={0}
-      aria-label={`Pending - ${description}`}
+      aria-label={`${isOptimised ? 'Optimised' : 'Pending'} — ${description}`}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
     >
-      Pending
+      {isOptimised ? 'Optimised' : 'Pending'}
       <svg width="11" height="11" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <circle cx="6.5" cy="6.5" r="5.75" stroke="currentColor" strokeWidth="1.5" />
         <line x1="6.5" y1="5.75" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -2283,9 +2283,9 @@ export default function ConfigureBundleFlow() {
                             </span>
                             <span className={productPageBundleStyles.setupNavLabel}>{item.label}</span>
                             <span className={productPageBundleStyles.setupNavMeta}>
-                              {statusBadge && !isActive && (
-                                statusBadge.label === "Pending"
-                                  ? <InfoIcon tooltipKey="bundleVisibilityPending" />
+                              {statusBadge && (
+                                (statusBadge.label === "Pending" || statusBadge.label === "Optimised")
+                                  ? <VisibilityBadge isOptimised={statusBadge.label === "Optimised"} />
                                   : <s-badge tone={(statusBadge.tone as any) || "subdued"}>{statusBadge.label}</s-badge>
                               )}
                             </span>
@@ -3667,7 +3667,7 @@ export default function ConfigureBundleFlow() {
                         { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
                         { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
                         { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
-                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/productPageThumbnail.png" },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png" },
                       ].map(({ title, desc: description, img }) => (
                         <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
                           <div className={productPageBundleStyles.visibilityGuideMedia}>

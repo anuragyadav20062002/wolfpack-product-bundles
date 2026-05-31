@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 16:00
+**Last Updated:** 2026-06-01 17:00
 
 ## Overview
 Change the Bundle Visibility sidebar badge label from "Complete" (FPB) / null (PPB) to "Optimised" to match EB exactly.
@@ -34,6 +34,13 @@ EB shows App Embed = Enabled BUT Bundle Visibility = Pending — confirming App 
 - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx` — line ~2266
 
 ## Progress Log
+### 2026-06-01 17:00 - Polish: image, border, badge tooltip + visibility
+- Swapped Featured Product Card image from productPageThumbnail.png → floatingCardThumbnail.png in FPB + PPB
+- Added visible black border (1px solid #000) to placement cards in FPB + PPB CSS
+- Refactored InfoIcon → VisibilityBadge in both routes: accepts isOptimised prop, same tooltip text for both states
+- Removed !isActive guard — badge now visible whether section is active or not
+- Added .optimisedBadge CSS class to shared + FPB + PPB modules
+
 ### 2026-06-01 15:00 - Starting implementation
 - Investigated EB network responses and confirmed badge label/conditions from translation chunks
 - Confirmed App Embed enabled ≠ Optimised in EB (empirical observation)
@@ -46,4 +53,9 @@ EB shows App Embed = Enabled BUT Bundle Visibility = Pending — confirming App 
 - [x] Commit badge change
 - [x] Fix placement card images: Hero-Banner.png, Navigation-Menu.png, Announcement-Bar.png in both FPB + PPB
 - [x] Remove stray "→" from PPB Quick Setup Guide button text
+- [x] Swap Featured Product Card image to floatingCardThumbnail.png (best available)
+- [x] Add visible black border to placement cards (FPB + PPB)
+- [x] Both Pending/Optimised badges show same tooltip on hover; visible when section is active
 - [ ] User to provide custom placement card images to replace current ones
+- [ ] App Embed Status card badge inline with title/description
+- [ ] Placement card body (description + button) uniform height across all 4 cards
