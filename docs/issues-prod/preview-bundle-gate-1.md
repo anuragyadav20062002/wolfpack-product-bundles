@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-31
-**Last Updated:** 2026-05-31
+**Last Updated:** 2026-05-31 (modal replication complete)
 
 ## Overview
 
@@ -23,6 +23,19 @@ Change the JSON parse failure to fail-open: return `{ enabled: true, themeId }` 
 - Updated JSDoc comment to reflect new behavior
 - Updated log message to indicate fail-open behavior
 
+### 2026-05-31 — Replicate preview gate modal copy + design (EB parity)
+
+- Investigated EB modal by temporarily disabling embed on yash-wolfpack test store and observing configure page load
+- EB modal: "Your bundle visibility is not set up yet" / "Your bundle is live but shoppers have no way to find it. Set up visibility to change that." / "Maybe Later" + "Set Up Visibility" buttons
+- Updated `app/components/EnablePreviewModal.tsx`:
+  - Replaced 3-step instruction layout with centered modal: eye SVG icon in 56×56 circular grey container (#f1f1f1)
+  - Title: "Your bundle visibility is not set up yet"
+  - Body: "Your bundle is live but shoppers have no way to find it. Set up visibility to change that."
+  - Buttons: "Maybe Later" (secondary) + "Set Up Visibility" (primary)
+  - Removed `if (!themeEditorUrl) return null` guard — modal now shows even without theme URL
+  - "Set Up Visibility" opens themeEditorUrl only if available (guarded), then closes modal
+- EB embed on yash-wolfpack re-enabled and saved after investigation ("Changes saved." toast confirmed)
+
 ### 2026-05-31 — Option B: DB cache for app embed check (EB parity)
 
 - Confirmed EB uses `GET /api/utility/isAppEmbedEnabled` with HTTP ETag caching (5-min TTL)
@@ -40,5 +53,5 @@ Change the JSON parse failure to fail-open: return `{ enabled: true, themeId }` 
 - [x] Fix fail-closed → fail-open in `checkAppEmbedEnabled`
 - [x] Option B: DB cache (schema + migration + code + tests)
 - [x] Lint + commit
-- [ ] Replicate EB preview gate modal copy + design
+- [x] Replicate EB preview gate modal copy + design
 - [ ] E2E verification on SIT store
