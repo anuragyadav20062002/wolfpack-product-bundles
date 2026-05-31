@@ -143,7 +143,9 @@ describe("checkAppEmbedEnabled", () => {
     expect(result.enabled).toBe(false);
   });
 
-  it("returns false when settings_data.json is malformed JSON", async () => {
+  it("returns enabled:true when settings_data.json is malformed JSON (fail-open — likely truncation)", async () => {
+    // settings_data.json can exceed Shopify's ~1MB limit and arrive truncated.
+    // We cannot confirm embed is disabled from a malformed file, so we fail-open.
     const admin = makeAdmin([
       THEME_LIST_RESPONSE,
       {
@@ -164,7 +166,7 @@ describe("checkAppEmbedEnabled", () => {
 
     const result = await checkAppEmbedEnabled(admin as any, "test.myshopify.com");
 
-    expect(result.enabled).toBe(false);
+    expect(result.enabled).toBe(true);
     expect(result.themeId).toBe("gid://shopify/OnlineStoreTheme/123456");
   });
 

@@ -1,6 +1,6 @@
 # Issue: Preview Bundle Gate — Incorrect App Embed Block
 **Issue ID:** preview-bundle-gate-1
-**Status:** Completed
+**Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-31
 **Last Updated:** 2026-05-31
@@ -23,7 +23,22 @@ Change the JSON parse failure to fail-open: return `{ enabled: true, themeId }` 
 - Updated JSDoc comment to reflect new behavior
 - Updated log message to indicate fail-open behavior
 
+### 2026-05-31 — Option B: DB cache for app embed check (EB parity)
+
+- Confirmed EB uses `GET /api/utility/isAppEmbedEnabled` with HTTP ETag caching (5-min TTL)
+- Added `appEmbedEnabled Boolean?`, `appEmbedCheckedAt DateTime?`, `appEmbedThemeId String?` to `Shop` model
+- Migration `20260531154158_add_app_embed_cache_to_shop` applied to SIT DB
+- Updated `fetchEmbedData` in `bundle-configure-loader.server.ts` with 5-min DB cache:
+  - Cache hit → skip Shopify API entirely
+  - Cache miss/stale → call `checkAppEmbedEnabled`, update cache (only when themeId non-null)
+  - Network error (themeId:null) → skip cache update, don't poison cache
+- Added 5 new unit tests for cache behavior; all 17 tests pass
+- `buildThemeEditorUrl` extracted as standalone helper
+
 ## Phases Checklist
 - [x] Identify root cause
 - [x] Fix fail-closed → fail-open in `checkAppEmbedEnabled`
+- [x] Option B: DB cache (schema + migration + code + tests)
 - [x] Lint + commit
+- [ ] Replicate EB preview gate modal copy + design
+- [ ] E2E verification on SIT store
