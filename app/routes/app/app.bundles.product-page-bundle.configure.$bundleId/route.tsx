@@ -1472,6 +1472,7 @@ export default function ConfigureBundleFlow() {
     appEmbedEnabled,
     themeEditorUrl,
     onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+    sessionKey: bundle.id,
   });
 
   const handlePreviewBundle = useCallback(() => {

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-05-31
-**Last Updated:** 2026-05-31 (modal replication complete)
+**Last Updated:** 2026-05-31 (session-based page-load trigger + dismissible banner)
 
 ## Overview
 
@@ -22,6 +22,15 @@ Change the JSON parse failure to fail-open: return `{ enabled: true, themeId }` 
 - Changed `app/services/theme/app-embed-check.server.ts` line 94: `{ enabled: false }` → `{ enabled: true }` on JSON parse error
 - Updated JSDoc comment to reflect new behavior
 - Updated log message to indicate fail-open behavior
+
+### 2026-05-31 — Session-based page-load trigger + dismissible banner
+
+- Added `shouldAutoShowOnMount(appEmbedEnabled, hasBeenShownThisSession)` pure helper to `app/hooks/useEnablePreviewGate.ts`
+- Added `sessionKey?: string` option to `UseEnablePreviewGateOptions`; when provided, `useEnablePreviewGate` auto-opens the modal on mount if embed is disabled and sessionStorage key `wpb_visibility_shown_{sessionKey}` is not set
+- Updated FPB configure route: passes `sessionKey={bundle.id}` to `useEnablePreviewGate`
+- Updated PPB configure route: passes `sessionKey={bundle.id}` to `useEnablePreviewGate`
+- Added dismiss (×) button to `AppEmbedBanner`: component now has internal `dismissed` state; clicking × hides the banner for the current page load (does not persist across reloads — banner reappears until embed is enabled)
+- Added 3 unit tests for `shouldAutoShowOnMount` in `tests/unit/hooks/use-enable-preview-gate.test.ts`
 
 ### 2026-05-31 — Replicate preview gate modal copy + design (EB parity)
 
@@ -54,4 +63,6 @@ Change the JSON parse failure to fail-open: return `{ enabled: true, themeId }` 
 - [x] Option B: DB cache (schema + migration + code + tests)
 - [x] Lint + commit
 - [x] Replicate EB preview gate modal copy + design
+- [x] Session-based page-load trigger for visibility modal (FPB + PPB configure)
+- [x] Dismissible AppEmbedBanner (× button, per-page-load)
 - [ ] E2E verification on SIT store

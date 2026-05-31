@@ -1,10 +1,14 @@
+import { useState } from "react";
+
 interface AppEmbedBannerProps {
   appEmbedEnabled: boolean;
   themeEditorUrl: string | null;
 }
 
 export function AppEmbedBanner({ appEmbedEnabled, themeEditorUrl }: AppEmbedBannerProps) {
-  if (appEmbedEnabled) return null;
+  const [dismissed, setDismissed] = useState(false);
+
+  if (appEmbedEnabled || dismissed) return null;
 
   return (
     <div
@@ -51,6 +55,27 @@ export function AppEmbedBanner({ appEmbedEnabled, themeEditorUrl }: AppEmbedBann
           Enable here
         </s-button>
       )}
+      <button
+        aria-label="Dismiss"
+        onClick={() => setDismissed(true)}
+        style={{
+          flex: "0 0 auto",
+          display: "grid",
+          placeItems: "center",
+          width: 28,
+          height: 28,
+          padding: 0,
+          border: "none",
+          borderRadius: 6,
+          background: "transparent",
+          cursor: "pointer",
+          color: "#6b7280",
+          fontSize: 18,
+          lineHeight: 1,
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
