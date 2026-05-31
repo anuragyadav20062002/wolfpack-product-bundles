@@ -38,7 +38,9 @@ function isWolfpackEmbedBlock(
  * Reads config/settings_data.json via Admin GraphQL and scans `current.blocks` for
  * a key starting with the Wolfpack app prefix that is not explicitly disabled.
  *
- * Never throws — returns { enabled: false, themeId: null } on any error.
+ * Never throws. On JSON parse failure (e.g. settings_data.json exceeds Shopify's
+ * ~1MB response limit and arrives truncated) returns { enabled: true } — fail-open,
+ * because we cannot confirm the embed is disabled.
  */
 export async function checkAppEmbedEnabled(
   admin: ShopifyAdmin,
@@ -90,8 +92,10 @@ export async function checkAppEmbedEnabled(
     try {
       parsed = JSON.parse(fileContent);
     } catch {
-      AppLogger.warn("checkAppEmbedEnabled: failed to parse settings_data.json", { shopDomain });
-      return { enabled: false, themeId };
+      // settings_data.json likely truncated (exceeds Shopify ~1MB limit). Fail-open:
+      // we cannot confirm embed is disabled, so do not block preview.
+      AppLogger.warn("checkAppEmbedEnabled: failed to parse settings_data.json — failing open", { shopDomain });
+      return { enabled: true, themeId };
     }
 
     const blocks = (parsed?.current as Record<string, unknown> | undefined)?.blocks as
