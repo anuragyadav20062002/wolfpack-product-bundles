@@ -17,7 +17,8 @@
       "imageLoading": "Loading Parth profile photo"
     },
     "appEmbeds": {
-      "heading": "App Embeds",
+      "headingMain": "App Embeds",
+      "headingHint": "(Turn ON to make bundle visible on store)",
       "instruction": "Click on Online store → Edit Theme → Enable the toggle and Save it"
     },
     "filters": {

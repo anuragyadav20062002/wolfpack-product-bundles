@@ -193,6 +193,13 @@
   width: 100%;
 }
 
+.appEmbedHeadingHint {
+  background-color: #fef9c3;
+  font-weight: 400;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
 .appEmbedImage {
   display: block;
   width: 100%;

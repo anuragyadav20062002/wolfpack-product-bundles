@@ -581,10 +581,10 @@ export default function Dashboard() {
             <button type="button" className={dashboardStyles.appEmbedCard} onClick={handleAppEmbedCardClick}>
               <s-stack direction="block" gap="base">
                 <div className={dashboardStyles.appEmbedCardHeader}>
-                  <s-heading>{t("dashboard.appEmbeds.heading")}</s-heading>
+                  <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
                   <s-icon type="external" color="subdued" />
                 </div>
-                <img src="/appEmbed.png" alt={t("dashboard.appEmbeds.heading")} className={dashboardStyles.appEmbedImage} />
+                <img src="/appEmbed.png" alt={t("dashboard.appEmbeds.headingMain")} className={dashboardStyles.appEmbedImage} />
                 <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
               </s-stack>
             </button>
