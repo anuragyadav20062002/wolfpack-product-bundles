@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundles SDK
  * Version : 2.9.10
- * Built   : 2026-05-30
+ * Built   : 2026-05-31
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
@@ -136,7 +136,7 @@ const ConditionValidator = (function () {
       if (raw == null || raw === '') continue;
       // Strip GID prefix (e.g. "gid://shopify/Product/123" → "123") so that the
       // Set matches numeric IDs used as widget selection keys.
-      const id = String(raw).replace(/^gid:\/\/shopify\/[^/]+\//, '');
+      const id = String(raw).replace(new RegExp('^gid://shopify/[^/]+/'), '');
       if (id) ids.add(id);
     }
     return ids;

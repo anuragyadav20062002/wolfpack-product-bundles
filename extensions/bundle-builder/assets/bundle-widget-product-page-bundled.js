@@ -1,7 +1,7 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
  * Version : 2.9.10
- * Built   : 2026-05-30
+ * Built   : 2026-05-31
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
@@ -80,7 +80,7 @@ const ConditionValidator = (function () {
       const raw = product && (product.id || product.productId || product.graphqlId);
       if (raw == null || raw === '') continue;
 
-      const id = String(raw).replace(/^gid:\/\/shopify\/[^/]+\
+      const id = String(raw).replace(new RegExp('^gid://shopify/[^/]+/'), '');
       if (id) ids.add(id);
     }
     return ids;

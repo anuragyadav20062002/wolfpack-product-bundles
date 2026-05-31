@@ -49,11 +49,18 @@ New test case added before implementation (TDD):
 - [x] Phase 3: Implement Fix 1 (GID strip + expose `isCategoryRuleMode`)
 - [x] Phase 4: Implement Fix 2 (widget `validateStep` translation) for PPB + FPB
 - [x] Phase 5: Bump WIDGET_VERSION 2.9.9 → 2.9.10, build
-- [ ] Phase 6: Commit (next: user runs `npm run deploy:sit`)
+- [x] Phase 6: Fix build corruption — regex literal → `new RegExp()` constructor, rebuild confirmed clean
+- [ ] Phase 7: Commit (next: user runs `npm run deploy:sit`)
 
 **Status:** Code complete. Awaiting merchant-driven `npm run deploy:sit`.
 
 ## Progress Log
+
+### 2026-05-31 — Build corruption fix
+- Discovered `minify-assets.js` `stripLineComment` does not handle regex literals. The end of the GID regex `[^\/]+\/`, `/` delimiter was preceded by `\/` — the scanner saw `//` and stripped the rest of the line.
+- Fixed by replacing the regex literal with `new RegExp('^gid://shopify/[^/]+/')` constructor form so the pattern is inside a string and immune to the comment stripper.
+- Rebuilt: FPB 307.1 KB, PPB 193.8 KB. Verified line 83 of both bundles correct post-minification.
+- 98/98 tests still passing.
 
 ### 2026-05-31 — Implementation complete
 - Added failing regression test (category-rules-3) in `condition-validator.test.ts`: category product with GID id → numeric product ID selection key. Confirmed Red before fix.

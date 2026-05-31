@@ -122,7 +122,7 @@ const ConditionValidator = (function () {
       if (raw == null || raw === '') continue;
       // Strip GID prefix (e.g. "gid://shopify/Product/123" → "123") so that the
       // Set matches numeric IDs used as widget selection keys.
-      const id = String(raw).replace(/^gid:\/\/shopify\/[^/]+\//, '');
+      const id = String(raw).replace(new RegExp('^gid://shopify/[^/]+/'), '');
       if (id) ids.add(id);
     }
     return ids;
