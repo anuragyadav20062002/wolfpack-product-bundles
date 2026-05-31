@@ -1408,11 +1408,9 @@ export default function ConfigureBundleFlow() {
   }, [fetcher.data, fetcher.state]);
 
   useEffect(() => {
-    const intent = templateFetcher.formData instanceof FormData
-      ? templateFetcher.formData.get("intent")
-      : null;
-
-    if (templateFetcher.state !== 'idle' || intent !== 'updateBundleDesignTemplate') {
+    // formData is cleared by the time state returns to 'idle', so guard
+    // using the request ref set at submit time instead.
+    if (templateFetcher.state !== 'idle' || !lastTemplateRequestRef.current) {
       return;
     }
 
@@ -5045,6 +5043,7 @@ export default function ConfigureBundleFlow() {
             onKeyDown={handleSelectTemplateDialogKeyDown}
             onMouseDown={(event) => event.stopPropagation()}
           >
+            <div className={productPageBundleStyles.templateDialogHandle} aria-hidden="true" />
             <div className={productPageBundleStyles.templateDialogHeader}>
               <h2 id="ppb-template-dialog-title" className={productPageBundleStyles.templateDialogHeading}>
                 Customization
@@ -5055,7 +5054,9 @@ export default function ConfigureBundleFlow() {
                 aria-label="Close customization"
                 onClick={closeSelectTemplateDialog}
               >
-                <s-icon name="x" />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
               </button>
             </div>
             {templateModalStep === "select" ? (

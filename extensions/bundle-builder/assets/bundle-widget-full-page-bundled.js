@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.9
- * Built   : 2026-05-30
+ * Version : 2.9.10
+ * Built   : 2026-05-31
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.9';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.10';
 (function() {
   'use strict';
 
@@ -77,8 +77,11 @@ const ConditionValidator = (function () {
     const ids = new Set();
     const products = Array.isArray(category && category.products) ? category.products : [];
     for (const product of products) {
-      const id = product && (product.id || product.productId || product.graphqlId);
-      if (id != null && id !== '') ids.add(String(id));
+      const raw = product && (product.id || product.productId || product.graphqlId);
+      if (raw == null || raw === '') continue;
+
+      const id = String(raw).replace(new RegExp('^gid://shopify/[^/]+/'), '');
+      if (id) ids.add(id);
     }
     return ids;
   }
@@ -224,6 +227,7 @@ const ConditionValidator = (function () {
     canUpdateQuantity,
     isStepConditionSatisfied,
     evaluateCategoryRules,
+    isCategoryRuleMode: _isCategoryRuleMode,
     getAllowedQuantityPerProduct,
     canUpdateProductQuantity,
   };
@@ -8003,6 +8007,18 @@ class BundleWidgetFullPage {
   validateStep(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
     const currentSelections = this.selectedProducts[stepIndex] || {};
+
+    if (ConditionValidator.isCategoryRuleMode(step)) {
+      const products = this.stepProductData[stepIndex] || [];
+      const translated = {};
+      for (const [selKey, qty] of Object.entries(currentSelections)) {
+        const product = products.find(p => (p.variantId || p.id) === selKey);
+        const productId = String((product && (product.parentProductId || product.id)) || selKey);
+        translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      }
+      return ConditionValidator.isStepConditionSatisfied(step, translated);
+    }
+
     return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
   }
 
