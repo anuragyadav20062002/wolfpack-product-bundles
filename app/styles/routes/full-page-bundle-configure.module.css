@@ -1021,21 +1021,22 @@
   inset: 0;
   z-index: 2147483000;
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
   background: rgba(17, 24, 39, 0.42);
 }
 
 .templateDialog {
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 100dvh;
-  max-height: 100dvh;
+  width: min(90vw, 960px);
+  height: min(85dvh, 820px);
+  max-height: 85dvh;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: 12px;
   background: #ffffff;
   outline: none;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
 }
 
 .templateDialogHeader {
