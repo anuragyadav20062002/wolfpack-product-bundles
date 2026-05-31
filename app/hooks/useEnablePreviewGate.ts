@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type EnablePreviewGateInput = {
   appEmbedEnabled: boolean;
@@ -20,8 +20,23 @@ export function decideEnablePreviewGate(input: EnablePreviewGateInput): EnablePr
   return { mode: "block_silent" };
 }
 
+/**
+ * Returns true when the visibility modal should auto-open on configure page mount:
+ * embed is disabled AND the modal hasn't already been shown in this browser session.
+ * Extracted as a pure function so it can be unit-tested without React or sessionStorage.
+ */
+export function shouldAutoShowOnMount(appEmbedEnabled: boolean, hasBeenShownThisSession: boolean): boolean {
+  return !appEmbedEnabled && !hasBeenShownThisSession;
+}
+
 export type UseEnablePreviewGateOptions = EnablePreviewGateInput & {
   onSilentBlock?: () => void;
+  /**
+   * Bundle ID — when provided, the modal auto-shows on page mount if the embed is
+   * disabled and it hasn't been shown yet this browser session (sessionStorage keyed
+   * per bundle so navigating between bundles re-triggers the nudge).
+   */
+  sessionKey?: string;
 };
 
 /**
@@ -34,6 +49,16 @@ export type UseEnablePreviewGateOptions = EnablePreviewGateInput & {
  */
 export function useEnablePreviewGate(options: UseEnablePreviewGateOptions) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!options.sessionKey) return;
+    const storageKey = `wpb_visibility_shown_${options.sessionKey}`;
+    const hasBeenShown = sessionStorage.getItem(storageKey) === "1";
+    if (shouldAutoShowOnMount(options.appEmbedEnabled, hasBeenShown)) {
+      setOpen(true);
+      sessionStorage.setItem(storageKey, "1");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional mount-only trigger
 
   const requestPreview = useCallback((onProceed: () => void) => {
     const decision = decideEnablePreviewGate({
