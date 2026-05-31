@@ -526,10 +526,21 @@
   line-height: 1.35;
 }
 
+.visibilityGuideDescription {
+  flex: 1;
+}
+
 .visibilitySectionIntro {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.visibilityCardHeaderRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .visibilityStatusEnabled,
@@ -562,7 +573,7 @@
   min-width: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #e3e3e3;
+  border: 1px solid #000000;
   border-radius: 8px;
   background: #ffffff;
 }
@@ -1469,6 +1480,10 @@
   composes: pendingBadge from "./bundle-configure-shared.module.css";
 }
 
+.optimisedBadge {
+  composes: optimisedBadge from "./bundle-configure-shared.module.css";
+}
+
 .pendingTooltipCard {
   composes: pendingTooltipCard from "./bundle-configure-shared.module.css";
 }
@@ -2138,6 +2153,18 @@
 
 .categoryRuleBlock {
   composes: categoryRuleBlock from "./bundle-configure-shared.module.css";
+}
+
+.categoryRuleFields {
+  composes: categoryRuleFields from "./bundle-configure-shared.module.css";
+}
+
+.ruleInlineSelect {
+  composes: ruleInlineSelect from "./bundle-configure-shared.module.css";
+}
+
+.ruleInlineNumber {
+  composes: ruleInlineNumber from "./bundle-configure-shared.module.css";
 }
 
 .ruleRow {

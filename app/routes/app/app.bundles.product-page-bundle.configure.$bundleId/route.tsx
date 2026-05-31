@@ -536,9 +536,9 @@ function QuestionHelpTooltip({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   );
 }
 
-function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
+function VisibilityBadge({ isOptimised }: { isOptimised: boolean }) {
   const { t } = useTranslation();
-  const description = t(`tooltips.${tooltipKey}.description`);
+  const description = t(`tooltips.bundleVisibilityPending.description`);
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; right: number } | null>(null);
 
@@ -553,16 +553,16 @@ function InfoIcon({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
   return (
     <span
       ref={wrapperRef}
-      className={productPageBundleStyles.pendingBadge}
+      className={isOptimised ? productPageBundleStyles.optimisedBadge : productPageBundleStyles.pendingBadge}
       onMouseEnter={showTooltip}
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
       onBlur={hideTooltip}
       tabIndex={0}
-      aria-label={`Pending - ${description}`}
+      aria-label={`${isOptimised ? 'Optimised' : 'Pending'} — ${description}`}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
     >
-      Pending
+      {isOptimised ? 'Optimised' : 'Pending'}
       <svg width="11" height="11" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
         <circle cx="6.5" cy="6.5" r="5.75" stroke="currentColor" strokeWidth="1.5" />
         <line x1="6.5" y1="5.75" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -2263,7 +2263,7 @@ export default function ConfigureBundleFlow() {
                         statusBadge = pricingState.discountEnabled ? null : { label: "None" };
                       }
                       if (item.id === "bundle_visibility") {
-                        statusBadge = !appEmbedEnabled ? { label: "Pending", tone: "warning" } : null;
+                        statusBadge = appEmbedEnabled ? { label: "Optimised", tone: "success" } : { label: "Pending", tone: "warning" };
                       }
                       return (
                         <div key={item.id}>
@@ -2283,9 +2283,9 @@ export default function ConfigureBundleFlow() {
                             </span>
                             <span className={productPageBundleStyles.setupNavLabel}>{item.label}</span>
                             <span className={productPageBundleStyles.setupNavMeta}>
-                              {statusBadge && !isActive && (
-                                statusBadge.label === "Pending"
-                                  ? <InfoIcon tooltipKey="bundleVisibilityPending" />
+                              {statusBadge && (
+                                (statusBadge.label === "Pending" || statusBadge.label === "Optimised")
+                                  ? <VisibilityBadge isOptimised={statusBadge.label === "Optimised"} />
                                   : <s-badge tone={(statusBadge.tone as any) || "subdued"}>{statusBadge.label}</s-badge>
                               )}
                             </span>
@@ -2889,31 +2889,35 @@ export default function ConfigureBundleFlow() {
                                                                   Remove
                                                                 </s-button>
                                                               </div>
-                                                              <div className={productPageBundleStyles.ruleFields}>
-                                                                <s-select
-                                                                  label="Type"
+                                                              <div className={productPageBundleStyles.categoryRuleFields}>
+                                                                <select
+                                                                  className={productPageBundleStyles.ruleInlineSelect}
                                                                   value={rule.type ?? "quantity"}
-                                                                  onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                                  onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                                  aria-label="Type"
                                                                 >
                                                                   {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                                   ))}
-                                                                </s-select>
-                                                                <s-select
-                                                                  label="Condition"
+                                                                </select>
+                                                                <select
+                                                                  className={productPageBundleStyles.ruleInlineSelect}
                                                                   value={rule.condition ?? rule.operator ?? "greaterThanOrEqualTo"}
-                                                                  onChange={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                                  onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                                  aria-label="Condition"
                                                                 >
                                                                   {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                                   ))}
-                                                                </s-select>
-                                                                <s-number-field
-                                                                  label="Value"
+                                                                </select>
+                                                                <input
+                                                                  type="number"
+                                                                  className={productPageBundleStyles.ruleInlineNumber}
                                                                   min={0}
                                                                   value={rule.value ?? ""}
-                                                                  onInput={(e: Event) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
+                                                                  onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
                                                                   autoComplete="off"
+                                                                  aria-label="Value"
                                                                 />
                                                               </div>
                                                             </div>
@@ -3633,16 +3637,18 @@ export default function ConfigureBundleFlow() {
               <div data-tour-target="ppb-bundle-visibility">
                 <div className={productPageBundleStyles.visibilityOverviewStack}>
                   <div className={productPageBundleStyles.visibilityOverviewCard}>
-                    <div>
-                      <h3 className={productPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
-                      <p className={productPageBundleStyles.visibilityCardText}>
-                        {appEmbedEnabled
-                          ? "Your store is connected and ready. Your bundle can now render on your storefront."
-                          : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
-                      </p>
-                    </div>
-                    <div className={appEmbedEnabled ? productPageBundleStyles.visibilityStatusEnabled : productPageBundleStyles.visibilityStatusWarning}>
-                      {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                    <div className={productPageBundleStyles.visibilityCardHeaderRow}>
+                      <div>
+                        <h3 className={productPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
+                        <p className={productPageBundleStyles.visibilityCardText}>
+                          {appEmbedEnabled
+                            ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                            : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                        </p>
+                      </div>
+                      <div className={appEmbedEnabled ? productPageBundleStyles.visibilityStatusEnabled : productPageBundleStyles.visibilityStatusWarning}>
+                        {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                      </div>
                     </div>
                     {!appEmbedEnabled && themeEditorUrl && (
                       <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => window.open(themeEditorUrl, "_blank")}>
@@ -3660,10 +3666,10 @@ export default function ConfigureBundleFlow() {
                     </div>
                     <div className={productPageBundleStyles.visibilityGuideGrid}>
                       {[
-                        { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/current-dashboard-setup-widget.png" },
-                        { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/bundleGallery.png" },
-                        { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/fpb.png" },
-                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/productPageThumbnail.png" },
+                        { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
+                        { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
+                        { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png" },
                       ].map(({ title, desc: description, img }) => (
                         <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
                           <div className={productPageBundleStyles.visibilityGuideMedia}>
@@ -3674,7 +3680,7 @@ export default function ConfigureBundleFlow() {
                             <p className={productPageBundleStyles.visibilityGuideDescription}>{description}</p>
                             <div className={productPageBundleStyles.visibilityGuideFooter}>
                               <button type="button" className={productPageBundleStyles.visibilityGuideAction} onClick={() => window.open("https://wolfpackapps.com", "_blank")}>
-                                Quick Setup Guide →
+                                Quick Setup Guide
                               </button>
                               <span className={productPageBundleStyles.visibilitySetupTime}>5 min setup</span>
                             </div>
@@ -3777,7 +3783,10 @@ export default function ConfigureBundleFlow() {
                         <span />
                       </div>
                       <div className={productPageBundleStyles.visibilityPreviewImage}>
-                        {upsellWidgetImageUrl ? <img src={upsellWidgetImageUrl} alt="" /> : null}
+                        <img
+                          src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                          alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                        />
                       </div>
                       <div className={productPageBundleStyles.visibilityPreviewDetails}>
                         <p className={productPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
@@ -3820,8 +3829,16 @@ export default function ConfigureBundleFlow() {
                   <div className={productPageBundleStyles.visibilityPanelSection}>
                     <div className={productPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={productPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
-                      <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} disabled={!upsellWidgetEnabled}>
-                        Multi language
+                      <button
+                        type="button"
+                        className={productPageBundleStyles.visibilitySecondaryAction}
+                        onClick={() => openMultiLanguageModal("Bundle Widget", [
+                          { key: "widgetTitle", label: "Widget Title", fallback: upsellWidgetTitle },
+                          { key: "widgetDescription", label: "Widget Description", fallback: upsellWidgetDescription, multiline: true },
+                          { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
+                        ])}
+                      >
+                        Multi Language
                       </button>
                     </div>
                     <div className={productPageBundleStyles.visibilitySettingsGrid}>
@@ -3927,7 +3944,9 @@ export default function ConfigureBundleFlow() {
                 <div className={productPageBundleStyles.visibilityPlacementCard}>
                   <div>
                     <h4 className={productPageBundleStyles.visibilitySectionTitle}>Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</h4>
-                    <p className={productPageBundleStyles.visibilityCardText}>Place app block on the theme</p>
+                    <p className={productPageBundleStyles.visibilityCardText}>
+                      By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
                   </div>
                   <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
                     Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
@@ -4048,13 +4067,15 @@ export default function ConfigureBundleFlow() {
                 </div>
 
                 <div className={productPageBundleStyles.visibilityPlacementCard}>
-                  <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
-                  <div className={productPageBundleStyles.visibilityPlacementActionRow}>
-                    <span>Place app block on the theme</span>
-                    <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
-                      Place Block
-                    </button>
+                  <div>
+                    <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
+                    <p className={productPageBundleStyles.visibilityCardText}>
+                      By default, the bundle builder is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
                   </div>
+                  <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                    Place Block
+                  </button>
                 </div>
               </div>
             )}
