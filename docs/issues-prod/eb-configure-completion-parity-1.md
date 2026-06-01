@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 23:58
+**Last Updated:** 2026-06-01 23:59
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -322,3 +322,28 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Added fast-track architecture doc `docs/storefront-asset-strategy/02-architecture.md` and test spec `test-spec/storefront-asset-strategy.spec.md`.
 - Added `node --check` raw-widget verification guidance and storefront `asset_url` strategy to `AGENTS.md` and `CLAUDE.md`; updated `internal docs/Architecture/Widget Architecture.md`.
 - Validation passed: focused Jest for FPB page generation/preview/proxy route `26/26`; scoped ESLint exited 0 errors with existing warnings; targeted search confirmed app-proxy asset references remain only in negative tests/docs while FPB and PPB Liquid blocks use `asset_url`.
+
+### 2026-06-01 23:59 - Internal docs tracking policy update
+- User directed that `internal docs/` should no longer be ignored and should be committed going forward.
+- Planned edit: remove the `internal docs/` ignore rule from `.gitignore` and commit the policy change with this issue log.
+
+### 2026-06-02 00:39 - FPB theme app block placement gap started
+- SIT storefront proof after deployment: FPB Shopify page body has the hidden bundle marker, but no `bundle-full-page` app block assets load because the selected page template does not contain the theme app block.
+- EB reference states FPB and PPB placement is through Shopify Theme Editor app blocks, so the next fix removes the false FPB no-op auto-install success path and opens Theme Editor with the correct full-page app block and page preview target.
+- Scope: FPB Place Widget / Preview placement links only; keep app-proxy routes for signed API/data, not asset loading.
+
+### 2026-06-02 00:45 - FPB theme app block placement validation
+- Updated FPB placement links so page creation/preview responses return a `bundle-full-page` page app-block Theme Editor URL with `previewPath=/pages/{handle}`.
+- Updated FPB Place Widget page selection to open Theme Editor directly for the selected Shopify page instead of calling the no-op `/api/install-fpb-widget` endpoint and claiming the widget is installed.
+- Added focused source-contract coverage for FPB Place Widget app-block behavior and extended `createFullPageBundle` tests for the returned Theme Editor placement link.
+- Validation passed: `npx jest tests/unit/services/widget-full-page-bundle.test.ts tests/unit/routes/fpb-place-widget-theme-block-contract.test.ts --runInBand` with 11/11 tests passing.
+- Validation passed: scoped ESLint for touched files exited with 0 errors; remaining warnings are pre-existing route/test warnings.
+- Chrome e2e for current code still requires deploying this app-server change to SIT; current SIT can only prove the pre-fix gap because it does not contain this patch yet.
+
+### 2026-06-02 00:47 - FPB theme app block placement graph update
+- Graph rebuild completed with the repo graphify environment: 3953 nodes, 5671 edges, 632 communities. The known graphify extraction warning class remains.
+
+### 2026-06-02 00:44 - Sensitive config removal from previous commit
+- GitHub secret scanning flagged `.codex/config.toml`; do not inspect or print the file contents.
+- Removing `.codex/config.toml` from Git tracking and amending the previous commit so the sensitive local config is not present in that commit.
+- User already added the path to `.gitignore`; keep the local file ignored after removal from the index.

@@ -295,7 +295,17 @@ export async function createFullPageBundle(
 
     // Return embed activation deep link — directs merchant to Theme Settings > App Embeds
     // to activate the single app embed (one-time per store).
-    const widgetInstallationLink = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
+    const widgetInstallationLink = apiKey
+      ? generateThemeEditorDeepLink(
+          shop,
+          apiKey,
+          "bundle-full-page",
+          bundleId,
+          "page",
+          "newAppsSection",
+          `/pages/${createdPage.handle}`,
+        ).url
+      : undefined;
 
     AppLogger.info('Full-page bundle created successfully', {
       component: 'WidgetFullPageBundle',

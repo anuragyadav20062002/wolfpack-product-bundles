@@ -2506,53 +2506,28 @@ export default function ConfigureBundleFlow() {
       ? shop.replace('.myshopify.com', '')
       : shop;
 
-    // Build theme editor deep link (used as fallback for non-page templates and on error)
+    // Build theme editor deep link with the selected page as the preview target.
     const buildThemeEditorUrl = () => {
-      const placementBlockHandle = upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block";
+      const placementBlockHandle = template.isPage
+        ? blockHandle
+        : (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block");
       const appBlockId = `${apiKey}/${placementBlockHandle}`;
       const templateParam = template.isPage ? 'page' : template.handle;
       const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
       return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
     };
 
-    // ── Full-page bundle: auto-install via Theme API (no theme editor needed) ──
+    // ── Full-page bundle: Shopify requires Theme Editor app-block placement. ──
     if (template.isPage) {
-      setIsInstallingWidget(true);
-      try {
-
-        const response = await fetch('/api/install-fpb-widget', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageHandle: template.handle }),
-        });
-
-        const result = await response.json() as { success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string };
-
-        if (result.success) {
-          setSelectedPage(template);
-          closePageSelectionModal();
-          const msg = result.templateAlreadyExists
-            ? `Widget already installed — your bundle page is live.`
-            : `Widget installed! Your bundle page is live.`;
-          shopify.toast.show(msg, { isError: false, duration: 6000 });
-        } else {
-          // Auto-install failed — fall back to theme editor
-          AppLogger.error(`🚨 [INSTALL] Auto-install failed, falling back to theme editor`, { error: result.error });
-          setSelectedPage(template);
-          closePageSelectionModal();
-          shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
-          window.open(buildThemeEditorUrl(), '_blank');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        AppLogger.error(`🚨 [INSTALL] Unexpected error, falling back to theme editor`, { errorMessage });
-        setSelectedPage(template);
-        closePageSelectionModal();
-        shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
-        window.open(buildThemeEditorUrl(), '_blank');
-      } finally {
-        setIsInstallingWidget(false);
+      if (!apiKey || !blockHandle) {
+        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
+        return;
       }
+
+      setSelectedPage(template);
+      closePageSelectionModal();
+      shopify.toast.show(`Opening Theme Editor for "${template.title}". Add the full-page bundle block to this page template.`, { isError: false, duration: 5000 });
+      window.open(buildThemeEditorUrl(), '_blank');
       return;
     }
 
@@ -2580,7 +2555,7 @@ export default function ConfigureBundleFlow() {
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id, apiKey, upsellWidgetDisplayMode]);
+  }, [shop, shopify, bundle.id, apiKey, blockHandle, upsellWidgetDisplayMode]);
 
   return (
     <>
