@@ -4338,7 +4338,7 @@ export default function ConfigureBundleFlow() {
                         <div className={productPageBundleStyles.settingTitleRow}>
                           <h3 className={productPageBundleStyles.settingTitle}>Enable Quantity Validation</h3>
                           <span className={productPageBundleStyles.settingInlineSwitch}>
-                            <s-switch
+                            <s-checkbox
                               accessibilityLabel="Enable quantity validation"
                               checked={productSlotsEnabled || undefined}
                               onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:27
+**Last Updated:** 2026-06-01 21:35
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -145,3 +145,15 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/routes/step-setup-step-config-image-contract.test.ts --runInBand` with 4/4 tests.
 - Scoped ESLint passed with 0 errors for both configure routes and the focused test; warnings are existing route unsafe-any/security warnings.
 - Chrome smoke on SIT FPB configure confirmed Step Setup → Step Config renders `Upload file` and opens the image picker modal without leaving Step Setup.
+
+### 2026-06-01 21:31 - Quantity validation admin control parity started
+- EB PPB Bundle Settings evidence: `Enable Quantity Validation` renders a checkbox next to the heading, with `Maximum allowed quantity per product` below it.
+- WPB PPB/FPB configure used switch controls for the same setting, which is visually different from EB's checkbox control.
+- Planned edit: use checkbox controls for `Enable Quantity Validation` in FPB and PPB admin configure pages while preserving the existing `productSlotsEnabled` state and max-quantity disabling behavior.
+
+### 2026-06-01 21:35 - Quantity validation admin control parity validation
+- Updated FPB and PPB configure Bundle Settings so `Enable Quantity Validation` uses a checkbox control, matching the EB captured Admin surface.
+- Preserved the existing `productSlotsEnabled` state wiring and kept the maximum quantity field disabled when quantity validation is off.
+- Focused Jest passed: `npx jest tests/unit/routes/ppb-bundle-settings-surface-contract.test.ts tests/unit/routes/fpb-bundle-settings-surface-contract.test.ts --runInBand` with 3/3 tests.
+- Scoped ESLint passed with 0 errors for both configure routes and the focused Bundle Settings contract tests; warnings are existing route unsafe-any/security warnings.
+- Chrome smoke on SIT FPB configure confirmed Bundle Settings renders `Enable quantity validation` as a checkbox and leaves `Maximum allowed quantity per product` disabled while unchecked.

@@ -19,6 +19,8 @@ describe("Product Page Bundle Settings surface contract", () => {
     expect(settingsSection).toContain("Browse Products");
     expect(settingsSection).toContain("Enable Quantity Validation");
     expect(settingsSection).toContain("Maximum allowed quantity per product");
+    expect(settingsSection).toContain("<s-checkbox");
+    expect(settingsSection).toContain("accessibilityLabel=\"Enable quantity validation\"");
     expect(settingsSection).toContain("Pre-order &amp; Subscription Integration");
     expect(settingsSection).toContain("Cart line item discount display");
     expect(settingsSection).toContain("Use app defaults");

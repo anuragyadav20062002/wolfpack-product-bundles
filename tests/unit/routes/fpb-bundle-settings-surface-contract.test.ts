@@ -15,6 +15,8 @@ describe("Full Page Bundle Settings surface contract", () => {
     expect(sectionEnd).toBeGreaterThan(sectionStart);
     expect(settingsSection).toContain("Pre Selected Product");
     expect(settingsSection).toContain("Enable Quantity Validation");
+    expect(settingsSection).toContain("<s-checkbox");
+    expect(settingsSection).toContain("accessibilityLabel=\"Enable quantity validation\"");
     expect(settingsSection).toContain("Product Slots");
     expect(settingsSection).toContain("Slot Icon");
     expect(settingsSection).toContain("Variant Selector");

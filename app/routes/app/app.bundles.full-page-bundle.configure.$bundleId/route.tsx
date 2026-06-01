@@ -4925,7 +4925,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
-                          <s-switch
+                          <s-checkbox
                             accessibilityLabel="Enable quantity validation"
                             checked={productSlotsEnabled || undefined}
                             onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
