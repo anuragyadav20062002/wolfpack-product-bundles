@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:40
+**Last Updated:** 2026-06-01 22:13
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -253,3 +253,9 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Scoped ESLint passed with 0 errors for the overlay component, create configure route, and focused tests; warnings are existing create-route warnings.
 - Chrome smoke on SIT create configure confirmed the readiness control renders as compact gauge-only with no checklist rows.
 - Chrome smoke on SIT FPB configure confirmed the detailed readiness overlay still exposes readiness item rows and the near-complete footer.
+
+### 2026-06-01 22:13 - Phase 8 partial Admin e2e sanity
+- Ran Chrome SIT admin smoke on PPB configure `cmpfhk3ys0001v0t0w2r3xvls`: native Shopify Edit Product dialog opens, Place Widget uses button-level loading before opening the controlled `Select Product Page Template` modal, server-returned template row `product` is listed, and the modal dismisses via Close/X.
+- Ran Chrome SIT admin smoke on FPB configure `cmpfhj2m10000v0t038osl42y`: native Shopify Edit Product dialog opens for `Codex FPB 2026-05-21`, Bundle Settings renders Enable Quantity Validation fields, Slot Icon `Change Icon` opens Shopify file picker in-place, and closing the picker returns to Bundle Settings instead of redirecting to Step Setup.
+- Confirmed current FPB Bundle Settings still has the deferred Bundle Status UI gap: Bundle Status should move into its own card and the duplicate dropdown label should be removed after the current parity list is complete.
+- Phase 8 remains open because storefront-visible header/footer inheritance and quantity-validation runtime checks are DCP-gated until the DCP control decision is provided.
