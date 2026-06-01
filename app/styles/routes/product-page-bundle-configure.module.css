@@ -1014,9 +1014,8 @@
 .visibilityPreviewFullImage {
   display: block;
   width: 100%;
-  height: 220px;
-  object-fit: cover;
-  object-position: top;
+  height: 260px;
+  object-fit: contain;
 }
 
 .upsellWidgetContent {
