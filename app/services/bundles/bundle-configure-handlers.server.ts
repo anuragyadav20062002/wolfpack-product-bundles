@@ -387,70 +387,15 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
 
     const assetsData = await assetsResponse.json();
 
-    // Get active bundle container products for this shop
-    let bundleContainerProducts = [];
-    try {
-      // First, get active bundles from database to get their product IDs
-      const activeBundles = await db.bundle.findMany({
-        where: {
-          shopId: session.shop,
-          status: BundleStatus.ACTIVE
-        },
-        select: {
-          id: true,
-          name: true,
-          shopifyProductId: true
-        }
-      });
+    const formatProductTemplateTitle = (templateName: string) => {
+      if (templateName === "product") return "Default product";
+      return templateName
+        .replace(/^product\./, "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, character => character.toUpperCase());
+    };
 
-      AppLogger.debug(`[TEMPLATE_FILTER] Found ${activeBundles.length} active bundles with container products`);
-
-      // Get bundle container products from Shopify
-      if (activeBundles.length > 0) {
-        const productIds = activeBundles
-          .filter(bundle => bundle.shopifyProductId)
-          .map(bundle => bundle.shopifyProductId);
-
-        if (productIds.length > 0) {
-          AppLogger.debug(`[TEMPLATE_FILTER] Product IDs to query:`, productIds);
-          AppLogger.debug(`[TEMPLATE_FILTER] Fetching products with IDs: ${productIds.join(', ')}`);
-
-          const GET_BUNDLE_PRODUCTS = `
-            query getBundleContainerProducts($ids: [ID!]!) {
-              nodes(ids: $ids) {
-                ... on Product {
-                  id
-                  title
-                  handle
-                  legacyResourceId
-                  featuredImage {
-                    url
-                  }
-                  metafields(first: 5, namespace: "$app") {
-                    nodes {
-                      key
-                      value
-                    }
-                  }
-                }
-              }
-            }
-          `;
-
-          const bundleProductsResponse = await admin.graphql(GET_BUNDLE_PRODUCTS, {
-            variables: { ids: productIds }
-          });
-          const bundleProductsData = await bundleProductsResponse.json();
-          bundleContainerProducts = bundleProductsData.data?.nodes?.filter((node: any) => node) || [];
-
-          AppLogger.debug(`[TEMPLATE_FILTER] Fetched ${bundleContainerProducts.length} bundle container products from Shopify`);
-        }
-      }
-    } catch (error) {
-      AppLogger.warn("[TEMPLATE_FILTER] Could not fetch bundle container products:", {}, error as any);
-    }
-
-    // Filter for template files and organize them with bundle context
+    // Filter for product template files returned by the merchant's published theme.
     const templates = assetsData.assets
       .filter((asset: any) => asset.key.startsWith('templates/') &&
         (asset.key.endsWith('.liquid') || asset.key.endsWith('.json')))
@@ -458,68 +403,21 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
         const templateName = asset.key.replace('templates/', '').replace(/\.(liquid|json)$/, '');
         const isJson = asset.key.endsWith('.json');
 
-        // Determine template type and description
-        let title = templateName;
-        let description = '';
-        let recommended = false;
-        let bundleRelevant = false;
-
-        if (templateName === 'index') {
-          title = 'Homepage';
-          description = 'Main landing page of your store - useful for promoting bundles';
-          recommended = false;
-          bundleRelevant = true;
-        } else if (templateName.startsWith('product')) {
-          // Product templates are most relevant for bundle widgets
-          title = templateName === 'product' ? 'Product Pages (Default)' : `Product - ${templateName.replace('product.', '')}`;
-          description = 'Individual product detail pages - ideal for bundle widgets';
-          recommended = templateName === 'product';
-          bundleRelevant = true;
-        } else if (templateName.startsWith('collection')) {
-          title = templateName === 'collection' ? 'Collection Pages' : `Collection - ${templateName.replace('collection.', '')}`;
-          description = 'Product collection listing pages - can promote bundle collections';
-          recommended = false;
-          bundleRelevant = true;
-        } else if (templateName === 'page') {
-          title = 'Static Pages';
-          description = 'Custom content pages (About, Contact, etc.) - useful for bundle explanations';
-          recommended = false;
-          bundleRelevant = false;
-        } else if (templateName === 'cart') {
-          title = 'Cart Page';
-          description = 'Shopping cart page - not recommended for bundle widgets (cart transforms handle this)';
-          recommended = false;
-          bundleRelevant = false;
-        } else if (templateName === 'search') {
-          title = 'Search Results';
-          description = 'Search results page - can show bundle products in search';
-          recommended = false;
-          bundleRelevant = false;
-        } else {
-          title = templateName.charAt(0).toUpperCase() + templateName.slice(1);
-          description = `${title} template`;
-          recommended = false;
-          bundleRelevant = false;
-        }
-
         return {
           id: templateName,
-          title,
+          title: formatProductTemplateTitle(templateName),
           handle: templateName,
-          description,
-          recommended,
-          bundleRelevant,
+          description: asset.key,
+          recommended: templateName === "product",
+          bundleRelevant: true,
           fileType: isJson ? 'JSON' : 'Liquid',
           fullKey: asset.key
         };
       })
-      // ENHANCED FILTERING: Show only product templates for bundle widgets
       .filter((template: any) => {
-        // Only show product templates - bundles work best on product pages
-        return template.handle.startsWith('product');
+        return template.handle === "product" || template.handle.startsWith("product.");
       })
       .sort((a: any, b: any) => {
-        // Sort by recommended first, then alphabetically
         if (a.recommended && !b.recommended) return -1;
         if (!a.recommended && b.recommended) return 1;
         return a.title.localeCompare(b.title);
@@ -527,71 +425,12 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
 
     AppLogger.debug(`[TEMPLATE_FILTER] Filtered to ${templates.length} product templates`);
 
-    // PRIORITIZE: Bundle container product specific templates with auto-creation
-    const bundleSpecificTemplates: any[] = [];
-    if (bundleContainerProducts.length > 0) {
-      AppLogger.debug(`[TEMPLATE_FILTER] Creating ${bundleContainerProducts.length} bundle-specific template recommendations`);
-
-      const templateService = new ThemeTemplateService(admin, session);
-
-      for (const product of bundleContainerProducts) {
-        // Check if template exists, create if it doesn't
-        const templateResult = await templateService.ensureProductTemplate(product.handle);
-        const templateHandle = templateResult.templatePath === "templates/product.json"
-          ? "product"
-          : `product.${product.handle}`;
-
-        bundleSpecificTemplates.push({
-          id: `bundle-product-${product.handle}`,
-          title: `${product.title} (Bundle Container)`,
-          handle: templateHandle,
-          description: templateResult.created
-            ? `NEW TEMPLATE CREATED for ${product.title} - Widget automatically configured!`
-            : `Default product template previewed with ${product.title} - Widget will be placed here`,
-          recommended: true,
-          bundleRelevant: true,
-          fileType: templateResult.created ? 'NEW' : 'Existing',
-          fullKey: templateResult.templatePath || `templates/product.${product.handle}.json`,
-          bundleProduct: product, // Store product data for preview path
-          isBundleContainer: true,
-          templateCreated: templateResult.created,
-          templateExists: templateResult.success
-        });
-
-        AppLogger.debug(`[TEMPLATE_FILTER] Product ${product.handle}: Template ${templateResult.success ? 'ready' : 'failed'} ${templateResult.created ? '(created)' : '(exists)'}`);
-      }
-    }
-
-    // COMBINE: Bundle-specific templates first, then general product templates
-    const allTemplates = [
-      ...bundleSpecificTemplates,
-      ...templates.filter((t: any) => !bundleSpecificTemplates.some((bt: any) => bt.handle === t.handle))
-    ];
-
-    AppLogger.debug(`[TEMPLATE_FILTER] Final template list: ${allTemplates.length} templates (${bundleSpecificTemplates.length} bundle-specific)`);
-
-    // Add general product template as fallback if not already present
-    const hasGeneralProductTemplate = allTemplates.some(t => t.handle === 'product');
-    if (!hasGeneralProductTemplate) {
-      allTemplates.push({
-        id: 'product',
-        title: 'All Product Pages (General)',
-        handle: 'product',
-        description: 'Default product template - widget will appear on all product pages',
-        recommended: bundleSpecificTemplates.length === 0, // Only recommend if no bundle products
-        bundleRelevant: true,
-        fileType: 'General',
-        fullKey: 'templates/product.liquid',
-        isBundleContainer: false
-      });
-    }
-
     return json({
       success: true,
-      templates: allTemplates,
+      templates,
       themeId,
       themeName: publishedTheme.name,
-      bundleContainerCount: bundleSpecificTemplates.length
+      bundleContainerCount: 0
     });
 
   } catch (error) {

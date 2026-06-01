@@ -1830,39 +1830,6 @@ export default function ConfigureBundleFlow() {
       // Open synchronously from the click event so browsers keep the tab gesture.
       editorWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
 
-      // Create a theme template service instance
-      // Note: We'll need to refactor this to get admin from a fetcher since this is client-side
-      // For now, we'll use the existing approach but add template creation via API call
-
-      // Check if this is a bundle-specific template that needs to be created
-      if (template.isBundleContainer && template.bundleProduct) {
-
-        // Make API call to create template if needed
-        const createTemplateResponse = await fetch(`/api/ensure-product-template`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            productHandle: template.bundleProduct.handle,
-            bundleId: bundle.id
-          })
-        });
-
-        if (!createTemplateResponse.ok) {
-          AppLogger.error('🚨 [THEME_EDITOR] Failed to ensure template exists', {});
-          shopify.toast.show("Failed to prepare product template", { isError: true, duration: 5000 });
-          editorWindow?.close();
-          return;
-        }
-
-        const templateResult = await createTemplateResponse.json();
-
-        if (templateResult.created) {
-          shopify.toast.show(`Created new template for ${template.bundleProduct.handle}`, { isError: false, duration: 4000 });
-        }
-      }
-
       // Use app API key and block handle from loader data (passed from server)
       // CRITICAL: Must use app's API key (client_id), not extension UUID
       if (!apiKey || !blockHandle) {
@@ -1882,7 +1849,7 @@ export default function ConfigureBundleFlow() {
       //
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
-      const pageProductHandle = template.bundleProduct?.handle || bundle.shopifyProductHandle;
+      const pageProductHandle = bundle.shopifyProductHandle;
       const themeEditorUrl = buildProductPageThemeEditorDeepLink({
         shop,
         apiKey,
@@ -1911,7 +1878,7 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
       editorWindow?.close();
     }
-  }, [activeSection, blockHandle, shop, shopify, bundle.id, upsellWidgetDisplayMode, apiKey]);
+  }, [activeSection, blockHandle, shop, shopify, bundle.id, bundle.shopifyProductHandle, upsellWidgetDisplayMode, apiKey]);
 
   // Sync Bundle modal ref
   const syncModalRef = useRef<HTMLElement>(null);

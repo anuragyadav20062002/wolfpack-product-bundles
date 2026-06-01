@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE,
   PRODUCT_PAGE_EDIT_DEFAULTS_HREF,
@@ -8,6 +10,15 @@ import {
   extractSellingPlanValidationSources,
   resolveProductPageThemeEditorTemplateHandle,
 } from "../../../app/lib/bundle-config/product-page-admin-sections";
+
+const configureHandlersSource = readFileSync(
+  join(process.cwd(), "app/services/bundles/bundle-configure-handlers.server.ts"),
+  "utf8"
+);
+const getThemeTemplatesSource = configureHandlersSource.slice(
+  configureHandlersSource.indexOf("export async function handleGetThemeTemplates"),
+  configureHandlersSource.indexOf("/**\n * Handle getting current theme for deep linking")
+);
 
 describe("product page admin sections", () => {
   it("matches the captured product-page setup rail order", () => {
@@ -106,14 +117,14 @@ describe("product page admin sections", () => {
     ]);
   });
 
-  it("resolves theme-app-extension bundle recommendations to the default product template", () => {
+  it("keeps merchant-selected template handles unchanged even for legacy bundle-container rows", () => {
     expect(
       resolveProductPageThemeEditorTemplateHandle({
         handle: "product.codex-ppb-2026-05-21",
         fullKey: "theme-app-extension",
         isBundleContainer: true,
       })
-    ).toBe("product");
+    ).toBe("product.codex-ppb-2026-05-21");
   });
 
   it("keeps real product-specific templates when Shopify theme assets prove they exist", () => {
@@ -126,7 +137,7 @@ describe("product page admin sections", () => {
     ).toBe("product.custom-bundle");
   });
 
-  it("builds the Theme Editor deep link against the real default product template", () => {
+  it("builds the Theme Editor deep link against the merchant-selected template handle", () => {
     expect(
       buildProductPageThemeEditorDeepLink({
         shop: "agent-5sfidg3m.myshopify.com",
@@ -141,7 +152,7 @@ describe("product page admin sections", () => {
         },
       })
     ).toBe(
-      "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
+      "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product.codex-ppb-2026-05-21&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
     );
   });
 
@@ -161,5 +172,12 @@ describe("product page admin sections", () => {
     ).toBe(
       "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product.custom-merch-template&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
     );
+  });
+
+  it("lists only merchant theme product templates without generated fallback rows", () => {
+    expect(getThemeTemplatesSource).toContain('return template.handle === "product" || template.handle.startsWith("product.")');
+    expect(getThemeTemplatesSource).not.toContain("ensureProductTemplate(product.handle)");
+    expect(getThemeTemplatesSource).not.toMatch(/bundle-product-\$\{product\.handle\}/);
+    expect(getThemeTemplatesSource).not.toContain("All Product Pages (General)");
   });
 });

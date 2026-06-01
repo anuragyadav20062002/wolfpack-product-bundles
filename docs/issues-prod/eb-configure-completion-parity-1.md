@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 20:32
+**Last Updated:** 2026-06-01 20:42
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -64,3 +64,20 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 ### 2026-06-01 20:32 - Post-commit graph hook follow-up
 - The commit hook rebuilt graph outputs after the creation wizard SaveBar commit and left `graphify-out/GRAPH_REPORT.md` dirty.
 - Follow-up commit will include the generated graph report plus this issue-log entry only.
+
+### 2026-06-01 20:34 - Bundle Product Edit Product workflow audit start
+- Next explicit task selected: FPB/PPB Bundle Product card `Edit Product` workflow parity.
+- Docs show prior conflicting implementations (`shopify.navigate`, `_blank`, and direct-link fallback), so this slice starts by verifying current code and Chrome behavior against EB before editing.
+- Scope remains both configure/edit pages plus API/DTO behavior if current evidence shows gaps.
+
+### 2026-06-01 20:38 - PPB template listing correction
+- User clarified EB template selection: the server lists the product page templates available on the merchant store, and the merchant-selected template is used directly.
+- Current WPB server code still creates bundle-container template recommendations and rewrites product template labels, so this edit removes generated/fallback rows and keeps the selected handle unchanged.
+- Scope: PPB Place Widget template source/listing/deep-link behavior only; no unrelated configure sections.
+
+### 2026-06-01 20:42 - PPB template listing correction validated
+- Removed generated bundle-container template recommendations, removed fallback product-template row creation, and removed client-side `ensure-product-template` from the Place Widget click flow.
+- Deep-link resolution now uses the selected server-returned template handle unchanged.
+- Focused Jest passed: `npx jest tests/unit/lib/product-page-admin-sections.test.ts --runInBand` with 11/11 tests.
+- Scoped ESLint passed with 0 errors for the touched route, shared handler, product-page admin section helper, and unit test.
+- Chrome smoke on the SIT Admin PPB configure page confirmed `Place Widget` shows button loading first, opens `Select Product Page Template` only after data is ready, lists the server-returned `Default product` template row, and selecting it opens Theme Editor with `template=product`.

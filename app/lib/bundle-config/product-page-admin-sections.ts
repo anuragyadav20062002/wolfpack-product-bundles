@@ -137,11 +137,6 @@ export function resolveProductPageThemeEditorTemplateHandle(template: ProductPag
   const handle = typeof template?.handle === "string" && template.handle.trim() !== ""
     ? template.handle
     : "product";
-  const fullKey = typeof template?.fullKey === "string" ? template.fullKey : "";
-
-  if (template?.isBundleContainer === true && fullKey === "theme-app-extension") {
-    return "product";
-  }
 
   return handle;
 }
