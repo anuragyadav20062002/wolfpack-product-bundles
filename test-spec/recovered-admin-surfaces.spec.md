@@ -92,6 +92,7 @@ Lock the recovered Settings and Integrations Admin contracts so route UI stays a
 | 1 | Modal shell and actions | FPB and PPB configure route source | `Customization`, `Customize your bundle`, `Customize Colors & Language`, Selected/Select state, and `Next` action exist | Captured from Select template overlay evidence |
 | 2 | Template inventory | FPB and PPB configure route source | FPB has Standard, Classic, Compact, Horizontal; PPB has Product List, Horizontal Slots, Product Grid, Vertical Slots in captured order | Captured from FPB and PPB Select template overlay evidence |
 | 3 | Post-Next bundle-ready state | FPB and PPB configure route source | `View your bundle`, `View your bundle with your customizations`, `Your bundle is ready`, `Preview it now with your customizations`, and `Preview bundle` exist | Captured from live FPB Select template post-Next overlay evidence |
+| 4 | Customization tab flow | FPB and PPB configure route source | Templates, Colors and corners, Text and images, Back, Next, and Done states exist before the ready screen | Captured from deployed Select Template modal bundle evidence |
 
 ### ProductPageBundleSettingsSurfaceContract
 | # | Scenario | Input | Expected Output | Notes |

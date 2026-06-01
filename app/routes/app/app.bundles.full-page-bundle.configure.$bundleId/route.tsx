@@ -1278,7 +1278,7 @@ export default function ConfigureBundleFlow() {
   const selectTemplateModalRef = useRef<HTMLDivElement>(null);
   const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
-  const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
+  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "confirm">("templates");
   const templateFetcher = useFetcher();
   const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
   const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
@@ -1431,7 +1431,7 @@ export default function ConfigureBundleFlow() {
 
   const closeSelectTemplateModal = useCallback(() => {
     setIsSelectTemplateModalOpen(false);
-    setTemplateModalStep("select");
+    setTemplateModalStep("templates");
     setTemplateSaveError(null);
     lastTemplateRequestRef.current = null;
     lastTemplateResponseRef.current = null;
@@ -1506,7 +1506,7 @@ export default function ConfigureBundleFlow() {
   const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
-    setTemplateModalStep("select");
+    setTemplateModalStep("templates");
     setTemplateSaveError(null);
     lastTemplateRequestRef.current = null;
     lastTemplateResponseRef.current = null;
@@ -5695,7 +5695,7 @@ export default function ConfigureBundleFlow() {
                 </svg>
               </button>
             </div>
-            {templateModalStep === "select" ? (
+            {templateModalStep === "templates" ? (
               <>
                 <div className={fullPageBundleStyles.templateDialogBody}>
                   <div className={fullPageBundleStyles.templateDialogIntro}>
@@ -5705,7 +5705,7 @@ export default function ConfigureBundleFlow() {
                         Choose a design that suits your needs and fits your brand
                       </p>
                     </div>
-                    <s-button variant="secondary" onClick={openDesignControlPanel}>
+                    <s-button variant="secondary" onClick={() => setTemplateModalStep("colorsAndCorners")}>
                       Customize Colors &amp; Language
                     </s-button>
                   </div>
@@ -5748,6 +5748,80 @@ export default function ConfigureBundleFlow() {
                     onClick={handleTemplateNext}
                   >
                     Next
+                  </s-button>
+                </div>
+              </>
+            ) : templateModalStep === "colorsAndCorners" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Fine tune colors and corners before previewing the bundle
+                      </p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateDialogTabs} role="tablist" aria-label="Template customization">
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("templates")}>Templates</button>
+                      <button type="button" className={`${fullPageBundleStyles.templateDialogTab} ${fullPageBundleStyles.templateDialogTabActive}`} aria-current="page">Colors and corners</button>
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("textAndImages")}>Text and images</button>
+                    </div>
+                  </div>
+                  <div className={fullPageBundleStyles.templateCustomizationGrid}>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Brand colors</h4>
+                      <p>Use the Design Control Panel color controls for primary, secondary, background, text, border, and discount accents.</p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Corners</h4>
+                      <p>Review border radius and card rounding before applying the selected template.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button variant="secondary" onClick={() => setTemplateModalStep("templates")}>Back</s-button>
+                  <s-button variant="primary" onClick={() => setTemplateModalStep("textAndImages")}>Next</s-button>
+                </div>
+              </>
+            ) : templateModalStep === "textAndImages" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Review template language, labels, and media before finishing customization
+                      </p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateDialogTabs} role="tablist" aria-label="Template customization">
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("templates")}>Templates</button>
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("colorsAndCorners")}>Colors and corners</button>
+                      <button type="button" className={`${fullPageBundleStyles.templateDialogTab} ${fullPageBundleStyles.templateDialogTabActive}`} aria-current="page">Text and images</button>
+                    </div>
+                  </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={fullPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
+                  <div className={fullPageBundleStyles.templateCustomizationGrid}>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Text and language</h4>
+                      <p>Review Product Card, Bundle Cart, Bundle, Popups, Toasts, Addons, and Messages text from Settings Language.</p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Images and GIFs</h4>
+                      <p>Confirm template media, uploaded images, and loading GIFs before saving the template selection.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button variant="secondary" onClick={() => setTemplateModalStep("colorsAndCorners")}>Back</s-button>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Done
                   </s-button>
                 </div>
               </>

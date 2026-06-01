@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:52
+**Last Updated:** 2026-06-01 23:08
 
 ## Overview
 Recover EB behavior from deployed runtime evidence, previous internal documentation, and live Chrome inspection so Wolfpack can replicate Settings, Integrations, and key bundle edit sections with exact UI and functionality parity.
@@ -49,6 +49,12 @@ Constraints:
 - [ ] Phase 4 - Capture Bundle Visibility, Widget, Embed, Settings, Subscriptions, and Select template behavior.
 - [ ] Phase 5 - Produce parity gap matrix against Wolfpack.
 - [ ] Phase 6 - Prepare clean-room implementation plan and test specs.
+
+### 2026-06-01 23:08 - Completed Select Template customization tab-flow validation
+- Confirmed the pending FPB and PPB Select Template modal implementation includes the deployed modal tab flow: Templates, Colors and corners, Text and images, Back, Next, and Done.
+- Ran targeted Select Template source-contract tests and route ESLint before commit.
+- Smoke-tested the PPB Select Template modal on the agent store Chrome session: opened modal, entered Customize Colors & Language, moved to Text and images with Next, and returned with Back without saving.
+- Next: commit the validated Select Template tab-flow slice.
 
 ### 2026-06-01 19:12 - Started Settings Controls content parity fix
 - Refreshed live EB Additional Configurations evidence for Configuration, CSS & Scripts, Integrations, and Advanced tabs.
@@ -552,6 +558,11 @@ Constraints:
 - Targeted Jest passed: PPB route/source-contract tests, 8 suites and 10 tests.
 - Lint passed for the PPB configure route and PPB tests with 0 errors and existing warnings only.
 - Agent-store Chrome smoke check passed: opened the PPB configure route and Bundle Visibility surface rendered Bundle Widget and Bundle Embed placement cards without the Vite transform overlay.
+
+### 2026-06-01 23:00 - Started Select Template customization tab flow parity fix
+- Deployed bundle evidence shows Select Template has Templates, Colors and corners, and Text and images modal steps with Back, Next, and Done actions, while live Next still reaches the bundle-ready state.
+- Current FPB and PPB routes only model template selection plus the ready state.
+- Scope: add the missing modal customization path behind `Customize Colors & Language` while preserving the live-confirmed template-grid `Next` behavior and existing save flow.
 
 ### 2026-06-01 18:06 - Started PPB Bundle Settings surface contract coverage
 - Inspected the PPB Bundle Settings route block against captured evidence.

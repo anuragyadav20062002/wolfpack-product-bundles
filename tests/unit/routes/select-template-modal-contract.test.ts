@@ -33,6 +33,16 @@ describe("Select template modal contract", () => {
     }
   });
 
+  it("keeps the deployed customization tab flow in both bundle configure routes", () => {
+    for (const source of [ppbSource, fpbSource]) {
+      expect(source).toContain('"templates" | "colorsAndCorners" | "textAndImages" | "confirm"');
+      expect(source).toContain("Templates");
+      expect(source).toContain("Colors and corners");
+      expect(source).toContain("Text and images");
+      expect(source).toContain("Done");
+    }
+  });
+
   it("keeps the captured FPB template inventory", () => {
     expect(fpbSource).toContain('label: "Standard Design"');
     expect(fpbSource).toContain('label: "Classic Design"');
