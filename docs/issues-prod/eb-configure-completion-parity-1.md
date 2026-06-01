@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:48
+**Last Updated:** 2026-06-01 21:55
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -198,3 +198,17 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 ### 2026-06-01 21:50 - Post-commit graph hook follow-up
 - The commit hook rebuilt graph outputs after the FPB page selector close commit and left `graphify-out/GRAPH_REPORT.md` dirty.
 - Follow-up commit will include the generated graph report plus this issue-log entry only.
+
+### 2026-06-01 21:55 - Readiness overlay create/configure split started
+- User clarified the readiness widget should remain an overlay: create wizard should use the minified gauge/score overlay only, while edit/configure pages should keep the fuller overlay with inline description text.
+- Current `BundleReadinessOverlay` renders the same expandable checklist everywhere, and the create wizard opens it after the guided tour.
+- Planned edit: add a compact variant to the shared overlay, pass it only from the create wizard, and keep FPB/PPB configure on the detailed overlay.
+
+### 2026-06-01 22:00 - Readiness overlay create/configure split validation
+- Added a `variant="compact"` mode to `BundleReadinessOverlay` that renders only the readiness gauge/score control and suppresses the checklist panel, dim overlay, text label, and chevron.
+- Wired the compact variant only in the bundle creation wizard; FPB/PPB configure pages remain on the detailed overlay.
+- Added `tests/unit/bundle-readiness-overlay-variant-contract.test.ts` and `test-spec/bundle-readiness-overlay-variant.spec.md`.
+- Focused Jest passed: `npx jest tests/unit/bundle-readiness-overlay-contract.test.ts tests/unit/bundle-readiness-overlay-variant-contract.test.ts --runInBand` with 7/7 tests.
+- Scoped ESLint passed with 0 errors for the overlay component, create configure route, and focused tests; warnings are existing create-route warnings.
+- Chrome smoke on SIT create configure confirmed the readiness control renders as compact gauge-only with no checklist rows.
+- Chrome smoke on SIT FPB configure confirmed the detailed readiness overlay still exposes readiness item rows and the near-complete footer.

@@ -2804,6 +2804,7 @@ export default function WizardConfigureStep() {
         bundleId={bundle.id}
         open={readinessOpen}
         onOpenChange={setReadinessOpen}
+        variant="compact"
       />
     </>
   );
