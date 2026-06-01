@@ -373,6 +373,7 @@ export default function SettingsRoute() {
   const [isExpertColorControls, setIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
   const [savedIsExpertColorControls, setSavedIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
   const [activeDesignScope, setActiveDesignScope] = useState("General");
+  const [isExpertScopeActive, setIsExpertScopeActive] = useState(false);
   const [designGateMessage, setDesignGateMessage] = useState<string | null>(null);
   const selectedDesignTab = DESIGN_CONFIGURATION.find((tab) => tab.title === activeDesignTab) ?? DESIGN_CONFIGURATION[0];
   const selectedControlLayout = CONTROL_LAYOUTS.find((layout) => layout.label === activeControlLayout) ?? CONTROL_LAYOUTS[0];
@@ -451,9 +452,10 @@ export default function SettingsRoute() {
   }, [actionData]);
 
   if (settingsView === "design") {
-    const selectedDesignFields = isExpertColorControls && selectedDesignTab.title === "Brand Colors"
+    const selectedDesignFields = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive
       ? EXPERT_COLOR_CONTROLS[activeDesignScope] ?? EXPERT_COLOR_CONTROLS.General
       : selectedDesignTab.fields;
+    const isBrandColorsPanelGated = isExpertColorControls && selectedDesignTab.title === "Brand Colors" && !isExpertScopeActive;
     const resetSelectedDesignTab = () => {
       setDesignFieldValues((current) => ({
         ...current,
@@ -489,18 +491,15 @@ export default function SettingsRoute() {
                     <button
                       key={tab.title}
                       type="button"
-                      className={[
-                        selectedDesignTab.title === tab.title ? styles.designNavActive : styles.designNavButton,
-                        tab.title === "Brand Colors" && isExpertColorControls ? styles.designNavDisabled : "",
-                      ].filter(Boolean).join(" ")}
-                      aria-disabled={tab.title === "Brand Colors" && isExpertColorControls ? "true" : undefined}
+                      className={selectedDesignTab.title === tab.title && !isExpertScopeActive ? styles.designNavActive : styles.designNavButton}
                       onClick={() => {
+                        setActiveDesignTab(tab.title);
+                        setIsExpertScopeActive(false);
                         if (tab.title === "Brand Colors" && isExpertColorControls) {
                           setDesignGateMessage("Disable Expert Color Controls to access brand colors.");
                           return;
                         }
                         setDesignGateMessage(null);
-                        setActiveDesignTab(tab.title);
                       }}
                     >
                       <span className={styles.designNavIcon}>
@@ -527,6 +526,7 @@ export default function SettingsRoute() {
                         setIsExpertColorControls(isChecked);
                         if (isChecked) {
                           setActiveDesignTab("Brand Colors");
+                          setIsExpertScopeActive(false);
                         }
                         setDesignGateMessage(isChecked ? "Disable Expert Color Controls to access brand colors." : null);
                       }}
@@ -540,11 +540,12 @@ export default function SettingsRoute() {
                       <button
                         key={scope}
                         type="button"
-                        className={activeDesignScope === scope && selectedDesignTab.title === "Brand Colors" ? styles.designScopeActive : styles.designScopeButton}
+                        className={activeDesignScope === scope && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive ? styles.designScopeActive : styles.designScopeButton}
                         onClick={() => {
                           setDesignGateMessage(null);
                           setActiveDesignTab("Brand Colors");
                           setActiveDesignScope(scope);
+                          setIsExpertScopeActive(true);
                         }}
                       >
                         <span className={styles.designNavIcon}>
@@ -556,9 +557,9 @@ export default function SettingsRoute() {
                   </div>
                 ) : null}
               </section>
-              {designGateMessage ? (
+              {isBrandColorsPanelGated || designGateMessage ? (
                 <div className={styles.designGateAlert} role="alert" aria-live="polite">
-                  {designGateMessage}
+                  {designGateMessage ?? "Disable Expert Color Controls to access brand colors."}
                 </div>
               ) : null}
               <button type="button" className={styles.designResetButton} onClick={resetSelectedDesignTab}>
@@ -566,12 +567,19 @@ export default function SettingsRoute() {
               </button>
             </aside>
             <section className={styles.designContentCard}>
-              <DesignFields
-                title={isExpertColorControls && selectedDesignTab.title === "Brand Colors" ? activeDesignScope : selectedDesignTab.title}
-                fields={selectedDesignFields}
-                values={designFieldValues}
-                onFieldChange={(label, value) => setDesignFieldValues((current) => ({ ...current, [label]: value }))}
-              />
+              <div className={isBrandColorsPanelGated ? styles.designGatedPanel : undefined}>
+                <DesignFields
+                  title={isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive ? activeDesignScope : selectedDesignTab.title}
+                  fields={selectedDesignFields}
+                  values={designFieldValues}
+                  onFieldChange={(label, value) => {
+                    if (isBrandColorsPanelGated) {
+                      return;
+                    }
+                    setDesignFieldValues((current) => ({ ...current, [label]: value }));
+                  }}
+                />
+              </div>
             </section>
           </section>
           <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />

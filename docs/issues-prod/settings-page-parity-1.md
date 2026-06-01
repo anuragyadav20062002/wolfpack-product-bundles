@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 17:21
+**Last Updated:** 2026-06-01 19:52
 
 ## Overview
 Recover and replicate the full EB Settings page flow from live Chrome evidence and deployed Settings bundle evidence, with sensitive auth/session values redacted.
@@ -316,3 +316,18 @@ Recover and replicate the full EB Settings page flow from live Chrome evidence a
 - Chrome smoke confirmed Brand Colors now appears disabled while Expert Color Controls are enabled.
 - Scoped ESLint passed for `app/lib/admin-configuration-surfaces.ts` and `app/routes/app/app.settings.tsx` with zero errors and existing warnings only.
 - Next: rebuild graph metadata and commit the pending parity slice.
+
+### 2026-06-01 20:35 - Brand Colors panel-level gate correction
+- User clarified that the Brand Colors navigation item should not be greyed out.
+- Next: keep the Brand Colors nav clickable, grey out the Brand Colors field panel itself when Expert Color Controls are enabled, and keep expert scope panels editable.
+
+### 2026-06-01 20:38 - Brand Colors panel gate patch
+- Restored the Brand Colors navigation item to normal clickable styling.
+- Added a panel-level disabled/greyed state for the Brand Colors field panel when Expert Color Controls are enabled.
+- Kept expert scope panels editable by separating base Brand Colors view from expert scope view.
+- Next: smoke-check the Design Control Panel, rerun scoped lint, rebuild graph metadata, and commit.
+
+### 2026-06-01 19:52 - Brand Colors panel gate smoke
+- Verified in Chrome on the local embedded Settings page that Brand Colors remains a normal selectable nav item while Expert Color Controls is enabled.
+- Verified only the right-side Brand Colors field panel is visually grayed and guarded by the alert.
+- Verified selecting an expert scope such as General opens editable expert color fields without the Brand Colors panel gate.
