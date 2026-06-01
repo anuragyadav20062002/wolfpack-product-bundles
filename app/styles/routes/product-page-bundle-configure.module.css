@@ -1011,6 +1011,13 @@
   background: #f1f1f1;
 }
 
+.visibilityPreviewFullImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
 .visibilityPreviewProduct {
   display: grid;
   grid-template-columns: 44px minmax(145px, 0.95fr) minmax(180px, 1fr);

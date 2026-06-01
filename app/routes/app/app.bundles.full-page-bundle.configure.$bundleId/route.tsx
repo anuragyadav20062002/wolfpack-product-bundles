@@ -1180,6 +1180,12 @@ export default function ConfigureBundleFlow() {
     savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
   );
 
+  const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
+  const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
+  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Buy with Bundle");
+  const originalAutoSelectBrowsedProductRef = useRef<boolean>(savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false);
+
   // Bundle Banner upload state (Gap 2)
   const [bundleBannerDesktopUrl, setBundleBannerDesktopUrl] = useState<string>((bundle as any).bundleBannerDesktopUrl ?? "");
   const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
@@ -2021,6 +2027,11 @@ export default function ConfigureBundleFlow() {
           originalGiftMessageDraftRef.current = giftMessageDraft;
           originalDiscountMessagingMultiLanguageEnabledRef.current = discountMessagingMultiLanguageEnabled;
           originalRuleMessagesByLocaleRef.current = ruleMessagesByLocale;
+          originalUpsellWidgetEnabledRef.current = upsellWidgetEnabled;
+          originalUpsellWidgetDisplayModeRef.current = upsellWidgetDisplayMode;
+          originalUpsellWidgetDisplayOnRef.current = upsellWidgetDisplayOn;
+          originalUpsellWidgetButtonTextRef.current = upsellWidgetButtonText;
+          originalAutoSelectBrowsedProductRef.current = autoSelectBrowsedProduct;
 
           // Reset dirty flag after successful save
           setIsDirty(false);
@@ -2154,6 +2165,11 @@ export default function ConfigureBundleFlow() {
     setGiftMessageDraft(originalGiftMessageDraftRef.current);
     setDiscountMessagingMultiLanguageEnabled(originalDiscountMessagingMultiLanguageEnabledRef.current);
     setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
+    setUpsellWidgetEnabled(originalUpsellWidgetEnabledRef.current);
+    setUpsellWidgetDisplayMode(originalUpsellWidgetDisplayModeRef.current);
+    setUpsellWidgetDisplayOn(originalUpsellWidgetDisplayOnRef.current);
+    setUpsellWidgetButtonText(originalUpsellWidgetButtonTextRef.current);
+    setAutoSelectBrowsedProduct(originalAutoSelectBrowsedProductRef.current);
   }, [bundle.shopifyPageHandle, hookHandleDiscard]);
 
   const handleConfirmDiscard = useCallback(() => {
@@ -3850,7 +3866,7 @@ export default function ConfigureBundleFlow() {
                                           );
                                           updateAddonTiers(updated);
                                         }}
-                                        min="0"
+                                        min={0}
                                       />
                                       <s-number-field
                                         label="Discount on Add-ons"
@@ -3861,8 +3877,8 @@ export default function ConfigureBundleFlow() {
                                           );
                                           updateAddonTiers(updated);
                                         }}
-                                        min="0"
-                                        max="100"
+                                        min={0}
+                                        max={100}
                                         suffix="%"
                                       />
                                     </div>
@@ -5316,29 +5332,13 @@ export default function ConfigureBundleFlow() {
                     />
                   </div>
 
+                  <div style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
                   <div className={fullPageBundleStyles.visibilityPreviewFrame}>
-                    <div className={fullPageBundleStyles.visibilityPreviewProduct}>
-                      <div className={fullPageBundleStyles.visibilityPreviewThumbnails}>
-                        <span />
-                        <span />
-                        <span />
-                      </div>
-                      <div className={fullPageBundleStyles.visibilityPreviewImage}>
-                        <img
-                          src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
-                          alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
-                        />
-                      </div>
-                      <div className={fullPageBundleStyles.visibilityPreviewDetails}>
-                        <p className={fullPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
-                        <p className={fullPageBundleStyles.visibilityPreviewPrice}>$47.97</p>
-                        <div className={fullPageBundleStyles.visibilityPreviewNativeButton}>Add to Cart - $47.97</div>
-                        <div className={fullPageBundleStyles.visibilityPreviewWidget}>
-                          <span>{upsellWidgetTitle || "Bundle & Save"}</span>
-                          <button type="button">{upsellWidgetButtonText || "Buy with Bundle"}</button>
-                        </div>
-                      </div>
-                    </div>
+                    <img
+                      className={fullPageBundleStyles.visibilityPreviewFullImage}
+                      src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                      alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                    />
                     <div className={fullPageBundleStyles.visibilityRadioBar}>
                       <label className={fullPageBundleStyles.visibilityRadioLabel}>
                         <input
@@ -5370,16 +5370,15 @@ export default function ConfigureBundleFlow() {
                   <div className={fullPageBundleStyles.visibilityPanelSection}>
                     <div className={fullPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
-                      <button
-                        type="button"
-                        className={fullPageBundleStyles.visibilitySecondaryAction}
-                        onClick={() => {
-                          setUpsellWidgetLanguageMode((prev) => prev === "MULTIPLE" ? "SINGLE" : "MULTIPLE");
-                          markAsDirty();
-                        }}
-                      >
-                        Multi Language
-                      </button>
+                      <s-button
+                        variant="plain"
+                        icon="globe"
+                        accessibilityLabel="Multi Language"
+                        title="Multi Language"
+                        onClick={() => openMultiLanguageModal("Bundle Widget", [
+                          { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
+                        ])}
+                      />
                     </div>
                     <div className={fullPageBundleStyles.visibilityFieldStack}>
                       <label className={fullPageBundleStyles.visibilityFieldLabel}>
@@ -5458,6 +5457,7 @@ export default function ConfigureBundleFlow() {
                     />
                     <span>Add browsed product to bundle</span>
                   </label>
+                  </div>
                 </div>
 
                 <div className={fullPageBundleStyles.visibilityPlacementCard}>
