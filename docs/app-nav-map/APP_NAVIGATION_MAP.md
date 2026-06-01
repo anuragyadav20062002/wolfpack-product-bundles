@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-05-26
+**Last Updated:** 2026-06-01
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -20,6 +20,8 @@ provides a persistent left-nav with the app's registered nav items.
 ```
 Wolfpack: Product Bundles -SIT
 ├── [root]              → /app/dashboard          (Dashboard)
+├── Settings            → /app/settings
+├── Integrations        → /app/integrations
 ├── Design Control Panel → /app/design-control-panel
 ├── Analytics           → /app/attribution
 ├── Pricing             → /app/pricing
@@ -219,6 +221,58 @@ Triggered by: "CSS Guide" button
 CSS Guide Modal (max overlay)
 └── Help content: CSS variable reference, examples
 ```
+
+---
+
+### 2.2a Settings — `/app/settings`
+
+**Route file:** `app/routes/app/app.settings.tsx`
+
+Recovered Admin Settings hub:
+```
+Settings
+├── Card: Design
+│   └── Shows recovered Design Control Panel facts: brand colors, typography, corners, images and GIFs
+├── Card: Language
+│   └── Shows multilanguage model, supported languages, shared Cart & Checkout strings, and template language sections
+└── Card: Controls
+    └── Shows recovered Additional Configurations facts split by Landing Page Layout and Product Page Layout
+```
+
+Primary action:
+- `Open Design Control Panel` → `/app/design-control-panel`
+
+---
+
+### 2.2b Integrations — `/app/integrations`
+
+**Route file:** `app/routes/app/app.integrations.tsx`
+
+Recovered Admin Integrations hub:
+```
+Integrations Hub
+├── Request Integration action
+├── Pre-orders, Pickup & Delivery
+│   ├── Stoq
+│   └── Zapiet
+├── Subscriptions
+│   ├── Skio
+│   ├── Appstle
+│   └── Bold
+├── Reviews
+│   └── Judge.me
+├── Page Builders
+│   ├── PageFly
+│   └── GemPages
+└── Checkout
+    ├── Gokwik
+    └── Shopflo
+```
+
+Setup behavior:
+- `View Setup` expands an internal recovered setup summary for guide-based integrations.
+- `Open Chat Setup` expands the recovered chat-based setup summary for Zapiet.
+- External competitor help URLs are intentionally not embedded in source code; sanitized evidence remains in `docs/competitor-analysis/18-eb-settings-integrations-replication-evidence.md`.
 
 ---
 

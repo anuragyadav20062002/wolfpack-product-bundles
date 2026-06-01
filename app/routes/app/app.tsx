@@ -68,6 +68,8 @@ export default function App() {
         <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
         <ui-nav-menu>
           <a href="/app/dashboard" rel="home">Dashboard</a>
+          <a href="/app/settings">Settings</a>
+          <a href="/app/integrations">Integrations</a>
           <a href="/app/design-control-panel">Design Control Panel</a>
           <a href="/app/attribution">Analytics</a>
           <a href="/app/pricing">Pricing</a>
