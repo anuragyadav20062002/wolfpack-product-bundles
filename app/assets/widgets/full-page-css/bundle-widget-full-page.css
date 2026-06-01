@@ -5138,6 +5138,23 @@ minmax(0,
   border-radius:999px;
   padding:6px 14px}
 
+[data-fpb-design-preset=DEFAULT] .category-tabs {
+  justify-content:flex-start;
+  gap:28px;
+  margin:18px 8px 14px}
+
+[data-fpb-design-preset=DEFAULT] .category-tab {
+  padding:0 0 6px;
+  border:0;
+  border-bottom:3px solid transparent;
+  border-radius:0;
+  background:transparent;
+  color:#000;
+  font-weight:600}
+
+[data-fpb-design-preset=DEFAULT] .category-tab.active {
+  border-bottom-color:#000}
+
 .product-selected-action-row {
   display:grid;
   grid-template-columns:1fr 64px;
