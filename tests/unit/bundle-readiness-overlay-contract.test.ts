@@ -10,6 +10,9 @@ describe("BundleReadinessOverlay interaction contract", () => {
   it("renders readiness rows as buttons and keeps existing layout class", () => {
     expect(source).toContain("<button");
     expect(source).toContain("styles.panelItem");
+    expect(source).toContain("styles.itemMainRow");
+    expect(source).toContain("showActionHint");
+    expect(source).toContain("showActionChevron");
     expect(source).toContain("onKeyDown={(event) => handleItemKeyDown(event, item.key)}");
   });
 
@@ -22,5 +25,11 @@ describe("BundleReadinessOverlay interaction contract", () => {
     expect(source).toContain('type="button"');
     expect(source).toContain('data-tour-target="fpb-readiness-score"');
     expect(source).toContain('aria-label="Toggle readiness score"');
+  });
+
+  it("uses the EB near-complete status copy for incomplete high and medium scores", () => {
+    expect(source).toContain("function readinessStatusText");
+    expect(source).toContain('return "Almost there. A few more steps to go.";');
+    expect(source).not.toContain("Your bundle isn't ready to sell yet.");
   });
 });

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:35
+**Last Updated:** 2026-06-01 21:36
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -157,3 +157,15 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/routes/ppb-bundle-settings-surface-contract.test.ts tests/unit/routes/fpb-bundle-settings-surface-contract.test.ts --runInBand` with 3/3 tests.
 - Scoped ESLint passed with 0 errors for both configure routes and the focused Bundle Settings contract tests; warnings are existing route unsafe-any/security warnings.
 - Chrome smoke on SIT FPB configure confirmed Bundle Settings renders `Enable quantity validation` as a checkbox and leaves `Maximum allowed quantity per product` disabled while unchecked.
+
+### 2026-06-01 21:29 - Readiness overlay compact EB parity started
+- EB configure overlay evidence: expanded readiness panel uses compact rows with title and points on one row, no descriptions on completed rows, a chevron only on the actionable incomplete row, and footer text `Almost there. A few more steps to go.` at score 85.
+- WPB configure evidence before this edit: expanded panel used taller card rows with descriptions on every item and footer text `Your bundle isn't ready to sell yet.` at score 65.
+- Planned edit: centralize the fix in `BundleReadinessOverlay` so FPB/PPB configure overlays align with EB while preserving the existing compact create-wizard collapsed trigger behavior.
+
+### 2026-06-01 21:36 - Readiness overlay compact EB parity validation
+- Updated `BundleReadinessOverlay` to render compact EB-like rows with the label and points on one row, descriptions only for incomplete action rows, and chevrons only for incomplete actionable rows.
+- Updated the incomplete medium/high-score footer copy to `Almost there. A few more steps to go.` while keeping the ready state copy for fully complete bundles.
+- Focused Jest passed: `npx jest tests/unit/bundle-readiness-overlay-contract.test.ts --runInBand` with 4/4 tests.
+- Scoped ESLint passed with 0 errors for `BundleReadinessOverlay.tsx` and its focused source contract test.
+- Chrome smoke on SIT FPB configure confirmed the expanded readiness overlay uses compact rows, right-aligned points, and the EB-style near-complete footer text.
