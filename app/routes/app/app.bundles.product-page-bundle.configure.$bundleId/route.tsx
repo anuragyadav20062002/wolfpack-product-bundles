@@ -245,8 +245,8 @@ const bundleVisibilityChildItems = [
 
 const productPageTemplateOptions = [
   { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/PPB-List.png" },
-  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/PPB-Grid.png" },
   { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/PPB-HorizontalSlots.png" },
+  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/PPB-Grid.png" },
   { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/PPB-VerticalSlots.png" },
 ] as const;
 
@@ -592,6 +592,7 @@ export default function ConfigureBundleFlow() {
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
   const subscriptionFetcher = useFetcher<SubscriptionValidationResponse>();
+  const [showSubscriptionSetupGuide, setShowSubscriptionSetupGuide] = useState(false);
   const revalidator = useRevalidator();
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
@@ -718,7 +719,7 @@ export default function ConfigureBundleFlow() {
   const savedWidgetDisplayConfiguration = savedWidgetConfiguration?.displayConfiguration;
   const savedEmbedDisplayConfiguration = savedUpsellConfiguration?.displayConfiguration;
   const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
-  const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "block");
   const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>(
     (bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all")
   );
@@ -748,7 +749,7 @@ export default function ConfigureBundleFlow() {
   const [bundleEmbedSpecificCollectionPages, setBundleEmbedSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificCollectionPages));
 
   const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
-  const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "block");
   const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
   const originalUpsellWidgetTitleRef = useRef<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
   const originalUpsellWidgetDescriptionRef = useRef<string>(savedWidgetConfiguration?.description ?? "");
@@ -2358,7 +2359,7 @@ export default function ConfigureBundleFlow() {
                   <div className={productPageBundleStyles.bundleLivePanel}>
                     <span className={productPageBundleStyles.bundleLivePlaceOnTheme}>Place on theme</span>
                     <s-button variant="secondary" onClick={handlePlaceWidget}>
-                      Place Widget ↗
+                      Place Widget
                     </s-button>
                   </div>
                 </s-stack>
@@ -3706,11 +3707,11 @@ export default function ConfigureBundleFlow() {
                     </div>
                     <div className={productPageBundleStyles.visibilityGuideGrid}>
                       {[
-                        { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
-                        { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
-                        { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
-                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/Featured-Product-Card.png" },
-                      ].map(({ title, desc: description, img }) => (
+                        { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png",           guide: "Copy your bundle link, open the theme editor, add or select an image banner, set the button label and link, then save." },
+                        { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png",       guide: "Copy your bundle link, open Content > Menus, add the bundle as a main-menu item, then save the menu." },
+                        { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png",     guide: "Copy your bundle link, open the theme editor, enable the announcement bar, add offer copy and the bundle link, then save." },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/Featured-Product-Card.png", guide: "Add the bundle product to a collection, open the theme editor, select Featured Collection, choose that collection, lower the max product count, then save." },
+                      ].map(({ title, desc: description, img, guide }) => (
                         <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
                           <div className={productPageBundleStyles.visibilityGuideMedia}>
                             <img src={img} alt={title} />
@@ -3719,9 +3720,10 @@ export default function ConfigureBundleFlow() {
                             <h4 className={productPageBundleStyles.visibilityGuideTitle}>{title}</h4>
                             <p className={productPageBundleStyles.visibilityGuideDescription}>{description}</p>
                             <div className={productPageBundleStyles.visibilityGuideFooter}>
-                              <button type="button" className={productPageBundleStyles.visibilityGuideAction} onClick={() => window.open("https://wolfpackapps.com", "_blank")}>
-                                Quick Setup Guide
-                              </button>
+                              <details>
+                                <summary className={productPageBundleStyles.visibilityGuideAction}>Quick Setup Guide</summary>
+                                <p className={productPageBundleStyles.visibilityGuideDescription}>{guide}</p>
+                              </details>
                               <span className={productPageBundleStyles.visibilitySetupTime}>5 min setup</span>
                             </div>
                           </div>
@@ -3776,7 +3778,7 @@ export default function ConfigureBundleFlow() {
                       <div>
                         <h4 className={productPageBundleStyles.visibilitySetupTitle}>Bundle Widget</h4>
                         <p className={productPageBundleStyles.visibilityCardText}>
-                          Add a bundle button to specific product pages.
+                          This will display an upsell block or button on the product pages of your choice.
                         </p>
                       </div>
                       <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={() => handleSectionChange("bundle_widget")}>
@@ -3787,7 +3789,7 @@ export default function ConfigureBundleFlow() {
                       <div>
                         <h4 className={productPageBundleStyles.visibilitySetupTitle}>Bundle Embed</h4>
                         <p className={productPageBundleStyles.visibilityCardText}>
-                          Embed the full bundle builder directly on a product page.
+                          Directly embed the Bundle Builder block on product pages so customers can curate bundles there.
                         </p>
                       </div>
                       <button type="button" className={productPageBundleStyles.visibilitySecondaryAction} onClick={() => handleSectionChange("bundle_embed")}>
@@ -3987,7 +3989,7 @@ export default function ConfigureBundleFlow() {
                     <div>
                       <h3 className={productPageBundleStyles.visibilityPanelTitle}>Embed Bundle Builder on Product Pages</h3>
                       <p className={productPageBundleStyles.visibilityCardText}>
-                        Directly embed the Bundle Builder block on product pages to let customers curate their bundles right there.
+                        Directly embed the Bundle Builder block on product pages so customers can curate bundles there.
                       </p>
                     </div>
                     <s-switch
@@ -4008,7 +4010,9 @@ export default function ConfigureBundleFlow() {
                         { key: "embedTitle", label: "Title", fallback: bundleEmbedTitle },
                         { key: "embedSubTitle", label: "Sub Title", fallback: bundleEmbedSubTitle, multiline: true },
                       ])}
-                    />
+                    >
+                      Multi Language
+                    </s-button>
                   </div>
 
                   <div className={productPageBundleStyles.visibilityFieldStack}>
@@ -4098,6 +4102,9 @@ export default function ConfigureBundleFlow() {
                     <h4 className={productPageBundleStyles.visibilitySectionTitle}>Put the Bundle Builder at a custom location</h4>
                     <p className={productPageBundleStyles.visibilityCardText}>
                       By default, the bundle builder is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
+                    <p className={productPageBundleStyles.visibilityCardText}>
+                      Place app block on the theme
                     </p>
                   </div>
                   <button type="button" className={productPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
@@ -4520,13 +4527,29 @@ export default function ConfigureBundleFlow() {
                     <s-stack direction="block" gap="base">
                       <s-stack direction="inline" alignItems="center" gap="small">
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Subscriptions</h3>
-                        <s-button variant="plain">
+                        <s-button
+                          variant="plain"
+                          onClick={() => setShowSubscriptionSetupGuide((visible) => !visible)}
+                        >
                           How to setup?
                         </s-button>
                       </s-stack>
                       <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                         Allow customers to purchase the bundle as a subscription
                       </p>
+
+                      <s-banner tone="warning">
+                        <span>Subscriptions cannot be enabled on bundles with Buy X, Get Y discounts. Use a different discount type to enable subscriptions.</span>
+                      </s-banner>
+
+                      {showSubscriptionSetupGuide && (
+                        <s-banner tone="info">
+                          <s-stack direction="block" gap="small-400">
+                            <span>Create a subscription plan, name it, select all bundle products, configure the purchase frequency, and save the plan.</span>
+                            <span>Return here, then use Get Subscription Plans to fetch the shared selling plans available for this bundle.</span>
+                          </s-stack>
+                        </s-banner>
+                      )}
 
                       {validationMessage && (
                         <s-banner tone="warning">

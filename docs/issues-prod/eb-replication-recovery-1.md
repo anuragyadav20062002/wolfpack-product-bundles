@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:40
+**Last Updated:** 2026-06-01 22:52
 
 ## Overview
 Recover EB behavior from deployed runtime evidence, previous internal documentation, and live Chrome inspection so Wolfpack can replicate Settings, Integrations, and key bundle edit sections with exact UI and functionality parity.
@@ -546,6 +546,12 @@ Constraints:
 - Targeted Jest passed: recovered Admin surfaces plus Settings and Integrations route/source-contract tests, 11 suites and 17 tests.
 - Lint passed for Settings/Integrations source and test files with 0 errors.
 - Agent-store Chrome smoke check passed for `/app/settings` landing, Language Configurations, Additional Configurations, `/app/integrations`, and Request Integration guidance without the Vite transform overlay.
+
+### 2026-06-01 22:52 - Completed PPB parity route validation
+- Validated the accumulated Product Page Bundle configure parity route diff for Place Widget, Bundle Visibility overview, Bundle Widget default mode, Bundle Embed copy/defaults/save shape, Bundle Settings surface, Subscriptions setup guidance, setup rail, and Select Template order.
+- Targeted Jest passed: PPB route/source-contract tests, 8 suites and 10 tests.
+- Lint passed for the PPB configure route and PPB tests with 0 errors and existing warnings only.
+- Agent-store Chrome smoke check passed: opened the PPB configure route and Bundle Visibility surface rendered Bundle Widget and Bundle Embed placement cards without the Vite transform overlay.
 
 ### 2026-06-01 18:06 - Started PPB Bundle Settings surface contract coverage
 - Inspected the PPB Bundle Settings route block against captured evidence.
