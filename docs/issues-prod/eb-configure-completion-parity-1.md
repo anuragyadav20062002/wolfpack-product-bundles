@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 20:58
+**Last Updated:** 2026-06-01 21:06
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -105,3 +105,8 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Scoped ESLint passed with 0 errors for the shared template handler, deep-link helper, and unit contract; warnings are existing unsafe-any warnings in touched files.
 - Chrome smoke on the SIT Admin PPB configure page confirmed `Place Widget` shows loading on the button first, opens `Select Product Page Template`, lists the asset-derived template row `product`, and selecting it opens Shopify Theme Editor with `template=product`.
 - Graph rebuild completed with `graph.json` and `GRAPH_REPORT.md` regenerated.
+
+### 2026-06-01 21:06 - User corrections queued for later slices
+- User clarified the `Edit Product` parity target: EB opens a Shopify product-page form inside an in-admin modal, not a new Admin product page tab. Take this up after the other listed tasks are completed.
+- User clarified Place Widget still has a remaining product-context gap: the Theme Editor deep link now preserves the selected template, but must also target the bundle parent product. Take this up later when the rest of the tasks are complete.
+- User clarified readiness behavior: the readiness score is still an overlay, not an inline card. Create wizard should keep the compact gauge+score overlay, while edit/configure overlay should include the extra EB description text inline. Deferred this slice and reverted the in-progress inline-card patch.
