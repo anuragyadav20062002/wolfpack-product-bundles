@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:36
+**Last Updated:** 2026-06-01 21:37
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -169,3 +169,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/bundle-readiness-overlay-contract.test.ts --runInBand` with 4/4 tests.
 - Scoped ESLint passed with 0 errors for `BundleReadinessOverlay.tsx` and its focused source contract test.
 - Chrome smoke on SIT FPB configure confirmed the expanded readiness overlay uses compact rows, right-aligned points, and the EB-style near-complete footer text.
+
+### 2026-06-01 21:37 - Post-commit graph hook follow-up
+- The commit hook rebuilt graph outputs after the readiness overlay commit and left `graphify-out/GRAPH_REPORT.md` dirty.
+- Follow-up commit will include the generated graph report plus this issue-log entry only.
