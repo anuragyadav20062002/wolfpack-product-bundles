@@ -74,3 +74,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: temporary probe style absent, FPB root width `1512px`, content width `842px`, sidebar width `366px`.
 - Network proof: FPB CSS 200, FPB bundled JS 200, bundle JSON 200, storefront product hydration 200, view tracking 200.
 - Regression check: DEFAULT background remains `rgb(241, 241, 241)` and active category tab remains transparent with `3px solid rgb(0, 0, 0)` bottom border.
+
+### 2026-06-02 02:12 - FPB desktop product card sizing slice started
+- Existing EB DEFAULT evidence shows two larger product cards in the left content area; Chrome computed WPB as four `182px` desktop columns with `166px` images.
+- Local CSS inspection found the desktop `fpbCardCtaMode=icon` rule hardcodes `repeat(4, 182px)`, `182px` cards, and `166px` product images.
+- Scope this slice to replacing the existing desktop compact-card dimensions with two larger cards; mobile rules are left unchanged.
+- Patched raw FPB CSS and generated CSS to use two `300px` desktop columns with `284px` product images.
+- Chrome initially showed Shopify's dev CSS CDN stayed on the previous 99,995-byte revision even after the local generated CSS changed to the larger-card constants.
+- Forced a byte-distinct generated CSS asset under the Shopify 100,000 byte limit; subsequent Chrome reload served the updated CSS.
+- Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: grid computes to `300px 300px`, first product card computes to `300px x 420px`, first product image computes to `284px x 284px`.
+- Network proof: FPB CSS 200, FPB bundled JS 200, bundle JSON 200, storefront product hydration 200.
