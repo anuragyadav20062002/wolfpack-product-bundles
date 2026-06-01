@@ -312,6 +312,29 @@
   padding: 26px 12px 16px;
 }
 
+.designGateAlert {
+  margin: 12px 0;
+  border: 1px solid #f0c36d;
+  border-radius: 8px;
+  background: #fff8e5;
+  color: #3f2e00;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.designFieldPanelHeader {
+  margin: 0 0 18px;
+}
+
+.designFieldPanelHeader h2 {
+  margin: 0;
+  color: #202223;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .designFieldStack {
   display: grid;
 }

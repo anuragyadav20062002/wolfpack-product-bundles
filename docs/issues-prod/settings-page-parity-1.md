@@ -227,3 +227,28 @@ Recover and replicate the full EB Settings page flow from live Chrome evidence a
 - Smoke-tested Preview Bundle locally: modal opens and exposes the gray top-right dismiss button.
 - Smoke-tested contextual save bar locally: editing Primary Color shows Shopify's unsaved changes bar; Discard restores the saved value and hides the bar.
 - Next: rerun scoped lint and graph rebuild, then stage only the Settings parity files for commit.
+
+### 2026-06-01 19:00 - Expert Color Controls gating
+- User flagged that EB gates base Brand Colors access when Expert Color Controls are enabled.
+- Captured EB behavior in Chrome: toggling Expert Color Controls on shows the alert `Disable Expert Color Controls to access brand colors.`, and expert scope rows expose their own field panels.
+- Next: add the same gating alert and Brand Colors navigation block to the local Settings Design Control Panel.
+
+### 2026-06-01 19:03 - Remove recovery-era type names
+- User flagged that source names must not use the `Recovered` prefix.
+- Found `RecoveredField`, `RecoveredTab`, and `RecoveredFieldGroup` in the Settings configuration types.
+- Next: rename them to neutral Settings configuration names before continuing Expert Color Controls persistence work.
+
+### 2026-06-01 19:08 - Expert color persistence flow
+- Captured EB save flow after enabling Expert Color Controls: EB posts to `pageCustomization/update` and persists expert state under `stylePresets.isExpertControlsEnabled`, while preserving base colors in `stylePresets.colors` and saving expert colors under page-customization sections such as `productCard`, `emptyStateCard`, `cartFooter`, `generalSettings`, and `mixAndMatchConfig`.
+- Updated the local Settings Design save shape to store `fieldValues` plus `isExpertControlsEnabled`, and to mirror EB's base-versus-expert separation into `generalSettings.pageCustomization`.
+- Updated runtime design mapping so expert product-card colors drive the storefront-facing product card/button/text runtime values when expert mode is enabled.
+- Next: lint and smoke-test local Admin behavior in Chrome.
+
+### 2026-06-01 19:12 - Expert color Admin smoke
+- Verified local Settings -> Design Control Panel in Chrome.
+- Enabling Expert Color Controls now shows `Disable Expert Color Controls to access brand colors.` and opens the expert field panel.
+- Product Card scope shows EB-matched fields: Background Color, Product Title Text Color, Add Product Button Color, Add Product Button Text Color, Empty State Border Color, and Empty State Text Color.
+- Saved the expert-enabled state through the contextual save bar and confirmed the app displayed `Settings saved successfully`.
+- Reloaded the product storefront page to confirm the widget page still loads after the Admin save path.
+- Scoped ESLint passed with zero errors and existing warnings only.
+- Next: rebuild graph metadata, stage only this slice, and commit.

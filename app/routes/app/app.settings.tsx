@@ -6,10 +6,11 @@ import { requireAdminSession } from "../../lib/auth-guards.server";
 import {
   CONTROL_LAYOUTS,
   DESIGN_CONFIGURATION,
+  EXPERT_COLOR_CONTROLS,
   LANGUAGE_CONFIGURATION,
   SETTINGS_CARDS,
   SUPPORTED_LANGUAGE_LABELS,
-  type RecoveredField,
+  type SettingsField,
   type SettingsCardId,
 } from "../../lib/admin-configuration-surfaces";
 import styles from "../../styles/routes/admin-configuration-surfaces.module.css";
@@ -89,13 +90,21 @@ export async function action({ request }: ActionFunctionArgs) {
     ...(intent === "saveSettingsLanguage" ? { language: payload } : {}),
     ...(intent === "saveSettingsControls" ? { controls: payload } : {}),
   };
+  const designRuntimeSettings = intent === "saveSettingsDesign" ? buildDesignRuntimeData(payload) : {};
+  const pageCustomization = "pageCustomization" in designRuntimeSettings
+    ? designRuntimeSettings.pageCustomization
+    : null;
+  const designSettingsUpdate = Object.fromEntries(
+    Object.entries(designRuntimeSettings).filter(([key]) => key !== "pageCustomization"),
+  );
   const runtimeSettings = {
-    ...(intent === "saveSettingsDesign" ? buildDesignRuntimeData(payload) : {}),
+    ...designSettingsUpdate,
     ...(intent === "saveSettingsLanguage" ? buildLanguageRuntimeData(payload) : {}),
     ...(intent === "saveSettingsControls" ? buildControlsRuntimeData(payload) : {}),
   };
   const nextGeneralSettings = {
     ...currentGeneralSettings,
+    ...(pageCustomization ? { pageCustomization } : {}),
     settingsPage: nextSettingsPage,
   };
   const updateData = {
@@ -142,10 +151,13 @@ function getInitialControlFieldValues() {
 
 function getInitialDesignFieldValues() {
   return Object.fromEntries(
-    DESIGN_CONFIGURATION.flatMap((tab) => tab.fields.map((field) => [
-      field.label,
+    [
+      ...DESIGN_CONFIGURATION.flatMap((tab) => tab.fields),
+      ...Object.values(EXPERT_COLOR_CONTROLS).flat(),
+    ].map((field) => [
+      field.key ?? field.label,
       field.value ?? "",
-    ])),
+    ]),
   ) as Record<string, string>;
 }
 
@@ -176,16 +188,68 @@ function numberFromSettings(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function buildPageCustomizationData(fieldValues: Record<string, unknown>, isExpertControlsEnabled: boolean) {
+  const value = (key: string, fallback: string) => String(fieldValues[key] ?? fallback);
+  return {
+    productCard: {
+      productCardBgColor: isExpertControlsEnabled ? value("expert.productCard.productCardBgColor", "#ffffff") : value("Product Background Color", "#ffffff"),
+      productCardTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardTextColor", "#252525") : value("Primary Text Color", "#000000"),
+      productCardButtonColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonColor", "#000000") : value("Primary Color", "#000000"),
+      productCardButtonTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonTextColor", "#ffffff") : value("Button Text Color", "#ffffff"),
+    },
+    emptyStateCard: {
+      emptyStateCardBorderColor: value("expert.emptyStateCard.emptyStateCardBorderColor", "#000"),
+      emptyStateCardTextColor: value("expert.emptyStateCard.emptyStateCardTextColor", "#3E3E3E"),
+    },
+    cartFooter: {
+      cartFooterBgColor: value("expert.cartFooter.cartFooterBgColor", "#ffffff"),
+      cartFooterTextColor: value("expert.cartFooter.cartFooterTextColor", "#000000"),
+      cartFooterFinalPriceFontColor: value("expert.cartFooter.cartFooterFinalPriceFontColor", "#000000"),
+      cartFooterDiscountTextColor: value("expert.cartFooter.cartFooterDiscountTextColor", "#000000"),
+      cartFooterNextButtonColor: value("expert.cartFooter.cartFooterNextButtonColor", "#000000"),
+      cartFooterNextButtonTextColor: value("expert.cartFooter.cartFooterNextButtonTextColor", "#ffffff"),
+    },
+    generalSettings: {
+      bundleBgColor: value("expert.generalSettings.bundleBgColor", "transparent"),
+      productPageTitleColor: value("expert.generalSettings.productPageTitleColor", "#000000"),
+      bundleUpSellButtonBg: value("expert.generalSettings.bundleUpSellButtonBg", "#000000"),
+      bundleUpsellTextColor: value("expert.generalSettings.bundleUpsellTextColor", "#ffffff"),
+      bundleUpsellFontColor: value("expert.generalSettings.bundleUpsellFontColor", "#000000"),
+    },
+    mixAndMatchConfig: {
+      generalSettings: {
+        bundleUpsellFontColor: value("expert.mixAndMatchConfig.generalSettings.bundleUpsellFontColor", "#000000"),
+        bundleUpsellButtonBg: value("expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", "#000000"),
+        bundleUpsellButtonTextColor: value("expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonTextColor", "#ffffff"),
+      },
+    },
+    stylePresets: {
+      colors: {
+        primaryColor: value("Primary Color", "#000000"),
+        buttonTextColor: value("Button Text Color", "#ffffff"),
+        primaryTextColor: value("Primary Text Color", "#000000"),
+        accentColor: value("Secondary Color", "#eeeeee"),
+        backgroundColor: value("Product Background Color", "#ffffff"),
+      },
+      isExpertControlsEnabled,
+    },
+  };
+}
+
 function buildDesignRuntimeData(payload: Record<string, unknown>) {
-  const value = (label: string) => String(payload[label] ?? "");
+  const fieldValues = payload.fieldValues && typeof payload.fieldValues === "object"
+    ? payload.fieldValues as Record<string, unknown>
+    : {};
+  const isExpertControlsEnabled = payload.isExpertControlsEnabled === true;
+  const value = (label: string) => String(fieldValues[label] ?? "");
   return {
     globalColorsSettings: {
-      globalPrimaryButtonColor: value("Primary Color") || "#000000",
-      globalButtonTextColor: value("Button Text Color") || "#ffffff",
-      globalPrimaryTextColor: value("Primary Text Color") || "#000000",
+      globalPrimaryButtonColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonColor") || "#000000" : value("Primary Color") || "#000000",
+      globalButtonTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonTextColor") || "#ffffff" : value("Button Text Color") || "#ffffff",
+      globalPrimaryTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardTextColor") || "#252525" : value("Primary Text Color") || "#000000",
       globalSecondaryTextColor: value("Secondary Color") || "#eeeeee",
     },
-    productCardBgColor: value("Product Background Color") || "#ffffff",
+    productCardBgColor: isExpertControlsEnabled ? value("expert.productCard.productCardBgColor") || "#ffffff" : value("Product Background Color") || "#ffffff",
     productCardFontSize: numberFromSettings(value("Primary Font Size")),
     productCardFontWeight: weightToNumber(value("Primary Font Weight")),
     productFinalPriceFontSize: numberFromSettings(value("Secondary Font Size")),
@@ -193,6 +257,7 @@ function buildDesignRuntimeData(payload: Record<string, unknown>) {
     buttonBorderRadius: numberFromSettings(value("Bundle Buttons Base")),
     productCardBorderRadius: numberFromSettings(value("Product Card & Cart Base")),
     productCardImageFit: value("Image Fit").toLowerCase() || "cover",
+    pageCustomization: buildPageCustomizationData(fieldValues, isExpertControlsEnabled),
   };
 }
 
@@ -254,7 +319,7 @@ export default function SettingsRoute() {
     ? settingsPage.controls as Record<string, string>
     : null;
   const persistedDesignState = settingsPage?.design && typeof settingsPage.design === "object"
-    ? settingsPage.design as Record<string, string>
+    ? settingsPage.design as { fieldValues?: Record<string, string>; isExpertControlsEnabled?: boolean }
     : null;
   const [activeCard, setActiveCard] = useState<SettingsCardId>("design");
   const [settingsView, setSettingsView] = useState<"landing" | "design" | "language" | "controls">("landing");
@@ -284,23 +349,27 @@ export default function SettingsRoute() {
   const [activeDesignTab, setActiveDesignTab] = useState(DESIGN_CONFIGURATION[0].title);
   const [designFieldValues, setDesignFieldValues] = useState<Record<string, string>>({
     ...getInitialDesignFieldValues(),
-    ...(persistedDesignState ?? {}),
+    ...(persistedDesignState?.fieldValues ?? {}),
   });
   const [savedDesignFieldValues, setSavedDesignFieldValues] = useState<Record<string, string>>({
     ...getInitialDesignFieldValues(),
-    ...(persistedDesignState ?? {}),
+    ...(persistedDesignState?.fieldValues ?? {}),
   });
   const [activeControlLayout, setActiveControlLayout] = useState(CONTROL_LAYOUTS[0].label);
   const [activeControlTab, setActiveControlTab] = useState(CONTROL_LAYOUTS[0].tabs[0].title);
-  const [isExpertColorControls, setIsExpertColorControls] = useState(false);
+  const [isExpertColorControls, setIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
+  const [savedIsExpertColorControls, setSavedIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
   const [activeDesignScope, setActiveDesignScope] = useState("General");
+  const [designGateMessage, setDesignGateMessage] = useState<string | null>(null);
   const selectedDesignTab = DESIGN_CONFIGURATION.find((tab) => tab.title === activeDesignTab) ?? DESIGN_CONFIGURATION[0];
   const selectedControlLayout = CONTROL_LAYOUTS.find((layout) => layout.label === activeControlLayout) ?? CONTROL_LAYOUTS[0];
   const selectedControlTab = selectedControlLayout.tabs.find((tab) => tab.title === activeControlTab) ?? selectedControlLayout.tabs[0];
   const currentLanguageState = { isMultilanguageEnabled, selectedLanguage, languageFieldValues };
   const isLanguageDirty = JSON.stringify(currentLanguageState) !== JSON.stringify(savedLanguageState);
   const isControlsDirty = JSON.stringify(controlFieldValues) !== JSON.stringify(savedControlFieldValues);
-  const isDesignDirty = JSON.stringify(designFieldValues) !== JSON.stringify(savedDesignFieldValues);
+  const currentDesignState = { fieldValues: designFieldValues, isExpertControlsEnabled: isExpertColorControls };
+  const savedDesignState = { fieldValues: savedDesignFieldValues, isExpertControlsEnabled: savedIsExpertColorControls };
+  const isDesignDirty = JSON.stringify(currentDesignState) !== JSON.stringify(savedDesignState);
   const isActiveSubpageDirty =
     (settingsView === "design" && isDesignDirty) ||
     (settingsView === "language" && isLanguageDirty) ||
@@ -309,6 +378,8 @@ export default function SettingsRoute() {
   const discardActiveSettingsChanges = () => {
     if (settingsView === "design") {
       setDesignFieldValues(savedDesignFieldValues);
+      setIsExpertColorControls(savedIsExpertColorControls);
+      setDesignGateMessage(null);
       return;
     }
     if (settingsView === "language") {
@@ -326,9 +397,10 @@ export default function SettingsRoute() {
     if (settingsView === "design") {
       submit({
         intent: "saveSettingsDesign",
-        payload: JSON.stringify(designFieldValues),
+        payload: JSON.stringify(currentDesignState),
       }, { method: "post" });
       setSavedDesignFieldValues(designFieldValues);
+      setSavedIsExpertColorControls(isExpertColorControls);
       return;
     }
     if (settingsView === "language") {
@@ -356,10 +428,13 @@ export default function SettingsRoute() {
   }, [actionData]);
 
   if (settingsView === "design") {
+    const selectedDesignFields = isExpertColorControls && selectedDesignTab.title === "Brand Colors"
+      ? EXPERT_COLOR_CONTROLS[activeDesignScope] ?? EXPERT_COLOR_CONTROLS.General
+      : selectedDesignTab.fields;
     const resetSelectedDesignTab = () => {
       setDesignFieldValues((current) => ({
         ...current,
-        ...Object.fromEntries(selectedDesignTab.fields.map((field) => [field.label, field.value ?? ""])),
+        ...Object.fromEntries(selectedDesignFields.map((field) => [field.key ?? field.label, field.value ?? ""])),
       }));
     };
 
@@ -392,7 +467,15 @@ export default function SettingsRoute() {
                       key={tab.title}
                       type="button"
                       className={selectedDesignTab.title === tab.title ? styles.designNavActive : styles.designNavButton}
-                      onClick={() => setActiveDesignTab(tab.title)}
+                      onClick={() => {
+                        if (tab.title === "Brand Colors" && isExpertColorControls) {
+                          setDesignGateMessage("Disable Expert Color Controls to access brand colors.");
+                          setActiveDesignTab(tab.title);
+                          return;
+                        }
+                        setDesignGateMessage(null);
+                        setActiveDesignTab(tab.title);
+                      }}
                     >
                       <span className={styles.designNavIcon}>
                         <s-icon type={getDesignIconKey(tab.title)} />
@@ -412,7 +495,11 @@ export default function SettingsRoute() {
                     <input
                       type="checkbox"
                       checked={isExpertColorControls}
-                      onChange={(event) => setIsExpertColorControls(event.currentTarget.checked)}
+                      onChange={(event) => {
+                        const isChecked = event.currentTarget.checked;
+                        setIsExpertColorControls(isChecked);
+                        setDesignGateMessage(isChecked ? "Disable Expert Color Controls to access brand colors." : null);
+                      }}
                     />
                   </label>
                   <div className={styles.designNavList} role="tablist" aria-label="Color control scopes">
@@ -421,7 +508,10 @@ export default function SettingsRoute() {
                         key={scope}
                         type="button"
                         className={activeDesignScope === scope ? styles.designScopeActive : styles.designScopeButton}
-                        onClick={() => setActiveDesignScope(scope)}
+                        onClick={() => {
+                          setDesignGateMessage(null);
+                          setActiveDesignScope(scope);
+                        }}
                       >
                         <span className={styles.designNavIcon}>
                           <s-icon type={getDesignIconKey(scope)} />
@@ -432,13 +522,23 @@ export default function SettingsRoute() {
                   </div>
                 </section>
               )}
+              {designGateMessage ? (
+                <div className={styles.designGateAlert} role="alert" aria-live="polite">
+                  {designGateMessage}
+                </div>
+              ) : null}
               <button type="button" className={styles.designResetButton} onClick={resetSelectedDesignTab}>
                 Reset to default
               </button>
             </aside>
             <section className={styles.designContentCard}>
+              {isExpertColorControls && selectedDesignTab.title === "Brand Colors" ? (
+                <div className={styles.designFieldPanelHeader}>
+                  <h2>{activeDesignScope}</h2>
+                </div>
+              ) : null}
               <DesignFields
-                fields={selectedDesignTab.fields}
+                fields={selectedDesignFields}
                 values={designFieldValues}
                 onFieldChange={(label, value) => setDesignFieldValues((current) => ({ ...current, [label]: value }))}
               />
@@ -726,14 +826,15 @@ function DesignFields({
   values,
   onFieldChange,
 }: {
-  fields: RecoveredField[];
+  fields: SettingsField[];
   values: Record<string, string>;
   onFieldChange: (label: string, value: string) => void;
 }) {
   return (
     <div className={styles.designFieldStack}>
       {fields.map((field) => {
-        const value = values[field.label] ?? field.value ?? "";
+        const fieldKey = field.key ?? field.label;
+        const value = values[fieldKey] ?? field.value ?? "";
         const colorValue = /^#[0-9a-f]{6}$/i.test(value) ? value : field.value || "#000000";
 
         return (
@@ -748,19 +849,19 @@ function DesignFields({
                   type="color"
                   value={colorValue}
                   aria-label={`${field.label} color`}
-                  onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+                  onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
                 />
                 <input
                   value={value}
                   aria-label={`${field.label} Hex Code`}
-                  onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+                  onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
                 />
               </span>
             ) : field.kind === "select" ? (
               <select
                 className={styles.designInput}
                 value={value || field.options?.[0] || ""}
-                onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+                onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
               >
                 {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
                   <option key={option} value={option}>
@@ -772,7 +873,7 @@ function DesignFields({
               <input
                 className={styles.designInput}
                 value={value}
-                onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+                onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
               />
             )}
           </label>
@@ -884,12 +985,12 @@ function ControlsContentCards({
 }: {
   title: string;
   description?: string;
-  fields: RecoveredField[];
+  fields: SettingsField[];
   values: Record<string, string>;
   onFieldChange: (label: string, value: string) => void;
   onFieldAction?: (label: string) => void;
 }) {
-  const fieldGroups = fields.reduce<Array<{ title: string; fields: RecoveredField[] }>>((groups, field) => {
+  const fieldGroups = fields.reduce<Array<{ title: string; fields: SettingsField[] }>>((groups, field) => {
     const groupTitle = field.group || title;
     const existingGroup = groups.find((group) => group.title === groupTitle);
     if (existingGroup) {
@@ -952,12 +1053,12 @@ function ControlsFormGroup({
 }: {
   title: string;
   description?: string;
-  fields: RecoveredField[];
+  fields: SettingsField[];
   values: Record<string, string>;
   onFieldChange: (label: string, value: string) => void;
   onFieldAction?: (label: string) => void;
 }) {
-  const fieldGroups = fields.reduce<Array<{ title: string; fields: RecoveredField[] }>>((groups, field) => {
+  const fieldGroups = fields.reduce<Array<{ title: string; fields: SettingsField[] }>>((groups, field) => {
     const groupTitle = field.group ?? "";
     const existingGroup = groups.find((group) => group.title === groupTitle);
     if (existingGroup) {
@@ -1010,7 +1111,7 @@ function ControlsField({
   onChange,
   onAction,
 }: {
-  field: RecoveredField;
+  field: SettingsField;
   value: string;
   onChange: (value: string) => void;
   onAction?: () => void;
@@ -1259,9 +1360,9 @@ function DetailGroup({
 }: {
   title: string;
   description?: string;
-  fields: RecoveredField[];
+  fields: SettingsField[];
 }) {
-  const fieldGroups = fields.reduce<Array<{ title: string; fields: RecoveredField[] }>>((groups, field) => {
+  const fieldGroups = fields.reduce<Array<{ title: string; fields: SettingsField[] }>>((groups, field) => {
     const groupTitle = field.group ?? "";
     const existingGroup = groups.find((group) => group.title === groupTitle);
     if (existingGroup) {

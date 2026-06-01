@@ -8,7 +8,8 @@ export type SettingsCard = {
   actionLabel: string;
 };
 
-export type RecoveredField = {
+export type SettingsField = {
+  key?: string;
   label: string;
   value?: string;
   kind?: "color" | "text" | "number" | "select" | "radio" | "toggle" | "css" | "script" | "image" | "file" | "button";
@@ -19,18 +20,18 @@ export type RecoveredField = {
   group?: string;
 };
 
-export type RecoveredTab = {
+export type SettingsTab = {
   title: string;
   description: string;
   contentTitle?: string;
   contentDescription?: string;
-  fields: RecoveredField[];
+  fields: SettingsField[];
 };
 
-export type RecoveredFieldGroup = {
+export type SettingsFieldGroup = {
   title: string;
   description?: string;
-  fields: RecoveredField[];
+  fields: SettingsField[];
 };
 
 export type SettingsPanel = {
@@ -43,17 +44,17 @@ export type LanguageConfiguration = {
   enabled: boolean;
   selectedLanguage: string;
   supportedLanguages: string[];
-  sharedCartFields: RecoveredField[];
+  sharedCartFields: SettingsField[];
   templateSections: string[];
-  productCardFields: RecoveredField[];
-  templateFields: Record<string, RecoveredFieldGroup[]>;
+  productCardFields: SettingsField[];
+  templateFields: Record<string, SettingsFieldGroup[]>;
 };
 
 export type ControlsLayout = {
   id: "landing-page" | "product-page";
   label: string;
   description: string;
-  tabs: RecoveredTab[];
+  tabs: SettingsTab[];
 };
 
 export type IntegrationCard = {
@@ -173,7 +174,7 @@ export const SUPPORTED_LANGUAGE_LABELS = [
   "Norwegian",
 ];
 
-export const DESIGN_CONFIGURATION: RecoveredTab[] = [
+export const DESIGN_CONFIGURATION: SettingsTab[] = [
   {
     title: "Brand Colors",
     description: "Global brand colors used by bundle cards, summary, buttons, and supporting surfaces.",
@@ -215,6 +216,37 @@ export const DESIGN_CONFIGURATION: RecoveredTab[] = [
     ],
   },
 ];
+
+export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
+  General: [
+    { key: "expert.generalSettings.bundleBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of the bundle page" },
+    { key: "expert.generalSettings.productPageTitleColor", label: "Product Page Title Color", value: "#000000", kind: "color", description: "Text color for product page titles" },
+    { key: "expert.generalSettings.bundleUpSellButtonBg", label: "Bundle Upsell Button Color", value: "#000000", kind: "color", description: "Color for bundle upsell buttons" },
+    { key: "expert.generalSettings.bundleUpsellTextColor", label: "Bundle Upsell Button Text Color", value: "#ffffff", kind: "color", description: "Text color for bundle upsell buttons" },
+    { key: "expert.generalSettings.bundleUpsellFontColor", label: "Bundle Upsell Text Color", value: "#000000", kind: "color", description: "Text color for bundle upsell content" },
+  ],
+  "Product Card": [
+    { key: "expert.productCard.productCardBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of individual product cards" },
+    { key: "expert.productCard.productCardTextColor", label: "Product Title Text Color", value: "#252525", kind: "color", description: "Text color for product names displayed on cards" },
+    { key: "expert.productCard.productCardButtonColor", label: "Add Product Button Color", value: "#000000", kind: "color", description: "Color for the button on the product card" },
+    { key: "expert.productCard.productCardButtonTextColor", label: "Add Product Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the button on the product card" },
+    { key: "expert.emptyStateCard.emptyStateCardBorderColor", label: "Empty State Border Color", value: "#000", kind: "color", description: "Border color for empty product slots waiting to be filled" },
+    { key: "expert.emptyStateCard.emptyStateCardTextColor", label: "Empty State Text Color", value: "#3E3E3E", kind: "color", description: "Text color for placeholder messages in empty product slots" },
+  ],
+  "Bundle Cart": [
+    { key: "expert.cartFooter.cartFooterBgColor", label: "Cart Background Color", value: "#ffffff", kind: "color", description: "Background color of the bundle cart area" },
+    { key: "expert.cartFooter.cartFooterTextColor", label: "Cart Title Text Color", value: "#000000", kind: "color", description: "Text color for bundle cart titles" },
+    { key: "expert.cartFooter.cartFooterFinalPriceFontColor", label: "Cart Price Text Color", value: "#000000", kind: "color", description: "Text color for cart prices and totals" },
+    { key: "expert.cartFooter.cartFooterDiscountTextColor", label: "Discount Text Color", value: "#000000", kind: "color", description: "Text color for cart discount messaging" },
+    { key: "expert.cartFooter.cartFooterNextButtonColor", label: "Checkout Button Color", value: "#000000", kind: "color", description: "Color for the cart checkout button" },
+    { key: "expert.cartFooter.cartFooterNextButtonTextColor", label: "Checkout Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the cart checkout button" },
+  ],
+  Upsell: [
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellFontColor", label: "Upsell Title Text Color", value: "#000000", kind: "color", description: "Text color for upsell titles" },
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", label: "Upsell Button Color", value: "#000000", kind: "color", description: "Color for upsell action buttons" },
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonTextColor", label: "Upsell Button Text Color", value: "#ffffff", kind: "color", description: "Text color for upsell action buttons" },
+  ],
+};
 
 export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
   enabled: true,
