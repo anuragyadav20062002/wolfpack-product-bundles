@@ -369,6 +369,7 @@ export default function SettingsRoute() {
   });
   const [activeControlLayout, setActiveControlLayout] = useState(CONTROL_LAYOUTS[0].label);
   const [activeControlTab, setActiveControlTab] = useState(CONTROL_LAYOUTS[0].tabs[0].title);
+  const [activeControlGroup, setActiveControlGroup] = useState("");
   const [isExpertColorControls, setIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
   const [savedIsExpertColorControls, setSavedIsExpertColorControls] = useState(persistedDesignState?.isExpertControlsEnabled ?? false);
   const [activeDesignScope, setActiveDesignScope] = useState("General");
@@ -376,6 +377,16 @@ export default function SettingsRoute() {
   const selectedDesignTab = DESIGN_CONFIGURATION.find((tab) => tab.title === activeDesignTab) ?? DESIGN_CONFIGURATION[0];
   const selectedControlLayout = CONTROL_LAYOUTS.find((layout) => layout.label === activeControlLayout) ?? CONTROL_LAYOUTS[0];
   const selectedControlTab = selectedControlLayout.tabs.find((tab) => tab.title === activeControlTab) ?? selectedControlLayout.tabs[0];
+  const selectedControlGroupTitles = Array.from(new Set(
+    selectedControlTab.fields.map((field) => field.group ?? selectedControlTab.contentTitle ?? selectedControlTab.title),
+  ));
+  const hasNestedControlGroups = selectedControlTab.title === "CSS & Scripts" && selectedControlGroupTitles.length > 1;
+  const selectedControlGroupTitle = selectedControlGroupTitles.includes(activeControlGroup)
+    ? activeControlGroup
+    : selectedControlGroupTitles[0] ?? selectedControlTab.contentTitle ?? selectedControlTab.title;
+  const selectedControlFields = hasNestedControlGroups
+    ? selectedControlTab.fields.filter((field) => (field.group ?? selectedControlTab.contentTitle ?? selectedControlTab.title) === selectedControlGroupTitle)
+    : selectedControlTab.fields;
   const currentLanguageState = { isMultilanguageEnabled, selectedLanguage, languageFieldValues };
   const isLanguageDirty = JSON.stringify(currentLanguageState) !== JSON.stringify(savedLanguageState);
   const isControlsDirty = JSON.stringify(controlFieldValues) !== JSON.stringify(savedControlFieldValues);
@@ -478,11 +489,14 @@ export default function SettingsRoute() {
                     <button
                       key={tab.title}
                       type="button"
-                      className={selectedDesignTab.title === tab.title ? styles.designNavActive : styles.designNavButton}
+                      className={[
+                        selectedDesignTab.title === tab.title ? styles.designNavActive : styles.designNavButton,
+                        tab.title === "Brand Colors" && isExpertColorControls ? styles.designNavDisabled : "",
+                      ].filter(Boolean).join(" ")}
+                      aria-disabled={tab.title === "Brand Colors" && isExpertColorControls ? "true" : undefined}
                       onClick={() => {
                         if (tab.title === "Brand Colors" && isExpertColorControls) {
                           setDesignGateMessage("Disable Expert Color Controls to access brand colors.");
-                          setActiveDesignTab(tab.title);
                           return;
                         }
                         setDesignGateMessage(null);
@@ -497,31 +511,39 @@ export default function SettingsRoute() {
                   ))}
                 </div>
               </section>
-              {selectedDesignTab.title === "Brand Colors" && (
-                <section className={styles.designSideCard}>
-                  <label className={styles.designSwitchRow}>
-                    <span>
-                      <span className={styles.designSideTitle}>Expert Color Controls</span>
-                      <span className={styles.designSideDescription}>Change colors of individual elements of the bundle</span>
-                    </span>
+              <section className={styles.designSideCard}>
+                <label className={styles.designSwitchRow}>
+                  <span>
+                    <span className={styles.designSideTitle}>Expert Color Controls</span>
+                    <span className={styles.designSideDescription}>Change colors of individual elements of the bundle</span>
+                  </span>
+                  <span className={styles.designExpertSwitch}>
                     <input
                       type="checkbox"
                       checked={isExpertColorControls}
+                      aria-label="Expert Color Controls"
                       onChange={(event) => {
                         const isChecked = event.currentTarget.checked;
                         setIsExpertColorControls(isChecked);
+                        if (isChecked) {
+                          setActiveDesignTab("Brand Colors");
+                        }
                         setDesignGateMessage(isChecked ? "Disable Expert Color Controls to access brand colors." : null);
                       }}
                     />
-                  </label>
+                    <span aria-hidden="true" />
+                  </span>
+                </label>
+                {isExpertColorControls ? (
                   <div className={styles.designNavList} role="tablist" aria-label="Color control scopes">
                     {["General", "Product Card", "Bundle Cart", "Upsell"].map((scope) => (
                       <button
                         key={scope}
                         type="button"
-                        className={activeDesignScope === scope ? styles.designScopeActive : styles.designScopeButton}
+                        className={activeDesignScope === scope && selectedDesignTab.title === "Brand Colors" ? styles.designScopeActive : styles.designScopeButton}
                         onClick={() => {
                           setDesignGateMessage(null);
+                          setActiveDesignTab("Brand Colors");
                           setActiveDesignScope(scope);
                         }}
                       >
@@ -532,8 +554,8 @@ export default function SettingsRoute() {
                       </button>
                     ))}
                   </div>
-                </section>
-              )}
+                ) : null}
+              </section>
               {designGateMessage ? (
                 <div className={styles.designGateAlert} role="alert" aria-live="polite">
                   {designGateMessage}
@@ -719,6 +741,7 @@ export default function SettingsRoute() {
                     const nextLayout = CONTROL_LAYOUTS.find((layout) => layout.label === nextLayoutLabel) ?? CONTROL_LAYOUTS[0];
                     setActiveControlLayout(nextLayout.label);
                     setActiveControlTab(nextLayout.tabs[0]?.title ?? CONTROL_LAYOUTS[0].tabs[0].title);
+                    setActiveControlGroup("");
                   }}
                 >
                   {CONTROL_LAYOUTS.map((layout) => (
@@ -735,19 +758,36 @@ export default function SettingsRoute() {
                     key={tab.title}
                     type="button"
                     className={selectedControlTab.title === tab.title ? styles.controlsNavActive : styles.controlsNavButton}
-                    onClick={() => setActiveControlTab(tab.title)}
+                    onClick={() => {
+                      setActiveControlTab(tab.title);
+                      setActiveControlGroup("");
+                    }}
                   >
                     <s-icon type={getControlTabIcon(tab.title)} size="small"></s-icon>
                     {tab.title}
                   </button>
                 ))}
               </div>
+              {hasNestedControlGroups ? (
+                <div className={styles.controlsSubNavList} aria-label={`${selectedControlTab.title} sections`}>
+                  {selectedControlGroupTitles.map((groupTitle) => (
+                    <button
+                      key={groupTitle}
+                      type="button"
+                      className={selectedControlGroupTitle === groupTitle ? styles.controlsSubNavActive : styles.controlsSubNavButton}
+                      onClick={() => setActiveControlGroup(groupTitle)}
+                    >
+                      {groupTitle}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </aside>
             <section className={styles.controlsContentColumn}>
               <ControlsContentCards
-                title={selectedControlTab.contentTitle ?? selectedControlTab.title}
-                description={selectedControlTab.contentDescription ?? selectedControlTab.description}
-                fields={selectedControlTab.fields}
+                title={hasNestedControlGroups ? selectedControlGroupTitle : selectedControlTab.contentTitle ?? selectedControlTab.title}
+                description={hasNestedControlGroups ? undefined : selectedControlTab.contentDescription ?? selectedControlTab.description}
+                fields={selectedControlFields}
                 values={controlFieldValues}
                 onFieldChange={(label, value) => setControlFieldValues((current) => ({ ...current, [label]: value }))}
                 onFieldAction={(label) => {

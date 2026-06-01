@@ -533,13 +533,17 @@ export const CONTROL_LAYOUTS: ControlsLayout[] = [
             description: "The CSS written here will have a global impact on all store pages. Please choose classes carefully.",
             note: "Use \".gbbBundle-HTML\" as parent class for giftbox builder CSS to avoid overwriting CSS throughout the site.",
           },
+          { label: "Custom JS Bundle Script", kind: "script", group: "JavaScript & Selectors", description: "Script, written here, would be applied only on bundle pages.", note: "Paste Custom Bundle Script here" },
+          { label: "Button Selectors", kind: "text", group: "JavaScript & Selectors", description: "CSS selectors for buttons" },
+          { label: "Add to Cart Button Selectors", kind: "text", group: "JavaScript & Selectors" },
+          { label: "Buy now button", kind: "text", group: "JavaScript & Selectors" },
         ],
       },
       {
         title: "Integrations",
         description: "Callback and redirect integration settings for checkout apps, side carts, and cart drawers.",
         contentTitle: "Integrate JS with custom elements from the store theme",
-        contentDescription: "The script written here will exclusively apply to theme pages and will not affect bundle pages.",
+        contentDescription: "The script written here will exclusively apply to theme pages and will not affect bundle pages. Please refer to our internal Notion document(Easy Bundles Custom CSS and JS Requests).",
         fields: [
           { label: "Enable Custom Theme Integration Script", kind: "toggle", group: "Integrate JS with custom elements from the store theme" },
           { label: "Custom Theme Integration Script", kind: "script", group: "Integrate JS with custom elements from the store theme" },

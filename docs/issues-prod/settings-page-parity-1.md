@@ -276,3 +276,43 @@ Recover and replicate the full EB Settings page flow from live Chrome evidence a
 - Saved an expert Upsell field through the Polaris contextual save bar, confirmed `Settings saved successfully`, restored the EB default value, and saved again.
 - Reloaded the local product storefront page and confirmed the bundle runtime still loads after the Admin DCP save.
 - Next: rebuild graph metadata and commit this slice.
+
+### 2026-06-01 20:04 - Language and Controls parity audit
+- User asked to apply the same EB parity loop to Settings -> Controls and Settings -> Language.
+- Captured EB Language panels in Chrome: multilanguage toggle, preferred-language selector, `English` chip, shared `Cart & Checkout`, `Landing Page Layout` selector, Product Card, Bundle Cart, Bundle, Popups, Toasts, Addons, and Messages field groups.
+- Captured EB Controls panels in Chrome: Landing Page Layout configuration, CSS nested tab, JavaScript & Selectors nested tab, Integrations, and Advanced video-player settings.
+- Found local field definitions already cover most Language text and most Controls groups, but Controls lacks the EB nested CSS/JavaScript selector behavior and Landing Page `Custom JS Bundle Script` selector fields.
+- Next: patch Controls nested group rendering and exact Landing Page CSS/script field definitions, then smoke-test Language and Controls save-bar behavior.
+
+### 2026-06-01 20:11 - Controls nested CSS and script parity patch
+- Added EB Landing Page `CSS & Scripts` JavaScript & Selectors fields: Custom JS Bundle Script, Button Selectors, Add to Cart Button Selectors, and Buy now button.
+- Updated Controls rendering so `CSS & Scripts` exposes EB-style nested `CSS` and `JavaScript & Selectors` buttons instead of showing all fields as one flat panel.
+- Updated the Integrations helper description to match EB's visible text.
+- Next: lint, smoke-test Controls nested tabs and Language save behavior locally, then rebuild graph and commit this slice.
+
+### 2026-06-01 20:16 - Expert Color Controls switch and scope visibility gap
+- User flagged two Design Control Panel gaps: Expert Color Controls must render as a toggle/switch rather than a checkbox, and expert color scope rows should stay visible after moving from Brand Colors to other design sections.
+- Next: update the Design Control Panel expert control markup/CSS so the switch matches EB behavior and scope navigation remains visible whenever expert mode is enabled, while Brand Colors remains gated.
+
+### 2026-06-01 20:18 - Expert Color Controls switch patch
+- Replaced the visible checkbox with an EB-style switch control while preserving checkbox semantics for state and accessibility.
+- Kept the Expert Color Controls card visible across Design Control Panel sections and only reveals General/Product Card/Bundle Cart/Upsell scope rows while expert mode is enabled.
+- Scope buttons now return the panel to gated Brand Colors/expert controls, while Typography/Corners/Images remain accessible and keep the expert scope rows visible in the sidebar.
+- Next: smoke-test the Design Control Panel in Chrome, then lint and commit with the pending Language/Controls parity slice.
+
+### 2026-06-01 20:23 - Expert switch smoke and lint
+- Chrome smoke confirmed Expert Color Controls scope rows remain visible after moving from Brand Colors to Typography.
+- Chrome smoke confirmed Brand Colors remains gated while Expert Color Controls are enabled and shows `Disable Expert Color Controls to access brand colors.`
+- Scoped ESLint passed for `app/lib/admin-configuration-surfaces.ts` and `app/routes/app/app.settings.tsx` with zero errors and existing warnings only.
+- Next: rebuild graph metadata and commit the pending Settings Language, Controls, and Expert Color Controls parity slice.
+
+### 2026-06-01 20:26 - Brand Colors grey gate
+- User clarified that gating should grey out Brand Colors and show the alert.
+- Updated Brand Colors navigation to render a disabled/greyed visual state while Expert Color Controls are enabled.
+- Clicking the greyed Brand Colors item now only raises the alert and does not switch the active panel to Brand Colors.
+- Next: smoke-check the grey gate, rerun scoped lint, rebuild graph, and commit.
+
+### 2026-06-01 20:30 - Brand Colors grey gate smoke
+- Chrome smoke confirmed Brand Colors now appears disabled while Expert Color Controls are enabled.
+- Scoped ESLint passed for `app/lib/admin-configuration-surfaces.ts` and `app/routes/app/app.settings.tsx` with zero errors and existing warnings only.
+- Next: rebuild graph metadata and commit the pending parity slice.
