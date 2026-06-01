@@ -1485,6 +1485,11 @@ class BundleWidgetFullPage {
     subtitle.textContent = summaryText.subTitle;
     panel.appendChild(subtitle);
 
+    const tierCta = this.createSidebarTierCta(nextRule);
+    if (tierCta) {
+      panel.appendChild(tierCta);
+    }
+
     const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
     if (boxSelection) {
       panel.appendChild(boxSelection);
@@ -1653,6 +1658,47 @@ class BundleWidgetFullPage {
     navSection.appendChild(nextBtn);
     actionSection.appendChild(navSection);
     panel.appendChild(actionSection);
+  }
+
+  createSidebarTierCta(nextRule) {
+    const pricing = this.selectedBundle?.pricing;
+    if (!pricing?.enabled) return null;
+
+    const displayOptions = pricing.messages?.displayOptions || {};
+    const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
+    const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+    const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+    const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
+    const label = typeof option?.label === 'string' && option.label.trim()
+      ? option.label.trim()
+      : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
+    const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+      ? option.subtext.trim()
+      : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+
+    if (!label && !subtext) return null;
+
+    const cta = document.createElement('div');
+    cta.className = 'fpb-sidebar-tier-cta';
+    cta.style.cssText = 'width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #000;border-radius:8px;padding:12px 16px;margin:4px 0 12px;text-align:center;font-weight:800;line-height:1.25;';
+
+    if (label) {
+      const title = document.createElement('div');
+      title.className = 'fpb-sidebar-tier-cta-title';
+      title.textContent = label;
+      cta.appendChild(title);
+    }
+
+    if (subtext) {
+      const detail = document.createElement('div');
+      detail.className = 'fpb-sidebar-tier-cta-subtext';
+      detail.textContent = subtext;
+      cta.appendChild(detail);
+    }
+
+    return cta;
   }
 
   getBoxSelectionRules() {

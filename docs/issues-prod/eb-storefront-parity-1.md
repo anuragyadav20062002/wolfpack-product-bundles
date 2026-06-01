@@ -84,3 +84,16 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Forced a byte-distinct generated CSS asset under the Shopify 100,000 byte limit; subsequent Chrome reload served the updated CSS.
 - Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: grid computes to `300px 300px`, first product card computes to `300px x 420px`, first product image computes to `284px x 284px`.
 - Network proof: FPB CSS 200, FPB bundled JS 200, bundle JSON 200, storefront product hydration 200.
+
+### 2026-06-02 02:32 - FPB sidebar tier CTA slice started
+- Existing EB DEFAULT evidence shows a prominent black sidebar tier CTA with merchant text such as `Box of 2` and discount subtext above the progress messaging.
+- Current WPB sidebar only shows discount messaging/progress and a narrow action button.
+- Live storefront JSON already carries the EB-style source data at `pricing.messages.displayOptions.bundleQuantityOptions.optionsByRuleId`, including `label: "Box of 2"` and `subtext: "₹5 off"`.
+- Scope this slice to rendering that consumed JSON as a black sidebar tier CTA; no merchant-facing fallback copy will be fabricated when option text is absent.
+- Implemented `createSidebarTierCta(nextRule)` in the FPB widget using `bundleQuantityOptions.optionsByRuleId` first and `tierTextByRuleId` second, with no fabricated fallback copy.
+- Bumped `WIDGET_VERSION` to `2.9.15` and rebuilt widget assets with `npm run build:widgets`.
+- Verification passed: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js` returned 0 errors; both files are ignored by ESLint and reported warnings only.
+- Verification passed: `node --check app/assets/bundle-widget-full-page.js && node --check scripts/build-widget-bundles.js`.
+- Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: served JS contains `createSidebarTierCta`, live `window.__BUNDLE_WIDGET_VERSION__` is `2.9.15`, and `.fpb-sidebar-tier-cta` renders `Box of 2` / `₹5 off`.
+- Computed style proof: CTA width `326px`, black background, white text, black border, `8px` radius, centered text.
+- Next gap observed: clicking `Add To Box` did not populate the sidebar selected product rows; handle selected-item/sidebar thumbnail parity as the next slice.
