@@ -2,11 +2,70 @@
   Wolfpack Bundle — Single App Embed
   ==================================
   Global activation surface used by the app to confirm the theme is connected.
-  Widget rendering is handled by explicit app blocks and app-proxy pages.
+  FPB bundle pages expose a hidden marker from the app-created Shopify page.
+  The embed hydrates that marker into the full-page widget container so the
+  renderer assets are requested without requiring merchants to manually place a
+  section block.
 {% endcomment %}
 
 <script>
   window.__WOLFPACK_BUNDLE_EMBED_ACTIVE__ = true;
+
+  (function () {
+    var fullPageScriptUrl = {{ 'bundle-widget-full-page-bundled.js' | asset_url | json }};
+    var fullPageStyleUrl = {{ 'bundle-widget-full-page.css' | asset_url | json }};
+
+    function ensureStylesheet(href) {
+      if (!href || document.querySelector('link[href="' + href + '"]')) return;
+
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      document.head.appendChild(link);
+    }
+
+    function ensureScript(src) {
+      if (!src || document.querySelector('script[src="' + src + '"]')) return;
+
+      var script = document.createElement('script');
+      script.src = src;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+
+    function hydrateFullPageBundleMarker() {
+      var marker = document.querySelector('[data-wpb-full-page-bundle][data-bundle-id]');
+      if (!marker || marker.dataset.wpbHydrated === 'true') return;
+      if (document.querySelector('#bundle-builder-app')) return;
+
+      var bundleId = marker.dataset.bundleId;
+      if (!bundleId) return;
+
+      var container = document.createElement('div');
+      container.id = 'bundle-builder-app';
+      container.className = 'bundle-widget-container bundle-widget-full-page';
+      container.dataset.bundleId = bundleId;
+      container.dataset.bundleType = marker.dataset.bundleType || 'full_page';
+      container.dataset.bundleConfig = marker.dataset.bundleConfig || 'null';
+      container.dataset.bundleSettings = marker.dataset.bundleSettings || 'null';
+      container.dataset.shop = marker.dataset.shop || '';
+      container.innerHTML = '<div class="bundle-loading"><div class="loading-spinner"></div></div>';
+
+      marker.parentNode.insertBefore(container, marker);
+      marker.dataset.wpbHydrated = 'true';
+
+      ensureStylesheet(fullPageStyleUrl);
+      ensureScript(fullPageScriptUrl);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hydrateFullPageBundleMarker);
+    } else {
+      hydrateFullPageBundleMarker();
+    }
+
+    document.addEventListener('shopify:section:load', hydrateFullPageBundleMarker);
+  })();
 </script>
 
 {% schema %}
