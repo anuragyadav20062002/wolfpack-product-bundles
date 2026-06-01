@@ -1,9 +1,9 @@
 # Issue: Bundle Upsell Widget — EB Parity (FPB simplify + PPB dynamic preview + embed fixes)
 **Issue ID:** bundle-upsell-widget-1
-**Status:** In Progress
+**Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 02:30
+**Last Updated:** 2026-06-01 04:00
 
 ## Overview
 Align WPB FPB and PPB Bundle Widget / Bundle Embed sections with EB competitor parity.
@@ -54,6 +54,18 @@ Both routes already have Bundle Widget and Bundle Embed UI + persistence (`bundl
 - Modal contents: confirmed already match EB exactly (no changes needed)
 - CSS: added .visibilityPreviewFullImage class to both CSS modules
 
+### 2026-06-01 04:00 - E2E verification complete (Chrome DevTools MCP)
+
+Verified all 5 round-2 fixes across PPB Bundle Widget, PPB Bundle Embed, and FPB Bundle Widget:
+- **Full-width preview image**: confirmed fills entire visibilityPreviewFrame on both PPB and FPB ✅
+- **Globe icon Multi Language button**: `s-button variant="plain" icon="globe"` renders correctly in all 3 sections ✅
+- **Disabled state**: panel grays out (opacity 0.4) and blocks interaction when toggle is OFF; re-enables when toggle ON ✅
+- **Multi Language modal fields**:
+  - PPB Bundle Widget → 3 fields: Widget Title, Widget Description, Widget Button Text ✅
+  - PPB Bundle Embed → 2 fields: Title, Sub Title ✅
+  - FPB Bundle Widget → 1 field: Widget Button Text ✅
+- **Discard resets state**: toggled settings, clicked Discard, confirmed all values reverted to saved state ✅
+
 ## Phases Checklist
 - [x] FPB: dynamic preview image (Block/Button swap)
 - [x] FPB: remove Image Upload + Widget Title + Widget Description from Widget Settings
@@ -68,4 +80,4 @@ Both routes already have Bundle Widget and Bundle Embed UI + persistence (`bundl
 - [x] FPB + PPB: discard button resets upsell widget + embed state
 - [x] Multi Language modal contents match EB (confirmed, no change needed)
 - [x] Lint modified files
-- [ ] E2E test on Chrome
+- [x] E2E test on Chrome
