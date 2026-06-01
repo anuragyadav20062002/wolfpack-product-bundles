@@ -5142,8 +5142,8 @@ minmax(0,
   justify-content:flex-start;
   gap:28px}
 
-body:has([data-fpb-design-preset=DEFAULT]),
-[data-fpb-design-preset=DEFAULT] {
+body:has([data-fpb-design-preset]),
+[data-fpb-design-preset] {
   background:#f1f1f1}
 
 [data-bundle-type=full_page] {

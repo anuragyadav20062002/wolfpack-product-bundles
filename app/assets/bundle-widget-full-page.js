@@ -1428,6 +1428,9 @@ class BundleWidgetFullPage {
   }
 
   shouldRenderFullPageSearch() {
+    if (this.resolveFullPageLayout() === 'footer_side') {
+      return false;
+    }
     return this.resolveFullPageCardCtaMode() !== 'icon';
   }
 

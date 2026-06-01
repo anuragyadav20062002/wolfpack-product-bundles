@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 01:21
+**Last Updated:** 2026-06-02 03:46
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -120,8 +120,30 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Existing EB DEFAULT evidence says product card prices are not shown, while CLASSIC/COMPACT/HORIZONTAL show prices.
 - Current Chrome proof after the variant fallback shows DEFAULT product cards rendering compare-at and final prices.
 - Scope this slice to CSS hiding product-card price rows only when `data-fpb-design-preset=DEFAULT`; sidebar totals and selected-row prices remain visible.
+
+### 2026-06-02 03:19 - FPB fixed-amount discount message currency slice started
+- Chrome selected-state proof showed the FPB sidebar message rendering `$5.00` while the consumed pricing DTO already carries EB-style merchant display text: `bundleQuantityOptions.optionsByRuleId[ruleId].subtext` = `₹5 off`.
+- Existing EB reference confirms discount messaging is template-driven via `{{discountValue}}` and `{{discountValueUnit}}`, with compact storefront discount data mirrored from the admin configuration.
+- Scope this slice to discount variable generation: prefer rule-bound DTO display text for fixed-amount reward variables, without hardcoding currency symbols or merchant-facing copy.
+- Implemented shared `TemplateManager` logic to derive fixed-amount reward variables from rule-bound `bundleQuantityOptions` / `tierTextByRuleId` text before falling back to storefront currency formatting.
+- Bumped `WIDGET_VERSION` to `2.9.17` and rebuilt storefront bundles with `npm run build:widgets`.
+- Verification passed: `node --check app/assets/widgets/shared/template-manager.js`, `node --check scripts/build-widget-bundles.js`, and modified-file ESLint with 0 errors.
+- Local runtime proof: a fixed-amount rule with DTO subtext `₹5 off` now renders `Add 1 product(s) to save ₹5!` even when `currencyInfo.display.symbol` is `$`.
+- Chrome DevTools page listing timed out twice at 120 seconds, so live Chrome e2e for this slice is still pending and must be retried when the DevTools connection recovers.
 - CSS-only hiding exceeded Shopify's 100,000 byte full-page CSS limit, so the final patch removes `.product-price-row` while rendering FPB DEFAULT product cards instead.
 - Bumped `WIDGET_VERSION` to `2.9.16` and rebuilt widget assets with `npm run build:widgets`; CSS minification also passed.
 - Verification passed: `node --check app/assets/bundle-widget-full-page.js && node --check scripts/build-widget-bundles.js`.
 - Verification passed: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js` returned 0 errors and ignore-pattern warnings only.
 - Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: served widget version is `2.9.16`, visible DEFAULT product card text is `2024 Summer Slides / Add To Box` with `0` price rows, and selected sidebar still shows product row price plus total after adding the card.
+
+### 2026-06-02 03:34 - FPB CLASSIC evidence-backed layout slice started
+- Current EB CLASSIC screenshot evidence shows a gray full-page background and no product search box above category pills.
+- Existing WPB CLASSIC screenshot showed a white page and a visible search box, while DEFAULT had already been moved to a gray background.
+- Patched the FPB storefront CSS background selector to apply the gray page background to every FPB design preset marker, not just DEFAULT.
+- Patched full-page sidebar rendering so `FBP_SIDE_FOOTER` presets do not render the product search box.
+- Built widget assets with `npm run build:widgets` and generated CSS with `npm run minify:assets css`; full-page CSS output stayed under Shopify's 100,000 byte limit.
+- Verification passed: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/widgets/shared/template-manager.js && node --check scripts/build-widget-bundles.js`.
+- Verification passed: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/widgets/shared/template-manager.js scripts/build-widget-bundles.js` returned 0 errors and ignore-pattern warnings only.
+- Admin e2e: opened Select Template for FPB bundle `cmpfhj2m10000v0t038osl42y`, selected Classic Design, and advanced to the preview-ready modal state.
+- Storefront e2e: public bundle JSON returned `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "CLASSIC"`; runtime markers matched `CLASSIC`, bundle-scoped search was absent, body/root backgrounds computed `rgb(241, 241, 241)`, product-card prices rendered, and `.fpb-sidebar-tier-cta` rendered `Box of 2` / `₹5 off`.
+- Interaction smoke: clicking an available CLASSIC product populated the sidebar selected row, updated the count to `1 item`, showed `Total $5.00`, and enabled `Add to Cart`.
