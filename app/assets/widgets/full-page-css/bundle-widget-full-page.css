@@ -4989,7 +4989,7 @@ block);
 .layout-sidebar .side-panel-action-container {
   display:grid;
   grid-template-columns:minmax(0,
-1fr) auto;
+1fr) 198px;
   align-items:center;
   gap:12px;
   margin-top:14px;
@@ -5017,7 +5017,7 @@ block);
   padding:0}
 
 .layout-sidebar .side-panel-btn-next {
-  min-width:140px;
+  min-width:198px;
   background:var(--bundle-sidebar-button-bg,
 #111111);
   color:var(--bundle-sidebar-button-text,
@@ -5154,7 +5154,7 @@ body:has([data-fpb-design-preset=DEFAULT]),
   border:0;
   border-bottom:3px solid #0000;
   background:none;
-  color:#000000}
+  color:#000}
 
 [data-fpb-design-preset=DEFAULT] .category-tab.active {
   border-bottom-color:#000}

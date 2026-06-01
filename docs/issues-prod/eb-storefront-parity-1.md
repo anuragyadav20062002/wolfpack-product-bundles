@@ -107,3 +107,11 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Live API proof: `/apps/product-bundles/api/storefront-products` now returns fallback variants for the FPB fixture; unavailable first product remains unavailable, while second and third products return available variant IDs.
 - Verification passed: `npx eslint --max-warnings 9999 app/routes/api/api.storefront-products.tsx` returned 0 errors and warnings only.
 - Chrome storefront smoke: after reload, the visible available card uses variant ID `48191701188867`; clicking `Add To Box` selects it, sidebar changes to `1 item`, renders the product thumbnail/title/price row, removes skeleton rows, and enables the action button.
+
+### 2026-06-02 03:02 - FPB sidebar action button width slice started
+- EB DEFAULT evidence shows a wider, more prominent black sidebar action button in the bottom total/action row.
+- Current selected WPB sidebar action row computes to `174px 140px`, with the button only `140px` wide.
+- Scope this slice to CSS sizing only: widen the existing action column/button without changing Add to Cart vs Next behavior.
+- Patched the existing sidebar action CSS to reserve a `198px` action column and `198px` CTA min-width.
+- Generated minified storefront CSS with `npm run minify:assets css`; local generated full-page CSS is under Shopify's 100,000 byte limit.
+- Chrome selected-state smoke: after selecting the available card, the action row computes to `116px 198px`, button width computes to `198px`, and the sidebar still shows the selected product row/thumbnail.
