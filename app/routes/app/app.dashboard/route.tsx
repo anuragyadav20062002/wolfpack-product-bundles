@@ -548,32 +548,38 @@ export default function Dashboard() {
           <div className={dashboardStyles.topCardsGrid}>
             <s-section padding="none">
               <div className={dashboardStyles.supportCard}>
-                <div className={dashboardStyles.supportAvatarWrap}>
-                  {!parthImageLoaded && (
-                    <div className={dashboardStyles.supportAvatarSkeleton}>
-                      <s-spinner accessibilityLabel={t("dashboard.support.imageLoading")} />
-                    </div>
-                  )}
-                  <img
-                    src="/Parth.jpeg"
-                    alt={t("dashboard.support.imageAlt")}
-                    className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
-                    onLoad={() => setParthImageLoaded(true)}
-                  />
+                <div className={dashboardStyles.supportCardHero}>
+                  <p className={dashboardStyles.supportCardHeroTitle}>{t("dashboard.support.heroTitle")}</p>
+                  <p className={dashboardStyles.supportCardHeroDesc}>{t("dashboard.support.heroDesc")}</p>
                 </div>
-                <div className={dashboardStyles.supportContent}>
-                  <s-stack direction="block" gap="base">
-                    <s-stack direction="block" gap="small-100">
-                      <s-heading>{t("dashboard.support.heading")}</s-heading>
-                      <s-text color="subdued">{t("dashboard.support.body")}</s-text>
+                <div className={dashboardStyles.supportCardBody}>
+                  <div className={dashboardStyles.supportAvatarWrap}>
+                    {!parthImageLoaded && (
+                      <div className={dashboardStyles.supportAvatarSkeleton}>
+                        <s-spinner accessibilityLabel={t("dashboard.support.imageLoading")} />
+                      </div>
+                    )}
+                    <img
+                      src="/Parth.jpeg"
+                      alt={t("dashboard.support.imageAlt")}
+                      className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
+                      onLoad={() => setParthImageLoaded(true)}
+                    />
+                  </div>
+                  <div className={dashboardStyles.supportContent}>
+                    <s-stack direction="block" gap="base">
+                      <s-stack direction="block" gap="small-100">
+                        <s-heading>{t("dashboard.support.heading")}</s-heading>
+                        <s-text color="subdued">{t("dashboard.support.body")}</s-text>
+                      </s-stack>
+                      <s-text color="subdued">
+                        <span className={dashboardStyles.onlineNow}>{t("dashboard.support.onlineNow")}</span> • {t("dashboard.support.availability")}
+                      </s-text>
                     </s-stack>
-                    <s-text color="subdued">
-                      <span className={dashboardStyles.onlineNow}>{t("dashboard.support.onlineNow")}</span> • {t("dashboard.support.availability")}
-                    </s-text>
-                  </s-stack>
-                </div>
-                <div className={dashboardStyles.supportCta}>
-                  <s-button variant="primary" inlineSize="fill" onClick={handleDirectChat}>{t("dashboard.support.cta")}</s-button>
+                  </div>
+                  <div className={dashboardStyles.supportCta}>
+                    <s-button variant="primary" inlineSize="fill" onClick={handleDirectChat}>{t("dashboard.support.cta")}</s-button>
+                  </div>
                 </div>
               </div>
             </s-section>

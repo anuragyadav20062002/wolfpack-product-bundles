@@ -82,6 +82,33 @@
 .supportCard {
   height: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.supportCardHero {
+  padding: 16px 20px;
+  background: #1a1a1a;
+}
+
+.supportCardHeroTitle {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.supportCardHeroDesc {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.4;
+}
+
+.supportCardBody {
+  flex: 1;
   padding: 20px 24px 28px;
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
@@ -95,6 +122,8 @@
   width: 84px;
   height: 84px;
   align-self: start;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .supportAvatarSkeleton {
@@ -122,9 +151,9 @@
 .supportAvatarImage {
   width: 84px;
   height: 84px;
-  border-radius: 50%;
   object-fit: cover;
-  object-position: center 18%;
+  object-position: center 12%;
+  transform: scale(1.3);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -593,7 +622,7 @@
     width: 100%;
   }
 
-  .supportCard {
+  .supportCardBody {
     grid-template-columns: 1fr;
   }
 
