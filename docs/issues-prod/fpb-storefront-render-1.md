@@ -36,3 +36,8 @@ FPB storefront page has the bundle marker and app-proxy endpoints return 200, bu
 - Confirmed app-proxy bundle JSON and view tracking return 200.
 - Found follow-up gap: the bundle API response omitted `StepCategory`, leaving the storefront with an empty category/product grid.
 - Follow-up fix is tracked under `eb-storefront-parity-1` because it affects the FPB storefront DTO contract.
+
+### 2026-06-02 01:40 - FPB render smoke passed
+- Confirmed the full-page storefront now renders product cards after the category DTO fix.
+- Network proof: bundle JSON, storefront product hydration, and view tracking all returned 200.
+- This closes the original no-render/no-products smoke failure; broader template parity continues under `eb-storefront-parity-1`.

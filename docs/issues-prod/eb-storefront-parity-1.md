@@ -41,3 +41,10 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Added focused test coverage proving the public bundle API query loads ordered `StepCategory` rows along with `StepProduct`.
 - Verification passed: `npx jest tests/unit/routes/api.bundle.free-gift.test.ts --runInBand`.
 - Verification passed: `npx eslint --max-warnings 9999 'app/routes/api/api.bundle.$bundleId[.]json.tsx' tests/unit/routes/api.bundle.free-gift.test.ts` with 0 errors.
+
+### 2026-06-02 01:40 - FPB storefront category smoke passed on SIT/dev proxy
+- Live storefront JSON now returns two categories for bundle `cmpfhj2m10000v0t038osl42y`, with product-backed category entries.
+- Reloaded FPB page and confirmed `#bundle-builder-app` initializes with FPB `DEFAULT` markers and product cards render.
+- Confirmed `No products available in this step.` is no longer present.
+- Network proof: FPB page document 200, FPB CSS/JS 200, bundle JSON 200, storefront-products hydration 200, view tracking 200.
+- Remaining non-goal-complete work: template-by-template visual parity and cart/metafield e2e for FPB and PPB.
