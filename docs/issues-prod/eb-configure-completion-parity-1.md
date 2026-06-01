@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:37
+**Last Updated:** 2026-06-01 23:21
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -289,3 +289,8 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 ### 2026-06-01 22:37 - Post-commit graph hook follow-up
 - The commit hook rebuilt graph outputs after the FPB page-shell commit and left `graphify-out/GRAPH_REPORT.md` dirty.
 - Follow-up commit will include the generated graph report plus this issue-log entry only.
+
+### 2026-06-01 23:21 - Second graph hook follow-up
+- Confirmed the FPB page-shell and runtime cleanup slice is already committed.
+- The remaining tracked worktree delta is a generated `graphify-out/GRAPH_REPORT.md` corpus word-count update from the graph hook.
+- Committing this graph metadata with the issue log to restore a clean tracked state before continuing Phase 5.
