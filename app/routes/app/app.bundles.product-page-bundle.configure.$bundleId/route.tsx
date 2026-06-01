@@ -1642,10 +1642,11 @@ export default function ConfigureBundleFlow() {
   const openProductInAdmin = useCallback((productId: string) => {
     const storeHandle = shop?.replace('.myshopify.com', '');
     const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
-    if (window.location.hostname.includes("trycloudflare.com")) {
-      window.open(adminProductUrl, "_blank");
-    } else {
+    try {
       shopify.navigate(adminProductUrl);
+    } catch (error) {
+      AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
+      window.open(adminProductUrl, "_blank");
     }
   }, [shop, shopify]);
 

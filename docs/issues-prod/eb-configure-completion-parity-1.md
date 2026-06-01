@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 20:42
+**Last Updated:** 2026-06-01 20:48
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -81,3 +81,16 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/lib/product-page-admin-sections.test.ts --runInBand` with 11/11 tests.
 - Scoped ESLint passed with 0 errors for the touched route, shared handler, product-page admin section helper, and unit test.
 - Chrome smoke on the SIT Admin PPB configure page confirmed `Place Widget` shows button loading first, opens `Select Product Page Template` only after data is ready, lists the server-returned `Default product` template row, and selecting it opens Theme Editor with `template=product`.
+
+### 2026-06-01 20:44 - Bundle Product Edit Product admin-modal gap
+- EB Chrome evidence: clicking `Edit Product` in the Bundle Product card opens Shopify's native Admin product editor modal over the embedded app.
+- WPB Chrome evidence before this edit: clicking `Edit Product` opens a separate `/products/{id}` Admin tab because both FPB and PPB routes hardcode a `trycloudflare.com` `_blank` fallback.
+- Next edit: remove the host-specific fallback branch and use App Bridge `shopify.navigate(adminProductUrl)` for FPB and PPB, keeping only a throw-time browser fallback.
+
+### 2026-06-01 20:48 - Bundle Product Edit Product validation
+- Updated FPB and PPB `openProductInAdmin` helpers to attempt `shopify.navigate(adminProductUrl)` first and removed the hardcoded `trycloudflare.com` branch.
+- Added `tests/unit/routes/bundle-product-edit-product-admin-modal.test.ts` and `test-spec/bundle-product-edit-product-admin-modal.spec.md`.
+- Focused Jest passed: `npx jest tests/unit/routes/bundle-product-edit-product-admin-modal.test.ts --runInBand` with 2/2 tests.
+- Scoped ESLint passed with 0 errors for both configure routes and the new route source contract.
+- Chrome EB evidence confirmed the target behavior: native Shopify product editor modal opens over EB.
+- Chrome WPB SIT evidence after the edit: App Bridge still emits a local tunnel postMessage origin mismatch, so the throw-time fallback opens the Admin product page in a new tab for both PPB and FPB. This keeps SIT usable while production/admin-origin behavior uses the EB-native `shopify.navigate` path.
