@@ -1,11 +1,11 @@
 # Graph Report - .  (2026-06-01)
 
 ## Corpus Check
-- 526 files · ~4,247,602 words
+- 527 files · ~4,248,150 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3939 nodes · 5638 edges · 627 communities detected
+- 3940 nodes · 5638 edges · 628 communities detected
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
@@ -637,6 +637,7 @@
 - [[_COMMUNITY_Community 624|Community 624]]
 - [[_COMMUNITY_Community 625|Community 625]]
 - [[_COMMUNITY_Community 626|Community 626]]
+- [[_COMMUNITY_Community 627|Community 627]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `BundleWidgetFullPage` - 183 edges
@@ -3034,161 +3035,165 @@ Nodes (0):
 
 ### Community 587 - "Community 587"
 Cohesion: 1.0
-Nodes (1): Ad-Ready Bundles Breaking Changes
+Nodes (0): 
 
 ### Community 588 - "Community 588"
 Cohesion: 1.0
-Nodes (1): Bundle Inventory Sync Engine
+Nodes (1): Ad-Ready Bundles Breaking Changes
 
 ### Community 589 - "Community 589"
 Cohesion: 1.0
-Nodes (1): Inventory Levels Update Webhook Handler
+Nodes (1): Bundle Inventory Sync Engine
 
 ### Community 590 - "Community 590"
 Cohesion: 1.0
-Nodes (1): Inventory Management SHOPIFY Migration
+Nodes (1): Inventory Levels Update Webhook Handler
 
 ### Community 591 - "Community 591"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range BR
+Nodes (1): Inventory Management SHOPIFY Migration
 
 ### Community 592 - "Community 592"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range PO Requirements
+Nodes (1): Analytics Custom Date Range BR
 
 ### Community 593 - "Community 593"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range SDE Plan
+Nodes (1): Analytics Custom Date Range PO Requirements
 
 ### Community 594 - "Community 594"
 Cohesion: 1.0
-Nodes (1): Analytics Pixel Toggle BR
+Nodes (1): Analytics Custom Date Range SDE Plan
 
 ### Community 595 - "Community 595"
 Cohesion: 1.0
-Nodes (1): Analytics Pixel Toggle SDE Plan
+Nodes (1): Analytics Pixel Toggle BR
 
 ### Community 596 - "Community 596"
 Cohesion: 1.0
-Nodes (1): Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
+Nodes (1): Analytics Pixel Toggle SDE Plan
 
 ### Community 597 - "Community 597"
 Cohesion: 1.0
-Nodes (1): Analytics Page Redesign BR
+Nodes (1): Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
 
 ### Community 598 - "Community 598"
 Cohesion: 1.0
-Nodes (1): Analytics Page Redesign SDE Plan
+Nodes (1): Analytics Page Redesign BR
 
 ### Community 599 - "Community 599"
 Cohesion: 1.0
-Nodes (1): Pricing Route /app/pricing
+Nodes (1): Analytics Page Redesign SDE Plan
 
 ### Community 600 - "Community 600"
 Cohesion: 1.0
-Nodes (1): Updates & FAQs Route /app/events
+Nodes (1): Pricing Route /app/pricing
 
 ### Community 601 - "Community 601"
 Cohesion: 1.0
-Nodes (1): PDP Bundle Configure Route
+Nodes (1): Updates & FAQs Route /app/events
 
 ### Community 602 - "Community 602"
 Cohesion: 1.0
-Nodes (1): Billing Route /app/billing
+Nodes (1): PDP Bundle Configure Route
 
 ### Community 603 - "Community 603"
 Cohesion: 1.0
-Nodes (1): Deployment Guide
+Nodes (1): Billing Route /app/billing
 
 ### Community 604 - "Community 604"
 Cohesion: 1.0
-Nodes (1): Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)
+Nodes (1): Deployment Guide
 
 ### Community 605 - "Community 605"
 Cohesion: 1.0
-Nodes (1): Bundle Widget Complete Analysis
+Nodes (1): Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)
 
 ### Community 606 - "Community 606"
 Cohesion: 1.0
-Nodes (1): Prompt Engineering Guide (App Recreation)
+Nodes (1): Bundle Widget Complete Analysis
 
 ### Community 607 - "Community 607"
 Cohesion: 1.0
-Nodes (1): Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature
+Nodes (1): Prompt Engineering Guide (App Recreation)
 
 ### Community 608 - "Community 608"
 Cohesion: 1.0
-Nodes (1): FilePicker Component for Shopify Files Browse & Upload
+Nodes (1): Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature
 
 ### Community 609 - "Community 609"
 Cohesion: 1.0
-Nodes (1): Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)
+Nodes (1): FilePicker Component for Shopify Files Browse & Upload
 
 ### Community 610 - "Community 610"
 Cohesion: 1.0
-Nodes (1): Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)
+Nodes (1): Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)
 
 ### Community 611 - "Community 611"
 Cohesion: 1.0
-Nodes (1): INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)
+Nodes (1): Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)
 
 ### Community 612 - "Community 612"
 Cohesion: 1.0
-Nodes (1): Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)
+Nodes (1): INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)
 
 ### Community 613 - "Community 613"
 Cohesion: 1.0
-Nodes (1): Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)
+Nodes (1): Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)
 
 ### Community 614 - "Community 614"
 Cohesion: 1.0
-Nodes (1): Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)
+Nodes (1): Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)
 
 ### Community 615 - "Community 615"
 Cohesion: 1.0
-Nodes (1): Service: app.state.service.ts
+Nodes (1): Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)
 
 ### Community 616 - "Community 616"
 Cohesion: 1.0
-Nodes (1): Concept: Widget Build Pipeline (npm run build:widgets)
+Nodes (1): Service: app.state.service.ts
 
 ### Community 617 - "Community 617"
 Cohesion: 1.0
-Nodes (1): DCP Audit Low Priority Fixes
+Nodes (1): Concept: Widget Build Pipeline (npm run build:widgets)
 
 ### Community 618 - "Community 618"
 Cohesion: 1.0
-Nodes (1): Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)
+Nodes (1): DCP Audit Low Priority Fixes
 
 ### Community 619 - "Community 619"
 Cohesion: 1.0
-Nodes (1): Compact Array Component Format
+Nodes (1): Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)
 
 ### Community 620 - "Community 620"
 Cohesion: 1.0
-Nodes (1): Legacy Object Component Format
+Nodes (1): Compact Array Component Format
 
 ### Community 621 - "Community 621"
 Cohesion: 1.0
-Nodes (1): pricing.messages Legacy Fallback Path
+Nodes (1): Legacy Object Component Format
 
 ### Community 622 - "Community 622"
 Cohesion: 1.0
-Nodes (1): messaging Top-Level Metafield Key
+Nodes (1): pricing.messages Legacy Fallback Path
 
 ### Community 623 - "Community 623"
 Cohesion: 1.0
-Nodes (1): Loading GIF Overlay - Business Requirement
+Nodes (1): messaging Top-Level Metafield Key
 
 ### Community 624 - "Community 624"
 Cohesion: 1.0
-Nodes (1): Shopify Admin files() GraphQL Query
+Nodes (1): Loading GIF Overlay - Business Requirement
 
 ### Community 625 - "Community 625"
 Cohesion: 1.0
-Nodes (1): Add Bundle to Cart Button
+Nodes (1): Shopify Admin files() GraphQL Query
 
 ### Community 626 - "Community 626"
+Cohesion: 1.0
+Nodes (1): Add Bundle to Cart Button
+
+### Community 627 - "Community 627"
 Cohesion: 1.0
 Nodes (1): Step Transition Loading State
 
@@ -3689,263 +3694,265 @@ Nodes (1): Step Transition Loading State
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 497`** (1 nodes): `styleMock.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 498`** (1 nodes): `bundle-readiness-overlay-variant-contract.test.ts`
+- **Thin community `Community 498`** (1 nodes): `bundle-readiness-score-state-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 499`** (1 nodes): `bundle-readiness-overlay-contract.test.ts`
+- **Thin community `Community 499`** (1 nodes): `bundle-readiness-overlay-variant-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 500`** (1 nodes): `functions.test.ts`
+- **Thin community `Community 500`** (1 nodes): `bundle-readiness-overlay-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 501`** (1 nodes): `client.test.ts`
+- **Thin community `Community 501`** (1 nodes): `functions.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 502`** (1 nodes): `cart-transform-run-query.test.ts`
+- **Thin community `Community 502`** (1 nodes): `client.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 503`** (1 nodes): `enable-preview-modal.test.ts`
+- **Thin community `Community 503`** (1 nodes): `cart-transform-run-query.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 504`** (1 nodes): `unlisted-bundle-banner.test.ts`
+- **Thin community `Community 504`** (1 nodes): `enable-preview-modal.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 505`** (1 nodes): `useSharedBundleHandlers.test.ts`
+- **Thin community `Community 505`** (1 nodes): `unlisted-bundle-banner.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 506`** (1 nodes): `use-enable-preview-gate.test.ts`
+- **Thin community `Community 506`** (1 nodes): `useSharedBundleHandlers.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 507`** (1 nodes): `useBundleConfigurationState.test.ts`
+- **Thin community `Community 507`** (1 nodes): `use-enable-preview-gate.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 508`** (1 nodes): `tier-config-validator.test.ts`
+- **Thin community `Community 508`** (1 nodes): `useBundleConfigurationState.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 509`** (1 nodes): `discount-mappers.test.ts`
+- **Thin community `Community 509`** (1 nodes): `tier-config-validator.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 510`** (1 nodes): `theme-color-inheritance.test.ts`
+- **Thin community `Community 510`** (1 nodes): `discount-mappers.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 511`** (1 nodes): `step-filter.test.ts`
+- **Thin community `Community 511`** (1 nodes): `theme-color-inheritance.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 512`** (1 nodes): `bundle-product-media.test.ts`
+- **Thin community `Community 512`** (1 nodes): `step-filter.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 513`** (1 nodes): `pricing-rule-defaults.test.ts`
+- **Thin community `Community 513`** (1 nodes): `bundle-product-media.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 514`** (1 nodes): `ppb-preview-url.test.ts`
+- **Thin community `Community 514`** (1 nodes): `pricing-rule-defaults.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 515`** (1 nodes): `design-control-panel-dirty.test.ts`
+- **Thin community `Community 515`** (1 nodes): `ppb-preview-url.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 516`** (1 nodes): `default-products-contract.test.ts`
+- **Thin community `Community 516`** (1 nodes): `design-control-panel-dirty.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 517`** (1 nodes): `bundle-product-description.test.ts`
+- **Thin community `Community 517`** (1 nodes): `default-products-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 518`** (1 nodes): `bundle-config-contracts.test.ts`
+- **Thin community `Community 518`** (1 nodes): `bundle-product-description.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 519`** (1 nodes): `bundle-navigation.test.ts`
+- **Thin community `Community 519`** (1 nodes): `bundle-config-contracts.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 520`** (1 nodes): `wizard-preview-url.test.ts`
+- **Thin community `Community 520`** (1 nodes): `bundle-navigation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 521`** (1 nodes): `admin-configuration-surfaces.test.ts`
+- **Thin community `Community 521`** (1 nodes): `wizard-preview-url.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 522`** (1 nodes): `bundle-product-data.test.ts`
+- **Thin community `Community 522`** (1 nodes): `admin-configuration-surfaces.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 523`** (1 nodes): `parse-condition-value.test.ts`
+- **Thin community `Community 523`** (1 nodes): `bundle-product-data.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 524`** (1 nodes): `dashboard-preview-action.test.ts`
+- **Thin community `Community 524`** (1 nodes): `parse-condition-value.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 525`** (1 nodes): `product-page-admin-sections.test.ts`
+- **Thin community `Community 525`** (1 nodes): `dashboard-preview-action.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 526`** (1 nodes): `bundle-configure-loader.test.ts`
+- **Thin community `Community 526`** (1 nodes): `product-page-admin-sections.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 527`** (1 nodes): `bundle-widget-product-page-addons.test.ts`
+- **Thin community `Community 527`** (1 nodes): `bundle-configure-loader.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 528`** (1 nodes): `bundle-widget-full-page-category-hydration.test.ts`
+- **Thin community `Community 528`** (1 nodes): `bundle-widget-product-page-addons.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 529`** (1 nodes): `bundle-widget-full-page-cart-properties.test.ts`
+- **Thin community `Community 529`** (1 nodes): `bundle-widget-full-page-category-hydration.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 530`** (1 nodes): `template-manager.test.ts`
+- **Thin community `Community 530`** (1 nodes): `bundle-widget-full-page-cart-properties.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 531`** (1 nodes): `bundle-widget-full-page-addons.test.ts`
+- **Thin community `Community 531`** (1 nodes): `template-manager.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 532`** (1 nodes): `bundle-widget-full-page-template-layout.test.ts`
+- **Thin community `Community 532`** (1 nodes): `bundle-widget-full-page-addons.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 533`** (1 nodes): `bundle-widget-full-page-step-config-image.test.ts`
+- **Thin community `Community 533`** (1 nodes): `bundle-widget-full-page-template-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 534`** (1 nodes): `widget-build-shared-modules.test.ts`
+- **Thin community `Community 534`** (1 nodes): `bundle-widget-full-page-step-config-image.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 535`** (1 nodes): `bundle-widget-full-page-bundle-text.test.ts`
+- **Thin community `Community 535`** (1 nodes): `widget-build-shared-modules.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 536`** (1 nodes): `bundle-data-manager.test.ts`
+- **Thin community `Community 536`** (1 nodes): `bundle-widget-full-page-bundle-text.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 537`** (1 nodes): `fpb-bundle-widget-multilanguage-gate.test.ts`
+- **Thin community `Community 537`** (1 nodes): `bundle-data-manager.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 538`** (1 nodes): `settings-controls-contract-source.test.ts`
+- **Thin community `Community 538`** (1 nodes): `fpb-bundle-widget-multilanguage-gate.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 539`** (1 nodes): `bundle-status-section.test.ts`
+- **Thin community `Community 539`** (1 nodes): `settings-controls-contract-source.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 540`** (1 nodes): `fpb-bundle-visibility-overview-copy.test.ts`
+- **Thin community `Community 540`** (1 nodes): `bundle-status-section.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 541`** (1 nodes): `discount-pricing-parity.test.ts`
+- **Thin community `Community 541`** (1 nodes): `fpb-bundle-visibility-overview-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 542`** (1 nodes): `settings-landing-card-only.test.ts`
+- **Thin community `Community 542`** (1 nodes): `discount-pricing-parity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 543`** (1 nodes): `fpb-admin-shell-layout.test.ts`
+- **Thin community `Community 543`** (1 nodes): `settings-landing-card-only.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 544`** (1 nodes): `ppb-place-widget-copy.test.ts`
+- **Thin community `Community 544`** (1 nodes): `fpb-admin-shell-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 545`** (1 nodes): `ppb-template-modal-close-contract.test.ts`
+- **Thin community `Community 545`** (1 nodes): `ppb-place-widget-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 546`** (1 nodes): `fpb-bundle-widget-button-text-default.test.ts`
+- **Thin community `Community 546`** (1 nodes): `ppb-template-modal-close-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 547`** (1 nodes): `bundle-visibility-quick-guide-contract.test.ts`
+- **Thin community `Community 547`** (1 nodes): `fpb-bundle-widget-button-text-default.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 548`** (1 nodes): `design-settings-cart-messaging.test.ts`
+- **Thin community `Community 548`** (1 nodes): `bundle-visibility-quick-guide-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 549`** (1 nodes): `create-bundle-wizard-preview-ui-contract.test.ts`
+- **Thin community `Community 549`** (1 nodes): `design-settings-cart-messaging.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 550`** (1 nodes): `integrations-no-kicker.test.ts`
+- **Thin community `Community 550`** (1 nodes): `create-bundle-wizard-preview-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 551`** (1 nodes): `settings-language-configure-flow.test.ts`
+- **Thin community `Community 551`** (1 nodes): `integrations-no-kicker.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 552`** (1 nodes): `fpb-page-selection-modal-close-contract.test.ts`
+- **Thin community `Community 552`** (1 nodes): `settings-language-configure-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 553`** (1 nodes): `settings-design-configure-flow.test.ts`
+- **Thin community `Community 553`** (1 nodes): `fpb-page-selection-modal-close-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 554`** (1 nodes): `ppb-setup-rail-contract.test.ts`
+- **Thin community `Community 554`** (1 nodes): `settings-design-configure-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 555`** (1 nodes): `fpb-slot-icon-change-icon-contract.test.ts`
+- **Thin community `Community 555`** (1 nodes): `ppb-setup-rail-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 556`** (1 nodes): `ppb-bundle-widget-default-mode.test.ts`
+- **Thin community `Community 556`** (1 nodes): `fpb-slot-icon-change-icon-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 557`** (1 nodes): `discount-pricing-ui-contract.test.ts`
+- **Thin community `Community 557`** (1 nodes): `ppb-bundle-widget-default-mode.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 558`** (1 nodes): `ppb-select-template-order.test.ts`
+- **Thin community `Community 558`** (1 nodes): `discount-pricing-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 559`** (1 nodes): `integrations-contract-shape.test.ts`
+- **Thin community `Community 559`** (1 nodes): `ppb-select-template-order.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 560`** (1 nodes): `ppb-bundle-settings-surface-contract.test.ts`
+- **Thin community `Community 560`** (1 nodes): `integrations-contract-shape.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 561`** (1 nodes): `ppb-bundle-embed-copy.test.ts`
+- **Thin community `Community 561`** (1 nodes): `ppb-bundle-settings-surface-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 562`** (1 nodes): `addons-free-display-contract.test.ts`
+- **Thin community `Community 562`** (1 nodes): `ppb-bundle-embed-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 563`** (1 nodes): `modal-utils-close-contract.test.ts`
+- **Thin community `Community 563`** (1 nodes): `addons-free-display-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 564`** (1 nodes): `fpb-addons-admin-layout.test.ts`
+- **Thin community `Community 564`** (1 nodes): `modal-utils-close-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 565`** (1 nodes): `integrations-landing-copy.test.ts`
+- **Thin community `Community 565`** (1 nodes): `fpb-addons-admin-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 566`** (1 nodes): `step-setup-category-variant-ui-contract.test.ts`
+- **Thin community `Community 566`** (1 nodes): `integrations-landing-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 567`** (1 nodes): `integrations-request-integration-flow.test.ts`
+- **Thin community `Community 567`** (1 nodes): `step-setup-category-variant-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 568`** (1 nodes): `select-template-modal-contract.test.ts`
+- **Thin community `Community 568`** (1 nodes): `integrations-request-integration-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 569`** (1 nodes): `settings-language-section-copy.test.ts`
+- **Thin community `Community 569`** (1 nodes): `select-template-modal-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 570`** (1 nodes): `ppb-place-widget-product-context.test.ts`
+- **Thin community `Community 570`** (1 nodes): `settings-language-section-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 571`** (1 nodes): `ppb-bundle-visibility-ui-contract.test.ts`
+- **Thin community `Community 571`** (1 nodes): `ppb-place-widget-product-context.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 572`** (1 nodes): `fpb-bundle-settings-surface-contract.test.ts`
+- **Thin community `Community 572`** (1 nodes): `ppb-bundle-visibility-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 573`** (1 nodes): `fpb-bundle-visibility-ui-contract.test.ts`
+- **Thin community `Community 573`** (1 nodes): `fpb-bundle-settings-surface-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 574`** (1 nodes): `fpb-bundle-settings-direct-contract.test.ts`
+- **Thin community `Community 574`** (1 nodes): `fpb-bundle-visibility-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 575`** (1 nodes): `create-wizard-contextual-savebar.test.ts`
+- **Thin community `Community 575`** (1 nodes): `fpb-bundle-settings-direct-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 576`** (1 nodes): `ppb-subscriptions-setup-guide.test.ts`
+- **Thin community `Community 576`** (1 nodes): `create-wizard-contextual-savebar.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 577`** (1 nodes): `step-setup-rule-mode-ui-contract.test.ts`
+- **Thin community `Community 577`** (1 nodes): `ppb-subscriptions-setup-guide.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 578`** (1 nodes): `ppb-bundle-visibility-overview-copy.test.ts`
+- **Thin community `Community 578`** (1 nodes): `step-setup-rule-mode-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 579`** (1 nodes): `settings-controls-configure-flow.test.ts`
+- **Thin community `Community 579`** (1 nodes): `ppb-bundle-visibility-overview-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 580`** (1 nodes): `inventory-webhook.test.ts`
+- **Thin community `Community 580`** (1 nodes): `settings-controls-configure-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 581`** (1 nodes): `theme-template.test.ts`
+- **Thin community `Community 581`** (1 nodes): `inventory-webhook.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 582`** (1 nodes): `order-attribution.test.ts`
+- **Thin community `Community 582`** (1 nodes): `theme-template.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 583`** (1 nodes): `inventory-sync.test.ts`
+- **Thin community `Community 583`** (1 nodes): `order-attribution.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 584`** (1 nodes): `metafield-validation.test.ts`
+- **Thin community `Community 584`** (1 nodes): `inventory-sync.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 585`** (1 nodes): `shopify.d.ts`
+- **Thin community `Community 585`** (1 nodes): `metafield-validation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 586`** (1 nodes): `webhook-worker.ts`
+- **Thin community `Community 586`** (1 nodes): `shopify.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 587`** (1 nodes): `Ad-Ready Bundles Breaking Changes`
+- **Thin community `Community 587`** (1 nodes): `webhook-worker.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 588`** (1 nodes): `Bundle Inventory Sync Engine`
+- **Thin community `Community 588`** (1 nodes): `Ad-Ready Bundles Breaking Changes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 589`** (1 nodes): `Inventory Levels Update Webhook Handler`
+- **Thin community `Community 589`** (1 nodes): `Bundle Inventory Sync Engine`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 590`** (1 nodes): `Inventory Management SHOPIFY Migration`
+- **Thin community `Community 590`** (1 nodes): `Inventory Levels Update Webhook Handler`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 591`** (1 nodes): `Analytics Custom Date Range BR`
+- **Thin community `Community 591`** (1 nodes): `Inventory Management SHOPIFY Migration`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 592`** (1 nodes): `Analytics Custom Date Range PO Requirements`
+- **Thin community `Community 592`** (1 nodes): `Analytics Custom Date Range BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 593`** (1 nodes): `Analytics Custom Date Range SDE Plan`
+- **Thin community `Community 593`** (1 nodes): `Analytics Custom Date Range PO Requirements`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 594`** (1 nodes): `Analytics Pixel Toggle BR`
+- **Thin community `Community 594`** (1 nodes): `Analytics Custom Date Range SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 595`** (1 nodes): `Analytics Pixel Toggle SDE Plan`
+- **Thin community `Community 595`** (1 nodes): `Analytics Pixel Toggle BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 596`** (1 nodes): `Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle`
+- **Thin community `Community 596`** (1 nodes): `Analytics Pixel Toggle SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 597`** (1 nodes): `Analytics Page Redesign BR`
+- **Thin community `Community 597`** (1 nodes): `Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 598`** (1 nodes): `Analytics Page Redesign SDE Plan`
+- **Thin community `Community 598`** (1 nodes): `Analytics Page Redesign BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 599`** (1 nodes): `Pricing Route /app/pricing`
+- **Thin community `Community 599`** (1 nodes): `Analytics Page Redesign SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 600`** (1 nodes): `Updates & FAQs Route /app/events`
+- **Thin community `Community 600`** (1 nodes): `Pricing Route /app/pricing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 601`** (1 nodes): `PDP Bundle Configure Route`
+- **Thin community `Community 601`** (1 nodes): `Updates & FAQs Route /app/events`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 602`** (1 nodes): `Billing Route /app/billing`
+- **Thin community `Community 602`** (1 nodes): `PDP Bundle Configure Route`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 603`** (1 nodes): `Deployment Guide`
+- **Thin community `Community 603`** (1 nodes): `Billing Route /app/billing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 604`** (1 nodes): `Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)`
+- **Thin community `Community 604`** (1 nodes): `Deployment Guide`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 605`** (1 nodes): `Bundle Widget Complete Analysis`
+- **Thin community `Community 605`** (1 nodes): `Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 606`** (1 nodes): `Prompt Engineering Guide (App Recreation)`
+- **Thin community `Community 606`** (1 nodes): `Bundle Widget Complete Analysis`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 607`** (1 nodes): `Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature`
+- **Thin community `Community 607`** (1 nodes): `Prompt Engineering Guide (App Recreation)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 608`** (1 nodes): `FilePicker Component for Shopify Files Browse & Upload`
+- **Thin community `Community 608`** (1 nodes): `Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 609`** (1 nodes): `Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)`
+- **Thin community `Community 609`** (1 nodes): `FilePicker Component for Shopify Files Browse & Upload`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 610`** (1 nodes): `Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)`
+- **Thin community `Community 610`** (1 nodes): `Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 611`** (1 nodes): `INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)`
+- **Thin community `Community 611`** (1 nodes): `Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 612`** (1 nodes): `Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)`
+- **Thin community `Community 612`** (1 nodes): `INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 613`** (1 nodes): `Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)`
+- **Thin community `Community 613`** (1 nodes): `Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 614`** (1 nodes): `Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)`
+- **Thin community `Community 614`** (1 nodes): `Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 615`** (1 nodes): `Service: app.state.service.ts`
+- **Thin community `Community 615`** (1 nodes): `Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 616`** (1 nodes): `Concept: Widget Build Pipeline (npm run build:widgets)`
+- **Thin community `Community 616`** (1 nodes): `Service: app.state.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 617`** (1 nodes): `DCP Audit Low Priority Fixes`
+- **Thin community `Community 617`** (1 nodes): `Concept: Widget Build Pipeline (npm run build:widgets)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 618`** (1 nodes): `Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)`
+- **Thin community `Community 618`** (1 nodes): `DCP Audit Low Priority Fixes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 619`** (1 nodes): `Compact Array Component Format`
+- **Thin community `Community 619`** (1 nodes): `Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 620`** (1 nodes): `Legacy Object Component Format`
+- **Thin community `Community 620`** (1 nodes): `Compact Array Component Format`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 621`** (1 nodes): `pricing.messages Legacy Fallback Path`
+- **Thin community `Community 621`** (1 nodes): `Legacy Object Component Format`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 622`** (1 nodes): `messaging Top-Level Metafield Key`
+- **Thin community `Community 622`** (1 nodes): `pricing.messages Legacy Fallback Path`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 623`** (1 nodes): `Loading GIF Overlay - Business Requirement`
+- **Thin community `Community 623`** (1 nodes): `messaging Top-Level Metafield Key`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 624`** (1 nodes): `Shopify Admin files() GraphQL Query`
+- **Thin community `Community 624`** (1 nodes): `Loading GIF Overlay - Business Requirement`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 625`** (1 nodes): `Add Bundle to Cart Button`
+- **Thin community `Community 625`** (1 nodes): `Shopify Admin files() GraphQL Query`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 626`** (1 nodes): `Step Transition Loading State`
+- **Thin community `Community 626`** (1 nodes): `Add Bundle to Cart Button`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 627`** (1 nodes): `Step Transition Loading State`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
