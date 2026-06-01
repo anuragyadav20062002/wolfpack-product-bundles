@@ -3,7 +3,7 @@ import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState, useRef, useEffect, useCallback, Fragment } from "react";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import { handleCreateBundle } from "../app.dashboard/handlers/handlers.server";
-import { BundleType, FullPageLayout } from "../../../constants/bundle";
+import { BundleType } from "../../../constants/bundle";
 import styles from "./create-bundle.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -39,7 +39,6 @@ export default function CreateBundleWizard() {
   const isSubmitting = navigation.state === "submitting";
 
   const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
-  const [fullPageLayout, setFullPageLayout] = useState<string>(FullPageLayout.FOOTER_BOTTOM);
   const [bundleNameError, setBundleNameError] = useState<string | null>(null);
 
   const bundleNameRef = useRef<any>(null);
@@ -58,9 +57,6 @@ export default function CreateBundleWizard() {
 
   const handleSelectBundleType = useCallback((type: string) => {
     setBundleType(type);
-    if (type !== BundleType.FULL_PAGE) {
-      setFullPageLayout(FullPageLayout.FOOTER_BOTTOM);
-    }
   }, []);
 
   const handleNext = useCallback(() => {
@@ -189,57 +185,7 @@ export default function CreateBundleWizard() {
               </div>
             </div>
 
-            {bundleType === BundleType.FULL_PAGE && (
-              <div className={styles.formSection}>
-                <h2 className={styles.sectionTitle}>Page Layout</h2>
-                <div className={styles.layoutGrid}>
-                  <div
-                    className={`${styles.layoutCard} ${fullPageLayout === FullPageLayout.FOOTER_BOTTOM ? styles.layoutCardSelected : ""}`}
-                    onClick={() => setFullPageLayout(FullPageLayout.FOOTER_BOTTOM)}
-                  >
-                    <div className={styles.bundleThumbnailWrap}>
-                      <img src="/floatingCardThumbnail.png" alt="Floating card" className={styles.bundleThumbnailImg} />
-                    </div>
-                    <div className={styles.layoutCardBody}>
-                      <strong>Floating card</strong>
-                      <s-button
-                        variant="secondary"
-                        href="https://wolfpackapps.com"
-                        target="_blank"
-                        onClick={(e: Event) => e.stopPropagation()}
-                      >
-                        View Demo
-                      </s-button>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`${styles.layoutCard} ${fullPageLayout === FullPageLayout.FOOTER_SIDE ? styles.layoutCardSelected : ""}`}
-                    onClick={() => setFullPageLayout(FullPageLayout.FOOTER_SIDE)}
-                  >
-                    <div className={styles.bundleThumbnailWrap}>
-                      <img src="/sidePanelThumbnail.png" alt="Side panel" className={styles.bundleThumbnailImg} />
-                    </div>
-                    <div className={styles.layoutCardBody}>
-                      <strong>Side Panel</strong>
-                      <s-button
-                        variant="secondary"
-                        href="https://wolfpackapps.com"
-                        target="_blank"
-                        onClick={(e: Event) => e.stopPropagation()}
-                      >
-                        View Demo
-                      </s-button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <input type="hidden" name="bundleType" value={bundleType} />
-            {bundleType === BundleType.FULL_PAGE && (
-              <input type="hidden" name="fullPageLayout" value={fullPageLayout} />
-            )}
 
             <button ref={submitButtonRef} type="submit" style={{ display: "none" }} aria-hidden="true" />
           </div>

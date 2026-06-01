@@ -151,7 +151,6 @@ describe("app.bundles.create action", () => {
     const request = makeRequest({
       bundleName: "Full Page Test",
       bundleType: "full_page",
-      fullPageLayout: "footer_side",
       description: "A description",
     });
 
@@ -161,6 +160,5 @@ describe("app.bundles.create action", () => {
     const [, , calledFormData] = mockHandleCreateBundle.mock.calls[0];
     expect(calledFormData.get("bundleName")).toBe("Full Page Test");
     expect(calledFormData.get("bundleType")).toBe("full_page");
-    expect(calledFormData.get("fullPageLayout")).toBe("footer_side");
   });
 });
