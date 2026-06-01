@@ -27,6 +27,24 @@ const CORS_HEADERS = {
  */
 const INVENTORY_FIELDS = "quantityAvailable currentlyNotInStock";
 
+function mapStorefrontVariant(edge: any) {
+  return {
+    id: edge.node.id,
+    title: edge.node.title,
+    price: edge.node.price?.amount || '0',
+    compareAtPrice: edge.node.compareAtPrice?.amount || null,
+    sellingPlanAllocations: (edge.node.sellingPlanAllocations?.edges || [])
+      .map((allocationEdge: any) => allocationEdge?.node)
+      .filter((allocation: any) => Boolean(allocation)),
+    available: edge.node.availableForSale,
+    quantityAvailable: typeof edge.node.quantityAvailable === 'number'
+      ? edge.node.quantityAvailable
+      : null,
+    currentlyNotInStock: edge.node.currentlyNotInStock === true,
+    image: edge.node.image ? { src: edge.node.image.url } : null
+  };
+}
+
 /**
  * Fetches all variants for a product using cursor-based pagination
  * Handles products with more than 100 variants.
@@ -166,12 +184,36 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const STOREFRONT_QUERY = country
       ? `query getProducts($ids: [ID!]!, $country: CountryCode!) @inContext(country: $country) {
           nodes(ids: $ids) {
-            ... on Product { id title handle featuredImage { url } }
+            ... on Product {
+              id title handle featuredImage { url }
+              variants(first: 1) {
+                edges {
+                  node {
+                    id title availableForSale
+                    price { amount currencyCode }
+                    compareAtPrice { amount currencyCode }
+                    image { url }
+                  }
+                }
+              }
+            }
           }
         }`
       : `query getProducts($ids: [ID!]!) {
           nodes(ids: $ids) {
-            ... on Product { id title handle featuredImage { url } }
+            ... on Product {
+              id title handle featuredImage { url }
+              variants(first: 1) {
+                edges {
+                  node {
+                    id title availableForSale
+                    price { amount currencyCode }
+                    compareAtPrice { amount currencyCode }
+                    image { url }
+                  }
+                }
+              }
+            }
           }
         }`;
 
@@ -280,34 +322,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
             title: product.title,
             handle: product.handle,
             imageUrl: product.featuredImage?.url || '',
-            variants: variantEdges.map((edge: any) => ({
-                id: edge.node.id,
-                title: edge.node.title,
-                price: edge.node.price?.amount || '0',
-                compareAtPrice: edge.node.compareAtPrice?.amount || null,
-                sellingPlanAllocations: (edge.node.sellingPlanAllocations?.edges || [])
-                  .map((allocationEdge: any) => allocationEdge?.node)
-                  .filter((allocation: any) => Boolean(allocation)),
-                available: edge.node.availableForSale,
-                // Numeric stock level; null when scope ungranted or variant is untracked.
-                // Widget treats null as "unlimited / do not clamp".
-              quantityAvailable: typeof edge.node.quantityAvailable === 'number'
-                ? edge.node.quantityAvailable
-                : null,
-              // True when the variant is sold out but accepting backorders.
-              currentlyNotInStock: edge.node.currentlyNotInStock === true,
-              image: edge.node.image ? { src: edge.node.image.url } : null
-            }))
+            variants: variantEdges.map(mapStorefrontVariant)
           };
         } catch (error) {
           AppLogger.warn("[STOREFRONT_API] Failed to fetch variants for product", { component: "api.storefront-products", productId: product.id });
-          // Return product with empty variants on error
+          const fallbackVariants = (product.variants?.edges || []).map(mapStorefrontVariant);
+
           return {
             id: product.id,
             title: product.title,
             handle: product.handle,
             imageUrl: product.featuredImage?.url || '',
-            variants: []
+            variants: fallbackVariants
           };
         }
       })

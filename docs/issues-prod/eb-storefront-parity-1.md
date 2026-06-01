@@ -97,3 +97,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: served JS contains `createSidebarTierCta`, live `window.__BUNDLE_WIDGET_VERSION__` is `2.9.15`, and `.fpb-sidebar-tier-cta` renders `Box of 2` / `₹5 off`.
 - Computed style proof: CTA width `326px`, black background, white text, black border, `8px` radius, centered text.
 - Next gap observed: clicking `Add To Box` did not populate the sidebar selected product rows; handle selected-item/sidebar thumbnail parity as the next slice.
+
+### 2026-06-02 02:45 - FPB selected-item variant fallback slice started
+- Chrome click proof showed `Add To Box` fires but is blocked by `This item is out of stock.` and the sidebar stays at `0 items`.
+- Public `/api/storefront-products` response for the FPB fixture returns products with empty `variants` arrays, so the widget has no sellable variant ID and treats cards as unavailable.
+- Existing EB rewrite evidence documents this stock-gate class: sellable Storefront variants must not be blocked when inventory details are missing or zero, and selected-state sidebar proof depends on usable variant data.
+- Scope this slice to the storefront-products DTO source: include a non-inventory first-variant fallback in the main product query and use it when paginated variant hydration fails, instead of returning `variants: []`.
+- Patched `api.storefront-products` to include `variants(first: 1)` in the main product query and map that fallback variant when `fetchAllVariants` fails.
+- Live API proof: `/apps/product-bundles/api/storefront-products` now returns fallback variants for the FPB fixture; unavailable first product remains unavailable, while second and third products return available variant IDs.
+- Verification passed: `npx eslint --max-warnings 9999 app/routes/api/api.storefront-products.tsx` returned 0 errors and warnings only.
+- Chrome storefront smoke: after reload, the visible available card uses variant ID `48191701188867`; clicking `Add To Box` selects it, sidebar changes to `1 item`, renders the product thumbnail/title/price row, removes skeleton rows, and enables the action button.
