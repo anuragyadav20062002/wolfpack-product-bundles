@@ -2,7 +2,7 @@
  * Widget Full-Page Bundle Operations
  *
  * Handles creation and management of full-page bundles.
- * Creates a Shopify page with a custom template that includes the app block.
+ * Creates a Shopify page whose body bootstraps the full-page bundle widget.
  */
 
 import { AppLogger } from "../../lib/logger";
@@ -17,13 +17,86 @@ interface ShopSession {
   accessToken?: string | null;
 }
 
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildFullPageBundleBodyHtml(bundleId: string, shop: string): string {
+  const escapedBundleId = escapeHtmlAttribute(bundleId);
+  const escapedShop = escapeHtmlAttribute(shop);
+  const designSettingsPath = `/apps/product-bundles/api/design-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+
+  return `
+<div
+  id="bundle-builder-app"
+  data-bundle-id="${escapedBundleId}"
+  data-bundle-type="full_page"
+  data-shop="${escapedShop}"
+  data-show-title="true"
+  data-show-description="true"
+  data-show-category-tabs="true"
+  data-show-promo-banner="true"
+  class="bundle-widget-container bundle-widget-full-page"
+>
+  <div class="bundle-loading">
+    <div class="loading-spinner"></div>
+  </div>
+</div>
+<link rel="stylesheet" href="${designSettingsPath}" type="text/css">
+<link rel="stylesheet" href="/apps/product-bundles/assets/bundle-widget-full-page.css" type="text/css">
+<script src="/apps/product-bundles/assets/bundle-widget-full-page-bundled.js" defer></script>
+`.trim();
+}
+
+async function updateFullPageBundlePageBody(admin: any, pageId: string, body: string): Promise<{ success: boolean; error?: string }> {
+  const UPDATE_PAGE_BODY = `
+    mutation updateFullPageBundlePageBody($id: ID!, $page: PageUpdateInput!) {
+      pageUpdate(id: $id, page: $page) {
+        page {
+          id
+          handle
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(UPDATE_PAGE_BODY, {
+    variables: { id: pageId, page: { body } },
+  });
+  const data = await response.json();
+  const userErrors = data.data?.pageUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    return { success: false, error: userErrors[0].message };
+  }
+
+  return { success: true };
+}
+
+export async function refreshFullPageBundlePageBody(
+  admin: any,
+  pageId: string,
+  bundleId: string,
+  shop: string
+): Promise<{ success: boolean; error?: string }> {
+  return updateFullPageBundlePageBody(admin, pageId, buildFullPageBundleBodyHtml(bundleId, shop));
+}
+
 /**
  * Create a full-page bundle with automated template setup
  *
  * Flow:
- * 1. Ensures page.full-page-bundle.json template exists in the active theme
- * 2. Creates page with bundle_id metafield and templateSuffix
- * 3. Returns storefront URL where bundle is live
+ * 1. Creates or reuses a Shopify page
+ * 2. Writes bundle widget bootstrap HTML into the page body
+ * 3. Sets bundle_id metafields and returns the Shopify page URL
  *
  * @param admin - Shopify admin API client
  * @param session - Shop session with domain and access token
@@ -51,14 +124,15 @@ export async function createFullPageBundle(
       bundleName
     });
 
-    // Pages use the default page.json template — no custom templateSuffix.
-    // Full-page bundle links now resolve through the app proxy route. The Shopify page
-    // is still maintained for existing sync workflows and optional manual block placement.
+    // Pages use the default page template so the store theme header/footer remain intact.
+    // The widget bootstrap is written into the page body so the bundle renders inside
+    // the normal page content instead of the app-proxy shell.
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
     const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     const { handle: pageHandle, adjusted: slugAdjusted } = await resolveUniqueHandle(admin, rawSlug);
     const pageTitle = bundleName || `Bundle ${bundleId}`;
+    const pageBodyHtml = buildFullPageBundleBodyHtml(bundleId, shop);
 
     const CHECK_PAGE_QUERY = `
       query getPageByHandle($query: String!) {
@@ -112,7 +186,7 @@ export async function createFullPageBundle(
           page: {
             title: pageTitle,
             handle: pageHandle,
-            body: '',
+            body: pageBodyHtml,
             isPublished
           }
         }
@@ -155,6 +229,15 @@ export async function createFullPageBundle(
         pageHandle: createdPage.handle,
         bundleId
       });
+
+      const bodyUpdate = await updateFullPageBundlePageBody(admin, createdPage.id, pageBodyHtml);
+      if (!bodyUpdate.success) {
+        return {
+          success: false,
+          error: `Failed to update page body: ${bodyUpdate.error}`,
+          errorType: 'page_creation_failed'
+        };
+      }
     }
 
     // Step 2a: Ensure PAGE metafield definitions exist with PUBLIC_READ storefront access
@@ -218,7 +301,7 @@ export async function createFullPageBundle(
     }
 
     const shopDomain = shop.replace('.myshopify.com', '');
-    const pageUrl = `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundleId}`;
+    const pageUrl = `https://${shopDomain}.myshopify.com/pages/${createdPage.handle}`;
 
     // Return embed activation deep link — directs merchant to Theme Settings > App Embeds
     // to activate the single app embed (one-time per store).
@@ -434,7 +517,9 @@ export async function writeBundleConfigPageMetafield(
  */
 export async function publishPreviewPage(
   admin: any,
-  pageId: string
+  pageId: string,
+  bundleId?: string,
+  shopDomain?: string
 ): Promise<{ success: boolean; error?: string }> {
   const PUBLISH_PAGE = `
     mutation publishPage($id: ID!, $page: PageUpdateInput!) {
@@ -453,6 +538,17 @@ export async function publishPreviewPage(
   `;
 
   try {
+    if (bundleId && shopDomain) {
+      const bodyUpdate = await updateFullPageBundlePageBody(
+        admin,
+        pageId,
+        buildFullPageBundleBodyHtml(bundleId, shopDomain),
+      );
+      if (!bodyUpdate.success) {
+        return { success: false, error: bodyUpdate.error };
+      }
+    }
+
     const response = await admin.graphql(PUBLISH_PAGE, {
       variables: { id: pageId, page: { isPublished: true } },
     });
@@ -495,7 +591,8 @@ export async function publishPreviewPage(
 export async function getPreviewPageUrl(
   admin: any,
   pageId: string,
-  shopDomain: string
+  shopDomain: string,
+  bundleId?: string
 ): Promise<{ success: boolean; previewUrl?: string; pageNotFound?: boolean; error?: string }> {
   const GET_PREVIEW_URL = `
     query getPagePreviewUrl($id: ID!) {
@@ -519,6 +616,22 @@ export async function getPreviewPageUrl(
         pageId,
       });
       return { success: false, pageNotFound: true };
+    }
+
+    if (bundleId) {
+      const bodyUpdate = await updateFullPageBundlePageBody(
+        admin,
+        pageId,
+        buildFullPageBundleBodyHtml(bundleId, shopDomain),
+      );
+      if (!bodyUpdate.success) {
+        AppLogger.warn('getPreviewPageUrl: failed to refresh preview page body', {
+          component: 'WidgetFullPageBundle',
+          pageId,
+          bundleId,
+          error: bodyUpdate.error,
+        });
+      }
     }
 
     const shop = shopDomain.replace('.myshopify.com', '');

@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 2.9.10
- * Built   : 2026-05-31
+ * Version : 2.9.12
+ * Built   : 2026-06-01
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.10';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.12';
 (function (window) {
   'use strict';
 
@@ -652,6 +652,10 @@ class BundleDataManager {
       return false;
     }
 
+    if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      return true;
+    }
+
     const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
     if (!visibility || typeof visibility !== 'object') {
       return true;
@@ -807,6 +811,13 @@ class BundleDataManager {
           if (bundleProductId === productIdStr) {
             return bundle;
           }
+        }
+
+        if (
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+          bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration
+        ) {
+          return bundle;
         }
 
         // Priority 4: Theme editor context (show any bundle)

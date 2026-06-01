@@ -342,12 +342,8 @@ class BundleWidgetFullPage {
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
       // Quantity selector visibility settings (default: show on both)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
-      showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
       // Promo banner settings from theme editor
       showPromoBanner: dataset.showPromoBanner !== 'false',
-      promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
-      promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
-      promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -510,6 +506,9 @@ class BundleWidgetFullPage {
 
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+    if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.selectedBundle = this.bundleData[this.config.bundleId];
+    }
 
     // Update message templates from bundle pricing messages
     this.updateMessagesFromBundle();
@@ -2187,15 +2186,8 @@ class BundleWidgetFullPage {
     }
 
     // Determine layout based on whether we have a discount
-    // Use theme editor settings for customizable text
     if (discountMessage) {
-      // With discount: Use subtitle from theme settings, discount as note
-      promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
       promoNote = discountMessage;
-    } else {
-      // No discount: Use tagline and note from theme settings
-      promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
-      promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
     }
 
     const banner = document.createElement('div');

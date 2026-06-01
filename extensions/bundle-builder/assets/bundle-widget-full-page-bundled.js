@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.10
- * Built   : 2026-05-31
+ * Version : 2.9.12
+ * Built   : 2026-06-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.10';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.12';
 (function() {
   'use strict';
 
@@ -514,6 +514,10 @@ class BundleDataManager {
       return false;
     }
 
+    if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      return true;
+    }
+
     const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
     if (!visibility || typeof visibility !== 'object') {
       return true;
@@ -664,6 +668,13 @@ class BundleDataManager {
           if (bundleProductId === productIdStr) {
             return bundle;
           }
+        }
+
+        if (
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+          bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration
+        ) {
+          return bundle;
         }
 
         const isThemeEditor = this.isThemeEditorContext();
@@ -2305,12 +2316,6 @@ class BundleProductModal {
 
     this.updatePrice();
 
-    const quantitySection = this.modalElement.querySelector('.bundle-modal-quantity');
-    if (quantitySection) {
-      const showQuantitySelector = this.widget?.config?.showQuantitySelectorInModal !== false;
-      quantitySection.style.display = showQuantitySelector ? 'flex' : 'none';
-    }
-
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
   }
 
@@ -3125,12 +3130,8 @@ class BundleWidgetFullPage {
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
 
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
-      showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
 
       showPromoBanner: dataset.showPromoBanner !== 'false',
-      promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
-      promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
-      promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
 
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -3279,6 +3280,9 @@ class BundleWidgetFullPage {
 
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+    if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.selectedBundle = this.bundleData[this.config.bundleId];
+    }
 
     this.updateMessagesFromBundle();
   }
@@ -4856,13 +4860,7 @@ class BundleWidgetFullPage {
     }
 
     if (discountMessage) {
-
-      promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
       promoNote = discountMessage;
-    } else {
-
-      promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
-      promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
     }
 
     const banner = document.createElement('div');

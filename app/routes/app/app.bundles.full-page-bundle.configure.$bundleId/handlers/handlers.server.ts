@@ -11,7 +11,7 @@ import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { renamePageHandle, writeBundleConfigPageMetafield, publishPreviewPage, getPreviewPageUrl } from "../../../../services/widget-installation/widget-full-page-bundle.server";
+import { renamePageHandle, writeBundleConfigPageMetafield, publishPreviewPage, getPreviewPageUrl, refreshFullPageBundlePageBody } from "../../../../services/widget-installation/widget-full-page-bundle.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -1593,7 +1593,10 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     // If a draft preview page exists, promote it to published instead of creating a new page.
     // This prevents duplicate Shopify pages when the merchant previewed before publishing.
     if (bundle.shopifyPreviewPageId) {
-      const publishResult = await publishPreviewPage(admin, bundle.shopifyPreviewPageId);
+      await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop);
+      await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+
+      const publishResult = await publishPreviewPage(admin, bundle.shopifyPreviewPageId, bundleId, session.shop);
 
       if (publishResult.success) {
         await db.bundle.update({
@@ -1777,9 +1780,12 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
 
     // If an existing preview page is tracked, return its URL directly
     if (bundle.shopifyPreviewPageId) {
-      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop);
+      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop, bundleId);
 
       if (urlResult.success) {
+        await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop);
+        await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+
         AppLogger.info("[PREVIEW_PAGE] Returning existing preview URL", {
           bundleId,
           previewPageId: bundle.shopifyPreviewPageId,

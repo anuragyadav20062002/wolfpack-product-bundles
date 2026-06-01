@@ -149,6 +149,10 @@ export class BundleDataManager {
       return false;
     }
 
+    if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      return true;
+    }
+
     const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
     if (!visibility || typeof visibility !== 'object') {
       return true;
@@ -304,6 +308,13 @@ export class BundleDataManager {
           if (bundleProductId === productIdStr) {
             return bundle;
           }
+        }
+
+        if (
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+          bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration
+        ) {
+          return bundle;
         }
 
         // Priority 4: Theme editor context (show any bundle)

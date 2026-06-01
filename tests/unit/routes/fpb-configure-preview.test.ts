@@ -1,3 +1,4 @@
+/* eslint-disable import/first */
 /**
  * Unit Tests — FPB configure preview handlers
  *
@@ -36,6 +37,7 @@ jest.mock('../../../app/services/widget-installation/widget-full-page-bundle.ser
   writeBundleConfigPageMetafield: jest.fn().mockResolvedValue(undefined),
   publishPreviewPage: jest.fn(),
   getPreviewPageUrl: jest.fn(),
+  refreshFullPageBundlePageBody: jest.fn().mockResolvedValue({ success: true }),
 }));
 
 jest.mock('../../../app/services/bundles/metafield-sync.server', () => ({
@@ -50,6 +52,7 @@ import {
   writeBundleConfigPageMetafield,
   publishPreviewPage,
   getPreviewPageUrl,
+  refreshFullPageBundlePageBody,
 } from '../../../app/services/widget-installation/widget-full-page-bundle.server';
 import {
   handleCreatePreviewPage,
@@ -62,6 +65,7 @@ const mockCreateFullPageBundle = WidgetInstallationService.createFullPageBundle 
 const mockPublishPreviewPage = publishPreviewPage as jest.MockedFunction<typeof publishPreviewPage>;
 const mockGetPreviewPageUrl = getPreviewPageUrl as jest.MockedFunction<typeof getPreviewPageUrl>;
 const mockWriteBundleConfigPageMetafield = writeBundleConfigPageMetafield as jest.MockedFunction<typeof writeBundleConfigPageMetafield>;
+const mockRefreshFullPageBundlePageBody = refreshFullPageBundlePageBody as jest.MockedFunction<typeof refreshFullPageBundlePageBody>;
 
 const mockAdmin = { graphql: jest.fn() } as any;
 const mockSession = {
@@ -150,7 +154,9 @@ describe('handleCreatePreviewPage', () => {
     const response = await handleCreatePreviewPage(mockAdmin, mockSession, bundleId);
     const body: any = await response.json();
 
-    expect(mockGetPreviewPageUrl).toHaveBeenCalledWith(mockAdmin, previewPageId, mockSession.shop);
+    expect(mockGetPreviewPageUrl).toHaveBeenCalledWith(mockAdmin, previewPageId, mockSession.shop, bundleId);
+    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
+    expect(mockWriteBundleConfigPageMetafield).toHaveBeenCalledWith(mockAdmin, previewPageId, expect.objectContaining({ id: bundleId }));
     expect(mockCreateFullPageBundle).not.toHaveBeenCalled();
     expect(getDb().bundle.update).not.toHaveBeenCalled();
     expect(body.success).toBe(true);
@@ -211,7 +217,8 @@ describe('handleValidateWidgetPlacement — draft promotion', () => {
     const response = await handleValidateWidgetPlacement(mockAdmin, mockSession, bundleId);
     const body: any = await response.json();
 
-    expect(mockPublishPreviewPage).toHaveBeenCalledWith(mockAdmin, previewPageId);
+    expect(mockPublishPreviewPage).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
+    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
     expect(mockCreateFullPageBundle).not.toHaveBeenCalled();
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({

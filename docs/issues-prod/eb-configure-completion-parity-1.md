@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:13
+**Last Updated:** 2026-06-01 22:36
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -23,7 +23,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - [x] Phase 1 - PPB Take your bundle live flow modal/loading parity
 - [x] Phase 2 - Creation wizard contextual save bar parity
 - [x] Phase 3 - FPB/PPB Bundle Product card Edit Product workflow parity
-- [ ] Phase 4 - FPB storefront template header/footer inheritance
+- [x] Phase 4 - FPB storefront template header/footer inheritance
 - [ ] Phase 5 - FPB/PPB Enable Quantity Validation admin-to-storefront parity
 - [x] Phase 6 - Slot Icon and Step Config parity
 - [x] Phase 7 - Bundle Readiness score card state/UI parity
@@ -259,3 +259,29 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Ran Chrome SIT admin smoke on FPB configure `cmpfhj2m10000v0t038osl42y`: native Shopify Edit Product dialog opens for `Codex FPB 2026-05-21`, Bundle Settings renders Enable Quantity Validation fields, Slot Icon `Change Icon` opens Shopify file picker in-place, and closing the picker returns to Bundle Settings instead of redirecting to Step Setup.
 - Confirmed current FPB Bundle Settings still has the deferred Bundle Status UI gap: Bundle Status should move into its own card and the duplicate dropdown label should be removed after the current parity list is complete.
 - Phase 8 remains open because storefront-visible header/footer inheritance and quantity-validation runtime checks are DCP-gated until the DCP control decision is provided.
+
+### 2026-06-01 22:20 - Phase 4 FPB page URL source gap started
+- Chrome SIT evidence: the app-proxy FPB URL `/apps/product-bundles/wpb/cmpfhj2m10000v0t038osl42y` renders an app-owned page without the Shopify theme header/footer, while a normal Shopify `/pages/...` URL renders the store header/footer.
+- Code evidence: `createFullPageBundle()` still returns an app-proxy `pageUrl`, even though the FPB Liquid block is a normal page-section app block and should be reached through the Shopify page for theme-shell inheritance.
+- Next edit: lock a unit contract that FPB page creation returns `/pages/{handle}` and update the service so publish/preview callers use the theme-shell page URL.
+
+### 2026-06-01 22:20 - Phase 4 FPB theme-shell page rendering validation
+- Updated FPB page creation to return Shopify `/pages/{handle}` URLs instead of app-proxy URLs so storefront pages inherit the store theme header/footer.
+- Added FPB page-body bootstrap generation and refreshed existing preview/promoted pages before returning/opening them, so page URLs still render the FPB widget rather than an empty Shopify page title.
+- Updated full-page runtime selection so an explicit FPB `data-bundle-id` is not blocked by product-page upsell targeting rules when there is no current product context.
+- Bumped widget bundle version to `2.9.12` and rebuilt widget bundles.
+- Validation: `npx jest tests/unit/assets/bundle-data-manager.test.ts tests/unit/services/widget-full-page-bundle.test.ts tests/unit/routes/fpb-configure-preview.test.ts --runInBand` passed with 27/27 tests; scoped ESLint passed with 0 errors.
+- Chrome SIT validation: FPB Preview Bundle opened `https://agent-5sfidg3m.myshopify.com/pages/preview-codex-fpb-2026-05-21`; the page showed the store announcement/header/nav/footer and rendered the FPB widget content inside the theme page.
+- Marked Phase 4 complete. Phase 5 quantity-validation storefront runtime proof and Phase 8 full comparison remain open.
+
+### 2026-06-01 22:31 - FPB banner/modal config cleanup requested
+- User clarified FPB supports image banners only, so the FPB runtime must not emit text banner config defaults for `promoBannerSubtitle`, `promoBannerTagline`, or `promoBannerNote`.
+- User also clarified FPB storefront modals are built from Select Template options, so `showQuantitySelectorInModal` should be removed from the FPB runtime config surface.
+- Removed those FPB runtime config fields, added `tests/unit/assets/fpb-runtime-config-surface.test.ts`, and rebuilt widget bundles.
+- Validation: `npx jest tests/unit/assets/fpb-runtime-config-surface.test.ts tests/unit/assets/bundle-data-manager.test.ts tests/unit/services/widget-full-page-bundle.test.ts tests/unit/routes/fpb-configure-preview.test.ts --runInBand` passed with 29/29 tests; scoped ESLint passed with 0 errors.
+- Follow-up validation: generated FPB bundle has no occurrences of `promoBannerSubtitle`, `promoBannerTagline`, `promoBannerNote`, `showQuantitySelectorInModal`, `Mix & Match`, `Create Your Perfect Bundle`, or `Mix & Match Your Favorites`.
+
+### 2026-06-01 22:36 - Phase 4 commit-boundary validation
+- Re-ran focused Jest for the FPB page-shell and runtime-config slice: `npx jest tests/unit/assets/fpb-runtime-config-surface.test.ts tests/unit/assets/bundle-data-manager.test.ts tests/unit/assets/bundle-widget-full-page-selection-fallback.test.ts tests/unit/services/widget-full-page-bundle.test.ts tests/unit/services/widget-full-page-bundle-preview.test.ts tests/unit/routes/fpb-configure-preview.test.ts --runInBand` passed with 43/43 tests.
+- Re-ran scoped ESLint for the touched server route/service and focused unit tests with `--max-warnings 9999`; result was 0 errors.
+- Rebuilt graph outputs with the documented graphify venv after code changes.

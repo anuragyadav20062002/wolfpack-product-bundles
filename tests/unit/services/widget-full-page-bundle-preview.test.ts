@@ -1,3 +1,4 @@
+/* eslint-disable import/first */
 /**
  * Unit Tests for widget-full-page-bundle.server.ts — preview functions
  *
@@ -186,6 +187,33 @@ describe('publishPreviewPage', () => {
     expect(call[1].variables.id).toBe(pageId);
   });
 
+  it('refreshes page body before publishing when bundle context is provided', async () => {
+    const admin = { graphql: jest.fn() };
+    admin.graphql
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          pageUpdate: {
+            page: { id: pageId, handle: pageHandle },
+            userErrors: [],
+          },
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          pageUpdate: {
+            page: { id: pageId, handle: pageHandle, isPublished: true },
+            userErrors: [],
+          },
+        })
+      );
+
+    const result = await publishPreviewPage(admin, pageId, bundleId, mockSession.shop);
+
+    expect(result.success).toBe(true);
+    const bodyCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
+    expect(bodyCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
+  });
+
   it('returns failure when pageUpdate returns userErrors', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
@@ -230,6 +258,31 @@ describe('getPreviewPageUrl', () => {
 
     expect(result.success).toBe(true);
     expect(result.previewUrl).toBe(`https://test-shop.myshopify.com/pages/${pageHandle}`);
+  });
+
+  it('refreshes existing preview page body when a bundle id is provided', async () => {
+    const admin = { graphql: jest.fn() };
+    admin.graphql
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          page: { id: pageId, handle: pageHandle },
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          pageUpdate: {
+            page: { id: pageId, handle: pageHandle },
+            userErrors: [],
+          },
+        })
+      );
+
+    const result = await getPreviewPageUrl(admin, pageId, mockSession.shop, bundleId);
+
+    expect(result.success).toBe(true);
+    const updateCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
+    expect(updateCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
+    expect(updateCall?.[1]?.variables?.page?.body).toContain('/apps/product-bundles/assets/bundle-widget-full-page-bundled.js');
   });
 
   it('returns pageNotFound when page query returns null', async () => {
