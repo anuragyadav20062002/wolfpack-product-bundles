@@ -5255,7 +5255,7 @@ export default function ConfigureBundleFlow() {
                     />
                   </div>
 
-                  <div style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
+                  <div className={fullPageBundleStyles.upsellWidgetContent} style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
                   <div className={fullPageBundleStyles.visibilityPreviewFrame}>
                     <img
                       className={fullPageBundleStyles.visibilityPreviewFullImage}
@@ -5294,14 +5294,14 @@ export default function ConfigureBundleFlow() {
                     <div className={fullPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
                       <s-button
-                        variant="plain"
+                        variant="secondary"
                         icon="globe"
-                        accessibilityLabel="Multi Language"
-                        title="Multi Language"
                         onClick={() => openMultiLanguageModal("Bundle Widget", [
                           { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
                         ])}
-                      />
+                      >
+                        Multi Language
+                      </s-button>
                     </div>
                     <div className={fullPageBundleStyles.visibilityFieldStack}>
                       <label className={fullPageBundleStyles.visibilityFieldLabel}>
