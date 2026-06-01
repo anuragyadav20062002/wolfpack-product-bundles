@@ -29,3 +29,15 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - [ ] Phase 4 - PPB templates: CASCADE, COGNIVE, MODAL, SIMPLIFIED
 - [ ] Phase 5 - Cart payload/metafield parity for FPB and PPB
 - [ ] Phase 6 - Final desktop/mobile e2e parity pass
+
+### 2026-06-02 01:32 - FPB proxy API category DTO gap patched
+- SIT FPB bootstrap smoke passed: marker hydrated, FPB CSS/JS requested, bundle JSON fetched, view tracking fired.
+- Found next storefront gap: `/apps/product-bundles/api/bundle/{id}.json` returned the step with `categoriesLen: 0`, causing "No products available in this step".
+- Root cause: public bundle API loaded `StepProduct` but did not include ordered `StepCategory`, while the formatter emits category runtime data from `step.StepCategory`.
+- Patched the API loader to include ordered `StepCategory` and added focused route coverage plus `test-spec/fpb-storefront-category-api.spec.md`.
+- Next: run focused verification, commit, deploy, then re-smoke FPB storefront JSON/render.
+
+### 2026-06-02 01:36 - FPB proxy API category DTO verification passed
+- Added focused test coverage proving the public bundle API query loads ordered `StepCategory` rows along with `StepProduct`.
+- Verification passed: `npx jest tests/unit/routes/api.bundle.free-gift.test.ts --runInBand`.
+- Verification passed: `npx eslint --max-warnings 9999 'app/routes/api/api.bundle.$bundleId[.]json.tsx' tests/unit/routes/api.bundle.free-gift.test.ts` with 0 errors.

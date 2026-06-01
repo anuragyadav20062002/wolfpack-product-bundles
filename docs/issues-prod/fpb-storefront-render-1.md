@@ -30,3 +30,9 @@ FPB storefront page has the bundle marker and app-proxy endpoints return 200, bu
 - The embed now creates the `#bundle-builder-app` full-page widget container and loads FPB CSS/JS assets when a marker is present.
 - This follows EB's storefront practice of loading the full-page renderer from the bundle page context, while preserving Wolfpack's proxy/metafield config transport.
 - Next: deploy the theme app extension and smoke the storefront network tab for FPB asset/config/render behavior.
+
+### 2026-06-02 01:32 - SIT bootstrap smoke passed; category DTO gap found
+- Confirmed SIT now hydrates the FPB marker into `#bundle-builder-app` and requests `bundle-widget-full-page.css` plus `bundle-widget-full-page-bundled.js`.
+- Confirmed app-proxy bundle JSON and view tracking return 200.
+- Found follow-up gap: the bundle API response omitted `StepCategory`, leaving the storefront with an empty category/product grid.
+- Follow-up fix is tracked under `eb-storefront-parity-1` because it affects the FPB storefront DTO contract.
