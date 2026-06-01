@@ -282,7 +282,8 @@ describe('getPreviewPageUrl', () => {
     expect(result.success).toBe(true);
     const updateCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
     expect(updateCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
-    expect(updateCall?.[1]?.variables?.page?.body).toContain('/apps/product-bundles/assets/bundle-widget-full-page-bundled.js');
+    expect(updateCall?.[1]?.variables?.page?.body).toContain('data-wpb-full-page-bundle');
+    expect(updateCall?.[1]?.variables?.page?.body).not.toContain('/apps/product-bundles/assets/');
   });
 
   it('returns pageNotFound when page query returns null', async () => {

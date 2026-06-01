@@ -18,16 +18,7 @@ jest.mock("../../../app/db.server", () => ({
   },
 }));
 
-jest.mock("../../../app/lib/bundle-formatter.server", () => ({
-  formatBundleForWidget: jest.fn((bundle) => ({
-    id: bundle.id,
-    name: bundle.name,
-    steps: [],
-  })),
-}));
-
 const getDb = () => require("../../../app/db.server").default;
-const getFormatter = () => require("../../../app/lib/bundle-formatter.server");
 
 function makeSignedRequest(bundleId = "bundle-1") {
   const params = new URLSearchParams({
@@ -57,13 +48,14 @@ describe("FPB app proxy page", () => {
     process.env.SHOPIFY_API_SECRET = originalSecret;
   });
 
-  it("renders the full-page widget shell for a valid signed bundle request", async () => {
+  it("redirects legacy signed full-page proxy links to the Shopify page URL", async () => {
     getDb().bundle.findFirst.mockResolvedValue({
       id: "bundle-1",
       name: "Build a Box",
       shopId: "test-shop.myshopify.com",
       bundleType: "full_page",
       status: "active",
+      shopifyPageHandle: "build-a-box",
       steps: [],
       pricing: null,
     });
@@ -73,16 +65,34 @@ describe("FPB app proxy page", () => {
       params: { bundleId: "bundle-1" },
       context: {},
     } as any)) as Response;
-    const html = await response.text();
-
-    expect(response.status).toBe(200);
-    expect(html).toContain('data-bundle-id="bundle-1"');
-    expect(html).toContain('data-bundle-type="full_page"');
-    expect(html).toContain("/apps/product-bundles/assets/bundle-widget-full-page.css");
-    expect(html).toContain("/apps/product-bundles/assets/bundle-widget-full-page-bundled.js");
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("https://test-shop.myshopify.com/pages/build-a-box");
   });
 
-  it("loads ordered step categories for category-backed storefront config", async () => {
+  it("does not render an app-proxy asset shell when no Shopify page is linked", async () => {
+    getDb().bundle.findFirst.mockResolvedValue({
+      id: "bundle-1",
+      name: "Build a Box",
+      shopId: "test-shop.myshopify.com",
+      bundleType: "full_page",
+      status: "active",
+      shopifyPageHandle: null,
+      steps: [],
+      pricing: null,
+    });
+
+    const response = (await loader({
+      request: makeSignedRequest(),
+      params: { bundleId: "bundle-1" },
+      context: {},
+    } as any)) as Response;
+    const text = await response.text();
+
+    expect(response.status).toBe(409);
+    expect(text).not.toContain("/apps/product-bundles/assets/");
+  });
+
+  it("still loads ordered step categories before legacy page-link handling", async () => {
     const category = {
       id: "category-1",
       name: "Phones",
@@ -97,6 +107,7 @@ describe("FPB app proxy page", () => {
       shopId: "test-shop.myshopify.com",
       bundleType: "full_page",
       status: "draft",
+      shopifyPageHandle: null,
       steps: [
         {
           id: "step-1",
@@ -113,7 +124,6 @@ describe("FPB app proxy page", () => {
       params: { bundleId: "bundle-1" },
       context: {},
     } as any)) as Response;
-    await response.text();
 
     expect(getDb().bundle.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -127,15 +137,7 @@ describe("FPB app proxy page", () => {
         }),
       }),
     );
-    expect(getFormatter().formatBundleForWidget).toHaveBeenCalledWith(
-      expect.objectContaining({
-        steps: [
-          expect.objectContaining({
-            StepCategory: [category],
-          }),
-        ],
-      }),
-    );
+    expect(response.status).toBe(409);
   });
 
   it("rejects invalid signatures before querying the bundle", async () => {

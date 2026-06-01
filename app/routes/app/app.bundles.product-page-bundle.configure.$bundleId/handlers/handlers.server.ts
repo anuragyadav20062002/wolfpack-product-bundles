@@ -1016,9 +1016,16 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       showProgressBar: discountData.displayOptions?.progressBar?.enabled === true,
       method: discountData.discountType,
     });
+    const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
     const directBoxSelection = discountData.discountEnabled === true
       && discountData.discountType !== "buy_x_get_y"
       ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
+      : null;
+    const boxSelection = directBoxSelection
+      ? {
+          ...directBoxSelection,
+          validateBoxSelectionQuantity: productSlotsEnabled,
+        }
       : null;
     const pricingMessages = {
       showDiscountDisplay: true,
@@ -1084,7 +1091,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
         ...parsePPBBundleSettings(formData),
-        boxSelection: directBoxSelection,
+        boxSelection,
         // Update steps if provided
         ...(stepsData && {
           steps: {

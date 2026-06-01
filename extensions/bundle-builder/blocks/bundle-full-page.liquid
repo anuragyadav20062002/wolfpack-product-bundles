@@ -87,9 +87,6 @@
     data-product-card-spacing="{{ block.settings.product_card_spacing }}"
     data-product-cards-per-row="{{ block.settings.product_cards_per_row }}"
     data-show-promo-banner="{{ block.settings.show_promo_banner | default: true }}"
-    data-promo-banner-subtitle="{{ block.settings.promo_banner_subtitle | default: 'Mix & Match' | escape }}"
-    data-promo-banner-tagline="{{ block.settings.promo_banner_tagline | default: 'Create Your Perfect Bundle' | escape }}"
-    data-promo-banner-note="{{ block.settings.promo_banner_note | default: 'Mix & Match Your Favorites' | escape }}"
     data-tier-config="{{ tier_config_json | escape }}"
     class="bundle-widget-container bundle-widget-full-page"
   >
@@ -253,24 +250,6 @@
       "id": "show_promo_banner",
       "label": "Show promo banner",
       "default": true
-    },
-    {
-      "type": "text",
-      "id": "promo_banner_subtitle",
-      "label": "Banner subtitle",
-      "default": "Mix & Match"
-    },
-    {
-      "type": "text",
-      "id": "promo_banner_tagline",
-      "label": "Banner tagline (no discount)",
-      "default": "Create Your Perfect Bundle"
-    },
-    {
-      "type": "text",
-      "id": "promo_banner_note",
-      "label": "Banner note (no discount)",
-      "default": "Mix & Match Your Favorites"
     },
     {
       "type": "header",

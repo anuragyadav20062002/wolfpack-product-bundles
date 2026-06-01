@@ -2,7 +2,7 @@
  * Widget Full-Page Bundle Operations
  *
  * Handles creation and management of full-page bundles.
- * Creates a Shopify page whose body bootstraps the full-page bundle widget.
+ * Creates a Shopify page linked to the full-page bundle app block.
  */
 
 import { AppLogger } from "../../lib/logger";
@@ -28,27 +28,17 @@ function escapeHtmlAttribute(value: string): string {
 function buildFullPageBundleBodyHtml(bundleId: string, shop: string): string {
   const escapedBundleId = escapeHtmlAttribute(bundleId);
   const escapedShop = escapeHtmlAttribute(shop);
-  const designSettingsPath = `/apps/product-bundles/api/design-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
 
   return `
 <div
-  id="bundle-builder-app"
+  data-wpb-full-page-bundle
   data-bundle-id="${escapedBundleId}"
   data-bundle-type="full_page"
   data-shop="${escapedShop}"
-  data-show-title="true"
-  data-show-description="true"
-  data-show-category-tabs="true"
-  data-show-promo-banner="true"
-  class="bundle-widget-container bundle-widget-full-page"
+  hidden
 >
-  <div class="bundle-loading">
-    <div class="loading-spinner"></div>
-  </div>
+  Wolfpack bundle page marker. The storefront widget is rendered by the Shopify theme app block.
 </div>
-<link rel="stylesheet" href="${designSettingsPath}" type="text/css">
-<link rel="stylesheet" href="/apps/product-bundles/assets/bundle-widget-full-page.css" type="text/css">
-<script src="/apps/product-bundles/assets/bundle-widget-full-page-bundled.js" defer></script>
 `.trim();
 }
 
@@ -95,7 +85,7 @@ export async function refreshFullPageBundlePageBody(
  *
  * Flow:
  * 1. Creates or reuses a Shopify page
- * 2. Writes bundle widget bootstrap HTML into the page body
+ * 2. Writes a bundle marker into the page body; the selected Shopify page template's app block loads storefront assets with `asset_url`
  * 3. Sets bundle_id metafields and returns the Shopify page URL
  *
  * @param admin - Shopify admin API client
