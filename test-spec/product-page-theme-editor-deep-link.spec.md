@@ -1,0 +1,17 @@
+# Test Spec: Product Page Theme Editor Deep Link
+**Spec ID:** product-page-theme-editor-deep-link  **Issue:** [eb-configure-completion-parity-1]  **Created:** 2026-06-01
+
+## Purpose
+Lock PPB Place Widget theme-editor deep-link behavior so the merchant-selected product template from server data is used without hardcoded template-name resolution.
+
+## Test Cases
+### ProductPageAdminSections
+| # | Scenario | Input | Expected Output | Notes |
+|---|---|---|---|---|
+| 1 | Default product template link | Server-returned template resolved to `product` | Theme editor URL uses `template=product`, bundle ID, and product preview path | Existing default behavior |
+| 2 | Merchant-selected custom product template link | Server-returned template with `handle=product.custom-merch-template` | Theme editor URL uses `template=product.custom-merch-template` unchanged | Proves arbitrary product template handles pass through |
+
+## Acceptance Criteria
+- [ ] Deep link unit tests pass.
+- [ ] Chrome e2e shows Place Widget loading on the button first, then opens a ready modal listing templates returned by the server.
+- [ ] Clicking a listed template opens Theme Editor with that selected template handle.

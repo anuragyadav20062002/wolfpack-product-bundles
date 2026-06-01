@@ -144,4 +144,22 @@ describe("product page admin sections", () => {
       "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
     );
   });
+
+  it("uses the merchant-selected product template handle in the Theme Editor deep link", () => {
+    expect(
+      buildProductPageThemeEditorDeepLink({
+        shop: "agent-5sfidg3m.myshopify.com",
+        apiKey: "app-key",
+        blockHandle: "bundle-product-page",
+        bundleId: "bundle-123",
+        productHandle: "codex-ppb-2026-05-21",
+        template: {
+          handle: "product.custom-merch-template",
+          fullKey: "templates/product.custom-merch-template.json",
+        },
+      })
+    ).toBe(
+      "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product.custom-merch-template&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
+    );
+  });
 });

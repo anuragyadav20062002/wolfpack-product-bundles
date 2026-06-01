@@ -874,6 +874,8 @@ export default function ConfigureBundleFlow() {
   const [readinessOpen, setReadinessOpen] = useState(false);
   const [hasPreview, setHasPreview] = useState(false);
   const [productMenuOpen, setProductMenuOpen] = useState(false);
+  const [isPreparingPlacementTemplates, setIsPreparingPlacementTemplates] = useState(false);
+  const pendingPlacementModalRef = useRef(false);
 
   const defaultMultiLanguageLocale = useCallback(() => (
     shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
@@ -1412,6 +1414,11 @@ export default function ConfigureBundleFlow() {
           const enhancedTemplates = enhanceTemplateListWithUserSelection(rawTemplates);
           setAvailablePages(enhancedTemplates);
           setIsLoadingPages(false);
+          setIsPreparingPlacementTemplates(false);
+          if (pendingPlacementModalRef.current) {
+            pendingPlacementModalRef.current = false;
+            openPageSelectionModal();
+          }
         } else if ('themeId' in result && result.themeId) {
           // This is a get current theme response - handled by individual callbacks
         } else if ('synced' in result && result.synced) {
@@ -1430,6 +1437,8 @@ export default function ConfigureBundleFlow() {
         // Handle specific error cases
         if (errorMessage.includes("pages") || errorMessage.includes("templates")) {
           setIsLoadingPages(false);
+          setIsPreparingPlacementTemplates(false);
+          pendingPlacementModalRef.current = false;
         }
       }
     }
@@ -1718,19 +1727,24 @@ export default function ConfigureBundleFlow() {
       AppLogger.error("Failed to load theme templates:", {}, error as any);
       shopify.toast.show("Failed to load theme templates", { isError: true, duration: 5000 });
       setIsLoadingPages(false);
+      setIsPreparingPlacementTemplates(false);
+      pendingPlacementModalRef.current = false;
     }
   }, [fetcher, shopify]);
 
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
     try {
-      openPageSelectionModal();
+      pendingPlacementModalRef.current = true;
+      setIsPreparingPlacementTemplates(true);
       loadAvailablePages();
     } catch (error) {
       AppLogger.error('Error opening page selection:', {}, error as any);
       shopify.toast.show("Failed to open page selection", { isError: true, duration: 5000 });
+      setIsPreparingPlacementTemplates(false);
+      pendingPlacementModalRef.current = false;
     }
-  }, [loadAvailablePages, shopify, openPageSelectionModal]);
+  }, [loadAvailablePages, shopify]);
 
   const openVisibilityProductPicker = useCallback(async (target: "widget" | "embed") => {
     const currentProducts = target === "widget" ? upsellWidgetSelectedProducts : bundleEmbedSelectedProducts;
@@ -2358,7 +2372,12 @@ export default function ConfigureBundleFlow() {
                   <h3 className={productPageBundleStyles.leftCardTitle}>Take your bundle live</h3>
                   <div className={productPageBundleStyles.bundleLivePanel}>
                     <span className={productPageBundleStyles.bundleLivePlaceOnTheme}>Place on theme</span>
-                    <s-button variant="secondary" onClick={handlePlaceWidget}>
+                    <s-button
+                      variant="secondary"
+                      loading={isPreparingPlacementTemplates || undefined}
+                      disabled={isPreparingPlacementTemplates || undefined}
+                      onClick={handlePlaceWidget}
+                    >
                       Place Widget
                     </s-button>
                   </div>
@@ -5016,48 +5035,47 @@ export default function ConfigureBundleFlow() {
         </div>
 
       {/* Page Selection Modal */}
-      <s-modal ref={pageSelectionModalRef} heading="Place Widget">
+      <s-modal ref={pageSelectionModalRef} heading="Select Product Page Template">
         <s-stack direction="block" gap="small">
-          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-            Select a template to open the theme editor with widget placement.
-          </p>
-
-          {isLoadingPages ? (
-            <s-stack direction="block" gap="small" style={{ alignItems: "center" }}>
-              <s-spinner />
-              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Loading templates...</p>
-            </s-stack>
-          ) : availablePages.length > 0 ? (
-            <s-stack direction="block" gap="small-100">
+          {availablePages.length > 0 ? (
+            <div style={{ borderTop: "1px solid #ebebeb" }}>
               {availablePages.map((template) => (
-                <s-section key={template.id}>
-                  <s-stack direction="inline" gap="small" style={{ justifyContent: "space-between", alignItems: "center", flexWrap: "nowrap" }}>
-                    <s-stack direction="block" gap="small-400">
-                      <s-stack direction="inline" gap="small-100" style={{ alignItems: "center" }}>
-                        <span style={{ fontSize: 14, fontWeight: 500 }}>
-                          {template.title}
-                        </span>
-                        {template.recommended && (
-                          <s-badge tone="success">Bundle Product</s-badge>
-                        )}
-                      </s-stack>
-                      {template.description && (
-                        <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                          {template.description}
-                        </p>
-                      )}
-                    </s-stack>
-                    <s-button
-                      onClick={() => handlePageSelection(template)}
-                      variant={template.recommended ? "primary" : "secondary"}
-                    >
-                      <s-icon name="external-minor" />
-                      Select
-                    </s-button>
-                  </s-stack>
-                </s-section>
+                <button
+                  key={template.id ?? template.handle ?? template.title}
+                  type="button"
+                  onClick={() => handlePageSelection(template)}
+                  style={{
+                    appearance: "none",
+                    background: "transparent",
+                    border: 0,
+                    borderBottom: "1px solid #ebebeb",
+                    color: "#202223",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    minHeight: 44,
+                    padding: "0 4px",
+                    textAlign: "left",
+                    width: "100%",
+                  }}
+                >
+                  <span>{template.title}</span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      color: "#202223",
+                      fontSize: 20,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ›
+                  </span>
+                </button>
               ))}
-            </s-stack>
+            </div>
           ) : (
             <s-section>
               <s-stack direction="block" gap="small" style={{ alignItems: "center" }}>
@@ -5071,7 +5089,6 @@ export default function ConfigureBundleFlow() {
             </s-section>
           )}
         </s-stack>
-        <s-button slot="secondaryActions" onClick={closePageSelectionModal}>Cancel</s-button>
       </s-modal>
 
       {/* Selected Products Modal */}
