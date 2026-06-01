@@ -1328,29 +1328,45 @@ export default function WizardConfigureStep() {
 
         {/* Step indicator — dynamic based on wizardStep */}
         <div className={styles.stepIndicator}>
-          {stepsMeta.map((step, idx) => (
-            <Fragment key={step.num}>
-              {idx > 0 && <div className={styles.stepConnector} />}
-              <div className={styles.stepItem}>
-                {idx < wizardStep ? (
-                  <>
+          {stepsMeta.map((step, idx) => {
+            const isDone = idx < wizardStep;
+            const isClickable = isDone && idx >= 1;
+            return (
+              <Fragment key={step.num}>
+                {idx > 0 && <div className={styles.stepConnector} />}
+                {isClickable ? (
+                  <button
+                    className={styles.stepItemClickable}
+                    onClick={() => setWizardStep(idx)}
+                    type="button"
+                    aria-label={`Go to ${step.label}`}
+                  >
                     <div className={styles.stepCircleDone}>✓</div>
                     <span className={styles.stepLabelDone}>{step.label}</span>
-                  </>
-                ) : idx === wizardStep ? (
-                  <>
-                    <div className={styles.stepCircleActive}>{step.num}</div>
-                    <span className={styles.stepLabelActive}>{step.label}</span>
-                  </>
+                  </button>
                 ) : (
-                  <>
-                    <span className={styles.stepNumFuture}>{step.num}</span>
-                    <span className={styles.stepLabelFuture}>{step.label}</span>
-                  </>
+                  <div className={styles.stepItem}>
+                    {isDone ? (
+                      <>
+                        <div className={styles.stepCircleDone}>✓</div>
+                        <span className={styles.stepLabelDone}>{step.label}</span>
+                      </>
+                    ) : idx === wizardStep ? (
+                      <>
+                        <div className={styles.stepCircleActive}>{step.num}</div>
+                        <span className={styles.stepLabelActive}>{step.label}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.stepNumFuture}>{step.num}</span>
+                        <span className={styles.stepLabelFuture}>{step.label}</span>
+                      </>
+                    )}
+                  </div>
                 )}
-              </div>
-            </Fragment>
-          ))}
+              </Fragment>
+            );
+          })}
         </div>
 
         {/* ══════════════════════════════════════════════════════
