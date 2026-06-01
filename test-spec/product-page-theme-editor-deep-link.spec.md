@@ -11,6 +11,7 @@ Lock PPB Place Widget theme-editor deep-link behavior so the merchant-selected p
 | 1 | Any merchant product template link | Server-returned template with arbitrary product-template handle | Theme editor URL uses that handle unchanged, bundle ID, and product preview path | No template-name resolution |
 | 2 | Merchant-selected custom product template link | Server-returned template with `handle=product.custom-merch-template` | Theme editor URL uses `template=product.custom-merch-template` unchanged | Proves arbitrary product template handles pass through |
 | 3 | Server listing source | Published theme contains product template assets | Modal data contains only those product templates; no generated bundle-container or fallback rows | Proves server lists store templates only |
+| 4 | Template display names | Theme asset key resolves to arbitrary product-template name | Modal title uses the asset-derived template name unchanged | No hardcoded `Default product`, `Cart transform`, or suffix title-casing |
 
 ## Acceptance Criteria
 - [ ] Deep link unit tests pass.

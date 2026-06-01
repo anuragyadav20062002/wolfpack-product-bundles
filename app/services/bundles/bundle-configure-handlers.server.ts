@@ -387,14 +387,6 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
 
     const assetsData = await assetsResponse.json();
 
-    const formatProductTemplateTitle = (templateName: string) => {
-      if (templateName === "product") return "Default product";
-      return templateName
-        .replace(/^product\./, "")
-        .replace(/[-_]+/g, " ")
-        .replace(/\b\w/g, character => character.toUpperCase());
-    };
-
     // Filter for product template files returned by the merchant's published theme.
     const templates = assetsData.assets
       .filter((asset: any) => asset.key.startsWith('templates/') &&
@@ -405,7 +397,7 @@ export async function handleGetThemeTemplates(admin: ShopifyAdmin, session: Sess
 
         return {
           id: templateName,
-          title: formatProductTemplateTitle(templateName),
+          title: templateName,
           handle: templateName,
           description: asset.key,
           recommended: templateName === "product",

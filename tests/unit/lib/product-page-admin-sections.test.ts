@@ -180,4 +180,11 @@ describe("product page admin sections", () => {
     expect(getThemeTemplatesSource).not.toMatch(/bundle-product-\$\{product\.handle\}/);
     expect(getThemeTemplatesSource).not.toContain("All Product Pages (General)");
   });
+
+  it("lists theme asset template names without hardcoded display-name rewriting", () => {
+    expect(getThemeTemplatesSource).toContain("title: templateName");
+    expect(getThemeTemplatesSource).not.toContain("formatProductTemplateTitle");
+    expect(getThemeTemplatesSource).not.toContain('return "Default product"');
+    expect(getThemeTemplatesSource).not.toContain(".replace(/^product\\./, \"\")");
+  });
 });

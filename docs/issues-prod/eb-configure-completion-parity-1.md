@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 20:48
+**Last Updated:** 2026-06-01 20:58
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -94,3 +94,14 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Scoped ESLint passed with 0 errors for both configure routes and the new route source contract.
 - Chrome EB evidence confirmed the target behavior: native Shopify product editor modal opens over EB.
 - Chrome WPB SIT evidence after the edit: App Bridge still emits a local tunnel postMessage origin mismatch, so the throw-time fallback opens the Admin product page in a new tab for both PPB and FPB. This keeps SIT usable while production/admin-origin behavior uses the EB-native `shopify.navigate` path.
+
+### 2026-06-01 20:54 - Product template naming correction
+- User clarified that product page templates can have arbitrary merchant/theme names, and the modal must list the server-returned template names without resolving them to fixed labels such as `Cart transform` or `Default product`.
+- Current server code already preserved the selected template handle, but still rewrote display titles by special-casing `product`, stripping `product.`, and title-casing suffixes.
+- Updated the server template payload so `title`, `id`, and `handle` all use the asset-derived product template name unchanged; the modal selection still passes the clicked template object directly into the Theme Editor deep link builder.
+
+### 2026-06-01 20:58 - Product template naming validation
+- Focused Jest passed: `npx jest tests/unit/lib/product-page-admin-sections.test.ts --runInBand` with 12/12 tests.
+- Scoped ESLint passed with 0 errors for the shared template handler, deep-link helper, and unit contract; warnings are existing unsafe-any warnings in touched files.
+- Chrome smoke on the SIT Admin PPB configure page confirmed `Place Widget` shows loading on the button first, opens `Select Product Page Template`, lists the asset-derived template row `product`, and selecting it opens Shopify Theme Editor with `template=product`.
+- Graph rebuild completed with `graph.json` and `GRAPH_REPORT.md` regenerated.
