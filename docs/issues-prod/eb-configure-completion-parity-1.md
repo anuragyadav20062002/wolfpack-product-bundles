@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 23:58
+**Last Updated:** 2026-06-01 23:59
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -322,3 +322,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Added fast-track architecture doc `docs/storefront-asset-strategy/02-architecture.md` and test spec `test-spec/storefront-asset-strategy.spec.md`.
 - Added `node --check` raw-widget verification guidance and storefront `asset_url` strategy to `AGENTS.md` and `CLAUDE.md`; updated `internal docs/Architecture/Widget Architecture.md`.
 - Validation passed: focused Jest for FPB page generation/preview/proxy route `26/26`; scoped ESLint exited 0 errors with existing warnings; targeted search confirmed app-proxy asset references remain only in negative tests/docs while FPB and PPB Liquid blocks use `asset_url`.
+
+### 2026-06-01 23:59 - Internal docs tracking policy update
+- User directed that `internal docs/` should no longer be ignored and should be committed going forward.
+- Planned edit: remove the `internal docs/` ignore rule from `.gitignore` and commit the policy change with this issue log.

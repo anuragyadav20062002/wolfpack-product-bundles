@@ -34,6 +34,3 @@ graphify-out/graph.html
 graphify-out/.graphify_*.json
 graphify-out/.graphify_*.txt
 graphify-out/cache/
-
-# Internal docs vault (audited, private — not for version control)
-internal docs/
