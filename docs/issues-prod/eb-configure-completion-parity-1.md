@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:37
+**Last Updated:** 2026-06-01 21:48
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -173,3 +173,24 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 ### 2026-06-01 21:37 - Post-commit graph hook follow-up
 - The commit hook rebuilt graph outputs after the readiness overlay commit and left `graphify-out/GRAPH_REPORT.md` dirty.
 - Follow-up commit will include the generated graph report plus this issue-log entry only.
+
+### 2026-06-01 21:37 - Product editor native modal parity started
+- EB parity target remains the native Shopify Admin product editor surface for Bundle Product → `Edit Product`, not a new Admin tab or a full-page Admin redirect.
+- Current WPB FPB/PPB helpers still build absolute `https://admin.shopify.com/store/.../products/...` URLs and call `shopify.navigate()`, with a `_blank` fallback that previously reproduced the wrong new-tab behavior in SIT.
+- Shopify Navigation API docs use `shopify://admin/products/{id}` with `target="_top"` for Admin resource navigation from embedded apps.
+- Planned edit: switch FPB/PPB helpers to dispatch a top-targeted `shopify://admin/products/{id}` link from the click handler, remove the `_blank` fallback, and update the focused navigation contract.
+
+### 2026-06-01 21:40 - FPB page selector modal close fix started
+- User reported the Select Product Page Template modal does not close after opening.
+- Current PPB page-selection flow already uses a controlled custom dialog, but FPB still renders the page/template selector through `s-modal` plus close-event synchronization.
+- Planned edit: move the FPB page-selection modal to the same controlled dialog pattern with a direct gray X close button, backdrop close, and preserved page/template selection behavior.
+
+### 2026-06-01 21:48 - FPB/PPB selector close validation
+- Converted the FPB page/template selector from `s-modal` to a controlled custom dialog with a defined gray X close button and backdrop close path.
+- Added `tests/unit/routes/fpb-page-selection-modal-close-contract.test.ts` plus `test-spec/fpb-page-selection-modal-close.spec.md` to lock the controlled-dialog close contract.
+- Focused Jest passed: `npx jest tests/unit/routes/fpb-page-selection-modal-close-contract.test.ts tests/unit/routes/ppb-template-modal-close-contract.test.ts --runInBand` with 4/4 tests.
+- Scoped ESLint passed with 0 errors for the FPB configure route and the FPB/PPB close contract tests; warnings are existing route warnings.
+- Chrome smoke on SIT FPB configure confirmed `Embed Upsell Button` opens the controlled page selector and the gray X closes it.
+- Chrome smoke on SIT PPB configure confirmed `Place Widget` opens `Select Product Page Template` and the gray X closes it.
+- During commit-boundary cleanup, the in-progress `shopify://admin/products/{id}` product-editor attempt was Chrome-smoked and still opened the full Admin product page instead of an in-admin modal; that code was not included in this modal-close slice and remains a separate unresolved follow-up.
+- User queued a later Bundle Status UI cleanup: render Bundle Status in its own card and remove the repeated `Bundle Status` label from the dropdown.
