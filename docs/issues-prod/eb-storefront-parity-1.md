@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 03:46
+**Last Updated:** 2026-06-02 04:08
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -147,3 +147,12 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Admin e2e: opened Select Template for FPB bundle `cmpfhj2m10000v0t038osl42y`, selected Classic Design, and advanced to the preview-ready modal state.
 - Storefront e2e: public bundle JSON returned `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "CLASSIC"`; runtime markers matched `CLASSIC`, bundle-scoped search was absent, body/root backgrounds computed `rgb(241, 241, 241)`, product-card prices rendered, and `.fpb-sidebar-tier-cta` rendered `Box of 2` / `₹5 off`.
 - Interaction smoke: clicking an available CLASSIC product populated the sidebar selected row, updated the count to `1 item`, showed `Total $5.00`, and enabled `Add to Cart`.
+
+### 2026-06-02 03:58 - FPB COMPACT grid parity slice started
+- Current EB COMPACT screenshot evidence shows a compact two-column portrait product grid beside the sidebar.
+- Existing WPB COMPACT screenshot showed oversized single-column cards, and the CSS forced `grid-template-columns: 1fr` for the COMPACT preset.
+- Patched the COMPACT desktop grid rule to render two compact columns with tighter spacing.
+- Generated CSS with `npm run minify:assets css`; full-page CSS output stayed under Shopify's 100,000 byte limit.
+- Admin e2e: reopened Select Template for FPB bundle `cmpfhj2m10000v0t038osl42y`, selected Compact Design, and submitted through the preview-ready modal flow.
+- Storefront e2e: public bundle JSON returned `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "COMPACT"`; runtime markers matched `COMPACT`, bundle-scoped search was absent, body/root backgrounds computed `rgb(241, 241, 241)`, grid computed `220px 220px` with `12px` gap, product-card prices rendered, and `.fpb-sidebar-tier-cta` rendered `Box of 2` / `₹5 off`.
+- Interaction smoke: clicking an available COMPACT product populated the sidebar selected row, updated the count to `1 item`, and enabled `Add to Cart`.

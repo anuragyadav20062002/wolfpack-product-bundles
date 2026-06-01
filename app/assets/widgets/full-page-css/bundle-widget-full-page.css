@@ -5129,8 +5129,8 @@ minmax(0,
   width:100%}
 
 .layout-sidebar[data-fpb-design-preset="COMPACT"] .sidebar-content .full-page-product-grid {
-  grid-template-columns:1fr;
-  gap:10px}
+  grid-template-columns:repeat(2,220px);
+  gap:12px}
 }
 
 .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab,
