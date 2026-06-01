@@ -1014,8 +1014,15 @@
 .visibilityPreviewFullImage {
   display: block;
   width: 100%;
-  height: auto;
+  height: 220px;
   object-fit: cover;
+  object-position: top;
+}
+
+.upsellWidgetContent {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .visibilityPreviewProduct {

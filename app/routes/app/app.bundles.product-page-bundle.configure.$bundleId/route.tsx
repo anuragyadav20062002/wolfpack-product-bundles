@@ -3815,7 +3815,7 @@ export default function ConfigureBundleFlow() {
                     />
                   </div>
 
-                  <div style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
+                  <div className={productPageBundleStyles.upsellWidgetContent} style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
                   <div className={productPageBundleStyles.visibilityPreviewFrame}>
                     <img
                       className={productPageBundleStyles.visibilityPreviewFullImage}
@@ -3854,16 +3854,16 @@ export default function ConfigureBundleFlow() {
                     <div className={productPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={productPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
                       <s-button
-                        variant="plain"
+                        variant="secondary"
                         icon="globe"
-                        accessibilityLabel="Multi Language"
-                        title="Multi Language"
                         onClick={() => openMultiLanguageModal("Bundle Widget", [
                           { key: "widgetTitle", label: "Widget Title", fallback: upsellWidgetTitle },
                           { key: "widgetDescription", label: "Widget Description", fallback: upsellWidgetDescription, multiline: true },
                           { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
                         ])}
-                      />
+                      >
+                        Multi Language
+                      </s-button>
                     </div>
                     <div className={productPageBundleStyles.visibilitySettingsGrid}>
                       <div className={productPageBundleStyles.visibilityImagePicker}>
