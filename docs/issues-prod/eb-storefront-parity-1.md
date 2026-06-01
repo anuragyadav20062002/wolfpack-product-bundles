@@ -56,3 +56,11 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Generated minified storefront CSS with `npm run minify:assets css`; final asset generation passed under Shopify's 100,000 byte limit.
 - Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: FPB CSS/JS 200, bundle JSON 200, product hydration 200, view tracking 200.
 - Computed style proof: active category tab has transparent background, `0px` radius, and `3px solid rgb(0, 0, 0)` bottom border; inactive category tab is transparent with transparent bottom border.
+
+### 2026-06-02 01:50 - FPB DEFAULT page background parity slice started
+- Existing EB select-template evidence shows FPB DEFAULT uses a light gray page background, while WPB computes white on both `body` and `#bundle-builder-app`.
+- Chrome ancestor inspection shows the widget ancestors are transparent up to `body`, so the narrow fix is a DEFAULT-scoped body/root background rule.
+- Patched raw FPB CSS with `body:has([data-fpb-design-preset=DEFAULT])` and root background rules.
+- Generated minified storefront CSS with `npm run minify:assets css`; final asset generation passed under Shopify's 100,000 byte limit.
+- Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: body and `#bundle-builder-app` both compute to `rgb(241, 241, 241)`.
+- Regression check: FPB DEFAULT category tabs still compute as transparent text tabs with active `3px solid rgb(0, 0, 0)` bottom border.

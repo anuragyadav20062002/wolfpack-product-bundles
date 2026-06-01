@@ -5143,14 +5143,17 @@ minmax(0,
   gap:28px;
   margin:18px 8px 14px}
 
+body:has([data-fpb-design-preset=DEFAULT]),
+[data-fpb-design-preset=DEFAULT] {
+  background:#f1f1f1}
+
 [data-fpb-design-preset=DEFAULT] .category-tab {
   padding:0 0 6px;
   border:0;
   border-bottom:3px solid transparent;
   border-radius:0;
   background:transparent;
-  color:#000;
-  font-weight:600}
+  color:#000}
 
 [data-fpb-design-preset=DEFAULT] .category-tab.active {
   border-bottom-color:#000}
