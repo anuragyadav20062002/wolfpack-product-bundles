@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:06
+**Last Updated:** 2026-06-01 21:15
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -110,3 +110,14 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - User clarified the `Edit Product` parity target: EB opens a Shopify product-page form inside an in-admin modal, not a new Admin product page tab. Take this up after the other listed tasks are completed.
 - User clarified Place Widget still has a remaining product-context gap: the Theme Editor deep link now preserves the selected template, but must also target the bundle parent product. Take this up later when the rest of the tasks are complete.
 - User clarified readiness behavior: the readiness score is still an overlay, not an inline card. Create wizard should keep the compact gauge+score overlay, while edit/configure overlay should include the extra EB description text inline. Deferred this slice and reverted the in-progress inline-card patch.
+
+### 2026-06-01 21:07 - Product template modal close fix started
+- User reported the `Select Product Page Template` modal does not close after opening.
+- Existing shared modal helper listened for `dismiss` and `hide`; this can miss close-button variants from `s-modal` that emit `close` or `afterhide`, leaving React state in the open state.
+- Initial shared-listener extension to `close`, `afterhide`, and a guarded click path passed tests but Chrome still reproduced the non-closing built-in `s-modal` close button after reload.
+- Updated the PPB page-selection modal to use a controlled custom dialog with its own X button and backdrop wired directly to `closePageSelectionModal`, while preserving the EB-style compact title and server-returned template rows.
+
+### 2026-06-01 21:15 - Product template modal close validation
+- Focused Jest passed: `npx jest tests/unit/routes/modal-utils-close-contract.test.ts tests/unit/routes/ppb-template-modal-close-contract.test.ts --runInBand` with 4/4 tests.
+- Scoped ESLint passed with 0 errors for the shared modal helper, PPB configure route, and focused route tests; warnings are existing route unsafe-any/security warnings.
+- Chrome smoke on SIT PPB configure confirmed `Place Widget` opens the controlled `Select Product Page Template` dialog with the server-returned `product` row, and clicking the dialog's X closes it immediately.
