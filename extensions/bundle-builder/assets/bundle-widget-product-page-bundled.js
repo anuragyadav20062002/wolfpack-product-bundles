@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.13
+ * Version : 2.9.14
  * Built   : 2026-06-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.13';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.14';
 (function() {
   'use strict';
 
@@ -2167,8 +2167,8 @@ class BundleWidgetProductPage {
   }
 
   /**
-   * Load Design Control Panel CSS settings
-   * Injects custom CSS from Design Control Panel into the page
+   * Load Settings design CSS
+   * Injects custom CSS from Settings -> Design into the page
    */
   async loadDesignSettingsCSS() {
     try {

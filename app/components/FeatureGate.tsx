@@ -9,7 +9,7 @@
  * <FeatureGate
  *   feature="design_control_panel"
  *   plan={currentPlan}
- *   fallback={<UpgradePrompt feature="Design Control Panel" />}
+ *   fallback={<UpgradePrompt feature="Settings -> Design" />}
  * >
  *   <DesignControlPanel />
  * </FeatureGate>

@@ -20,7 +20,7 @@ import {
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
-import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
+import { FilePicker } from "../../../components/shared/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -250,7 +250,7 @@ const productPageTemplateOptions = [
   { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/PPB-VerticalSlots.png" },
 ] as const;
 
-const PPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=product_page&section=globalColors";
+const PPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
 type VisibilityDisplayConfiguration = {
   showOnAllBundleProducts: boolean;
@@ -5375,7 +5375,7 @@ export default function ConfigureBundleFlow() {
                   <div className={productPageBundleStyles.templateCustomizationGrid}>
                     <div className={productPageBundleStyles.templateCustomizationCard}>
                       <h4>Brand colors</h4>
-                      <p>Use the Design Control Panel color controls for primary, secondary, background, text, border, and discount accents.</p>
+                      <p>Use Settings &rarr; Design color controls for primary, secondary, background, text, border, and discount accents.</p>
                     </div>
                     <div className={productPageBundleStyles.templateCustomizationCard}>
                       <h4>Corners</h4>

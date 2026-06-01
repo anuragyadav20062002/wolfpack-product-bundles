@@ -221,10 +221,10 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
-  /* Free Gift Badge — merchant-uploadable badge image + DCP-controlled position */
+  /* Free Gift Badge — merchant-uploadable badge image + Settings-controlled position */
   --bundle-free-gift-badge-url: ${s.freeGiftBadgeUrl ? `url("${s.freeGiftBadgeUrl}")` : 'none'};
   ${buildBadgePositionVars('free-gift', s.freeGiftBadgePosition ?? 'top-left')}
-  /* Included (Default) Badge — merchant-uploadable badge image + DCP-controlled position */
+  /* Included (Default) Badge — merchant-uploadable badge image + Settings-controlled position */
   --bundle-included-badge-url: ${s.includedBadgeUrl ? `url("${s.includedBadgeUrl}")` : 'none'};
   ${buildBadgePositionVars('included', s.includedBadgePosition ?? 'top-left')}
 

@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 2.9.13
+ * Version : 2.9.14
  * Built   : 2026-06-01
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.13';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.14';
 (function (window) {
   'use strict';
 
@@ -1188,7 +1188,7 @@ class ToastManager {
       existingToast.remove();
     }
 
-    // Create toast element - uses DCP CSS variables
+    // Create toast element - uses Settings design CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
@@ -1207,7 +1207,7 @@ class ToastManager {
       toast.remove();
     });
 
-    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
+    // Add to page (styles come from bundle-widget.css with Settings design CSS variables)
     document.body.appendChild(toast);
 
     // Auto-remove after duration

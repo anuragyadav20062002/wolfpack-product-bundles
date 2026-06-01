@@ -27,7 +27,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
-import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
+import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import {
   MultiLanguageTextModal,
@@ -86,7 +86,7 @@ const fullPageTemplateOptions = [
   { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
 ] as const;
 
-const FPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=full_page&section=globalColors";
+const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -5883,7 +5883,7 @@ export default function ConfigureBundleFlow() {
                   <div className={fullPageBundleStyles.templateCustomizationGrid}>
                     <div className={fullPageBundleStyles.templateCustomizationCard}>
                       <h4>Brand colors</h4>
-                      <p>Use the Design Control Panel color controls for primary, secondary, background, text, border, and discount accents.</p>
+                      <p>Use Settings &rarr; Design color controls for primary, secondary, background, text, border, and discount accents.</p>
                     </div>
                     <div className={fullPageBundleStyles.templateCustomizationCard}>
                       <h4>Corners</h4>

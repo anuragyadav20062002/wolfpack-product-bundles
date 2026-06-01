@@ -43,7 +43,7 @@
     {% assign bundle_config_json = 'null' %}
   {% endif %}
 
-  {% comment %} Bundle settings metafield — DCP display settings (promoBanner, badge, etc.) {% endcomment %}
+  {% comment %} Bundle settings metafield — Settings design display settings (promoBanner, badge, etc.) {% endcomment %}
   {% assign bundle_settings_metafield = page.metafields.custom.bundle_settings %}
   {% if bundle_settings_metafield.value != blank %}
     {% assign bundle_settings_json = bundle_settings_metafield.value | json %}

@@ -132,12 +132,11 @@ Reference in commit: `[issue-id] test: add unit tests for {module}\nSpec: test-s
 7. ✅ Write tests BEFORE implementation for all new code
 8. ✅ Run linter on modified files BEFORE every commit — see Lint Before Commit
 9. ❌ NO backwards-compatibility shims or migration hacks — see No Backwards Compatibility Rule
-10. ✅ ALWAYS ask about DCP customizability for storefront changes before implementing
-11. ✅ CREATE a test spec file in `test-spec/` for every TDD session
-12. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
-13. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
-14. ❌ NEVER commit Chrome DevTools investigation screenshots
-15. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
+10. ✅ CREATE a test spec file in `test-spec/` for every TDD session
+11. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
+12. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
+13. ❌ NEVER commit Chrome DevTools investigation screenshots
+14. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
 
 ---
 
@@ -162,15 +161,6 @@ Use Polaris web components (`s-*`) for **all** Admin-embedded app UI. Fall back 
 **Narrow EB clone rewrite exception:** For `eb-ui-clone-rewrite-1` only, custom non-Polaris Admin controls are allowed when exact evidence-backed EB pixel parity cannot be achieved with Polaris web components. Keep the exception scoped to the cloned control, document the evidence source in `docs/eb-ui-clone-rewrite/evidence-manifest.md`, and do not use this exception for unrelated Admin UI.
 
 Check availability: `mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-home")`
-
----
-
-## 🎨 DCP Customizability Rule
-
-Any storefront-visible change may need a merchant-facing DCP control:
-- User **explicitly says** DCP-customizable → implement DCP control in same issue/commit.
-- User **does not mention** DCP → **ask first**: "Should this also have a DCP control?"
-- Do NOT assume no DCP needed. Do NOT add DCP controls speculatively.
 
 ---
 
@@ -204,7 +194,7 @@ Zero ESLint errors required. Warnings acceptable (pre-existing ~6500 warnings in
 
 **MANDATORY:** Update `docs/app-nav-map/APP_NAVIGATION_MAP.md` whenever you:
 - Add/rename/remove a route, page, modal, or tab
-- Add a new sidebar section to DCP navigation
+- Add a new Settings subpage, sidebar section, or configuration tab
 - Add/change a user flow or add relevant API routes
 
 ---

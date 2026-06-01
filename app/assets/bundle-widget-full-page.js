@@ -161,7 +161,7 @@ class BundleWidgetFullPage {
         return;
       }
 
-      // Merge bundle_settings metafield into selectedBundle (DCP display settings)
+      // Merge bundle_settings metafield into selectedBundle (Settings design display settings)
       this._mergeBundleSettings(this.bundleSettings);
       this.applyPersonalizationAddonProducts();
 
@@ -254,8 +254,8 @@ class BundleWidgetFullPage {
   }
 
   /**
-   * Load Design Control Panel CSS settings
-   * Injects custom CSS from Design Control Panel into the page
+   * Load Settings design CSS
+   * Injects custom CSS from Settings -> Design into the page
    */
   loadDesignSettingsCSS() {
     try {
@@ -360,7 +360,7 @@ class BundleWidgetFullPage {
 
     this.tierConfig = this.config.tierConfig;
 
-    // Parse bundle_settings metafield (DCP display settings — promoBanner, badge, etc.)
+    // Parse bundle_settings metafield (Settings design display settings — promoBanner, badge, etc.)
     try {
       this.bundleSettings = JSON.parse(dataset.bundleSettings || 'null') || {};
     } catch {
@@ -2174,14 +2174,14 @@ class BundleWidgetFullPage {
   }
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
-  // Shows bundle title with optional discount info from DCP
+  // Shows bundle title with optional discount info from Settings -> Design
   createPromoBanner() {
     // Check if promo banner is disabled via theme editor settings
     if (this.config.showPromoBanner === false) {
       return null;
     }
 
-    // Check if promo banner is enabled via DCP CSS variable
+    // Check if promo banner is enabled via Settings design CSS variable
     const promoBannerEnabled = getComputedStyle(document.documentElement)
       .getPropertyValue('--bundle-promo-banner-enabled')
       .trim();
@@ -5099,7 +5099,7 @@ class BundleWidgetFullPage {
     const step = this.selectedBundle?.steps?.[stepIndex] || {};
 
     if (products.length === 0) {
-      // Show empty state cards like in DCP preview
+      // Show empty state cards like in Settings design preview
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;

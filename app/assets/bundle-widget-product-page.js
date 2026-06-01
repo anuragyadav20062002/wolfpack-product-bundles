@@ -210,8 +210,8 @@ class BundleWidgetProductPage {
   }
 
   /**
-   * Load Design Control Panel CSS settings
-   * Injects custom CSS from Design Control Panel into the page
+   * Load Settings design CSS
+   * Injects custom CSS from Settings -> Design into the page
    */
   async loadDesignSettingsCSS() {
     try {
@@ -792,7 +792,7 @@ class BundleWidgetProductPage {
     if (!panel) {
       panel = document.createElement('div');
       panel.id = 'bundle-builder-modal';
-      // bundle-builder-modal class required so DCP-injected CSS selectors apply to this panel
+      // bundle-builder-modal class required so Settings design CSS selectors apply to this panel
       panel.className = 'bw-bs-panel bundle-builder-modal';
       panel.setAttribute('role', 'dialog');
       panel.setAttribute('aria-modal', 'true');
@@ -1475,7 +1475,7 @@ class BundleWidgetProductPage {
   _createRibbonSvg() {
     const ribbon = document.createElement('span');
     ribbon.className = 'bw-slot-card__ribbon';
-    // Check for a merchant-configured badge image via DCP CSS variable
+    // Check for a merchant-configured badge image via Settings design CSS variable
     const badgeUrl = getComputedStyle(document.documentElement)
       .getPropertyValue('--bundle-free-gift-badge-url').trim();
     const hasMerchantBadge = badgeUrl && badgeUrl !== 'none' && badgeUrl !== '';

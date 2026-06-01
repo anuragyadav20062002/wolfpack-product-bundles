@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-06-01
+**Last Updated:** 2026-06-02
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -22,7 +22,6 @@ Wolfpack: Product Bundles -SIT
 ├── [root]              → /app/dashboard          (Dashboard)
 ├── Settings            → /app/settings
 ├── Integrations        → /app/integrations
-├── Design Control Panel → /app/design-control-panel
 ├── Analytics           → /app/attribution
 ├── Pricing             → /app/pricing
 └── Updates & FAQs      → /app/events
@@ -100,139 +99,15 @@ Delete Confirmation Modal (centered, small)
 
 ---
 
-### 2.2 Design Control Panel (DCP) — `/app/design-control-panel`
-
-**Route file:** `app/routes/app/app.design-control-panel/route.tsx`
-**Screenshot:** `screenshots/01-dcp-landing.png`
-**Deep link:** `/app/design-control-panel?modal=product_page&section=cartLineMessaging` opens the Product Page Layout Additional Configurations view directly on Cart Messaging.
-
-```
-DCP Landing Page
-├── Header: "Design Control Panel"
-├── Subheader: "Customize the appearance of your bundles"
-│
-├── Card: "Landing Page Bundles"
-│   └── [Button] "Customize" → opens FPB Customization Modal (max overlay)
-│
-├── Card: "Product Bundles"
-│   └── [Button] "Customize" → opens PDP Customization Modal (max overlay)
-│
-└── Section: "Custom CSS"
-    ├── Tab: "Product Bundles"
-    ├── Tab: "Landing Page Bundles"
-    ├── TextArea: CSS Rules (50,000 char limit)
-    ├── Security notice (XSS patterns auto-stripped)
-    ├── [Button] "Save Custom CSS"
-    └── [Button] "CSS Guide" → opens CSS Guide Modal
-```
-
-#### Modal: FPB Customization (max overlay)
-Triggered by: "Customize" on Landing Page Bundles card
-**Screenshot:** `screenshots/07-dcp-fpb-modal.png`
-
-```
-FPB DCP Modal (3-column layout)
-│
-├── LEFT: NavigationSidebar
-│   ├── Global Colors
-│   ├── Product Card  [expandable group]
-│   │   ├── Product Card
-│   │   ├── Product Card Typography
-│   │   ├── Button
-│   │   ├── Added State
-│   │   ├── Quantity & Variant Selector
-│   │   ├── Search Input
-│   │   ├── Skeleton Loading
-│   │   └── Typography
-│   ├── Bundle Footer  [expandable group]
-│   │   ├── Footer
-│   │   ├── Footer Price
-│   │   ├── Footer Button
-│   │   ├── Footer Discount Progress
-│   │   └── Quantity Badge
-│   ├── General  [expandable group]
-│   │   ├── Header Tabs
-│   │   ├── Header Text
-│   │   ├── Empty State
-│   │   ├── Add to Cart Button
-│   │   ├── Toasts
-│   │   ├── Modal Close Button
-│   │   ├── Accessibility
-│   │   └── Widget Style
-│   ├── Bundle Header  [FPB only, expandable]
-│   ├── Promo Banner  [FPB only, expandable]
-│   └── Pricing Tier Pills  [FPB only, expandable]
-│
-├── CENTER: SettingsPanel
-│   ├── "Reset to defaults" button (top right, critical/plain)
-│   ├── Divider
-│   └── Dynamic settings form for active section
-│       (ColorPickers, RangeSliders with number input, Segmented controls, Toggles)
-│
-├── RIGHT: PreviewPanel
-│   ├── Viewport toggle: [Desktop] [Mobile]
-│   ├── Footer layout toggle: [Sidebar] [Floating Footer]  (FPB only)
-│   └── Live iframe preview (scaled, postMessage CSS updates)
-│
-└── BOTTOM: Save Bar
-    ├── "Unsaved changes" label
-    ├── [Button] "Discard"
-    └── [Button] "Save"
-```
-
-#### Modal: PDP Customization (max overlay)
-Triggered by: "Customize" on Product Bundles card
-**Screenshot:** `screenshots/08-dcp-pdp-modal.png`
-
-```
-PDP DCP Modal (3-column layout — same as FPB except:)
-├── LEFT: NavigationSidebar (no Bundle Header / Promo Banner / Tier Pills)
-│   └── General [expandable group]
-│       ├── Checkout Button
-│       ├── Toasts
-│       ├── Accessibility
-│       ├── Modal Close Button
-│       ├── Widget Style
-│       └── Cart Messaging
-├── RIGHT: PreviewPanel — no footer layout toggle (single iframe)
-└── Same Settings Panel + Save Bar structure
-```
-
-Product Page Layout Additional Configurations deep link:
-```
-Additional Configurations
-├── LEFT: App Configurations card
-│   ├── Product Page Layout selector
-│   ├── Configuration
-│   └── CSS & Scripts
-└── RIGHT: Product Page Layout settings
-    ├── Bundle Settings card (read-only visual inventory until storefront proof)
-    └── Cart Messaging card
-        ├── Cart Messaging
-        ├── Bundle Items
-        ├── Original Bundle Price
-        ├── Discount Display
-        └── Discount format
-```
-
-#### Modal: CSS Guide
-Triggered by: "CSS Guide" button
-```
-CSS Guide Modal (max overlay)
-└── Help content: CSS variable reference, examples
-```
-
----
-
-### 2.2a Settings — `/app/settings`
+### 2.2 Settings — `/app/settings`
 
 **Route file:** `app/routes/app/app.settings.tsx`
 
-Recovered Admin Settings hub:
+Admin Settings hub:
 ```
 Settings
 ├── Card: Design
-│   └── Shows recovered Design Control Panel facts: brand colors, typography, corners, images and GIFs
+│   └── Shows Settings -> Design controls: brand colors, typography, corners, images and GIFs
 ├── Card: Language
 │   └── Shows multilanguage model, supported languages, shared Cart & Checkout strings, and template language sections
 └── Card: Controls
@@ -240,7 +115,7 @@ Settings
 ```
 
 Primary action:
-- `Open Design Control Panel` → `/app/design-control-panel`
+- Design card Configure opens the Settings -> Design subpage
 
 ---
 
@@ -374,7 +249,7 @@ FPB Configure Page
 │   │
 │   └── Select Template        → select_template section
 │       ├── Heading: "Customize your bundle"
-│       ├── [Button] "Customize Colors & Language" → /app/design-control-panel
+│       ├── [Button] "Customize Colors & Language" → /app/settings
 │       └── 2×2 template grid (FPB: Standard Design, Classic Design, Compact Design, Horizontal Design)
 │           └── Each card: preview placeholder + label + [Select]/[Selected] button
 │               Persists: wpbLayoutTemplate (always FBP_SIDE_FOOTER) + wpbPresetId (STANDARD | CLASSIC | COMPACT | HORIZONTAL)
@@ -454,7 +329,7 @@ PPB Configure Page
 │   │   ├── Maximum allowed quantity per product
 │   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
 │   ├── Cart line item discount display
-│   │   └── [Button] "Edit Defaults" → /app/design-control-panel?modal=product_page&section=cartLineMessaging
+│   │   └── [Button] "Edit Defaults" → /app/settings
 │   ├── Bundle Banners (bundleBannerDesktopUrl + bundleBannerMobileUrl)
 │   ├── Custom CSS textarea (bundleLevelCss — sanitized via processCss)
 │   └── Bundle Status
@@ -468,7 +343,7 @@ PPB Configure Page
 │
 ├── Select Template
 │   ├── Heading: "Customize your bundle"
-│   ├── [Button] "Customize Colors & Language" → /app/design-control-panel
+│   ├── [Button] "Customize Colors & Language" → /app/settings
 │   └── 2×2 template grid (PPB: Product List, Product Grid, Horizontal Slots, Vertical Slots)
 │       └── Each card: preview placeholder + label + [Select]/[Selected] button
 │           Persists: wpbLayoutTemplate (PDP_INPAGE | PDP_MODAL) + wpbPresetId (CASCADE | COGNIVE | MODAL | SIMPLIFIED)
@@ -524,12 +399,12 @@ Billing Page
           └── [Save] → [Sync Bundle tab → Sync Now]
 ```
 
-### Flow C: Design Customisation (DCP)
+### Flow C: Design Customisation
 ```
-/app/design-control-panel
+/app/settings
   └── [Customize] (FPB or PDP)
       └── Max modal opens
-          ├── Click sidebar section → Settings panel updates
+          ├── Click Design card → Settings -> Design panel opens
           ├── Change setting → Preview iframe updates via postMessage (no reload)
           ├── [Mobile] viewport toggle → iframe resets to 375px
           ├── [Floating Footer] layout toggle (FPB) → crossfade to other iframe
@@ -556,8 +431,6 @@ Billing Page
 |---|---|
 | `/apps/product-bundles/api/bundle/:id.json` | Storefront bundle config (HMAC verified) |
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
-| `/api/preview/pdp` | PDP preview page (DCP iframe) |
-| `/api/preview/fpb` | FPB preview page (DCP iframe) |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
 | `/api/billing/create` | Initiate subscription |
 | `/api/billing/confirm` | Confirm subscription |
@@ -578,11 +451,8 @@ Billing Page
 
 | File | What it shows |
 |---|---|
-| `screenshots/01-dcp-landing.png` | DCP landing page (two Customize cards + Custom CSS) |
 | `screenshots/02-dashboard.png` | Dashboard (empty state — no bundles) |
 | `screenshots/03-analytics.png` | Analytics / Attribution page |
 | `screenshots/04-pricing.png` | Pricing page (Free vs Grow) |
 | `screenshots/05-events.png` | Updates & FAQs page |
 | `screenshots/06-create-bundle-modal.png` | Create Bundle modal |
-| `screenshots/07-dcp-fpb-modal.png` | DCP FPB max modal (sidebar nav + settings + preview) |
-| `screenshots/08-dcp-pdp-modal.png` | DCP PDP max modal |

@@ -56,7 +56,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
     // Wrap all DB queries in a timeout so a cold DB connection never causes a 504.
     // If the timeout fires we fall through to defaults — the widget still renders,
-    // just without custom DCP styling until the next page load (when DB is warm).
+    // just without custom Settings -> Design styling until the next page load (when DB is warm).
     const DB_TIMEOUT_MS = 8000;
     const dbTimeout = new Promise<null>((resolve) =>
       setTimeout(() => resolve(null), DB_TIMEOUT_MS)

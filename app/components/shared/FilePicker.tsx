@@ -10,7 +10,7 @@ import {
   Banner,
 } from "@shopify/polaris";
 import { UploadIcon, XCircleIcon } from "@shopify/polaris-icons";
-import type { StoreFile } from "../../../routes/app/app.store-files";
+import type { StoreFile } from "../../routes/app/app.store-files";
 import { ImageCropEditor } from "./ImageCropEditor";
 
 interface FilePickerProps {
@@ -278,7 +278,7 @@ export function FilePicker({
     return () => clearTimeout(timer);
   }, [uploadStatus]);
 
-  // Capture Escape to prevent the DCP modal from closing while picker is open
+  // Capture Escape so parent modals do not close while the picker is open
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {

@@ -40,7 +40,7 @@ export function generateCSSFromSettings(
   customCss: string = "",
   themeColors?: ThemeColors | null
 ): string {
-  // Resolve global color anchors: DCP custom value → theme color → hardcoded default
+  // Resolve global color anchors: Settings design value → theme color → hardcoded default
   const globalPrimaryButton = settings.globalPrimaryButtonColor || themeColors?.globalPrimaryButton || '#000000';
   const globalButtonText = settings.globalButtonTextColor || themeColors?.globalButtonText || '#FFFFFF';
   const globalPrimaryText = settings.globalPrimaryTextColor || themeColors?.globalPrimaryText || '#000000';
@@ -75,7 +75,7 @@ export function generateCSSFromSettings(
 /*
  * Wolfpack Bundle Widget - Design Settings
  * Bundle Type: ${bundleType}
- * Auto-generated from Design Control Panel
+ * Auto-generated from Settings -> Design
  *
  * Global Colors System:
  * - Global colors automatically cascade to all relevant components

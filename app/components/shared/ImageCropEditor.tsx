@@ -35,7 +35,7 @@ export function ImageCropEditor({ imageUrl, cropValue, onConfirm, onClose }: Ima
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
 
-  // Capture Escape at capture phase to prevent parent modals from closing
+  // Capture Escape at capture phase so parent modals do not close
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

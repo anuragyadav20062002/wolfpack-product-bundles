@@ -33,7 +33,7 @@ jest.mock("../../../app/db.server", () => ({
 }));
 
 jest.mock(
-  "../../../app/components/design-control-panel/settings/FilePicker",
+  "../../../app/components/shared/FilePicker",
   () => ({
     FilePicker: () => null,
   })

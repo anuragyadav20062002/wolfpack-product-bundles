@@ -19,7 +19,7 @@ export interface ProductPageThemeEditorDeepLinkInput {
   template: ProductPageThemeTemplateOption;
 }
 
-export const PRODUCT_PAGE_EDIT_DEFAULTS_HREF = "/app/design-control-panel?modal=product_page&section=cartLineMessaging";
+export const PRODUCT_PAGE_EDIT_DEFAULTS_HREF = "/app/settings";
 
 export const SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE =
   "To offer this bundle as a subscription, all of its products must be part of the same subscription plan in your Shopify settings. Please update your product selling plans and try again.";

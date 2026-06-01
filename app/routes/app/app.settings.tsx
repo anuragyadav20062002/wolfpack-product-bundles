@@ -465,7 +465,7 @@ export default function SettingsRoute() {
 
     return (
       <>
-        <ui-title-bar title="Design Control Panel" />
+        <ui-title-bar title="Design" />
         <main className={styles.page}>
           <header className={styles.hero}>
             <button type="button" className={styles.settingsBackButton} onClick={() => setSettingsView("landing")}>
@@ -473,7 +473,7 @@ export default function SettingsRoute() {
               Back
             </button>
             <div>
-              <h1 className={styles.title}>Design Control Panel</h1>
+              <h1 className={styles.title}>Design</h1>
             </div>
             <button type="button" className={styles.settingsPreviewButton} onClick={() => setIsPreviewModalOpen(true)}>
               <s-icon type="view" size="small"></s-icon>
@@ -481,7 +481,7 @@ export default function SettingsRoute() {
             </button>
           </header>
 
-          <section className={styles.designLayout} aria-label="Design Control Panel">
+          <section className={styles.designLayout} aria-label="Design">
             <aside className={styles.designSidebar}>
               <section className={styles.designSideCard}>
                 <h2>Bundle Design</h2>

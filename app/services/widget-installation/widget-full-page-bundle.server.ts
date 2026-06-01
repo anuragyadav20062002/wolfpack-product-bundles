@@ -410,8 +410,8 @@ export async function renamePageHandle(
 }
 
 /**
- * Extract the display/DCP settings from a raw Prisma bundle for the bundle_settings metafield.
- * These fields are intentionally kept out of bundle_config to allow lightweight DCP-only writes.
+ * Extract the display settings from a raw Prisma bundle for the bundle_settings metafield.
+ * These fields are intentionally kept out of bundle_config to allow lightweight display-only writes.
  */
 function buildBundleSettings(bundle: any) {
   return {
@@ -430,7 +430,7 @@ function buildBundleSettings(bundle: any) {
  *
  * This caches the bundle config so the FPB Liquid template can inject it as `data-bundle-config`
  * on the widget container, eliminating the app proxy call for first-paint.
- * Also atomically writes `custom:bundle_settings` for the display/DCP settings.
+ * Also atomically writes `custom:bundle_settings` for the display settings.
  *
  * Non-fatal: errors are logged but never thrown — a missing metafield means the widget falls
  * back to the proxy API, which is still functional.

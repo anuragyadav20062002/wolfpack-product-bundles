@@ -1,5 +1,5 @@
 -- AlterTable: Remove progress bar shape columns from DesignSettings.
--- These settings are no longer exposed in the DCP (no progress bar in the widget).
+-- These settings are no longer exposed in Settings -> Design (no progress bar in the widget).
 -- IF EXISTS guards make this safe to run on any DB state.
 
 ALTER TABLE "DesignSettings"

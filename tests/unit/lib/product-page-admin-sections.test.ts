@@ -32,8 +32,8 @@ describe("product page admin sections", () => {
     ]);
   });
 
-  it("routes Bundle Settings Edit Defaults to Product Page Layout Additional Configurations", () => {
-    expect(PRODUCT_PAGE_EDIT_DEFAULTS_HREF).toBe("/app/design-control-panel?modal=product_page&section=cartLineMessaging");
+  it("routes Bundle Settings Edit Defaults to Settings", () => {
+    expect(PRODUCT_PAGE_EDIT_DEFAULTS_HREF).toBe("/app/settings");
   });
 
   it("uses the captured no-common-selling-plan validation message", () => {

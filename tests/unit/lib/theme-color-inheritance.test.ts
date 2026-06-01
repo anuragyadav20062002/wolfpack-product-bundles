@@ -2,7 +2,7 @@
  * Unit Tests: Theme Color Inheritance in CSS Generator
  *
  * Verifies the three-level cascade in generateCSSFromSettings:
- *   DCP custom value → theme color → hardcoded default
+ *   Settings design value → theme color → hardcoded default
  */
 
 import { generateCSSFromSettings } from "../../../app/lib/css-generators";
@@ -20,7 +20,7 @@ const THEME_COLORS: ThemeColors = {
 
 describe("generateCSSFromSettings — theme color cascade", () => {
   describe("globalPrimaryButton", () => {
-    it("uses DCP value when set (DCP wins over theme)", () => {
+    it("uses Settings design value when set (Settings design wins over theme)", () => {
       const css = generateCSSFromSettings(
         { globalPrimaryButtonColor: "#FF0000" },
         "product_page",
@@ -30,7 +30,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
       expect(css).toContain("--bundle-global-primary-button: #FF0000");
     });
 
-    it("uses theme color when DCP value is absent", () => {
+    it("uses theme color when Settings design value is absent", () => {
       const css = generateCSSFromSettings(
         {},
         "product_page",
@@ -40,7 +40,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
       expect(css).toContain("--bundle-global-primary-button: #1A56DB");
     });
 
-    it("uses hardcoded default when both DCP and theme are absent", () => {
+    it("uses hardcoded default when both Settings design and theme are absent", () => {
       const css = generateCSSFromSettings(
         {},
         "product_page",
@@ -52,7 +52,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
   });
 
   describe("globalButtonText", () => {
-    it("uses DCP value when set", () => {
+    it("uses Settings design value when set", () => {
       const css = generateCSSFromSettings(
         { globalButtonTextColor: "#333333" },
         "product_page",
@@ -62,7 +62,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
       expect(css).toContain("--bundle-global-button-text: #333333");
     });
 
-    it("uses theme color when DCP value is absent", () => {
+    it("uses theme color when Settings design value is absent", () => {
       const css = generateCSSFromSettings({}, "product_page", "", THEME_COLORS);
       expect(css).toContain("--bundle-global-button-text: #FFFFFF");
     });
@@ -74,7 +74,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
   });
 
   describe("globalPrimaryText", () => {
-    it("uses DCP value when set", () => {
+    it("uses Settings design value when set", () => {
       const css = generateCSSFromSettings(
         { globalPrimaryTextColor: "#222222" },
         "product_page",
@@ -84,7 +84,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
       expect(css).toContain("--bundle-global-primary-text: #222222");
     });
 
-    it("uses theme color when DCP value is absent", () => {
+    it("uses theme color when Settings design value is absent", () => {
       const css = generateCSSFromSettings({}, "product_page", "", THEME_COLORS);
       expect(css).toContain("--bundle-global-primary-text: #111827");
     });
@@ -96,7 +96,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
   });
 
   describe("globalSecondaryText", () => {
-    it("uses theme color when DCP value is absent", () => {
+    it("uses theme color when Settings design value is absent", () => {
       const css = generateCSSFromSettings({}, "product_page", "", THEME_COLORS);
       expect(css).toContain("--bundle-global-secondary-text: #6B7280");
     });
@@ -108,7 +108,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
   });
 
   describe("globalFooterBg", () => {
-    it("uses theme color when DCP value is absent", () => {
+    it("uses theme color when Settings design value is absent", () => {
       const css = generateCSSFromSettings({}, "product_page", "", THEME_COLORS);
       expect(css).toContain("--bundle-global-footer-bg: #F9FAFB");
     });
@@ -120,7 +120,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
   });
 
   describe("globalFooterText", () => {
-    it("uses theme color when DCP value is absent", () => {
+    it("uses theme color when Settings design value is absent", () => {
       const css = generateCSSFromSettings({}, "product_page", "", THEME_COLORS);
       expect(css).toContain("--bundle-global-footer-text: #111827");
     });
@@ -133,7 +133,7 @@ describe("generateCSSFromSettings — theme color cascade", () => {
       expect(withUndefined).toBe(withNull);
     });
 
-    it("uses hardcoded defaults when DCP color absent and themeColors omitted", () => {
+    it("uses hardcoded defaults when Settings design color absent and themeColors omitted", () => {
       const css = generateCSSFromSettings({}, "product_page");
       expect(css).toContain("--bundle-global-primary-button: #000000");
       expect(css).toContain("--bundle-global-button-text: #FFFFFF");

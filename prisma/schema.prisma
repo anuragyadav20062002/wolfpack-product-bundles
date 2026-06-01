@@ -320,7 +320,7 @@ model BundleAnalytics {
   @@index([bundleId, event, createdAt])
 }
 
-// Design Control Panel Settings - Stores visual customization per bundle type
+// Settings Design Values - Stores visual customization per bundle type
 model DesignSettings {
   id         String     @id @default(uuid())
   shopId     String
@@ -484,7 +484,7 @@ model DesignSettings {
   // Advanced Settings - Custom CSS
   customCss String?
 
-  // Cached Shopify theme colors — used as fallback global color anchors when no DCP values set.
+  // Cached Shopify theme colors — used as fallback global color anchors when no Settings design values set.
   // Populated on install and on Sync Bundle. Null = fall through to hardcoded defaults.
   themeColors Json?
 

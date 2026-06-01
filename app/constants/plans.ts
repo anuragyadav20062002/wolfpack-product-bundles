@@ -29,7 +29,7 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
       "Up to 10 bundles",
       "Product Page Bundles",
       "Full Page Bundles",
-      "Design Control Panel",
+      "Settings -> Design",
       "Basic discount rules",
       "Standard support",
       "Community access"
@@ -57,9 +57,8 @@ export const PLANS: Record<SubscriptionPlan, PlanConfig> = {
 // Gate enforcement is controlled by the ENFORCE_PLAN_GATES env var.
 // Set ENFORCE_PLAN_GATES=true on PROD. Leave unset (or false) on SIT so
 // that the paywall is never triggered during development/testing.
-// NOTE: design_control_panel is intentionally NOT in this list — DCP is available
-// to all plans. The Grow plan is differentiated by bundle revenue threshold and
-// bundle count limit only.
+// NOTE: Settings -> Design is available to all plans. The Grow plan is differentiated
+// by bundle revenue threshold and bundle count limit only.
 export const GROW_ONLY_FEATURES = [
   // "advanced_discounts",
   // "priority_support",

@@ -70,7 +70,6 @@ export default function App() {
           <a href="/app/dashboard" rel="home">Dashboard</a>
           <a href="/app/settings">Settings</a>
           <a href="/app/integrations">Integrations</a>
-          <a href="/app/design-control-panel">Design Control Panel</a>
           <a href="/app/attribution">Analytics</a>
           <a href="/app/pricing">Pricing</a>
           <a href="/app/events">Updates &amp; FAQs</a>

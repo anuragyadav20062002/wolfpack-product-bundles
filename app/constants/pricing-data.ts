@@ -21,7 +21,7 @@ export const FEATURE_COMPARISON: FeatureComparisonRow[] = [
   { feature: "Bundle sales threshold", free: "Up to $500/mo", grow: "Unlimited", highlight: true },
   { feature: "Product Page Bundles", free: true, grow: true },
   { feature: "Full Page Bundles", free: true, grow: true },
-  { feature: "Design Control Panel", free: true, grow: true },
+  { feature: "Settings -> Design", free: true, grow: true },
   { feature: "Basic discount rules", free: true, grow: true },
   { feature: "Advanced discount rules", free: false, grow: true, highlight: true },
   { feature: "Bundle analytics", free: false, grow: true, highlight: true },

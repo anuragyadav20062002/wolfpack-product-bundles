@@ -38,7 +38,7 @@ export function UpgradeCTACard({ onUpgrade }: UpgradeCTACardProps) {
           </p>
 
           <s-stack direction="inline" gap="small-100">
-            {["20 bundles", "Design Control Panel", "Priority Support"].map((label) => (
+            {["20 bundles", "Settings Design", "Priority Support"].map((label) => (
               <div
                 key={label}
                 style={{ backgroundColor: "white", borderRadius: "6px", padding: "8px 12px" }}
