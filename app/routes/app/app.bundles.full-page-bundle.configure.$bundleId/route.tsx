@@ -4477,7 +4477,6 @@ export default function ConfigureBundleFlow() {
                             })}
                             <s-section>
                               <s-stack direction="block" gap="small">
-                                <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Success Message</h5>
                                 <s-text-field
                                   label="Success Message"
                                   value={(() => {
