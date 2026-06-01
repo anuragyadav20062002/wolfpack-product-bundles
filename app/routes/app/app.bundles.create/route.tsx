@@ -31,7 +31,6 @@ const STEPS = [
   { num: "02", label: "Configuration" },
   { num: "03", label: "Pricing" },
   { num: "04", label: "Assets" },
-  { num: "05", label: "Pricing Tiers" },
 ];
 
 export default function CreateBundleWizard() {

@@ -28,7 +28,6 @@ import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
-import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import {
   MultiLanguageTextModal,
@@ -1032,14 +1031,6 @@ export default function ConfigureBundleFlow() {
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
 
-  // Pricing tier config state (full-page bundles)
-  const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
-  );
-  const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
-  );
-
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
     bundle.showStepTimeline !== false  // default true; only false when explicitly saved as false
@@ -1283,12 +1274,6 @@ export default function ConfigureBundleFlow() {
   // Multi-language modal for step names
   const [isStepLocaleModalOpen, setIsStepLocaleModalOpen] = useState(false);
 
-  // Warning modal state: steps + tiers conflict
-  const [stepsTiersWarning, setStepsTiersWarning] = useState<{
-    open: boolean;
-    onConfirm: (() => void) | null;
-  }>({ open: false, onConfirm: null });
-
   // Select Template modal state
   const selectTemplateModalRef = useRef<HTMLDivElement>(null);
   const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
@@ -1403,7 +1388,6 @@ export default function ConfigureBundleFlow() {
   }, [bundle.id]);
 
   // Modal refs for s-modal web components
-  const stepsTiersModalRef = useRef<HTMLElement>(null);
   const pageSelectionModalRef = useRef<HTMLElement>(null);
   const productsModalRef = useRef<HTMLElement>(null);
   const collectionsModalRef = useRef<HTMLElement>(null);
@@ -1412,10 +1396,6 @@ export default function ConfigureBundleFlow() {
   const discountVariablesModalRef = useRef<HTMLElement>(null);
   const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
-
-  useEffect(() => {
-    stepsTiersWarning.open ? showPolarisModal(stepsTiersModalRef) : hidePolarisModal(stepsTiersModalRef);
-  }, [stepsTiersWarning.open]);
 
   useEffect(() => {
     isPageSelectionModalOpen ? showPolarisModal(pageSelectionModalRef) : hidePolarisModal(pageSelectionModalRef);
@@ -1811,11 +1791,6 @@ export default function ConfigureBundleFlow() {
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
-      formData.append("tierConfigData", tierConfig.length > 0 ? JSON.stringify(tierConfig) : "");
-      // Only send showStepTimeline when >= 2 tiers are configured (server will reset to null otherwise)
-      if (tierConfig.length >= 2) {
-        formData.append("showStepTimeline", String(showStepTimeline));
-      }
       formData.append("floatingBadgeEnabled", String(floatingBadgeEnabled));
       formData.append("floatingBadgeText", floatingBadgeText);
       formData.append("showProductPrices", String(showProductPrices));
@@ -1882,7 +1857,6 @@ export default function ConfigureBundleFlow() {
     bundle.bundleType,
     bundle.shopifyPageId,
     bundle.shopifyPageHandle,
-    tierConfig,
     showStepTimeline,
     floatingBadgeEnabled,
     floatingBadgeText,
@@ -2012,7 +1986,6 @@ export default function ConfigureBundleFlow() {
           originalPromoBannerBgImageRef.current = promoBannerBgImage;
           originalPromoBannerBgImageCropRef.current = promoBannerBgImageCrop;
           originalLoadingGifRef.current = loadingGif;
-          originalTierConfigRef.current = tierConfig;
           originalShowStepTimelineRef.current = showStepTimeline;
           originalFloatingBadgeEnabledRef.current = floatingBadgeEnabled;
           originalFloatingBadgeTextRef.current = floatingBadgeText;
@@ -2150,7 +2123,6 @@ export default function ConfigureBundleFlow() {
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
-    setTierConfig(originalTierConfigRef.current);
     setShowStepTimeline(originalShowStepTimelineRef.current);
     setFloatingBadgeEnabled(originalFloatingBadgeEnabledRef.current);
     setFloatingBadgeText(originalFloatingBadgeTextRef.current);
@@ -2372,7 +2344,6 @@ export default function ConfigureBundleFlow() {
     setCurrentModalStepId('');
   }, []);
 
-  useModalHideListener(stepsTiersModalRef, () => setStepsTiersWarning({ open: false, onConfirm: null }));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
@@ -2383,24 +2354,11 @@ export default function ConfigureBundleFlow() {
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
-    const isActivatingMultiStep = stepsState.steps.length === 1;
-    if (isActivatingMultiStep && tierConfig.length >= 2) {
-      setStepsTiersWarning({
-        open: true,
-        onConfirm: () => {
-          stepsState.addStep();
-          setSlideDir("forward");
-          setSlideKey(prev => prev + 1);
-          setActiveTabIndex(stepsState.steps.length);
-        },
-      });
-      return;
-    }
     stepsState.addStep();
     setSlideDir("forward");
     setSlideKey(prev => prev + 1);
     setActiveTabIndex(stepsState.steps.length);
-  }, [stepsState, tierConfig, setStepsTiersWarning, setActiveTabIndex]);
+  }, [stepsState, setActiveTabIndex]);
 
   // Function to load available pages or templates based on bundle type
   const loadAvailablePages = useCallback(() => {
@@ -4907,41 +4865,6 @@ export default function ConfigureBundleFlow() {
               </div>
             )}
 
-            {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
-              <s-stack direction="block" gap="base">
-                <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
-                  <s-stack direction="inline" gap="small-100">
-                    <s-icon name="discount-minor" />
-                    <s-stack direction="block" gap="small-400">
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Pricing Tiers</p>
-                      <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                        Let shoppers switch between different bundle price points on the same page.
-                      </p>
-                    </s-stack>
-                  </s-stack>
-                </div>
-
-                <PricingTiersSection
-                  tiers={tierConfig}
-                  availableBundles={availableBundles}
-                  currentBundleId={bundle.id}
-                  showStepTimeline={showStepTimeline}
-                  onShowStepTimelineChange={(val) => {
-                    setShowStepTimeline(val);
-                    markAsDirty();
-                  }}
-                  stepsCount={stepsState.steps.length}
-                  onStepsTiersConflictWarning={(onConfirm) => {
-                    setStepsTiersWarning({ open: true, onConfirm });
-                  }}
-                  onChange={(tiers) => {
-                    setTierConfig(tiers);
-                    markAsDirty();
-                  }}
-                />
-              </s-stack>
-            )}
-
             {activeSection === "bundle_settings" && (() => {
               const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
 
@@ -5582,27 +5505,6 @@ export default function ConfigureBundleFlow() {
             })()}
           </div>
         </div>
-
-      {/* Steps + Tiers Conflict Warning Modal */}
-      <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup">
-        <s-stack direction="block" gap="small">
-          <p style={{ margin: 0, fontSize: 14 }}>
-            <strong>Wolfpack Bundles works best when the shopper flow and pricing flow match.</strong>
-          </p>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            Pricing tier pills are best for a single-step bundle. This bundle has <strong>{stepsState.steps.length} steps</strong> configured.
-          </p>
-          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-            Continue only if you want to show tiers alongside the step-by-step builder.
-          </p>
-        </s-stack>
-        <s-button slot="primaryAction" variant="primary" onClick={() => { stepsTiersWarning.onConfirm?.(); setStepsTiersWarning({ open: false, onConfirm: null }); }}>
-          Continue
-        </s-button>
-        <s-button slot="secondaryActions" onClick={() => setStepsTiersWarning({ open: false, onConfirm: null })}>
-          Cancel
-        </s-button>
-      </s-modal>
 
       {/* Page Selection Modal */}
       <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront">

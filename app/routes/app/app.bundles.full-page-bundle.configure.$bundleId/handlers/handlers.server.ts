@@ -40,7 +40,6 @@ import {
   buildBundleProductDescriptionHtml,
 } from "../../../../services/bundles/bundle-configure-handlers.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
-import { validateTierConfig } from "../../../../lib/tier-config-validator.server";
 import { buildStepCategoryCreateInput } from "../../../../lib/bundle-config/category-persistence";
 import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
 import {
@@ -548,8 +547,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const promoBannerBgImageCrop = promoBannerBgImageCropRaw || null;
     const loadingGifRaw = formData.get("loadingGif") as string;
     const loadingGif = loadingGifRaw || null;
-    const tierConfigRaw = formData.get("tierConfigData") as string | null;
-    const tierConfigParsed = tierConfigRaw ? JSON.parse(tierConfigRaw) : null;
     const searchBarEnabled = formData.get("searchBarEnabled") === "true";
     const showStepTimelineRaw = formData.get("showStepTimeline") as string | null;
     // Parse: "true" → true, "false" → false, null/missing → null
@@ -700,12 +697,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       select: { shopifyProductId: true }
     });
 
-    // Reset showStepTimeline to null when < 2 tiers are active (no pills shown),
-    // so the theme editor data attribute regains control (backward compat).
-    const activeTierCount = Array.isArray(tierConfigParsed) ? tierConfigParsed.length : 0;
-    const showStepTimelineForSave: boolean | null =
-      activeTierCount >= 2 ? showStepTimelineParsed : null;
-
     // Update bundle in database
     AppLogger.debug("[BUNDLE_CONFIG] Updating bundle in database");
     const updatedBundle = await db.bundle.update({
@@ -724,10 +715,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         promoBannerBgImage: promoBannerBgImage,
         promoBannerBgImageCrop: promoBannerBgImageCrop,
         loadingGif: loadingGif,
-        tierConfig: tierConfigParsed
-          ? await validateTierConfig(tierConfigParsed, session.shop, db)
-          : null,
-        showStepTimeline: showStepTimelineForSave,
+        showStepTimeline: showStepTimelineParsed,
         floatingBadgeEnabled,
         floatingBadgeText,
         showProductPrices,
