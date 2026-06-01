@@ -33,9 +33,19 @@ describe("Select template modal contract", () => {
     }
   });
 
+  it("keeps the deployed app-embed enablement branch before bundle preview", () => {
+    for (const source of [ppbSource, fpbSource]) {
+      expect(source).toContain('"enableThemeExtension"');
+      expect(source).toContain('appEmbedEnabled ? "confirm" : "enableThemeExtension"');
+      expect(source).toContain("Enable your preview");
+      expect(source).toContain("Open theme editor");
+      expect(source).toContain("I've enabled it");
+    }
+  });
+
   it("keeps the deployed customization tab flow in both bundle configure routes", () => {
     for (const source of [ppbSource, fpbSource]) {
-      expect(source).toContain('"templates" | "colorsAndCorners" | "textAndImages" | "confirm"');
+      expect(source).toContain('"templates" | "colorsAndCorners" | "textAndImages" | "enableThemeExtension" | "confirm"');
       expect(source).toContain("Templates");
       expect(source).toContain("Colors and corners");
       expect(source).toContain("Text and images");

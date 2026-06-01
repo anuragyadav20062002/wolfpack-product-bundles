@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 23:24
+**Last Updated:** 2026-06-01 23:40
 
 ## Overview
 Recover EB behavior from deployed runtime evidence, previous internal documentation, and live Chrome inspection so Wolfpack can replicate Settings, Integrations, and key bundle edit sections with exact UI and functionality parity.
@@ -67,6 +67,18 @@ Constraints:
 - Updated `tests/unit/routes/ppb-subscriptions-setup-guide.test.ts` and `test-spec/recovered-admin-surfaces.spec.md` to lock the recovered post-validation labels.
 - Validation passed: focused Subscriptions Jest tests and route/test ESLint with 0 errors.
 - Agent-store Chrome smoke passed on the PPB Subscriptions section; current bundle data is BXGY-gated, so the valid-plan list path is covered by source/handler tests rather than live data.
+
+### 2026-06-01 23:32 - Started Select Template app-embed enablement branch parity fix
+- Deployed Select Template evidence includes an app-embed/theme-extension enablement end screen in addition to the bundle-ready end screen.
+- Current FPB and PPB Select Template save flow always advances to the ready screen after saving, even when `appEmbedEnabled` is false.
+- Scope: branch the Select Template modal after save so app-embed-enabled stores show the ready screen and app-embed-disabled stores show an enablement screen with theme-editor action, then lock it with route source-contract coverage.
+
+### 2026-06-01 23:40 - Completed Select Template app-embed enablement branch parity fix
+- Updated FPB and PPB Select Template modal state so successful template save branches to `enableThemeExtension` when `appEmbedEnabled` is false and to the bundle-ready preview screen when enabled.
+- Added the recovered enablement screen with `Enable your preview`, theme-editor guidance, `Open theme editor`, and `I've enabled it` actions.
+- Updated `tests/unit/routes/select-template-modal-contract.test.ts` and `test-spec/recovered-admin-surfaces.spec.md` to lock the app-embed enablement branch.
+- Validation passed: focused Select Template Jest test and route/test ESLint with 0 errors.
+- Agent-store Chrome smoke passed for the PPB Select Template modal and customization tab path without saving.
 
 ### 2026-06-01 19:12 - Started Settings Controls content parity fix
 - Refreshed live EB Additional Configurations evidence for Configuration, CSS & Scripts, Integrations, and Advanced tabs.

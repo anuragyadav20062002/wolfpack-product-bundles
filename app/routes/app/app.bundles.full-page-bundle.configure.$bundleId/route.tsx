@@ -1278,7 +1278,7 @@ export default function ConfigureBundleFlow() {
   const selectTemplateModalRef = useRef<HTMLDivElement>(null);
   const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
-  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "confirm">("templates");
+  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "enableThemeExtension" | "confirm">("templates");
   const templateFetcher = useFetcher();
   const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
   const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
@@ -1550,7 +1550,7 @@ export default function ConfigureBundleFlow() {
       if (request) {
         setBundleDesignTemplate(request.template);
         setBundleDesignPresetId(request.presetId);
-        setTemplateModalStep("confirm");
+        setTemplateModalStep(appEmbedEnabled ? "confirm" : "enableThemeExtension");
       }
       setTemplateSaveError(null);
       lastTemplateRequestRef.current = null;
@@ -1558,7 +1558,7 @@ export default function ConfigureBundleFlow() {
     }
 
     setTemplateSaveError(response.error || "Failed to save template settings.");
-  }, [templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
+  }, [appEmbedEnabled, templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
 
   const handleTemplateNext = useCallback(() => {
     if (!pendingDesignTemplate || !pendingDesignPresetId) {
@@ -5825,6 +5825,24 @@ export default function ConfigureBundleFlow() {
                   </s-button>
                 </div>
               </>
+            ) : templateModalStep === "enableThemeExtension" ? (
+              <div className={fullPageBundleStyles.templateDialogBody}>
+                <div className={fullPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={fullPageBundleStyles.templateDialogSubheading}>Enable your preview</h3>
+                  <p className={fullPageBundleStyles.templateDialogDescription}>A simple switch in your theme editor. Nothing changes on your store until you decide.</p>
+                </div>
+                <div className={fullPageBundleStyles.templateReadyPanel}>
+                  <div className={fullPageBundleStyles.templateReadyIcon}>
+                    <s-icon name="view" />
+                  </div>
+                  <h3 className={fullPageBundleStyles.templateReadyTitle}>Enable app embed</h3>
+                  <p className={fullPageBundleStyles.templateReadyText}>Open your theme editor, enable the Wolfpack Bundles app embed, then return here to preview your bundle.</p>
+                  <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "center" }}>
+                    <s-button variant="secondary" onClick={() => themeEditorUrl ? window.open(themeEditorUrl, "_blank") : undefined}>Open theme editor</s-button>
+                    <s-button variant="primary" onClick={() => setTemplateModalStep("confirm")}>I've enabled it</s-button>
+                  </s-stack>
+                </div>
+              </div>
             ) : (
               <div className={fullPageBundleStyles.templateDialogBody}>
                 <div className={fullPageBundleStyles.templateDialogConfirmHeader}>

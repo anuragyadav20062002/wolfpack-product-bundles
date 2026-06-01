@@ -860,7 +860,7 @@ export default function ConfigureBundleFlow() {
 
   // Select Template dialog state
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
-  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "confirm">("templates");
+  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "enableThemeExtension" | "confirm">("templates");
   const templateFetcher = useFetcher();
   const selectTemplateDialogRef = useRef<HTMLDivElement>(null);
   const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
@@ -1462,7 +1462,7 @@ export default function ConfigureBundleFlow() {
       if (request) {
         setBundleDesignTemplate(request.template);
         setBundleDesignPresetId(request.presetId);
-        setTemplateModalStep("confirm");
+        setTemplateModalStep(appEmbedEnabled ? "confirm" : "enableThemeExtension");
       }
       setTemplateSaveError(null);
       lastTemplateRequestRef.current = null;
@@ -1471,7 +1471,7 @@ export default function ConfigureBundleFlow() {
 
     const errorMessage = response.error || "Failed to save template settings.";
     setTemplateSaveError(errorMessage);
-  }, [templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
+  }, [appEmbedEnabled, templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
 
   const handleAddToStorefront = useCallback(() => {
     const embedLink = `https://${shop}/admin/themes/current/editor?context=apps&activateAppId=${apiKey}/bundle-app-embed`;
@@ -5354,6 +5354,24 @@ export default function ConfigureBundleFlow() {
                   </s-button>
                 </div>
               </>
+            ) : templateModalStep === "enableThemeExtension" ? (
+              <div className={productPageBundleStyles.templateDialogBody}>
+                <div className={productPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={productPageBundleStyles.templateDialogSubheading}>Enable your preview</h3>
+                  <p className={productPageBundleStyles.templateDialogDescription}>A simple switch in your theme editor. Nothing changes on your store until you decide.</p>
+                </div>
+                <div className={productPageBundleStyles.templateReadyPanel}>
+                  <div className={productPageBundleStyles.templateReadyIcon}>
+                    <s-icon name="view" />
+                  </div>
+                  <h3 className={productPageBundleStyles.templateReadyTitle}>Enable app embed</h3>
+                  <p className={productPageBundleStyles.templateReadyText}>Open your theme editor, enable the Wolfpack Bundles app embed, then return here to preview your bundle.</p>
+                  <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "center" }}>
+                    <s-button variant="secondary" onClick={() => themeEditorUrl ? window.open(themeEditorUrl, "_blank") : undefined}>Open theme editor</s-button>
+                    <s-button variant="primary" onClick={() => setTemplateModalStep("confirm")}>I've enabled it</s-button>
+                  </s-stack>
+                </div>
+              </div>
             ) : (
               <div className={productPageBundleStyles.templateDialogBody}>
                 <div className={productPageBundleStyles.templateDialogConfirmHeader}>
