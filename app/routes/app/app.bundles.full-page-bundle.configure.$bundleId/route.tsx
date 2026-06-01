@@ -5659,15 +5659,18 @@ export default function ConfigureBundleFlow() {
         </s-button>
       </s-modal>
 
-      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="small">
-        <s-stack direction="block" gap="small">
-          {TEMPLATE_VARIABLES.map(([variable, description]) => (
-            <div key={variable} className={fullPageBundleStyles.templateVariableItem}>
-              <s-text tone="subdued">{description}</s-text>
-              <s-badge>{variable}</s-badge>
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="medium">
+        <div>
+          {TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={fullPageBundleStyles.discountVariableRow}>
+                <s-text tone="subdued">{description}</s-text>
+                <span className={fullPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
             </div>
           ))}
-        </s-stack>
+        </div>
       </s-modal>
 
       <BundleReadinessOverlay

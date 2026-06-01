@@ -5227,15 +5227,18 @@ export default function ConfigureBundleFlow() {
         </s-button>
       </s-modal>
 
-      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="small">
-        <s-stack direction="block" gap="small">
-          {DISCOUNT_TEMPLATE_VARIABLES.map(([variable, description]) => (
-            <div key={variable} className={productPageBundleStyles.templateVariableItem}>
-              <s-text tone="subdued">{description}</s-text>
-              <s-badge>{variable}</s-badge>
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="medium">
+        <div>
+          {DISCOUNT_TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={productPageBundleStyles.discountVariableRow}>
+                <s-text tone="subdued">{description}</s-text>
+                <span className={productPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
             </div>
           ))}
-        </s-stack>
+        </div>
       </s-modal>
 
       {/* Bundle Quantity Options Multi Language Modal */}

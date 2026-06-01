@@ -1509,6 +1509,21 @@
   gap: 10px;
 }
 
+.discountVariableRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.discountVariableCode {
+  font-size: 13px;
+  color: #6d7175;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ── Category Accordion (multi-category system) ──────────────── */
 .categoryDrag {
   composes: categoryDrag from "./bundle-configure-shared.module.css";
