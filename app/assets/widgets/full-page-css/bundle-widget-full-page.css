@@ -5140,19 +5140,20 @@ minmax(0,
 
 [data-fpb-design-preset=DEFAULT] .category-tabs {
   justify-content:flex-start;
-  gap:28px;
-  margin:18px 8px 14px}
+  gap:28px}
 
 body:has([data-fpb-design-preset=DEFAULT]),
 [data-fpb-design-preset=DEFAULT] {
   background:#f1f1f1}
 
+[data-bundle-type=full_page] {
+  width:100vw;
+  margin-left:calc(50% - 50vw)}
+
 [data-fpb-design-preset=DEFAULT] .category-tab {
-  padding:0 0 6px;
   border:0;
-  border-bottom:3px solid transparent;
-  border-radius:0;
-  background:transparent;
+  border-bottom:3px solid #0000;
+  background:none;
   color:#000}
 
 [data-fpb-design-preset=DEFAULT] .category-tab.active {

@@ -64,3 +64,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Generated minified storefront CSS with `npm run minify:assets css`; final asset generation passed under Shopify's 100,000 byte limit.
 - Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: body and `#bundle-builder-app` both compute to `rgb(241, 241, 241)`.
 - Regression check: FPB DEFAULT category tabs still compute as transparent text tabs with active `3px solid rgb(0, 0, 0)` bottom border.
+
+### 2026-06-02 02:00 - FPB full-bleed storefront layout slice started
+- Existing EB DEFAULT evidence shows a broad full-page content/sidebar layout, while WPB's marker-rendered widget is constrained by the theme page content to `672px`.
+- Chrome probe with a temporary full-bleed root rule expanded the FPB root to viewport width, content to `842px`, and sidebar to `366px` without changing PPB.
+- Scope this slice to the FPB widget root via `data-bundle-type=full_page`; product card sizing remains a separate gap because `fpbCardCtaMode=icon` still forces compact cards.
+- Patched raw FPB CSS with a `data-bundle-type=full_page` full-bleed root rule.
+- Generated minified storefront CSS with `npm run minify:assets css`; final asset generation passed under Shopify's 100,000 byte limit after selector compaction.
+- Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: temporary probe style absent, FPB root width `1512px`, content width `842px`, sidebar width `366px`.
+- Network proof: FPB CSS 200, FPB bundled JS 200, bundle JSON 200, storefront product hydration 200, view tracking 200.
+- Regression check: DEFAULT background remains `rgb(241, 241, 241)` and active category tab remains transparent with `3px solid rgb(0, 0, 0)` bottom border.
