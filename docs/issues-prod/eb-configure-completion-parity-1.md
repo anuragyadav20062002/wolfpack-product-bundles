@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:30
+**Last Updated:** 2026-06-01 22:40
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -22,10 +22,10 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 ## Phases Checklist
 - [x] Phase 1 - PPB Take your bundle live flow modal/loading parity
 - [x] Phase 2 - Creation wizard contextual save bar parity
-- [ ] Phase 3 - FPB/PPB Bundle Product card Edit Product workflow parity
+- [x] Phase 3 - FPB/PPB Bundle Product card Edit Product workflow parity
 - [ ] Phase 4 - FPB storefront template header/footer inheritance
 - [ ] Phase 5 - FPB/PPB Enable Quantity Validation admin-to-storefront parity
-- [ ] Phase 6 - Slot Icon and Step Config parity
+- [x] Phase 6 - Slot Icon and Step Config parity
 - [x] Phase 7 - Bundle Readiness score card state/UI parity
 - [ ] Phase 8 - Full Chrome e2e sanity and EB gap comparison
 
@@ -144,6 +144,11 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/bundle-readiness-overlay-contract.test.ts tests/unit/bundle-readiness-overlay-variant-contract.test.ts tests/unit/bundle-readiness-score-state-contract.test.ts --runInBand` with 10/10 tests.
 - Scoped ESLint passed with 0 errors for the readiness component and focused readiness tests.
 - Chrome SIT smoke on PPB configure confirmed the detailed readiness overlay opens with readiness rows and `Almost there. A few more steps to go.`
+
+### 2026-06-01 22:40 - Issue checklist reconciled
+- Marked Phase 3 complete because FPB and PPB Bundle Product `Edit Product` now use Shopify's native product editor intent and Chrome SIT smoke confirmed the in-admin editor dialog for both bundle types.
+- Marked Phase 6 complete because FPB Slot Icon `Change Icon` now opens the picker in place, Step Config image UI was aligned, direct `stepImage` persistence remains covered, and Chrome SIT smoke confirmed the picker behavior.
+- Remaining implementation phases are Phase 4 storefront template header/footer inheritance, Phase 5 quantity validation admin-to-storefront parity, and Phase 8 full e2e gap comparison. Phase 4 and the storefront half of Phase 5 remain DCP-gated by repo rule until the DCP control decision is provided.
 - User clarified Place Widget still has a remaining product-context gap: the Theme Editor deep link now preserves the selected template, but must also target the bundle parent product. Take this up later when the rest of the tasks are complete.
 - User clarified readiness behavior: the readiness score is still an overlay, not an inline card. Create wizard should keep the compact gauge+score overlay, while edit/configure overlay should include the extra EB description text inline. Deferred this slice and reverted the in-progress inline-card patch.
 
