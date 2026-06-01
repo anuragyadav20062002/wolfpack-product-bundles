@@ -252,20 +252,19 @@
 }
 
 .designNavIcon {
-  width: 13px;
-  height: 13px;
-  color: transparent;
-  font-size: 0;
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  align-items: center;
+  justify-content: center;
+  color: #6d7175;
+  line-height: 1;
 }
 
-.designNavIcon::before {
-  content: "";
-  display: block;
-  width: 9px;
-  height: 9px;
-  margin: 2px auto;
-  border: 1.5px solid #8c9196;
-  border-radius: 2px;
+.designNavIcon s-icon {
+  --s-icon-size: 12px;
+  color: #6d7175;
 }
 
 .designSwitchRow {
@@ -841,6 +840,18 @@
   pointer-events: none;
 }
 
+.controlsLayoutSelectWrap::after {
+  content: "";
+  position: absolute;
+  right: 11px;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid #ffffff;
+  border-bottom: 1.5px solid #ffffff;
+  pointer-events: none;
+  transform: translateY(-2px) rotate(45deg);
+}
+
 .controlsLayoutSelect {
   width: 100%;
   min-height: 28px;
@@ -939,6 +950,7 @@
 }
 
 .bundlePreviewModal {
+  position: relative;
   width: min(620px, calc(100vw - 40px));
   max-height: min(620px, calc(100vh - 80px));
   overflow: auto;
@@ -953,6 +965,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding-right: 36px;
   margin-bottom: 18px;
 }
 
@@ -963,7 +976,6 @@
   font-weight: 750;
 }
 
-.bundlePreviewClose,
 .bundlePreviewViewButton {
   min-height: 28px;
   border: 1px solid #d2d5d8;
@@ -1260,7 +1272,13 @@
 .ebSettingLabel {
   display: block;
   color: #202223;
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.ebSettingLabelLine {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .ebSettingHelp {
@@ -1285,7 +1303,7 @@
   resize: vertical;
 }
 
-.settingsSaveFooter {
+.settingsSaveFallback {
   position: fixed;
   right: 24px;
   bottom: 24px;
@@ -1369,12 +1387,37 @@
 }
 
 .settingsModal {
+  position: relative;
   width: min(560px, 100%);
   border-radius: 14px;
   background: #ffffff;
   box-shadow: 0 18px 48px rgba(31, 33, 36, 0.22);
   color: #202223;
   padding: 20px;
+}
+
+.settingsModalDismiss {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c9cccf;
+  border-radius: 8px;
+  background: #e3e3e3;
+  color: #5c5f62;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.settingsModalDismiss:hover {
+  background: #d9d9d9;
+  color: #202223;
 }
 
 .settingsModal h2 {
@@ -1466,7 +1509,10 @@
   flex: 0 0 46px;
   place-items: center;
   border-radius: 14px;
+  border: 1px solid #d9d9d9;
+  background: #202223;
   color: #ffffff;
+  font-size: 10px;
   font-weight: 800;
 }
 

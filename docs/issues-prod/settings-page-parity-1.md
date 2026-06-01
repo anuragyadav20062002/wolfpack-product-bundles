@@ -182,3 +182,48 @@ Recover and replicate the full EB Settings page flow from live Chrome evidence a
 - Confirmed Product Page rows still open the storefront product and render the bundle widget.
 - Confirmed Landing Page rows without a page handle now show a disabled View action instead of opening an incorrect product URL.
 - Next: run required lint/graph checks and commit the Settings parity slice if the worktree can be staged safely.
+
+### 2026-06-01 18:40 - Integrations local AVIF icon pass
+- User flagged that the checked-in `public/icons/*.avif` assets need to be used by the Integrations page.
+- Found the Integrations card data still pointed at remote CloudFront AVIF URLs.
+- Next: map available integration cards to `/icons/*.avif` and include those local assets in the next commit; leave integrations without local AVIF assets on text fallback.
+
+### 2026-06-01 18:42 - Integrations icon smoke check
+- Mapped Stoq, Zapiet, Skio, Appstle, Bold, Judge.me, PageFly, and GemPages to local `/icons/*.avif` assets.
+- Removed remote logo URLs for Gokwik and Shopflo because matching local AVIF assets are not present; those cards now use the visible text fallback badge.
+- Confirmed in Chrome that the Integrations page loads local icon URLs from the app server and still renders all cards.
+- Next: run scoped lint/graph checks and commit the Integrations icon slice.
+
+### 2026-06-01 18:43 - Additional Configurations control polish
+- User flagged three Settings -> Additional Configurations details: lighter control label font weight, inline `Know More`, and a visible white chevron on the Landing Page layout dropdown.
+- Next: patch the Controls row label/action markup and selector CSS, then smoke-check in Chrome before commit.
+
+### 2026-06-01 18:44 - Settings modal dismiss control polish
+- User flagged that Settings-page modals/popups for Design, Language, and Controls need a defined gray dismiss `X` button at the top right.
+- Next: replace text close buttons in Settings dialogs with a shared top-right gray `X` dismiss control and smoke-check the Preview/Controls help modal states.
+
+### 2026-06-01 18:46 - Design Control Panel icon parity
+- User flagged that Design Control Panel navigation still needs icons copied from EB.
+- Captured EB Design Control Panel visual evidence and confirmed the left navigation uses small muted line icons: brand/color mark, typography T, corners glyph, image glyph, and scoped icons for General/Product Card/Bundle Cart/Upsell.
+- Next: replace placeholder first-letter/box markers with EB-style compact icons in local Settings Design Control Panel.
+
+### 2026-06-01 18:47 - Contextual save bar wiring
+- User flagged that Settings subpages need the proper Polaris contextual save bar and that Save/Discard must be wired correctly.
+- Next: replace per-section custom save footer rendering with a single App Bridge `ui-save-bar`, preserving existing save intents and restoring saved snapshots on discard.
+
+### 2026-06-01 18:52 - Design Control Panel icon E2E comparison
+- Compared EB and local Design Control Panel in Chrome after the first icon pass.
+- Found local icons still read as heavier box/border drawings while EB uses compact muted stroke glyphs.
+- Next: replace the CSS-drawn border glyphs with SVG-backed line icons and retest the Design Control Panel against EB before committing.
+
+### 2026-06-01 18:55 - Design Control Panel Shopify icon mapping
+- User provided the exact desired Design Control Panel icon mapping.
+- Replaced custom CSS-drawn DCP icons with Shopify `s-icon` glyphs: `color`, `text-font`, `corner-round`, `image-add`, `settings`, `product`, `cart`, and `button-press`.
+- Next: refresh Chrome and confirm the icon glyphs render correctly before final lint/graph/commit.
+
+### 2026-06-01 18:58 - Design Control Panel smoke comparison
+- Refreshed local Settings -> Design Control Panel in Chrome and confirmed the requested Shopify icon glyphs render in the left navigation.
+- Compared the local Design Control Panel screenshot against EB after the icon correction; icons now use named Shopify glyphs instead of custom placeholder drawings.
+- Smoke-tested Preview Bundle locally: modal opens and exposes the gray top-right dismiss button.
+- Smoke-tested contextual save bar locally: editing Primary Color shows Shopify's unsaved changes bar; Discard restores the saved value and hides the bar.
+- Next: rerun scoped lint and graph rebuild, then stage only the Settings parity files for commit.

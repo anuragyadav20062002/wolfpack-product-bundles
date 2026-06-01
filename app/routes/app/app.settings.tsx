@@ -301,6 +301,52 @@ export default function SettingsRoute() {
   const isLanguageDirty = JSON.stringify(currentLanguageState) !== JSON.stringify(savedLanguageState);
   const isControlsDirty = JSON.stringify(controlFieldValues) !== JSON.stringify(savedControlFieldValues);
   const isDesignDirty = JSON.stringify(designFieldValues) !== JSON.stringify(savedDesignFieldValues);
+  const isActiveSubpageDirty =
+    (settingsView === "design" && isDesignDirty) ||
+    (settingsView === "language" && isLanguageDirty) ||
+    (settingsView === "controls" && isControlsDirty);
+
+  const discardActiveSettingsChanges = () => {
+    if (settingsView === "design") {
+      setDesignFieldValues(savedDesignFieldValues);
+      return;
+    }
+    if (settingsView === "language") {
+      setIsMultilanguageEnabled(savedLanguageState.isMultilanguageEnabled);
+      setSelectedLanguage(savedLanguageState.selectedLanguage);
+      setLanguageFieldValues(savedLanguageState.languageFieldValues);
+      return;
+    }
+    if (settingsView === "controls") {
+      setControlFieldValues(savedControlFieldValues);
+    }
+  };
+
+  const saveActiveSettingsChanges = () => {
+    if (settingsView === "design") {
+      submit({
+        intent: "saveSettingsDesign",
+        payload: JSON.stringify(designFieldValues),
+      }, { method: "post" });
+      setSavedDesignFieldValues(designFieldValues);
+      return;
+    }
+    if (settingsView === "language") {
+      submit({
+        intent: "saveSettingsLanguage",
+        payload: JSON.stringify(currentLanguageState),
+      }, { method: "post" });
+      setSavedLanguageState(currentLanguageState);
+      return;
+    }
+    if (settingsView === "controls") {
+      submit({
+        intent: "saveSettingsControls",
+        payload: JSON.stringify(controlFieldValues),
+      }, { method: "post" });
+      setSavedControlFieldValues(controlFieldValues);
+    }
+  };
 
   useEffect(() => {
     if (!actionData) {
@@ -348,7 +394,9 @@ export default function SettingsRoute() {
                       className={selectedDesignTab.title === tab.title ? styles.designNavActive : styles.designNavButton}
                       onClick={() => setActiveDesignTab(tab.title)}
                     >
-                      <span className={styles.designNavIcon}>{tab.title.slice(0, 1)}</span>
+                      <span className={styles.designNavIcon}>
+                        <s-icon type={getDesignIconKey(tab.title)} />
+                      </span>
                       {tab.title}
                     </button>
                   ))}
@@ -375,7 +423,9 @@ export default function SettingsRoute() {
                         className={activeDesignScope === scope ? styles.designScopeActive : styles.designScopeButton}
                         onClick={() => setActiveDesignScope(scope)}
                       >
-                        <span className={styles.designNavIcon}>{scope.slice(0, 1)}</span>
+                        <span className={styles.designNavIcon}>
+                          <s-icon type={getDesignIconKey(scope)} />
+                        </span>
                         {scope}
                       </button>
                     ))}
@@ -394,18 +444,7 @@ export default function SettingsRoute() {
               />
             </section>
           </section>
-          {isDesignDirty && (
-            <SettingsSaveFooter
-              onDiscard={() => setDesignFieldValues(savedDesignFieldValues)}
-              onSave={() => {
-                submit({
-                  intent: "saveSettingsDesign",
-                  payload: JSON.stringify(designFieldValues),
-                }, { method: "post" });
-                setSavedDesignFieldValues(designFieldValues);
-              }}
-            />
-          )}
+          <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />
           <BundlePreviewModal
             isOpen={isPreviewModalOpen}
             bundles={previewBundles}
@@ -536,22 +575,7 @@ export default function SettingsRoute() {
               </section>
             </div>
           </section>
-          {isLanguageDirty && (
-            <SettingsSaveFooter
-              onDiscard={() => {
-                setIsMultilanguageEnabled(savedLanguageState.isMultilanguageEnabled);
-                setSelectedLanguage(savedLanguageState.selectedLanguage);
-                setLanguageFieldValues(savedLanguageState.languageFieldValues);
-              }}
-              onSave={() => {
-                submit({
-                  intent: "saveSettingsLanguage",
-                  payload: JSON.stringify(currentLanguageState),
-                }, { method: "post" });
-                setSavedLanguageState(currentLanguageState);
-              }}
-            />
-          )}
+          <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />
           <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
         </main>
       </>
@@ -631,18 +655,7 @@ export default function SettingsRoute() {
               />
             </section>
           </section>
-          {isControlsDirty && (
-            <SettingsSaveFooter
-              onDiscard={() => setControlFieldValues(savedControlFieldValues)}
-              onSave={() => {
-                submit({
-                  intent: "saveSettingsControls",
-                  payload: JSON.stringify(controlFieldValues),
-                }, { method: "post" });
-                setSavedControlFieldValues(controlFieldValues);
-              }}
-            />
-          )}
+          <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />
           <SettingsHelpModal article={settingsHelpArticle} onClose={() => setSettingsHelpArticle(null)} />
           <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
         </main>
@@ -787,8 +800,8 @@ function BundlePreviewModal({
       <section className={styles.bundlePreviewModal} role="dialog" aria-modal="true" aria-labelledby="bundle-preview-title">
         <div className={styles.bundlePreviewHeader}>
           <h2 id="bundle-preview-title">Bundle Preview</h2>
-          <button type="button" className={styles.bundlePreviewClose} onClick={onClose}>
-            Close
+          <button type="button" className={styles.settingsModalDismiss} aria-label="Dismiss Bundle Preview" onClick={onClose}>
+            X
           </button>
         </div>
         <div className={styles.bundlePreviewGridHeader}>
@@ -832,6 +845,31 @@ function getControlTabIcon(title: string) {
   }
   if (title === "Advanced") {
     return "adjust";
+  }
+  return "settings";
+}
+
+function getDesignIconKey(title: string) {
+  if (title === "Brand Colors") {
+    return "color";
+  }
+  if (title === "Typography") {
+    return "text-font";
+  }
+  if (title === "Corners") {
+    return "corner-round";
+  }
+  if (title === "Images & GIFs") {
+    return "image-add";
+  }
+  if (title === "Product Card") {
+    return "product";
+  }
+  if (title === "Bundle Cart") {
+    return "cart";
+  }
+  if (title === "Upsell") {
+    return "button-press";
   }
   return "settings";
 }
@@ -979,6 +1017,7 @@ function ControlsField({
 }) {
   const isChecked = value === "Checked";
   const inputId = `settings-${field.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const hasInlineAction = field.description === "Edit Language" || field.description === "Know More";
 
   if (field.kind === "toggle") {
     return (
@@ -994,8 +1033,9 @@ function ControlsField({
           <s-icon type={isChecked ? "toggle-on" : "toggle-off"} size="small"></s-icon>
         </span>
         <span>
-          <span className={styles.ebSettingLabel}>{field.label}</span>
-          {field.description === "Edit Language" || field.description === "Know More" ? (
+          <span className={hasInlineAction ? styles.ebSettingLabelLine : undefined}>
+            <span className={styles.ebSettingLabel}>{field.label}</span>
+            {hasInlineAction ? (
             <button
               type="button"
               className={styles.ebInlineAction}
@@ -1007,7 +1047,9 @@ function ControlsField({
             >
               {field.description}
             </button>
-          ) : field.description ? (
+            ) : null}
+          </span>
+          {!hasInlineAction && field.description ? (
             <span className={styles.ebSettingHelp}>{field.description}</span>
           ) : null}
         </span>
@@ -1131,19 +1173,32 @@ function ControlsField({
   );
 }
 
-function SettingsSaveFooter({ onDiscard, onSave }: { onDiscard: () => void; onSave: () => void }) {
+function SettingsContextualSaveBar({ isOpen, onDiscard, onSave }: { isOpen: boolean; onDiscard: () => void; onSave: () => void }) {
+  useEffect(() => {
+    const shopify = (window as typeof window & {
+      shopify?: { saveBar?: { show: (id: string) => void; hide: (id: string) => void } };
+    }).shopify;
+
+    if (!shopify?.saveBar) {
+      return;
+    }
+
+    if (isOpen) {
+      shopify.saveBar.show("settings-contextual-save-bar");
+    } else {
+      shopify.saveBar.hide("settings-contextual-save-bar");
+    }
+  }, [isOpen]);
+
   return (
-    <div className={styles.settingsSaveFooter}>
-      <span>Unsaved changes</span>
-      <div className={styles.settingsSaveActions}>
-        <button type="button" className={styles.settingsSecondaryButton} onClick={onDiscard}>
-          Discard
-        </button>
-        <button type="button" className={styles.settingsPrimaryButton} onClick={onSave}>
-          Save
-        </button>
-      </div>
-    </div>
+    <ui-save-bar id="settings-contextual-save-bar">
+      <button type="button" onClick={onDiscard}>
+        Discard
+      </button>
+      <button type="button" variant="primary" onClick={onSave}>
+        Save
+      </button>
+    </ui-save-bar>
   );
 }
 
@@ -1163,8 +1218,8 @@ function SettingsHelpModal({
       <section className={styles.settingsModal} role="dialog" aria-modal="true" aria-labelledby="settings-help-title">
         <div className={styles.ebSectionHeader}>
           <h2 id="settings-help-title">Product-level inventory tracking</h2>
-          <button type="button" className={styles.settingsSecondaryButton} onClick={onClose}>
-            Close
+          <button type="button" className={styles.settingsModalDismiss} aria-label="Dismiss help modal" onClick={onClose}>
+            X
           </button>
         </div>
         <div className={styles.settingsHelpBody}>
