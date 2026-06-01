@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 20:31
+**Last Updated:** 2026-06-01 20:32
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -60,3 +60,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Validated with focused Jest and scoped ESLint; ESLint reported 0 errors.
 - Chrome smoke confirmed dirty edit shows Shopify `Unsaved changes`, `Next` is blocked while dirty, `Discard` restores and hides the SaveBar, clean `Next` advances to Pricing, and `Save` persists then hides the SaveBar.
 - Restored the temporary pricing smoke-test data in the dev database after the Chrome save probe.
+
+### 2026-06-01 20:32 - Post-commit graph hook follow-up
+- The commit hook rebuilt graph outputs after the creation wizard SaveBar commit and left `graphify-out/GRAPH_REPORT.md` dirty.
+- Follow-up commit will include the generated graph report plus this issue-log entry only.
