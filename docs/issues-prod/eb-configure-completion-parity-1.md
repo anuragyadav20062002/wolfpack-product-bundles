@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:36
+**Last Updated:** 2026-06-01 22:37
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -285,3 +285,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Re-ran focused Jest for the FPB page-shell and runtime-config slice: `npx jest tests/unit/assets/fpb-runtime-config-surface.test.ts tests/unit/assets/bundle-data-manager.test.ts tests/unit/assets/bundle-widget-full-page-selection-fallback.test.ts tests/unit/services/widget-full-page-bundle.test.ts tests/unit/services/widget-full-page-bundle-preview.test.ts tests/unit/routes/fpb-configure-preview.test.ts --runInBand` passed with 43/43 tests.
 - Re-ran scoped ESLint for the touched server route/service and focused unit tests with `--max-warnings 9999`; result was 0 errors.
 - Rebuilt graph outputs with the documented graphify venv after code changes.
+
+### 2026-06-01 22:37 - Post-commit graph hook follow-up
+- The commit hook rebuilt graph outputs after the FPB page-shell commit and left `graphify-out/GRAPH_REPORT.md` dirty.
+- Follow-up commit will include the generated graph report plus this issue-log entry only.
