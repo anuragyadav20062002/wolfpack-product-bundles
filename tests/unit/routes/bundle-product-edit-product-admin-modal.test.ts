@@ -21,10 +21,15 @@ describe("Bundle Product Edit Product admin navigation", () => {
   it.each([
     ["PPB", ppbRouteSource],
     ["FPB", fpbRouteSource],
-  ])("%s uses App Bridge navigation for the native Shopify product editor modal", (_bundleType, source) => {
+  ])("%s uses App Bridge Product editor intent before Admin URL fallback", (_bundleType, source) => {
     const helperSource = getOpenProductInAdminSource(source);
 
+    expect(helperSource).toContain('intentsApi.invoke("edit:shopify/Product"');
+    expect(helperSource).toContain('type: "shopify/Product"');
+    expect(helperSource).toContain("value: productGid");
+    expect(helperSource).toContain(["`gid://shopify/Product/", "{productId}`"].join("$"));
     expect(helperSource).toContain("shopify.navigate(adminProductUrl);");
+    expect(helperSource).toContain('window.open(adminProductUrl, "_blank")');
     expect(helperSource).not.toContain("trycloudflare.com");
     expect(helperSource).not.toContain('window.location.hostname.includes');
   });

@@ -108,6 +108,18 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 
 ### 2026-06-01 21:06 - User corrections queued for later slices
 - User clarified the `Edit Product` parity target: EB opens a Shopify product-page form inside an in-admin modal, not a new Admin product page tab. Take this up after the other listed tasks are completed.
+
+### 2026-06-01 21:58 - Product editor Intents API parity started
+- Current WPB `shopify.navigate(adminProductUrl)` path still targets full Admin product navigation rather than the EB-style in-admin product editor workflow.
+- Official Shopify App Bridge Intents API exposes `edit:shopify/Product` for opening the existing product editor, so this slice will try that intent first for FPB and PPB Bundle Product `Edit Product`.
+- Keep the existing Admin URL navigation/new-tab fallback only for stores or runtimes where the intent API is unavailable or rejects.
+
+### 2026-06-01 22:02 - Product editor Intents API parity validated
+- Updated FPB and PPB `openProductInAdmin` helpers to invoke `edit:shopify/Product` with the bundle parent product GID before falling back to Admin URL navigation.
+- Updated `tests/unit/routes/bundle-product-edit-product-admin-modal.test.ts` and `test-spec/bundle-product-edit-product-admin-modal.spec.md` to lock the intent-first contract.
+- Focused Jest passed: `npx jest tests/unit/routes/bundle-product-edit-product-admin-modal.test.ts --runInBand` with 2/2 tests.
+- Scoped ESLint passed with 0 errors for both configure routes and the focused unit test; remaining warnings are existing route-level warnings.
+- Chrome SIT smoke confirmed PPB and FPB `Edit Product` now open Shopify's native product editor dialog over the Admin app.
 - User clarified Place Widget still has a remaining product-context gap: the Theme Editor deep link now preserves the selected template, but must also target the bundle parent product. Take this up later when the rest of the tasks are complete.
 - User clarified readiness behavior: the readiness score is still an overlay, not an inline card. Create wizard should keep the compact gauge+score overlay, while edit/configure overlay should include the extra EB description text inline. Deferred this slice and reverted the in-progress inline-card patch.
 

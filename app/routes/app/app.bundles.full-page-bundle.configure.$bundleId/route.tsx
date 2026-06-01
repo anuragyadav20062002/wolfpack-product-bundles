@@ -2280,14 +2280,41 @@ export default function ConfigureBundleFlow() {
   }, [isDirty, activeSection, promptSaveBarBeforeNavigation]);
 
   const openProductInAdmin = useCallback((productId: string) => {
+    const numericProductId = productId.startsWith("gid://")
+      ? productId.split("/").pop() ?? productId
+      : productId;
+    const productGid = productId.startsWith("gid://")
+      ? productId
+      : `gid://shopify/Product/${productId}`;
     const storeHandle = shop?.replace('.myshopify.com', '');
-    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
-    try {
-      shopify.navigate(adminProductUrl);
-    } catch (error) {
-      AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
-      window.open(adminProductUrl, "_blank");
+    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${numericProductId}`;
+    const openFallback = () => {
+      try {
+        shopify.navigate(adminProductUrl);
+      } catch (error) {
+        AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
+        window.open(adminProductUrl, "_blank");
+      }
+    };
+    const intentsApi = (shopify as any).intents;
+    if (typeof intentsApi?.invoke === "function") {
+      try {
+        const intentResult = intentsApi.invoke("edit:shopify/Product", {
+          type: "shopify/Product",
+          value: productGid,
+        });
+        if (typeof intentResult?.catch === "function") {
+          void intentResult.catch((error: unknown) => {
+            AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
+            openFallback();
+          });
+        }
+        return;
+      } catch (error) {
+        AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
+      }
     }
+    openFallback();
   }, [shop, shopify]);
 
   const handleReadinessItemClick = useCallback((key: string) => {
