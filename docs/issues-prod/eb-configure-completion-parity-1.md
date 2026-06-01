@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 20:20
+**Last Updated:** 2026-06-01 20:31
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -21,7 +21,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 
 ## Phases Checklist
 - [x] Phase 1 - PPB Take your bundle live flow modal/loading parity
-- [ ] Phase 2 - Creation wizard contextual save bar parity
+- [x] Phase 2 - Creation wizard contextual save bar parity
 - [ ] Phase 3 - FPB/PPB Bundle Product card Edit Product workflow parity
 - [ ] Phase 4 - FPB storefront template header/footer inheritance
 - [ ] Phase 5 - FPB/PPB Enable Quantity Validation admin-to-storefront parity
@@ -46,3 +46,17 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Added a focused unit assertion proving arbitrary merchant-selected template handles pass through the Theme Editor deep link builder.
 - Validated with `npx eslint --max-warnings 9999 app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx app/lib/bundle-config/product-page-admin-sections.ts tests/unit/lib/product-page-admin-sections.test.ts` with 0 errors, and `npx jest tests/unit/lib/product-page-admin-sections.test.ts --runInBand` with 10/10 tests passing.
 - Chrome e2e on the WPB embedded app confirmed the EB-like sequence: button busy first, modal after data readiness, server-returned `Product Pages (Default)` row displayed, and selecting it opened Shopify Theme Editor for the selected product template.
+
+### 2026-06-01 20:24 - Creation wizard contextual save bar slice started
+- Next explicit task selected: replace the creation wizard's save-on-next behavior with contextual SaveBar behavior like the configure/edit pages.
+- Current route evidence: `handleNext` submits `saveConfig`, `savePricing`, and `saveAssets` before advancing; this is the behavior to remove.
+- Planned files: create wizard route, focused route source contract, test spec, issue log, and graph outputs.
+
+### 2026-06-01 20:31 - Creation wizard contextual save bar validated
+- Added App Bridge contextual SaveBar to the creation wizard route with Save and Discard handlers for the active wizard page.
+- Removed save-on-next behavior: `Next` and `Back` now gate dirty pages and show the save/discard prompt instead of submitting data.
+- Save now persists the active wizard page without advancing; Discard restores the active page from its saved baseline.
+- Added `tests/unit/routes/create-wizard-contextual-savebar.test.ts` and `test-spec/create-wizard-contextual-savebar.spec.md`.
+- Validated with focused Jest and scoped ESLint; ESLint reported 0 errors.
+- Chrome smoke confirmed dirty edit shows Shopify `Unsaved changes`, `Next` is blocked while dirty, `Discard` restores and hides the SaveBar, clean `Next` advances to Pricing, and `Save` persists then hides the SaveBar.
+- Restored the temporary pricing smoke-test data in the dev database after the Chrome save probe.
