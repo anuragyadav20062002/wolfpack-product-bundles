@@ -1877,7 +1877,7 @@ export default function ConfigureBundleFlow() {
       //
       // Adding bundleId parameter allows the widget's Liquid code to auto-detect and populate
       // the bundle_id setting in the theme editor, making setup seamless for merchants
-      const pageProductHandle = bundle.shopifyProductHandle;
+      const pageProductHandle = bundleProduct?.handle ?? bundle.shopifyProductHandle;
       const themeEditorUrl = buildProductPageThemeEditorDeepLink({
         shop,
         apiKey,
@@ -1906,7 +1906,7 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
       editorWindow?.close();
     }
-  }, [activeSection, blockHandle, shop, shopify, bundle.id, bundle.shopifyProductHandle, upsellWidgetDisplayMode, apiKey]);
+  }, [activeSection, blockHandle, shop, shopify, bundle.id, bundle.shopifyProductHandle, bundleProduct?.handle, upsellWidgetDisplayMode, apiKey]);
 
   // Sync Bundle modal ref
   const syncModalRef = useRef<HTMLElement>(null);

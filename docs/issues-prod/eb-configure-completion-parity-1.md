@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:55
+**Last Updated:** 2026-06-01 22:20
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -120,6 +120,18 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/routes/bundle-product-edit-product-admin-modal.test.ts --runInBand` with 2/2 tests.
 - Scoped ESLint passed with 0 errors for both configure routes and the focused unit test; remaining warnings are existing route-level warnings.
 - Chrome SIT smoke confirmed PPB and FPB `Edit Product` now open Shopify's native product editor dialog over the Admin app.
+
+### 2026-06-01 22:20 - PPB Place Widget product-context gap started
+- User clarified the Theme Editor deep link must target the bundle parent product, not just the selected template.
+- Current PPB route builds the Theme Editor deep link with `bundle.shopifyProductHandle` even though the loader has already fetched the current Shopify parent product node as `bundleProduct`.
+- Planned edit: prefer `bundleProduct.handle` for `previewPath=/products/{handle}`, fall back to the stored bundle handle only when the live product node is unavailable, and keep the merchant-selected template handle unchanged.
+
+### 2026-06-01 22:24 - PPB Place Widget product-context gap validated
+- Updated PPB `handlePageSelection` so the Theme Editor deep link uses `bundleProduct.handle` before falling back to `bundle.shopifyProductHandle`.
+- Added `tests/unit/routes/ppb-place-widget-product-context.test.ts` and `test-spec/ppb-place-widget-product-context.spec.md`.
+- Focused Jest passed: `npx jest tests/unit/routes/ppb-place-widget-product-context.test.ts tests/unit/lib/product-page-admin-sections.test.ts --runInBand` with 14/14 tests.
+- Scoped ESLint passed with 0 errors for the PPB configure route and focused tests; remaining warnings are existing route warnings.
+- Chrome SIT smoke confirmed selecting the server-returned `product` template opens Theme Editor with `template=product` and `previewPath=%2Fproducts%2Fwpb-complete-audit-product-page-2026-05-25`, matching the bundle parent product.
 - User clarified Place Widget still has a remaining product-context gap: the Theme Editor deep link now preserves the selected template, but must also target the bundle parent product. Take this up later when the rest of the tasks are complete.
 - User clarified readiness behavior: the readiness score is still an overlay, not an inline card. Create wizard should keep the compact gauge+score overlay, while edit/configure overlay should include the extra EB description text inline. Deferred this slice and reverted the in-progress inline-card patch.
 
