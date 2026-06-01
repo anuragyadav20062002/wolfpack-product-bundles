@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:22
+**Last Updated:** 2026-06-01 21:27
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -133,3 +133,15 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/routes/fpb-slot-icon-change-icon-contract.test.ts --runInBand` with 2/2 tests.
 - Scoped ESLint passed with 0 errors for the FPB configure route and focused test; warnings are existing route unsafe-any/security warnings.
 - Chrome smoke on SIT FPB configure confirmed clicking Bundle Settings → Slot Icon → `Change Icon` opens the image picker modal while remaining in Bundle Settings.
+
+### 2026-06-01 21:24 - Step Config EB visual parity started
+- EB Step Config evidence: compact thumbnail on the left, remove icon over the thumbnail when populated, `Replace` action below the thumbnail, and `Step Title` field aligned to the right.
+- WPB FPB evidence before this edit: Step Config used a large 140x120 icon box and a single `Upload` button, which did not match the EB compact layout.
+- Planned edit: align FPB and PPB Step Config thumbnail sizing, action labels, and remove behavior while preserving the direct `stepImage` persistence contract.
+
+### 2026-06-01 21:27 - Step Config EB visual parity validation
+- Updated shared FPB/PPB Step Config styling to the EB-like compact thumbnail layout and added an overlaid remove control for populated step icons.
+- Updated FPB and PPB Step Config action text from `Upload` to `Upload file`, keeping `Replace` for populated icons and preserving the existing `FilePicker` upload flow.
+- Focused Jest passed: `npx jest tests/unit/routes/step-setup-step-config-image-contract.test.ts --runInBand` with 4/4 tests.
+- Scoped ESLint passed with 0 errors for both configure routes and the focused test; warnings are existing route unsafe-any/security warnings.
+- Chrome smoke on SIT FPB configure confirmed Step Setup → Step Config renders `Upload file` and opens the image picker modal without leaving Step Setup.

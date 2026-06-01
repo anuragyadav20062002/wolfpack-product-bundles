@@ -63,6 +63,9 @@ describe.each(Object.entries(routeSources))("%s Step Config image Admin contract
     expect(stepConfigCard).toContain("(step as any).stepImage");
     expect(stepConfigCard).toContain("value={(step as any).stepImage ?? null}");
     expect(stepConfigCard).toContain("stepsState.updateStepField(step.id, 'stepImage', url)");
+    expect(stepConfigCard).toContain("aria-label=\"Remove step icon\"");
+    expect(stepConfigCard).toContain("stepsState.updateStepField(step.id, 'stepImage', null)");
+    expect(stepConfigCard).toContain("\"Upload file\"");
     expect(stepConfigCard).not.toContain("timelineIconUrl");
   });
 });

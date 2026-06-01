@@ -658,6 +658,10 @@
   composes: iconPlaceholder from "./bundle-configure-shared.module.css";
 }
 
+.iconRemoveButton {
+  composes: iconRemoveButton from "./bundle-configure-shared.module.css";
+}
+
 .fieldsColumn {
   composes: fieldsColumn from "./bundle-configure-shared.module.css";
 }
