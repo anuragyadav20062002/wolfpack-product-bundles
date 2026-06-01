@@ -4971,14 +4971,23 @@ export default function ConfigureBundleFlow() {
                             You can change the default icon that renders in the empty slots
                           </p>
                           <s-stack direction="inline" gap="small">
-                            <s-button variant="primary" icon="upload" onClick={() => handleSectionChange("step_setup")}>
-                              Change Icon
+                            <s-button
+                              variant="primary"
+                              icon="upload"
+                              disabled={!settingsStep || undefined}
+                              onClick={() => {
+                                if (!settingsStep) return;
+                                setShowIconPickerForStep(prev => prev === settingsStep.id ? null : settingsStep.id);
+                              }}
+                            >
+                              {settingsStep && showIconPickerForStep === settingsStep.id ? "Close picker" : "Change Icon"}
                             </s-button>
                             <s-button
                               variant="secondary"
                               onClick={() => {
                                 if (settingsStep) {
                                   stepsState.updateStepField(settingsStep.id, "stepImage", null);
+                                  setShowIconPickerForStep(null);
                                   markAsDirty();
                                 }
                               }}
@@ -4986,6 +4995,20 @@ export default function ConfigureBundleFlow() {
                               Reset
                             </s-button>
                           </s-stack>
+                          {settingsStep && showIconPickerForStep === settingsStep.id && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowIconPickerForStep(null)}
+                              value={(settingsStep as any).stepImage ?? null}
+                              onChange={(url: string | null) => {
+                                stepsState.updateStepField(settingsStep.id, "stepImage", url);
+                                setShowIconPickerForStep(null);
+                                markAsDirty();
+                              }}
+                              label=""
+                              hideCropEditor
+                            />
+                          )}
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                             Note: Only applicable when rules are based on quantity
                           </p>

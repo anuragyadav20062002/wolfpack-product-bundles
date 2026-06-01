@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 21:15
+**Last Updated:** 2026-06-01 21:22
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -121,3 +121,15 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Focused Jest passed: `npx jest tests/unit/routes/modal-utils-close-contract.test.ts tests/unit/routes/ppb-template-modal-close-contract.test.ts --runInBand` with 4/4 tests.
 - Scoped ESLint passed with 0 errors for the shared modal helper, PPB configure route, and focused route tests; warnings are existing route unsafe-any/security warnings.
 - Chrome smoke on SIT PPB configure confirmed `Place Widget` opens the controlled `Select Product Page Template` dialog with the server-returned `product` row, and clicking the dialog's X closes it immediately.
+
+### 2026-06-01 21:18 - FPB Slot Icon redirect fix started
+- User reported Bundle Settings → Slot Icon `Change Icon` redirects to Step Setup.
+- Current FPB configure code confirms the bug: `Change Icon` calls `handleSectionChange("step_setup")` instead of opening the icon picker in Bundle Settings.
+- Planned edit: wire Slot Icon to the existing `showIconPickerForStep`/`FilePicker` flow for `settingsStep.id`, keep the merchant on Bundle Settings, and preserve direct `stepImage` persistence.
+
+### 2026-06-01 21:22 - FPB Slot Icon redirect fix validation
+- Updated FPB Bundle Settings → Slot Icon `Change Icon` to toggle the existing `FilePicker` for `settingsStep.id` in place and removed the Step Setup navigation from that control.
+- Reset now clears `stepImage` and closes the picker if open.
+- Focused Jest passed: `npx jest tests/unit/routes/fpb-slot-icon-change-icon-contract.test.ts --runInBand` with 2/2 tests.
+- Scoped ESLint passed with 0 errors for the FPB configure route and focused test; warnings are existing route unsafe-any/security warnings.
+- Chrome smoke on SIT FPB configure confirmed clicking Bundle Settings → Slot Icon → `Change Icon` opens the image picker modal while remaining in Bundle Settings.
