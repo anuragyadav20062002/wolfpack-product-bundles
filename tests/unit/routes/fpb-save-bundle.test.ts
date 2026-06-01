@@ -502,14 +502,11 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     expect(body.error).toContain("DB connection lost");
   });
 
-  it("resets showStepTimeline to null when fewer than 2 tier pills are configured", async () => {
-    const fd = makeFormData({
-      tierConfigData: JSON.stringify([{ id: "tier-1", label: "Save 10%" }]),
-      showStepTimeline: "true",
-    });
+  it("saves showStepTimeline as the parsed boolean value", async () => {
+    const fd = makeFormData({ showStepTimeline: "true" });
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const updateCall = getDb().bundle.update.mock.calls[0][0];
-    expect(updateCall.data.showStepTimeline).toBeNull();
+    expect(updateCall.data.showStepTimeline).toBe(true);
   });
 
   it("truncates floatingBadgeText to 60 characters", async () => {

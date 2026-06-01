@@ -407,7 +407,6 @@ export async function handleCreateBundle(
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
   const bundleType = (formData.get("bundleType") as string) || BundleType.PRODUCT_PAGE;
-  const fullPageLayout = (formData.get("fullPageLayout") as string) || null;
 
   if (typeof bundleName !== 'string' || bundleName.length === 0) {
     return json({ error: 'Bundle name is required' }, { status: 400 });
@@ -483,7 +482,7 @@ export async function handleCreateBundle(
         description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
         bundleType: bundleType as any,
-        fullPageLayout: bundleType === BundleType.FULL_PAGE ? (fullPageLayout as any || FullPageLayout.FOOTER_BOTTOM) : null,
+        fullPageLayout: bundleType === BundleType.FULL_PAGE ? FullPageLayout.FOOTER_BOTTOM : null,
         status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId,
         shopifyProductHandle: shopifyProductHandle || null,

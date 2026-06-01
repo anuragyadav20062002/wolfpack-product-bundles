@@ -28,7 +28,6 @@ import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
-import { PricingTiersSection } from "../../../components/PricingTiersSection";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import {
   MultiLanguageTextModal,
@@ -1032,14 +1031,6 @@ export default function ConfigureBundleFlow() {
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
 
-  // Pricing tier config state (full-page bundles)
-  const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
-  );
-  const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
-  );
-
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
     bundle.showStepTimeline !== false  // default true; only false when explicitly saved as false
@@ -1180,6 +1171,12 @@ export default function ConfigureBundleFlow() {
     savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
   );
 
+  const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
+  const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
+  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Buy with Bundle");
+  const originalAutoSelectBrowsedProductRef = useRef<boolean>(savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false);
+
   // Bundle Banner upload state (Gap 2)
   const [bundleBannerDesktopUrl, setBundleBannerDesktopUrl] = useState<string>((bundle as any).bundleBannerDesktopUrl ?? "");
   const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
@@ -1276,12 +1273,6 @@ export default function ConfigureBundleFlow() {
 
   // Multi-language modal for step names
   const [isStepLocaleModalOpen, setIsStepLocaleModalOpen] = useState(false);
-
-  // Warning modal state: steps + tiers conflict
-  const [stepsTiersWarning, setStepsTiersWarning] = useState<{
-    open: boolean;
-    onConfirm: (() => void) | null;
-  }>({ open: false, onConfirm: null });
 
   // Select Template modal state
   const selectTemplateModalRef = useRef<HTMLDivElement>(null);
@@ -1397,7 +1388,6 @@ export default function ConfigureBundleFlow() {
   }, [bundle.id]);
 
   // Modal refs for s-modal web components
-  const stepsTiersModalRef = useRef<HTMLElement>(null);
   const pageSelectionModalRef = useRef<HTMLElement>(null);
   const productsModalRef = useRef<HTMLElement>(null);
   const collectionsModalRef = useRef<HTMLElement>(null);
@@ -1406,10 +1396,6 @@ export default function ConfigureBundleFlow() {
   const discountVariablesModalRef = useRef<HTMLElement>(null);
   const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
-
-  useEffect(() => {
-    stepsTiersWarning.open ? showPolarisModal(stepsTiersModalRef) : hidePolarisModal(stepsTiersModalRef);
-  }, [stepsTiersWarning.open]);
 
   useEffect(() => {
     isPageSelectionModalOpen ? showPolarisModal(pageSelectionModalRef) : hidePolarisModal(pageSelectionModalRef);
@@ -1805,11 +1791,6 @@ export default function ConfigureBundleFlow() {
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
-      formData.append("tierConfigData", tierConfig.length > 0 ? JSON.stringify(tierConfig) : "");
-      // Only send showStepTimeline when >= 2 tiers are configured (server will reset to null otherwise)
-      if (tierConfig.length >= 2) {
-        formData.append("showStepTimeline", String(showStepTimeline));
-      }
       formData.append("floatingBadgeEnabled", String(floatingBadgeEnabled));
       formData.append("floatingBadgeText", floatingBadgeText);
       formData.append("showProductPrices", String(showProductPrices));
@@ -1876,7 +1857,6 @@ export default function ConfigureBundleFlow() {
     bundle.bundleType,
     bundle.shopifyPageId,
     bundle.shopifyPageHandle,
-    tierConfig,
     showStepTimeline,
     floatingBadgeEnabled,
     floatingBadgeText,
@@ -2006,7 +1986,6 @@ export default function ConfigureBundleFlow() {
           originalPromoBannerBgImageRef.current = promoBannerBgImage;
           originalPromoBannerBgImageCropRef.current = promoBannerBgImageCrop;
           originalLoadingGifRef.current = loadingGif;
-          originalTierConfigRef.current = tierConfig;
           originalShowStepTimelineRef.current = showStepTimeline;
           originalFloatingBadgeEnabledRef.current = floatingBadgeEnabled;
           originalFloatingBadgeTextRef.current = floatingBadgeText;
@@ -2021,6 +2000,11 @@ export default function ConfigureBundleFlow() {
           originalGiftMessageDraftRef.current = giftMessageDraft;
           originalDiscountMessagingMultiLanguageEnabledRef.current = discountMessagingMultiLanguageEnabled;
           originalRuleMessagesByLocaleRef.current = ruleMessagesByLocale;
+          originalUpsellWidgetEnabledRef.current = upsellWidgetEnabled;
+          originalUpsellWidgetDisplayModeRef.current = upsellWidgetDisplayMode;
+          originalUpsellWidgetDisplayOnRef.current = upsellWidgetDisplayOn;
+          originalUpsellWidgetButtonTextRef.current = upsellWidgetButtonText;
+          originalAutoSelectBrowsedProductRef.current = autoSelectBrowsedProduct;
 
           // Reset dirty flag after successful save
           setIsDirty(false);
@@ -2139,7 +2123,6 @@ export default function ConfigureBundleFlow() {
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
-    setTierConfig(originalTierConfigRef.current);
     setShowStepTimeline(originalShowStepTimelineRef.current);
     setFloatingBadgeEnabled(originalFloatingBadgeEnabledRef.current);
     setFloatingBadgeText(originalFloatingBadgeTextRef.current);
@@ -2154,6 +2137,11 @@ export default function ConfigureBundleFlow() {
     setGiftMessageDraft(originalGiftMessageDraftRef.current);
     setDiscountMessagingMultiLanguageEnabled(originalDiscountMessagingMultiLanguageEnabledRef.current);
     setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
+    setUpsellWidgetEnabled(originalUpsellWidgetEnabledRef.current);
+    setUpsellWidgetDisplayMode(originalUpsellWidgetDisplayModeRef.current);
+    setUpsellWidgetDisplayOn(originalUpsellWidgetDisplayOnRef.current);
+    setUpsellWidgetButtonText(originalUpsellWidgetButtonTextRef.current);
+    setAutoSelectBrowsedProduct(originalAutoSelectBrowsedProductRef.current);
   }, [bundle.shopifyPageHandle, hookHandleDiscard]);
 
   const handleConfirmDiscard = useCallback(() => {
@@ -2356,7 +2344,6 @@ export default function ConfigureBundleFlow() {
     setCurrentModalStepId('');
   }, []);
 
-  useModalHideListener(stepsTiersModalRef, () => setStepsTiersWarning({ open: false, onConfirm: null }));
   useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
@@ -2367,24 +2354,11 @@ export default function ConfigureBundleFlow() {
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
-    const isActivatingMultiStep = stepsState.steps.length === 1;
-    if (isActivatingMultiStep && tierConfig.length >= 2) {
-      setStepsTiersWarning({
-        open: true,
-        onConfirm: () => {
-          stepsState.addStep();
-          setSlideDir("forward");
-          setSlideKey(prev => prev + 1);
-          setActiveTabIndex(stepsState.steps.length);
-        },
-      });
-      return;
-    }
     stepsState.addStep();
     setSlideDir("forward");
     setSlideKey(prev => prev + 1);
     setActiveTabIndex(stepsState.steps.length);
-  }, [stepsState, tierConfig, setStepsTiersWarning, setActiveTabIndex]);
+  }, [stepsState, setActiveTabIndex]);
 
   // Function to load available pages or templates based on bundle type
   const loadAvailablePages = useCallback(() => {
@@ -3850,7 +3824,7 @@ export default function ConfigureBundleFlow() {
                                           );
                                           updateAddonTiers(updated);
                                         }}
-                                        min="0"
+                                        min={0}
                                       />
                                       <s-number-field
                                         label="Discount on Add-ons"
@@ -3861,8 +3835,8 @@ export default function ConfigureBundleFlow() {
                                           );
                                           updateAddonTiers(updated);
                                         }}
-                                        min="0"
-                                        max="100"
+                                        min={0}
+                                        max={100}
                                         suffix="%"
                                       />
                                     </div>
@@ -4503,7 +4477,6 @@ export default function ConfigureBundleFlow() {
                             })}
                             <s-section>
                               <s-stack direction="block" gap="small">
-                                <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Success Message</h5>
                                 <s-text-field
                                   label="Success Message"
                                   value={(() => {
@@ -4889,41 +4862,6 @@ export default function ConfigureBundleFlow() {
                 )}
               </s-stack>
               </div>
-            )}
-
-            {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
-              <s-stack direction="block" gap="base">
-                <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
-                  <s-stack direction="inline" gap="small-100">
-                    <s-icon name="discount-minor" />
-                    <s-stack direction="block" gap="small-400">
-                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Pricing Tiers</p>
-                      <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
-                        Let shoppers switch between different bundle price points on the same page.
-                      </p>
-                    </s-stack>
-                  </s-stack>
-                </div>
-
-                <PricingTiersSection
-                  tiers={tierConfig}
-                  availableBundles={availableBundles}
-                  currentBundleId={bundle.id}
-                  showStepTimeline={showStepTimeline}
-                  onShowStepTimelineChange={(val) => {
-                    setShowStepTimeline(val);
-                    markAsDirty();
-                  }}
-                  stepsCount={stepsState.steps.length}
-                  onStepsTiersConflictWarning={(onConfirm) => {
-                    setStepsTiersWarning({ open: true, onConfirm });
-                  }}
-                  onChange={(tiers) => {
-                    setTierConfig(tiers);
-                    markAsDirty();
-                  }}
-                />
-              </s-stack>
             )}
 
             {activeSection === "bundle_settings" && (() => {
@@ -5316,29 +5254,13 @@ export default function ConfigureBundleFlow() {
                     />
                   </div>
 
+                  <div className={fullPageBundleStyles.upsellWidgetContent} style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
                   <div className={fullPageBundleStyles.visibilityPreviewFrame}>
-                    <div className={fullPageBundleStyles.visibilityPreviewProduct}>
-                      <div className={fullPageBundleStyles.visibilityPreviewThumbnails}>
-                        <span />
-                        <span />
-                        <span />
-                      </div>
-                      <div className={fullPageBundleStyles.visibilityPreviewImage}>
-                        <img
-                          src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
-                          alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
-                        />
-                      </div>
-                      <div className={fullPageBundleStyles.visibilityPreviewDetails}>
-                        <p className={fullPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
-                        <p className={fullPageBundleStyles.visibilityPreviewPrice}>$47.97</p>
-                        <div className={fullPageBundleStyles.visibilityPreviewNativeButton}>Add to Cart - $47.97</div>
-                        <div className={fullPageBundleStyles.visibilityPreviewWidget}>
-                          <span>{upsellWidgetTitle || "Bundle & Save"}</span>
-                          <button type="button">{upsellWidgetButtonText || "Buy with Bundle"}</button>
-                        </div>
-                      </div>
-                    </div>
+                    <img
+                      className={fullPageBundleStyles.visibilityPreviewFullImage}
+                      src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                      alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                    />
                     <div className={fullPageBundleStyles.visibilityRadioBar}>
                       <label className={fullPageBundleStyles.visibilityRadioLabel}>
                         <input
@@ -5370,16 +5292,15 @@ export default function ConfigureBundleFlow() {
                   <div className={fullPageBundleStyles.visibilityPanelSection}>
                     <div className={fullPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
-                      <button
-                        type="button"
-                        className={fullPageBundleStyles.visibilitySecondaryAction}
-                        onClick={() => {
-                          setUpsellWidgetLanguageMode((prev) => prev === "MULTIPLE" ? "SINGLE" : "MULTIPLE");
-                          markAsDirty();
-                        }}
+                      <s-button
+                        variant="secondary"
+                        icon="globe"
+                        onClick={() => openMultiLanguageModal("Bundle Widget", [
+                          { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
+                        ])}
                       >
                         Multi Language
-                      </button>
+                      </s-button>
                     </div>
                     <div className={fullPageBundleStyles.visibilityFieldStack}>
                       <label className={fullPageBundleStyles.visibilityFieldLabel}>
@@ -5458,6 +5379,7 @@ export default function ConfigureBundleFlow() {
                     />
                     <span>Add browsed product to bundle</span>
                   </label>
+                  </div>
                 </div>
 
                 <div className={fullPageBundleStyles.visibilityPlacementCard}>
@@ -5582,27 +5504,6 @@ export default function ConfigureBundleFlow() {
             })()}
           </div>
         </div>
-
-      {/* Steps + Tiers Conflict Warning Modal */}
-      <s-modal ref={stepsTiersModalRef} heading="Review bundle pricing setup">
-        <s-stack direction="block" gap="small">
-          <p style={{ margin: 0, fontSize: 14 }}>
-            <strong>Wolfpack Bundles works best when the shopper flow and pricing flow match.</strong>
-          </p>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            Pricing tier pills are best for a single-step bundle. This bundle has <strong>{stepsState.steps.length} steps</strong> configured.
-          </p>
-          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-            Continue only if you want to show tiers alongside the step-by-step builder.
-          </p>
-        </s-stack>
-        <s-button slot="primaryAction" variant="primary" onClick={() => { stepsTiersWarning.onConfirm?.(); setStepsTiersWarning({ open: false, onConfirm: null }); }}>
-          Continue
-        </s-button>
-        <s-button slot="secondaryActions" onClick={() => setStepsTiersWarning({ open: false, onConfirm: null })}>
-          Cancel
-        </s-button>
-      </s-modal>
 
       {/* Page Selection Modal */}
       <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront">
@@ -5757,15 +5658,18 @@ export default function ConfigureBundleFlow() {
         </s-button>
       </s-modal>
 
-      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="small">
-        <s-stack direction="block" gap="small">
-          {TEMPLATE_VARIABLES.map(([variable, description]) => (
-            <div key={variable} className={fullPageBundleStyles.templateVariableItem}>
-              <s-text tone="subdued">{description}</s-text>
-              <s-badge>{variable}</s-badge>
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="medium">
+        <div>
+          {TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={fullPageBundleStyles.discountVariableRow}>
+                <s-text tone="subdued">{description}</s-text>
+                <span className={fullPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
             </div>
           ))}
-        </s-stack>
+        </div>
       </s-modal>
 
       <BundleReadinessOverlay

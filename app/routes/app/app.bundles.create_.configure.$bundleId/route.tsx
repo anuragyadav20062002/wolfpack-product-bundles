@@ -261,13 +261,6 @@ function buildCreateWizardAssetsPayload(input: {
   });
 }
 
-function buildCreateWizardTiersPayload(
-  tiers: Array<{ label: string; linkedBundleId: string }>
-) {
-  return JSON.stringify(
-    tiers.map(({ label, linkedBundleId }) => ({ label, linkedBundleId }))
-  );
-}
 
 export function shouldSubmitCreateWizardPage(input: {
   baseline: string | null;
@@ -287,7 +280,6 @@ const STEPS_META = [
   { num: "02", label: "Configuration" },
   { num: "03", label: "Pricing" },
   { num: "04", label: "Assets" },
-  { num: "05", label: "Pricing Tiers" },
 ];
 
 const CUSTOM_FIELD_TYPE_OPTIONS = [
@@ -363,17 +355,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const routeBase =
     bundle.bundleType === "full_page" ? "full-page-bundle" : "product-page-bundle";
 
-  // Fetch sibling FPB bundles for the Pricing Tiers "Linked Bundle" dropdown
-  const fpbBundles = await db.bundle.findMany({
-    where: {
-      shopId: session.shop,
-      bundleType: "full_page",
-      id: { not: bundleId },
-    },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-
   return json({
     bundle: {
       id: bundle.id,
@@ -384,7 +365,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       promoBannerBgImage: bundle.promoBannerBgImage ?? null,
       promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
       loadingGif: bundle.loadingGif ?? null,
-      tierConfig: (bundle.tierConfig as Array<{ label: string; linkedBundleId: string }> | null) ?? [],
       shopifyProductId: bundle.shopifyProductId,
       shopifyProductHandle: bundle.shopifyProductHandle,
       shopifyPageId: bundle.shopifyPageId,
@@ -421,7 +401,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     shopLocales,
     shop: session.shop,
     themeEditorUrl,
-    fpbBundles,
     showFirstLoadTour,
   });
 };
@@ -468,23 +447,6 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     });
 
     return json({ ok: true, intent: "savePricing" });
-  }
-
-  // ── Save Tiers (Step 05) ────────────────────────────────────
-  if (intent === "saveTiers") {
-    const tiersJson = formData.get("tiers") as string;
-    const tiers: Array<{ label: string; linkedBundleId: string }> = JSON.parse(
-      tiersJson || "[]"
-    );
-    await db.bundle.update({
-      where: { id: bundleId },
-      data: { tierConfig: tiers },
-    });
-    return json({
-      ok: true,
-      intent: "saveTiers",
-      redirectTo: getBundleWizardConfigurePath(bundle.id),
-    });
   }
 
   // ── Save Assets (Step 04) ───────────────────────────────────
@@ -644,7 +606,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function WizardConfigureStep() {
-  const { bundle, readiness, shopLocales, shop, themeEditorUrl, fpbBundles, showFirstLoadTour } =
+  const { bundle, readiness, shopLocales, shop, themeEditorUrl, showFirstLoadTour } =
     useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
@@ -660,14 +622,8 @@ export default function WizardConfigureStep() {
     intent: string;
     redirectTo: string;
   }>();
-  const tiersFetcher = useFetcher<{
-    ok: boolean;
-    intent: string;
-    redirectTo: string;
-  }>();
 
-  const isFpb = bundle.bundleType === "full_page";
-  const stepsMeta = isFpb ? STEPS_META : STEPS_META.slice(0, 4);
+  const stepsMeta = STEPS_META;
 
   // ── Wizard step (1=Config 02, 2=Pricing 03) ───────────────────
   const [wizardStep, setWizardStep] = useState(1);
@@ -760,16 +716,6 @@ export default function WizardConfigureStep() {
     }))
   );
 
-  // ── Step 05 Pricing Tiers state ────────────────────────────────
-  const [tiers, setTiers] = useState<
-    Array<{ id: string; label: string; linkedBundleId: string }>
-  >(() =>
-    (bundle.tierConfig ?? []).map((t) => ({
-      ...t,
-      id: crypto.randomUUID(),
-    }))
-  );
-
   const editRoutePath = getBundleWizardConfigurePath(bundle.id);
   const currentConfigPayload = buildCreateWizardConfigPayload({
     steps,
@@ -794,12 +740,10 @@ export default function WizardConfigureStep() {
     steps,
     customFields,
   });
-  const currentTiersPayload = buildCreateWizardTiersPayload(tiers);
 
   const configBaselineRef = useRef(currentConfigPayload);
   const pricingBaselineRef = useRef(currentPricingPayload);
   const assetsBaselineRef = useRef(currentAssetsPayload);
-  const tiersBaselineRef = useRef(currentTiersPayload);
 
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
@@ -869,25 +813,9 @@ export default function WizardConfigureStep() {
       assetsFetcher.state === "idle"
     ) {
       assetsBaselineRef.current = currentAssetsPayload;
-      if (isFpb) {
-        setWizardStep(4);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        navigate(assetsFetcher.data.redirectTo);
-      }
+      navigate(assetsFetcher.data.redirectTo);
     }
-  }, [assetsFetcher.data, assetsFetcher.state, isFpb, navigate]);
-
-  useEffect(() => {
-    if (
-      tiersFetcher.data?.ok &&
-      tiersFetcher.data.intent === "saveTiers" &&
-      tiersFetcher.state === "idle"
-    ) {
-      tiersBaselineRef.current = currentTiersPayload;
-      navigate(tiersFetcher.data.redirectTo);
-    }
-  }, [tiersFetcher.data, tiersFetcher.state, navigate]);
+  }, [assetsFetcher.data, assetsFetcher.state, navigate]);
 
   const currentStep = steps[currentIdx];
 
@@ -897,17 +825,13 @@ export default function WizardConfigureStep() {
       ? "Configuration"
       : wizardStep === 2
       ? "Pricing"
-      : wizardStep === 3
-      ? "Assets"
-      : "Pricing Tiers";
+      : "Assets";
   const isSubmitting =
     wizardStep === 1
       ? configFetcher.state === "submitting"
       : wizardStep === 2
       ? pricingFetcher.state === "submitting"
-      : wizardStep === 3
-      ? assetsFetcher.state === "submitting"
-      : tiersFetcher.state === "submitting";
+      : assetsFetcher.state === "submitting";
 
   // ── Step 02 mutations ──────────────────────────────────────────
   const updateStep = useCallback(
@@ -1255,12 +1179,7 @@ export default function WizardConfigureStep() {
           current: currentAssetsPayload,
         })
       ) {
-        if (isFpb) {
-          setWizardStep(4);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        } else {
-          navigate(editRoutePath);
-        }
+        navigate(editRoutePath);
         return;
       }
       const fd = new FormData();
@@ -1279,25 +1198,6 @@ export default function WizardConfigureStep() {
       );
       fd.set("customFields", JSON.stringify(customFields));
       assetsFetcher.submit(fd, { method: "post" });
-    } else if (wizardStep === 4) {
-      if (
-        !shouldSubmitCreateWizardPage({
-          baseline: tiersBaselineRef.current,
-          current: currentTiersPayload,
-        })
-      ) {
-        navigate(editRoutePath);
-        return;
-      }
-      const fd = new FormData();
-      fd.set("_intent", "saveTiers");
-      fd.set(
-        "tiers",
-        JSON.stringify(
-          tiers.map(({ label, linkedBundleId }) => ({ label, linkedBundleId }))
-        )
-      );
-      tiersFetcher.submit(fd, { method: "post" });
     }
   }, [
     wizardStep,
@@ -1308,7 +1208,6 @@ export default function WizardConfigureStep() {
     configFetcher,
     pricingFetcher,
     assetsFetcher,
-    tiersFetcher,
     pricing,
     showProgressBar,
     discountMessagingEnabled,
@@ -1318,12 +1217,9 @@ export default function WizardConfigureStep() {
     promoBannerBgImageCrop,
     loadingGif,
     customFields,
-    tiers,
     currentConfigPayload,
     currentPricingPayload,
     currentAssetsPayload,
-    currentTiersPayload,
-    isFpb,
     editRoutePath,
     navigate,
   ]);
@@ -1432,29 +1328,45 @@ export default function WizardConfigureStep() {
 
         {/* Step indicator — dynamic based on wizardStep */}
         <div className={styles.stepIndicator}>
-          {stepsMeta.map((step, idx) => (
-            <Fragment key={step.num}>
-              {idx > 0 && <div className={styles.stepConnector} />}
-              <div className={styles.stepItem}>
-                {idx < wizardStep ? (
-                  <>
+          {stepsMeta.map((step, idx) => {
+            const isDone = idx < wizardStep;
+            const isClickable = isDone && idx >= 1;
+            return (
+              <Fragment key={step.num}>
+                {idx > 0 && <div className={styles.stepConnector} />}
+                {isClickable ? (
+                  <button
+                    className={styles.stepItemClickable}
+                    onClick={() => setWizardStep(idx)}
+                    type="button"
+                    aria-label={`Go to ${step.label}`}
+                  >
                     <div className={styles.stepCircleDone}>✓</div>
                     <span className={styles.stepLabelDone}>{step.label}</span>
-                  </>
-                ) : idx === wizardStep ? (
-                  <>
-                    <div className={styles.stepCircleActive}>{step.num}</div>
-                    <span className={styles.stepLabelActive}>{step.label}</span>
-                  </>
+                  </button>
                 ) : (
-                  <>
-                    <span className={styles.stepNumFuture}>{step.num}</span>
-                    <span className={styles.stepLabelFuture}>{step.label}</span>
-                  </>
+                  <div className={styles.stepItem}>
+                    {isDone ? (
+                      <>
+                        <div className={styles.stepCircleDone}>✓</div>
+                        <span className={styles.stepLabelDone}>{step.label}</span>
+                      </>
+                    ) : idx === wizardStep ? (
+                      <>
+                        <div className={styles.stepCircleActive}>{step.num}</div>
+                        <span className={styles.stepLabelActive}>{step.label}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className={styles.stepNumFuture}>{step.num}</span>
+                        <span className={styles.stepLabelFuture}>{step.label}</span>
+                      </>
+                    )}
+                  </div>
                 )}
-              </div>
-            </Fragment>
-          ))}
+              </Fragment>
+            );
+          })}
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -2387,177 +2299,6 @@ export default function WizardConfigureStep() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════
-            STEP 05 — Pricing Tiers
-        ══════════════════════════════════════════════════════ */}
-        {wizardStep === 4 && isFpb && (
-          <div className={styles.assetsLayout}>
-            <div className={styles.card}>
-              <div style={{ marginBottom: 20 }}>
-                <s-heading>Pricing Tiers</s-heading>
-                <s-text color="subdued">
-                  Let shoppers switch between different bundle price points on the same page.
-                </s-text>
-              </div>
-
-              {tiers.map((tier, idx) => (
-                <div
-                  key={tier.id}
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 8,
-                    padding: "16px",
-                    marginBottom: 12,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: 14, color: "#303030" }}>
-                      Tier {idx + 1}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label="Delete tier"
-                      onClick={() =>
-                        setTiers((prev) => prev.filter((t) => t.id !== tier.id))
-                      }
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 4,
-                        color: "#d82c0d",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 16,
-                    }}
-                  >
-                    <div>
-                      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 500, color: "#303030" }}>
-                        Label
-                      </p>
-                      <s-text-field
-                        label="Tier label"
-                        labelAccessibilityVisibility="exclusive"
-                        placeholder="Buy 3 @ 699"
-                        maxLength={50}
-                        value={tier.label}
-                        onInput={(e: Event) =>
-                          setTiers((prev) =>
-                            prev.map((t) =>
-                              t.id === tier.id
-                                ? { ...t, label: (e.target as HTMLInputElement).value }
-                                : t
-                            )
-                          )
-                        }
-                        autoComplete="off"
-                      />
-                      <p style={{ margin: "4px 0 0", fontSize: 12, color: "#6d7175" }}>
-                        Shown on the pill button (50 max characters)
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 500, color: "#303030" }}>
-                        Linked Bundle
-                      </p>
-                      <s-select
-                        label="Linked bundle"
-                        labelAccessibilityVisibility="exclusive"
-                        onChange={(e: Event) =>
-                          setTiers((prev) =>
-                            prev.map((t) =>
-                              t.id === tier.id
-                                ? { ...t, linkedBundleId: (e.target as HTMLSelectElement).value }
-                                : t
-                            )
-                          )
-                        }
-                      >
-                        <s-option value="" selected={!tier.linkedBundleId || undefined}>
-                          Select bundle
-                        </s-option>
-                        {fpbBundles.map((b) => (
-                          <s-option
-                            key={b.id}
-                            value={b.id}
-                            selected={tier.linkedBundleId === b.id || undefined}
-                          >
-                            {b.name}
-                          </s-option>
-                        ))}
-                      </s-select>
-                      <p style={{ margin: "4px 0 0", fontSize: 12, color: "#6d7175" }}>
-                        Choose the product bundle to trigger for this tier
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <button
-                type="button"
-                onClick={() =>
-                  setTiers((prev) => [
-                    ...prev,
-                    { id: crypto.randomUUID(), label: "", linkedBundleId: "" },
-                  ])
-                }
-                style={{
-                  width: "100%",
-                  border: "1px dashed #c9cccf",
-                  borderRadius: 8,
-                  background: "none",
-                  padding: "12px 0",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  color: "#303030",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontSize: 18, lineHeight: 1 }}>+</span>
-                Add Rule
-              </button>
-            </div>
-
-            {/* Footer */}
-            <div className={styles.wizardFooter}>
-              <s-button variant="secondary" onClick={handleBack}>
-                Back
-              </s-button>
-              <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
-                Preview
-              </s-button>
-              <s-button
-                variant="primary"
-                loading={isSubmitting || undefined}
-                onClick={handleNext}
-              >
-                Finish
-              </s-button>
-            </div>
-          </div>
-        )}
       </div>
 
       <EnablePreviewModal {...enablePreviewGate.modalProps} />

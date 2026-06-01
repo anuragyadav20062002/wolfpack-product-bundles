@@ -7,7 +7,7 @@
 .dashboardLayout {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .dashboardTitle {
@@ -28,8 +28,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  padding: 20px 0 8px;
+  gap: 16px;
+  padding: 12px 0 4px;
 }
 
 .dashboardTitleBlock {
@@ -71,7 +71,7 @@
 .topCardsGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
+  gap: 16px;
   align-items: stretch;
 }
 
@@ -82,19 +82,48 @@
 .supportCard {
   height: 100%;
   box-sizing: border-box;
-  padding: 20px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.supportCardHero {
+  padding: 12px 16px;
+  background: #1a1a1a;
+}
+
+.supportCardHeroTitle {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.supportCardHeroDesc {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.4;
+}
+
+.supportCardBody {
+  flex: 1;
+  padding: 14px 18px 18px;
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-columns: 80px minmax(0, 1fr);
   grid-template-rows: 1fr auto;
-  gap: 14px 18px;
+  gap: 10px 14px;
   align-items: start;
 }
 
 .supportAvatarWrap {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 70px;
+  height: 70px;
   align-self: start;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .supportAvatarSkeleton {
@@ -120,11 +149,11 @@
 }
 
 .supportAvatarImage {
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
+  width: 70px;
+  height: 70px;
   object-fit: cover;
-  object-position: center 18%;
+  object-position: center 44%;
+  transform: scale(1.3);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -164,7 +193,7 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  padding: 20px 24px;
+  padding: 14px 18px;
   border: 1px solid var(--p-color-border);
   border-radius: var(--p-border-radius-300);
   background: var(--p-color-bg-surface);
@@ -205,22 +234,22 @@
   width: 100%;
   aspect-ratio: 1096 / 304;
   object-fit: contain;
-  max-height: 126px;
+  max-height: 100px;
   border: 1px solid #e3e3e3;
   border-radius: 6px;
   background: #fff;
 }
 
 .bundlesPanel {
-  padding: 16px 18px;
+  padding: 12px 14px;
 }
 
 .bundlesToolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .filterGroup {
@@ -251,7 +280,7 @@
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
   gap: 0;
-  padding: 12px 0;
+  padding: 8px 0;
   border-bottom: 1px solid #d8dbe1;
   background: #fafafa;
   color: #6d7175;
@@ -273,18 +302,18 @@
 }
 
 .emptyBundlesState {
-  min-height: 240px;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 34px 20px;
+  gap: 12px;
+  padding: 24px 20px;
 }
 
 .emptyBundlesIcon {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -294,8 +323,8 @@
 }
 
 .emptyBundlesImg {
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
 
@@ -320,7 +349,7 @@
 }
 
 .bundleTableCell {
-  padding: 10px 6px;
+  padding: 7px 6px;
   font-size: 14px;
   color: #303030;
   overflow: hidden;
@@ -330,6 +359,7 @@
 
 .bundleTableCell:first-child {
   padding-left: 12px;
+  font-weight: 500;
 }
 
 .bundleTableCell:last-child {
@@ -360,8 +390,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 12px;
+  padding: 10px 14px;
   border-top: 1px solid #d8dbe1;
 }
 
@@ -375,24 +405,24 @@
 
 .resourcesLayout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  min-height: 282px;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 220px;
 }
 
 .resourcesList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 36px 28px;
+  gap: 4px;
+  padding: 20px 18px;
 }
 
 .resourceItem {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
-  min-height: 52px;
-  padding: 12px 16px;
+  min-height: 40px;
+  padding: 8px 12px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -419,15 +449,15 @@
 
 .resourceItemLabel {
   flex: 1;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.2;
 }
 
 .resourcesThumbnails {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 22px;
-  padding: 28px;
+  gap: 16px;
+  padding: 20px;
   border-left: 1px solid #d8dbe1;
   align-content: center;
 }
@@ -463,12 +493,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 10px;
+  padding: 10px 14px;
   border-top: 1px solid #d8dbe1;
   background: #f3f3f3;
   color: #303030;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -593,7 +623,7 @@
     width: 100%;
   }
 
-  .supportCard {
+  .supportCardBody {
     grid-template-columns: 1fr;
   }
 

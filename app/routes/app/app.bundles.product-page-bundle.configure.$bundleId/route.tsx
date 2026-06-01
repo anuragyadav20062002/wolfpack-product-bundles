@@ -244,10 +244,10 @@ const bundleVisibilityChildItems = [
 ];
 
 const productPageTemplateOptions = [
-  { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/productPageThumbnail.png" },
-  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/fullPageThumbnail.png" },
-  { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/sidePanelThumbnail.png" },
-  { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
+  { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/PPB-List.png" },
+  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/PPB-Grid.png" },
+  { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/PPB-HorizontalSlots.png" },
+  { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/PPB-VerticalSlots.png" },
 ] as const;
 
 const PPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=product_page&section=globalColors";
@@ -746,6 +746,20 @@ export default function ConfigureBundleFlow() {
   const [bundleEmbedSpecificProductPages, setBundleEmbedSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificProductPages));
   const [bundleEmbedCollectionsSelectedData, setBundleEmbedCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.collectionsSelectedData));
   const [bundleEmbedSpecificCollectionPages, setBundleEmbedSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedEmbedDisplayConfiguration?.showOnSpecificCollectionPages));
+
+  const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
+  const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
+  const originalUpsellWidgetTitleRef = useRef<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
+  const originalUpsellWidgetDescriptionRef = useRef<string>(savedWidgetConfiguration?.description ?? "");
+  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? "Buy With Bundle");
+  const originalUpsellWidgetImageUrlRef = useRef<string>(savedWidgetConfiguration?.imageUrl ?? "");
+  const originalAutoSelectBrowsedProductRef = useRef<boolean>(savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false);
+  const originalBundleEmbedEnabledRef = useRef<boolean>(savedUpsellConfiguration?.isEnabled ?? (bundle as any).textOverrides?.bundleEmbedEnabled === "true");
+  const originalBundleEmbedTitleRef = useRef<string>(savedUpsellConfiguration?.title ?? (bundle as any).textOverrides?.embedTitle ?? "Build Your Bundle & Save More");
+  const originalBundleEmbedSubTitleRef = useRef<string>(savedUpsellConfiguration?.subTitle ?? (bundle as any).textOverrides?.embedSubTitle ?? "");
+  const originalBundleEmbedDisplayOnRef = useRef<string>((bundle as any).textOverrides?.embedDisplayOn ?? getVisibilityDisplayTarget(savedEmbedDisplayConfiguration, "all_products"));
+  const originalBundleEmbedAddBrowsedProductRef = useRef<boolean>(savedUpsellConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).textOverrides?.embedAddBrowsedProduct === "true");
 
   // FR-02: Gift Messages state
   const [giftMessagesEnabled, setGiftMessagesEnabled] = useState<boolean>((bundle as any).giftMessagesEnabled ?? false);
@@ -1354,6 +1368,19 @@ export default function ConfigureBundleFlow() {
           originalTextOverridesRef.current = textOverrides;
           originalTextOverridesByLocaleRef.current = textOverridesByLocale;
           originalDefaultProductsDataRef.current = defaultProductsData;
+          originalUpsellWidgetEnabledRef.current = upsellWidgetEnabled;
+          originalUpsellWidgetDisplayModeRef.current = upsellWidgetDisplayMode;
+          originalUpsellWidgetDisplayOnRef.current = upsellWidgetDisplayOn;
+          originalUpsellWidgetTitleRef.current = upsellWidgetTitle;
+          originalUpsellWidgetDescriptionRef.current = upsellWidgetDescription;
+          originalUpsellWidgetButtonTextRef.current = upsellWidgetButtonText;
+          originalUpsellWidgetImageUrlRef.current = upsellWidgetImageUrl;
+          originalAutoSelectBrowsedProductRef.current = autoSelectBrowsedProduct;
+          originalBundleEmbedEnabledRef.current = bundleEmbedEnabled;
+          originalBundleEmbedTitleRef.current = bundleEmbedTitle;
+          originalBundleEmbedSubTitleRef.current = bundleEmbedSubTitle;
+          originalBundleEmbedDisplayOnRef.current = bundleEmbedDisplayOn;
+          originalBundleEmbedAddBrowsedProductRef.current = bundleEmbedAddBrowsedProduct;
           // Mark state as saved (updates hook baseline ref and resets dirty flag)
           markAsSaved();
 
@@ -1466,6 +1493,19 @@ export default function ConfigureBundleFlow() {
     setTextOverrides(originalTextOverridesRef.current);
     setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
     setDefaultProductsData(originalDefaultProductsDataRef.current);
+    setUpsellWidgetEnabled(originalUpsellWidgetEnabledRef.current);
+    setUpsellWidgetDisplayMode(originalUpsellWidgetDisplayModeRef.current);
+    setUpsellWidgetDisplayOn(originalUpsellWidgetDisplayOnRef.current);
+    setUpsellWidgetTitle(originalUpsellWidgetTitleRef.current);
+    setUpsellWidgetDescription(originalUpsellWidgetDescriptionRef.current);
+    setUpsellWidgetButtonText(originalUpsellWidgetButtonTextRef.current);
+    setUpsellWidgetImageUrl(originalUpsellWidgetImageUrlRef.current);
+    setAutoSelectBrowsedProduct(originalAutoSelectBrowsedProductRef.current);
+    setBundleEmbedEnabled(originalBundleEmbedEnabledRef.current);
+    setBundleEmbedTitle(originalBundleEmbedTitleRef.current);
+    setBundleEmbedSubTitle(originalBundleEmbedSubTitleRef.current);
+    setBundleEmbedDisplayOn(originalBundleEmbedDisplayOnRef.current);
+    setBundleEmbedAddBrowsedProduct(originalBundleEmbedAddBrowsedProductRef.current);
   }, [hookHandleDiscard]);
 
   const enablePreviewGate = useEnablePreviewGate({
@@ -3669,7 +3709,7 @@ export default function ConfigureBundleFlow() {
                         { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
                         { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
                         { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
-                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png" },
+                        { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/Featured-Product-Card.png" },
                       ].map(({ title, desc: description, img }) => (
                         <div key={title} className={productPageBundleStyles.visibilityGuideCard}>
                           <div className={productPageBundleStyles.visibilityGuideMedia}>
@@ -3775,29 +3815,13 @@ export default function ConfigureBundleFlow() {
                     />
                   </div>
 
+                  <div className={productPageBundleStyles.upsellWidgetContent} style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
                   <div className={productPageBundleStyles.visibilityPreviewFrame}>
-                    <div className={productPageBundleStyles.visibilityPreviewProduct}>
-                      <div className={productPageBundleStyles.visibilityPreviewThumbnails}>
-                        <span />
-                        <span />
-                        <span />
-                      </div>
-                      <div className={productPageBundleStyles.visibilityPreviewImage}>
-                        <img
-                          src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
-                          alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
-                        />
-                      </div>
-                      <div className={productPageBundleStyles.visibilityPreviewDetails}>
-                        <p className={productPageBundleStyles.visibilityPreviewTitle}>The Ultimate Juice</p>
-                        <p className={productPageBundleStyles.visibilityPreviewPrice}>$47.97</p>
-                        <div className={productPageBundleStyles.visibilityPreviewNativeButton}>Add to Cart · $47.97</div>
-                        <div className={productPageBundleStyles.visibilityPreviewWidget}>
-                          <span>{upsellWidgetTitle || "Bundle & Save"}</span>
-                          <button type="button">{upsellWidgetButtonText || "Buy With Bundle"}</button>
-                        </div>
-                      </div>
-                    </div>
+                    <img
+                      className={productPageBundleStyles.visibilityPreviewFullImage}
+                      src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                      alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                    />
                     <div className={productPageBundleStyles.visibilityRadioBar}>
                       <label className={productPageBundleStyles.visibilityRadioLabel}>
                         <input
@@ -3829,9 +3853,9 @@ export default function ConfigureBundleFlow() {
                   <div className={productPageBundleStyles.visibilityPanelSection}>
                     <div className={productPageBundleStyles.visibilitySectionHeader}>
                       <h4 className={productPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
-                      <button
-                        type="button"
-                        className={productPageBundleStyles.visibilitySecondaryAction}
+                      <s-button
+                        variant="secondary"
+                        icon="globe"
                         onClick={() => openMultiLanguageModal("Bundle Widget", [
                           { key: "widgetTitle", label: "Widget Title", fallback: upsellWidgetTitle },
                           { key: "widgetDescription", label: "Widget Description", fallback: upsellWidgetDescription, multiline: true },
@@ -3839,7 +3863,7 @@ export default function ConfigureBundleFlow() {
                         ])}
                       >
                         Multi Language
-                      </button>
+                      </s-button>
                     </div>
                     <div className={productPageBundleStyles.visibilitySettingsGrid}>
                       <div className={productPageBundleStyles.visibilityImagePicker}>
@@ -3939,6 +3963,7 @@ export default function ConfigureBundleFlow() {
                     />
                     <span>Add browsed product to bundle</span>
                   </label>
+                  </div>
                 </div>
 
                 <div className={productPageBundleStyles.visibilityPlacementCard}>
@@ -3971,18 +3996,19 @@ export default function ConfigureBundleFlow() {
                     />
                   </div>
 
+                  <div style={{ opacity: bundleEmbedEnabled ? 1 : 0.4, pointerEvents: bundleEmbedEnabled ? undefined : 'none' }}>
                   <div className={productPageBundleStyles.visibilitySectionHeader}>
                     <span />
-                    <button
-                      type="button"
-                      className={productPageBundleStyles.visibilitySecondaryAction}
+                    <s-button
+                      variant="plain"
+                      icon="globe"
+                      accessibilityLabel="Multi Language"
+                      title="Multi Language"
                       onClick={() => openMultiLanguageModal("Bundle Embed", [
                         { key: "embedTitle", label: "Title", fallback: bundleEmbedTitle },
                         { key: "embedSubTitle", label: "Sub Title", fallback: bundleEmbedSubTitle, multiline: true },
                       ])}
-                    >
-                      Multi Language
-                    </button>
+                    />
                   </div>
 
                   <div className={productPageBundleStyles.visibilityFieldStack}>
@@ -4064,6 +4090,7 @@ export default function ConfigureBundleFlow() {
                     />
                     <span>Add browsed product to bundle</span>
                   </label>
+                  </div>
                 </div>
 
                 <div className={productPageBundleStyles.visibilityPlacementCard}>
@@ -5200,15 +5227,18 @@ export default function ConfigureBundleFlow() {
         </s-button>
       </s-modal>
 
-      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="small">
-        <s-stack direction="block" gap="small">
-          {DISCOUNT_TEMPLATE_VARIABLES.map(([variable, description]) => (
-            <div key={variable} className={productPageBundleStyles.templateVariableItem}>
-              <s-text tone="subdued">{description}</s-text>
-              <s-badge>{variable}</s-badge>
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="medium">
+        <div>
+          {DISCOUNT_TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={productPageBundleStyles.discountVariableRow}>
+                <s-text tone="subdued">{description}</s-text>
+                <span className={productPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
             </div>
           ))}
-        </s-stack>
+        </div>
       </s-modal>
 
       {/* Bundle Quantity Options Multi Language Modal */}

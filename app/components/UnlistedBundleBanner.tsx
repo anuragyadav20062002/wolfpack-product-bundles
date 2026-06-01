@@ -55,12 +55,13 @@ export function UnlistedBundleBanner({ shop, bundleProductId }: UnlistedBundleBa
       <div style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.4, color: "#5f3700" }}>
         <p style={{ margin: 0, fontWeight: 650 }}>Your bundle is Unlisted</p>
         <p style={{ margin: "2px 0 0" }}>
-          Discounts apply, but the product is hidden from your store&rsquo;s search results and collection pages. Customers can still buy it through a direct link. To make it discoverable, change the bundle product&rsquo;s status to Active in Shopify Products.
+          Bundle is hidden from your store&rsquo;s search results and collection pages. <br />
+          For discoverabiity, change the bundle product&rsquo;s status to Active in Shopify Products.
         </p>
       </div>
       <s-button
         variant="secondary"
-        tone="warning"
+        tone="auto"
         onClick={() => window.open(adminUrl, "_blank", "noopener,noreferrer")}
       >
         Manage in Shopify Products
