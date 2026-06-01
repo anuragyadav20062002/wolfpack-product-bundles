@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.15
+ * Version : 2.9.16
  * Built   : 2026-06-01
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.15';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.16';
 (function() {
   'use strict';
 
@@ -5455,6 +5455,10 @@ class BundleWidgetFullPage {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
+
+    if (this.getFullPageDesignPreset() === 'DEFAULT') {
+      cardElement.querySelector('.product-price-row')?.remove();
+    }
 
     if (renderSelectedQuantityBadge) {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);

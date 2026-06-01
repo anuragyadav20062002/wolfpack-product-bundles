@@ -115,3 +115,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Patched the existing sidebar action CSS to reserve a `198px` action column and `198px` CTA min-width.
 - Generated minified storefront CSS with `npm run minify:assets css`; local generated full-page CSS is under Shopify's 100,000 byte limit.
 - Chrome selected-state smoke: after selecting the available card, the action row computes to `116px 198px`, button width computes to `198px`, and the sidebar still shows the selected product row/thumbnail.
+
+### 2026-06-02 03:18 - FPB DEFAULT product price visibility slice started
+- Existing EB DEFAULT evidence says product card prices are not shown, while CLASSIC/COMPACT/HORIZONTAL show prices.
+- Current Chrome proof after the variant fallback shows DEFAULT product cards rendering compare-at and final prices.
+- Scope this slice to CSS hiding product-card price rows only when `data-fpb-design-preset=DEFAULT`; sidebar totals and selected-row prices remain visible.
+- CSS-only hiding exceeded Shopify's 100,000 byte full-page CSS limit, so the final patch removes `.product-price-row` while rendering FPB DEFAULT product cards instead.
+- Bumped `WIDGET_VERSION` to `2.9.16` and rebuilt widget assets with `npm run build:widgets`; CSS minification also passed.
+- Verification passed: `node --check app/assets/bundle-widget-full-page.js && node --check scripts/build-widget-bundles.js`.
+- Verification passed: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js` returned 0 errors and ignore-pattern warnings only.
+- Chrome storefront smoke on `preview-codex-fpb-2026-05-21`: served widget version is `2.9.16`, visible DEFAULT product card text is `2024 Summer Slides / Add To Box` with `0` price rows, and selected sidebar still shows product row price plus total after adding the card.

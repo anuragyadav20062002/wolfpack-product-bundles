@@ -5153,8 +5153,7 @@ body:has([data-fpb-design-preset=DEFAULT]),
 [data-fpb-design-preset=DEFAULT] .category-tab {
   border:0;
   border-bottom:3px solid #0000;
-  background:none;
-  color:#000}
+  background:none}
 
 [data-fpb-design-preset=DEFAULT] .category-tab.active {
   border-bottom-color:#000}

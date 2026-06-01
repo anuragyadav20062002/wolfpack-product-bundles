@@ -2814,6 +2814,10 @@ class BundleWidgetFullPage {
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
+    if (this.getFullPageDesignPreset() === 'DEFAULT') {
+      cardElement.querySelector('.product-price-row')?.remove();
+    }
+
     if (renderSelectedQuantityBadge) {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);
     }
