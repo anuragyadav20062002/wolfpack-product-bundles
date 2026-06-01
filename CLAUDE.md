@@ -246,6 +246,16 @@ npm run build:widgets:product-page
 npm run build:sdk
 ```
 
+**Raw widget JS syntax check:** after editing raw storefront widget JS, run `node --check <file>` before commit.
+
+Examples:
+```bash
+node --check app/assets/bundle-widget-full-page.js
+node --check app/assets/bundle-widget-product-page.js
+node --check app/assets/bundle-modal-component.js
+node --check app/assets/bundle-widget-components.js
+```
+
 **Forgetting to build = changes won't appear in the storefront.**
 
 ---
@@ -294,6 +304,8 @@ Increment `WIDGET_VERSION` in `scripts/build-widget-bundles.js` before every wid
 Verify live version: `console.log(window.__BUNDLE_WIDGET_VERSION__)` in DevTools console.
 
 Shopify CDN cache-busting: the `?v=HASH` param on `asset_url` only changes on `shopify app deploy`. Custom query params are NOT on the CDN allowlist.
+
+Storefront asset strategy: theme/app-extension Liquid must load storefront JS/CSS with Shopify `asset_url`. Do not use `/apps/product-bundles/assets/...` as the production storefront JS/CSS loading path; app proxy is for signed API/data routes only.
 
 ---
 

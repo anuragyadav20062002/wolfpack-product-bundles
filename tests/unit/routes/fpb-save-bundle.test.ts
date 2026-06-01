@@ -581,6 +581,55 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     });
   });
 
+  it("wires Bundle Settings quantity validation into direct box-selection config", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      pricingDisplayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "5% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+        progressBar: {
+          enabled: true,
+          type: "step_based",
+          progressText: "Add {{conditionText}} to unlock {{discountText}}",
+          successText: "{{discountText}} unlocked",
+        },
+      },
+    });
+    const fd = makeFormData({
+      discountData: JSON.stringify(discountData),
+      productSlotsEnabled: "true",
+    });
+
+    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.boxSelection).toMatchObject({
+      isEnabled: true,
+      validateBoxSelectionQuantity: true,
+      rules: [
+        expect.objectContaining({
+          ruleId: "rule-2",
+          boxQuantity: 2,
+        }),
+      ],
+    });
+  });
+
   it("clears direct box-selection config when the discount method is Buy X, get Y", async () => {
     const discountData = makeDiscountData({
       discountEnabled: true,

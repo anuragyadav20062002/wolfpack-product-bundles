@@ -660,6 +660,12 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       && discountData.discountType !== 'buy_x_get_y'
       ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
       : null;
+    const boxSelection = directBoxSelection
+      ? {
+          ...directBoxSelection,
+          validateBoxSelectionQuantity: productSlotsEnabled,
+        }
+      : null;
 
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
@@ -727,7 +733,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         textOverridesByLocale,
         bundleTextConfig,
         personalizationData,
-        boxSelection: directBoxSelection,
+        boxSelection,
         bundleUpsellConfig,
         upsellWidgetEnabled,
         upsellWidgetDisplayMode,

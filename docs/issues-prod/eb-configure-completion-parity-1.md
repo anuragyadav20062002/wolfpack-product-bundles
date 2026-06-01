@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 23:21
+**Last Updated:** 2026-06-01 23:58
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
@@ -294,3 +294,31 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Confirmed the FPB page-shell and runtime cleanup slice is already committed.
 - The remaining tracked worktree delta is a generated `graphify-out/GRAPH_REPORT.md` corpus word-count update from the graph hook.
 - Committing this graph metadata with the issue log to restore a clean tracked state before continuing Phase 5.
+
+### 2026-06-01 23:21 - Phase 5 quantity validation runtime wiring started
+- EB reference confirms `boxSelection.isEnabled` controls the box tier selector and `validateBoxSelectionQuantity` controls the ATC/navigation gate.
+- Current WPB save path derives `boxSelection` from pricing display options but hardcodes `validateBoxSelectionQuantity: false`, so the Bundle Settings checkbox cannot reach storefront runtime.
+- Planned edit: preserve pricing-derived box rules, wire FPB/PPB `productSlotsEnabled` into `boxSelection.validateBoxSelectionQuantity`, and block FPB Add to Cart unless selected quantity exactly matches the active box rule when validation is enabled.
+
+### 2026-06-01 23:39 - Phase 5 quantity validation implementation validation
+- Wired FPB and PPB configure saves so pricing-derived `boxSelection` keeps its pricing rule source while `validateBoxSelectionQuantity` mirrors the Bundle Settings quantity validation checkbox.
+- Added FPB runtime exact-match gating: when `boxSelection.validateBoxSelectionQuantity` is true, FPB Add to Cart CTAs block unless selected non-default/non-free-gift quantity equals the active box rule quantity.
+- Added focused tests: `tests/unit/routes/fpb-save-bundle.test.ts`, `tests/unit/routes/ppb-save-bundle.test.ts`, and `tests/unit/assets/bundle-widget-full-page-box-selection-validation.test.ts`.
+- Added test spec: `test-spec/fpb-box-selection-quantity-validation.spec.md`.
+- Validation passed: focused Jest `73/73`; `npm run build:widgets`; scoped ESLint exited 0 errors with existing warnings; `node --check app/assets/bundle-widget-full-page.js`; generated FPB bundle contains version `2.9.13` and the validation gate.
+- Chrome storefront smoke could not prove runtime behavior because Shopify app-proxy asset requests for both FPB CSS and JS returned 500, including unchanged CSS. The page shell loaded, but widget hydration could not proceed until the app-proxy asset serving issue is clear.
+
+### 2026-06-01 23:50 - EB storefront asset strategy alignment started
+- User directed storefront strategy to align with EB practice for both FPB and Product Page bundles.
+- Decision: app proxy remains for API/data only; storefront JS/CSS must be loaded by Shopify theme extension Liquid with `asset_url`, not by `/apps/product-bundles/assets/...`.
+- Scope: remove FPB generated page-body/app-proxy shell dependency on proxy JS/CSS, keep PPB on existing Liquid `asset_url`, remove lingering FPB text-banner defaults from the Liquid block, and add `node --check` verification guidance to AGENTS/CLAUDE.
+- E2E proof must run after this switch and after Shopify extension assets are deployed to SIT, because Shopify CDN `asset_url` hashes only update on app deploy.
+
+### 2026-06-01 23:58 - EB storefront asset strategy implementation validation
+- Updated FPB page-body generation so Shopify pages no longer inject `/apps/product-bundles/assets/...` CSS/JS; page bodies now carry only a hidden bundle marker and rely on the selected page template's full-page app block.
+- Updated the legacy signed FPB app-proxy page route so it redirects to the linked Shopify `/pages/{handle}` URL instead of rendering a standalone proxy asset shell; unlinked bundles return a setup response.
+- Confirmed Product Page bundles stay aligned through `bundle-product-page.liquid`, which already loads CSS, SDK, and widget JS with `asset_url`.
+- Removed FPB text-banner defaults from `bundle-full-page.liquid` so image-banner-only FPB behavior is not reintroduced through Liquid block defaults.
+- Added fast-track architecture doc `docs/storefront-asset-strategy/02-architecture.md` and test spec `test-spec/storefront-asset-strategy.spec.md`.
+- Added `node --check` raw-widget verification guidance and storefront `asset_url` strategy to `AGENTS.md` and `CLAUDE.md`; updated `internal docs/Architecture/Widget Architecture.md`.
+- Validation passed: focused Jest for FPB page generation/preview/proxy route `26/26`; scoped ESLint exited 0 errors with existing warnings; targeted search confirmed app-proxy asset references remain only in negative tests/docs while FPB and PPB Liquid blocks use `asset_url`.
