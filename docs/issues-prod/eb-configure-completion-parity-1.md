@@ -194,3 +194,7 @@ Complete EB parity for the remaining PPB/FPB configure, creation wizard, product
 - Chrome smoke on SIT PPB configure confirmed `Place Widget` opens `Select Product Page Template` and the gray X closes it.
 - During commit-boundary cleanup, the in-progress `shopify://admin/products/{id}` product-editor attempt was Chrome-smoked and still opened the full Admin product page instead of an in-admin modal; that code was not included in this modal-close slice and remains a separate unresolved follow-up.
 - User queued a later Bundle Status UI cleanup: render Bundle Status in its own card and remove the repeated `Bundle Status` label from the dropdown.
+
+### 2026-06-01 21:50 - Post-commit graph hook follow-up
+- The commit hook rebuilt graph outputs after the FPB page selector close commit and left `graphify-out/GRAPH_REPORT.md` dirty.
+- Follow-up commit will include the generated graph report plus this issue-log entry only.
