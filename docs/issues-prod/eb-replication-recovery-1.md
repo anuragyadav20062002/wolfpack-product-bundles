@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 22:12
+**Last Updated:** 2026-06-01 22:30
 
 ## Overview
 Recover EB behavior from deployed runtime evidence, previous internal documentation, and live Chrome inspection so Wolfpack can replicate Settings, Integrations, and key bundle edit sections with exact UI and functionality parity.
@@ -526,6 +526,20 @@ Constraints:
 - Updated the sanitized evidence doc, recovered Admin test spec, and Select template source-contract test to lock the post-Next bundle-ready state.
 - Lint passed for `tests/unit/routes/select-template-modal-contract.test.ts`.
 - Targeted Jest passed: `npx jest tests/unit/routes/select-template-modal-contract.test.ts --runInBand --coverage=false`.
+
+### 2026-06-01 22:20 - Started FPB configure compile fix
+- Agent-store Chrome smoke check showed the local dev app failing to render with a Vite/esbuild JSX transform error in the FPB configure route around Bundle Settings.
+- Scope: remove the stray closing `s-section` tag after `BundleStatusSection`, then rerun targeted lint/build smoke and agent-store Chrome check.
+
+### 2026-06-01 22:24 - Completed FPB configure compile fix
+- Removed the stray closing `s-section` tag after `BundleStatusSection` in the FPB configure route.
+- Lint passed for `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx` with 0 errors and existing warnings only.
+- Agent-store Chrome smoke check passed: dashboard loaded, then the local FPB configure route opened and rendered `Configure Bundle Flow`, `Bundle Setup`, and `Step Setup` without the Vite transform overlay.
+
+### 2026-06-01 22:30 - Completed FPB parity route validation
+- Confirmed the staged FPB route diff also includes accumulated EB parity fixes for Bundle Visibility quick guides, Bundle Widget overview/defaults/multilanguage gating, and Bundle Settings field exclusions.
+- Targeted Jest passed: `bundle-visibility-quick-guide-contract`, `fpb-bundle-settings-direct-contract`, `fpb-bundle-settings-surface-contract`, `fpb-bundle-visibility-overview-copy`, `fpb-bundle-widget-button-text-default`, and `fpb-bundle-widget-multilanguage-gate`.
+- Lint passed for those six route test files with 0 errors and one existing warning in the quick-guide test.
 
 ### 2026-06-01 18:06 - Started PPB Bundle Settings surface contract coverage
 - Inspected the PPB Bundle Settings route block against captured evidence.

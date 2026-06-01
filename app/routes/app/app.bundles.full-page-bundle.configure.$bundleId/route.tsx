@@ -1157,7 +1157,7 @@ export default function ConfigureBundleFlow() {
   const [upsellWidgetTitle, setUpsellWidgetTitle] = useState<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
   const [upsellWidgetDescription, setUpsellWidgetDescription] = useState<string>(savedWidgetConfiguration?.description ?? "");
   const [upsellWidgetButtonText, setUpsellWidgetButtonText] = useState<string>(
-    savedWidgetConfiguration?.buttonText ?? textOverrides.widgetButtonText ?? "Buy with Bundle"
+    savedWidgetConfiguration?.buttonText ?? textOverrides.widgetButtonText ?? "Save More With Bundle"
   );
   const [upsellWidgetImageUrl, setUpsellWidgetImageUrl] = useState<string>(savedWidgetConfiguration?.imageUrl ?? "");
   const [upsellWidgetLanguageMode, setUpsellWidgetLanguageMode] = useState<string>(
@@ -1174,7 +1174,7 @@ export default function ConfigureBundleFlow() {
   const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
   const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
   const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
-  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Buy with Bundle");
+  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Save More With Bundle");
   const originalAutoSelectBrowsedProductRef = useRef<boolean>(savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false);
 
   // Bundle Banner upload state (Gap 2)
@@ -4554,11 +4554,11 @@ export default function ConfigureBundleFlow() {
                       </div>
                       <div className={fullPageBundleStyles.visibilityGuideGrid}>
                         {[
-                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
-                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
-                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
-                          { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png" },
-                        ].map(({ title, desc: description, img }) => (
+                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png",            guide: "Copy your bundle link, open the theme editor, add or select an image banner, set the button label and link, then save." },
+                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png",        guide: "Copy your bundle link, open Content > Menus, add the bundle as a main-menu item, then save the menu." },
+                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png",      guide: "Copy your bundle link, open the theme editor, enable the announcement bar, add offer copy and the bundle link, then save." },
+                          { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png", guide: "Add the bundle product to a collection, open the theme editor, select Featured Collection, choose that collection, lower the max product count, then save." },
+                        ].map(({ title, desc: description, img, guide }) => (
                           <div key={title} className={fullPageBundleStyles.visibilityGuideCard}>
                             <div className={fullPageBundleStyles.visibilityGuideMedia}>
                               <img src={img} alt={title} />
@@ -4567,9 +4567,10 @@ export default function ConfigureBundleFlow() {
                               <h4 className={fullPageBundleStyles.visibilityGuideTitle}>{title}</h4>
                               <p className={fullPageBundleStyles.visibilityGuideDescription}>{description}</p>
                               <div className={fullPageBundleStyles.visibilityGuideFooter}>
-                                <button type="button" className={fullPageBundleStyles.visibilityGuideAction} onClick={() => window.open("https://wolfpackapps.com", "_blank")}>
-                                  Quick Setup Guide
-                                </button>
+                                <details>
+                                  <summary className={fullPageBundleStyles.visibilityGuideAction}>Quick Setup Guide</summary>
+                                  <p className={fullPageBundleStyles.visibilityGuideDescription}>{guide}</p>
+                                </details>
                                 <span className={fullPageBundleStyles.visibilitySetupTime}>5 min setup</span>
                               </div>
                             </div>
@@ -4635,7 +4636,7 @@ export default function ConfigureBundleFlow() {
                         <div>
                           <h4 className={fullPageBundleStyles.visibilitySetupTitle}>Bundle Widget</h4>
                           <p className={fullPageBundleStyles.visibilityCardText}>
-                            Add a bundle button to specific product pages.
+                            This will display an upsell block or button on the product pages of your choice.
                           </p>
                         </div>
                         <button type="button" className={fullPageBundleStyles.visibilityPrimaryAction} onClick={() => handleSectionChange("bundle_widget")}>
@@ -5190,49 +5191,10 @@ export default function ConfigureBundleFlow() {
                         )}
                       </s-stack>
                     </s-section>
-
-                    {/* WPB-specific: Show product prices + Compare-at + Allow quantity changes */}
-                    <s-section>
-                      <s-stack direction="block" gap="small">
-                        <SettingsRow
-                          title="Show product prices"
-                          description="Display product prices on product cards."
-                        >
-                          <s-switch
-                            accessibilityLabel="Show product prices"
-                            checked={showProductPrices || undefined}
-                            onChange={(e: Event) => { setShowProductPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
-                        <SettingsRow
-                          title="Show compare-at prices"
-                          description="Show original prices next to sale prices."
-                        >
-                          <s-switch
-                            accessibilityLabel="Show compare-at prices"
-                            checked={showCompareAtPrices || undefined}
-                            onChange={(e: Event) => { setShowCompareAtPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
-                        <SettingsRow
-                          title="Allow quantity changes"
-                          description="Let customers adjust item quantities inside the bundle."
-                        >
-                          <s-switch
-                            accessibilityLabel="Allow quantity changes"
-                            checked={allowQuantityChanges || undefined}
-                            onChange={(e: Event) => { setAllowQuantityChanges((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
-                      </s-stack>
-                    </s-section>
-
-                    <s-section>
-                      <BundleStatusSection
+                    <BundleStatusSection
                         status={formState.bundleStatus}
                         onChange={formState.setBundleStatus}
                       />
-                    </s-section>
                   </s-stack>
                 </div>
               );
@@ -5295,6 +5257,7 @@ export default function ConfigureBundleFlow() {
                       <s-button
                         variant="secondary"
                         icon="globe"
+                        disabled={shopLocales.length === 0 || undefined}
                         onClick={() => openMultiLanguageModal("Bundle Widget", [
                           { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
                         ])}
