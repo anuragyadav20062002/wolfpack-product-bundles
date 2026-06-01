@@ -16,4 +16,22 @@ describe("Product Page Bundle Subscriptions setup guide", () => {
     expect(source).toContain("Use a different discount type to enable subscriptions.");
     expect(source).not.toMatch(/help\\.skailama|easybundles-help/i);
   });
+
+  it("renders the recovered plan-management surface after a valid plan lookup", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("subscriptionPlans");
+    expect(source).toContain("Subscription Plans");
+    expect(source).toContain("Plan display name");
+    expect(source).toContain("Discount pill");
+    expect(source).toContain("Make plan default");
+    expect(source).toContain("One-time purchase");
+    expect(source).toContain("Make one-time purchase default");
+    expect(source).toContain("Recurring discount");
+    expect(source).toContain("Subscription text and translations");
+    expect(source).toContain("Save Selection");
+  });
 });

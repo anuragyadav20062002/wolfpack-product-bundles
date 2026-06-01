@@ -78,6 +78,7 @@ Lock the recovered Settings and Integrations Admin contracts so route UI stays a
 | 1 | Subscriptions setup action | PPB configure route source | `How to setup?` toggles sanitized setup guidance and preserves `Get Subscription Plans` flow | Captured from live PPB Subscriptions UI and setup article evidence |
 | 2 | Subscriptions discount gating | PPB configure route source | Section warns that subscriptions cannot be enabled on Buy X, Get Y discounts and recommends a different discount type | Captured from live PPB Subscriptions evidence |
 | 3 | Setup rail reachability | PPB configure route source | Route uses the recovered setup rail list, exposes Bundle Widget and Bundle Embed children, and renders Subscriptions as an active section | Captured from live PPB setup rail evidence |
+| 4 | Post-validation plan management | PPB configure route source | A valid `Get Subscription Plans` response renders Subscription Plans, plan display name, discount pill, default-plan control, one-time purchase controls, recurring discount, translation fields, and Save Selection | Captured from deployed Subscriptions modal/list evidence |
 
 ### BundleVisibilityQuickGuideContract
 | # | Scenario | Input | Expected Output | Notes |

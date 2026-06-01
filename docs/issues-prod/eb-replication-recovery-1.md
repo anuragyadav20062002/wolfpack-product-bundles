@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 23:08
+**Last Updated:** 2026-06-01 23:24
 
 ## Overview
 Recover EB behavior from deployed runtime evidence, previous internal documentation, and live Chrome inspection so Wolfpack can replicate Settings, Integrations, and key bundle edit sections with exact UI and functionality parity.
@@ -55,6 +55,18 @@ Constraints:
 - Ran targeted Select Template source-contract tests and route ESLint before commit.
 - Smoke-tested the PPB Select Template modal on the agent store Chrome session: opened modal, entered Customize Colors & Language, moved to Text and images with Next, and returned with Back without saving.
 - Next: commit the validated Select Template tab-flow slice.
+
+### 2026-06-01 23:16 - Started PPB Subscriptions post-validation surface parity fix
+- Deployed bundle evidence includes Subscription plan list/modal behavior, default-plan controls, one-time purchase controls, recurring-discount configuration, save-selection semantics, and multilanguage text fields.
+- Current PPB Subscriptions route only validates common selling plans and shows warnings/setup guidance, so a valid plan response has no recovered management surface.
+- Scope: render the missing post-validation plan-management surface from the existing `Get Subscription Plans` response, keep the BXGY gate, and lock the visible recovered labels with source-contract coverage.
+
+### 2026-06-01 23:24 - Completed PPB Subscriptions post-validation surface parity fix
+- Updated `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx` so a valid `Get Subscription Plans` response renders the recovered Subscription Plans surface with plan display name, discount pill, default-plan control, one-time purchase controls, recurring discount, translation fields, and Save Selection.
+- Preserved the Buy X, Get Y subscriptions gate and disabled plan fetching while the gate applies.
+- Updated `tests/unit/routes/ppb-subscriptions-setup-guide.test.ts` and `test-spec/recovered-admin-surfaces.spec.md` to lock the recovered post-validation labels.
+- Validation passed: focused Subscriptions Jest tests and route/test ESLint with 0 errors.
+- Agent-store Chrome smoke passed on the PPB Subscriptions section; current bundle data is BXGY-gated, so the valid-plan list path is covered by source/handler tests rather than live data.
 
 ### 2026-06-01 19:12 - Started Settings Controls content parity fix
 - Refreshed live EB Additional Configurations evidence for Configuration, CSS & Scripts, Integrations, and Advanced tabs.
