@@ -201,20 +201,32 @@ function buildPageCustomizationData(fieldValues: Record<string, unknown>, isExpe
       emptyStateCardBorderColor: value("expert.emptyStateCard.emptyStateCardBorderColor", "#000"),
       emptyStateCardTextColor: value("expert.emptyStateCard.emptyStateCardTextColor", "#3E3E3E"),
     },
+    navigationBanner: {
+      navigationBannerStepCompletionColor: value("expert.navigationBanner.navigationBannerStepCompletionColor", "#000000"),
+      navigationCheckColor: value("expert.navigationBanner.navigationCheckColor", "#FFFFFF"),
+      navigationBannerStepTextColor: value("expert.navigationBanner.navigationBannerStepTextColor", "#000000"),
+      navigationBannerStepProgressBarEmptyColor: value("expert.navigationBanner.navigationBannerStepProgressBarEmptyColor", "#cccccc"),
+      tabsActiveBgColor: value("expert.navigationBanner.tabsActiveBgColor", "#000000"),
+      tabsActiveTextColor: value("expert.navigationBanner.tabsActiveTextColor", "#F6f6f6"),
+      tabsInactiveBgColor: value("expert.navigationBanner.tabsInactiveBgColor", "#FFFFFF"),
+      tabsInactiveTextColor: value("expert.navigationBanner.tabsInactiveTextColor", "#000000"),
+    },
     cartFooter: {
       cartFooterBgColor: value("expert.cartFooter.cartFooterBgColor", "#ffffff"),
       cartFooterTextColor: value("expert.cartFooter.cartFooterTextColor", "#000000"),
-      cartFooterFinalPriceFontColor: value("expert.cartFooter.cartFooterFinalPriceFontColor", "#000000"),
-      cartFooterDiscountTextColor: value("expert.cartFooter.cartFooterDiscountTextColor", "#000000"),
       cartFooterNextButtonColor: value("expert.cartFooter.cartFooterNextButtonColor", "#000000"),
       cartFooterNextButtonTextColor: value("expert.cartFooter.cartFooterNextButtonTextColor", "#ffffff"),
+      cartFooterBackButtonColor: value("expert.cartFooter.cartFooterBackButtonColor", "#6d7175"),
+      cartFooterBackButtonTextColor: value("expert.cartFooter.cartFooterBackButtonTextColor", "#000000"),
+      cartFooterDiscountTextColor: value("expert.cartFooter.cartFooterDiscountTextColor", "#000000"),
+      cartFooterDiscountProgressBarEmptyColor: value("expert.cartFooter.cartFooterDiscountProgressBarEmptyColor", "#C1E7C5"),
+      cartFooterDiscountProgressBarFilledColor: value("expert.cartFooter.cartFooterDiscountProgressBarFilledColor", "#15A524"),
     },
     generalSettings: {
-      bundleBgColor: value("expert.generalSettings.bundleBgColor", "transparent"),
       productPageTitleColor: value("expert.generalSettings.productPageTitleColor", "#000000"),
-      bundleUpSellButtonBg: value("expert.generalSettings.bundleUpSellButtonBg", "#000000"),
-      bundleUpsellTextColor: value("expert.generalSettings.bundleUpsellTextColor", "#ffffff"),
-      bundleUpsellFontColor: value("expert.generalSettings.bundleUpsellFontColor", "#000000"),
+      loadingBgColor: value("expert.generalSettings.loadingBgColor", "transparent"),
+      conditionToastBgColor: value("expert.generalSettings.conditionToastBgColor", "#000000"),
+      conditionToastTextColor: value("expert.generalSettings.conditionToastTextColor", "#ffffff"),
     },
     mixAndMatchConfig: {
       generalSettings: {
@@ -532,12 +544,8 @@ export default function SettingsRoute() {
               </button>
             </aside>
             <section className={styles.designContentCard}>
-              {isExpertColorControls && selectedDesignTab.title === "Brand Colors" ? (
-                <div className={styles.designFieldPanelHeader}>
-                  <h2>{activeDesignScope}</h2>
-                </div>
-              ) : null}
               <DesignFields
+                title={isExpertColorControls && selectedDesignTab.title === "Brand Colors" ? activeDesignScope : selectedDesignTab.title}
                 fields={selectedDesignFields}
                 values={designFieldValues}
                 onFieldChange={(label, value) => setDesignFieldValues((current) => ({ ...current, [label]: value }))}
@@ -822,61 +830,101 @@ function SettingsCardIcon({ icon }: { icon: string }) {
 }
 
 function DesignFields({
+  title,
   fields,
   values,
   onFieldChange,
 }: {
+  title?: string;
   fields: SettingsField[];
   values: Record<string, string>;
   onFieldChange: (label: string, value: string) => void;
 }) {
+  const defaultGroup = title ?? "";
+  const groupedFields = fields.reduce<Array<{ title: string; fields: SettingsField[] }>>((groups, field) => {
+    const groupTitle = field.group ?? defaultGroup;
+    const existing = groups.find((group) => group.title === groupTitle);
+    if (existing) {
+      existing.fields.push(field);
+    } else {
+      groups.push({ title: groupTitle, fields: [field] });
+    }
+    return groups;
+  }, []);
+  const colorPickerValue = (value: string, fallback: string) => {
+    const hex = /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+    if (/^#[0-9a-f]{6}$/i.test(hex)) {
+      return hex;
+    }
+    const shortHex = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(hex);
+    return shortHex ? `#${shortHex[1]}${shortHex[1]}${shortHex[2]}${shortHex[2]}${shortHex[3]}${shortHex[3]}` : "#000000";
+  };
+
   return (
     <div className={styles.designFieldStack}>
-      {fields.map((field) => {
-        const fieldKey = field.key ?? field.label;
-        const value = values[fieldKey] ?? field.value ?? "";
-        const colorValue = /^#[0-9a-f]{6}$/i.test(value) ? value : field.value || "#000000";
+      {groupedFields.map((group) => {
+        const guideUrl = group.fields.find((field) => field.guideUrl)?.guideUrl;
 
         return (
-          <label key={field.label} className={styles.designFieldRow}>
-            <span className={styles.designFieldCopy}>
-              <span className={styles.designFieldLabel}>{field.label}</span>
-              {field.description && <span className={styles.designFieldHelp}>{field.description}</span>}
-            </span>
-            {field.kind === "color" ? (
-              <span className={styles.designColorControl}>
-                <input
-                  type="color"
-                  value={colorValue}
-                  aria-label={`${field.label} color`}
-                  onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
-                />
-                <input
-                  value={value}
-                  aria-label={`${field.label} Hex Code`}
-                  onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
-                />
-              </span>
-            ) : field.kind === "select" ? (
-              <select
-                className={styles.designInput}
-                value={value || field.options?.[0] || ""}
-                onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
-              >
-                {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                className={styles.designInput}
-                value={value}
-                onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
-              />
-            )}
-          </label>
+          <section key={group.title} className={styles.designFieldGroup}>
+            {group.title ? (
+              <div className={styles.designFieldPanelHeader}>
+                <h2>{group.title}</h2>
+                {guideUrl ? (
+                  <a href={guideUrl} target="_blank" rel="noreferrer" className={styles.designGuideLink}>
+                    Show Color Guide
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+            {group.fields.map((field) => {
+              const fieldKey = field.key ?? field.label;
+              const value = values[fieldKey] ?? field.value ?? "";
+              const colorValue = colorPickerValue(value, field.value || "#000000");
+
+              return (
+                <label key={`${group.title}:${field.label}`} className={styles.designFieldRow}>
+                  <span className={styles.designFieldCopy}>
+                    <span className={styles.designFieldLabel}>{field.label}</span>
+                    {field.description && <span className={styles.designFieldHelp}>{field.description}</span>}
+                  </span>
+                  {field.kind === "color" ? (
+                    <span className={styles.designColorControl}>
+                      <input
+                        type="color"
+                        value={colorValue}
+                        aria-label={`${field.label} color`}
+                        onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
+                      />
+                      <input
+                        value={value}
+                        aria-label={`${field.label} Hex Code`}
+                        onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
+                      />
+                    </span>
+                  ) : field.kind === "select" ? (
+                    <select
+                      className={styles.designInput}
+                      value={value || field.options?.[0] || ""}
+                      onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
+                    >
+                      {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className={styles.designInput}
+                      value={value}
+                      onChange={(event) => onFieldChange(fieldKey, event.currentTarget.value)}
+                    />
+                  )}
+                </label>
+              );
+            })}
+          </section>
         );
       })}
     </div>

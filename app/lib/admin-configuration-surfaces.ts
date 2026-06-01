@@ -15,6 +15,7 @@ export type SettingsField = {
   kind?: "color" | "text" | "number" | "select" | "radio" | "toggle" | "css" | "script" | "image" | "file" | "button";
   note?: string;
   description?: string;
+  guideUrl?: string;
   options?: string[];
   state?: string;
   group?: string;
@@ -103,7 +104,7 @@ export const SETTINGS_CARDS: SettingsCard[] = [
 export const SETTINGS_PANELS: Record<SettingsCardId, SettingsPanel> = {
   design: {
     title: "Design control panel",
-    description: "Recovered settings from the deployed design configuration surface.",
+    description: "Design settings for bundle colors, typography, corners, and media controls.",
     bullets: [
       "Brand colors control primary, button text, primary text, secondary background, and product card background colors.",
       "Typography is split between primary, secondary, and body text tokens with size and weight controls.",
@@ -113,7 +114,7 @@ export const SETTINGS_PANELS: Record<SettingsCardId, SettingsPanel> = {
   },
   language: {
     title: "Language configurations",
-    description: "Recovered multilingual and text-template configuration surface.",
+    description: "Multilingual and text-template configuration surface.",
     bullets: [
       "Multilingual configuration is enabled and defaults to English.",
       "Cart and checkout shared labels include bundle contains, original price, and cart discount display labels.",
@@ -123,7 +124,7 @@ export const SETTINGS_PANELS: Record<SettingsCardId, SettingsPanel> = {
   },
   controls: {
     title: "Additional configurations",
-    description: "Recovered layout-specific behavior controls and integration callback settings.",
+    description: "Layout-specific behavior controls and integration callback settings.",
     bullets: [
       "Landing Page Layout and Product Page Layout expose different configuration sets.",
       "Controls are grouped into Configuration, CSS & Scripts, Integrations, and Advanced tabs.",
@@ -188,7 +189,7 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
   },
   {
     title: "Typography",
-    description: "Recovered text token defaults for primary, secondary, and body labels.",
+    description: "Text token defaults for primary, secondary, and body labels.",
     fields: [
       { label: "Primary Font Size", value: "16", kind: "number" },
       { label: "Primary Font Weight", value: "Bold", kind: "select" },
@@ -200,7 +201,7 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
   },
   {
     title: "Corners",
-    description: "Recovered radius controls for bundle buttons and product card/cart shells.",
+    description: "Radius controls for bundle buttons and product card/cart shells.",
     fields: [
       { label: "Bundle Buttons Base", value: "5px", kind: "number" },
       { label: "Product Card & Cart Base", value: "10px", kind: "number" },
@@ -208,7 +209,7 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
   },
   {
     title: "Images & GIFs",
-    description: "Recovered image-fit and loading-media controls.",
+    description: "Image-fit and loading-media controls.",
     fields: [
       { label: "Image Fit", value: "Cover", kind: "select" },
       { label: "Bundle Loading GIF", value: "Loading_Spinner.gif", kind: "text" },
@@ -219,14 +220,21 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
 
 export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
   General: [
-    { key: "expert.generalSettings.bundleBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of the bundle page" },
-    { key: "expert.generalSettings.productPageTitleColor", label: "Product Page Title Color", value: "#000000", kind: "color", description: "Text color for product page titles" },
-    { key: "expert.generalSettings.bundleUpSellButtonBg", label: "Bundle Upsell Button Color", value: "#000000", kind: "color", description: "Color for bundle upsell buttons" },
-    { key: "expert.generalSettings.bundleUpsellTextColor", label: "Bundle Upsell Button Text Color", value: "#ffffff", kind: "color", description: "Text color for bundle upsell buttons" },
-    { key: "expert.generalSettings.bundleUpsellFontColor", label: "Bundle Upsell Text Color", value: "#000000", kind: "color", description: "Text color for bundle upsell content" },
+    { key: "expert.navigationBanner.navigationBannerStepCompletionColor", label: "Completed step color", value: "#000000", kind: "color", description: "Background color for completed step indicators", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/BundleDcpPreview.webp" },
+    { key: "expert.navigationBanner.navigationCheckColor", label: "Check Mark Color", value: "#FFFFFF", kind: "color", description: "Check mark icons displayed on completed bundle steps" },
+    { key: "expert.navigationBanner.navigationBannerStepTextColor", label: "Step Text Color", value: "#000000", kind: "color", description: "Text color for step names and navigation labels" },
+    { key: "expert.generalSettings.productPageTitleColor", label: "Product Page Title Color", value: "#000000", kind: "color", description: "Title text color on the bundle builder page" },
+    { key: "expert.navigationBanner.navigationBannerStepProgressBarEmptyColor", label: "Step Progress Bar Empty Color", value: "#cccccc", kind: "color", description: "Background color for incomplete sections of progress bars" },
+    { key: "expert.generalSettings.loadingBgColor", label: "Loading Screen Background Color", value: "transparent", kind: "color", description: "Background color bundle loading screen" },
+    { key: "expert.generalSettings.conditionToastBgColor", label: "Condition Toast Background Color", value: "#000000", kind: "color", description: "Background color for condition toast" },
+    { key: "expert.generalSettings.conditionToastTextColor", label: "Condition Toast Text Color", value: "#ffffff", kind: "color", description: "Text color for condition toast" },
+    { key: "expert.navigationBanner.tabsActiveBgColor", label: "Active Tab Background Color", value: "#000000", kind: "color", description: "Background color for the currently selected category tab", group: "Categories", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/CategoriesDcpPreview.webp" },
+    { key: "expert.navigationBanner.tabsActiveTextColor", label: "Active Tab Text Color", value: "#F6f6f6", kind: "color", description: "Text color for the currently selected category tab", group: "Categories" },
+    { key: "expert.navigationBanner.tabsInactiveBgColor", label: "Inactive Tab Background Color", value: "#FFFFFF", kind: "color", description: "Background color for unselected category tabs", group: "Categories" },
+    { key: "expert.navigationBanner.tabsInactiveTextColor", label: "Inactive Tab Text Color", value: "#000000", kind: "color", description: "Text color for unselected category tabs", group: "Categories" },
   ],
   "Product Card": [
-    { key: "expert.productCard.productCardBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of individual product cards" },
+    { key: "expert.productCard.productCardBgColor", label: "Background Color", value: "#ffffff", kind: "color", description: "Background color of individual product cards", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/ProductCardDcpPreview.webp" },
     { key: "expert.productCard.productCardTextColor", label: "Product Title Text Color", value: "#252525", kind: "color", description: "Text color for product names displayed on cards" },
     { key: "expert.productCard.productCardButtonColor", label: "Add Product Button Color", value: "#000000", kind: "color", description: "Color for the button on the product card" },
     { key: "expert.productCard.productCardButtonTextColor", label: "Add Product Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the button on the product card" },
@@ -234,17 +242,20 @@ export const EXPERT_COLOR_CONTROLS: Record<string, SettingsField[]> = {
     { key: "expert.emptyStateCard.emptyStateCardTextColor", label: "Empty State Text Color", value: "#3E3E3E", kind: "color", description: "Text color for placeholder messages in empty product slots" },
   ],
   "Bundle Cart": [
-    { key: "expert.cartFooter.cartFooterBgColor", label: "Cart Background Color", value: "#ffffff", kind: "color", description: "Background color of the bundle cart area" },
-    { key: "expert.cartFooter.cartFooterTextColor", label: "Cart Title Text Color", value: "#000000", kind: "color", description: "Text color for bundle cart titles" },
-    { key: "expert.cartFooter.cartFooterFinalPriceFontColor", label: "Cart Price Text Color", value: "#000000", kind: "color", description: "Text color for cart prices and totals" },
-    { key: "expert.cartFooter.cartFooterDiscountTextColor", label: "Discount Text Color", value: "#000000", kind: "color", description: "Text color for cart discount messaging" },
-    { key: "expert.cartFooter.cartFooterNextButtonColor", label: "Checkout Button Color", value: "#000000", kind: "color", description: "Color for the cart checkout button" },
-    { key: "expert.cartFooter.cartFooterNextButtonTextColor", label: "Checkout Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the cart checkout button" },
+    { key: "expert.cartFooter.cartFooterBgColor", label: "Cart Background Color", value: "#ffffff", kind: "color", description: "Background color for bundle cart", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/BundleCartDcpPreview.webp" },
+    { key: "expert.cartFooter.cartFooterTextColor", label: "Cart Text Color", value: "#000000", kind: "color", description: "Text color for cart content, totals, and labels" },
+    { key: "expert.cartFooter.cartFooterNextButtonColor", label: "Next Button Color", value: "#000000", kind: "color", description: "Background color for the next step button" },
+    { key: "expert.cartFooter.cartFooterNextButtonTextColor", label: "Next Button Text Color", value: "#ffffff", kind: "color", description: "Text color for the next step button" },
+    { key: "expert.cartFooter.cartFooterBackButtonColor", label: "Back Button Color", value: "#6d7175", kind: "color", description: "Background color for the back step button" },
+    { key: "expert.cartFooter.cartFooterBackButtonTextColor", label: "Back Button Text Color", value: "#000000", kind: "color", description: "Text color for the back step button" },
+    { key: "expert.cartFooter.cartFooterDiscountTextColor", label: "Discount Text Color", value: "#000000", kind: "color", description: "Text color for discount messages" },
+    { key: "expert.cartFooter.cartFooterDiscountProgressBarEmptyColor", label: "Discount Progress Bar Empty Color", value: "#C1E7C5", kind: "color", description: "Fill color for empty part of discount progress bar" },
+    { key: "expert.cartFooter.cartFooterDiscountProgressBarFilledColor", label: "Discount Progress Bar Filled Color", value: "#15A524", kind: "color", description: "Fill color for completed part of discount progress bar" },
   ],
   Upsell: [
-    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellFontColor", label: "Upsell Title Text Color", value: "#000000", kind: "color", description: "Text color for upsell titles" },
-    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", label: "Upsell Button Color", value: "#000000", kind: "color", description: "Color for upsell action buttons" },
-    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonTextColor", label: "Upsell Button Text Color", value: "#ffffff", kind: "color", description: "Text color for upsell action buttons" },
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", label: "Upsell Button Color", value: "#000000", kind: "color", description: "Background color for upsell buttons", guideUrl: "https://d3ks0ngva6go34.cloudfront.net/public/UpsellDcpPreview.webp" },
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonTextColor", label: "Upsell Button Text Color", value: "#ffffff", kind: "color", description: "Text color displayed on upsell buttons" },
+    { key: "expert.mixAndMatchConfig.generalSettings.bundleUpsellFontColor", label: "Upsell Widget Body Text Color", value: "#000000", kind: "color", description: "Text color displayed on upsell widget" },
   ],
 };
 
@@ -467,7 +478,7 @@ export const CONTROL_LAYOUTS: ControlsLayout[] = [
   {
     id: "landing-page",
     label: "Landing Page Layout",
-    description: "Full-page bundle controls recovered from the deployed Additional Configurations surface.",
+    description: "Full-page bundle controls for the Additional Configurations surface.",
     tabs: [
       {
         title: "Configuration",
@@ -549,7 +560,7 @@ export const CONTROL_LAYOUTS: ControlsLayout[] = [
       },
       {
         title: "Advanced",
-        description: "Advanced display and runtime behavior settings recovered from deployed controls.",
+        description: "Advanced display and runtime behavior settings for deployed bundle controls.",
         contentTitle: "Video Player Page Settings",
         contentDescription: "Customize the video player page of the bundle video message",
         fields: [
@@ -570,7 +581,7 @@ export const CONTROL_LAYOUTS: ControlsLayout[] = [
   {
     id: "product-page",
     label: "Product Page Layout",
-    description: "Product-page bundle controls recovered from the deployed Additional Configurations surface.",
+    description: "Product-page bundle controls for the Additional Configurations surface.",
     tabs: [
       {
         title: "Configuration",

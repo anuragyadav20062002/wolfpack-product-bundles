@@ -252,3 +252,27 @@ Recover and replicate the full EB Settings page flow from live Chrome evidence a
 - Reloaded the product storefront page to confirm the widget page still loads after the Admin save path.
 - Scoped ESLint passed with zero errors and existing warnings only.
 - Next: rebuild graph metadata, stage only this slice, and commit.
+
+### 2026-06-01 19:32 - Remove remaining recovery wording
+- Current source still had merchant-facing/internal Settings descriptions containing `Recovered`.
+- Next: replace those recovery-era descriptions with neutral Settings copy before continuing the Design Control Panel feedback loop.
+
+### 2026-06-01 19:34 - Expert scope field gap
+- Compared EB Expert Color Controls scopes in Chrome.
+- Found local expert panels still missing EB `Show Color Guide` links and several exact EB field groups.
+- EB General includes a `General` guide, eight general fields, then a `Categories` guide with four category-tab fields.
+- EB Product Card, Bundle Cart, and Upsell each show a `Show Color Guide` link and exact scope-specific field labels.
+- Next: update expert field definitions and Design field rendering to match these EB panels.
+
+### 2026-06-01 19:43 - Expert DCP panel parity patch
+- Updated local Expert Color Controls definitions to match EB scope labels, defaults, descriptions, and `Show Color Guide` links for General, Categories, Product Card, Bundle Cart, and Upsell.
+- Updated Design field rendering to show scoped headers and guide links inside the panel rather than a separate custom header.
+- Updated saved `pageCustomization` mapping so expert General category/progress/cart/upsell values persist under EB-aligned sections.
+- Next: run focused lint, smoke-test the local Settings DCP scopes in Chrome, rebuild graph metadata, and commit this slice.
+
+### 2026-06-01 19:49 - Expert DCP smoke and save check
+- Scoped ESLint passed for `app/lib/admin-configuration-surfaces.ts` and `app/routes/app/app.settings.tsx` with zero errors and existing warnings only.
+- Chrome smoke confirmed local Expert Color Controls render EB-matched General, Categories, Product Card, Bundle Cart, and Upsell panels with `Show Color Guide` links.
+- Saved an expert Upsell field through the Polaris contextual save bar, confirmed `Settings saved successfully`, restored the EB default value, and saved again.
+- Reloaded the local product storefront page and confirmed the bundle runtime still loads after the Admin DCP save.
+- Next: rebuild graph metadata and commit this slice.
