@@ -1,8 +1,8 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useState } from "react";
 import { requireAdminSession } from "../../lib/auth-guards.server";
-import { INTEGRATION_CATEGORIES } from "../../lib/recovered-admin-surfaces";
-import styles from "../../styles/routes/recovered-admin-surfaces.module.css";
+import { INTEGRATION_CATEGORIES } from "../../lib/admin-configuration-surfaces";
+import styles from "../../styles/routes/admin-configuration-surfaces.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await requireAdminSession(request);

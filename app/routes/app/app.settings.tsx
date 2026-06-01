@@ -1,92 +1,558 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useNavigate } from "@remix-run/react";
-import { useState } from "react";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
+import { useEffect, useState } from "react";
+import { prisma } from "../../db.server";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import {
   CONTROL_LAYOUTS,
+  DESIGN_CONFIGURATION,
   LANGUAGE_CONFIGURATION,
   SETTINGS_CARDS,
   SUPPORTED_LANGUAGE_LABELS,
   type RecoveredField,
   type SettingsCardId,
-} from "../../lib/recovered-admin-surfaces";
-import styles from "../../styles/routes/recovered-admin-surfaces.module.css";
+} from "../../lib/admin-configuration-surfaces";
+import styles from "../../styles/routes/admin-configuration-surfaces.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await requireAdminSession(request);
-  return json(null);
+  const { session } = await requireAdminSession(request);
+  const settings = await prisma.designSettings.findUnique({
+    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
+  });
+  const previewBundles = await prisma.bundle.findMany({
+    where: {
+      shopId: session.shop,
+      OR: [
+        { shopifyProductHandle: { not: null } },
+        { shopifyPageHandle: { not: null } },
+      ],
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 12,
+    select: {
+      id: true,
+      name: true,
+      bundleType: true,
+      shopifyProductHandle: true,
+      shopifyPageHandle: true,
+    },
+  });
+  const generalSettings = settings?.generalSettings && typeof settings.generalSettings === "object"
+    ? settings.generalSettings as Record<string, unknown>
+    : {};
+  return json({
+    settingsPage: generalSettings.settingsPage && typeof generalSettings.settingsPage === "object"
+      ? generalSettings.settingsPage as Record<string, unknown>
+      : null,
+    previewBundles: previewBundles.map((bundle) => ({
+      id: bundle.id,
+      name: bundle.name,
+      type: bundle.bundleType === "full_page" ? "Landing Page" : "Product Page",
+      viewUrl: bundle.bundleType === "full_page"
+        ? bundle.shopifyPageHandle
+          ? `https://${session.shop}/pages/${bundle.shopifyPageHandle}`
+          : null
+        : bundle.shopifyProductHandle
+          ? `https://${session.shop}/products/${bundle.shopifyProductHandle}`
+          : null,
+    })),
+  });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const { session } = await requireAdminSession(request);
+  const formData = await request.formData();
+  const intent = String(formData.get("intent") ?? "");
+  const payloadValue = String(formData.get("payload") ?? "{}");
+  const payload = JSON.parse(payloadValue) as Record<string, unknown>;
+
+  if (
+    intent !== "saveSettingsDesign"
+    && intent !== "saveSettingsLanguage"
+    && intent !== "saveSettingsControls"
+  ) {
+    return json({ success: false, message: "Unsupported Settings action" }, { status: 400 });
+  }
+
+  const current = await prisma.designSettings.findUnique({
+    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
+  });
+  const currentGeneralSettings = current?.generalSettings && typeof current.generalSettings === "object"
+    ? current.generalSettings as Record<string, unknown>
+    : {};
+  const currentSettingsPage = currentGeneralSettings.settingsPage && typeof currentGeneralSettings.settingsPage === "object"
+    ? currentGeneralSettings.settingsPage as Record<string, unknown>
+    : {};
+  const nextSettingsPage = {
+    ...currentSettingsPage,
+    ...(intent === "saveSettingsDesign" ? { design: payload } : {}),
+    ...(intent === "saveSettingsLanguage" ? { language: payload } : {}),
+    ...(intent === "saveSettingsControls" ? { controls: payload } : {}),
+  };
+  const runtimeSettings = {
+    ...(intent === "saveSettingsDesign" ? buildDesignRuntimeData(payload) : {}),
+    ...(intent === "saveSettingsLanguage" ? buildLanguageRuntimeData(payload) : {}),
+    ...(intent === "saveSettingsControls" ? buildControlsRuntimeData(payload) : {}),
+  };
+  const nextGeneralSettings = {
+    ...currentGeneralSettings,
+    settingsPage: nextSettingsPage,
+  };
+  const updateData = {
+    ...runtimeSettings,
+    generalSettings: nextGeneralSettings,
+  };
+
+  await prisma.designSettings.upsert({
+    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
+    create: {
+      shopId: session.shop,
+      bundleType: "product_page",
+      ...updateData,
+    },
+    update: updateData,
+  });
+
+  return json({ success: true });
+}
+
+function getInitialLanguageFieldValues() {
+  return Object.fromEntries(
+    [
+      ...LANGUAGE_CONFIGURATION.sharedCartFields,
+      ...LANGUAGE_CONFIGURATION.productCardFields,
+      ...Object.values(LANGUAGE_CONFIGURATION.templateFields).flatMap((groups) =>
+        groups.flatMap((group) => group.fields),
+      ),
+    ].map((field) => [
+      field.label,
+      field.value ?? "",
+    ]),
+  ) as Record<string, string>;
+}
+
+function getInitialControlFieldValues() {
+  return Object.fromEntries(
+    CONTROL_LAYOUTS.flatMap((layout) => layout.tabs.flatMap((tab) => tab.fields.map((field) => [
+      field.label,
+      field.value ?? "",
+    ]))),
+  ) as Record<string, string>;
+}
+
+function getInitialDesignFieldValues() {
+  return Object.fromEntries(
+    DESIGN_CONFIGURATION.flatMap((tab) => tab.fields.map((field) => [
+      field.label,
+      field.value ?? "",
+    ])),
+  ) as Record<string, string>;
+}
+
+function weightToNumber(value: string) {
+  const cleaned = value.trim();
+  if (!cleaned) {
+    return undefined;
+  }
+
+  if (cleaned.toLowerCase() === "bold") {
+    return 700;
+  }
+  if (cleaned.toLowerCase() === "regular") {
+    return 400;
+  }
+
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function numberFromSettings(value: string) {
+  const cleaned = String(value).replace(/px$/i, "").trim();
+  if (!cleaned) {
+    return undefined;
+  }
+
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function buildDesignRuntimeData(payload: Record<string, unknown>) {
+  const value = (label: string) => String(payload[label] ?? "");
+  return {
+    globalColorsSettings: {
+      globalPrimaryButtonColor: value("Primary Color") || "#000000",
+      globalButtonTextColor: value("Button Text Color") || "#ffffff",
+      globalPrimaryTextColor: value("Primary Text Color") || "#000000",
+      globalSecondaryTextColor: value("Secondary Color") || "#eeeeee",
+    },
+    productCardBgColor: value("Product Background Color") || "#ffffff",
+    productCardFontSize: numberFromSettings(value("Primary Font Size")),
+    productCardFontWeight: weightToNumber(value("Primary Font Weight")),
+    productFinalPriceFontSize: numberFromSettings(value("Secondary Font Size")),
+    productFinalPriceFontWeight: weightToNumber(value("Secondary Font Weight")),
+    buttonBorderRadius: numberFromSettings(value("Bundle Buttons Base")),
+    productCardBorderRadius: numberFromSettings(value("Product Card & Cart Base")),
+    productCardImageFit: value("Image Fit").toLowerCase() || "cover",
+  };
+}
+
+function buildControlsRuntimeData(payload: Record<string, unknown>) {
+  const value = (label: string) => String(payload[label] ?? "");
+  const checked = (label: string) => value(label) === "Checked";
+  const customCss = [
+    value("Custom CSS for Mix And Match Bundles"),
+    value("Custom CSS for bundle builder pages"),
+    value("Custom CSS for bundle dummy product page"),
+    value("Custom CSS for theme pages"),
+  ].filter(Boolean).join("\n\n") || null;
+  const discountFormatValue = value("Discount format");
+  const discountFormat = discountFormatValue.includes("Amount only")
+    ? "amount_only"
+    : discountFormatValue.includes("Percentage only")
+      ? "percentage_only"
+      : "amount_percentage";
+
+  return {
+    customCss,
+    bundleCartLineMessaging: {
+      isEnabled: checked("Cart Messaging"),
+      showBundleContains: checked("Bundle Items"),
+      showOriginalPrice: checked("Original Bundle Price"),
+      discountDisplay: {
+        isEnabled: checked("Discount Display"),
+        format: discountFormat,
+      },
+    },
+  };
+}
+
+function buildLanguageRuntimeData(payload: Record<string, unknown>) {
+  const languageFieldValues = payload.languageFieldValues && typeof payload.languageFieldValues === "object"
+    ? payload.languageFieldValues as Record<string, unknown>
+    : {};
+  const addToBundleText = String(languageFieldValues["Add Product to Bundle Button"] ?? "");
+  return {
+    buttonAddToCartText: addToBundleText || "Add To Box",
+  };
 }
 
 export default function SettingsRoute() {
-  const navigate = useNavigate();
+  const { settingsPage, previewBundles } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
+  const submit = useSubmit();
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [settingsHelpArticle, setSettingsHelpArticle] = useState<"inventory" | null>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const persistedLanguageState = settingsPage?.language && typeof settingsPage.language === "object"
+    ? settingsPage.language as {
+        isMultilanguageEnabled?: boolean;
+        selectedLanguage?: string;
+        languageFieldValues?: Record<string, string>;
+      }
+    : null;
+  const persistedControlState = settingsPage?.controls && typeof settingsPage.controls === "object"
+    ? settingsPage.controls as Record<string, string>
+    : null;
+  const persistedDesignState = settingsPage?.design && typeof settingsPage.design === "object"
+    ? settingsPage.design as Record<string, string>
+    : null;
   const [activeCard, setActiveCard] = useState<SettingsCardId>("design");
-  const [settingsView, setSettingsView] = useState<"landing" | "language" | "controls">("landing");
+  const [settingsView, setSettingsView] = useState<"landing" | "design" | "language" | "controls">("landing");
+  const [isMultilanguageEnabled, setIsMultilanguageEnabled] = useState(persistedLanguageState?.isMultilanguageEnabled ?? LANGUAGE_CONFIGURATION.enabled);
+  const [selectedLanguage, setSelectedLanguage] = useState(persistedLanguageState?.selectedLanguage ?? LANGUAGE_CONFIGURATION.selectedLanguage);
+  const [languageFieldValues, setLanguageFieldValues] = useState<Record<string, string>>({
+    ...getInitialLanguageFieldValues(),
+    ...(persistedLanguageState?.languageFieldValues ?? {}),
+  });
+  const [activeLanguagePanel, setActiveLanguagePanel] = useState<"cartCheckout" | string>("Product Card");
+  const [savedLanguageState, setSavedLanguageState] = useState(() => ({
+    isMultilanguageEnabled: persistedLanguageState?.isMultilanguageEnabled ?? LANGUAGE_CONFIGURATION.enabled,
+    selectedLanguage: persistedLanguageState?.selectedLanguage ?? LANGUAGE_CONFIGURATION.selectedLanguage,
+    languageFieldValues: {
+      ...getInitialLanguageFieldValues(),
+      ...(persistedLanguageState?.languageFieldValues ?? {}),
+    },
+  }));
+  const [controlFieldValues, setControlFieldValues] = useState<Record<string, string>>({
+    ...getInitialControlFieldValues(),
+    ...(persistedControlState ?? {}),
+  });
+  const [savedControlFieldValues, setSavedControlFieldValues] = useState<Record<string, string>>({
+    ...getInitialControlFieldValues(),
+    ...(persistedControlState ?? {}),
+  });
+  const [activeDesignTab, setActiveDesignTab] = useState(DESIGN_CONFIGURATION[0].title);
+  const [designFieldValues, setDesignFieldValues] = useState<Record<string, string>>({
+    ...getInitialDesignFieldValues(),
+    ...(persistedDesignState ?? {}),
+  });
+  const [savedDesignFieldValues, setSavedDesignFieldValues] = useState<Record<string, string>>({
+    ...getInitialDesignFieldValues(),
+    ...(persistedDesignState ?? {}),
+  });
   const [activeControlLayout, setActiveControlLayout] = useState(CONTROL_LAYOUTS[0].label);
   const [activeControlTab, setActiveControlTab] = useState(CONTROL_LAYOUTS[0].tabs[0].title);
+  const [isExpertColorControls, setIsExpertColorControls] = useState(false);
+  const [activeDesignScope, setActiveDesignScope] = useState("General");
+  const selectedDesignTab = DESIGN_CONFIGURATION.find((tab) => tab.title === activeDesignTab) ?? DESIGN_CONFIGURATION[0];
   const selectedControlLayout = CONTROL_LAYOUTS.find((layout) => layout.label === activeControlLayout) ?? CONTROL_LAYOUTS[0];
   const selectedControlTab = selectedControlLayout.tabs.find((tab) => tab.title === activeControlTab) ?? selectedControlLayout.tabs[0];
+  const currentLanguageState = { isMultilanguageEnabled, selectedLanguage, languageFieldValues };
+  const isLanguageDirty = JSON.stringify(currentLanguageState) !== JSON.stringify(savedLanguageState);
+  const isControlsDirty = JSON.stringify(controlFieldValues) !== JSON.stringify(savedControlFieldValues);
+  const isDesignDirty = JSON.stringify(designFieldValues) !== JSON.stringify(savedDesignFieldValues);
+
+  useEffect(() => {
+    if (!actionData) {
+      return;
+    }
+    setSaveMessage(actionData.success ? "Settings saved successfully" : actionData.message || "Something went wrong");
+  }, [actionData]);
+
+  if (settingsView === "design") {
+    const resetSelectedDesignTab = () => {
+      setDesignFieldValues((current) => ({
+        ...current,
+        ...Object.fromEntries(selectedDesignTab.fields.map((field) => [field.label, field.value ?? ""])),
+      }));
+    };
+
+    return (
+      <>
+        <ui-title-bar title="Design Control Panel" />
+        <main className={styles.page}>
+          <header className={styles.hero}>
+            <button type="button" className={styles.settingsBackButton} onClick={() => setSettingsView("landing")}>
+              <s-icon type="arrow-left" size="small"></s-icon>
+              Back
+            </button>
+            <div>
+              <h1 className={styles.title}>Design Control Panel</h1>
+            </div>
+            <button type="button" className={styles.settingsPreviewButton} onClick={() => setIsPreviewModalOpen(true)}>
+              <s-icon type="view" size="small"></s-icon>
+              Preview Bundle
+            </button>
+          </header>
+
+          <section className={styles.designLayout} aria-label="Design Control Panel">
+            <aside className={styles.designSidebar}>
+              <section className={styles.designSideCard}>
+                <h2>Bundle Design</h2>
+                <p>Customize your bundle in a few clicks</p>
+                <div className={styles.designNavList} role="tablist" aria-label="Design sections">
+                  {DESIGN_CONFIGURATION.map((tab) => (
+                    <button
+                      key={tab.title}
+                      type="button"
+                      className={selectedDesignTab.title === tab.title ? styles.designNavActive : styles.designNavButton}
+                      onClick={() => setActiveDesignTab(tab.title)}
+                    >
+                      <span className={styles.designNavIcon}>{tab.title.slice(0, 1)}</span>
+                      {tab.title}
+                    </button>
+                  ))}
+                </div>
+              </section>
+              {selectedDesignTab.title === "Brand Colors" && (
+                <section className={styles.designSideCard}>
+                  <label className={styles.designSwitchRow}>
+                    <span>
+                      <span className={styles.designSideTitle}>Expert Color Controls</span>
+                      <span className={styles.designSideDescription}>Change colors of individual elements of the bundle</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={isExpertColorControls}
+                      onChange={(event) => setIsExpertColorControls(event.currentTarget.checked)}
+                    />
+                  </label>
+                  <div className={styles.designNavList} role="tablist" aria-label="Color control scopes">
+                    {["General", "Product Card", "Bundle Cart", "Upsell"].map((scope) => (
+                      <button
+                        key={scope}
+                        type="button"
+                        className={activeDesignScope === scope ? styles.designScopeActive : styles.designScopeButton}
+                        onClick={() => setActiveDesignScope(scope)}
+                      >
+                        <span className={styles.designNavIcon}>{scope.slice(0, 1)}</span>
+                        {scope}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+              <button type="button" className={styles.designResetButton} onClick={resetSelectedDesignTab}>
+                Reset to default
+              </button>
+            </aside>
+            <section className={styles.designContentCard}>
+              <DesignFields
+                fields={selectedDesignTab.fields}
+                values={designFieldValues}
+                onFieldChange={(label, value) => setDesignFieldValues((current) => ({ ...current, [label]: value }))}
+              />
+            </section>
+          </section>
+          {isDesignDirty && (
+            <SettingsSaveFooter
+              onDiscard={() => setDesignFieldValues(savedDesignFieldValues)}
+              onSave={() => {
+                submit({
+                  intent: "saveSettingsDesign",
+                  payload: JSON.stringify(designFieldValues),
+                }, { method: "post" });
+                setSavedDesignFieldValues(designFieldValues);
+              }}
+            />
+          )}
+          <BundlePreviewModal
+            isOpen={isPreviewModalOpen}
+            bundles={previewBundles}
+            onClose={() => setIsPreviewModalOpen(false)}
+          />
+          <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
+        </main>
+      </>
+    );
+  }
 
   if (settingsView === "language") {
+    const languageGroups = activeLanguagePanel === "cartCheckout"
+      ? [{
+        title: "Cart & Checkout",
+        description: "Shared cart and checkout labels",
+        fields: LANGUAGE_CONFIGURATION.sharedCartFields,
+      }]
+      : LANGUAGE_CONFIGURATION.templateFields[activeLanguagePanel] ?? [];
+
     return (
       <>
         <ui-title-bar title="Language Configurations" />
         <main className={styles.page}>
-          <header className={styles.hero}>
-            <button type="button" className={styles.buttonLike} onClick={() => setSettingsView("landing")}>
-              Settings
+          <header className={styles.languageHero}>
+            <button
+              type="button"
+              className={styles.languageBackIcon}
+              aria-label="Settings"
+              onClick={() => setSettingsView("landing")}
+            >
+              <s-icon type="arrow-left" size="small"></s-icon>
             </button>
-            <div>
-              <h1 className={styles.title}>Language Configurations</h1>
-            </div>
+            <h1 className={styles.title}>Language Configurations</h1>
           </header>
 
-          <section className={styles.panel} aria-label="Language Configurations">
-            <div className={styles.detailSection}>
-              <DetailGroup
-                title="Enable Multilanguage"
-                fields={[
-                  { label: "Select the language mode for your app", value: LANGUAGE_CONFIGURATION.enabled ? "Enabled" : "Disabled", kind: "toggle" },
-                  { label: "Add preferred languages", value: LANGUAGE_CONFIGURATION.selectedLanguage, kind: "select" },
-                ]}
-              />
-              <div className={styles.languageRail} aria-label="Supported languages">
-                {SUPPORTED_LANGUAGE_LABELS.map((language) => (
-                  <span key={language} className={styles.languageChip}>
-                    {language}
-                  </span>
+          <section className={styles.languageTopCard} aria-label="Language mode">
+            <div className={styles.languageTopCopy}>
+              <label className={styles.languageSwitchRow}>
+                <span>
+                  <span className={styles.languageTopTitle}>Enable Multilanguage</span>
+                  <span className={styles.languageTopHelp}>Select the language mode for your app</span>
+                </span>
+                <input
+                  className={styles.languageSwitch}
+                  type="checkbox"
+                  checked={isMultilanguageEnabled}
+                  onChange={(event) => setIsMultilanguageEnabled(event.currentTarget.checked)}
+                />
+              </label>
+            </div>
+            <label className={styles.languageSelectStack}>
+              <span>Add preferred languages</span>
+              <span className={styles.ebSelectWrap}>
+                <select
+                  className={styles.ebSelect}
+                  value={selectedLanguage}
+                  onChange={(event) => setSelectedLanguage(event.currentTarget.value)}
+                >
+                  {SUPPORTED_LANGUAGE_LABELS.map((language) => (
+                    <option key={language} value={language}>
+                      {language}
+                    </option>
+                  ))}
+                </select>
+                <s-icon type="caret-down" size="small"></s-icon>
+              </span>
+            </label>
+          </section>
+
+          <section className={styles.languageEditorCard} aria-label="Language Configurations">
+            <button type="button" className={styles.languageSelectedChip}>
+              {selectedLanguage}
+            </button>
+            <div className={styles.languageContentLayout}>
+              <aside className={styles.languageSidebarCard}>
+                <section className={styles.languageSidebarSection}>
+                  <h2 className={styles.languageSidebarTitle}>Shared Components</h2>
+                  <p className={styles.languageSidebarDescription}>Customize language for components across all templates</p>
+                  <button
+                    type="button"
+                    className={activeLanguagePanel === "cartCheckout" ? styles.languageSharedButtonActive : styles.languageSharedButton}
+                    onClick={() => setActiveLanguagePanel("cartCheckout")}
+                  >
+                    Cart &amp; Checkout
+                  </button>
+                </section>
+                <section className={styles.languageSidebarSection}>
+                  <h2 className={styles.languageSidebarTitle}>Template Language</h2>
+                  <p className={styles.languageSidebarDescription}>Edit language for your landing page or product page template</p>
+                  <button type="button" className={styles.languageLayoutButton}>
+                    Landing Page Layout
+                  </button>
+                  <div className={styles.languageNavList} aria-label="Template Language">
+                    {LANGUAGE_CONFIGURATION.templateSections.map((section) => (
+                      <button
+                        key={section}
+                        type="button"
+                        className={activeLanguagePanel === section ? styles.languageNavActive : styles.languageNavButton}
+                        onClick={() => setActiveLanguagePanel(section)}
+                      >
+                        <span className={styles.languageNavIcon} aria-hidden="true" />
+                        {section}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </aside>
+              <section className={styles.languageFieldPanel}>
+                {languageGroups.map((group) => (
+                  <ControlsFormGroup
+                    key={`${activeLanguagePanel}-${group.title}`}
+                    title={group.title}
+                    description={group.description}
+                    fields={group.fields}
+                    values={languageFieldValues}
+                    onFieldChange={(label, value) => setLanguageFieldValues((current) => ({
+                      ...current,
+                      [label]: value,
+                    }))}
+                  />
                 ))}
-              </div>
-              <DetailGroup
-                title="Shared Components"
-                description="Customize language for components across all templates"
-                fields={LANGUAGE_CONFIGURATION.sharedCartFields}
-              />
-              <div className={styles.languageRail} aria-label="Shared Components actions">
-                <span className={styles.languageChip}>Cart &amp; Checkout</span>
-              </div>
-              <div>
-                <h3 className={styles.detailTitle}>Template Language</h3>
-                <p className={styles.detailDescription}>Edit language for your landing page or product page template</p>
-              </div>
-              <div className={styles.languageRail} aria-label="Template Language">
-                <span className={styles.languageChip}>Landing Page Layout</span>
-                {LANGUAGE_CONFIGURATION.templateSections.map((section) => (
-                  <span key={section} className={styles.languageChip}>
-                    {section}
-                  </span>
-                ))}
-              </div>
-              <div>
-                <h3 className={styles.detailTitle}>Product Card</h3>
-                <p className={styles.detailDescription}>Product card button text and action labels</p>
-              </div>
-              <DetailGroup
-                title="Button Configuration"
-                description="Product card button text and action labels"
-                fields={LANGUAGE_CONFIGURATION.productCardFields}
-              />
+                {activeLanguagePanel !== "cartCheckout" && languageGroups.length === 0 && (
+                  <p className={styles.emptyLanguageState}>
+                    No live field list has been captured for this section yet.
+                  </p>
+                )}
+              </section>
             </div>
           </section>
+          {isLanguageDirty && (
+            <SettingsSaveFooter
+              onDiscard={() => {
+                setIsMultilanguageEnabled(savedLanguageState.isMultilanguageEnabled);
+                setSelectedLanguage(savedLanguageState.selectedLanguage);
+                setLanguageFieldValues(savedLanguageState.languageFieldValues);
+              }}
+              onSave={() => {
+                submit({
+                  intent: "saveSettingsLanguage",
+                  payload: JSON.stringify(currentLanguageState),
+                }, { method: "post" });
+                setSavedLanguageState(currentLanguageState);
+              }}
+            />
+          )}
+          <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
         </main>
       </>
     );
@@ -99,6 +565,7 @@ export default function SettingsRoute() {
         <main className={styles.page}>
           <header className={styles.hero}>
             <button type="button" className={styles.buttonLike} onClick={() => setSettingsView("landing")}>
+              <s-icon type="arrow-left" size="small"></s-icon>
               Back
             </button>
             <div>
@@ -106,47 +573,78 @@ export default function SettingsRoute() {
             </div>
           </header>
 
-          <section className={styles.panel} aria-label="Additional Configurations">
-            <p className={styles.panelEyebrow}>App Configurations</p>
-            <h2 className={styles.panelTitle}>Configure your bundle settings</h2>
-            <label className={styles.layoutSelector}>
-              <span>Layout selector</span>
-              <select
-                className={styles.layoutSelect}
-                aria-label="Layout selector"
-                value={activeControlLayout}
-                onChange={(event) => {
-                  const nextLayoutLabel = event.target.value;
-                  const nextLayout = CONTROL_LAYOUTS.find((layout) => layout.label === nextLayoutLabel) ?? CONTROL_LAYOUTS[0];
-                  setActiveControlLayout(nextLayout.label);
-                  setActiveControlTab(nextLayout.tabs[0]?.title ?? CONTROL_LAYOUTS[0].tabs[0].title);
-                }}
-              >
-                {CONTROL_LAYOUTS.map((layout) => (
-                  <option key={layout.id} value={layout.label}>
-                    {layout.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className={styles.tabRow} role="tablist" aria-label="Configuration tabs">
-              {selectedControlLayout.tabs.map((tab) => (
-                <button
-                  key={tab.title}
-                  type="button"
-                  className={selectedControlTab.title === tab.title ? styles.tabActive : ""}
-                  onClick={() => setActiveControlTab(tab.title)}
+          <section className={styles.controlsLayout} aria-label="Additional Configurations">
+            <aside className={styles.controlsSidebarCard}>
+              <h2>App Configurations</h2>
+              <p>Configure your bundle settings</p>
+              <span className={styles.controlsLayoutSelectWrap}>
+                <select
+                  className={styles.controlsLayoutSelect}
+                  aria-label="Layout selector"
+                  value={activeControlLayout}
+                  onChange={(event) => {
+                    const nextLayoutLabel = event.target.value;
+                    const nextLayout = CONTROL_LAYOUTS.find((layout) => layout.label === nextLayoutLabel) ?? CONTROL_LAYOUTS[0];
+                    setActiveControlLayout(nextLayout.label);
+                    setActiveControlTab(nextLayout.tabs[0]?.title ?? CONTROL_LAYOUTS[0].tabs[0].title);
+                  }}
                 >
-                  {tab.title}
-                </button>
-              ))}
-            </div>
-            <DetailGroup
-              title={selectedControlTab.contentTitle ?? selectedControlTab.title}
-              description={selectedControlTab.contentDescription ?? selectedControlTab.description}
-              fields={selectedControlTab.fields}
-            />
+                  {CONTROL_LAYOUTS.map((layout) => (
+                    <option key={layout.id} value={layout.label}>
+                      {layout.label}
+                    </option>
+                  ))}
+                </select>
+                <s-icon type="caret-down" size="small"></s-icon>
+              </span>
+              <div className={styles.controlsNavList} role="tablist" aria-label="Configuration tabs">
+                {selectedControlLayout.tabs.map((tab) => (
+                  <button
+                    key={tab.title}
+                    type="button"
+                    className={selectedControlTab.title === tab.title ? styles.controlsNavActive : styles.controlsNavButton}
+                    onClick={() => setActiveControlTab(tab.title)}
+                  >
+                    <s-icon type={getControlTabIcon(tab.title)} size="small"></s-icon>
+                    {tab.title}
+                  </button>
+                ))}
+              </div>
+            </aside>
+            <section className={styles.controlsContentColumn}>
+              <ControlsContentCards
+                title={selectedControlTab.contentTitle ?? selectedControlTab.title}
+                description={selectedControlTab.contentDescription ?? selectedControlTab.description}
+                fields={selectedControlTab.fields}
+                values={controlFieldValues}
+                onFieldChange={(label, value) => setControlFieldValues((current) => ({ ...current, [label]: value }))}
+                onFieldAction={(label) => {
+                  if (label === "Cart Messaging") {
+                    setSettingsView("language");
+                    setActiveLanguagePanel("cartCheckout");
+                    return;
+                  }
+                  if (label === "Track inventory on Add To Cart (in beta)") {
+                    setSettingsHelpArticle("inventory");
+                  }
+                }}
+              />
+            </section>
           </section>
+          {isControlsDirty && (
+            <SettingsSaveFooter
+              onDiscard={() => setControlFieldValues(savedControlFieldValues)}
+              onSave={() => {
+                submit({
+                  intent: "saveSettingsControls",
+                  payload: JSON.stringify(controlFieldValues),
+                }, { method: "post" });
+                setSavedControlFieldValues(controlFieldValues);
+              }}
+            />
+          )}
+          <SettingsHelpModal article={settingsHelpArticle} onClose={() => setSettingsHelpArticle(null)} />
+          <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
         </main>
       </>
     );
@@ -167,10 +665,11 @@ export default function SettingsRoute() {
             <button
               key={card.id}
               type="button"
-              className={`${styles.settingCard} ${activeCard === card.id ? styles.settingCardActive : ""}`}
+              className={styles.settingCard}
               onClick={() => {
                 if (card.id === "design") {
-                  navigate("/app/design-control-panel");
+                  setActiveCard(card.id);
+                  setSettingsView("design");
                   return;
                 }
                 if (card.id === "language") {
@@ -186,16 +685,515 @@ export default function SettingsRoute() {
                 setActiveCard(card.id);
               }}
             >
-              <span>
+              <span className={styles.settingsCardContent}>
+                <SettingsCardIcon icon={card.icon} />
                 <h2 className={styles.cardTitle}>{card.title}</h2>
                 <p className={styles.cardDescription}>{card.description}</p>
               </span>
-              <span className={styles.buttonLike}>{card.actionLabel}</span>
+              <span className={styles.settingsConfigureButton}>{card.actionLabel}</span>
             </button>
           ))}
         </section>
+        <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
       </main>
     </>
+  );
+}
+
+function SettingsCardIcon({ icon }: { icon: string }) {
+  return (
+    <span className={styles.settingsCardIcon} aria-hidden="true">
+      <s-icon type={icon} size="base"></s-icon>
+    </span>
+  );
+}
+
+function DesignFields({
+  fields,
+  values,
+  onFieldChange,
+}: {
+  fields: RecoveredField[];
+  values: Record<string, string>;
+  onFieldChange: (label: string, value: string) => void;
+}) {
+  return (
+    <div className={styles.designFieldStack}>
+      {fields.map((field) => {
+        const value = values[field.label] ?? field.value ?? "";
+        const colorValue = /^#[0-9a-f]{6}$/i.test(value) ? value : field.value || "#000000";
+
+        return (
+          <label key={field.label} className={styles.designFieldRow}>
+            <span className={styles.designFieldCopy}>
+              <span className={styles.designFieldLabel}>{field.label}</span>
+              {field.description && <span className={styles.designFieldHelp}>{field.description}</span>}
+            </span>
+            {field.kind === "color" ? (
+              <span className={styles.designColorControl}>
+                <input
+                  type="color"
+                  value={colorValue}
+                  aria-label={`${field.label} color`}
+                  onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+                />
+                <input
+                  value={value}
+                  aria-label={`${field.label} Hex Code`}
+                  onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+                />
+              </span>
+            ) : field.kind === "select" ? (
+              <select
+                className={styles.designInput}
+                value={value || field.options?.[0] || ""}
+                onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+              >
+                {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className={styles.designInput}
+                value={value}
+                onChange={(event) => onFieldChange(field.label, event.currentTarget.value)}
+              />
+            )}
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function BundlePreviewModal({
+  isOpen,
+  bundles,
+  onClose,
+}: {
+  isOpen: boolean;
+  bundles: Array<{ id: string; name: string; type: string; viewUrl: string | null }>;
+  onClose: () => void;
+}) {
+  if (!isOpen) {
+    return null;
+  }
+
+  return (
+    <div className={styles.settingsModalBackdrop} role="presentation">
+      <section className={styles.bundlePreviewModal} role="dialog" aria-modal="true" aria-labelledby="bundle-preview-title">
+        <div className={styles.bundlePreviewHeader}>
+          <h2 id="bundle-preview-title">Bundle Preview</h2>
+          <button type="button" className={styles.bundlePreviewClose} onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className={styles.bundlePreviewGridHeader}>
+          <span>Bundle Name</span>
+          <span>Type</span>
+          <span aria-hidden="true" />
+        </div>
+        <div className={styles.bundlePreviewRows}>
+          {bundles.length === 0 ? (
+            <p className={styles.emptyLanguageState}>No storefront-ready bundles are available for preview.</p>
+          ) : bundles.map((bundle) => (
+            <div key={bundle.id} className={styles.bundlePreviewRow}>
+              <span className={styles.bundlePreviewName}>{bundle.name}</span>
+              <span>{bundle.type}</span>
+              <button
+                type="button"
+                className={styles.bundlePreviewViewButton}
+                disabled={!bundle.viewUrl}
+                onClick={() => {
+                  if (bundle.viewUrl) {
+                    window.open(bundle.viewUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+              >
+                View
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function getControlTabIcon(title: string) {
+  if (title === "CSS & Scripts") {
+    return "code";
+  }
+  if (title === "Integrations") {
+    return "link-list";
+  }
+  if (title === "Advanced") {
+    return "adjust";
+  }
+  return "settings";
+}
+
+function ControlsContentCards({
+  title,
+  description,
+  fields,
+  values,
+  onFieldChange,
+  onFieldAction,
+}: {
+  title: string;
+  description?: string;
+  fields: RecoveredField[];
+  values: Record<string, string>;
+  onFieldChange: (label: string, value: string) => void;
+  onFieldAction?: (label: string) => void;
+}) {
+  const fieldGroups = fields.reduce<Array<{ title: string; fields: RecoveredField[] }>>((groups, field) => {
+    const groupTitle = field.group || title;
+    const existingGroup = groups.find((group) => group.title === groupTitle);
+    if (existingGroup) {
+      existingGroup.fields.push(field);
+      return groups;
+    }
+    groups.push({ title: groupTitle, fields: [field] });
+    return groups;
+  }, []);
+
+  return (
+    <>
+      {fieldGroups.map((group, index) => (
+        <section key={`${title}-${group.title}`} className={styles.controlsContentCard}>
+          <div className={styles.controlsCardHeader}>
+            <div>
+              <h3>{group.title}</h3>
+              {index === 0 && description && <p>{description}</p>}
+            </div>
+            {group.title === "Cart Messaging" && (
+              <button
+                type="button"
+                className={styles.controlsEditLanguageButton}
+                onClick={() => onFieldAction?.("Cart Messaging")}
+              >
+                Edit Language
+              </button>
+            )}
+          </div>
+          <div className={styles.controlsCardFields}>
+            {group.fields.map((field) => {
+              const displayField = group.title === "Cart Messaging" && field.label === "Cart Messaging"
+                ? { ...field, description: undefined }
+                : field;
+
+              return (
+                <ControlsField
+                  key={`${title}-${field.label}`}
+                  field={displayField}
+                  value={values[field.label] ?? ""}
+                  onChange={(value) => onFieldChange(field.label, value)}
+                  onAction={onFieldAction ? () => onFieldAction(field.label) : undefined}
+                />
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
+function ControlsFormGroup({
+  title,
+  description,
+  fields,
+  values,
+  onFieldChange,
+  onFieldAction,
+}: {
+  title: string;
+  description?: string;
+  fields: RecoveredField[];
+  values: Record<string, string>;
+  onFieldChange: (label: string, value: string) => void;
+  onFieldAction?: (label: string) => void;
+}) {
+  const fieldGroups = fields.reduce<Array<{ title: string; fields: RecoveredField[] }>>((groups, field) => {
+    const groupTitle = field.group ?? "";
+    const existingGroup = groups.find((group) => group.title === groupTitle);
+    if (existingGroup) {
+      existingGroup.fields.push(field);
+      return groups;
+    }
+    groups.push({ title: groupTitle, fields: [field] });
+    return groups;
+  }, []);
+  const hasVariables = fields.some((field) =>
+    String(values[field.label] ?? field.value ?? "").includes("{{"),
+  );
+
+  return (
+    <section className={styles.ebControlsPanel}>
+      <div>
+        <div className={styles.ebSectionHeader}>
+          <h3 className={styles.detailTitle}>{title}</h3>
+          {hasVariables && (
+            <button type="button" className={styles.ebVariablesButton}>
+              Show Variables
+            </button>
+          )}
+        </div>
+        {description && <p className={styles.detailDescription}>{description}</p>}
+      </div>
+      {fieldGroups.map((group) => (
+        <div key={`${title}-${group.title || "default"}`} className={styles.ebControlsSection}>
+          {group.title && <h4 className={styles.fieldGroupTitle}>{group.title}</h4>}
+          <div className={styles.ebControlsStack}>
+            {group.fields.map((field) => (
+              <ControlsField
+                key={`${title}-${field.label}`}
+                field={field}
+                value={values[field.label] ?? ""}
+                onChange={(value) => onFieldChange(field.label, value)}
+                onAction={onFieldAction ? () => onFieldAction(field.label) : undefined}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function ControlsField({
+  field,
+  value,
+  onChange,
+  onAction,
+}: {
+  field: RecoveredField;
+  value: string;
+  onChange: (value: string) => void;
+  onAction?: () => void;
+}) {
+  const isChecked = value === "Checked";
+  const inputId = `settings-${field.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  if (field.kind === "toggle") {
+    return (
+      <label className={styles.ebSettingRow} htmlFor={inputId}>
+        <input
+          id={inputId}
+          className={styles.ebSwitchInput}
+          type="checkbox"
+          checked={isChecked}
+          onChange={(event) => onChange(event.currentTarget.checked ? "Checked" : "")}
+        />
+        <span className={styles.ebSwitchVisual} aria-hidden="true">
+          <s-icon type={isChecked ? "toggle-on" : "toggle-off"} size="small"></s-icon>
+        </span>
+        <span>
+          <span className={styles.ebSettingLabel}>{field.label}</span>
+          {field.description === "Edit Language" || field.description === "Know More" ? (
+            <button
+              type="button"
+              className={styles.ebInlineAction}
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onAction?.();
+              }}
+            >
+              {field.description}
+            </button>
+          ) : field.description ? (
+            <span className={styles.ebSettingHelp}>{field.description}</span>
+          ) : null}
+        </span>
+      </label>
+    );
+  }
+
+  if (field.kind === "color") {
+    const colorValue = /^#[0-9a-f]{6}$/i.test(value) ? value : field.value || "#000000";
+
+    return (
+      <label className={styles.ebFieldStack}>
+        <span>{field.label}</span>
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+        <span className={styles.ebColorInputRow}>
+          <input
+            className={styles.ebTextInput}
+            aria-label={`${field.label} Hex Code`}
+            value={value}
+            onChange={(event) => onChange(event.currentTarget.value)}
+          />
+          <input
+            className={styles.ebColorWell}
+            type="color"
+            value={colorValue}
+            onChange={(event) => onChange(event.currentTarget.value)}
+          />
+        </span>
+      </label>
+    );
+  }
+
+  if (field.kind === "select") {
+    return (
+      <label className={styles.ebFieldStack}>
+        <span>{field.label}</span>
+        <span className={styles.ebSelectWrap}>
+          <select className={styles.ebSelect} value={value || field.options?.[0] || ""} onChange={(event) => onChange(event.currentTarget.value)}>
+            {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <s-icon type="caret-down" size="small"></s-icon>
+        </span>
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+      </label>
+    );
+  }
+
+  if (field.kind === "radio") {
+    return (
+      <fieldset className={styles.ebRadioGroup}>
+        <legend>{field.label}</legend>
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+        {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
+          <label key={option} className={styles.ebSettingRow}>
+            <input
+              type="radio"
+              name={inputId}
+              checked={(value || field.value) === option}
+              onChange={() => onChange(option)}
+            />
+            <span className={styles.ebSettingLabel}>{option}</span>
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+
+  if (field.kind === "script" || field.kind === "css") {
+    return (
+      <label className={styles.ebFieldStack}>
+        <span>{field.label}</span>
+        <textarea className={styles.ebTextArea} value={value} rows={4} onChange={(event) => onChange(event.currentTarget.value)} />
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+        {field.note && <span className={styles.ebFieldNote}>Note: {field.note}</span>}
+      </label>
+    );
+  }
+
+  if (field.kind === "image") {
+    return (
+      <div className={styles.ebFieldStack}>
+        <span>{field.label}</span>
+        <img className={styles.ebPreviewImage} src={value || field.value} alt={field.label} />
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+      </div>
+    );
+  }
+
+  if (field.kind === "file") {
+    return (
+      <label className={styles.ebFieldStack}>
+        <span>{field.label}</span>
+        <input className={styles.ebTextInput} type="file" onChange={() => onChange("Selected")} />
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+      </label>
+    );
+  }
+
+  if (field.kind === "button") {
+    return (
+      <div className={styles.ebFieldStack}>
+        <button type="button" className={styles.settingsSecondaryButton} onClick={onAction}>
+          {field.value || field.label}
+        </button>
+        {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+      </div>
+    );
+  }
+
+  return (
+    <label className={styles.ebFieldStack}>
+      <span>{field.label}</span>
+      <input className={styles.ebTextInput} value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+      {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
+      {field.note && <span className={styles.ebFieldNote}>Note: {field.note}</span>}
+    </label>
+  );
+}
+
+function SettingsSaveFooter({ onDiscard, onSave }: { onDiscard: () => void; onSave: () => void }) {
+  return (
+    <div className={styles.settingsSaveFooter}>
+      <span>Unsaved changes</span>
+      <div className={styles.settingsSaveActions}>
+        <button type="button" className={styles.settingsSecondaryButton} onClick={onDiscard}>
+          Discard
+        </button>
+        <button type="button" className={styles.settingsPrimaryButton} onClick={onSave}>
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SettingsHelpModal({
+  article,
+  onClose,
+}: {
+  article: "inventory" | null;
+  onClose: () => void;
+}) {
+  if (!article) {
+    return null;
+  }
+
+  return (
+    <div className={styles.settingsModalBackdrop} role="presentation">
+      <section className={styles.settingsModal} role="dialog" aria-modal="true" aria-labelledby="settings-help-title">
+        <div className={styles.ebSectionHeader}>
+          <h2 id="settings-help-title">Product-level inventory tracking</h2>
+          <button type="button" className={styles.settingsSecondaryButton} onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <div className={styles.settingsHelpBody}>
+          <p>Enable the inventory tracking toggle in Additional Configurations to apply product-level inventory tracking globally to all bundles.</p>
+          <ul>
+            <li>Each child product should have Shopify Track Quantity enabled.</li>
+            <li>Products with zero inventory are not shown in the bundle.</li>
+            <li>Digital products should use inventory 0 or below so they are recognized correctly.</li>
+            <li>If Track Quantity is disabled, the product may still appear but cannot be added to cart when out of stock.</li>
+            <li>If out-of-stock selling is enabled and inventory is above 0, digital-product detection can be restricted.</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SettingsToast({ message, onDismiss }: { message: string | null; onDismiss: () => void }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <div className={styles.settingsToast} role="status" aria-live="polite">
+      <span>{message}</span>
+      <button type="button" onClick={onDismiss} aria-label="Dismiss save message">
+        x
+      </button>
+    </div>
   );
 }
 
