@@ -244,10 +244,10 @@ const bundleVisibilityChildItems = [
 ];
 
 const productPageTemplateOptions = [
-  { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/productPageThumbnail.png" },
-  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/fullPageThumbnail.png" },
-  { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/sidePanelThumbnail.png" },
-  { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/floatingCardThumbnail.png" },
+  { presetId: "CASCADE", layoutTemplate: "PDP_INPAGE", label: "Product List", image: "/PPB-List.png" },
+  { presetId: "COGNIVE", layoutTemplate: "PDP_INPAGE", label: "Product Grid", image: "/PPB-Grid.png" },
+  { presetId: "MODAL", layoutTemplate: "PDP_MODAL", label: "Horizontal Slots", image: "/PPB-HorizontalSlots.png" },
+  { presetId: "SIMPLIFIED", layoutTemplate: "PDP_MODAL", label: "Vertical Slots", image: "/PPB-VerticalSlots.png" },
 ] as const;
 
 const PPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=product_page&section=globalColors";
