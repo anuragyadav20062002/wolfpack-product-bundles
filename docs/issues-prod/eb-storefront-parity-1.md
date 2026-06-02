@@ -283,3 +283,8 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - EB ground truth: PPB posts selected component lines to `/cart/add` as multipart form fields, while FPB posts JSON to `/cart/add.js`.
 - Current WPB PPB storefront widget still posts JSON to `/cart/add.js`, which diverges from EB's PPB Cart Transform `OVERWRITE_LINE_ITEM` flow.
 - Scope: change only PPB storefront add-to-cart transport to EB-style multipart `/cart/add` fields while preserving existing selected component DTOs and line properties.
+
+### 2026-06-02 10:26 - PPB multipart cart-add spec reconciled
+- Confirmed current PPB widget source posts EB-style multipart `FormData` to `/cart/add` and keeps FPB on JSON `/cart/add.js`.
+- Confirmed `tests/unit/assets/bundle-widget-product-page-init.test.ts` already covers the PPB multipart field contract.
+- Added the missing `test-spec/ppb-multipart-cart-add.spec.md` to keep the required TDD spec artifact with the existing source/test contract.
