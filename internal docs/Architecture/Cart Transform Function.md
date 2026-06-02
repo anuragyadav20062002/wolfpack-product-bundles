@@ -64,7 +64,7 @@ The codebase uses the new names. Do not use the old names when reading or modify
 
 ## MERGE/EXPAND Pattern
 
-The function groups cart lines by `_bundle_id` cart attribute:
+The function groups cart lines by EB's public `_easyBundle:OfferId` cart attribute. The item-specific suffix is removed before grouping, so `MIX-894502_K1K_1` and `MIX-894502_K1K_2` become one bundle instance group keyed by `MIX-894502_K1K`:
 
 1. **MERGE**: Groups all component lines for a bundle instance into a single parent line
    - `parentVariantId`: the bundle variant ID
@@ -84,7 +84,7 @@ The function groups cart lines by `_bundle_id` cart attribute:
 
 ## Bundle Instance Tracking
 
-- Each add-to-cart generates a unique `_bundle_id` via `crypto.randomUUID()` in the widget
-- Cart lines for the same bundle instance share this `_bundle_id` cart attribute
-- Shopify's `/cart/add.js` does NOT merge lines with different properties — instances stay separate
+- Each add-to-cart generates one EB session key and writes `_easyBundle:OfferId` as `{offerId}_{sessionKey}_{itemIndex}`
+- Cart Transform groups component lines by the `{offerId}_{sessionKey}` base and uses `_bundleName` for the parent title
+- Shopify's cart line properties still differ per component line because the trailing item index differs
 - See [[Features/Bundle Instance Tracking]]

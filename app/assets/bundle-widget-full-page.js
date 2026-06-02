@@ -4092,7 +4092,6 @@ class BundleWidgetFullPage {
 
             itemNumber += 1;
             const properties = {
-              '_bundle_id': bundleInstanceId,
               Box: String(itemNumber),
               '_bundleName': bundleName,
               '_easyBundle:prodQty': String(quantity),

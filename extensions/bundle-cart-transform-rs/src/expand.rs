@@ -136,7 +136,7 @@ pub fn process_expand_operations(
             serde_json::to_string(&component_details).unwrap_or_default();
 
         let bundle_name = line
-            .bundle_name()
+            .easy_bundle_name()
             .and_then(|a| a.value())
             .map(|s| s.as_str().to_string())
             .unwrap_or_else(|| "Bundle".to_string());

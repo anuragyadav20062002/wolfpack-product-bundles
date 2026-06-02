@@ -23,4 +23,11 @@ describe("Cart Transform input query", () => {
       /bundleCartLineMessaging:\s*metafield\(namespace:\s*"\$app",\s*key:\s*"bundle_cart_line_messaging"\)/,
     );
   });
+
+  it("groups merge lines from EB public cart attributes instead of private bundle IDs", () => {
+    expect(normalizedQuery).toContain('easyBundleOfferId: attribute(key: "_easyBundle:OfferId")');
+    expect(normalizedQuery).toContain('easyBundleName: attribute(key: "_bundleName")');
+    expect(normalizedQuery).not.toContain('attribute(key: "_bundle_id")');
+    expect(normalizedQuery).not.toContain('attribute(key: "_bundle_name")');
+  });
 });

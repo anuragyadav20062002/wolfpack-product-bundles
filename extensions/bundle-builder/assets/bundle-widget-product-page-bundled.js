@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.27
+ * Version : 2.9.28
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.27';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.28';
 (function() {
   'use strict';
 
@@ -5486,10 +5486,7 @@ class BundleWidgetProductPage {
 
             const step = this.selectedBundle.steps[stepIndex];
             const addonDiscount = this.getAddonLineDiscount(step);
-            const properties = {
-              '_bundle_id': bundleInstanceId,
-              '_bundle_name': this.selectedBundle.name
-            };
+            const properties = {};
             if (addonDiscount && step?.addonDisplayFree !== true) {
               properties['_bundle_step_type'] = addonDiscount
                 ? `addon:${addonDiscount.type}:${addonDiscount.value}`

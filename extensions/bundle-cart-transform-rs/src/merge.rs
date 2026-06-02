@@ -79,7 +79,24 @@ fn display_properties_for_group(
 
 /// Process all MERGE operations for one cart pass.
 ///
-/// Groups cart lines by _bundle_id (O(n) pass), then for each group builds one
+fn easy_bundle_offer_group_id(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let Some((base, item_index)) = trimmed.rsplit_once('_') else {
+        return Some(trimmed.to_string());
+    };
+
+    if base.is_empty() || item_index.is_empty() {
+        return None;
+    }
+
+    Some(base.to_string())
+}
+
+/// Groups cart lines by EB `_easyBundle:OfferId` base (O(n) pass), then for each group builds one
 /// MERGE operation using the component_parents metafield for parent variant ID
 /// and pricing config.
 ///
@@ -99,7 +116,7 @@ pub fn process_merge_operations(
     let mut bundle_name_counts: HashMap<String, u32> = HashMap::new();
 
     // -------------------------------------------------------------------------
-    // Step 1: Group cart lines by _bundle_id in a single O(n) pass.
+    // Step 1: Group cart lines by EB `_easyBundle:OfferId` base in a single O(n) pass.
     // Using indices to avoid borrow conflicts with `lines` slice.
     // -------------------------------------------------------------------------
     let lines = input.cart().lines();
@@ -111,15 +128,15 @@ pub fn process_merge_operations(
             continue;
         }
 
-        // bundle_id attribute value is nullable (value: String in schema)
-        let bundle_id = match line.bundle_id().and_then(|a| a.value()) {
-            Some(v) => v.as_str().to_string(),
+        let offer_group_id = match line
+            .easy_bundle_offer_id()
+            .and_then(|a| a.value())
+            .and_then(|value| easy_bundle_offer_group_id(value.as_str()))
+        {
+            Some(v) => v,
             None => continue,
         };
-        if bundle_id.is_empty() {
-            continue;
-        }
-        bundle_groups.entry(bundle_id).or_default().push(idx);
+        bundle_groups.entry(offer_group_id).or_default().push(idx);
     }
 
     // -------------------------------------------------------------------------
@@ -249,7 +266,7 @@ pub fn process_merge_operations(
         // Step 5: Build unique bundle title.
         // -------------------------------------------------------------------------
         let base_name = lines[line_indices[0]]
-            .bundle_name()
+            .easy_bundle_name()
             .and_then(|a| a.value())
             .map(|s| s.as_str().to_string())
             .unwrap_or_else(|| "Bundle".to_string());

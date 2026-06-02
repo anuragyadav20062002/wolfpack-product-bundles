@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 11:23
+**Last Updated:** 2026-06-02 11:45
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -373,3 +373,19 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
 - Verification: `npx jest tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 38 tests.
 - Verification: `npx eslint --max-warnings 9999 app/routes/api/api.cart-bundle-details.tsx app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.
+
+### 2026-06-02 11:36 - EB OfferId Cart Transform grouping slice started
+- EB ground truth: component cart lines are identified by `_easyBundle:OfferId` in `{offerId}_{sessionKey}_{itemIndex}` format and display name comes from `_bundleName`.
+- Current WPB gap: Cart Transform still queried/grouped by private `_bundle_id`, and FPB/PPB widget cart payloads still emitted that private attribute.
+- Scope: migrate Function input/grouping to `_easyBundle:OfferId` base, use `_bundleName`, remove `_bundle_id`/`_bundle_name` from touched FPB/PPB component line payloads, update internal docs, and rebuild widgets.
+
+### 2026-06-02 11:45 - EB OfferId Cart Transform grouping slice completed
+- Cart Transform input now reads EB public cart attributes: `_easyBundle:OfferId` and `_bundleName`.
+- Merge grouping now derives the bundle instance from the `_easyBundle:OfferId` base, for example `MIX-894502_K1K_1` and `MIX-894502_K1K_2` merge as `MIX-894502_K1K`.
+- FPB and PPB component cart payloads no longer emit private `_bundle_id` / `_bundle_name` in the touched widget paths; public EB properties remain `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId`, and `Box`.
+- Updated internal Cart Transform and bundle instance tracking docs to the EB OfferId contract.
+- Bumped storefront widget version to `2.9.28` and rebuilt widget deploy assets.
+- Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
+- Verification: `npx jest tests/unit/extensions/cart-transform-run-query.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 38 tests.
+- Verification: `cargo test` in `extensions/bundle-cart-transform-rs` passed with 38 Rust tests.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts tests/unit/extensions/cart-transform-run-query.test.ts` completed with 0 errors and warnings only.

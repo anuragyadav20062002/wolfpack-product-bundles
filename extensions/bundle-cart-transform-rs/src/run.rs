@@ -28,7 +28,7 @@ pub fn cart_transform_run(input: schema::run::Input) -> Result<schema::FunctionR
             .map(|metafield| metafield.value().as_str()),
     );
 
-    // Pass 1: MERGE — component lines grouped by _bundle_id
+    // Pass 1: MERGE — component lines grouped by EB `_easyBundle:OfferId`
     let mut operations = process_merge_operations(
         &input,
         presentment_currency_rate,

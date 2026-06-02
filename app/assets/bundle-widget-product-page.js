@@ -3663,10 +3663,7 @@ class BundleWidgetProductPage {
 
             const step = this.selectedBundle.steps[stepIndex];
             const addonDiscount = this.getAddonLineDiscount(step);
-            const properties = {
-              '_bundle_id': bundleInstanceId,
-              '_bundle_name': this.selectedBundle.name
-            };
+            const properties = {};
             if (addonDiscount && step?.addonDisplayFree !== true) {
               properties['_bundle_step_type'] = addonDiscount
                 ? `addon:${addonDiscount.type}:${addonDiscount.value}`

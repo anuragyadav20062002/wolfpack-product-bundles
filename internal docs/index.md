@@ -35,6 +35,6 @@ Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigati
 - [[Shopify Integration/Metafields]] — Bundle config metafield sync strategy
 - [[Features/Bundle Types]] — FPB vs PDP, layout modes, step config
 - [[Features/Pricing Pipeline]] — UI → DB → Metafield → Cart Transform units
-- [[Features/Bundle Instance Tracking]] — `_bundle_id`, MERGE dedup, unique titles
+- [[Features/Bundle Instance Tracking]] — EB `_easyBundle:OfferId`, MERGE dedup, unique titles
 - [[Operations/Deployment]] — Render + Shopify deploy process
 - [[Operations/Build Process]] — Widget bundles, WASM, CSS size limits

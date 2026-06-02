@@ -26,7 +26,7 @@ describe("Full Page widget cart display properties", () => {
     expect(source).toContain("'_bundleName': bundleName");
     expect(source).toContain("'_easyBundle:prodQty': String(quantity)");
     expect(source).toContain("'_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`");
-    expect(source).toContain("'_bundle_id': bundleInstanceId");
+    expect(source).not.toContain("'_bundle_id': bundleInstanceId");
     expect(source).not.toContain("'_step_index'");
     expect(source).not.toContain("'_step_name'");
   });
