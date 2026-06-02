@@ -288,3 +288,11 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Confirmed current PPB widget source posts EB-style multipart `FormData` to `/cart/add` and keeps FPB on JSON `/cart/add.js`.
 - Confirmed `tests/unit/assets/bundle-widget-product-page-init.test.ts` already covers the PPB multipart field contract.
 - Added the missing `test-spec/ppb-multipart-cart-add.spec.md` to keep the required TDD spec artifact with the existing source/test contract.
+
+### 2026-06-02 10:27 - PPB multipart cart API parity implemented
+- Updated PPB storefront `addToCart()` to submit multipart `FormData` to `/cart/add`, matching EB's PPB cart transport.
+- Added explicit EB field names for `items[index][id]`, `items[index][quantity]`, `items[index][properties][Box]`, `items[index][properties][_easyBundle:OfferId]`, and `items[index][properties][_easyBundle:prodQty]`.
+- Preserved existing private `_bundle_id` grouping properties so the current WPB Cart Transform path does not regress while PPB transport moves toward EB.
+- Bumped `WIDGET_VERSION` to `2.9.24`, rebuilt widget assets, and minified CSS assets.
+- Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts`, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors.
+- Live cart/network e2e remains pending until SIT serves the rebuilt widget and Chrome access is stable.

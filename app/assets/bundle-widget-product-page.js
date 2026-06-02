@@ -3542,12 +3542,10 @@ class BundleWidgetProductPage {
       this.elements.addToCartButton.textContent = this._resolveText('addingToCart', 'Adding to Cart...');
       this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
 
-      const response = await fetch('/cart/add.js', {
+      const cartFormData = this.buildProductPageCartFormData(cartItems);
+      const response = await fetch('/cart/add', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ items: cartItems })
+        body: cartFormData
       });
 
       // Read body as text first — Shopify can return HTML on password-protected stores
@@ -3726,6 +3724,45 @@ class BundleWidgetProductPage {
     }
 
     return cartItems;
+  }
+
+  buildProductPageCartFormData(cartItems) {
+    const formData = new FormData();
+    const sessionKey = this.generateBundleSessionKey();
+    const offerId = this.resolveProductPageOfferId();
+
+    cartItems.forEach((item, index) => {
+      const itemNumber = index + 1;
+      formData.append(`items[${index}][id]`, String(item.id));
+      formData.append(`items[${index}][quantity]`, String(item.quantity));
+
+      if (item.selling_plan) {
+        formData.append(`items[${index}][selling_plan]`, String(item.selling_plan));
+      }
+
+      Object.entries(item.properties || {}).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
+        formData.append(`items[${index}][properties][${key}]`, String(value));
+      });
+      formData.append(`items[${index}][properties][Box]`, String(itemNumber));
+      formData.append(`items[${index}][properties][_easyBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
+      formData.append(`items[${index}][properties][_easyBundle:prodQty]`, String(item.quantity));
+    });
+
+    return formData;
+  }
+
+  resolveProductPageOfferId() {
+    const rawOfferId = this.selectedBundle?.offerId
+      || this.selectedBundle?.bundleOfferId
+      || this.selectedBundle?.id
+      || 'UNKNOWN';
+    const offerId = String(rawOfferId);
+    return offerId.startsWith('MIX-') ? offerId : `MIX-${offerId}`;
+  }
+
+  generateBundleSessionKey() {
+    return Math.random().toString(36).slice(2, 5).toUpperCase();
   }
 
   generateBundleInstanceId() {

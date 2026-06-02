@@ -421,11 +421,12 @@ describe('Product Page bundle cart add transport contract', () => {
 
     expect(source).toContain("fetch('/cart/add',");
     expect(source).toContain('new FormData()');
-    expect(source).toContain('items[${index}][id]');
-    expect(source).toContain('items[${index}][quantity]');
-    expect(source).toContain('items[${index}][properties][Box]');
-    expect(source).toContain('items[${index}][properties][_easyBundle:OfferId]');
-    expect(source).toContain('items[${index}][properties][_easyBundle:prodQty]');
+    const indexToken = ['$', '{index}'].join('');
+    expect(source).toContain(`items[${indexToken}][id]`);
+    expect(source).toContain(`items[${indexToken}][quantity]`);
+    expect(source).toContain(`items[${indexToken}][properties][Box]`);
+    expect(source).toContain(`items[${indexToken}][properties][_easyBundle:OfferId]`);
+    expect(source).toContain(`items[${indexToken}][properties][_easyBundle:prodQty]`);
     expect(source).not.toContain("fetch('/cart/add.js', {");
   });
 
