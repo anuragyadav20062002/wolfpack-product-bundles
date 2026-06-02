@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:50
+**Last Updated:** 2026-06-02 19:01
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -711,3 +711,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped widget assets to `2.9.51`, rebuilt widget/minified assets, and rebuilt graph output.
 - Chrome SIT proof: SIMPLIFIED PPB product loaded `2.9.51`, opened modal from slot, panel measured `1280px x 616px` with `top:108.75px`, `bottom:0`, `height:616.25px`, and `border-radius:15px 15px 0 0` on a `1280px x 725px` viewport.
 - Selection smoke passed after the shell change: clicking modal Add to Cart changed the modal button to `Selected ✓`, footer pill to `$4.97 1`, and main CTA to enabled `Add Bundle to Cart • $4.97`.
+
+### 2026-06-02 18:55 - FPB HORIZONTAL selected-slot summary parity started
+- EB HORIZONTAL evidence shows the right summary card rendering selected bundle contents as square slot tiles: the selected product image tile plus a dashed `+` placeholder slot.
+- Live WPB HORIZONTAL on the SIT FPB page still rendered selected products as row-list entries (`side-panel-product-row`) with title, price, and quantity text in the side panel.
+- Scope: switch only the HORIZONTAL preset side-panel selected-products presentation to EB-style slots while preserving existing selection, remove, total, and Add to Cart behavior for all presets.
+
+### 2026-06-02 19:01 - FPB HORIZONTAL selected-slot summary parity verified
+- Added HORIZONTAL-only side-panel slot rendering so selected products display as EB-style square image slots with dashed `+` placeholders instead of row-list entries.
+- Kept CLASSIC, COMPACT, and DEFAULT side-panel product rows unchanged; HORIZONTAL slot styling is injected as a runtime stylesheet to keep `bundle-widget-full-page.css` below Shopify's 100,000 B asset limit.
+- Bumped widget assets to `2.9.52`, rebuilt widget/minified assets, and rebuilt graph output.
+- Chrome SIT proof: FPB HORIZONTAL page loaded `2.9.52`, selected Cross Necklace, side panel received `side-panel-products--slots`, selected slot measured `70px x 70px`, selected image measured `70px x 70px` with `8px` radius, title/price row details computed `display:none`, dashed empty slot measured `70px x 70px`, and Add to Cart remained enabled.

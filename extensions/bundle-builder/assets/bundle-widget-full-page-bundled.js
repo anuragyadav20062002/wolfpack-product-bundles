@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.51
+ * Version : 2.9.52
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.51';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.52';
 (function() {
   'use strict';
 
@@ -3765,6 +3765,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
     this.ensureCompactPresetRuntimeStyles();
+    this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section';
@@ -3840,6 +3841,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
     this.ensureCompactPresetRuntimeStyles();
+    this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
@@ -4242,6 +4244,8 @@ class BundleWidgetFullPage {
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
+    const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
     const summaryText = this.getBundleSummaryText();
 
     const header = document.createElement('div');
@@ -4323,11 +4327,17 @@ class BundleWidgetFullPage {
 
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
+    if (isHorizontalPreset) {
+      productsContainer.classList.add('side-panel-products--slots');
+    }
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
+        if (isHorizontalPreset) {
+          row.classList.add('side-panel-product-slot');
+        }
 
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
@@ -4372,9 +4382,23 @@ class BundleWidgetFullPage {
         productsContainer.appendChild(row);
       });
     }
+    if (isHorizontalPreset) {
+      const requiredSlots = Math.max(
+        totalQuantity + 1,
+        activeStep?.maxQuantity || activeStep?.minQuantity || 2,
+        2
+      );
+      const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
+      for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+        const emptySlot = document.createElement('div');
+        emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
+        emptySlot.textContent = '+';
+        productsContainer.appendChild(emptySlot);
+      }
+    }
     panel.appendChild(productsContainer);
 
-    if (!isMobileSheet && allSelectedProducts.length === 0) {
+    if (!isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
       this._renderSidebarProductSkeletons(skeletonContainer);
@@ -5003,6 +5027,16 @@ class BundleWidgetFullPage {
     const style = document.createElement('style');
     style.id = 'wpb-fpb-compact-runtime-styles';
     style.textContent = '@media (min-width:769px){.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-product-grid{grid-template-columns:repeat(2,220px);gap:12px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-card{width:220px;min-width:220px;height:332px;min-height:332px;padding:6px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-image{width:208px;height:208px;min-height:208px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-content-wrapper{width:208px}}';
+    document.head.appendChild(style);
+  }
+
+  ensureHorizontalSidePanelSlotRuntimeStyles() {
+    if (this.getFullPageDesignPreset() !== 'HORIZONTAL') return;
+    if (document.getElementById('wpb-fpb-horizontal-slots-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-horizontal-slots-runtime-styles';
+    style.textContent = '.side-panel-products--slots{display:flex;flex:initial;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:12px;margin:12px 0 18px;overflow:visible}.side-panel-product-slot{width:70px;height:70px;flex:0 0 70px;padding:0;border:0;border-radius:8px;overflow:visible;background:transparent;display:block}.side-panel-product-slot .side-panel-product-img-wrap,.side-panel-product-slot .side-panel-product-img,.side-panel-product-slot .side-panel-product-img-placeholder{width:70px;height:70px;border-radius:8px}.side-panel-product-slot .side-panel-product-info,.side-panel-product-slot .side-panel-product-price{display:none}.side-panel-product-slot .side-panel-product-remove{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:2px;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.18)}.side-panel-product-slot--empty{display:flex;align-items:center;justify-content:center;border:2px dashed #111;color:#111;font-size:24px;font-weight:400;line-height:1;box-sizing:border-box}';
     document.head.appendChild(style);
   }
 
