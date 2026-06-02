@@ -456,6 +456,7 @@ describe('Product Page bundle cart add transport contract', () => {
 
     [ppbSource, fpbSource].forEach((source) => {
       expect(source).toContain("fetch('/apps/product-bundles/api/cart-bundle-details'");
+      expect(source).toContain("if (data?.ok !== true)");
       expect(source).toContain("fetch('/cart.js?app=wolfpackProductBundles'");
       expect(source).toContain('Failed to sync bundle_details cart metafield');
       expect(source).not.toContain('query GetCartMetafield');

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.26
+ * Version : 2.9.27
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.26';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.27';
 (function() {
   'use strict';
 
@@ -8433,6 +8433,11 @@ class BundleWidgetFullPage {
 
       if (!response.ok) {
         throw new Error(`bundle_details sync failed (${response.status})`);
+      }
+
+      const data = await response.json().catch(() => null);
+      if (data?.ok !== true) {
+        throw new Error(data?.error || 'bundle_details sync failed');
       }
     } catch (error) {
       console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);

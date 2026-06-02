@@ -3787,6 +3787,11 @@ class BundleWidgetProductPage {
       if (!response.ok) {
         throw new Error(`bundle_details sync failed (${response.status})`);
       }
+
+      const data = await response.json().catch(() => null);
+      if (data?.ok !== true) {
+        throw new Error(data?.error || 'bundle_details sync failed');
+      }
     } catch (error) {
       console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
     }

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 11:02
+**Last Updated:** 2026-06-02 11:23
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -355,3 +355,21 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `npm run build:widgets` completed and regenerated FPB/PPB bundled widget assets.
 - Verification: modified-file ESLint completed with 0 errors and warnings only.
 - Graph: `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` completed; graph output changed but remains unstaged with prior graph working-tree drift.
+
+### 2026-06-02 11:18 - Cart `bundle_details` hardening follow-up started
+- Current worktree contains useful post-commit hardening for the EB cart metafield route: widgets now require `{ ok: true }` from the proxy route, and the route creates a Storefront access token on-demand when the offline session lacks one.
+- Scope: validate and commit those hardening changes with focused route/source tests, widget rebuild, and version bump.
+- Added focused route coverage for on-demand Storefront token creation and widget source coverage for checking the proxy route response body.
+- Rebuilt FPB/PPB widget bundles at `WIDGET_VERSION=2.9.26`.
+- Verification passed: `npm run build:widgets`.
+- Verification passed: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js`.
+- Verification passed: `npx jest tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (38 tests).
+- Verification passed: modified-file ESLint returned 0 errors with warnings only.
+
+### 2026-06-02 11:23 - Cart `bundle_details` hardening follow-up completed
+- Widgets now parse the cart-bundle-details proxy response and treat anything other than `{ ok: true }` as a non-fatal sync failure, instead of accepting any 2xx response.
+- The proxy route now creates a Storefront access token on-demand when the offline session has an Admin access token but no stored Storefront token, matching the existing storefront product hydration route practice.
+- Bumped storefront widget version to `2.9.27` and rebuilt generated widget deploy assets.
+- Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
+- Verification: `npx jest tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 38 tests.
+- Verification: `npx eslint --max-warnings 9999 app/routes/api/api.cart-bundle-details.tsx app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.

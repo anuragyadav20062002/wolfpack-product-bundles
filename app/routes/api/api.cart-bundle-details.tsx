@@ -4,6 +4,7 @@ import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
 import { verifyAppProxyRequest } from "../../lib/app-proxy.server";
 import { AppLogger } from "../../lib/logger";
 import { getOfflineSessionForShop } from "../../services/offline-token.server";
+import { createStorefrontAccessToken } from "../../services/storefront-token.server";
 import { sessionStorage } from "../../shopify.server";
 
 const CORS_HEADERS = {
@@ -154,7 +155,29 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ ok: false, error: "Invalid bundle details payload" }, { status: 400, headers: CORS_HEADERS });
   }
 
-  const session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
+  let session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
+
+  if (session && !session.storefrontAccessToken && session.accessToken) {
+    const admin = {
+      graphql: async (query: string, options?: { variables?: Record<string, unknown> }) => fetch(
+        `https://${shop}/admin/api/${SHOPIFY_REST_API_VERSION}/graphql.json`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Shopify-Access-Token": session!.accessToken,
+          },
+          body: JSON.stringify({ query, variables: options?.variables }),
+        },
+      ),
+    };
+
+    await createStorefrontAccessToken(admin as never, shop);
+    session = await getOfflineSessionForShop(prisma, shop, sessionStorage, {
+      migrateIfNeeded: false,
+      refreshIfNeeded: false,
+    });
+  }
 
   if (!session?.storefrontAccessToken) {
     AppLogger.warn("Cart bundle_details missing Storefront token", {

@@ -6,6 +6,7 @@ import {
   sanitizeDisplayProperties,
 } from "../../../app/routes/api/api.cart-bundle-details";
 import { getOfflineSessionForShop } from "../../../app/services/offline-token.server";
+import { createStorefrontAccessToken } from "../../../app/services/storefront-token.server";
 
 jest.mock("../../../app/db.server", () => ({}));
 
@@ -25,7 +26,12 @@ jest.mock("../../../app/services/offline-token.server", () => ({
   getOfflineSessionForShop: jest.fn(),
 }));
 
+jest.mock("../../../app/services/storefront-token.server", () => ({
+  createStorefrontAccessToken: jest.fn(),
+}));
+
 const mockGetOfflineSessionForShop = getOfflineSessionForShop as jest.Mock;
+const mockCreateStorefrontAccessToken = createStorefrontAccessToken as jest.Mock;
 
 function makeSignedRequest(body: Record<string, unknown>, shop = "test-shop.myshopify.com") {
   const params = new URLSearchParams({
@@ -94,8 +100,10 @@ describe("cart bundle_details metafield route", () => {
     jest.clearAllMocks();
     process.env.SHOPIFY_API_SECRET = "test_api_secret";
     mockGetOfflineSessionForShop.mockResolvedValue({
+      accessToken: "admin-token",
       storefrontAccessToken: "sf-token",
     });
+    mockCreateStorefrontAccessToken.mockResolvedValue("new-sf-token");
     global.fetch = jest.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         data: {
@@ -152,6 +160,34 @@ describe("cart bundle_details metafield route", () => {
       "FBP-1_ABC": { displayProperties: { Items: "Old" } },
       "MIX-2_DEF": { displayProperties: { Items: "1 x Product" } },
     });
+  });
+
+  it("creates a Storefront token on demand when the offline session is missing one", async () => {
+    mockGetOfflineSessionForShop
+      .mockResolvedValueOnce({
+        accessToken: "admin-token",
+        storefrontAccessToken: null,
+      })
+      .mockResolvedValueOnce({
+        accessToken: "admin-token",
+        storefrontAccessToken: "new-sf-token",
+      });
+
+    const response = await action({
+      request: makeSignedRequest({
+        cartToken: "cart-token",
+        bundleDetailsKey: "MIX-2_DEF",
+        displayProperties: { Items: "1 x Product" },
+      }),
+      params: {},
+      context: {},
+    } as any) as Response;
+
+    expect(response.status).toBe(200);
+    expect(mockCreateStorefrontAccessToken).toHaveBeenCalledWith(expect.objectContaining({
+      graphql: expect.any(Function),
+    }), "test-shop.myshopify.com");
+    expect((global.fetch as jest.Mock).mock.calls[0][1].headers["X-Shopify-Storefront-Access-Token"]).toBe("new-sf-token");
   });
 
   it("rejects invalid app-proxy signatures", async () => {
