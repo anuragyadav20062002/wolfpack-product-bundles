@@ -5139,7 +5139,11 @@ minmax(0,
   justify-content:flex-start;
   gap:28px}
 
-body:has([data-fpb-design-preset]),
+html:has([data-fpb-design-preset]),
+body:has([data-fpb-design-preset]) {
+  overflow-x:clip;
+  background:#f1f1f1}
+
 [data-fpb-design-preset] {
   background:#f1f1f1}
 

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:01 IST
+**Last Updated:** 2026-06-02 18:08 IST
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -642,3 +642,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Reused the app existing full-page page-body refresh and bundle_config/bundle_settings metafield writer helpers for the SIT fixture.
 - Shopify Admin GraphQL confirmed the page metafield now stores FBP_SIDE_FOOTER/HORIZONTAL, and storefront DOM now embeds the same fields in both #bundle-builder-app and the hidden data-wpb-full-page-bundle marker.
 - Remaining bundle JSON request on reload is the intentional post-cache _scheduleLayoutRefresh freshness check, not initial fallback; first-paint marker data is now complete.
+
+### 2026-06-02 18:04 IST - FPB HORIZONTAL live visual overflow fix started
+- Live SIT HORIZONTAL screenshot showed WPB still differs from EB with horizontal viewport overflow and a horizontal scrollbar; EB HORIZONTAL screenshot has no horizontal overflow.
+- Scope: fix the full-page widget width/bleed behavior first, before smaller HORIZONTAL category-tab refinements or deferred FPB title removal.
+
+### 2026-06-02 18:08 IST - FPB HORIZONTAL live visual overflow fix completed
+- Patched full-page FPB CSS to clip horizontal overflow on FPB pages while preserving the existing full-bleed gray EB-style section.
+- Bumped WIDGET_VERSION to 2.9.44, regenerated CSS assets, rebuilt widget bundles, and kept bundle-widget-full-page.css under Shopify's 100,000 B app-block limit.
+- Verification passed: npm run minify:assets css and npm run build:widgets.
+- Verification passed: node --check scripts/build-widget-bundles.js and modified-file ESLint with 0 errors and the existing ignored-file warning.
+- Chrome SIT HORIZONTAL verification loaded widget 2.9.44 and reported documentElement scrollWidth 1269, clientWidth 1269, overflowX body/html clip, and hasHorizontalOverflow false.
