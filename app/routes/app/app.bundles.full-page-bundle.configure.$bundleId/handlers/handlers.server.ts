@@ -310,7 +310,7 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       }))
       .filter((product: { productId: string | null }) => Boolean(product.productId));
 
-    const categoriesForMetafield = formatStepCategoriesForRuntime(step);
+    const categoriesForMetafield = formatStepCategoriesForRuntime(step, rawStepProducts);
     const stepCollections = Array.isArray(step.collections) ? step.collections : [];
 
     return {
@@ -429,7 +429,7 @@ function buildFpbBaseConfig(
   directBoxSelection: unknown = null,
 ): Record<string, unknown> {
   const optimizedSteps = (stepsData || []).map((step: any) => {
-    const categoriesForRuntime = formatStepCategoriesForRuntime(step);
+    const categoriesForRuntime = formatStepCategoriesForRuntime(step, Array.isArray(step.StepProduct) ? step.StepProduct : []);
 
     return {
       id: step.id,

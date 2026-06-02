@@ -753,3 +753,15 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: `npm run build:widgets`, `node --check app/assets/bundle-widget-full-page.js`, `node --check scripts/build-widget-bundles.js`, modified-file ESLint with 0 errors, and graphify rebuild.
 - Formatter proof passed with `npx tsx`: enriched category products retain image/price/variants in runtime output while compact product references remain compact.
 - Chrome live proof is pending until SIT deploy serves widget 2.9.54 and the FPB page/bundle is re-synced so `custom.bundle_config` contains enriched category products; the current live metafield still contains only `{id,title}` and the app-proxy product API is blocked by the unavailable Cloudflare tunnel.
+
+### 2026-06-02 20:13 - FPB category metafield enrichment slice started
+- Live Chrome still proves the FPB HORIZONTAL page is blocked by stale widget 2.9.52, app-proxy product API 500, and category metafield products compacted to `{id,title}` only.
+- The previous slice preserves enriched category fields if present, but current write paths still call `formatStepCategoriesForRuntime(step)` without giving it the step's enriched product sources.
+- Scope: enrich runtime category product references from the same raw step product data already used for step-level product payloads, so `custom.bundle_config` can render FPB category products without app-proxy hydration after the next sync.
+
+### 2026-06-02 20:19 - FPB category metafield enrichment slice verified locally
+- Extended `formatStepCategoriesForRuntime` / `formatStepCategoryForRuntime` with optional product source enrichment keyed by Shopify product GID/numeric ID, preferring `productId`/`graphqlId` over DB row IDs.
+- Updated FPB runtime payload writers (`bundle-product.server.ts`, `bundle-formatter.server.ts`, and the FPB configure save handler) to pass raw step product sources into category formatting.
+- Local formatter proof: a category product stub `{id,title}` now keeps its category title but receives `imageUrl`, `price`, and `variants` from the matching raw step product source.
+- Verification passed: focused ESLint on touched server/formatter files returned 0 errors, `npx tsx` formatter proof passed, and graphify rebuild completed.
+- Live Chrome proof is still pending deploy + bundle sync because current SIT remains on widget 2.9.52 and the existing page metafield still contains the old compact `{id,title}` category product.

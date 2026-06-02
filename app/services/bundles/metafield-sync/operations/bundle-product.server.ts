@@ -459,7 +459,7 @@ export async function updateBundleProductMetafields(
       maxQuantity: step.maxQuantity || 1,
       products: collectStepProductReferences(step),
       collections: Array.isArray(step.collections) ? step.collections : [],
-      categories: formatStepCategoriesForRuntime(step),
+      categories: formatStepCategoriesForRuntime(step, Array.isArray(step.StepProduct) ? step.StepProduct : []),
       conditionType: step.conditionType,
       conditionOperator: step.conditionOperator,
       conditionValue: step.conditionValue,

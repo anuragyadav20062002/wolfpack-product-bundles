@@ -174,7 +174,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       displayVariantsAsIndividual: step.displayVariantsAsIndividual,
       products: productsArray,
       collections: Array.isArray(step.collections) ? step.collections : [],
-      categories: formatStepCategoriesForRuntime(step),
+      categories: formatStepCategoriesForRuntime(step, stepProducts),
       conditionType: step.conditionType ?? null,
       conditionOperator: step.conditionOperator ?? null,
       conditionValue: step.conditionValue ?? null,
