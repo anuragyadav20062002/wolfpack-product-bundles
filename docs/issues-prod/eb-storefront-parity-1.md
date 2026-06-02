@@ -613,3 +613,12 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - COMPACT proof: marker COMPACT, header/footer present, selected product summary rendered, and 198px black Add to Cart CTA enabled.
 - HORIZONTAL proof: marker HORIZONTAL, header/footer present, product card used horizontal grid sizing, selected product summary rendered, and wide black Add to Cart CTA enabled.
 - Checks completed: npm run build:widgets, npm run minify:assets css, node --check for modified JS files, eslint on modified JS files, graphify code rebuild, and Chrome SIT FPB storefront smokes.
+
+### 2026-06-02 17:34 IST - Deferred FPB page title/header removal request
+- User-provided storefront screenshot shows the page-level bundle name/title block above the FPB widget should be removed from all FPB designs.
+- Deferred by instruction: do this at the very end of the storefront parity goal after remaining sanity checks and gaps are complete.
+
+### 2026-06-02 17:36 IST - Completed PPB MODAL add-to-cart sanity
+- Reloaded fresh SIT PPB product page on widget version 2.9.43 with MODAL/PDP_MODAL markers.
+- Opened the gated modal from the slot card, confirmed Cross Necklace hydrated, selected it, and clicked the enabled black Add Bundle to Cart • .97 parent CTA.
+- Storefront navigated to cart and rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
