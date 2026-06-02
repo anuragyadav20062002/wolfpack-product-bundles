@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 09:41
+**Last Updated:** 2026-06-02 10:04
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -166,3 +166,15 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: `node --check app/assets/bundle-widget-full-page.js`, `node --check scripts/build-widget-bundles.js`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
 - Chrome storefront read-only proof: current live FPB bundle remains COMPACT (`data-fpb-design-preset="COMPACT"`), so HORIZONTAL browser proof is still pending.
 - Admin e2e blocker: the SIT embedded app iframe currently returns Cloudflare `Error 1016 Origin DNS error` for the dev tunnel, preventing template switching through Select Template.
+
+### 2026-06-02 09:46 - PPB SIMPLIFIED modal product-loading slice started
+- Chrome storefront proof shows the PPB app block now renders on `WPB Complete Audit Product Page 2026-05-25` with `data-ppb-template-type="PDP_MODAL"` and `data-ppb-design-preset="SIMPLIFIED"`.
+- Clicking the visible `Product 1` slot opens the modal, but the modal shows `Could not load products. Please check your connection and try again.`
+- Root-cause candidate: PPB `resolveStorefrontApiBase()` falls back to the shop origin when `window.Shopify.shop` is absent and `window.__BUNDLE_APP_URL__` is null, producing `/api/storefront-products` instead of EB-aligned app-proxy data loading via `/apps/product-bundles/api/storefront-products`.
+- Scope this slice to align PPB storefront data fetches with the app-proxy API strategy already used by FPB.
+
+### 2026-06-02 10:04 - PPB SIMPLIFIED modal product-loading app-proxy fix prepared
+- Updated PPB storefront widget API base resolution so missing `window.__BUNDLE_APP_URL__` now uses Shopify app-proxy paths instead of shop-origin `/api/...` paths.
+- Rebuilt widget bundles with `WIDGET_VERSION=2.9.19`; generated PPB bundled asset contains the same app-proxy fallback.
+- Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
+- Chrome storefront retry after reload still shows the old product-loading error modal; live asset proof is pending until the Shopify extension/CDN serves the rebuilt `2.9.19` widget.

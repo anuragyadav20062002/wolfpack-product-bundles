@@ -1915,6 +1915,11 @@ class BundleWidgetProductPage {
   }
 
   resolveStorefrontApiBase() {
+    const appProxyPrefix = '/apps/product-bundles';
+    if (window.location?.pathname?.startsWith(`${appProxyPrefix}/`)) {
+      return appProxyPrefix;
+    }
+
     const configuredAppUrl = window.__BUNDLE_APP_URL__ || '';
     const currentOrigin = window.location.origin;
     const currentHost = window.location.host;
@@ -1929,8 +1934,12 @@ class BundleWidgetProductPage {
       }
     }
 
+    if (!configuredAppUrl) {
+      return appProxyPrefix;
+    }
+
     if (shopDomain && configuredAppHost !== currentHost) {
-      return '/apps/product-bundles';
+      return appProxyPrefix;
     }
 
     return configuredAppUrl || currentOrigin;
