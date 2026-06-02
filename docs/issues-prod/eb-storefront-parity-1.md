@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:41
+**Last Updated:** 2026-06-02 10:42
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -182,6 +182,7 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Patched PPB product normalization so unavailable configured products remain visible as out-of-stock cards instead of becoming a false product-loading failure.
 - Patched PPB stock lookup so `available:false` from the Storefront DTO disables the card as out of stock even when `quantityAvailable` is null.
 - Rebuilt widget bundles and re-smoked live PPB after SIT served the new extension asset path: SIMPLIFIED computes to a single 345px slot column, clicking the slot opens the modal, `fetchErrorVisible=false`, and the configured product renders in the product grid.
+- Chrome storefront proof on live widget `2.9.20`: SIMPLIFIED modal product card renders `Out of stock`, card class includes `is-out-of-stock`, CTA text is `OUT OF STOCK`, CTA is disabled, and the product hydration request uses `/apps/product-bundles/api/storefront-products`.
 
 ### 2026-06-02 10:17 - PPB SIMPLIFIED slot-grid CSS parity slice started
 - EB reference confirms MODAL and SIMPLIFIED both use `PDP_MODAL`; MODAL is a 3-column mini-slot grid and SIMPLIFIED is a single-column full-width slot row.
