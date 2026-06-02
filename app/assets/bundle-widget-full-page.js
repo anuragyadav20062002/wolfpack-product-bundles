@@ -2303,6 +2303,7 @@ class BundleWidgetFullPage {
       promoNote = discountMessage;
     }
 
+    const tierBadges = this.createPromoDiscountTierBadges(pricing, currencyInfo);
     const banner = document.createElement('div');
     banner.className = 'promo-banner';
     banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
@@ -2310,6 +2311,7 @@ class BundleWidgetFullPage {
       ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
       <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
       ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
+      ${tierBadges}
     `;
 
     // Apply per-bundle promo banner background image directly as inline style.
@@ -2342,6 +2344,50 @@ class BundleWidgetFullPage {
     }
 
     return banner;
+  }
+
+  createPromoDiscountTierBadges(pricing, currencyInfo) {
+    const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
+    if (!pricing?.enabled || rules.length === 0) return '';
+
+    const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
+    const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
+    const badges = rules
+      .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
+      .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+      .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
+      .filter(Boolean)
+      .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
+
+    if (badges.length === 0) return '';
+    return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
+  }
+
+  formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {
+    const ruleId = String(rule?.id || '');
+    const tierText = pricing?.messages?.tierTextByRuleId?.[ruleId];
+    if (tierText?.tierText && tierText?.tierSubtext) {
+      return `${tierText.tierText} / ${tierText.tierSubtext}`;
+    }
+    if (tierText?.tierText) return tierText.tierText;
+    if (tierText?.tierSubtext) return tierText.tierSubtext;
+
+    const threshold = Number(rule?.conditionValue || 0) || 0;
+    const discountValue = Number(rule?.discountValue || 0) || 0;
+    if (!threshold || !discountValue) return '';
+
+    const thresholdText = rule.conditionType === 'amount'
+      ? CurrencyManager.convertAndFormat(threshold, currencyInfo)
+      : String(threshold);
+    let discountText = '';
+    const discountMethod = pricing?.method || 'percentage_off';
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+      discountText = `${discountValue}%`;
+    } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF || discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
+      discountText = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
+    }
+
+    return discountText ? `${thresholdText} / ${discountText}` : thresholdText;
   }
 
   collectStepProductIds(step) {

@@ -3,12 +3,28 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 12:41
+**Last Updated:** 2026-06-02 13:05
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 12:55 - Started FPB promo discount-tier badge parity slice
+- EB storefront audit shows CLASSIC, COMPACT, and HORIZONTAL FPB templates display a horizontal discount tier badge row near the hero/promo area.
+- Current source already inserts `createPromoBanner()` in sidebar FPB layout, but the banner only shows one best-rule message and does not render EB-style per-tier badges.
+- Scope: derive promo tier badges from existing pricing rules and configured tier text/subtext where present; do not hardcode merchant marketing copy or template names.
+
+### 2026-06-02 13:05 - FPB promo discount-tier badge parity slice completed
+- Added `createPromoDiscountTierBadges()` and `formatPromoDiscountTierLabel()` to render EB-style promo tier badge rows from existing FPB pricing rules.
+- Configured `pricing.messages.tierTextByRuleId` values win; fallback labels are structured threshold/discount values only, avoiding fabricated merchant marketing copy.
+- Kept badge styling inline in the widget HTML to avoid increasing the Shopify app-block CSS asset beyond the 100,000 B limit.
+- Bumped storefront widget version to `2.9.32`, rebuilt widget JS assets, and regenerated minified CSS assets.
+- Verification: `node --check app/assets/bundle-widget-full-page.js` completed successfully.
+- Verification: `npx jest tests/unit/assets/bundle-widget-full-page-discount-display.test.ts` passed with 9 tests.
+- Verification: `npm run build:widgets` and `npm run minify:assets css` completed successfully; `bundle-widget-full-page.css` generated at 97.6 KB.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/widgets/full-page-css/bundle-widget-full-page.css scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-discount-display.test.ts` completed with 0 errors and warnings only.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+
 ### 2026-06-02 12:40 - Started PPB EB template body marker slice
 - Live storefront remains deploy-gated: FPB serves widget `2.9.17`, PPB serves widget `2.9.21`, while local source is `2.9.30`.
 - EB evidence confirms PPB writes `gbbmix-template-id`, `gbbmix-template-type`, and consolidated design state onto `document.body` after bundle data loads.
