@@ -6023,12 +6023,15 @@ class BundleWidgetFullPage {
 
     const fullPageTemplate = this.getFullPageTemplate();
     const fullPageDesignPreset = this.getFullPageDesignPreset();
+    const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
 
     this.container.dataset.fpbTemplateType = fullPageTemplate;
     this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
 
     this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
     this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
+    this.container.dataset.fpbTabStyle = fullPageTabStyle;
+    this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
     this.elements.stepsContainer.dataset.fpbCardCtaMode = this.resolveFullPageCardCtaMode();
   }
 

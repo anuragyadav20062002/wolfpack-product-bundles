@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 04:08
+**Last Updated:** 2026-06-02 09:41
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -156,3 +156,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Admin e2e: reopened Select Template for FPB bundle `cmpfhj2m10000v0t038osl42y`, selected Compact Design, and submitted through the preview-ready modal flow.
 - Storefront e2e: public bundle JSON returned `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and `bundleDesignPresetId: "COMPACT"`; runtime markers matched `COMPACT`, bundle-scoped search was absent, body/root backgrounds computed `rgb(241, 241, 241)`, grid computed `220px 220px` with `12px` gap, product-card prices rendered, and `.fpb-sidebar-tier-cta` rendered `Box of 2` / `₹5 off`.
 - Interaction smoke: clicking an available COMPACT product populated the sidebar selected row, updated the count to `1 item`, and enabled `Add to Cart`.
+
+### 2026-06-02 04:18 - FPB HORIZONTAL tab parity slice started
+- Current EB HORIZONTAL screenshot evidence shows text category tabs with an underline active state, not filled pill tabs.
+- Existing WPB HORIZONTAL screenshot showed pill category tabs.
+- Patched the HORIZONTAL preset to reuse the FPB underline tab treatment while keeping the horizontal product-card layout.
+- Added runtime `data-fpb-tab-style` markers so DEFAULT and HORIZONTAL use underline tabs while CLASSIC and COMPACT keep pill tabs.
+- Bumped `WIDGET_VERSION` to `2.9.18`, rebuilt widget bundles with `npm run build:widgets`, and regenerated CSS with `npm run minify:assets css`.
+- Verification passed: `node --check app/assets/bundle-widget-full-page.js`, `node --check scripts/build-widget-bundles.js`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
+- Chrome storefront read-only proof: current live FPB bundle remains COMPACT (`data-fpb-design-preset="COMPACT"`), so HORIZONTAL browser proof is still pending.
+- Admin e2e blocker: the SIT embedded app iframe currently returns Cloudflare `Error 1016 Origin DNS error` for the dev tunnel, preventing template switching through Select Template.

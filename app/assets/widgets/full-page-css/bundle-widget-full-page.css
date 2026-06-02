@@ -5138,7 +5138,7 @@ minmax(0,
   border-radius:999px;
   padding:6px 14px}
 
-[data-fpb-design-preset=DEFAULT] .category-tabs {
+[data-fpb-tab-style=underline] .category-tabs {
   justify-content:flex-start;
   gap:28px}
 
@@ -5150,12 +5150,12 @@ body:has([data-fpb-design-preset]),
   width:100vw;
   margin-left:calc(50% - 50vw)}
 
-[data-fpb-design-preset=DEFAULT] .category-tab {
+[data-fpb-tab-style=underline] .category-tab {
   border:0;
   border-bottom:3px solid #0000;
   background:none}
 
-[data-fpb-design-preset=DEFAULT] .category-tab.active {
+[data-fpb-tab-style=underline] .category-tab.active {
   border-bottom-color:#000}
 
 .product-selected-action-row {
