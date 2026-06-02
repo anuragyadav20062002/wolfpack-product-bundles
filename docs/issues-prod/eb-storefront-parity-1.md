@@ -3,12 +3,60 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 13:48
+**Last Updated:** 2026-06-02 11:50
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 16:11 IST - SIT fixture storefront sanity
+- Created fresh SIT PPB and FPB fixtures after the Render DB reset and activated both through the normal configure save flow.
+- PPB storefront product URL bootstrapped `bundle-widget-product-page-bundled.js` at widget version 2.9.36 with product-page markers and compare-at text gated off.
+- FPB parent product URL incorrectly bootstrapped the product-page block/assets because `bundle-product-page.liquid` rendered any bundle container product, including `full_page` configs.
+- Next: gate the product-page Liquid block to product-page bundles only, then re-test FPB product URL and proceed to the documented FPB page/app-embed placement path.
+### 2026-06-02 16:11 IST - FPB placement flow gap
+- Verified the FPB app-proxy link returns the documented setup response when no Shopify page is linked.
+- Found the existing `validateWidgetPlacement` action and `handleAddToStorefront` client handler were not exposed in the Bundle Visibility UI, leaving fresh FPB fixtures without a direct page creation action.
+- Next: wire the existing Add-to-storefront handler into the Visibility link card and test page creation plus storefront hydration.
+### 2026-06-02 16:11 IST - FPB page marker cache and reuse
+- FPB page hydration loaded the correct full-page assets from Shopify CDN but used the proxy JSON fallback because the app-created marker carried `data-bundle-config="null"`.
+- Updated page marker generation so the app-created marker carries the formatted bundle config and display settings, matching the metafield cache payload used by the section block.
+- Rerunning placement exposed duplicate page creation because the handler did not reuse an already linked `shopifyPageId`; added a refresh-in-place path for linked pages.
+### 2026-06-02 16:11 IST - PPB modal category hydration gap
+- PPB storefront bootstrapped correctly, but clicking the Product 1 slot opened an empty modal and never called the storefront-products API.
+- Root cause: `loadStepProducts` skipped hydration whenever `stepProductData[stepIndex]` was non-empty; category-only DTOs can seed raw product stubs without variants/prices, so the modal rendered no usable product cards.
+- Next: only skip hydration when cached modal products already contain hydrated storefront data, then rebuild widget assets and re-test PPB selection/cart.
+### 2026-06-02 16:11 IST - PPB cart redirect handling gap
+- PPB selection worked after category hydration, but Add Bundle to Cart showed a false failure.
+- Network evidence showed `/cart/add` accepted the multipart payload and redirected to `/cart`; the widget treated the successful HTML redirect as an error because it required a JSON response body.
+- Next: treat successful HTTP responses from Shopify cart add as success for the multipart PPB path and rebuild widget assets.
+### 2026-06-02 16:11 IST - SIT storefront smoke result
+- FPB fixture: active bundle, linked Shopify page, full-page assets served from Shopify CDN, embedded marker config/settings present, product selection worked, Add to Cart succeeded, and cart redirect completed.
+- PPB fixture: product-page widget served version 2.9.38, category product hydrated through storefront-products API, modal selection worked, multipart cart add redirected to `/cart`, and cart showed the new bundle line.
+- Remaining known gaps: EB pixel/template parity still needs deeper per-template comparison; this pass covered bootstrap, marker/config flow, product hydration, and base cart add for fresh SIT fixtures.
+
+
+
+
+
+
+### 2026-06-02 11:50 - Started PPB discount tier pill DTO parity slice
+- EB PPB storefront templates show inline discount tier pills using merchant-configured pricing rule copy from the consumed bundle JSON.
+- Current WPB PPB widget renders tier pills from index-based `bundleQuantityOptions.labels` / `subtexts`, which can drift when rules are keyed by id.
+- Scope: read rule-id keyed display DTO text first, keep existing index arrays as compatibility within the current consumed JSON shape, and use structured threshold/discount labels only as the final non-marketing fallback.
+
+### 2026-06-02 11:50 - PPB discount tier pill DTO parity slice completed
+- Added `getProductPageTierPillContent()` so PPB quantity/tier pills read `bundleQuantityOptions.optionsByRuleId[rule.id]` first, then `pricing.messages.tierTextByRuleId[rule.id]`.
+- Kept current index-based `labels[index]` / `subtexts[index]` as a consumed-JSON compatibility path and made the final fallback structured threshold/discount text only.
+- Bumped storefront widget version to `2.9.36` and rebuilt widget JS assets.
+- Added `test-spec/ppb-discount-tier-pill-dto.spec.md` and focused source-contract coverage.
+- Verification: `node --check app/assets/bundle-widget-product-page.js` completed successfully.
+- Verification: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` passed with 29 tests.
+- Verification: `npm run build:widgets` completed successfully.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+- E2E status: live storefront remains deploy-gated for this slice because Shopify CDN serves the last deployed widget until manual app deploy/cache propagation.
+
 ### 2026-06-02 13:44 - Started PPB compare-at price visibility parity slice
 - EB PPB runtime settings include `showProductComparedAtPrice` with default `false`.
 - Current WPB PPB widget renders compare-at strike prices whenever product data includes `compareAtPrice`.

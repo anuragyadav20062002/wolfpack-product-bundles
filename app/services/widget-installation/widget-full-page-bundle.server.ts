@@ -25,15 +25,19 @@ function escapeHtmlAttribute(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
-function buildFullPageBundleBodyHtml(bundleId: string, shop: string): string {
+function buildFullPageBundleBodyHtml(bundleId: string, shop: string, bundle?: any): string {
   const escapedBundleId = escapeHtmlAttribute(bundleId);
   const escapedShop = escapeHtmlAttribute(shop);
+  const bundleConfig = bundle ? JSON.stringify(formatBundleForWidget(bundle)) : "null";
+  const bundleSettings = bundle ? JSON.stringify(buildBundleSettings(bundle)) : "null";
 
   return `
 <div
   data-wpb-full-page-bundle
   data-bundle-id="${escapedBundleId}"
   data-bundle-type="full_page"
+  data-bundle-config="${escapeHtmlAttribute(bundleConfig)}"
+  data-bundle-settings="${escapeHtmlAttribute(bundleSettings)}"
   data-shop="${escapedShop}"
   hidden
 >
@@ -75,9 +79,10 @@ export async function refreshFullPageBundlePageBody(
   admin: any,
   pageId: string,
   bundleId: string,
-  shop: string
+  shop: string,
+  bundle?: any
 ): Promise<{ success: boolean; error?: string }> {
-  return updateFullPageBundlePageBody(admin, pageId, buildFullPageBundleBodyHtml(bundleId, shop));
+  return updateFullPageBundlePageBody(admin, pageId, buildFullPageBundleBodyHtml(bundleId, shop, bundle));
 }
 
 /**

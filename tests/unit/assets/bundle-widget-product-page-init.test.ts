@@ -410,6 +410,21 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('background:#111111');
     expect(css).toContain('color:#ffffff');
   });
+
+  it('renders PPB discount tier pills from rule-id display DTOs', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('getProductPageTierPillContent(rule, index, qtyOpts)');
+    expect(source).toContain('getProductPageTierPillContent(rule, index, qtyOpts) {');
+    expect(source).toContain('bundleQuantityOptions.optionsByRuleId || {}');
+    expect(source).toContain('pricing.messages?.tierTextByRuleId || {}');
+    expect(source).toContain('optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]');
+    expect(source).toContain('qtyOpts?.labels?.[index]');
+    expect(source).toContain('CurrencyManager.convertAndFormat(discountValue, currencyInfo)');
+  });
 });
 
 describe('Product Page bundle cart add transport contract', () => {

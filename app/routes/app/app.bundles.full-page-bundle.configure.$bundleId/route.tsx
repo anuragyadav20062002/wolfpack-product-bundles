@@ -4632,6 +4632,16 @@ export default function ConfigureBundleFlow() {
                             View on Storefront
                           </button>
                         )}
+                        {!bundle.shopifyPageHandle && (
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.visibilityPrimaryAction}
+                            onClick={handleAddToStorefront}
+                            disabled={Boolean(pageSlugError) || isInstallingWidget}
+                          >
+                            {isInstallingWidget ? "Creating..." : "Create Page"}
+                          </button>
+                        )}
                       </div>
                       <label className={fullPageBundleStyles.visibilityFieldLabel}>
                         <span>Page URL slug</span>

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.35
+ * Version : 2.9.38
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.35';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.38';
 (function() {
   'use strict';
 
@@ -3849,8 +3849,7 @@ class BundleWidgetProductPage {
     const defaultIndex = qtyOpts.defaultRuleIndex ?? 0;
 
     rules.forEach((rule, index) => {
-      const label = qtyOpts.labels?.[index] || `Option ${index + 1}`;
-      const subtext = qtyOpts.subtexts?.[index] || '';
+      const { label, subtext } = this.getProductPageTierPillContent(rule, index, qtyOpts);
       const isActive = index === defaultIndex;
 
       const pill = document.createElement('button');
@@ -3894,6 +3893,55 @@ class BundleWidgetProductPage {
 
       el.appendChild(pill);
     });
+  }
+
+  getProductPageTierPillContent(rule, index, qtyOpts) {
+    const pricing = this.selectedBundle?.pricing || {};
+    const bundleQuantityOptions = this.selectedBundle?.messaging?.displayOptions?.bundleQuantityOptions || qtyOpts || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
+    const ruleId = String(rule?.id || '');
+    const ruleOption = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
+
+    const configuredLabel =
+      (typeof ruleOption?.label === 'string' && ruleOption.label.trim()) ||
+      (typeof ruleOption?.tierText === 'string' && ruleOption.tierText.trim()) ||
+      '';
+    const configuredSubtext =
+      (typeof ruleOption?.subtext === 'string' && ruleOption.subtext.trim()) ||
+      (typeof ruleOption?.tierSubtext === 'string' && ruleOption.tierSubtext.trim()) ||
+      '';
+
+    if (configuredLabel || configuredSubtext) {
+      return {
+        label: configuredLabel || configuredSubtext,
+        subtext: configuredSubtext && configuredSubtext !== configuredLabel ? configuredSubtext : '',
+      };
+    }
+
+    const indexedLabel = qtyOpts?.labels?.[index] || '';
+    const indexedSubtext = qtyOpts?.subtexts?.[index] || '';
+    if (indexedLabel || indexedSubtext) {
+      return {
+        label: indexedLabel || indexedSubtext,
+        subtext: indexedSubtext && indexedSubtext !== indexedLabel ? indexedSubtext : '',
+      };
+    }
+
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const threshold = Number(rule?.conditionValue || 0) || 0;
+    const discountValue = Number(rule?.discountValue || 0) || 0;
+    const thresholdText = rule?.conditionType === 'amount'
+      ? CurrencyManager.convertAndFormat(threshold, currencyInfo)
+      : String(threshold || index + 1);
+    const discountText = pricing.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
+      ? (discountValue ? `${discountValue}%` : '')
+      : (discountValue ? CurrencyManager.convertAndFormat(discountValue, currencyInfo) : '');
+
+    return {
+      label: discountText ? `${thresholdText} / ${discountText}` : thresholdText,
+      subtext: '',
+    };
   }
 
   renderGiftMessageUI() {
@@ -4164,7 +4212,15 @@ class BundleWidgetProductPage {
   async loadStepProducts(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
 
-    if (this.stepProductData[stepIndex].length > 0) {
+    const cachedProducts = this.stepProductData[stepIndex] || [];
+    const hasHydratedProducts = cachedProducts.some(product =>
+      product?.variantId
+      || product?.imageUrl
+      || (Array.isArray(product?.variants) && product.variants.length > 0)
+      || typeof product?.price === 'number'
+    );
+
+    if (cachedProducts.length > 0 && hasHydratedProducts) {
       return;
     }
 
@@ -5453,12 +5509,10 @@ class BundleWidgetProductPage {
         throw new Error(errorMessage);
       }
 
-      let result;
       try {
-        result = JSON.parse(responseText);
+        JSON.parse(responseText);
       } catch {
 
-        throw new Error('Cart add failed: Store may be password protected or temporarily unavailable.');
       }
 
       ToastManager.show('Bundle added to cart successfully!');

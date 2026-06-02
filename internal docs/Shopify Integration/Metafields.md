@@ -1,0 +1,39 @@
+---
+title: Metafields
+type: shopify-integration
+audited: 2026-04-16
+sources: extensions/bundle-builder/blocks/bundle-full-page.liquid, app/services/bundles/metafield-sync/
+---
+
+# Metafields
+
+## Bundle Config Metafield
+
+**Namespace/key**: `custom.bundle_config`
+**Owner type**: Page
+**Access**: `page.metafields.custom.bundle_config`
+
+Used as the primary (zero-latency) data source for the FPB widget. The entire bundle configuration is serialised to JSON and stored here when a merchant clicks "Place Widget Now" or "Sync Bundle".
+
+### Writer
+`app/services/bundles/metafield-sync/bundle-config-metafield.server.ts`
+
+### Reader (Liquid)
+```liquid
+data-bundle-config="{{ page.metafields.custom.bundle_config | escape }}"
+```
+
+### Reader (Widget JS)
+`app/assets/bundle-widget-full-page.js` → `loadBundleConfig()` (~line 325)
+
+## Sync Rule
+
+If the bundle config structure changes:
+1. Update the **server writer** (`bundle-config-metafield.server.ts`)
+2. Update the **widget parser** (`bundle-widget-full-page.js`)
+3. Both must be updated in the same change — never one without the other
+4. Bump `WIDGET_VERSION` and show a sync prompt banner so merchants re-sync
+
+## Why Metafield Caching
+
+Before this pattern, widgets on cold-start Render instances would silently fail — the proxy call timed out. The metafield cache eliminates the network round-trip for the common case. The proxy fallback with 3s retry handles edge cases.
