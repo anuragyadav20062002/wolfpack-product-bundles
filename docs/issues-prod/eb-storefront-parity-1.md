@@ -296,3 +296,11 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped `WIDGET_VERSION` to `2.9.24`, rebuilt widget assets, and minified CSS assets.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts`, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors.
 - Live cart/network e2e remains pending until SIT serves the rebuilt widget and Chrome access is stable.
+
+### 2026-06-02 10:32 - PPB multipart cart-add implementation committed
+- Implemented EB-aligned PPB cart-add transport in the product-page widget: `FormData` POST to `/cart/add` instead of JSON `/cart/add.js`.
+- Added multipart fields for `items[index][id]`, `items[index][quantity]`, `items[index][properties][Box]`, `items[index][properties][_easyBundle:OfferId]`, and `items[index][properties][_easyBundle:prodQty]`.
+- Kept FPB widget cart-add transport unchanged on JSON `/cart/add.js`.
+- Bumped `WIDGET_VERSION` to `2.9.24` and rebuilt widget bundles.
+- Verification passed: `npm run build:widgets`, `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, and `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (27 tests).
+- ESLint returned 0 errors with ignored-file/existing warnings only.
