@@ -3,12 +3,25 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 13:05
+**Last Updated:** 2026-06-02 13:10
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 13:06 - Started PPB single-step categories-as-steps slice
+- EB evidence confirms `useSingleStepCategoriesAsBundleSteps` is a store-level PPB setting and maps into storefront runtime settings.
+- Current WPB server writes `useSingleStepCategoriesAsBundleSteps`, but the PPB widget does not consume it and still renders multi-category single steps as tabs.
+- Added `ppbExpandSingleStepCategoriesAsSteps()` to normalize a single non-default, non-free multi-category PPB step into one visible step per category before `initializeDataStructures()`.
+- Each expanded step keeps only its source category, preserving category product/collection filtering while preventing category tabs from rendering for the expanded steps.
+- Bumped storefront widget version to `2.9.33` and rebuilt widget JS assets.
+- Added `test-spec/ppb-single-step-categories-as-steps.spec.md` and focused source-contract coverage.
+- Verification: `node --check app/assets/bundle-widget-product-page.js` completed successfully.
+- Verification: `npx jest tests/unit/assets/bundle-widget-product-page-single-step-categories.test.ts --runInBand` passed with 3 tests.
+- Verification: `npm run build:widgets` completed successfully.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-product-page-single-step-categories.test.ts` completed with 0 errors; asset JS files are ignored by the current ESLint config.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+
 ### 2026-06-02 12:55 - Started FPB promo discount-tier badge parity slice
 - EB storefront audit shows CLASSIC, COMPACT, and HORIZONTAL FPB templates display a horizontal discount tier badge row near the hero/promo area.
 - Current source already inserts `createPromoBanner()` in sidebar FPB layout, but the banner only shows one best-rule message and does not render EB-style per-tier badges.
