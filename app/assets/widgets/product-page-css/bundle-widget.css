@@ -2443,6 +2443,7 @@ rgb(244,
   justify-content:flex-start;
   top:auto;
   height:0;
+  border-radius:15px 15px 0 0;
   background:var(--bundle-bs-panel-bg,
 rgb(244,
 249,
@@ -2451,11 +2452,11 @@ rgb(244,
 .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
   height:min(var(--bundle-bottom-sheet-max-height,
 880px),
-96vh)}
+85vh)}
 
 @media (max-width:767px) {
   .bw-bs-panel.bundle-builder-modal.bw-bs-panel--open {
-  height:96vh}
+  height:85vh}
 }
 
 .bw-bs-header {

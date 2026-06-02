@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:42
+**Last Updated:** 2026-06-02 18:50
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -700,3 +700,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped widget assets to `2.9.50`, rebuilt widget/minified assets, and rebuilt graph output.
 - Chrome SIT proof: SIMPLIFIED PPB product loaded `2.9.50`, opened modal from slot, footer measured `300px x 84px`, pill measured `133px x 29px`, Prev computed `display:none`, Done measured `270px x 41px`, and pre-selection pill displayed `$0.00 0`.
 - Selection smoke passed: clicking modal Add to Cart updated the pill to `$4.97 1` and enabled the main CTA as `Add Bundle to Cart • $4.97`.
+
+### 2026-06-02 18:47 - PPB modal shell height parity started
+- Live EB PPB modal shell measured at viewport `1512px x 725px` as `616px` tall with `top:109px`, `bottom:0`, and `15px 15px 0 0` radius, matching an `85vh` bottom sheet.
+- Live WPB PPB modal shell on widget `2.9.50` measured at viewport `1280px x 725px` as `696px` tall with `top:29px`, `bottom:0`, and `12px 12px 0 0` radius, which makes the modal too tall versus EB.
+- Scope: align only the PPB bottom-sheet shell height/radius with EB while preserving modal product-card/footer behavior and selection/cart contracts.
+
+### 2026-06-02 18:50 - PPB modal shell height parity verified
+- Updated the PPB bottom-sheet shell to EB's `85vh` desktop/mobile open height and `15px 15px 0 0` modal radius.
+- Bumped widget assets to `2.9.51`, rebuilt widget/minified assets, and rebuilt graph output.
+- Chrome SIT proof: SIMPLIFIED PPB product loaded `2.9.51`, opened modal from slot, panel measured `1280px x 616px` with `top:108.75px`, `bottom:0`, `height:616.25px`, and `border-radius:15px 15px 0 0` on a `1280px x 725px` viewport.
+- Selection smoke passed after the shell change: clicking modal Add to Cart changed the modal button to `Selected ✓`, footer pill to `$4.97 1`, and main CTA to enabled `Add Bundle to Cart • $4.97`.
