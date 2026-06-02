@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:52
+**Last Updated:** 2026-06-02 11:02
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -344,3 +344,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Current WPB gap: widgets attempt direct Storefront GraphQL at `/api/{version}/graphql.json` without a Storefront access token, so the token-bearing cart metafield operation is expected to fail on storefront.
 - Scope: replace direct widget GraphQL with one signed app-proxy route that reads and writes the same `bundle_details` Storefront API metafield server-side using the stored Storefront access token.
 - Test plan: route unit coverage for signed request, merge behavior, invalid signature, and widget source tests for FPB/PPB proxy calls.
+
+### 2026-06-02 11:02 - Cart `bundle_details` metafield route fix completed
+- Added signed app-proxy route `/apps/product-bundles/api/cart-bundle-details` to merge EB-style cart `bundle_details` entries server-side with the stored Storefront access token.
+- Replaced FPB and PPB widget direct tokenless Storefront GraphQL calls with app-proxy POSTs carrying only `cartToken`, `{offerId}_{sessionKey}` key, and display properties.
+- Preserved EB key semantics: `_easyBundle:OfferId` remains `{offerId}_{sessionKey}_{itemIndex}`, while `bundle_details` stores under `{offerId}_{sessionKey}`.
+- Updated API navigation map and bumped widget version to `2.9.26`.
+- Verification: Storefront GraphQL `cart(id).metafields(identifiers: [{ key: "bundle_details" }])` query and `cartMetafieldsSet` mutation were validated with Shopify MCP.
+- Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js && npx jest tests/unit/routes/cart-bundle-details.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 37 tests.
+- Verification: `npm run build:widgets` completed and regenerated FPB/PPB bundled widget assets.
+- Verification: modified-file ESLint completed with 0 errors and warnings only.
+- Graph: `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"` completed; graph output changed but remains unstaged with prior graph working-tree drift.

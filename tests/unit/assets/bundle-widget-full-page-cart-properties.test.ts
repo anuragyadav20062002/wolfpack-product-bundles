@@ -30,4 +30,15 @@ describe("Full Page widget cart display properties", () => {
     expect(source).not.toContain("'_step_index'");
     expect(source).not.toContain("'_step_name'");
   });
+
+  it("syncs EB bundle_details through the signed app proxy instead of direct Storefront GraphQL", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+
+    expect(source).toContain("fetch('/apps/product-bundles/api/cart-bundle-details'");
+    expect(source).toContain("bundleDetailsKey");
+    expect(source).not.toContain("fetch(`/api/${version}/graphql.json`");
+  });
 });

@@ -431,6 +431,7 @@ Billing Page
 |---|---|
 | `/apps/product-bundles/api/bundle/:id.json` | Storefront bundle config (HMAC verified) |
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
+| `/apps/product-bundles/api/cart-bundle-details` | Signed storefront route that merges EB-style cart `bundle_details` metafield entries |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
 | `/api/billing/create` | Initiate subscription |
 | `/api/billing/confirm` | Confirm subscription |

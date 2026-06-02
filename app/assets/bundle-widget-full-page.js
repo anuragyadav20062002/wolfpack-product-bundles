@@ -5928,10 +5928,22 @@ class BundleWidgetFullPage {
       const cartToken = await this.getBundleDetailsCartToken();
       if (!cartToken) return;
 
-      const cartId = `gid://shopify/Cart/${cartToken}`;
-      const existingDetails = await this.fetchExistingBundleDetails(cartId);
-      existingDetails[bundleDetailsKey] = { displayProperties };
-      await this.writeBundleDetailsCartMetafield(cartId, existingDetails);
+      const response = await fetch('/apps/product-bundles/api/cart-bundle-details', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cartToken,
+          bundleDetailsKey,
+          displayProperties
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`bundle_details sync failed (${response.status})`);
+      }
     } catch (error) {
       console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
     }
@@ -5969,79 +5981,6 @@ class BundleWidgetFullPage {
     if (!response.ok) return null;
     const cart = await response.json();
     return cart?.token || null;
-  }
-
-  async fetchExistingBundleDetails(cartId) {
-    const query = `
-      query GetCartMetafield($cartId: ID!) {
-        cart(id: $cartId) {
-          metafield(key: "bundle_details") {
-            value
-          }
-        }
-      }
-    `;
-    const data = await this.postStorefrontCartGraphql(query, { cartId });
-    const value = data?.data?.cart?.metafield?.value;
-    if (!value) return {};
-    try {
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-
-  async writeBundleDetailsCartMetafield(cartId, bundleDetails) {
-    const mutation = `
-      mutation SyncBundleDetails($metafields: [CartMetafieldsSetInput!]!) {
-        cartMetafieldsSet(metafields: $metafields) {
-          userErrors {
-            field
-            message
-          }
-        }
-      }
-    `;
-    const data = await this.postStorefrontCartGraphql(mutation, {
-      metafields: [{
-        ownerId: cartId,
-        key: 'bundle_details',
-        type: 'json',
-        value: JSON.stringify(bundleDetails)
-      }]
-    });
-    const errors = data?.data?.cartMetafieldsSet?.userErrors || [];
-    if (errors.length > 0) {
-      throw new Error(errors.map(error => error.message).join(', '));
-    }
-  }
-
-  async postStorefrontCartGraphql(query, variables) {
-    const version = this.resolveStorefrontCartApiVersion();
-    const response = await fetch(`/api/${version}/graphql.json`, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query, variables })
-    });
-    if (!response.ok) {
-      throw new Error(`Storefront API failed (${response.status})`);
-    }
-    const data = await response.json();
-    if (data?.errors?.length) {
-      throw new Error(data.errors.map(error => error.message).join(', '));
-    }
-    return data;
-  }
-
-  resolveStorefrontCartApiVersion() {
-    return this.selectedBundle?.storefrontApiVersion
-      || window.__WOLFPACK_STOREFRONT_API_VERSION__
-      || window.Shopify?.storefrontApiVersion
-      || '2025-04';
   }
 
   generateBundleSessionKey() {
