@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:42
+**Last Updated:** 2026-06-02 10:54
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -196,3 +196,12 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped `WIDGET_VERSION` to `2.9.20`, rebuilt widget bundles, and minified CSS assets.
 - Verification passed: `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, `npm run minify:assets css`, and `npx eslint --max-warnings 9999 scripts/build-widget-bundles.js` with 0 errors and an ignore-pattern warning only.
 - Chrome storefront reload still serves the older Shopify CDN stylesheet; computed SIMPLIFIED grid remains `104.32px 104.32px 104.32px`, so live e2e proof is pending after SIT deploy/CDN propagation.
+
+### 2026-06-02 10:54 - PPB MODAL/SIMPLIFIED empty-slot visual parity slice started
+- EB screenshot evidence shows PDP modal empty slots render a visual placeholder block with the label, not a standalone plus icon.
+- Live consumed PPB JSON has no slot image fields on the fixture, so the empty visual must use the widget styling fallback unless a merchant image URL is present.
+- Patched PPB modal empty cards to render `.bw-slot-card__empty-visual`; non-modal empty cards keep the previous plus icon.
+- Patched SIMPLIFIED CSS so the empty row uses label-left and visual-right layout with a taller EB-like row.
+- Bumped `WIDGET_VERSION` to `2.9.21`, rebuilt widget bundles, and minified CSS assets.
+- Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
+- Chrome storefront reload still serves a widget without `.bw-slot-card__empty-visual`; live e2e proof for the empty visual is pending after SIT deploy/CDN propagation.

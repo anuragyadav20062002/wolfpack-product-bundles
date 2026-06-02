@@ -2907,6 +2907,16 @@ var(--bundle-global-primary-button,
   padding:0 4px;
   line-height:1.3}
 
+.bw-slot-card__empty-visual {
+  width:80px;
+  height:80px;
+  border-radius:0;
+  background:var(--bundle-empty-slot-visual-bg,#ff9790);
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-position:center;
+  flex-shrink:0}
+
 .bw-slot-discount-badge {
   position:absolute;
   bottom:32px;
@@ -3292,17 +3302,31 @@ to {
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card--empty {
   display:grid;
-  grid-template-columns:minmax(0, 1fr) 52px;
-  min-height:60px;
+  grid-template-columns:minmax(0, 1fr) 84px;
+  min-height:96px;
   height:auto;
   padding:10px;
   align-items:center}
 
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__empty-visual {
+  grid-column:2;
+  grid-row:1;
+  width:76px;
+  height:76px;
+  justify-self:end}
+
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__plus-icon--plain {
   grid-column:2;
   grid-row:1;
+  width:76px;
+  height:76px;
   margin:0;
-  justify-self:end}
+  justify-self:end;
+  background:var(--bundle-empty-slot-visual-bg,#ff9790);
+  color:transparent}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__plus-icon--plain svg {
+  display:none}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__label {
   grid-column:1;

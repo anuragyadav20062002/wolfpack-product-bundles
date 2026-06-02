@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.20
+ * Version : 2.9.21
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.20';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.21';
 (function() {
   'use strict';
 
@@ -3132,21 +3132,27 @@ class BundleWidgetProductPage {
     stepBox.className = 'step-box bw-slot-card bw-slot-card--empty';
 
     const imgUrl = step.categoryImageUrl || null;
-    if (imgUrl) {
+    const isModalSlotTemplate = this._isProductPageModalSlotTemplate();
+    if (imgUrl && !isModalSlotTemplate) {
       stepBox.style.backgroundImage = `url('${imgUrl}')`;
       stepBox.style.backgroundSize = 'contain';
       stepBox.style.backgroundRepeat = 'no-repeat';
       stepBox.style.backgroundPosition = 'center';
     }
 
-    const iconWrapper = document.createElement('div');
-    iconWrapper.className = 'bw-slot-card__plus-icon';
-    const isModalSlotTemplate = this._isProductPageModalSlotTemplate();
-    const primaryColor = getComputedStyle(document.documentElement)
-      .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
     if (isModalSlotTemplate) {
-      iconWrapper.classList.add('bw-slot-card__plus-icon--plain');
+      const visual = document.createElement('div');
+      visual.className = 'bw-slot-card__empty-visual';
+      if (imgUrl) {
+        visual.style.backgroundImage = `url('${imgUrl}')`;
+      }
+      stepBox.appendChild(visual);
     } else {
+
+      const iconWrapper = document.createElement('div');
+      iconWrapper.className = 'bw-slot-card__plus-icon';
+      const primaryColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
       iconWrapper.style.cssText = `
         width: 80px;
         height: 80px;
@@ -3157,12 +3163,12 @@ class BundleWidgetProductPage {
         justify-content: center;
         margin-bottom: 10px;
       `;
+      iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+      </svg>`;
+      iconWrapper.style.color = primaryColor;
+      stepBox.appendChild(iconWrapper);
     }
-    iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
-    </svg>`;
-    iconWrapper.style.color = isModalSlotTemplate ? '#111111' : primaryColor;
-    stepBox.appendChild(iconWrapper);
 
     const slotNumber = instanceIndex + 1;
     const label = document.createElement('p');
