@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:26
+**Last Updated:** 2026-06-02 18:35
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -676,3 +676,15 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Restored disabled `Add Bundle to Cart` visual state to gray for SIMPLIFIED PDP modal while preserving enabled/hover black styling.
 - Bumped widget assets to `2.9.47`, rebuilt widget/minified assets, and rebuilt graph output.
 - Chrome SIT proof: PPB product `cmpwhs56g0000v02va4z44oxd` loaded `2.9.47`, markers `PDP_MODAL`/`SIMPLIFIED`/`vertical`, slot measured 345x104 with 226px/70px columns, CTA disabled background `rgb(138, 138, 138)`, and clicking the empty slot opened the product-selection modal with Cross Necklace controls.
+
+### 2026-06-02 18:30 - PPB SIMPLIFIED modal product-card visual parity started
+- Live EB open PPB modal measured as a fixed `rgb(244,249,249)` bottom panel with a centered category tab row, 24px condition title, 5-column product grid, compact 244px x 343px product cards, 182px images, rectangular 5px Add to Cart buttons, and no visible quantity selector before selection.
+- Live WPB SIMPLIFIED open modal loaded widget `2.9.47` but rendered oversized 295px x 525px product cards, visible +/- quantity controls at quantity 0, a pill Add to Cart button, and grid/card sizing that diverged from EB.
+- Scope: strengthen PPB bottom-sheet modal CSS to match EB's open modal product grid/card treatment while preserving the existing slot trigger, hydration, selection, and cart contracts.
+
+### 2026-06-02 18:35 - PPB SIMPLIFIED modal product-card visual parity verified
+- Strengthened the `#bundle-builder-modal` CSS path so the PPB bottom-sheet product grid uses EB-style 5-column layout, 30px gap, padded product area, compact 343px cards, 10px card radius, 5px Add to Cart radius, and 16px/400 product text/button treatment.
+- Hid pre-selection quantity controls in modal product cards while preserving selected-state behavior and existing cart/selection handlers.
+- Bumped widget assets to `2.9.49`, rebuilt widget/minified assets, and rebuilt graph output.
+- Chrome SIT proof: SIMPLIFIED PPB product loaded `2.9.49`, opened modal from slot, grid measured five `200px` columns at current viewport, product card measured `200px x 343px`, quantity wrapper computed `display:none`, Add to Cart measured `174px x 33px` with `5px` radius and `16px/400` typography.
+- Selection smoke passed: clicking modal Add to Cart changed the card to `product-card selected` and enabled the main CTA as `Add Bundle to Cart • $4.97`.
