@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 16:50
+**Last Updated:** 2026-06-02 17:02
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -47,6 +47,12 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
 - Chrome proof on fresh SIT PPB with SIMPLIFIED attributes forced after reload: widget version `2.9.41`, slot row measured `345px x 104px`, grid columns `345px`, card padding `0px`, visual `display:none`, label `16px/700` centered.
 - E2E caveat: the persisted fresh SIT PPB fixture remains `PDP_MODAL/MODAL`; the cross-origin Admin shell POST did not update it. A real persisted SIMPLIFIED fixture/template smoke remains open.
+### 2026-06-02 17:02 IST - PPB SIMPLIFIED persisted template smoke completed
+- Updated the fresh SIT PPB fixture row and its Shopify parent variant `$app.bundle_ui_config` metafield to `bundleDesignTemplate: "PDP_MODAL"`, `bundleDesignPresetId: "SIMPLIFIED"`, `bundleDesignTemplateData.templateId: "SIMPLIFIED"`, and `renderFilledSlotsAsHorizontalStacked: false`.
+- Storefront reload on `wpb-sit-sanity-ppb-2026-06-02` loaded the persisted config as widget version `2.9.41`, `data-ppb-template-type="PDP_MODAL"`, `data-ppb-design-preset="SIMPLIFIED"`, `data-ppb-slot-orientation="vertical"`, and body `gbbmix-template-id="SIMPLIFIED"`.
+- Closed-state persisted measurements matched the EB SIMPLIFIED target: grid `345px`, slot card `345px x 104px`, dashed black `2px` border, `10px` radius, `0px` padding, visual hidden, centered `16px/700` label, and black `345px x 45px` CTA.
+- Slot click opened the gated modal, hydrated the Cross Necklace product card, selecting it changed the modal button to `SELECTED` and enabled the main CTA as `Add Bundle to Cart • $4.97`.
+- This closes the prior SIMPLIFIED e2e caveat for the fresh SIT fixture; remaining PPB template work still includes persisted MODAL, CASCADE, and COGNIVE per-template smoke and visual comparison.
 ### 2026-06-02 16:11 IST - SIT fixture storefront sanity
 - Created fresh SIT PPB and FPB fixtures after the Render DB reset and activated both through the normal configure save flow.
 - PPB storefront product URL bootstrapped `bundle-widget-product-page-bundled.js` at widget version 2.9.36 with product-page markers and compare-at text gated off.
