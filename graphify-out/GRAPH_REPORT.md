@@ -638,6 +638,10 @@ Nodes (152): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bu
 Cohesion: 0.03
 Nodes (5): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ppbExpandSingleStepCategoriesAsSteps()
 
+### Community 5 - "Community 5"
+Cohesion: 0.02
+Nodes (124): Rationale: Option C (tierConfig on Bundle DB + existing API) Selected, Bundle.tierConfig JSON Field, Analytics Pixel Toggle Architecture, deactivateUtmPixel Service Function, getPixelStatus Service Function, Remove Pixel Auto-Activation from afterAuth, AppLogger (Structured Logger Utility), App Proxy 504 / Render Cold-Start Issue (+116 more)
+
 ### Community 6 - "Community 6"
 Cohesion: 0.02
 Nodes (119): Admin Tier Config Architecture Decision Record, Admin Tier Config BR, Admin Tier Config PO Requirements, PricingTiersSection UI Component, Rationale: Option C (tierConfig on Bundle DB + existing API) Selected, Admin Tier Config SDE Implementation Plan, Bundle.tierConfig JSON Field, validateTierConfig Server Function (+111 more)
@@ -686,21 +690,25 @@ Nodes (39): Architecture Comparison - Hybrid Approach (3 Standard + 1 UI Config)
 Cohesion: 0.07
 Nodes (38): Admin Performance Optimization Report, App Proxy API (/apps/product-bundles/api/bundle/), App Store Compliance (No Theme Writes), Bundle.active Column (Redundant), BundleConfig Database Table, Bundle Prisma Model, BundlePricing Prisma Model, bundleType Field (product_page | full_page) (+30 more)
 
+### Community 17 - "Community 17"
+Cohesion: 0.07
+Nodes (37): app.billing.tsx Route, Route: app.dashboard/route.tsx, Route: app._index.tsx (home/onboarding), app.pricing.tsx Route, Billing returnUrl Embedded App Pattern, Service: billing.server.ts, Fix Session Loss During Billing Upgrade Redirect, Service: bundle-analytics.server.ts (+29 more)
+
 ### Community 18 - "Community 18"
 Cohesion: 0.07
 Nodes (37): app.billing.tsx Route, Route: app.dashboard/route.tsx, Route: app._index.tsx (home/onboarding), app.pricing.tsx Route, Billing returnUrl Embedded App Pattern, Service: billing.server.ts, Fix Session Loss During Billing Upgrade Redirect, Service: bundle-analytics.server.ts (+29 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.13
-Nodes (1): BundleProductModal
+Cohesion: 0.09
+Nodes (31): api.bundle-product-manager.test.ts, $app Namespace Reserved Prefix, BundleIsolationService (bundle-isolation.server.ts), bundle-product-manager.test.ts, bundle-widget.test.ts, bundle-workflow.test.ts (Integration), cart-transform-bundle-utils.test.ts, Cart Transform Test Environment Variables (+23 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.13
 Nodes (1): BundleProductModal
 
 ### Community 21 - "Community 21"
-Cohesion: 0.12
-Nodes (25): api.bundle-product-manager.test.ts, $app Namespace Reserved Prefix, BundleIsolationService (bundle-isolation.server.ts), bundle-product-manager.test.ts, bundle-widget.test.ts, bundle-workflow.test.ts (Integration), cart-transform-bundle-utils.test.ts, Cart Transform Test Environment Variables (+17 more)
+Cohesion: 0.13
+Nodes (1): BundleProductModal
 
 ### Community 22 - "Community 22"
 Cohesion: 0.1
@@ -762,39 +770,39 @@ Nodes (13): asArray(), buildProductSourceMap(), compactCollectionReferences(), c
 Cohesion: 0.25
 Nodes (1): VariantSelectorComponent
 
-### Community 37 - "Community 37"
+### Community 36 - "Community 36"
 Cohesion: 0.19
 Nodes (6): merge_attributes(), messaging_merge_input(), test_merge_applies_selected_addon_discount_attributes(), test_merge_buy_x_get_y_component_parent(), test_merge_emits_public_cart_line_messaging_by_default(), test_merge_uses_cart_line_messaging_settings_from_function_owner()
+
+### Community 37 - "Community 37"
+Cohesion: 0.27
+Nodes (1): VariantSelectorComponent
 
 ### Community 38 - "Community 38"
 Cohesion: 0.27
 Nodes (1): VariantSelectorComponent
 
 ### Community 39 - "Community 39"
-Cohesion: 0.27
-Nodes (1): VariantSelectorComponent
-
-### Community 40 - "Community 40"
-Cohesion: 0.27
-Nodes (1): VariantSelectorComponent
-
-### Community 41 - "Community 41"
 Cohesion: 0.35
 Nodes (1): PricingCalculator
 
-### Community 42 - "Community 42"
+### Community 40 - "Community 40"
 Cohesion: 0.32
 Nodes (1): CartTransformService
 
-### Community 43 - "Community 43"
+### Community 41 - "Community 41"
+Cohesion: 0.31
+Nodes (1): VariantSelectorComponent
+
+### Community 42 - "Community 42"
 Cohesion: 0.22
 Nodes (13): Discount Messaging Data Flow (form → handler → metafield → widget), ensureBundleMetafieldDefinitions() Dead Wrapper, getStepSelectionText() Dead Method (PDP Widget), ADR: Legacy Code Removal Architecture, BR: Legacy Code Removal, PO Requirements: Legacy Code Removal, Metafield Sync Index (metafield-sync/index.ts), Issue: PDP Step Limit Enforcement & Discount Messaging Fix (+5 more)
 
-### Community 44 - "Community 44"
+### Community 43 - "Community 43"
 Cohesion: 0.29
 Nodes (9): useAppState(), useBundleConfiguration(), useDesignSettings(), useModals(), usePreferences(), useSelector(), useSubscription(), useToasts() (+1 more)
 
-### Community 45 - "Community 45"
+### Community 44 - "Community 44"
 Cohesion: 0.32
 Nodes (11): addBundleToCart(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), buildProductPageCartFormData(), _formatCartAmount(), _generateBundleInstanceId(), _generateBundleSessionKey() (+3 more)
 
@@ -874,27 +882,27 @@ Nodes (8): addUnique(), asArray(), buildProductPageThemeEditorDeepLink(), derive
 Cohesion: 0.28
 Nodes (1): ComponentGenerator
 
-### Community 65 - "Community 65"
+### Community 64 - "Community 64"
 Cohesion: 0.39
 Nodes (1): CurrencyManager
 
-### Community 66 - "Community 66"
+### Community 65 - "Community 65"
 Cohesion: 0.33
 Nodes (7): collectCachedStepVariants(), collectStepProductReferences(), ensureBundleParentVariantRequiresComponents(), getCachedVariantId(), getProductReferenceId(), normalizeShopifyGid(), updateBundleProductMetafields()
 
-### Community 67 - "Community 67"
+### Community 66 - "Community 66"
 Cohesion: 0.31
 Nodes (4): makeDiscountData(), makeFormData(), makeStepsData(), makeStepWithProduct()
 
-### Community 68 - "Community 68"
+### Community 67 - "Community 67"
 Cohesion: 0.25
 Nodes (9): buildSettingsData() — DCP Settings Handler, DCP Config-Driven Section Filtering (app/lib/dcp-config/), DCP NavigationSidebar Component, Issue: DCP Settings Silently Not Saved to DB, Issue: DCP UI Fixes (5 targeted improvements), Issue: Free Gift Badge — DCP Asset Picker, Issue: UX Gap Fixes — Batch 2, PreviewScope Component — DCP CSS Injection (+1 more)
 
-### Community 69 - "Community 69"
+### Community 68 - "Community 68"
 Cohesion: 0.25
 Nodes (0): 
 
-### Community 70 - "Community 70"
+### Community 69 - "Community 69"
 Cohesion: 0.29
 Nodes (2): FeatureGate(), formatFeatureName()
 
@@ -946,9 +954,13 @@ Nodes (1): SubscriptionGuard
 Cohesion: 0.29
 Nodes (0): 
 
-### Community 83 - "Community 83"
+### Community 82 - "Community 82"
 Cohesion: 0.29
 Nodes (7): Fix: $app:serverUrl Metafield Sync Moved to afterAuth, Fix: BillingService.getSubscriptionInfo try-catch guard, Concept: Embedded Context Guard (auth.login redirect), Issue: Homepage Login Redirect (homepage-login-redirect-2), Issue: Login Screen Fix (login-screen-fix-1), Bug: Parallel Loader Race Condition (app.tsx + app._index.tsx), Fix: Root Route Embedded Detection (host, id_token, sec-fetch-dest header)
+
+### Community 83 - "Community 83"
+Cohesion: 0.33
+Nodes (0): 
 
 ### Community 84 - "Community 84"
 Cohesion: 0.29
@@ -966,23 +978,23 @@ Nodes (0):
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 88 - "Community 88"
+### Community 87 - "Community 87"
 Cohesion: 0.6
 Nodes (4): buildDefaultProductEntryFromPicker(), extractShopifyNumericId(), firstImageUrl(), normalizeVariant()
 
-### Community 89 - "Community 89"
+### Community 88 - "Community 88"
 Cohesion: 0.6
 Nodes (5): asObjectArray(), buildStepCategoryCreateInput(), numberValue(), objectRecord(), stringValue()
 
-### Community 90 - "Community 90"
+### Community 89 - "Community 89"
 Cohesion: 0.53
 Nodes (4): addItem(), clearStep(), _findStep(), removeItem()
 
-### Community 91 - "Community 91"
+### Community 90 - "Community 90"
 Cohesion: 0.6
 Nodes (1): ToastManager
 
-### Community 92 - "Community 92"
+### Community 91 - "Community 91"
 Cohesion: 0.53
 Nodes (4): discoverSalesChannels(), handleCloneBundle(), handleCreateBundle(), publishToSalesChannels()
 
@@ -1110,9 +1122,13 @@ Nodes (0):
 Cohesion: 0.83
 Nodes (3): processCss(), sanitizeCss(), validateCssSyntax()
 
-### Community 124 - "Community 124"
+### Community 123 - "Community 123"
 Cohesion: 0.67
 Nodes (2): buildBadgePositionVars(), generateCSSVariables()
+
+### Community 124 - "Community 124"
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 125 - "Community 125"
 Cohesion: 0.5
@@ -1146,7 +1162,7 @@ Nodes (1): WebhookProcessor
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 133 - "Community 133"
+### Community 132 - "Community 132"
 Cohesion: 0.5
 Nodes (0): 
 
@@ -1158,9 +1174,17 @@ Nodes (3): buildPriceAdjustmentConfig(), toNumber(), toPositiveNumber()
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 136 - "Community 136"
+### Community 134 - "Community 134"
 Cohesion: 0.5
 Nodes (0): 
+
+### Community 135 - "Community 135"
+Cohesion: 0.5
+Nodes (0): 
+
+### Community 136 - "Community 136"
+Cohesion: 0.67
+Nodes (1): WebhookProcessor
 
 ### Community 137 - "Community 137"
 Cohesion: 0.5
@@ -1173,6 +1197,10 @@ Nodes (0):
 ### Community 139 - "Community 139"
 Cohesion: 0.5
 Nodes (0): 
+
+### Community 139 - "Community 139"
+Cohesion: 0.83
+Nodes (3): buildPriceAdjustmentConfig(), toNumber(), toPositiveNumber()
 
 ### Community 140 - "Community 140"
 Cohesion: 0.5
@@ -1199,8 +1227,8 @@ Cohesion: 0.5
 Nodes (0): 
 
 ### Community 146 - "Community 146"
-Cohesion: 0.5
-Nodes (0): 
+Cohesion: 0.67
+Nodes (2): buildFreeBadge(), createFakeElement()
 
 ### Community 147 - "Community 147"
 Cohesion: 0.5
@@ -1326,13 +1354,25 @@ Nodes (0):
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 178 - "Community 178"
+### Community 175 - "Community 175"
 Cohesion: 0.67
 Nodes (0): 
 
 ### Community 179 - "Community 179"
 Cohesion: 0.67
 Nodes (0): 
+
+### Community 177 - "Community 177"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 178 - "Community 178"
+Cohesion: 1.0
+Nodes (2): normalizeShop(), pickPpbPreviewUrl()
+
+### Community 179 - "Community 179"
+Cohesion: 1.0
+Nodes (2): buildGeneratedBundleProductHandle(), buildGeneratedBundleProductMetadata()
 
 ### Community 180 - "Community 180"
 Cohesion: 0.67
@@ -1379,8 +1419,8 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 191 - "Community 191"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): loader(), sanitizeBundleType()
 
 ### Community 192 - "Community 192"
 Cohesion: 0.67
@@ -1423,12 +1463,12 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 202 - "Community 202"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): isValidHexColor(), syncThemeColors()
 
 ### Community 203 - "Community 203"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): discoverSalesChannels(), publishProductToSalesChannels()
 
 ### Community 204 - "Community 204"
 Cohesion: 0.67
@@ -2144,7 +2184,7 @@ Nodes (0):
 
 ### Community 382 - "Community 382"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (2): Theme Editor Deep Link URL Format, Theme Editor Deep Links
 
 ### Community 383 - "Community 383"
 Cohesion: 1.0

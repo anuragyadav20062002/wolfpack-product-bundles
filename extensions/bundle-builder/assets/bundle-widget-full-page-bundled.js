@@ -3986,12 +3986,18 @@ class BundleWidgetFullPage {
     const conditionlessMobile = this.bundleHasNoConditions();
     const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
     const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
+    const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
     ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
+    if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (conditionlessMobile || (isLastStep && isComplete)) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         if (!this.canCheckoutWithBoxSelection()) {
           this.showBoxSelectionValidationMessage();
           return;
@@ -4146,8 +4152,13 @@ class BundleWidgetFullPage {
     priceSpan.textContent = priceText;
     ctaBtn.append(labelSpan, separatorSpan, priceSpan);
     if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+    if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (shouldAddToCart) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         if (!this.canCheckoutWithBoxSelection()) {
           this.showBoxSelectionValidationMessage();
           return;
@@ -4558,6 +4569,49 @@ class BundleWidgetFullPage {
     if (reachedRule) return reachedRule;
 
     return rules.find(rule => rule.isDefaultSelected) || rules[0];
+  }
+
+  getSelectedBoxSelectionQuantity() {
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      if (item.isDefault === true || item.isFreeGift === true) return total;
+      return total + (Number(item.quantity || 0) || 0);
+    }, 0);
+  }
+
+  getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
+    const boxSelection = this.selectedBundle?.boxSelection;
+    const rules = this.getBoxSelectionRules();
+    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+    const isEnabled = boxSelection?.isEnabled === true
+      && boxSelection?.validateBoxSelectionQuantity === true
+      && !!activeRule;
+
+    if (!isEnabled) {
+      return {
+        isEnabled: false,
+        isValid: true,
+        activeRule,
+        totalQuantity: Number(totalQuantity || 0),
+      };
+    }
+
+    return {
+      isEnabled: true,
+      isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
+      activeRule,
+      totalQuantity: Number(totalQuantity || 0),
+    };
+  }
+
+  canCheckoutWithBoxSelection() {
+    return this.getBoxSelectionValidationState().isValid;
+  }
+
+  showBoxSelectionValidationMessage() {
+    const state = this.getBoxSelectionValidationState();
+    if (!state.isEnabled || state.isValid) return;
+
+    ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
   }
 
   getSelectedBoxSelectionQuantity() {
@@ -6017,10 +6071,15 @@ class BundleWidgetFullPage {
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
     ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
+    if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
     ctaBtn.addEventListener('click', () => {
       if (conditionless || isLastStep) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         if (!this.canCheckoutWithBoxSelection()) {
           this.showBoxSelectionValidationMessage();
           return;
