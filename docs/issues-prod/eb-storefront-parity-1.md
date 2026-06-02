@@ -594,3 +594,11 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Storefront loaded widget version 2.9.42 with body marker COGNIVE, a three-column in-page product grid, square product image crop, centered product title/price, and full-width black Add button.
 - Confirmed selecting Cross Necklace changes the product button to Selected and enables Add Bundle to Cart with .97 total.
 - No code changes were required for this slice; this validates the existing COGNIVE grid rendering after the CASCADE tab fix.
+
+### 2026-06-02 17:19 IST - Completed PPB MODAL persisted storefront smoke and CTA color fix
+- Persisted SIT PPB fixture to EB Horizontal Slots contract: bundleDesignTemplate PDP_MODAL, bundleDesignTemplateData.templateId MODAL, and renderFilledSlotsAsHorizontalStacked true.
+- Storefront loaded widget version 2.9.42 with body marker MODAL and PDP_MODAL type; closed state kept the modal shell hidden/inert and rendered the horizontal 104px slot card with gray disabled Add Bundle to Cart CTA.
+- Found a parity gap after selection: the parent Add Bundle to Cart CTA became enabled but kept the disabled gray background.
+- Fixed the PPB MODAL base CTA CSS so enabled state is black while disabled state remains gray; regenerated minified CSS asset.
+- Chrome proof after fix: selecting Cross Necklace closes the modal, fills the slot, enables Add Bundle to Cart • .97, and computes the enabled CTA background as rgb(0, 0, 0).
+- Checks completed: npm run minify:assets css, graphify code rebuild, and Chrome SIT persisted PPB MODAL smoke.

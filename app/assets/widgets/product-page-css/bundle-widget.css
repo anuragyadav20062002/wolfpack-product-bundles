@@ -3517,7 +3517,7 @@ to {
   height:45px;
   margin:14px 0 0;
   border-radius:4px;
-  background:#8a8a8a;
+  background:#000000;
   color:#ffffff;
   font-size:16px;
   font-weight:700;
@@ -3534,7 +3534,7 @@ to {
   transform:none}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart:hover {
-  background:#8a8a8a;
+  background:#000000;
   transform:none}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart,
