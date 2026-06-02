@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.40
+ * Version : 2.9.41
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.40';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.41';
 (function() {
   'use strict';
 
@@ -2970,6 +2970,18 @@ class BundleWidgetProductPage {
     return button;
   }
 
+  syncProductPagePrimaryCtaStyle() {
+    const button = this.elements?.addToCartButton;
+    if (!button) return;
+
+    if (this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()) {
+      button.style.backgroundColor = '#000000';
+      return;
+    }
+
+    button.style.backgroundColor = '';
+  }
+
   _createDynamicCheckoutVisual() {
     const button = document.createElement('div');
     button.className = 'bw-ppb-dynamic-checkout-visual';
@@ -4107,6 +4119,8 @@ class BundleWidgetProductPage {
       button.disabled = false;
       button.classList.remove('disabled');
     }
+
+    this.syncProductPagePrimaryCtaStyle();
 
     const totalPillFinal = this.elements.modal?.querySelector('.total-price-final');
     const totalPillStrike = this.elements.modal?.querySelector('.total-price-strike');

@@ -972,6 +972,18 @@ class BundleWidgetProductPage {
     return button;
   }
 
+  syncProductPagePrimaryCtaStyle() {
+    const button = this.elements?.addToCartButton;
+    if (!button) return;
+
+    if (this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()) {
+      button.style.backgroundColor = '#000000';
+      return;
+    }
+
+    button.style.backgroundColor = '';
+  }
+
   _createDynamicCheckoutVisual() {
     const button = document.createElement('div');
     button.className = 'bw-ppb-dynamic-checkout-visual';
@@ -2157,6 +2169,8 @@ class BundleWidgetProductPage {
       button.disabled = false;
       button.classList.remove('disabled');
     }
+
+    this.syncProductPagePrimaryCtaStyle();
 
     // Update the modal footer total pill
     const totalPillFinal = this.elements.modal?.querySelector('.total-price-final');

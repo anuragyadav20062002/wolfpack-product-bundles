@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 16:44
+**Last Updated:** 2026-06-02 16:50
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -34,6 +34,19 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: targeted ESLint completed with 0 errors; the checked JS files are ignored by the current ESLint config.
 - Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
 - Chrome SIT PPB smoke on `wpb-sit-sanity-ppb-2026-06-02`: widget version `2.9.40`, template `PDP_MODAL/MODAL`, `data-ppb-slot-orientation="horizontal"`, slot grid measured `104.32px 104.32px 104.32px`, first slot card measured `104.32px x 178px`, modal remained hidden before slot open.
+### 2026-06-02 16:50 IST - Started PPB SIMPLIFIED closed-state parity slice
+- Live EB SIMPLIFIED storefront measured as a single 345px-wide dashed slot row: 104px tall, 10px radius, centered 16px/700 label, no visible slot image/icon, and a black 345px CTA.
+- WPB SIMPLIFIED CSS path measured as a two-column 345px row with a visible pink visual block, 114px height, left-aligned 14px label, and gray disabled CTA.
+- Scope: align the SIMPLIFIED closed PDP state to EB while leaving MODAL horizontal slot cards unchanged.
+### 2026-06-02 16:50 IST - PPB SIMPLIFIED closed-state parity slice completed
+- Updated SIMPLIFIED/vertical PPB closed-state CSS to a single 345px row with 104px height, centered 16px/700 label, hidden slot visual/icon, 10px dashed card border, and black primary CTA rules.
+- Added a widget runtime CTA style sync so persisted SIMPLIFIED templates get the EB black primary CTA even if Shopify serves a stale CSS revision.
+- Bumped widget version to `2.9.41`, rebuilt widget assets, and regenerated CSS assets.
+- Verification: `npm run build:widgets`, `npm run minify:assets css`, and `node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
+- Verification: targeted ESLint completed with 0 errors; checked widget JS/CSS files are ignored by the current ESLint config.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+- Chrome proof on fresh SIT PPB with SIMPLIFIED attributes forced after reload: widget version `2.9.41`, slot row measured `345px x 104px`, grid columns `345px`, card padding `0px`, visual `display:none`, label `16px/700` centered.
+- E2E caveat: the persisted fresh SIT PPB fixture remains `PDP_MODAL/MODAL`; the cross-origin Admin shell POST did not update it. A real persisted SIMPLIFIED fixture/template smoke remains open.
 ### 2026-06-02 16:11 IST - SIT fixture storefront sanity
 - Created fresh SIT PPB and FPB fixtures after the Render DB reset and activated both through the normal configure save flow.
 - PPB storefront product URL bootstrapped `bundle-widget-product-page-bundled.js` at widget version 2.9.36 with product-page markers and compare-at text gated off.
