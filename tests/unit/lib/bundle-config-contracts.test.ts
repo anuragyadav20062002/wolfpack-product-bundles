@@ -3,6 +3,7 @@ import { describe, expect, it } from "@jest/globals";
 import {
   getStorefrontConfigLoadPlan,
   mapTemplateSelection,
+  resolveProductPageRenderFilledSlotsAsHorizontalStacked,
 } from "../../../app/lib/bundle-config/evidence-template-mapping";
 import { deriveControlDependencies } from "../../../app/lib/bundle-config/control-dependencies";
 import { buildCategoryContract } from "../../../app/lib/bundle-config/category-contracts";
@@ -38,6 +39,20 @@ describe("mapTemplateSelection", () => {
 
   it("rejects a template key that is not valid for the bundle type", () => {
     expect(() => mapTemplateSelection("full_page", "product-grid")).toThrow(/template/i);
+  });
+});
+
+describe("resolveProductPageRenderFilledSlotsAsHorizontalStacked", () => {
+  it("maps EB horizontal modal slots to horizontally stacked selected slots", () => {
+    expect(resolveProductPageRenderFilledSlotsAsHorizontalStacked("PDP_MODAL", "MODAL")).toBe(true);
+  });
+
+  it("maps EB vertical modal slots to vertically stacked selected slots", () => {
+    expect(resolveProductPageRenderFilledSlotsAsHorizontalStacked("PDP_MODAL", "SIMPLIFIED")).toBe(false);
+  });
+
+  it("does not emit a modal slot orientation for in-page templates", () => {
+    expect(resolveProductPageRenderFilledSlotsAsHorizontalStacked("PDP_INPAGE", "CASCADE")).toBeNull();
   });
 });
 

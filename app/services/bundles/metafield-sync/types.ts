@@ -67,6 +67,7 @@ export interface BundleUiConfig {
   individualSellingPlanSelection?: Record<string, unknown>;
   validateQuantityPerProduct?: Record<string, unknown>;
   useSingleStepCategoriesAsBundleSteps?: boolean;
+  renderFilledSlotsAsHorizontalStacked?: boolean | null;
   bundleVariantId: string;
   steps: BundleUiStep[];
   pricing: BundleUiPricing | null;

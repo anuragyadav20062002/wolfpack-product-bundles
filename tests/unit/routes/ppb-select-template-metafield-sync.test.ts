@@ -158,6 +158,51 @@ describe("PPB Select Template metafield sync", () => {
         defaultProductsData: { isDefaultProductsEnabled: true },
         bundleTextConfig: { bundleSummary: { title: "Summary", subTitle: "Sub" } },
         validateQuantityPerProduct: { isEnabled: true, allowedQuantity: 1 },
+        renderFilledSlotsAsHorizontalStacked: null,
+      }),
+    );
+  });
+
+  it("rewrites PPB modal slot orientation into bundle product metafields", async () => {
+    getDb().bundle.update.mockResolvedValue({
+      id: "bundle-1",
+      name: "Product Page Bundle",
+      description: "Description",
+      status: "active",
+      templateName: null,
+      bundleType: "product_page",
+      shopifyProductId: "gid://shopify/Product/123",
+      bundleDesignTemplate: "PDP_MODAL",
+      bundleDesignPresetId: "MODAL",
+      defaultProductsData: {},
+      bundleTextConfig: {},
+      validateQuantityPerProduct: { isEnabled: false, allowedQuantity: 1 },
+      individualSellingPlanSelection: { isEnabled: false, showFor: "ALL_PRODUCTS" },
+      useSingleStepCategoriesAsBundleSteps: false,
+      steps: [],
+      pricing: null,
+    });
+
+    const response = await handleUpdateBundleDesignTemplate(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeForm({
+        bundleDesignTemplate: "PDP_MODAL",
+        bundleDesignPresetId: "MODAL",
+      }),
+    );
+    const body = await response.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      "gid://shopify/Product/123",
+      expect.objectContaining({
+        bundleDesignTemplate: "PDP_MODAL",
+        bundleDesignPresetId: "MODAL",
+        bundleDesignTemplateData: { templateId: "MODAL" },
+        renderFilledSlotsAsHorizontalStacked: true,
       }),
     );
   });

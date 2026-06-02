@@ -348,4 +348,36 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('width:360px');
     expect(css).toContain('grid-template-columns:repeat(3,110.66px)');
   });
+
+  it('drives EB modal slot orientation from consumed JSON instead of the template label alone', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_usesVerticalModalSlotLayout');
+    expect(source).toContain('renderFilledSlotsAsHorizontalStacked');
+    expect(source).toContain('this.container.dataset.ppbSlotOrientation');
+    expect(source).toContain('this.elements.stepsContainer.dataset.ppbSlotOrientation');
+    expect(source).not.toContain('_isProductPageSimplifiedTemplate');
+    expect(css).toContain('data-ppb-slot-orientation="vertical"');
+  });
+
+  it('renders only one quantity increase button in PPB in-page product cards', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const inpageRenderer = source.slice(
+      source.indexOf('_renderInpageStepProducts'),
+      source.indexOf('  // Create an empty state card for a step'),
+    );
+
+    const increaseButtonMatches = inpageRenderer.match(/class="qty-btn qty-increase"/g) ?? [];
+    expect(increaseButtonMatches).toHaveLength(1);
+  });
 });

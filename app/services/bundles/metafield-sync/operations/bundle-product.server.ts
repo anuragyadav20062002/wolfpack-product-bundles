@@ -14,6 +14,7 @@ import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
 import { collectAddonComponentVariants } from "../utils/addon-components";
 import type { BundleUiConfig, ComponentPricing } from "../types";
 import { BundleStatus, BundleType } from "../../../../constants/bundle";
+import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "../../../../lib/bundle-config/evidence-template-mapping";
 import { formatStepCategoriesForRuntime } from "../../../../lib/bundle-config/category-runtime";
 
 async function ensureBundleParentVariantRequiresComponents(
@@ -407,6 +408,11 @@ export async function updateBundleProductMetafields(
   );
 
   // Build bundle_ui_config for widget
+  const bundleDesignTemplateData = bundleConfiguration.bundleDesignTemplateData
+    ?? (bundleConfiguration.bundleType === BundleType.PRODUCT_PAGE && bundleConfiguration.bundleDesignPresetId
+      ? { templateId: bundleConfiguration.bundleDesignPresetId }
+      : null);
+
   const bundleUiConfig: BundleUiConfig = {
     id: bundleConfiguration.id || bundleConfiguration.bundleId, // Widget expects 'id' field
     bundleId: bundleConfiguration.id || bundleConfiguration.bundleId, // Keep for backwards compatibility
@@ -420,10 +426,7 @@ export async function updateBundleProductMetafields(
       : null,
     bundleDesignTemplate: bundleConfiguration.bundleDesignTemplate ?? null,
     bundleDesignPresetId: bundleConfiguration.bundleDesignPresetId ?? null,
-    bundleDesignTemplateData: bundleConfiguration.bundleDesignTemplateData
-      ?? (bundleConfiguration.bundleType === BundleType.PRODUCT_PAGE && bundleConfiguration.bundleDesignPresetId
-        ? { templateId: bundleConfiguration.bundleDesignPresetId }
-        : null),
+    bundleDesignTemplateData,
     defaultProductsData: bundleConfiguration.defaultProductsData ?? {},
     boxSelection: bundleConfiguration.boxSelection ?? null,
     bundleUpsellConfig: bundleConfiguration.bundleUpsellConfig ?? null,
@@ -439,6 +442,11 @@ export async function updateBundleProductMetafields(
       allowedQuantity: 1,
     },
     useSingleStepCategoriesAsBundleSteps: bundleConfiguration.useSingleStepCategoriesAsBundleSteps ?? false,
+    renderFilledSlotsAsHorizontalStacked: bundleConfiguration.renderFilledSlotsAsHorizontalStacked
+      ?? resolveProductPageRenderFilledSlotsAsHorizontalStacked(
+        bundleConfiguration.bundleDesignTemplate,
+        bundleDesignTemplateData?.templateId,
+      ),
     bundleVariantId: bundleVariantId, // Bundle parent variant ID for cart transform EXPAND operation
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
       id: step.id,

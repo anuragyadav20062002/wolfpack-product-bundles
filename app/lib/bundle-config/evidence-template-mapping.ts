@@ -81,3 +81,14 @@ export function getStorefrontConfigLoadPlan(bundleType: BundleContractType): str
 
   return ["product-page-config"];
 }
+
+export function resolveProductPageRenderFilledSlotsAsHorizontalStacked(
+  bundleDesignTemplate: string | null | undefined,
+  templateId: string | null | undefined,
+): boolean | null {
+  if (bundleDesignTemplate !== "PDP_MODAL") {
+    return null;
+  }
+
+  return templateId === "MODAL";
+}

@@ -247,3 +247,19 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js` and `node --check scripts/build-widget-bundles.js`.
 - Modified-file ESLint returned 0 errors and ignored-file warnings only for widget/script files.
 - Live CASCADE/COGNIVE e2e remains pending because the Admin iframe is currently refusing the Cloudflare origin and the live storefront is still serving widget `2.9.21`.
+
+### 2026-06-02 10:18 - PPB modal slot orientation JSON contract fix prepared
+- Completed server/runtime JSON parity for EB's `renderFilledSlotsAsHorizontalStacked` modal-slot orientation field.
+- Added the field to formatted widget JSON and bundle product metafield sync so Admin saves and storefront consumed JSON stay aligned.
+- Added TDD coverage and `test-spec/ppb-modal-slot-orientation.spec.md` for the orientation contract.
+- Verification passed: `npx jest tests/unit/lib/bundle-config-contracts.test.ts tests/unit/lib/bundle-formatter.test.ts tests/unit/routes/ppb-select-template-metafield-sync.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (4 suites, 73 tests).
+- ESLint on modified DTO/metafield/test files returned 0 errors and pre-existing warnings only.
+
+### 2026-06-02 10:17 - PPB modal slot orientation JSON contract implemented
+- Added shared template-runtime mapping for EB's `renderFilledSlotsAsHorizontalStacked` PPB modal slot orientation field.
+- Added the field to formatted bundle JSON and product metafield sync payloads so PPB metafield/API config exposes the consumed JSON flag.
+- Updated the PPB widget to set `data-ppb-slot-orientation` from `renderFilledSlotsAsHorizontalStacked` and key vertical slot layout from that orientation marker instead of coupling CSS to `templateId: SIMPLIFIED`.
+- Confirmed the PPB in-page product renderer contains a single quantity increase button in its card markup.
+- Bumped `WIDGET_VERSION` to `2.9.23`, rebuilt widget assets, and minified CSS assets.
+- Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, focused Jest for bundle config contracts, bundle formatter, PPB select-template metafield sync, and product-page widget source contracts, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors.
+- Live modal-orientation e2e remains pending until the rebuilt widget is deployed to SIT and the PPB product metafield is rewritten through Select Template or bundle sync.
