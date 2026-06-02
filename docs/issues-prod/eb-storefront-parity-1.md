@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 17:44 IST
+**Last Updated:** 2026-06-02 17:50 IST
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -202,7 +202,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Live SIT evidence confirmed PPB already loads through the product page app block and initialized widget container, while FPB marker hydration is a separate full-page issue.
 - Next: implement in small template/contract slices, with e2e proof after each template.
 
-## Related Documentation
+### 2026-06-02 17:50 IST - Completed FPB HORIZONTAL cart-contract smoke
+- Desktop FPB page loaded widget version 2.9.43, selected Cross Necklace, and updated bundle summary to 1 item with total .97.
+- Cart state after widget CTA showed one FPB parent line with final_line_price 497 and parent properties for _is_bundle_parent, _bundle_name, _bundle_components, Box, and bundle totals.
+- Network proof returned 200 for bundle config, storefront-products, cart/add.js, cart.js?app=wolfpackProductBundles, and app-proxy cart-bundle-details.
+- Saved cart-add body matched EB-style fields: Box, _bundleName, _easyBundle:prodQty, _easyBundle:OfferId, Items, Retail Price, and _bundle_display_properties. Cart-bundle-details body carried displayProperties only in the issue log; sensitive cart token was not copied.
+
+
 - internal docs/EB Implementation Reference.md
 - docs/competitor-analysis/16-eb-full-data-flow-investigation.md
 - docs/issues-prod/eb-complete-configure-e2e-audit-1.md
