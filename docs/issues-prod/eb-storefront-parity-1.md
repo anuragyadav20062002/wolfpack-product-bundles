@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** {ts}
+**Last Updated:** 2026-06-02 17:44 IST
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -622,3 +622,10 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Reloaded fresh SIT PPB product page on widget version 2.9.43 with MODAL/PDP_MODAL markers.
 - Opened the gated modal from the slot card, confirmed Cross Necklace hydrated, selected it, and clicked the enabled black Add Bundle to Cart • .97 parent CTA.
 - Storefront navigated to cart and rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
+
+### 2026-06-02 17:44 IST - Completed remaining PPB template cart e2e smokes
+- CASCADE: persisted SIT PPB fixture to PDP_INPAGE/CASCADE, storefront loaded widget 2.9.43 with body marker CASCADE, selected Cross Necklace from the in-page product list, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
+- COGNIVE: persisted SIT PPB fixture to PDP_INPAGE/COGNIVE, storefront loaded widget 2.9.43 with body marker COGNIVE and three-column product grid, selected Cross Necklace, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
+- SIMPLIFIED: persisted SIT PPB fixture to PDP_MODAL/SIMPLIFIED with renderFilledSlotsAsHorizontalStacked false, storefront loaded widget 2.9.43 with body marker SIMPLIFIED, measured closed slot as 345px x 104px, opened modal, selected Cross Necklace, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
+- Network proof for the SIMPLIFIED add: cart-bundle-details app-proxy call returned 200, Shopify /cart/add returned 302 to /cart, and the multipart request body carried EB component fields Box, _bundleName, _easyBundle:OfferId, and _easyBundle:prodQty.
+- Cart.js note: merged parent cart lines expose _bundle_name from the Cart Transform output for checkout/display metadata; the widget component add payload itself uses the EB _bundleName/_easyBundle fields.
