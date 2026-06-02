@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:08 IST
+**Last Updated:** 2026-06-02 18:16 IST
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -653,3 +653,15 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: npm run minify:assets css and npm run build:widgets.
 - Verification passed: node --check scripts/build-widget-bundles.js and modified-file ESLint with 0 errors and the existing ignored-file warning.
 - Chrome SIT HORIZONTAL verification loaded widget 2.9.44 and reported documentElement scrollWidth 1269, clientWidth 1269, overflowX body/html clip, and hasHorizontalOverflow false.
+
+### 2026-06-02 18:10 IST - FPB HORIZONTAL underline tab parity fix started
+- Live SIT HORIZONTAL DOM already sets data-fpb-tab-style=underline, but computed category tab style still renders as a rounded pill.
+- EB HORIZONTAL evidence uses underline-style category tabs, so scope is to strengthen the existing HORIZONTAL underline CSS without touching deferred FPB title removal.
+
+### 2026-06-02 18:16 IST - FPB HORIZONTAL underline tab parity fix completed
+- Strengthened the existing data-fpb-tab-style=underline CSS so HORIZONTAL category tabs render as EB-style transparent black text with a straight black underline instead of an active pill.
+- Removed redundant base category-tab declarations to keep the generated full-page CSS below Shopify's 100,000 B asset limit.
+- Bumped WIDGET_VERSION to 2.9.45, regenerated CSS assets, and rebuilt widget bundles.
+- Verification passed: npm run minify:assets css and npm run build:widgets.
+- Verification passed: node --check scripts/build-widget-bundles.js and modified-file ESLint with 0 errors and the existing ignored-file warning.
+- Chrome SIT HORIZONTAL verification loaded widget 2.9.45 with no horizontal overflow; computed tab style was transparent background, black text, 3px solid black bottom border, and 0px border radius.

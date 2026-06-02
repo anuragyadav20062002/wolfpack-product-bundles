@@ -984,8 +984,6 @@ rgba(0,
   font-weight:700;
   font-size:15px;
   line-height:27px;
-  text-transform:none;
-  letter-spacing:0;
   transition:background 0.2s ease,
 color 0.2s ease;
   box-shadow:none}
@@ -5154,7 +5152,9 @@ body:has([data-fpb-design-preset]) {
 [data-fpb-tab-style=underline] .category-tab {
   border:0;
   border-bottom:3px solid #0000;
-  background:none}
+  border-radius:0;
+  background:none;
+  color:#000}
 
 [data-fpb-tab-style=underline] .category-tab.active {
   border-bottom-color:#000}
