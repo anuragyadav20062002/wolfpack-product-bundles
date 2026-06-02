@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.21
+ * Version : 2.9.22
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.21';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.22';
 (function() {
   'use strict';
 
@@ -2375,6 +2375,10 @@ class BundleWidgetProductPage {
     return this._getProductPageTemplateType() === 'PDP_MODAL';
   }
 
+  _isProductPageInpageTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_INPAGE';
+  }
+
   _isProductPageCogniveTemplate() {
     return this._getProductPageTemplateType() === 'PDP_INPAGE'
       && this._getProductPageDesignPreset() === 'COGNIVE';
@@ -3026,6 +3030,18 @@ class BundleWidgetProductPage {
 
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
+      if (this._isProductPageInpageTemplate()) {
+        const section = this._createInpageStepSection(step);
+        const target = section.querySelector('.bw-ppb-inpage-step-grid');
+        this.elements.stepsContainer.appendChild(section);
+
+        const banner = this._createStepBannerImage(step);
+        if (banner) target.appendChild(banner);
+
+        this._renderInpageStepProducts(stepIndex, target);
+        return;
+      }
+
       const section = this._isProductPageModalSlotTemplate()
         ? this._createModalSlotStepSection(step)
         : this._isProductPageCogniveTemplate()
@@ -3111,7 +3127,8 @@ class BundleWidgetProductPage {
 
   _createInpageStepSection(step) {
     const section = document.createElement('div');
-    section.className = 'bw-ppb-inpage-step-section';
+    const preset = this._getProductPageDesignPreset();
+    section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}`;
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-inpage-step-title';
@@ -3123,6 +3140,85 @@ class BundleWidgetProductPage {
     section.appendChild(grid);
 
     return section;
+  }
+
+  _renderInpageStepProducts(stepIndex, target) {
+    const rawProducts = this.stepProductData[stepIndex] || [];
+
+    if (rawProducts.length === 0 && !(this._stepFetchFailed && this._stepFetchFailed[stepIndex])) {
+      target.innerHTML = '<div class="bw-ppb-inpage-loading">Loading products...</div>';
+      this.loadStepProducts(stepIndex).then(() => {
+        if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
+      }).catch(() => {
+        if (!this._stepFetchFailed) this._stepFetchFailed = {};
+        this._stepFetchFailed[stepIndex] = true;
+        if (target.isConnected) this._renderInpageStepProducts(stepIndex, target);
+      });
+      return;
+    }
+
+    const products = this.expandProductsByVariant(rawProducts);
+    if (products.length === 0) {
+      target.innerHTML = this._stepFetchFailed?.[stepIndex]
+        ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
+        : '<p class="no-products-message">No products are configured for this step.</p>';
+      return;
+    }
+
+    const currentStep = this.selectedBundle?.steps?.[stepIndex];
+    const selectedProducts = this.selectedProducts[stepIndex] || {};
+    const showQuantitySelector = this.config.showQuantitySelectorOnCard;
+    const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
+      this.selectedBundle?.validateQuantityPerProduct
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+    target.innerHTML = products.map(product => {
+      const selectionKey = product.variantId || product.id;
+      const currentQuantity = this.getSelectedQuantity(stepIndex, selectionKey);
+      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
+      const atMaxStock = available !== null && currentQuantity >= available;
+      const atMaxProductQuantity = productQuantityLimit !== null && currentQuantity >= productQuantityLimit;
+      const increaseDisabled = outOfStock || atMaxStock || atMaxProductQuantity;
+      const addDisabled = outOfStock;
+      const stockBadge = outOfStock
+        ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
+        : '';
+
+      return `
+        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+          ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
+          <div class="product-image">
+            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
+            ${stockBadge}
+          </div>
+          <div class="product-content-wrapper">
+            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
+            ${product.price ? `
+              <div class="product-price-row">
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+              </div>
+            ` : ''}
+            ${this.renderVariantSelector(product)}
+            ${showQuantitySelector ? `
+              <div class="product-quantity-wrapper">
+                <div class="product-quantity-selector">
+                  <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                  <span class="qty-display">${currentQuantity}</span>
+                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+                </div>
+              </div>
+            ` : ''}
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +'))}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    this.attachProductEventHandlers(target, stepIndex);
   }
 
   createEmptyStateCard(step, stepIndex, instanceIndex = 0) {

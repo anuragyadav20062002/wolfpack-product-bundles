@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 11:08
+**Last Updated:** 2026-06-02 10:13
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -205,3 +205,18 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Chrome storefront proof on live widget `2.9.21`: `data-ppb-template-type="PDP_MODAL"`, `data-ppb-design-preset="SIMPLIFIED"`, slot card computes `345px x 100px`, dashed black border, label left, and right visual block computes `76px x 76px` with salmon background.
 - Bumped `WIDGET_VERSION` to `2.9.21`, rebuilt widget bundles, and minified CSS assets.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
+
+### 2026-06-02 10:09 - PPB MODAL empty-slot visual parity slice started
+- Ground truth: `internal docs/EB Implementation Reference.md` confirms PPB `PDP_MODAL` + `MODAL` and `SIMPLIFIED` share the same modal widget path, with visual differences driven by CSS/classing.
+- EB screenshot evidence: `docs/select-template/eb-ppb-modal-storefront.png` shows a narrow vertical dashed slot with a salmon visual block above the `Product 1` label.
+- Planned change: patch PPB modal-slot CSS only, keeping SIMPLIFIED's horizontal row override separate.
+
+### 2026-06-02 10:13 - PPB CASCADE/COGNIVE in-page product rendering implemented
+- EB ground truth: `PDP_INPAGE` dispatches to the CASCADE renderer for both Product List and Product Grid; COGNIVE is a CSS variant of the same inline product renderer.
+- Current WPB code path rendered slot state cards for product-page bundles instead of inline product cards when the template type is `PDP_INPAGE`.
+- Patched PPB `PDP_INPAGE` layout to load the same Storefront DTOs and render selectable products inline, reusing existing product selection handlers.
+- Patched CASCADE CSS toward compact row cards and COGNIVE CSS toward three-column square image product cards.
+- Bumped `WIDGET_VERSION` to `2.9.22` and rebuilt widget/CSS assets.
+- Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, and `npm run minify:assets css`.
+- Modified-file ESLint returned 0 errors and ignored-file warnings only.
+- Live CASCADE/COGNIVE e2e remains pending until the PPB fixture is switched from the current `PDP_MODAL`/`SIMPLIFIED` live template to `PDP_INPAGE`.
