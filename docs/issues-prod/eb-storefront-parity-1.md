@@ -765,3 +765,13 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Local formatter proof: a category product stub `{id,title}` now keeps its category title but receives `imageUrl`, `price`, and `variants` from the matching raw step product source.
 - Verification passed: focused ESLint on touched server/formatter files returned 0 errors, `npx tsx` formatter proof passed, and graphify rebuild completed.
 - Live Chrome proof is still pending deploy + bundle sync because current SIT remains on widget 2.9.52 and the existing page metafield still contains the old compact `{id,title}` category product.
+
+### 2026-06-02 20:30 - FPB category metafield enrichment contract tests started
+- Added unit coverage for the updated storefront runtime category contract: render-critical product image/price/variants are preserved, and category product stubs are enriched from raw step product sources keyed by Shopify product GID.
+- Updated the EB clone rewrite test spec row to reflect the new EB-aligned requirement: FPB first paint should not depend on app-proxy product hydration when `custom.bundle_config` has product sources.
+
+### 2026-06-02 20:34 - FPB category metafield enrichment contract tests verified
+- Added two focused assertions to `tests/unit/lib/bundle-config-contracts.test.ts`: category runtime output preserves render-critical product fields, and category stubs enrich from raw step product sources using Shopify product IDs instead of DB row IDs.
+- Verification passed: `npx jest tests/unit/lib/bundle-config-contracts.test.ts` returned 27/27 passing tests.
+- Verification passed: `npx eslint --max-warnings 9999 tests/unit/lib/bundle-config-contracts.test.ts` returned 0 errors, and graphify rebuild completed.
+- Note: ESLint is not configured for `.md` specs; the updated `test-spec/eb-ui-clone-rewrite.spec.md` is docs/test-spec evidence and was not linted as TypeScript.
