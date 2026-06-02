@@ -11,7 +11,7 @@ import type { Session } from "@shopify/shopify-api";
 import { AppLogger } from "../../../../lib/logger";
 import db from "../../../../db.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
-import { renamePageHandle, writeBundleConfigPageMetafield, publishPreviewPage, getPreviewPageUrl } from "../../../../services/widget-installation/widget-full-page-bundle.server";
+import { renamePageHandle, writeBundleConfigPageMetafield, publishPreviewPage, getPreviewPageUrl, refreshFullPageBundlePageBody } from "../../../../services/widget-installation/widget-full-page-bundle.server";
 import {
   updateBundleProductMetafields,
   updateComponentProductMetafields,
@@ -310,7 +310,7 @@ function buildFullPageBundleMetafieldSteps(steps: any[] = []) {
       }))
       .filter((product: { productId: string | null }) => Boolean(product.productId));
 
-    const categoriesForMetafield = formatStepCategoriesForRuntime(step);
+    const categoriesForMetafield = formatStepCategoriesForRuntime(step, rawStepProducts);
     const stepCollections = Array.isArray(step.collections) ? step.collections : [];
 
     return {
@@ -429,7 +429,7 @@ function buildFpbBaseConfig(
   directBoxSelection: unknown = null,
 ): Record<string, unknown> {
   const optimizedSteps = (stepsData || []).map((step: any) => {
-    const categoriesForRuntime = formatStepCategoriesForRuntime(step);
+    const categoriesForRuntime = formatStepCategoriesForRuntime(step, Array.isArray(step.StepProduct) ? step.StepProduct : []);
 
     return {
       id: step.id,
@@ -660,6 +660,12 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       && discountData.discountType !== 'buy_x_get_y'
       ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
       : null;
+    const boxSelection = directBoxSelection
+      ? {
+          ...directBoxSelection,
+          validateBoxSelectionQuantity: productSlotsEnabled,
+        }
+      : null;
 
     // Automatically set status to 'active' if bundle has configured steps
     let finalStatus = bundleStatus as any;
@@ -727,7 +733,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         textOverridesByLocale,
         bundleTextConfig,
         personalizationData,
-        boxSelection: directBoxSelection,
+        boxSelection,
         bundleUpsellConfig,
         upsellWidgetEnabled,
         upsellWidgetDisplayMode,
@@ -1593,7 +1599,10 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     // If a draft preview page exists, promote it to published instead of creating a new page.
     // This prevents duplicate Shopify pages when the merchant previewed before publishing.
     if (bundle.shopifyPreviewPageId) {
-      const publishResult = await publishPreviewPage(admin, bundle.shopifyPreviewPageId);
+      await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop, bundle);
+      await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+
+      const publishResult = await publishPreviewPage(admin, bundle.shopifyPreviewPageId, bundleId, session.shop);
 
       if (publishResult.success) {
         await db.bundle.update({
@@ -1607,7 +1616,18 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
           },
         });
 
-        await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+        await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop, {
+          ...bundle,
+          shopifyPageHandle: bundle.shopifyPreviewPageHandle,
+          shopifyPageId: bundle.shopifyPreviewPageId,
+          status: BundleStatus.ACTIVE,
+        });
+        await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, {
+          ...bundle,
+          shopifyPageHandle: bundle.shopifyPreviewPageHandle,
+          shopifyPageId: bundle.shopifyPreviewPageId,
+          status: BundleStatus.ACTIVE,
+        });
 
         // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level
         if (bundle.shopifyProductId && bundle.shopifyPreviewPageHandle) {
@@ -1639,6 +1659,34 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
       await db.bundle.update({
         where: { id: bundleId, shopId: session.shop },
         data: { shopifyPreviewPageId: null, shopifyPreviewPageHandle: null },
+      });
+    }
+
+    if (bundle.shopifyPageId && bundle.shopifyPageHandle) {
+      const publishedBundle = {
+        ...bundle,
+        status: BundleStatus.ACTIVE,
+      };
+
+      await refreshFullPageBundlePageBody(admin, bundle.shopifyPageId, bundle.id, session.shop, publishedBundle);
+      await writeBundleConfigPageMetafield(admin, bundle.shopifyPageId, publishedBundle);
+
+      const pageUrl = `https://${session.shop.replace('.myshopify.com', '')}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+
+      AppLogger.info("[WIDGET_PLACEMENT] Existing page refreshed", {
+        bundleId,
+        pageId: bundle.shopifyPageId,
+        pageHandle: bundle.shopifyPageHandle,
+      });
+
+      return json({
+        success: true,
+        pageHandle: bundle.shopifyPageHandle,
+        pageId: bundle.shopifyPageId,
+        pageUrl,
+        slugAdjusted: false,
+        widgetInstallationRequired: true,
+        message: `Bundle page refreshed successfully!`,
       });
     }
 
@@ -1680,7 +1728,17 @@ export async function handleValidateWidgetPlacement(admin: ShopifyAdmin, session
     });
 
     // Write bundle config as page metafield for zero-proxy widget initialisation (non-fatal)
-    await writeBundleConfigPageMetafield(admin, result.pageId ?? null, bundle);
+    const publishedBundle = {
+      ...bundle,
+      shopifyPageHandle: result.pageHandle,
+      shopifyPageId: result.pageId,
+      status: BundleStatus.ACTIVE,
+    };
+
+    if (result.pageId) {
+      await refreshFullPageBundlePageBody(admin, result.pageId, bundle.id, session.shop, publishedBundle);
+    }
+    await writeBundleConfigPageMetafield(admin, result.pageId ?? null, publishedBundle);
 
     // Create URL redirect so /products/{handle} → /pages/{pageHandle} at routing level (non-fatal)
     if (bundle.shopifyProductId && result.pageHandle) {
@@ -1777,9 +1835,12 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
 
     // If an existing preview page is tracked, return its URL directly
     if (bundle.shopifyPreviewPageId) {
-      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop);
+      const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop, bundleId);
 
       if (urlResult.success) {
+        await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop);
+        await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
+
         AppLogger.info("[PREVIEW_PAGE] Returning existing preview URL", {
           bundleId,
           previewPageId: bundle.shopifyPreviewPageId,

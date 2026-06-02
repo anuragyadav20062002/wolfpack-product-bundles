@@ -4,6 +4,7 @@
  * Verifies that the bundle API returns the new step fields:
  *   isFreeGift, freeGiftName, isDefault, defaultVariantId
  */
+/* eslint-disable import/first */
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -52,9 +53,9 @@ function makeRequest(bundleId: string, fields?: string) {
   if (fields) params.set('fields', fields);
   // Compute HMAC so verifyAppProxyRequest() passes (uses SHOPIFY_API_SECRET from setup.ts)
   const message = [...params.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}=${v}`)
-    .join('&');
+    .sort()
+    .join('');
   const signature = createHmac('sha256', 'test_api_secret').update(message).digest('hex');
   params.set('signature', signature);
   return new Request(`https://test.myshopify.com/apps/product-bundles/api/bundle/${bundleId}.json?${params.toString()}`);
@@ -191,6 +192,27 @@ describe('api.bundle.$bundleId.json — free gift & default product fields', () 
   });
 
   describe('multi-step bundle with mixed step types', () => {
+    it('loads StepCategory rows for EB-aligned storefront category runtime', async () => {
+      mockFindFirst().mockResolvedValue(makeBundle([makeBaseStep()]));
+
+      await loader({ request: makeRequest('bundle-abc'), params: { bundleId: 'bundle-abc' }, context: {} }) as Response;
+
+      expect(mockFindFirst()).toHaveBeenCalledWith(expect.objectContaining({
+        include: expect.objectContaining({
+          steps: expect.objectContaining({
+            include: expect.objectContaining({
+              StepProduct: true,
+              StepCategory: {
+                orderBy: {
+                  sortOrder: 'asc',
+                },
+              },
+            }),
+          }),
+        }),
+      }));
+    });
+
     it('returns correct fields for each step in a bundle with paid + free gift + default steps', async () => {
       const steps = [
         makeBaseStep({ id: 'step-default', isDefault: true, defaultVariantId: 'gid://shopify/ProductVariant/1' }),

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type MouseEvent, type ReactNode } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../../../lib/logger";
@@ -27,7 +27,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
-import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
+import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import {
   MultiLanguageTextModal,
@@ -86,7 +86,7 @@ const fullPageTemplateOptions = [
   { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
 ] as const;
 
-const FPB_DESIGN_CONTROL_PANEL_URL = "/app/design-control-panel?modal=full_page&section=globalColors";
+const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -1157,7 +1157,7 @@ export default function ConfigureBundleFlow() {
   const [upsellWidgetTitle, setUpsellWidgetTitle] = useState<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
   const [upsellWidgetDescription, setUpsellWidgetDescription] = useState<string>(savedWidgetConfiguration?.description ?? "");
   const [upsellWidgetButtonText, setUpsellWidgetButtonText] = useState<string>(
-    savedWidgetConfiguration?.buttonText ?? textOverrides.widgetButtonText ?? "Buy with Bundle"
+    savedWidgetConfiguration?.buttonText ?? textOverrides.widgetButtonText ?? "Save More With Bundle"
   );
   const [upsellWidgetImageUrl, setUpsellWidgetImageUrl] = useState<string>(savedWidgetConfiguration?.imageUrl ?? "");
   const [upsellWidgetLanguageMode, setUpsellWidgetLanguageMode] = useState<string>(
@@ -1174,7 +1174,7 @@ export default function ConfigureBundleFlow() {
   const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
   const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
   const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
-  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Buy with Bundle");
+  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Save More With Bundle");
   const originalAutoSelectBrowsedProductRef = useRef<boolean>(savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false);
 
   // Bundle Banner upload state (Gap 2)
@@ -1278,7 +1278,7 @@ export default function ConfigureBundleFlow() {
   const selectTemplateModalRef = useRef<HTMLDivElement>(null);
   const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
   const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
-  const [templateModalStep, setTemplateModalStep] = useState<"select" | "confirm">("select");
+  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "enableThemeExtension" | "confirm">("templates");
   const templateFetcher = useFetcher();
   const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
   const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
@@ -1388,7 +1388,6 @@ export default function ConfigureBundleFlow() {
   }, [bundle.id]);
 
   // Modal refs for s-modal web components
-  const pageSelectionModalRef = useRef<HTMLElement>(null);
   const productsModalRef = useRef<HTMLElement>(null);
   const collectionsModalRef = useRef<HTMLElement>(null);
   const syncModalRef = useRef<HTMLElement>(null);
@@ -1396,10 +1395,6 @@ export default function ConfigureBundleFlow() {
   const discountVariablesModalRef = useRef<HTMLElement>(null);
   const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
-
-  useEffect(() => {
-    isPageSelectionModalOpen ? showPolarisModal(pageSelectionModalRef) : hidePolarisModal(pageSelectionModalRef);
-  }, [isPageSelectionModalOpen]);
 
   useEffect(() => {
     isProductsModalOpen ? showPolarisModal(productsModalRef) : hidePolarisModal(productsModalRef);
@@ -1431,7 +1426,7 @@ export default function ConfigureBundleFlow() {
 
   const closeSelectTemplateModal = useCallback(() => {
     setIsSelectTemplateModalOpen(false);
-    setTemplateModalStep("select");
+    setTemplateModalStep("templates");
     setTemplateSaveError(null);
     lastTemplateRequestRef.current = null;
     lastTemplateResponseRef.current = null;
@@ -1506,7 +1501,7 @@ export default function ConfigureBundleFlow() {
   const openSelectTemplateModal = useCallback(() => {
     setPendingDesignTemplate(bundleDesignTemplate);
     setPendingDesignPresetId(bundleDesignPresetId);
-    setTemplateModalStep("select");
+    setTemplateModalStep("templates");
     setTemplateSaveError(null);
     lastTemplateRequestRef.current = null;
     lastTemplateResponseRef.current = null;
@@ -1550,7 +1545,7 @@ export default function ConfigureBundleFlow() {
       if (request) {
         setBundleDesignTemplate(request.template);
         setBundleDesignPresetId(request.presetId);
-        setTemplateModalStep("confirm");
+        setTemplateModalStep(appEmbedEnabled ? "confirm" : "enableThemeExtension");
       }
       setTemplateSaveError(null);
       lastTemplateRequestRef.current = null;
@@ -1558,7 +1553,7 @@ export default function ConfigureBundleFlow() {
     }
 
     setTemplateSaveError(response.error || "Failed to save template settings.");
-  }, [templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
+  }, [appEmbedEnabled, templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
 
   const handleTemplateNext = useCallback(() => {
     if (!pendingDesignTemplate || !pendingDesignPresetId) {
@@ -2285,13 +2280,41 @@ export default function ConfigureBundleFlow() {
   }, [isDirty, activeSection, promptSaveBarBeforeNavigation]);
 
   const openProductInAdmin = useCallback((productId: string) => {
+    const numericProductId = productId.startsWith("gid://")
+      ? productId.split("/").pop() ?? productId
+      : productId;
+    const productGid = productId.startsWith("gid://")
+      ? productId
+      : `gid://shopify/Product/${productId}`;
     const storeHandle = shop?.replace('.myshopify.com', '');
-    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${productId}`;
-    if (window.location.hostname.includes("trycloudflare.com")) {
-      window.open(adminProductUrl, "_blank");
-    } else {
-      shopify.navigate(adminProductUrl);
+    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${numericProductId}`;
+    const openFallback = () => {
+      try {
+        shopify.navigate(adminProductUrl);
+      } catch (error) {
+        AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
+        window.open(adminProductUrl, "_blank");
+      }
+    };
+    const intentsApi = (shopify as any).intents;
+    if (typeof intentsApi?.invoke === "function") {
+      try {
+        const intentResult = intentsApi.invoke("edit:shopify/Product", {
+          type: "shopify/Product",
+          value: productGid,
+        });
+        if (typeof intentResult?.catch === "function") {
+          void intentResult.catch((error: unknown) => {
+            AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
+            openFallback();
+          });
+        }
+        return;
+      } catch (error) {
+        AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
+      }
     }
+    openFallback();
   }, [shop, shopify]);
 
   const handleReadinessItemClick = useCallback((key: string) => {
@@ -2344,7 +2367,12 @@ export default function ConfigureBundleFlow() {
     setCurrentModalStepId('');
   }, []);
 
-  useModalHideListener(pageSelectionModalRef, closePageSelectionModal);
+  const handlePageSelectionBackdropClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    if (event.currentTarget === event.target) {
+      closePageSelectionModal();
+    }
+  }, [closePageSelectionModal]);
+
   useModalHideListener(productsModalRef, handleCloseProductsModal);
   useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
   useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
@@ -2478,53 +2506,28 @@ export default function ConfigureBundleFlow() {
       ? shop.replace('.myshopify.com', '')
       : shop;
 
-    // Build theme editor deep link (used as fallback for non-page templates and on error)
+    // Build theme editor deep link with the selected page as the preview target.
     const buildThemeEditorUrl = () => {
-      const placementBlockHandle = upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block";
+      const placementBlockHandle = template.isPage
+        ? blockHandle
+        : (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block");
       const appBlockId = `${apiKey}/${placementBlockHandle}`;
       const templateParam = template.isPage ? 'page' : template.handle;
       const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
       return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
     };
 
-    // ── Full-page bundle: auto-install via Theme API (no theme editor needed) ──
+    // ── Full-page bundle: Shopify requires Theme Editor app-block placement. ──
     if (template.isPage) {
-      setIsInstallingWidget(true);
-      try {
-
-        const response = await fetch('/api/install-fpb-widget', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageHandle: template.handle }),
-        });
-
-        const result = await response.json() as { success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string };
-
-        if (result.success) {
-          setSelectedPage(template);
-          closePageSelectionModal();
-          const msg = result.templateAlreadyExists
-            ? `Widget already installed — your bundle page is live.`
-            : `Widget installed! Your bundle page is live.`;
-          shopify.toast.show(msg, { isError: false, duration: 6000 });
-        } else {
-          // Auto-install failed — fall back to theme editor
-          AppLogger.error(`🚨 [INSTALL] Auto-install failed, falling back to theme editor`, { error: result.error });
-          setSelectedPage(template);
-          closePageSelectionModal();
-          shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
-          window.open(buildThemeEditorUrl(), '_blank');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        AppLogger.error(`🚨 [INSTALL] Unexpected error, falling back to theme editor`, { errorMessage });
-        setSelectedPage(template);
-        closePageSelectionModal();
-        shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
-        window.open(buildThemeEditorUrl(), '_blank');
-      } finally {
-        setIsInstallingWidget(false);
+      if (!apiKey || !blockHandle) {
+        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
+        return;
       }
+
+      setSelectedPage(template);
+      closePageSelectionModal();
+      shopify.toast.show(`Opening Theme Editor for "${template.title}". Add the full-page bundle block to this page template.`, { isError: false, duration: 5000 });
+      window.open(buildThemeEditorUrl(), '_blank');
       return;
     }
 
@@ -2552,7 +2555,7 @@ export default function ConfigureBundleFlow() {
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id, apiKey, upsellWidgetDisplayMode]);
+  }, [shop, shopify, bundle.id, apiKey, blockHandle, upsellWidgetDisplayMode]);
 
   return (
     <>
@@ -3514,14 +3517,30 @@ export default function ConfigureBundleFlow() {
                         <div className={fullPageBundleStyles.iconColumn}>
                           <div className={fullPageBundleStyles.iconBox}>
                             {(step as any).stepImage ? (
-                              <img
-                                src={(step as any).stepImage}
-                                alt="Step icon"
-                                className={fullPageBundleStyles.iconImg}
-                              />
+                              <>
+                                <img
+                                  src={(step as any).stepImage}
+                                  alt="Step icon"
+                                  className={fullPageBundleStyles.iconImg}
+                                />
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.iconRemoveButton}
+                                  aria-label="Remove step icon"
+                                  onClick={() => {
+                                    stepsState.updateStepField(step.id, 'stepImage', null);
+                                    setShowIconPickerForStep(null);
+                                    markAsDirty();
+                                  }}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                    <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                  </svg>
+                                </button>
+                              </>
                             ) : (
                               <div className={fullPageBundleStyles.iconPlaceholder}>
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                   <path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 5l-8 4-8-4" />
                                 </svg>
                               </div>
@@ -3544,7 +3563,7 @@ export default function ConfigureBundleFlow() {
                           <s-button
                             onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
                           >
-                            {(step as any).stepImage ? "Replace" : "Upload"}
+                            {(step as any).stepImage ? "Replace" : "Upload file"}
                           </s-button>
                         </div>
                         <div className={fullPageBundleStyles.fieldsColumn}>
@@ -4554,11 +4573,11 @@ export default function ConfigureBundleFlow() {
                       </div>
                       <div className={fullPageBundleStyles.visibilityGuideGrid}>
                         {[
-                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png" },
-                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png" },
-                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png" },
-                          { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png" },
-                        ].map(({ title, desc: description, img }) => (
+                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png",            guide: "Copy your bundle link, open the theme editor, add or select an image banner, set the button label and link, then save." },
+                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png",        guide: "Copy your bundle link, open Content > Menus, add the bundle as a main-menu item, then save the menu." },
+                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png",      guide: "Copy your bundle link, open the theme editor, enable the announcement bar, add offer copy and the bundle link, then save." },
+                          { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png", guide: "Add the bundle product to a collection, open the theme editor, select Featured Collection, choose that collection, lower the max product count, then save." },
+                        ].map(({ title, desc: description, img, guide }) => (
                           <div key={title} className={fullPageBundleStyles.visibilityGuideCard}>
                             <div className={fullPageBundleStyles.visibilityGuideMedia}>
                               <img src={img} alt={title} />
@@ -4567,9 +4586,10 @@ export default function ConfigureBundleFlow() {
                               <h4 className={fullPageBundleStyles.visibilityGuideTitle}>{title}</h4>
                               <p className={fullPageBundleStyles.visibilityGuideDescription}>{description}</p>
                               <div className={fullPageBundleStyles.visibilityGuideFooter}>
-                                <button type="button" className={fullPageBundleStyles.visibilityGuideAction} onClick={() => window.open("https://wolfpackapps.com", "_blank")}>
-                                  Quick Setup Guide
-                                </button>
+                                <details>
+                                  <summary className={fullPageBundleStyles.visibilityGuideAction}>Quick Setup Guide</summary>
+                                  <p className={fullPageBundleStyles.visibilityGuideDescription}>{guide}</p>
+                                </details>
                                 <span className={fullPageBundleStyles.visibilitySetupTime}>5 min setup</span>
                               </div>
                             </div>
@@ -4612,6 +4632,16 @@ export default function ConfigureBundleFlow() {
                             View on Storefront
                           </button>
                         )}
+                        {!bundle.shopifyPageHandle && (
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.visibilityPrimaryAction}
+                            onClick={handleAddToStorefront}
+                            disabled={Boolean(pageSlugError) || isInstallingWidget}
+                          >
+                            {isInstallingWidget ? "Creating..." : "Create Page"}
+                          </button>
+                        )}
                       </div>
                       <label className={fullPageBundleStyles.visibilityFieldLabel}>
                         <span>Page URL slug</span>
@@ -4635,7 +4665,7 @@ export default function ConfigureBundleFlow() {
                         <div>
                           <h4 className={fullPageBundleStyles.visibilitySetupTitle}>Bundle Widget</h4>
                           <p className={fullPageBundleStyles.visibilityCardText}>
-                            Add a bundle button to specific product pages.
+                            This will display an upsell block or button on the product pages of your choice.
                           </p>
                         </div>
                         <button type="button" className={fullPageBundleStyles.visibilityPrimaryAction} onClick={() => handleSectionChange("bundle_widget")}>
@@ -4907,7 +4937,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
-                          <s-switch
+                          <s-checkbox
                             accessibilityLabel="Enable quantity validation"
                             checked={productSlotsEnabled || undefined}
                             onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -4969,14 +4999,23 @@ export default function ConfigureBundleFlow() {
                             You can change the default icon that renders in the empty slots
                           </p>
                           <s-stack direction="inline" gap="small">
-                            <s-button variant="primary" icon="upload" onClick={() => handleSectionChange("step_setup")}>
-                              Change Icon
+                            <s-button
+                              variant="primary"
+                              icon="upload"
+                              disabled={!settingsStep || undefined}
+                              onClick={() => {
+                                if (!settingsStep) return;
+                                setShowIconPickerForStep(prev => prev === settingsStep.id ? null : settingsStep.id);
+                              }}
+                            >
+                              {settingsStep && showIconPickerForStep === settingsStep.id ? "Close picker" : "Change Icon"}
                             </s-button>
                             <s-button
                               variant="secondary"
                               onClick={() => {
                                 if (settingsStep) {
                                   stepsState.updateStepField(settingsStep.id, "stepImage", null);
+                                  setShowIconPickerForStep(null);
                                   markAsDirty();
                                 }
                               }}
@@ -4984,6 +5023,20 @@ export default function ConfigureBundleFlow() {
                               Reset
                             </s-button>
                           </s-stack>
+                          {settingsStep && showIconPickerForStep === settingsStep.id && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowIconPickerForStep(null)}
+                              value={(settingsStep as any).stepImage ?? null}
+                              onChange={(url: string | null) => {
+                                stepsState.updateStepField(settingsStep.id, "stepImage", url);
+                                setShowIconPickerForStep(null);
+                                markAsDirty();
+                              }}
+                              label=""
+                              hideCropEditor
+                            />
+                          )}
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                             Note: Only applicable when rules are based on quantity
                           </p>
@@ -5190,49 +5243,10 @@ export default function ConfigureBundleFlow() {
                         )}
                       </s-stack>
                     </s-section>
-
-                    {/* WPB-specific: Show product prices + Compare-at + Allow quantity changes */}
-                    <s-section>
-                      <s-stack direction="block" gap="small">
-                        <SettingsRow
-                          title="Show product prices"
-                          description="Display product prices on product cards."
-                        >
-                          <s-switch
-                            accessibilityLabel="Show product prices"
-                            checked={showProductPrices || undefined}
-                            onChange={(e: Event) => { setShowProductPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
-                        <SettingsRow
-                          title="Show compare-at prices"
-                          description="Show original prices next to sale prices."
-                        >
-                          <s-switch
-                            accessibilityLabel="Show compare-at prices"
-                            checked={showCompareAtPrices || undefined}
-                            onChange={(e: Event) => { setShowCompareAtPrices((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
-                        <SettingsRow
-                          title="Allow quantity changes"
-                          description="Let customers adjust item quantities inside the bundle."
-                        >
-                          <s-switch
-                            accessibilityLabel="Allow quantity changes"
-                            checked={allowQuantityChanges || undefined}
-                            onChange={(e: Event) => { setAllowQuantityChanges((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
-                      </s-stack>
-                    </s-section>
-
-                    <s-section>
-                      <BundleStatusSection
+                    <BundleStatusSection
                         status={formState.bundleStatus}
                         onChange={formState.setBundleStatus}
                       />
-                    </s-section>
                   </s-stack>
                 </div>
               );
@@ -5295,6 +5309,7 @@ export default function ConfigureBundleFlow() {
                       <s-button
                         variant="secondary"
                         icon="globe"
+                        disabled={shopLocales.length === 0 || undefined}
                         onClick={() => openMultiLanguageModal("Bundle Widget", [
                           { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
                         ])}
@@ -5506,55 +5521,126 @@ export default function ConfigureBundleFlow() {
         </div>
 
       {/* Page Selection Modal */}
-      <s-modal ref={pageSelectionModalRef} heading="Add Wolfpack Bundles to storefront">
-        <s-stack direction="block" gap="small">
-          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-            {bundle.bundleType === 'full_page'
-              ? "Select a page to place and preview the bundle."
-              : "Select a template to place and preview the bundle."}
-          </p>
-          {isLoadingPages ? (
-            <s-stack direction="block" gap="small">
-              <s-spinner />
-              <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
+      {isPageSelectionModalOpen && (
+        <div
+          role="presentation"
+          onClick={handlePageSelectionBackdropClick}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.45)",
+            padding: 20,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fpb-page-selection-modal-title"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "min(560px, calc(100vw - 40px))",
+              overflow: "hidden",
+              border: "1px solid #d9d9d9",
+              borderRadius: 12,
+              background: "#ffffff",
+              boxShadow: "0 18px 48px rgba(0, 0, 0, 0.22)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                minHeight: 48,
+                padding: "0 12px",
+                borderBottom: "1px solid #ebebeb",
+              }}
+            >
+              <h2 id="fpb-page-selection-modal-title" style={{ margin: 0, fontSize: 14, fontWeight: 650, color: "#202223" }}>
+                Add Wolfpack Bundles to storefront
+              </h2>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={closePageSelectionModal}
+                disabled={isInstallingWidget}
+                style={{
+                  appearance: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 28,
+                  height: 28,
+                  border: "1px solid #d1d5db",
+                  borderRadius: 8,
+                  background: "#f3f4f6",
+                  color: "#5f6368",
+                  cursor: isInstallingWidget ? "not-allowed" : "pointer",
+                  fontSize: 18,
+                  lineHeight: 1,
+                  opacity: isInstallingWidget ? 0.6 : 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: 16 }}>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "#6d7175" }}>
+                {bundle.bundleType === 'full_page'
+                  ? "Select a page to place and preview the bundle."
+                  : "Select a template to place and preview the bundle."}
               </p>
-            </s-stack>
-          ) : availablePages.length > 0 ? (
-            <s-stack direction="block" gap="small-100">
-              {availablePages.map((template) => (
-                <div key={template.id || template.handle} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <s-stack direction="block" gap="small-400">
-                    <s-stack direction="inline" gap="small-400">
-                      <span style={{ fontSize: 14, fontWeight: 500 }}>{template.title}</span>
-                      {template.recommended && <s-badge tone="success">Bundle Product</s-badge>}
-                    </s-stack>
-                    {template.description && <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>{template.description}</p>}
-                  </s-stack>
-                  <s-button
-                    variant={template.recommended ? "primary" : undefined}
-                    loading={isInstallingWidget || undefined}
-                    disabled={isInstallingWidget || undefined}
-                    onClick={() => handlePageSelection(template)}
-                  >
-                    {isInstallingWidget ? 'Adding...' : 'Select'}
-                  </s-button>
+              {isLoadingPages ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <s-spinner />
+                  <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                    {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
+                  </p>
                 </div>
-              ))}
-            </s-stack>
-          ) : (
-            <s-stack direction="block" gap="small">
-              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
-              </p>
-              <s-button href="https://admin.shopify.com/admin/pages" target="_blank">Create page</s-button>
-            </s-stack>
-          )}
-        </s-stack>
-        <s-button slot="secondaryActions" disabled={isInstallingWidget || undefined} onClick={() => closePageSelectionModal()}>
-          Cancel
-        </s-button>
-      </s-modal>
+              ) : availablePages.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {availablePages.map((template) => (
+                    <div key={template.id || template.handle} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{template.title}</span>
+                          {template.recommended && <s-badge tone="success">Bundle Product</s-badge>}
+                        </div>
+                        {template.description && <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>{template.description}</p>}
+                      </div>
+                      <s-button
+                        variant={template.recommended ? "primary" : undefined}
+                        loading={isInstallingWidget || undefined}
+                        disabled={isInstallingWidget || undefined}
+                        onClick={() => handlePageSelection(template)}
+                      >
+                        {isInstallingWidget ? 'Adding...' : 'Select'}
+                      </s-button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                    {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
+                  </p>
+                  <s-button href="https://admin.shopify.com/admin/pages" target="_blank">Create page</s-button>
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 16px", borderTop: "1px solid #ebebeb" }}>
+              <s-button disabled={isInstallingWidget || undefined} onClick={closePageSelectionModal}>
+                Cancel
+              </s-button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selected Products Modal */}
       <s-modal ref={productsModalRef} heading="Selected products">
@@ -5732,7 +5818,7 @@ export default function ConfigureBundleFlow() {
                 </svg>
               </button>
             </div>
-            {templateModalStep === "select" ? (
+            {templateModalStep === "templates" ? (
               <>
                 <div className={fullPageBundleStyles.templateDialogBody}>
                   <div className={fullPageBundleStyles.templateDialogIntro}>
@@ -5742,7 +5828,7 @@ export default function ConfigureBundleFlow() {
                         Choose a design that suits your needs and fits your brand
                       </p>
                     </div>
-                    <s-button variant="secondary" onClick={openDesignControlPanel}>
+                    <s-button variant="secondary" onClick={() => setTemplateModalStep("colorsAndCorners")}>
                       Customize Colors &amp; Language
                     </s-button>
                   </div>
@@ -5788,6 +5874,98 @@ export default function ConfigureBundleFlow() {
                   </s-button>
                 </div>
               </>
+            ) : templateModalStep === "colorsAndCorners" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Fine tune colors and corners before previewing the bundle
+                      </p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateDialogTabs} role="tablist" aria-label="Template customization">
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("templates")}>Templates</button>
+                      <button type="button" className={`${fullPageBundleStyles.templateDialogTab} ${fullPageBundleStyles.templateDialogTabActive}`} aria-current="page">Colors and corners</button>
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("textAndImages")}>Text and images</button>
+                    </div>
+                  </div>
+                  <div className={fullPageBundleStyles.templateCustomizationGrid}>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Brand colors</h4>
+                      <p>Use Settings &rarr; Design color controls for primary, secondary, background, text, border, and discount accents.</p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Corners</h4>
+                      <p>Review border radius and card rounding before applying the selected template.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button variant="secondary" onClick={() => setTemplateModalStep("templates")}>Back</s-button>
+                  <s-button variant="primary" onClick={() => setTemplateModalStep("textAndImages")}>Next</s-button>
+                </div>
+              </>
+            ) : templateModalStep === "textAndImages" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Review template language, labels, and media before finishing customization
+                      </p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateDialogTabs} role="tablist" aria-label="Template customization">
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("templates")}>Templates</button>
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("colorsAndCorners")}>Colors and corners</button>
+                      <button type="button" className={`${fullPageBundleStyles.templateDialogTab} ${fullPageBundleStyles.templateDialogTabActive}`} aria-current="page">Text and images</button>
+                    </div>
+                  </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={fullPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
+                  <div className={fullPageBundleStyles.templateCustomizationGrid}>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Text and language</h4>
+                      <p>Review Product Card, Bundle Cart, Bundle, Popups, Toasts, Addons, and Messages text from Settings Language.</p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Images and GIFs</h4>
+                      <p>Confirm template media, uploaded images, and loading GIFs before saving the template selection.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button variant="secondary" onClick={() => setTemplateModalStep("colorsAndCorners")}>Back</s-button>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Done
+                  </s-button>
+                </div>
+              </>
+            ) : templateModalStep === "enableThemeExtension" ? (
+              <div className={fullPageBundleStyles.templateDialogBody}>
+                <div className={fullPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={fullPageBundleStyles.templateDialogSubheading}>Enable your preview</h3>
+                  <p className={fullPageBundleStyles.templateDialogDescription}>A simple switch in your theme editor. Nothing changes on your store until you decide.</p>
+                </div>
+                <div className={fullPageBundleStyles.templateReadyPanel}>
+                  <div className={fullPageBundleStyles.templateReadyIcon}>
+                    <s-icon name="view" />
+                  </div>
+                  <h3 className={fullPageBundleStyles.templateReadyTitle}>Enable app embed</h3>
+                  <p className={fullPageBundleStyles.templateReadyText}>Open your theme editor, enable the Wolfpack Bundles app embed, then return here to preview your bundle.</p>
+                  <s-stack direction="inline" gap="small" alignItems="center" style={{ justifyContent: "center" }}>
+                    <s-button variant="secondary" onClick={() => themeEditorUrl ? window.open(themeEditorUrl, "_blank") : undefined}>Open theme editor</s-button>
+                    <s-button variant="primary" onClick={() => setTemplateModalStep("confirm")}>I've enabled it</s-button>
+                  </s-stack>
+                </div>
+              </div>
             ) : (
               <div className={fullPageBundleStyles.templateDialogBody}>
                 <div className={fullPageBundleStyles.templateDialogConfirmHeader}>

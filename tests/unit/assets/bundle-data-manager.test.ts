@@ -49,6 +49,34 @@ describe("BundleDataManager", () => {
     expect(selected).toBe(bundle);
   });
 
+  it("selects a full-page bundle by explicit bundle ID without product-page targeting context", () => {
+    const bundle = {
+      id: "bundle-1",
+      name: "Active FPB",
+      status: "active",
+      bundleType: "full_page",
+      steps: [{ id: "step-1", name: "Step 1" }],
+      bundleUpsellConfig: {
+        widgetConfiguration: {
+          displayConfiguration: {
+            showOnAllBundleProducts: false,
+            selectedProducts: [{ productId: "2222", handle: "other-product" }],
+            showOnSpecificProductPages: [],
+            collectionsSelectedData: [],
+            showOnSpecificCollectionPages: [],
+          },
+        },
+      },
+    };
+
+    const selected = BundleDataManager.selectBundle(
+      { "bundle-1": bundle },
+      { bundleId: "bundle-1" },
+    );
+
+    expect(selected).toBe(bundle);
+  });
+
   it("does not select a draft bundle without an explicit full-page bundle ID", () => {
     const bundle = {
       id: "bundle-1",

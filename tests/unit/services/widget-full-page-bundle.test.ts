@@ -1,3 +1,4 @@
+/* eslint-disable import/first */
 /**
  * Unit Tests for widget-full-page-bundle.server.ts
  *
@@ -35,8 +36,10 @@ jest.mock('../../../app/lib/slug-utils', () => ({
 
 import { createFullPageBundle, renamePageHandle } from '../../../app/services/widget-installation/widget-full-page-bundle.server';
 import { resolveUniqueHandle } from '../../../app/lib/slug-utils';
+import { generateThemeEditorDeepLink } from '../../../app/services/widget-installation/widget-theme-editor-links.server';
 
 const mockResolveUniqueHandle = resolveUniqueHandle as jest.MockedFunction<typeof resolveUniqueHandle>;
+const mockGenerateThemeEditorDeepLink = generateThemeEditorDeepLink as jest.MockedFunction<typeof generateThemeEditorDeepLink>;
 
 const mockSession = {
   shop: 'test-shop.myshopify.com',
@@ -134,6 +137,49 @@ describe('createFullPageBundle', () => {
     expect(result.success).toBe(true);
     expect(result.slugAdjusted).toBe(true);
     expect(result.pageHandle).toBe('my-kit-2');
+  });
+
+  it('returns the Shopify page URL so the storefront inherits the theme header and footer', async () => {
+    mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit', adjusted: false });
+    const admin = makeAdmin({ createPageHandle: 'my-kit' });
+
+    const result = await createFullPageBundle(admin, mockSession, 'api-key', bundleId, bundleName, 'my-kit');
+
+    expect(result.success).toBe(true);
+    expect(result.pageUrl).toBe('https://test-shop.myshopify.com/pages/my-kit');
+  });
+
+  it('creates the Shopify page with a theme-block marker instead of app-proxy assets', async () => {
+  it('creates the Shopify page with a theme-block marker instead of app-proxy assets', async () => {
+    mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit', adjusted: false });
+    const admin = makeAdmin({ createPageHandle: 'my-kit' });
+
+    await createFullPageBundle(admin, mockSession, 'api-key', bundleId, bundleName, 'my-kit');
+
+    const createCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('mutation createPage'));
+    expect(createCall?.[1]?.variables?.page?.body).toContain('data-wpb-full-page-bundle');
+    expect(createCall?.[1]?.variables?.page?.body).toContain('data-wpb-full-page-bundle');
+    expect(createCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
+    expect(createCall?.[1]?.variables?.page?.body).not.toContain('/apps/product-bundles/assets/');
+  });
+
+  it('returns a page app-block Theme Editor link for full-page storefront placement', async () => {
+    mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit', adjusted: false });
+    const admin = makeAdmin({ createPageHandle: 'my-kit' });
+
+    const result = await createFullPageBundle(admin, mockSession, 'api-key', bundleId, bundleName, 'my-kit');
+
+    expect(mockGenerateThemeEditorDeepLink).toHaveBeenCalledWith(
+      mockSession.shop,
+      'api-key',
+      'bundle-full-page',
+      bundleId,
+      'page',
+      'newAppsSection',
+      '/pages/my-kit',
+    );
+    expect(result.widgetInstallationRequired).toBe(true);
+    expect(result.widgetInstallationLink).toBe('https://theme-editor-link.example.com');
   });
 
   it('returns error when page creation fails', async () => {

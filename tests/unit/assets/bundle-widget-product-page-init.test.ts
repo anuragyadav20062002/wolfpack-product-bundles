@@ -348,4 +348,140 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('width:360px');
     expect(css).toContain('grid-template-columns:repeat(3,110.66px)');
   });
+
+  it('drives EB modal slot orientation from consumed JSON instead of the template label alone', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_usesVerticalModalSlotLayout');
+    expect(source).toContain('renderFilledSlotsAsHorizontalStacked');
+    expect(source).toContain('this.container.dataset.ppbSlotOrientation');
+    expect(source).toContain('this.elements.stepsContainer.dataset.ppbSlotOrientation');
+    expect(source).not.toContain('_isProductPageSimplifiedTemplate');
+    expect(css).toContain('data-ppb-slot-orientation="vertical"');
+  });
+
+  it('renders only one quantity increase button in PPB in-page product cards', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const inpageRenderer = source.slice(
+      source.indexOf('_renderInpageStepProducts'),
+      source.indexOf('  // Create an empty state card for a step'),
+    );
+
+    const increaseButtonMatches = inpageRenderer.match(/class="qty-btn qty-increase"/g) ?? [];
+    expect(increaseButtonMatches).toHaveLength(1);
+  });
+
+  it('renders EB-style PPB in-page category tabs from the consumed step categories', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_createInpageCategoryTabs');
+    expect(source).toContain('Array.isArray(step?.categories) ? step.categories : []');
+    expect(source).toContain('this.activeInpageCategoryIndexes[stepIndex]');
+    expect(source).toContain('bw-ppb-inpage-category-tab');
+    expect(source).toContain('_getInpageCategoryLabel');
+    const expectedCategoryFallback = [
+      'category?.title || category?.name || `Category $',
+      '{categoryIndex + 1}`',
+    ].join('');
+    expect(source).toContain(expectedCategoryFallback);
+    expect(source).toContain('_filterProductsForInpageCategory');
+    expect(source).toContain('_getCategoryProductIds');
+    expect(source).toContain('categoryProductIds.has(productId)');
+
+    expect(css).toContain('.bw-ppb-inpage-category-tabs');
+    expect(css).toContain('.bw-ppb-inpage-category-tab.active');
+    expect(css).toContain('background:#111111');
+    expect(css).toContain('color:#ffffff');
+  });
+
+  it('renders PPB discount tier pills from rule-id display DTOs', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain('getProductPageTierPillContent(rule, index, qtyOpts)');
+    expect(source).toContain('getProductPageTierPillContent(rule, index, qtyOpts) {');
+    expect(source).toContain('bundleQuantityOptions.optionsByRuleId || {}');
+    expect(source).toContain('pricing.messages?.tierTextByRuleId || {}');
+    expect(source).toContain('optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]');
+    expect(source).toContain('qtyOpts?.labels?.[index]');
+    expect(source).toContain('CurrencyManager.convertAndFormat(discountValue, currencyInfo)');
+  });
+});
+
+describe('Product Page bundle cart add transport contract', () => {
+  it('submits PPB cart adds as EB-style multipart fields to /cart/add', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain("fetch('/cart/add',");
+    expect(source).toContain('new FormData()');
+    const indexToken = ['$', '{index}'].join('');
+    expect(source).toContain(`items[${indexToken}][id]`);
+    expect(source).toContain(`items[${indexToken}][quantity]`);
+    expect(source).toContain(`items[${indexToken}][properties][Box]`);
+    expect(source).toContain(`items[${indexToken}][properties][_easyBundle:OfferId]`);
+    expect(source).toContain(`items[${indexToken}][properties][_easyBundle:prodQty]`);
+    expect(source).toContain(`items[${indexToken}][properties][_bundleName]`);
+    expect(source).toContain("const properties = {};");
+    expect(source).not.toContain("'_bundle_name': this.selectedBundle.name");
+    expect(source).not.toContain("'_step_index'");
+    expect(source).not.toContain("fetch('/cart/add.js', {");
+  });
+
+  it('keeps FPB cart adds on JSON /cart/add.js', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain("fetch('/cart/add.js',");
+    expect(source).toContain("'Content-Type': 'application/json'");
+    expect(source).toContain('JSON.stringify({ items })');
+  });
+
+  it('syncs EB-style bundle_details cart metafields for PPB and FPB through the signed app proxy', () => {
+    const ppbSource = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const fpbSource = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
+      'utf8',
+    );
+
+    [ppbSource, fpbSource].forEach((source) => {
+      expect(source).toContain("fetch('/apps/product-bundles/api/cart-bundle-details'");
+      expect(source).toContain("if (data?.ok !== true)");
+      expect(source).toContain("fetch('/cart.js?app=wolfpackProductBundles'");
+      expect(source).toContain('Failed to sync bundle_details cart metafield');
+      expect(source).not.toContain('query GetCartMetafield');
+      expect(source).not.toContain('cartMetafieldsSet');
+      expect(source).not.toContain('fetch(`/api/${version}/graphql.json`');
+    });
+
+    expect(ppbSource).toContain('bundleDetailsKey: `${offerId}_${sessionKey}`');
+    expect(ppbSource).toContain('await this.syncBundleDetailsCartMetafield(cartContext.bundleDetailsKey, cartContext.sourceProperties)');
+    expect(fpbSource).toContain('await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties)');
+  });
 });

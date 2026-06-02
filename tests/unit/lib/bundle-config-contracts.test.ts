@@ -3,10 +3,14 @@ import { describe, expect, it } from "@jest/globals";
 import {
   getStorefrontConfigLoadPlan,
   mapTemplateSelection,
+  resolveProductPageRenderFilledSlotsAsHorizontalStacked,
 } from "../../../app/lib/bundle-config/evidence-template-mapping";
 import { deriveControlDependencies } from "../../../app/lib/bundle-config/control-dependencies";
 import { buildCategoryContract } from "../../../app/lib/bundle-config/category-contracts";
-import { formatStepCategoryForRuntime } from "../../../app/lib/bundle-config/category-runtime";
+import {
+  formatStepCategoriesForRuntime,
+  formatStepCategoryForRuntime,
+} from "../../../app/lib/bundle-config/category-runtime";
 import { serializeCartLineDisplayProperties } from "../../../app/lib/bundle-config/cart-line-messaging";
 
 describe("mapTemplateSelection", () => {
@@ -38,6 +42,20 @@ describe("mapTemplateSelection", () => {
 
   it("rejects a template key that is not valid for the bundle type", () => {
     expect(() => mapTemplateSelection("full_page", "product-grid")).toThrow(/template/i);
+  });
+});
+
+describe("resolveProductPageRenderFilledSlotsAsHorizontalStacked", () => {
+  it("maps EB horizontal modal slots to horizontally stacked selected slots", () => {
+    expect(resolveProductPageRenderFilledSlotsAsHorizontalStacked("PDP_MODAL", "MODAL")).toBe(true);
+  });
+
+  it("maps EB vertical modal slots to vertically stacked selected slots", () => {
+    expect(resolveProductPageRenderFilledSlotsAsHorizontalStacked("PDP_MODAL", "SIMPLIFIED")).toBe(false);
+  });
+
+  it("does not emit a modal slot orientation for in-page templates", () => {
+    expect(resolveProductPageRenderFilledSlotsAsHorizontalStacked("PDP_INPAGE", "CASCADE")).toBeNull();
   });
 });
 
@@ -252,13 +270,15 @@ describe("buildCategoryContract", () => {
 });
 
 describe("formatStepCategoryForRuntime", () => {
-  it("compacts hydrated Admin products for runtime/metafield output", () => {
+  it("preserves render-critical category product data for runtime/metafield output", () => {
     const hydratedProduct = {
       id: "gid://shopify/Product/111",
       productId: "111",
       graphqlId: "gid://shopify/Product/111",
       handle: "rings",
       title: "Rings",
+      imageUrl: "https://cdn.example/ring-card.jpg",
+      price: "10.00",
       images: [{ originalSrc: "https://cdn.example/ring.jpg" }],
       variants: [
         {
@@ -284,12 +304,52 @@ describe("formatStepCategoryForRuntime", () => {
         graphqlId: "gid://shopify/Product/111",
         handle: "rings",
         title: "Rings",
+        imageUrl: "https://cdn.example/ring-card.jpg",
+        price: "10.00",
+        images: [{ originalSrc: "https://cdn.example/ring.jpg" }],
+        variants: [
+          {
+            id: "gid://shopify/ProductVariant/222",
+            price: "10.00",
+            image: { originalSrc: "https://cdn.example/variant.jpg" },
+            selectedOptions: [{ name: "Size", value: "6" }],
+          },
+        ],
       },
     ]);
     expect(runtime.selectedProducts).toEqual(runtime.products);
-    expect(JSON.stringify(runtime)).not.toContain("variants");
-    expect(JSON.stringify(runtime)).not.toContain("images");
-    expect(JSON.stringify(runtime).length).toBeLessThan(800);
+  });
+
+  it("enriches category product stubs from raw step product sources", () => {
+    const runtime = formatStepCategoriesForRuntime({
+      StepCategory: [
+        {
+          id: "category-db-1",
+          name: "Rings",
+          products: [{ id: "gid://shopify/Product/111", title: "Category title" }],
+        },
+      ],
+    }, [
+      {
+        id: "step-product-db-row",
+        productId: "gid://shopify/Product/111",
+        title: "Step title",
+        imageUrl: "https://cdn.example/ring-card.jpg",
+        price: "10.00",
+        variants: [{ id: "gid://shopify/ProductVariant/222", price: "10.00", available: true }],
+      },
+    ]);
+
+    expect(runtime[0].products).toEqual([
+      {
+        id: "gid://shopify/Product/111",
+        productId: "gid://shopify/Product/111",
+        title: "Category title",
+        imageUrl: "https://cdn.example/ring-card.jpg",
+        price: "10.00",
+        variants: [{ id: "gid://shopify/ProductVariant/222", price: "10.00", available: true }],
+      },
+    ]);
   });
 });
 

@@ -1,4 +1,4 @@
--- AlterTable: Add DCP Phase 1 settings columns to DesignSettings
+-- AlterTable: Add Settings design phase 1 values columns to DesignSettings
 -- All columns are nullable with defaults so existing rows are unaffected.
 
 ALTER TABLE "DesignSettings"

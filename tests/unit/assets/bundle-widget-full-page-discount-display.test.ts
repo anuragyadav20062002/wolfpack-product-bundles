@@ -41,6 +41,31 @@ describe("Full Page widget discount display contract", () => {
     expect(source).toContain("tierSubtext");
   });
 
+  it("renders EB-style promo discount tier badges from pricing rules", () => {
+    const source = widgetSource();
+    const css = widgetStyles();
+
+    expect(source).toContain("createPromoDiscountTierBadges(");
+    expect(source).toContain("promo-discount-tier-row");
+    expect(source).toContain("promo-discount-tier-badge");
+    expect(source).toContain("formatPromoDiscountTierLabel(");
+    expect(source).toContain("pricing?.messages?.tierTextByRuleId");
+    expect(source).toContain('style="${rowStyle}"');
+    expect(source).toContain('style="${badgeStyle}"');
+    expect(css).toContain(".promo-banner.has-discount .promo-banner-note");
+  });
+
+  it("uses EB-style sidebar tier labels for the primary add-to-cart CTA", () => {
+    const source = widgetSource();
+
+    expect(source).toContain("getSidebarTierCtaContent(");
+    expect(source).toContain("const sidebarTierCtaContent = (conditionless || isLastStep)");
+    expect(source).toContain("side-panel-btn-tier-label");
+    expect(source).toContain("side-panel-btn-tier-subtext");
+    expect(source).toContain("nextBtn.innerHTML = sidebarTierCtaContent");
+    expect(source).toContain("nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';");
+  });
+
   it("includes styles for box options and step progress labels", () => {
     const css = widgetStyles();
 
@@ -54,7 +79,7 @@ describe("Full Page widget discount display contract", () => {
     const source = widgetSource();
     const css = widgetStyles();
 
-    expect(source).toContain('_renderDiscountProgress({ placement: "sidebar" })');
+    expect(source).toContain('placement: "sidebar"');
     expect(source).toContain("fpb-discount-step-subtitle-list");
     expect(source).toContain('placement === "sidebar"');
     expect(css).toContain(".fpb-discount-progress.fpb-dp-sidebar");
@@ -127,35 +152,35 @@ describe("Full Page widget discount display contract", () => {
     expect(source).toContain("this.renderModalProducts(stepIndex);");
     expect(css).toContain('@media (max-width:767px)');
     expect(css).toMatch(
-      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.full-page-product-grid \{[^}]*grid-template-columns:repeat\(4,\s*182px\);[^}]*gap:15px;[^}]*justify-content:flex-start;/,
+      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.full-page-product-grid \{[^}]*grid-template-columns:repeat\(2,\s*var\(--cw,300px\)\);[^}]*gap:var\(--cg,15px\);[^}]*justify-content:flex-start;/,
     );
     expect(css).toMatch(
-      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-card \{[^}]*width:182px;[^}]*height:286px;[^}]*padding:8px;[^}]*border:0;[^}]*border-radius:10px;[^}]*box-shadow:none;/,
+      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-card \{[^}]*width:var\(--cw,300px\);[^}]*height:var\(--ch,420px\);[^}]*padding:var\(--cp,8px\);[^}]*border:0;[^}]*border-radius:10px;[^}]*box-shadow:none;/,
     );
     expect(css).toMatch(
-      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-image \{[^}]*width:166px;[^}]*height:166px;/,
+      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-image \{[^}]*width:var\(--is,284px\);[^}]*height:var\(--is,284px\);/,
     );
-    expect(css).toContain('.layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-image');
-    expect(css).toContain('.layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn::before');
+    expect(css).toContain('.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-image');
+    expect(css).toContain('.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn::before');
     expect(css).toMatch(
       /\.layout-sidebar \.sidebar-layout-wrapper \.sidebar-content \{[^}]*padding:20px 2px 120px;?/,
     );
     expect(css).toMatch(
-      /\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.full-page-product-grid \{[^}]*gap:15px;[^}]*padding:0;?/,
+      /\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.full-page-product-grid \{[^}]*gap:15px;[^}]*padding:0;?/,
     );
     expect(css).toMatch(
-      /\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-card \{[^}]*min-height:263px;[^}]*height:263px;[^}]*padding:8px;[^}]*border-radius:10px;/,
+      /\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-card \{[^}]*min-height:263px;[^}]*height:263px;[^}]*padding:8px;[^}]*border-radius:10px;/,
     );
     expect(css).toMatch(
-      /\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-image \{[^}]*width:100%;[^}]*height:150px;/,
+      /\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-image \{[^}]*width:100%;[^}]*height:150px;/,
     );
     expect(css).toMatch(
-      /\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-card-action \{[^}]*position:absolute;[^}]*width:28px;[^}]*height:28px;/,
+      /\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-card-action \{[^}]*position:absolute;[^}]*width:28px;[^}]*height:28px;/,
     );
     expect(css).toContain(".product-selected-action-row");
     expect(css).toContain(".inline-quantity-display-only");
     expect(css).toMatch(
-      /\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-add-btn \{[^}]*width:28px;[^}]*height:28px;[^}]*font-size:0;/,
+      /\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.sidebar-content \.product-add-btn \{[^}]*width:28px;[^}]*height:28px;[^}]*font-size:0;/,
     );
   });
 
@@ -163,7 +188,7 @@ describe("Full Page widget discount display contract", () => {
     const css = widgetStyles();
 
     expect(css).toMatch(
-      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-design-preset="DEFAULT"\]\[data-fpb-card-cta-mode="icon"\] \.full-page-side-panel \{[^}]*width:366px;[^}]*flex:0 0 366px;[^}]*min-height:681px;[^}]*margin-top:115px;[^}]*border:0;[^}]*border-radius:10px;[^}]*padding:20px;[^}]*gap:5px;[^}]*grid-template-columns:326px/,
+      /@media \(min-width:1024px\) \{[\s\S]*?\.layout-sidebar\[data-fpb-card-cta-mode="icon"\] \.full-page-side-panel \{[^}]*width:366px;[^}]*flex:0 0 366px;[^}]*min-height:681px;[^}]*margin-top:115px;[^}]*border:0;[^}]*border-radius:10px;[^}]*padding:20px;[^}]*gap:5px;[^}]*grid-template-columns:326px/,
     );
   });
 

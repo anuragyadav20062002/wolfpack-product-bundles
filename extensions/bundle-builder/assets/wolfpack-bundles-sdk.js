@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 2.9.10
- * Built   : 2026-05-31
+ * Version : 2.9.54
+ * Built   : 2026-06-02
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.10';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.54';
 (function (window) {
   'use strict';
 
@@ -652,6 +652,10 @@ class BundleDataManager {
       return false;
     }
 
+    if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      return true;
+    }
+
     const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
     if (!visibility || typeof visibility !== 'object') {
       return true;
@@ -807,6 +811,13 @@ class BundleDataManager {
           if (bundleProductId === productIdStr) {
             return bundle;
           }
+        }
+
+        if (
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+          bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration
+        ) {
+          return bundle;
         }
 
         // Priority 4: Theme editor context (show any bundle)
@@ -1177,7 +1188,7 @@ class ToastManager {
       existingToast.remove();
     }
 
-    // Create toast element - uses DCP CSS variables
+    // Create toast element - uses Settings design CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
@@ -1196,7 +1207,7 @@ class ToastManager {
       toast.remove();
     });
 
-    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
+    // Add to page (styles come from bundle-widget.css with Settings design CSS variables)
     document.body.appendChild(toast);
 
     // Auto-remove after duration
@@ -1338,7 +1349,16 @@ class TemplateManager {
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
     // Calculate discount-specific values
-    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
+    let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
+    const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
+    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+      discountData = {
+        ...discountData,
+        discountText: dtoDiscountDisplay.text,
+        discountValue: dtoDiscountDisplay.valueToken,
+        discountValueUnit: ''
+      };
+    }
 
     // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
@@ -1570,6 +1590,62 @@ class TemplateManager {
           discountValueUnit: ''
         };
     }
+  }
+
+  static shouldUseDtoDiscountDisplay(discountMethod, rule = null) {
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF) {
+      return true;
+    }
+
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y) {
+      return (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount';
+    }
+
+    return false;
+  }
+
+  static getRuleDiscountDisplay(bundle, rule = null) {
+    const messages = bundle?.pricing?.messages;
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const bundleQuantityOptions = messages?.displayOptions?.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = messages?.tierTextByRuleId || {};
+    const candidates = [];
+
+    if (ruleId) {
+      candidates.push(optionsByRuleId[ruleId]?.subtext);
+      candidates.push(tierTextByRuleId[ruleId]?.tierSubtext);
+    }
+
+    const defaultRuleId = bundleQuantityOptions.defaultRuleId ? String(bundleQuantityOptions.defaultRuleId) : '';
+    if (defaultRuleId && defaultRuleId !== ruleId) {
+      candidates.push(optionsByRuleId[defaultRuleId]?.subtext);
+      candidates.push(tierTextByRuleId[defaultRuleId]?.tierSubtext);
+    }
+
+    const text = candidates.find(value => typeof value === 'string' && value.trim());
+    if (!text) return null;
+
+    const valueToken = this.extractDiscountValueToken(text);
+    if (!valueToken) return null;
+
+    return {
+      text: text.trim(),
+      valueToken
+    };
+  }
+
+  static extractDiscountValueToken(displayText) {
+    if (typeof displayText !== 'string') return '';
+
+    const token = displayText
+      .trim()
+      .replace(/^save\s+/i, '')
+      .replace(/\s+discount$/i, '')
+      .replace(/\s+off$/i, '')
+      .trim();
+
+    return /\d/.test(token) ? token : '';
   }
 
   static createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -2299,6 +2375,7 @@ function createState() {
   return {
     isReady: false,
     bundleId: null,
+    offerId: null,
     bundleName: null,
     bundleData: null,
     steps: [],
@@ -2389,6 +2466,7 @@ function loadBundleConfig(container, state) {
   }
 
   state.bundleId = bundleData.id;
+  state.offerId = bundleData.offerId || bundleData.bundleOfferId || bundleData.id;
   state.bundleName = bundleData.name || null;
   state.bundleData = bundleData;
   state.steps = Array.isArray(bundleData.steps) ? bundleData.steps : [];
@@ -2434,6 +2512,16 @@ function _generateBundleInstanceId(bundleId) {
   return bundleId + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000000);
 }
 
+function _generateBundleSessionKey() {
+  return Math.random().toString(36).slice(2, 5).toUpperCase();
+}
+
+function _resolveProductPageOfferId(state) {
+  var rawOfferId = state.offerId || state.bundleOfferId || state.bundleId || 'UNKNOWN';
+  var offerId = String(rawOfferId);
+  return offerId.indexOf('MIX-') === 0 ? offerId : 'MIX-' + offerId;
+}
+
 function _formatCartAmount(cents, state) {
   if (typeof state.formatMoney === 'function') return state.formatMoney(cents);
   return String(cents);
@@ -2475,6 +2563,9 @@ function _buildCartLineSourceProperties(state, selectedLines) {
 
 function buildCartItems(state) {
   var bundleInstanceId = _generateBundleInstanceId(state.bundleId);
+  var offerId = _resolveProductPageOfferId(state);
+  var sessionKey = _generateBundleSessionKey();
+  var itemNumber = 0;
   var items = [];
   var unavailable = [];
   var selectedLines = [];
@@ -2497,10 +2588,12 @@ function buildCartItems(state) {
         return;
       }
 
+      itemNumber += 1;
       var properties = {
-        '_bundle_id': bundleInstanceId,
-        '_bundle_name': state.bundleName || '',
-        '_step_index': String(stepIndex),
+        'Box': String(itemNumber),
+        '_bundleName': state.bundleName || '',
+        '_easyBundle:OfferId': offerId + '_' + sessionKey + '_' + itemNumber,
+        '_easyBundle:prodQty': String(qty),
       };
       if (step.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
       if (step.isDefault) properties['_bundle_step_type'] = 'default';
@@ -2526,7 +2619,97 @@ function buildCartItems(state) {
     Object.assign(item.properties, sourceProperties);
   });
 
-  return { items: items, bundleInstanceId: bundleInstanceId };
+  return {
+    items: items,
+    bundleInstanceId: bundleInstanceId,
+    offerId: offerId,
+    sessionKey: sessionKey,
+    bundleDetailsKey: offerId + '_' + sessionKey,
+    sourceProperties: sourceProperties,
+  };
+}
+
+function buildProductPageCartFormData(items) {
+  var formData = new FormData();
+  items.forEach(function (item, index) {
+    formData.append('items[' + index + '][id]', String(item.id));
+    formData.append('items[' + index + '][quantity]', String(item.quantity));
+    Object.keys(item.properties || {}).forEach(function (key) {
+      var value = item.properties[key];
+      if (value === null || typeof value === 'undefined') return;
+      formData.append('items[' + index + '][properties][' + key + ']', String(value));
+    });
+  });
+  return formData;
+}
+
+function buildBundleDetailsDisplayProperties(sourceProperties) {
+  var displayProperties = {};
+  var raw = sourceProperties && sourceProperties._bundle_display_properties;
+
+  if (raw) {
+    try {
+      var parsed = JSON.parse(raw);
+      if (parsed && parsed.box) displayProperties.Box = String(parsed.box);
+      if (parsed && parsed.items) displayProperties.Items = String(parsed.items);
+      if (parsed && parsed.retailPrice) displayProperties['Retail Price'] = String(parsed.retailPrice);
+      if (parsed && parsed.youSave && parsed.youSave.amountPercentage) {
+        displayProperties['You Save'] = String(parsed.youSave.amountPercentage);
+      }
+    } catch (_) {}
+  }
+
+  ['Box', 'Items', 'Retail Price', 'You Save'].forEach(function (key) {
+    if (sourceProperties && sourceProperties[key] && !displayProperties[key]) {
+      displayProperties[key] = String(sourceProperties[key]);
+    }
+  });
+
+  return displayProperties;
+}
+
+function getBundleDetailsCartToken() {
+  return fetch('/cart.js', { credentials: 'same-origin' })
+    .then(function (response) {
+      if (!response.ok) return null;
+      return response.json().catch(function () { return null; });
+    })
+    .then(function (cart) {
+      return (cart && cart.token) || null;
+    })
+    .catch(function () { return null; });
+}
+
+function syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
+  var displayProperties = buildBundleDetailsDisplayProperties(sourceProperties);
+  if (!bundleDetailsKey || Object.keys(displayProperties).length === 0) return Promise.resolve();
+
+  return getBundleDetailsCartToken()
+    .then(function (cartToken) {
+      if (!cartToken) return null;
+      return fetch('/apps/product-bundles/api/cart-bundle-details', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cartToken: cartToken,
+          bundleDetailsKey: bundleDetailsKey,
+          displayProperties: displayProperties,
+        }),
+      });
+    })
+    .then(function (response) {
+      if (!response || !response.ok) return null;
+      return response.json().catch(function () { return null; });
+    })
+    .then(function (data) {
+      if (data && data.ok !== true) {
+        console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', data.error || data);
+      }
+    })
+    .catch(function (error) {
+      console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
+    });
 }
 
 function addBundleToCart(state, validateBundleFn, emitFn) {
@@ -2544,10 +2727,9 @@ function addBundleToCart(state, validateBundleFn, emitFn) {
     return Promise.resolve();
   }
 
-  return fetch('/cart/add.js', {
+  return fetch('/cart/add', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items: cartResult.items }),
+    body: buildProductPageCartFormData(cartResult.items),
   })
     .then(function (response) {
       return response.text().then(function (text) {
@@ -2558,6 +2740,9 @@ function addBundleToCart(state, validateBundleFn, emitFn) {
         }
         return text;
       });
+    })
+    .then(function () {
+      return syncBundleDetailsCartMetafield(cartResult.bundleDetailsKey, cartResult.sourceProperties);
     })
     .then(function () {
       emitFn('wbp:cart-success', { bundleId: state.bundleId });

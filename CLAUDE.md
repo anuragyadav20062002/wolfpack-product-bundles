@@ -132,12 +132,11 @@ Reference in commit: `[issue-id] test: add unit tests for {module}\nSpec: test-s
 7. ✅ Write tests BEFORE implementation for all new code
 8. ✅ Run linter on modified files BEFORE every commit — see Lint Before Commit
 9. ❌ NO backwards-compatibility shims or migration hacks — see No Backwards Compatibility Rule
-10. ✅ ALWAYS ask about DCP customizability for storefront changes before implementing
-11. ✅ CREATE a test spec file in `test-spec/` for every TDD session
-12. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
-13. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
-14. ❌ NEVER commit Chrome DevTools investigation screenshots
-15. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
+10. ✅ CREATE a test spec file in `test-spec/` for every TDD session
+11. ❌ NO hardcoded fallback UI copy strings — never fabricate merchant-facing marketing copy
+12. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
+13. ❌ NEVER commit Chrome DevTools investigation screenshots
+14. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
 
 ---
 
@@ -160,15 +159,6 @@ Use Polaris web components (`s-*`) for **all** Admin-embedded app UI. Fall back 
 **Acceptable custom HTML exceptions:** tab navigation, step chip/pill patterns, keyframe animations, fixed-position overlays, complex grids not achievable with `s-grid`.
 
 Check availability: `mcp__shopify-dev-mcp__learn_shopify_api(api: "polaris-app-home")`
-
----
-
-## 🎨 DCP Customizability Rule
-
-Any storefront-visible change may need a merchant-facing DCP control:
-- User **explicitly says** DCP-customizable → implement DCP control in same issue/commit.
-- User **does not mention** DCP → **ask first**: "Should this also have a DCP control?"
-- Do NOT assume no DCP needed. Do NOT add DCP controls speculatively.
 
 ---
 
@@ -202,7 +192,7 @@ Zero ESLint errors required. Warnings acceptable (pre-existing ~6500 warnings in
 
 **MANDATORY:** Update `docs/app-nav-map/APP_NAVIGATION_MAP.md` whenever you:
 - Add/rename/remove a route, page, modal, or tab
-- Add a new sidebar section to DCP navigation
+- Add a new Settings subpage, sidebar section, or configuration tab
 - Add/change a user flow or add relevant API routes
 
 ---
@@ -244,6 +234,16 @@ npm run build:widgets           # all widget bundles + minify
 npm run build:widgets:full-page
 npm run build:widgets:product-page
 npm run build:sdk
+```
+
+**Raw widget JS syntax check:** after editing raw storefront widget JS, run `node --check <file>` before commit.
+
+Examples:
+```bash
+node --check app/assets/bundle-widget-full-page.js
+node --check app/assets/bundle-widget-product-page.js
+node --check app/assets/bundle-modal-component.js
+node --check app/assets/bundle-widget-components.js
 ```
 
 **Forgetting to build = changes won't appear in the storefront.**
@@ -294,6 +294,8 @@ Increment `WIDGET_VERSION` in `scripts/build-widget-bundles.js` before every wid
 Verify live version: `console.log(window.__BUNDLE_WIDGET_VERSION__)` in DevTools console.
 
 Shopify CDN cache-busting: the `?v=HASH` param on `asset_url` only changes on `shopify app deploy`. Custom query params are NOT on the CDN allowlist.
+
+Storefront asset strategy: theme/app-extension Liquid must load storefront JS/CSS with Shopify `asset_url`. Do not use `/apps/product-bundles/assets/...` as the production storefront JS/CSS loading path; app proxy is for signed API/data routes only.
 
 ---
 

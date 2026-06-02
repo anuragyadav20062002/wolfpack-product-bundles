@@ -27,7 +27,7 @@ import {
   createNewPricingRule,
 } from "../../../types/pricing";
 import { useBundlePricing } from "../../../hooks/useBundlePricing";
-import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
+import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
@@ -38,6 +38,7 @@ import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
 import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { StepSummary } from "./StepSummary";
 import styles from "./wizard-configure.module.css";
+import { SaveBar } from "@shopify/app-bridge-react";
 
 declare const shopify: {
   resourcePicker: (opts: {
@@ -46,6 +47,7 @@ declare const shopify: {
     selectionIds?: { id: string }[];
   }) => Promise<{ selection: any[] } | null>;
   toast: { show: (msg: string, opts?: { isError?: boolean }) => void };
+  saveBar?: { leaveConfirmation?: () => Promise<void> | void };
 };
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -744,6 +746,7 @@ export default function WizardConfigureStep() {
   const configBaselineRef = useRef(currentConfigPayload);
   const pricingBaselineRef = useRef(currentPricingPayload);
   const assetsBaselineRef = useRef(currentAssetsPayload);
+  const [, forceSaveBarRender] = useState(0);
 
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
@@ -789,8 +792,8 @@ export default function WizardConfigureStep() {
       } else {
         configBaselineRef.current = currentConfigPayload;
       }
-      setWizardStep(2);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      forceSaveBarRender((revision) => revision + 1);
+      shopify.toast.show("Settings saved successfully");
     }
   }, [configFetcher.data, configFetcher.state]);
 
@@ -801,8 +804,8 @@ export default function WizardConfigureStep() {
       pricingFetcher.state === "idle"
     ) {
       pricingBaselineRef.current = currentPricingPayload;
-      setWizardStep(3);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      forceSaveBarRender((revision) => revision + 1);
+      shopify.toast.show("Settings saved successfully");
     }
   }, [pricingFetcher.data, pricingFetcher.state]);
 
@@ -813,9 +816,10 @@ export default function WizardConfigureStep() {
       assetsFetcher.state === "idle"
     ) {
       assetsBaselineRef.current = currentAssetsPayload;
-      navigate(assetsFetcher.data.redirectTo);
+      forceSaveBarRender((revision) => revision + 1);
+      shopify.toast.show("Settings saved successfully");
     }
-  }, [assetsFetcher.data, assetsFetcher.state, navigate]);
+  }, [assetsFetcher.data, assetsFetcher.state, currentAssetsPayload]);
 
   const currentStep = steps[currentIdx];
 
@@ -832,6 +836,27 @@ export default function WizardConfigureStep() {
       : wizardStep === 2
       ? pricingFetcher.state === "submitting"
       : assetsFetcher.state === "submitting";
+  const isAnyWizardSaveInFlight =
+    configFetcher.state !== "idle" ||
+    pricingFetcher.state !== "idle" ||
+    assetsFetcher.state !== "idle";
+  const isCurrentWizardPageDirty =
+    wizardStep === 1
+      ? shouldSubmitCreateWizardPage({
+          baseline: configBaselineRef.current,
+          current: currentConfigPayload,
+          requirePersistedStepIds: true,
+          steps,
+        })
+      : wizardStep === 2
+      ? shouldSubmitCreateWizardPage({
+          baseline: pricingBaselineRef.current,
+          current: currentPricingPayload,
+        })
+      : shouldSubmitCreateWizardPage({
+          baseline: assetsBaselineRef.current,
+          current: currentAssetsPayload,
+        });
 
   // ── Step 02 mutations ──────────────────────────────────────────
   const updateStep = useCallback(
@@ -1113,29 +1138,17 @@ export default function WizardConfigureStep() {
   );
 
   // ── Navigation ─────────────────────────────────────────────────
-  const handleBack = useCallback(() => {
-    if (wizardStep === 1) {
-      window.history.back();
-    } else {
-      setWizardStep((prev) => prev - 1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, [wizardStep]);
+  const promptSaveBarBeforeNavigation = useCallback(() => {
+    shopify.toast.show("Save or discard your changes before moving to another step.", {
+      isError: true,
+    });
+    void shopify.saveBar?.leaveConfirmation?.();
+  }, []);
 
-  const handleNext = useCallback(() => {
+  const handleSaveCurrentWizardPage = useCallback(() => {
+    if (isAnyWizardSaveInFlight) return;
+
     if (wizardStep === 1) {
-      if (
-        !shouldSubmitCreateWizardPage({
-          baseline: configBaselineRef.current,
-          current: currentConfigPayload,
-          requirePersistedStepIds: true,
-          steps,
-        })
-      ) {
-        setWizardStep(2);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
       const fd = new FormData();
       fd.set("_intent", "saveConfig");
       fd.set("steps", JSON.stringify(steps));
@@ -1143,17 +1156,10 @@ export default function WizardConfigureStep() {
       fd.set("searchBarEnabled", String(searchBarEnabled));
       fd.set("textOverridesByLocale", JSON.stringify(textOverridesByLocale));
       configFetcher.submit(fd, { method: "post" });
-    } else if (wizardStep === 2) {
-      if (
-        !shouldSubmitCreateWizardPage({
-          baseline: pricingBaselineRef.current,
-          current: currentPricingPayload,
-        })
-      ) {
-        setWizardStep(3);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
+      return;
+    }
+
+    if (wizardStep === 2) {
       const fd = new FormData();
       fd.set("_intent", "savePricing");
       fd.set(
@@ -1172,34 +1178,27 @@ export default function WizardConfigureStep() {
         })
       );
       pricingFetcher.submit(fd, { method: "post" });
-    } else if (wizardStep === 3) {
-      if (
-        !shouldSubmitCreateWizardPage({
-          baseline: assetsBaselineRef.current,
-          current: currentAssetsPayload,
-        })
-      ) {
-        navigate(editRoutePath);
-        return;
-      }
-      const fd = new FormData();
-      fd.set("_intent", "saveAssets");
-      fd.set("promoBannerBgImage", promoBannerBgImage ?? "");
-      fd.set("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
-      fd.set("loadingGif", loadingGif ?? "");
-      fd.set("searchBarEnabled", String(searchBarEnabled));
-      fd.set(
-        "stepsFilters",
-        JSON.stringify(
-          steps
-            .filter((s) => s.dbId)
-            .map((s) => ({ stepDbId: s.dbId, filters: s.filters }))
-        )
-      );
-      fd.set("customFields", JSON.stringify(customFields));
-      assetsFetcher.submit(fd, { method: "post" });
+      return;
     }
+
+    const fd = new FormData();
+    fd.set("_intent", "saveAssets");
+    fd.set("promoBannerBgImage", promoBannerBgImage ?? "");
+    fd.set("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
+    fd.set("loadingGif", loadingGif ?? "");
+    fd.set("searchBarEnabled", String(searchBarEnabled));
+    fd.set(
+      "stepsFilters",
+      JSON.stringify(
+        steps
+          .filter((s) => s.dbId)
+          .map((s) => ({ stepDbId: s.dbId, filters: s.filters }))
+      )
+    );
+    fd.set("customFields", JSON.stringify(customFields));
+    assetsFetcher.submit(fd, { method: "post" });
   }, [
+    isAnyWizardSaveInFlight,
     wizardStep,
     steps,
     bundleStatus,
@@ -1217,12 +1216,98 @@ export default function WizardConfigureStep() {
     promoBannerBgImageCrop,
     loadingGif,
     customFields,
-    currentConfigPayload,
-    currentPricingPayload,
-    currentAssetsPayload,
-    editRoutePath,
-    navigate,
   ]);
+
+  const handleDiscardCurrentWizardPage = useCallback(() => {
+    if (wizardStep === 1) {
+      const saved = JSON.parse(configBaselineRef.current || currentConfigPayload);
+      const restoredSteps: WizardStepState[] = (saved.steps || []).map(
+        (step: Partial<WizardStepState>, index: number) => ({
+          tempId: step.tempId || crypto.randomUUID(),
+          dbId: step.dbId ?? null,
+          name: step.name ?? "",
+          pageTitle: step.pageTitle ?? "",
+          iconUrl: step.iconUrl ?? null,
+          products: step.products ?? [],
+          collections: step.collections ?? [],
+          StepCategory:
+            step.StepCategory && step.StepCategory.length > 0
+              ? step.StepCategory
+              : [{ id: `cat-${index}`, name: "Category 1", sortOrder: 0, products: [], collections: [] }],
+          conditions: step.conditions ?? [],
+          filters: step.filters ?? [],
+          preSelectAll: false,
+          activeTab: "products",
+        })
+      );
+      setSteps(restoredSteps.length > 0 ? restoredSteps : [emptyStep()]);
+      setBundleStatus(saved.bundleStatus);
+      setSearchBarEnabled(Boolean(saved.searchBarEnabled));
+      setTextOverridesByLocale(saved.textOverridesByLocale ?? {});
+      setCurrentIdx((idx) => Math.min(idx, Math.max(restoredSteps.length - 1, 0)));
+    } else if (wizardStep === 2) {
+      const saved = JSON.parse(pricingBaselineRef.current || currentPricingPayload);
+      const discountType = (saved.discountType || DiscountMethod.PERCENTAGE_OFF) as DiscountMethod;
+      pricing.toggleDiscountEnabled(Boolean(saved.discountEnabled));
+      pricing.changeDiscountType(discountType);
+      pricing.setDiscountRules(
+        Array.isArray(saved.discountRules) && saved.discountRules.length > 0
+          ? saved.discountRules
+          : [createNewPricingRule(discountType)]
+      );
+      setDiscountMessagingEnabled(Boolean(saved.discountMessagingEnabled));
+      setShowProgressBar(Boolean(saved.showProgressBar));
+      setProgressMessage(saved.messages?.progress ?? "");
+      setQualifiedMessage(saved.messages?.qualified ?? "");
+    } else {
+      const saved = JSON.parse(assetsBaselineRef.current || currentAssetsPayload);
+      setPromoBannerBgImage(saved.promoBannerBgImage || null);
+      setPromoBannerBgImageCrop(saved.promoBannerBgImageCrop || null);
+      setLoadingGif(saved.loadingGif || null);
+      setSearchBarEnabled(Boolean(saved.searchBarEnabled));
+      setCustomFields(saved.customFields ?? []);
+      setSteps((prev) =>
+        prev.map((step) => {
+          const savedFilters = (saved.stepsFilters ?? []).find(
+            (entry: { stepDbId: string; filters: FilterDef[] }) =>
+              entry.stepDbId === step.dbId
+          );
+          return savedFilters ? { ...step, filters: savedFilters.filters ?? [] } : step;
+        })
+      );
+    }
+
+    shopify.toast.show("Changes discarded");
+  }, [wizardStep, currentConfigPayload, currentPricingPayload, currentAssetsPayload, pricing]);
+
+  const handleBack = useCallback(() => {
+    if (isCurrentWizardPageDirty) {
+      promptSaveBarBeforeNavigation();
+      return;
+    }
+
+    if (wizardStep === 1) {
+      window.history.back();
+    } else {
+      setWizardStep((prev) => prev - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [isCurrentWizardPageDirty, promptSaveBarBeforeNavigation, wizardStep]);
+
+  const handleNext = useCallback(() => {
+    if (isCurrentWizardPageDirty) {
+      promptSaveBarBeforeNavigation();
+      return;
+    }
+
+    if (wizardStep === 3) {
+      navigate(editRoutePath);
+      return;
+    }
+
+    setWizardStep((prev) => prev + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [editRoutePath, isCurrentWizardPageDirty, navigate, promptSaveBarBeforeNavigation, wizardStep]);
 
   const enablePreviewGate = useEnablePreviewGate({
     appEmbedEnabled: readiness.appEmbedEnabled,
@@ -1299,6 +1384,34 @@ export default function WizardConfigureStep() {
   // ── Render ─────────────────────────────────────────────────────
   return (
     <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSaveCurrentWizardPage();
+        }}
+        onReset={(e) => {
+          e.preventDefault();
+          handleDiscardCurrentWizardPage();
+        }}
+      >
+        <SaveBar id="create-wizard-save-bar" open={isCurrentWizardPageDirty}>
+          <button
+            type="submit"
+            variant="primary"
+            loading={isSubmitting ? "" : undefined}
+            disabled={isAnyWizardSaveInFlight}
+          >
+            Save
+          </button>
+          <button
+            type="reset"
+            disabled={isAnyWizardSaveInFlight}
+          >
+            Discard
+          </button>
+        </SaveBar>
+      </form>
+
       <ui-title-bar title={pageTitle}>
         <button variant="breadcrumb" onClick={() => window.history.back()}>
           Create Bundle
@@ -1785,7 +1898,7 @@ export default function WizardConfigureStep() {
                   </s-button>
                   <s-button
                     variant="primary"
-                    loading={isSubmitting || undefined}
+                    disabled={isAnyWizardSaveInFlight || undefined}
                     onClick={handleNext}
                   >
                     Next
@@ -2140,7 +2253,7 @@ export default function WizardConfigureStep() {
               </s-button>
               <s-button
                 variant="primary"
-                loading={isSubmitting || undefined}
+                disabled={isAnyWizardSaveInFlight || undefined}
                 onClick={handleNext}
               >
                 Next
@@ -2290,7 +2403,7 @@ export default function WizardConfigureStep() {
               </s-button>
               <s-button
                 variant="primary"
-                loading={isSubmitting || undefined}
+                disabled={isAnyWizardSaveInFlight || undefined}
                 onClick={handleNext}
               >
                 Next
@@ -2691,6 +2804,7 @@ export default function WizardConfigureStep() {
         bundleId={bundle.id}
         open={readinessOpen}
         onOpenChange={setReadinessOpen}
+        variant="compact"
       />
     </>
   );

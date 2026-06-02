@@ -46,7 +46,7 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 | 4 | PPB collection category | hydrated collection picker objects | `collectionsSelectedData`, empty `products`, subtitle/banner fields | |
 | 5 | PPB variant flags | flags true/false | category-level variant and swatch flags | |
 | 6 | Category-first runtime | category-backed products/collections with empty top-level arrays | runtime keeps category data under `categories` and does not copy it into top-level step `products`/`collections` | No compatibility shims. |
-| 7 | Runtime category compactness | hydrated Admin product objects with variants/images in `StepCategory.products` | metafield/runtime categories keep product references but strip variant and image payload bloat | Admin save payload remains hydrated; storefront runtime hydrates products through app proxy. |
+| 7 | Runtime category product resilience | category product references plus raw step product sources | metafield/runtime categories keep render-critical image, price, variants, and options so FPB can first-paint from `custom.bundle_config` without app-proxy product hydration | EB runtime embeds steps/categories as primary storefront source; app proxy is fallback, not required first paint. |
 
 ### Step Setup Multi Language Admin
 

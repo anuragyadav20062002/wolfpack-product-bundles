@@ -44,7 +44,7 @@ export const BUNDLE_STATUS_OPTIONS = [
   { label: "Unlisted (Ad Campaigns)", value: BundleStatus.UNLISTED },
 ] as const;
 
-/** Bundle type options for the DCP selector */
+/** Bundle type options for Settings design selectors */
 export const BUNDLE_TYPE_OPTIONS = [
   { label: "Product Page Bundle", value: BundleType.PRODUCT_PAGE },
   { label: "Full Page Bundle", value: BundleType.FULL_PAGE },

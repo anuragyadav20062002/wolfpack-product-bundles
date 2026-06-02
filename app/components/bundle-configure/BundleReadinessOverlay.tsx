@@ -16,6 +16,7 @@ interface Props {
   onOpenChange?: (open: boolean) => void;
   hideCollapsedTrigger?: boolean;
   onItemClick?: (key: string) => void;
+  variant?: "detailed" | "compact";
 }
 
 function scoreColor(score: number) {
@@ -24,8 +25,16 @@ function scoreColor(score: number) {
   return "#d82c0d";
 }
 
-export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick }: Props) {
+function readinessStatusText(score: number, allDone: boolean) {
+  if (allDone) return "Your bundle is ready to sell!";
+  if (score >= 80) return "Almost there. A few more steps to go.";
+  if (score >= 40) return "Almost there. A few more steps to go.";
+  return "Complete the remaining steps to get your bundle ready.";
+}
+
+export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick, variant = "detailed" }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const isCompact = variant === "compact";
 
   useEffect(() => {
     if (open !== undefined) setExpanded(open);
@@ -40,11 +49,13 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
   const progressLength = (score / 100) * arcLength;
 
   const toggle = useCallback(() => {
+    if (isCompact) return;
+
     setExpanded((e) => {
       onOpenChange?.(!e);
       return !e;
     });
-  }, [onOpenChange]);
+  }, [isCompact, onOpenChange]);
 
   const allDone = items.every((i) => i.done);
 
@@ -65,7 +76,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
     [activateItem],
   );
 
-  if (hideCollapsedTrigger && !expanded) return null;
+  if (!isCompact && hideCollapsedTrigger && !expanded) return null;
 
   const donut = (
     <svg width="56" height="56" viewBox="0 0 56 56" className={styles.arc}>
@@ -100,71 +111,81 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
 
   return (
     <>
-      {expanded && <div className={styles.dimOverlay} onClick={toggle} />}
+      {!isCompact && expanded && <div className={styles.dimOverlay} onClick={toggle} />}
       <div className={styles.container}>
-        <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
-          <div className={styles.panelInner}>
-            <div className={styles.panel}>
-              <div className={styles.panelItems}>
-                {items.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""} ${onItemClick ? styles.panelItemClickable : ""}`}
-                    onClick={() => {
-                      activateItem(item.key);
-                    }}
-                    onKeyDown={(event) => handleItemKeyDown(event, item.key)}
-                    aria-label={`${item.label} readiness item`}
-                  >
-                    <div className={styles.itemIndicator}>
-                      {item.done ? (
-                        <svg width="20" height="20" viewBox="0 0 20 20">
-                          <circle cx="10" cy="10" r="10" fill="#008060" />
-                          <path d="M6 10.5l2.5 2.5L14 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                        </svg>
-                      ) : (
-                        <svg width="20" height="20" viewBox="0 0 20 20">
-                          <circle cx="10" cy="10" r="9" fill="none" stroke="#c9cccf" strokeWidth="1.5" />
-                        </svg>
-                      )}
-                    </div>
-                    <div className={styles.itemContent}>
-                      <span className={styles.itemLabel}>{item.label}</span>
-                      {item.description && (
-                        <span className={styles.itemDesc}>{item.description}</span>
-                      )}
-                      <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
-                        +{item.points} Points
-                      </span>
-                    </div>
-                    {onItemClick && (
-                      <div className={styles.itemChevron} aria-hidden="true">
-                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <path d="M3 1.5L7 5L3 8.5" stroke="#8c8c8c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className={allDone ? styles.statusReady : styles.statusNotReady}>
-                {allDone ? "Your bundle is ready to sell!" : "Your bundle isn't ready to sell yet."}
+        {!isCompact && (
+          <div className={`${styles.panelWrapper} ${expanded ? styles.panelWrapperOpen : ""}`}>
+            <div className={styles.panelInner}>
+              <div className={styles.panel}>
+                <div className={styles.panelItems}>
+                  {items.map((item) => {
+                    const showActionHint = !item.done && Boolean(item.description);
+                    const showActionChevron = !item.done && Boolean(onItemClick);
+
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        className={`${styles.panelItem} ${item.done ? styles.panelItemDone : ""} ${showActionChevron ? styles.panelItemClickable : ""}`}
+                        onClick={() => {
+                          activateItem(item.key);
+                        }}
+                        onKeyDown={(event) => handleItemKeyDown(event, item.key)}
+                        aria-label={`${item.label} readiness item`}
+                      >
+                        <div className={styles.itemIndicator}>
+                          {item.done ? (
+                            <svg width="18" height="18" viewBox="0 0 20 20">
+                              <circle cx="10" cy="10" r="10" fill="#008060" />
+                              <path d="M6 10.5l2.5 2.5L14 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                            </svg>
+                          ) : (
+                            <svg width="18" height="18" viewBox="0 0 20 20">
+                              <circle cx="10" cy="10" r="8.5" fill="none" stroke="#c9cccf" strokeWidth="1.5" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className={styles.itemContent}>
+                          <div className={styles.itemMainRow}>
+                            <span className={styles.itemLabel}>{item.label}</span>
+                            <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
+                              +{item.points} Points
+                            </span>
+                          </div>
+                          {showActionHint && (
+                            <span className={styles.itemDesc}>{item.description}</span>
+                          )}
+                        </div>
+                        {showActionChevron && (
+                          <div className={styles.itemChevron} aria-hidden="true">
+                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                              <path d="M3 1.5L7 5L3 8.5" stroke="#8c8c8c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={allDone ? styles.statusReady : styles.statusNotReady}>
+                  {readinessStatusText(score, allDone)}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {(!hideCollapsedTrigger || expanded) && (
           <button
             type="button"
             data-tour-target="fpb-readiness-score"
-            className={`${styles.collapsed} ${expanded ? styles.collapsedOpen : ""}`}
+            className={`${styles.collapsed} ${expanded && !isCompact ? styles.collapsedOpen : ""} ${isCompact ? styles.collapsedCompact : ""}`}
             onClick={toggle}
             aria-label="Toggle readiness score"
+            aria-disabled={isCompact}
           >
             {donut}
-            {expanded && (
+            {expanded && !isCompact && (
               <div className={styles.scoreLabel}>
                 <span className={styles.scoreLabelTitle}>Readiness Score</span>
                 <span className={styles.scoreLabelSub}>
@@ -172,7 +193,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                 </span>
               </div>
             )}
-            {chevron}
+            {!isCompact && chevron}
           </button>
         )}
       </div>

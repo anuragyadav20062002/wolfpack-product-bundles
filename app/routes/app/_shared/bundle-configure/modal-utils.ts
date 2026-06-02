@@ -30,7 +30,7 @@ export function hidePolarisModal(ref: { current: any }): void {
 }
 
 /**
- * Attaches native dismiss/hide event listeners to an s-modal so React state
+ * Attaches native dismiss/hide/close event listeners to an s-modal so React state
  * stays in sync when the user closes the modal via Escape, backdrop, or the
  * built-in close button. React 18 does not wire onHide as a DOM event
  * listener for custom elements — use this hook instead.
@@ -46,11 +46,25 @@ export function useModalHideListener(
     const modal = ref.current;
     if (!modal) return;
     const handler = () => handlerRef.current();
+    const closeClickHandler = (event: MouseEvent) => {
+      const path = event.composedPath();
+      const clickedCloseButton = path.some((node) => {
+        if (!(node instanceof HTMLElement)) return false;
+        return node.getAttribute("aria-label") === "Close" || node.textContent?.trim() === "Close";
+      });
+      if (clickedCloseButton) handlerRef.current();
+    };
     modal.addEventListener("dismiss", handler);
     modal.addEventListener("hide", handler);
+    modal.addEventListener("close", handler);
+    modal.addEventListener("afterhide", handler);
+    modal.addEventListener("click", closeClickHandler);
     return () => {
       modal.removeEventListener("dismiss", handler);
       modal.removeEventListener("hide", handler);
+      modal.removeEventListener("close", handler);
+      modal.removeEventListener("afterhide", handler);
+      modal.removeEventListener("click", closeClickHandler);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }

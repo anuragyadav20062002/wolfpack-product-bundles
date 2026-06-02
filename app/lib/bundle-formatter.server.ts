@@ -10,6 +10,7 @@
  */
 
 import { formatStepCategoriesForRuntime } from "./bundle-config/category-runtime";
+import { resolveProductPageRenderFilledSlotsAsHorizontalStacked } from "./bundle-config/evidence-template-mapping";
 
 /** Convert a Shopify GID to its numeric ID for storefront cart operations. */
 function extractNumericId(gid: string): string {
@@ -36,6 +37,7 @@ export interface FormattedBundle {
   individualSellingPlanSelection: Record<string, unknown>;
   validateQuantityPerProduct: Record<string, unknown>;
   useSingleStepCategoriesAsBundleSteps: boolean;
+  renderFilledSlotsAsHorizontalStacked: boolean | null;
   shopifyProductId: string | null;
   steps: FormattedStep[];
   pricing: FormattedPricing | null;
@@ -172,7 +174,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       displayVariantsAsIndividual: step.displayVariantsAsIndividual,
       products: productsArray,
       collections: Array.isArray(step.collections) ? step.collections : [],
-      categories: formatStepCategoriesForRuntime(step),
+      categories: formatStepCategoriesForRuntime(step, stepProducts),
       conditionType: step.conditionType ?? null,
       conditionOperator: step.conditionOperator ?? null,
       conditionValue: step.conditionValue ?? null,
@@ -187,6 +189,10 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     };
   });
 
+  const bundleDesignTemplateData = bundle.bundleType === "product_page" && bundle.bundleDesignPresetId
+    ? { templateId: bundle.bundleDesignPresetId }
+    : null;
+
   return {
     id: bundle.id,
     name: bundle.name,
@@ -196,9 +202,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     fullPageLayout: bundle.fullPageLayout ?? null,
     bundleDesignTemplate: bundle.bundleDesignTemplate ?? null,
     bundleDesignPresetId: bundle.bundleDesignPresetId ?? null,
-    bundleDesignTemplateData: bundle.bundleType === "product_page" && bundle.bundleDesignPresetId
-      ? { templateId: bundle.bundleDesignPresetId }
-      : null,
+    bundleDesignTemplateData,
     defaultProductsData: (bundle.defaultProductsData as Record<string, unknown> | null) ?? {},
     boxSelection: (bundle.boxSelection as Record<string, unknown> | null) ?? null,
     bundleUpsellConfig: (bundle.bundleUpsellConfig as Record<string, unknown> | null) ?? null,
@@ -214,6 +218,10 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       allowedQuantity: 1,
     },
     useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
+    renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
+      bundle.bundleDesignTemplate,
+      bundleDesignTemplateData?.templateId,
+    ),
     shopifyProductId: bundle.shopifyProductId,
     steps,
     pricing: bundle.pricing

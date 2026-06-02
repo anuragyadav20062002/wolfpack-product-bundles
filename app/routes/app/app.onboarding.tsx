@@ -331,7 +331,7 @@ export default function Onboarding() {
               </s-stack>
 
               <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                The Design Control Panel gives you full control over how your bundles look — no coding required.
+                Settings &rarr; Design gives you control over how your bundles look — no coding required.
                 Changes apply instantly to your storefront.
               </p>
 
@@ -350,8 +350,7 @@ export default function Onboarding() {
 
               <s-banner tone="info">
                 <p style={{ margin: 0, fontSize: 13 }}>
-                  The DCP has separate settings for <strong>Product Page</strong> and{" "}
-                  <strong>Full-Page</strong> bundle types. You can customize each independently with a live preview on the right.
+                  Settings &rarr; Design contains the active design, language, and controls flows for bundle storefront customization.
                 </p>
               </s-banner>
 
@@ -360,10 +359,10 @@ export default function Onboarding() {
                   variant="primary"
                   onClick={() => {
                     handleStepAction(2);
-                    navigate("/app/design-control-panel");
+                    navigate("/app/settings");
                   }}
                 >
-                  Open Design Control Panel
+                  Open Settings
                 </s-button>
                 {currentStep === 2 && (
                   <s-button onClick={() => goToStep(3)}>Skip for now</s-button>

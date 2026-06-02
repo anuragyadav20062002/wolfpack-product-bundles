@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.10
- * Built   : 2026-05-31
+ * Version : 2.9.54
+ * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.10';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.54';
 (function() {
   'use strict';
 
@@ -514,6 +514,10 @@ class BundleDataManager {
       return false;
     }
 
+    if (bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      return true;
+    }
+
     const visibility = bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration;
     if (!visibility || typeof visibility !== 'object') {
       return true;
@@ -664,6 +668,13 @@ class BundleDataManager {
           if (bundleProductId === productIdStr) {
             return bundle;
           }
+        }
+
+        if (
+          bundle.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE &&
+          bundle.bundleUpsellConfig?.widgetConfiguration?.displayConfiguration
+        ) {
+          return bundle;
         }
 
         const isThemeEditor = this.isThemeEditorContext();
@@ -1147,7 +1158,16 @@ class TemplateManager {
 
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
-    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
+    let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
+    const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
+    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+      discountData = {
+        ...discountData,
+        discountText: dtoDiscountDisplay.text,
+        discountValue: dtoDiscountDisplay.valueToken,
+        discountValueUnit: ''
+      };
+    }
 
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
     const progressPercentage = targetValue > 0 ? Math.min(100, (currentProgress / targetValue) * 100) : 0;
@@ -1365,6 +1385,62 @@ class TemplateManager {
           discountValueUnit: ''
         };
     }
+  }
+
+  static shouldUseDtoDiscountDisplay(discountMethod, rule = null) {
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF) {
+      return true;
+    }
+
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y) {
+      return (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount';
+    }
+
+    return false;
+  }
+
+  static getRuleDiscountDisplay(bundle, rule = null) {
+    const messages = bundle?.pricing?.messages;
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const bundleQuantityOptions = messages?.displayOptions?.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = messages?.tierTextByRuleId || {};
+    const candidates = [];
+
+    if (ruleId) {
+      candidates.push(optionsByRuleId[ruleId]?.subtext);
+      candidates.push(tierTextByRuleId[ruleId]?.tierSubtext);
+    }
+
+    const defaultRuleId = bundleQuantityOptions.defaultRuleId ? String(bundleQuantityOptions.defaultRuleId) : '';
+    if (defaultRuleId && defaultRuleId !== ruleId) {
+      candidates.push(optionsByRuleId[defaultRuleId]?.subtext);
+      candidates.push(tierTextByRuleId[defaultRuleId]?.tierSubtext);
+    }
+
+    const text = candidates.find(value => typeof value === 'string' && value.trim());
+    if (!text) return null;
+
+    const valueToken = this.extractDiscountValueToken(text);
+    if (!valueToken) return null;
+
+    return {
+      text: text.trim(),
+      valueToken
+    };
+  }
+
+  static extractDiscountValueToken(displayText) {
+    if (typeof displayText !== 'string') return '';
+
+    const token = displayText
+      .trim()
+      .replace(/^save\s+/i, '')
+      .replace(/\s+discount$/i, '')
+      .replace(/\s+off$/i, '')
+      .trim();
+
+    return /\d/.test(token) ? token : '';
   }
 
   static createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -2305,12 +2381,6 @@ class BundleProductModal {
 
     this.updatePrice();
 
-    const quantitySection = this.modalElement.querySelector('.bundle-modal-quantity');
-    if (quantitySection) {
-      const showQuantitySelector = this.widget?.config?.showQuantitySelectorInModal !== false;
-      quantitySection.style.display = showQuantitySelector ? 'flex' : 'none';
-    }
-
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
   }
 
@@ -3041,8 +3111,8 @@ class BundleWidgetFullPage {
   }
 
   /**
-   * Load Design Control Panel CSS settings
-   * Injects custom CSS from Design Control Panel into the page
+   * Load Settings design CSS
+   * Injects custom CSS from Settings -> Design into the page
    */
   loadDesignSettingsCSS() {
     try {
@@ -3125,12 +3195,8 @@ class BundleWidgetFullPage {
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
 
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
-      showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
 
       showPromoBanner: dataset.showPromoBanner !== 'false',
-      promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
-      promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
-      promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
 
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
@@ -3182,7 +3248,8 @@ class BundleWidgetFullPage {
       if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
         try {
           const parsed = JSON.parse(cachedConfig);
-          if (parsed && typeof parsed === 'object' && parsed.id) {
+          const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
+          if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
             bundleData = { [parsed.id]: parsed };
           }
         } catch (_e) {
@@ -3279,6 +3346,9 @@ class BundleWidgetFullPage {
 
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+    if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.selectedBundle = this.bundleData[this.config.bundleId];
+    }
 
     this.updateMessagesFromBundle();
   }
@@ -3694,6 +3764,8 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
+    this.ensureCompactPresetRuntimeStyles();
+    this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section';
@@ -3768,6 +3840,8 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
+    this.ensureCompactPresetRuntimeStyles();
+    this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
@@ -3911,12 +3985,23 @@ class BundleWidgetFullPage {
 
     const conditionlessMobile = this.bundleHasNoConditions();
     const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
+    const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
     ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
-    if (conditionlessMobile ? !hasSelectionMobile : (isLastStep && !isComplete)) ctaBtn.disabled = true;
+    if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
+    if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (conditionlessMobile || (isLastStep && isComplete)) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         this.addBundleToCart();
       } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -4066,9 +4151,18 @@ class BundleWidgetFullPage {
     priceSpan.className = 'fpb-mobile-summary-action-price';
     priceSpan.textContent = priceText;
     ctaBtn.append(labelSpan, separatorSpan, priceSpan);
-    if (shouldAddToCart && (conditionlessMobile ? !hasSelectionMobile : !isComplete)) ctaBtn.disabled = true;
+    if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+    if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (shouldAddToCart) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         this.addBundleToCart();
       } else {
         const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
@@ -4130,6 +4224,9 @@ class BundleWidgetFullPage {
   }
 
   shouldRenderFullPageSearch() {
+    if (this.resolveFullPageLayout() === 'footer_side') {
+      return false;
+    }
     return this.resolveFullPageCardCtaMode() !== 'icon';
   }
 
@@ -4158,6 +4255,8 @@ class BundleWidgetFullPage {
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
+    const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
     const summaryText = this.getBundleSummaryText();
 
     const header = document.createElement('div');
@@ -4183,6 +4282,11 @@ class BundleWidgetFullPage {
     subtitle.className = 'side-panel-subtitle';
     subtitle.textContent = summaryText.subTitle;
     panel.appendChild(subtitle);
+
+    const tierCta = this.createSidebarTierCta(nextRule);
+    if (tierCta) {
+      panel.appendChild(tierCta);
+    }
 
     const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
     if (boxSelection) {
@@ -4234,11 +4338,17 @@ class BundleWidgetFullPage {
 
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
+    if (isHorizontalPreset) {
+      productsContainer.classList.add('side-panel-products--slots');
+    }
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
+        if (isHorizontalPreset) {
+          row.classList.add('side-panel-product-slot');
+        }
 
         const imgSrc = item.image || item.imageUrl || '';
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
@@ -4283,9 +4393,23 @@ class BundleWidgetFullPage {
         productsContainer.appendChild(row);
       });
     }
+    if (isHorizontalPreset) {
+      const requiredSlots = Math.max(
+        totalQuantity + 1,
+        activeStep?.maxQuantity || activeStep?.minQuantity || 2,
+        2
+      );
+      const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
+      for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+        const emptySlot = document.createElement('div');
+        emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
+        emptySlot.textContent = '+';
+        productsContainer.appendChild(emptySlot);
+      }
+    }
     panel.appendChild(productsContainer);
 
-    if (!isMobileSheet && allSelectedProducts.length === 0) {
+    if (!isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
       this._renderSidebarProductSkeletons(skeletonContainer);
@@ -4319,10 +4443,27 @@ class BundleWidgetFullPage {
     const canProceed = this.canProceedToNextStep();
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
+    const sidebarTierCtaContent = (conditionless || isLastStep)
+      ? this.getSidebarTierCtaContent(nextRule)
+      : null;
+    if (sidebarTierCtaContent) {
+      actionSection.style.gridTemplateColumns = '1fr';
+      actionSection.style.gap = '8px';
+      totalSection.style.alignItems = 'center';
+    }
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
     nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    if (sidebarTierCtaContent) {
+      const labelHtml = sidebarTierCtaContent.label
+        ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
+        : '';
+      const subtextHtml = sidebarTierCtaContent.subtext
+        ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
+        : '';
+      nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+    }
     if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
       nextBtn.disabled = true;
     }
@@ -4345,6 +4486,55 @@ class BundleWidgetFullPage {
     navSection.appendChild(nextBtn);
     actionSection.appendChild(navSection);
     panel.appendChild(actionSection);
+  }
+
+  createSidebarTierCta(nextRule) {
+    const content = this.getSidebarTierCtaContent(nextRule);
+    if (!content) return null;
+
+    const { label, subtext } = content;
+
+    const cta = document.createElement('div');
+    cta.className = 'fpb-sidebar-tier-cta';
+    cta.style.cssText = 'width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #000;border-radius:8px;padding:12px 16px;margin:4px 0 12px;text-align:center;font-weight:800;line-height:1.25;';
+
+    if (label) {
+      const title = document.createElement('div');
+      title.className = 'fpb-sidebar-tier-cta-title';
+      title.textContent = label;
+      cta.appendChild(title);
+    }
+
+    if (subtext) {
+      const detail = document.createElement('div');
+      detail.className = 'fpb-sidebar-tier-cta-subtext';
+      detail.textContent = subtext;
+      cta.appendChild(detail);
+    }
+
+    return cta;
+  }
+
+  getSidebarTierCtaContent(nextRule) {
+    const pricing = this.selectedBundle?.pricing;
+    if (!pricing?.enabled) return null;
+
+    const displayOptions = pricing.messages?.displayOptions || {};
+    const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
+    const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+    const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+    const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
+    const label = typeof option?.label === 'string' && option.label.trim()
+      ? option.label.trim()
+      : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
+    const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+      ? option.subtext.trim()
+      : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+
+    if (!label && !subtext) return null;
+    return { label, subtext };
   }
 
   getBoxSelectionRules() {
@@ -4379,6 +4569,92 @@ class BundleWidgetFullPage {
     if (reachedRule) return reachedRule;
 
     return rules.find(rule => rule.isDefaultSelected) || rules[0];
+  }
+
+  getSelectedBoxSelectionQuantity() {
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      if (item.isDefault === true || item.isFreeGift === true) return total;
+      return total + (Number(item.quantity || 0) || 0);
+    }, 0);
+  }
+
+  getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
+    const boxSelection = this.selectedBundle?.boxSelection;
+    const rules = this.getBoxSelectionRules();
+    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+    const isEnabled = boxSelection?.isEnabled === true
+      && boxSelection?.validateBoxSelectionQuantity === true
+      && !!activeRule;
+
+    if (!isEnabled) {
+      return {
+        isEnabled: false,
+        isValid: true,
+        activeRule,
+        totalQuantity: Number(totalQuantity || 0),
+      };
+    }
+
+    return {
+      isEnabled: true,
+      isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
+      activeRule,
+      totalQuantity: Number(totalQuantity || 0),
+    };
+  }
+
+  canCheckoutWithBoxSelection() {
+    return this.getBoxSelectionValidationState().isValid;
+  }
+
+  showBoxSelectionValidationMessage() {
+    const state = this.getBoxSelectionValidationState();
+    if (!state.isEnabled || state.isValid) return;
+
+    ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+  }
+
+  getSelectedBoxSelectionQuantity() {
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      if (item.isDefault === true || item.isFreeGift === true) return total;
+      return total + (Number(item.quantity || 0) || 0);
+    }, 0);
+  }
+
+  getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
+    const boxSelection = this.selectedBundle?.boxSelection;
+    const rules = this.getBoxSelectionRules();
+    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+    const isEnabled = boxSelection?.isEnabled === true
+      && boxSelection?.validateBoxSelectionQuantity === true
+      && !!activeRule;
+
+    if (!isEnabled) {
+      return {
+        isEnabled: false,
+        isValid: true,
+        activeRule,
+        totalQuantity: Number(totalQuantity || 0),
+      };
+    }
+
+    return {
+      isEnabled: true,
+      isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
+      activeRule,
+      totalQuantity: Number(totalQuantity || 0),
+    };
+  }
+
+  canCheckoutWithBoxSelection() {
+    return this.getBoxSelectionValidationState().isValid;
+  }
+
+  showBoxSelectionValidationMessage() {
+    const state = this.getBoxSelectionValidationState();
+    if (!state.isEnabled || state.isValid) return;
+
+    ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
   }
 
   renderBoxSelectionOptions(totalQuantity = 0) {
@@ -4798,6 +5074,26 @@ class BundleWidgetFullPage {
     });
   }
 
+  ensureCompactPresetRuntimeStyles() {
+    if (this.getFullPageDesignPreset() !== 'COMPACT') return;
+    if (document.getElementById('wpb-fpb-compact-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-compact-runtime-styles';
+    style.textContent = '@media (min-width:769px){.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-product-grid{grid-template-columns:repeat(2,220px);gap:12px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-card{width:220px;min-width:220px;height:332px;min-height:332px;padding:6px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-image{width:208px;height:208px;min-height:208px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-content-wrapper{width:208px}}';
+    document.head.appendChild(style);
+  }
+
+  ensureHorizontalSidePanelSlotRuntimeStyles() {
+    if (this.getFullPageDesignPreset() !== 'HORIZONTAL') return;
+    if (document.getElementById('wpb-fpb-horizontal-slots-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-horizontal-slots-runtime-styles';
+    style.textContent = '.side-panel-products--slots{display:flex;flex:initial;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:12px;margin:12px 0 18px;overflow:visible}.side-panel-product-slot{width:70px;height:70px;flex:0 0 70px;padding:0;border:0;border-radius:8px;overflow:visible;background:transparent;display:block}.side-panel-product-slot .side-panel-product-img-wrap,.side-panel-product-slot .side-panel-product-img,.side-panel-product-slot .side-panel-product-img-placeholder{width:70px;height:70px;border-radius:8px}.side-panel-product-slot .side-panel-product-info,.side-panel-product-slot .side-panel-product-price{display:none}.side-panel-product-slot .side-panel-product-remove{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:2px;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.18)}.side-panel-product-slot--empty{display:flex;align-items:center;justify-content:center;border:2px dashed #111;color:#111;font-size:24px;font-weight:400;line-height:1;box-sizing:border-box}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content{width:100%;max-width:none;align-items:stretch}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid{width:100%;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;overflow:visible;padding-top:20px}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card{width:auto;min-width:0;height:128px;min-height:128px;grid-template-columns:112px minmax(0,1fr);align-items:stretch}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image{width:112px;height:124px;min-height:124px}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-content-wrapper{width:auto;min-height:124px;display:grid;grid-template-rows:auto auto 1fr auto}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-add-btn{min-width:145px;height:32px;justify-self:end}';
+    document.head.appendChild(style);
+  }
+
   createPromoBanner() {
 
     if (this.config.showPromoBanner === false) {
@@ -4856,15 +5152,10 @@ class BundleWidgetFullPage {
     }
 
     if (discountMessage) {
-
-      promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
       promoNote = discountMessage;
-    } else {
-
-      promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
-      promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
     }
 
+    const tierBadges = this.createPromoDiscountTierBadges(pricing, currencyInfo);
     const banner = document.createElement('div');
     banner.className = 'promo-banner';
     banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
@@ -4872,6 +5163,7 @@ class BundleWidgetFullPage {
       ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
       <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
       ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
+      ${tierBadges}
     `;
 
     const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
@@ -4900,6 +5192,50 @@ class BundleWidgetFullPage {
     }
 
     return banner;
+  }
+
+  createPromoDiscountTierBadges(pricing, currencyInfo) {
+    const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
+    if (!pricing?.enabled || rules.length === 0) return '';
+
+    const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
+    const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
+    const badges = rules
+      .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
+      .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+      .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
+      .filter(Boolean)
+      .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
+
+    if (badges.length === 0) return '';
+    return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
+  }
+
+  formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {
+    const ruleId = String(rule?.id || '');
+    const tierText = pricing?.messages?.tierTextByRuleId?.[ruleId];
+    if (tierText?.tierText && tierText?.tierSubtext) {
+      return `${tierText.tierText} / ${tierText.tierSubtext}`;
+    }
+    if (tierText?.tierText) return tierText.tierText;
+    if (tierText?.tierSubtext) return tierText.tierSubtext;
+
+    const threshold = Number(rule?.conditionValue || 0) || 0;
+    const discountValue = Number(rule?.discountValue || 0) || 0;
+    if (!threshold || !discountValue) return '';
+
+    const thresholdText = rule.conditionType === 'amount'
+      ? CurrencyManager.convertAndFormat(threshold, currencyInfo)
+      : String(threshold);
+    let discountText = '';
+    const discountMethod = pricing?.method || 'percentage_off';
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+      discountText = `${discountValue}%`;
+    } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF || discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
+      discountText = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
+    }
+
+    return discountText ? `${thresholdText} / ${discountText}` : thresholdText;
   }
 
   collectStepProductIds(step) {
@@ -5360,6 +5696,10 @@ class BundleWidgetFullPage {
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
 
+    if (this.getFullPageDesignPreset() === 'DEFAULT') {
+      cardElement.querySelector('.product-price-row')?.remove();
+    }
+
     if (renderSelectedQuantityBadge) {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);
     }
@@ -5730,11 +6070,20 @@ class BundleWidgetFullPage {
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
     ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
-    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
+    if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
+    if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
     ctaBtn.addEventListener('click', () => {
       if (conditionless || isLastStep) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -6528,7 +6877,10 @@ class BundleWidgetFullPage {
 
       const bundleInstanceId = crypto.randomUUID();
       const bundleName = this.selectedBundle.name || 'Bundle';
+      const sessionKey = this.generateBundleSessionKey();
+      const offerId = this.resolveFullPageOfferId();
       const selectedLines = [];
+      let itemNumber = 0;
 
       this.selectedBundle.steps.forEach((step, stepIndex) => {
         const stepSelections = this.selectedProducts[stepIndex] || {};
@@ -6541,11 +6893,12 @@ class BundleWidgetFullPage {
             const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
               || { id: variantId, title: variantId };
 
+            itemNumber += 1;
             const properties = {
-              '_bundle_id': bundleInstanceId,
-              '_bundle_name': bundleName,
-              '_step_index': String(stepIndex),
-              '_step_name': step.name
+              Box: String(itemNumber),
+              '_bundleName': bundleName,
+              '_easyBundle:prodQty': String(quantity),
+              '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
             };
             const addonDiscount = this.getAddonLineDiscount(step);
             if (addonDiscount && step?.addonDisplayFree !== true) {
@@ -6606,6 +6959,8 @@ class BundleWidgetFullPage {
         }
 
         const result = await response.json();
+
+        await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
         ToastManager.show('Bundle added to cart successfully!');
 
@@ -7173,17 +7528,39 @@ class BundleWidgetFullPage {
 
           if (!response.ok) {
             await response.text();
-            return;
-          }
+          } else {
+            const data = await response.json();
 
-          const data = await response.json();
-
-          if (data.products && data.products.length > 0) {
-            allProducts = allProducts.concat(data.products);
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+            }
           }
         } catch (error) {
         }
       }
+    }
+
+    if (allProducts.length === 0 && Array.isArray(step.categories)) {
+      const hasRenderableCachedProductData = (product) => Boolean(
+        product
+        && typeof product === 'object'
+        && (
+          (Array.isArray(product.variants) && product.variants.length > 0)
+          || (Array.isArray(product.images) && product.images.length > 0)
+          || product.imageUrl
+          || product.featuredImage
+          || product.price
+        )
+      );
+
+      step.categories.forEach(category => {
+        (category.products || []).forEach(product => {
+          if (hasRenderableCachedProductData(product)) allProducts.push(product);
+        });
+        (category.selectedProducts || []).forEach(product => {
+          if (hasRenderableCachedProductData(product)) allProducts.push(product);
+        });
+      });
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
@@ -8222,6 +8599,87 @@ class BundleWidgetFullPage {
     return bundleInstanceId;
   }
 
+  resolveFullPageOfferId() {
+    const rawOfferId = this.selectedBundle?.offerId
+      || this.selectedBundle?.bundleOfferId
+      || this.selectedBundle?.id
+      || 'UNKNOWN';
+    const offerId = String(rawOfferId);
+    return offerId.startsWith('FBP-') ? offerId : `FBP-${offerId}`;
+  }
+
+  async syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
+    try {
+      const displayProperties = this.buildBundleDetailsDisplayProperties(sourceProperties);
+      if (!bundleDetailsKey || Object.keys(displayProperties).length === 0) return;
+
+      const cartToken = await this.getBundleDetailsCartToken();
+      if (!cartToken) return;
+
+      const response = await fetch('/apps/product-bundles/api/cart-bundle-details', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cartToken,
+          bundleDetailsKey,
+          displayProperties
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`bundle_details sync failed (${response.status})`);
+      }
+
+      const data = await response.json().catch(() => null);
+      if (data?.ok !== true) {
+        throw new Error(data?.error || 'bundle_details sync failed');
+      }
+    } catch (error) {
+      console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
+    }
+  }
+
+  buildBundleDetailsDisplayProperties(sourceProperties) {
+    const displayProperties = {};
+    const raw = sourceProperties?._bundle_display_properties;
+
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.box) displayProperties.Box = String(parsed.box);
+        if (parsed?.items) displayProperties.Items = String(parsed.items);
+        if (parsed?.retailPrice) displayProperties['Retail Price'] = String(parsed.retailPrice);
+        if (parsed?.youSave?.amountPercentage) displayProperties['You Save'] = String(parsed.youSave.amountPercentage);
+      } catch {
+
+      }
+    }
+
+    ['Box', 'Items', 'Retail Price', 'You Save'].forEach((key) => {
+      if (sourceProperties?.[key] && !displayProperties[key]) {
+        displayProperties[key] = String(sourceProperties[key]);
+      }
+    });
+
+    return displayProperties;
+  }
+
+  async getBundleDetailsCartToken() {
+    const response = await fetch('/cart.js?app=wolfpackProductBundles', {
+      credentials: 'same-origin'
+    });
+    if (!response.ok) return null;
+    const cart = await response.json();
+    return cart?.token || null;
+  }
+
+  generateBundleSessionKey() {
+    return Math.random().toString(36).slice(2, 5).toUpperCase();
+  }
+
   parseTierConfig(rawJson) {
     try {
       const parsed = JSON.parse(rawJson);
@@ -8308,12 +8766,15 @@ class BundleWidgetFullPage {
 
     const fullPageTemplate = this.getFullPageTemplate();
     const fullPageDesignPreset = this.getFullPageDesignPreset();
+    const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
 
     this.container.dataset.fpbTemplateType = fullPageTemplate;
     this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
 
     this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
     this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
+    this.container.dataset.fpbTabStyle = fullPageTabStyle;
+    this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
     this.elements.stepsContainer.dataset.fpbCardCtaMode = this.resolveFullPageCardCtaMode();
   }
 
@@ -8582,13 +9043,21 @@ class BundleWidgetFullPage {
 
       const freshLayout = this.resolveFullPageLayout(data.bundle);
       const currentLayout = this.resolveFullPageLayout();
+      const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
+      const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
+      const freshPreset = data.bundle.bundleDesignPresetId ?? null;
+      const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
 
-      if (freshLayout !== currentLayout && this.selectedBundle) {
+      if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
         this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
         this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
+        this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
+        this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
         if (this.bundleData?.[bundleId]) {
           this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
           this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
+          this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
+          this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
         }
         await this.renderSteps();
       }

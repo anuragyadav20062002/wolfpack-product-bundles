@@ -23,6 +23,10 @@
   {% break %}
 {% endunless %}
 
+{% if is_bundle_product and bundle_ui_config.bundleType != blank and bundle_ui_config.bundleType != 'product_page' %}
+  {% break %}
+{% endif %}
+
 {% assign bundle_id = nil %}
 {% if bundle_ui_config.bundleId %}
   {% assign bundle_id = bundle_ui_config.bundleId %}

@@ -34,7 +34,7 @@ export class ToastManager {
       existingToast.remove();
     }
 
-    // Create toast element - uses DCP CSS variables
+    // Create toast element - uses Settings design CSS variables
     const toast = document.createElement('div');
     toast.id = 'bundle-toast';
     toast.className = 'bundle-toast';
@@ -53,7 +53,7 @@ export class ToastManager {
       toast.remove();
     });
 
-    // Add to page (styles come from bundle-widget.css with DCP CSS variables)
+    // Add to page (styles come from bundle-widget.css with Settings design CSS variables)
     document.body.appendChild(toast);
 
     // Auto-remove after duration

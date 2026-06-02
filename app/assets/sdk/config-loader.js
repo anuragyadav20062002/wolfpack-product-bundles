@@ -19,6 +19,7 @@ function loadBundleConfig(container, state) {
   }
 
   state.bundleId = bundleData.id;
+  state.offerId = bundleData.offerId || bundleData.bundleOfferId || bundleData.id;
   state.bundleName = bundleData.name || null;
   state.bundleData = bundleData;
   state.steps = Array.isArray(bundleData.steps) ? bundleData.steps : [];

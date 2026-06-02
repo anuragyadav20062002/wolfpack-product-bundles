@@ -1,9 +1,4 @@
 {
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true,
-    "feature-dev@claude-plugins-official": true,
-    "vercel-plugin": false
-  },
   "hooks": {
     "Notification": [
       {
@@ -11,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title \"\ud83d\udd14 Claude Code: request\" -message \"Claude needs your input\" -sender com.anthropic.claudefordesktop"
+            "command": "terminal-notifier -title \"🔔 Claude Code: request\" -message \"Claude needs your input\" -sender com.anthropic.claudefordesktop"
           }
         ]
       }
@@ -22,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "terminal-notifier -title \"\u2705 Claude Code: done\" -message \"Task completed\" -sender com.anthropic.claudefordesktop"
+            "command": "terminal-notifier -title \"✅ Claude Code: done\" -message \"Task completed\" -sender com.anthropic.claudefordesktop"
           }
         ]
       }
@@ -38,5 +33,14 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "feature-dev@claude-plugins-official": true,
+    "vercel-plugin": false,
+    "superpowers@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
   }
 }

@@ -146,7 +146,7 @@ export default function CreateBundleWizard() {
                   onClick={() => handleSelectBundleType(BundleType.PRODUCT_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <img src="/pdp.png" alt="Product page bundle" className={styles.bundleThumbnailImg} />
+                    <img src="/ppb.png" alt="Product page bundle" className={styles.bundleThumbnailImg} />
                   </div>
                   <div className={styles.bundleCardBody}>
                     <div className={styles.bundleCardText}>

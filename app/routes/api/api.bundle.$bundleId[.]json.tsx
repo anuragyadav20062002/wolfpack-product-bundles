@@ -143,7 +143,12 @@ export const loader: LoaderFunction = async ({ request, params }) => {
       include: {
         steps: {
           include: {
-            StepProduct: true
+            StepProduct: true,
+            StepCategory: {
+              orderBy: {
+                sortOrder: 'asc'
+              }
+            }
           },
           orderBy: {
             position: 'asc'

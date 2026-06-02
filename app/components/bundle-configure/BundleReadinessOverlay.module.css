@@ -46,6 +46,16 @@
   border-color: #ccc;
 }
 
+.collapsedCompact {
+  cursor: default;
+  padding: 6px;
+}
+
+.collapsedCompact:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+  border-color: #e0e0e0;
+}
+
 /* Expanded trigger — wide to accommodate score label text */
 .collapsedOpen {
   width: min(360px, calc(100vw - 40px));
@@ -114,15 +124,15 @@
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
-  padding: 12px;
+  padding: 10px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .panelItems {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 5px;
+  margin-bottom: 8px;
   max-height: 380px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -134,19 +144,19 @@
   font: inherit;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 9px;
+  padding: 9px 10px;
   border-radius: 8px;
-  border: 1px solid #f0f0f0;
-  background: #fafafa;
+  border: 1px solid #d9e9e1;
+  background: #ffffff;
   color: inherit;
   text-align: left;
   text-decoration: none;
 }
 
 .panelItemDone {
-  border-color: #aee9d1;
-  background: #f1faf6;
+  border-color: #008060;
+  background: #ffffff;
 }
 
 .panelItemClickable {
@@ -166,7 +176,6 @@
   flex-shrink: 0;
   display: flex;
   align-items: flex-start;
-  padding-top: 2px;
 }
 
 .itemContent {
@@ -177,24 +186,31 @@
   min-width: 0;
 }
 
+.itemMainRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .itemLabel {
   font-size: 13px;
   font-weight: 700;
   color: #202223;
-  line-height: 1.3;
+  line-height: 1.2;
 }
 
 .itemDesc {
-  font-size: 12px;
+  font-size: 11px;
   color: #6d7175;
-  line-height: 1.4;
+  line-height: 1.25;
 }
 
 .itemPoints {
+  flex-shrink: 0;
   font-size: 12px;
   font-weight: 700;
   color: #6d7175;
-  margin-top: 1px;
 }
 
 .itemPointsDone {
@@ -211,16 +227,14 @@
 }
 
 .statusNotReady {
-  padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
+  padding: 4px 2px 0;
   font-size: 12px;
   font-weight: 500;
-  color: #d72c0d;
+  color: #5c5f62;
 }
 
 .statusReady {
-  padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
+  padding: 4px 2px 0;
   font-size: 12px;
   font-weight: 500;
   color: #008060;

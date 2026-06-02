@@ -61,8 +61,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-attrs" }},
-                        "bundleName": {{ "value": "Test Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-attrs" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -80,8 +80,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 2,
-                        "bundleId": {{ "value": "bundle-attrs" }},
-                        "bundleName": {{ "value": "Test Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-attrs" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -119,7 +119,7 @@ mod tests {
             "cart": {
                 "lines": [{
                     "id": "line1", "quantity": 1,
-                    "bundleId": null, "bundleName": null, "stepType": null,
+                    "easyBundleOfferId": null, "easyBundleName": null, "stepType": null,
                     "merchandise": {
                         "__typename": "ProductVariant",
                         "id": "gid://shopify/ProductVariant/111",
@@ -158,8 +158,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-abc" }},
-                        "bundleName": {{ "value": "Test Bundle" }},
+                        "easyBundleOfferId": {{ "value": "MIX-894502_K1K_1" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -176,8 +176,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-abc" }},
-                        "bundleName": {{ "value": "Test Bundle" }},
+                        "easyBundleOfferId": {{ "value": "MIX-894502_K1K_2" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -258,8 +258,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-with-message" }},
-                        "bundleName": {{ "value": "Message Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "easyBundleName": {{ "value": "Message Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display:?} }},
                         "merchandise": {{
@@ -279,8 +279,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-with-message" }},
-                        "bundleName": {{ "value": "Message Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "easyBundleName": {{ "value": "Message Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display:?} }},
                         "merchandise": {{
@@ -300,8 +300,8 @@ mod tests {
                     }},
                     {{
                         "id": "message-line", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-with-message" }},
-                        "bundleName": {{ "value": "Message Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "easyBundleName": {{ "value": "Message Bundle" }},
                         "stepType": {{ "value": "gift_message" }},
                         "bundleDisplayProperties": null,
                         "merchandise": {{
@@ -395,8 +395,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 3,
-                        "bundleId": {{ "value": "bundle-bxy" }},
-                        "bundleName": {{ "value": "BXY Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-bxy" }},
+                        "easyBundleName": {{ "value": "BXY Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -503,8 +503,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-001" }},
-                        "bundleName": {{ "value": "Summer Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-001" }},
+                        "easyBundleName": {{ "value": "Summer Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant", "id": "gid://shopify/ProductVariant/101",
@@ -517,8 +517,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-002" }},
-                        "bundleName": {{ "value": "Summer Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-002" }},
+                        "easyBundleName": {{ "value": "Summer Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant", "id": "gid://shopify/ProductVariant/201",
@@ -580,8 +580,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "sidebar-instance-1" }},
-                        "bundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "easyBundleOfferId": {{ "value": "sidebar-instance-1" }},
+                        "easyBundleName": {{ "value": "Full Page Sidebar Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -598,8 +598,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "sidebar-instance-1" }},
-                        "bundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "easyBundleOfferId": {{ "value": "sidebar-instance-1" }},
+                        "easyBundleName": {{ "value": "Full Page Sidebar Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -675,8 +675,8 @@ mod tests {
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-with-addon" }},
-                        "bundleName": {{ "value": "Add-on Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "easyBundleName": {{ "value": "Add-on Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -694,8 +694,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-with-addon" }},
-                        "bundleName": {{ "value": "Add-on Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "easyBundleName": {{ "value": "Add-on Bundle" }},
                         "stepType": null,
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -713,8 +713,8 @@ mod tests {
                     }},
                     {{
                         "id": "addon-line", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-with-addon" }},
-                        "bundleName": {{ "value": "Add-on Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "easyBundleName": {{ "value": "Add-on Bundle" }},
                         "stepType": {{ "value": "addon:PERCENTAGE:10" }},
                         "bundleDisplayProperties": {{ "value": {display_properties:?} }},
                         "merchandise": {{
@@ -786,8 +786,8 @@ mod tests {
             "cart": {{
                 "lines": [{{
                     "id": "flex-line", "quantity": 1,
-                    "bundleId": null,
-                    "bundleName": {{ "value": "Flex Bundle" }},
+                    "easyBundleOfferId": null,
+                    "easyBundleName": {{ "value": "Flex Bundle" }},
                     "stepType": null,
                     "merchandise": {{
                         "__typename": "ProductVariant",
@@ -840,8 +840,8 @@ mod tests {
             "cart": {{
                 "lines": [{{
                     "id": "flex-line-2", "quantity": 1,
-                    "bundleId": null,
-                    "bundleName": {{ "value": "No Discount Bundle" }},
+                    "easyBundleOfferId": null,
+                    "easyBundleName": {{ "value": "No Discount Bundle" }},
                     "stepType": null,
                     "merchandise": {{
                         "__typename": "ProductVariant",

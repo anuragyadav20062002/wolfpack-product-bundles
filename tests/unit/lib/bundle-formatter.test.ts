@@ -277,6 +277,28 @@ describe("formatBundleForWidget", () => {
     expect(result.bundleDesignTemplateData).toEqual({ templateId: "CASCADE" });
   });
 
+  it("exposes EB modal slot orientation for product-page horizontal slots", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      bundleDesignTemplate: "PDP_MODAL",
+      bundleDesignPresetId: "MODAL",
+    }) as any);
+
+    expect(result.bundleDesignTemplateData).toEqual({ templateId: "MODAL" });
+    expect(result.renderFilledSlotsAsHorizontalStacked).toBe(true);
+  });
+
+  it("exposes EB modal slot orientation for product-page vertical slots", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleType: "product_page",
+      bundleDesignTemplate: "PDP_MODAL",
+      bundleDesignPresetId: "SIMPLIFIED",
+    }) as any);
+
+    expect(result.bundleDesignTemplateData).toEqual({ templateId: "SIMPLIFIED" });
+    expect(result.renderFilledSlotsAsHorizontalStacked).toBe(false);
+  });
+
   it("includes direct product-page bundle settings contracts", () => {
     const defaultProductsData = {
       isDefaultProductsEnabled: true,

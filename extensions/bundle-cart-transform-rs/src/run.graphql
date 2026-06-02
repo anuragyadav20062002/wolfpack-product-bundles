@@ -9,10 +9,10 @@ query Input {
     lines {
       id
       quantity
-      bundleId: attribute(key: "_bundle_id") {
+      easyBundleOfferId: attribute(key: "_easyBundle:OfferId") {
         value
       }
-      bundleName: attribute(key: "_bundle_name") {
+      easyBundleName: attribute(key: "_bundleName") {
         value
       }
       stepType: attribute(key: "_bundle_step_type") {

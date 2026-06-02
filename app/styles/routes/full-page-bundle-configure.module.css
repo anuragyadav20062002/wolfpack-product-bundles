@@ -1188,6 +1188,58 @@
   gap: 20px;
 }
 
+.templateDialogTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.templateDialogTab {
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid #c9cccf;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.templateDialogTabActive {
+  border-color: #1a1a1a;
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.templateCustomizationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.templateCustomizationCard {
+  padding: 18px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.templateCustomizationCard h4 {
+  margin: 0 0 8px;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.templateCustomizationCard p {
+  margin: 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .templateOptionCard {
   display: block;
   width: 100%;
@@ -1671,6 +1723,10 @@
 
 .iconPlaceholder {
   composes: iconPlaceholder from "./bundle-configure-shared.module.css";
+}
+
+.iconRemoveButton {
+  composes: iconRemoveButton from "./bundle-configure-shared.module.css";
 }
 
 .fieldsColumn {
