@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:37
+**Last Updated:** 2026-06-02 10:52
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -325,3 +325,22 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `npm run build:widgets` completed and regenerated FPB/PPB bundled widget assets.
 - Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.
 - Graph: default `python3` could not import `graphify`; reran with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python` and graph rebuild completed.
+
+### 2026-06-02 10:39 - Bundle details cart metafield parity implemented
+- Added Storefront cart read/write scopes to PROD and SIT app configs so delegated Storefront tokens can access cart metafields after deploy/reauthorization.
+- Implemented EB-style `bundle_details` merge helpers in both FPB and PPB storefront widgets using `GetCartMetafield` plus `cartMetafieldsSet` with the default app-reserved key `bundle_details`.
+- FPB now syncs `bundle_details` after successful JSON `/cart/add.js`; PPB syncs before multipart `/cart/add`, matching EB's observed sequencing.
+- Sync failures are intentionally non-fatal so stores that have not reauthorized the new scopes still complete cart add.
+- Added `test-spec/bundle-details-cart-metafield.spec.md` and expanded widget source-contract tests for FPB/PPB cart metafield behavior and app scopes.
+- Bumped `WIDGET_VERSION` to `2.9.25` and rebuilt storefront widget assets.
+- Verification passed: `npm run build:widgets`.
+- Verification passed: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js`.
+- Verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (28 tests).
+- Verification passed: modified-file ESLint returned 0 errors with ignored-file/existing warnings only.
+- Live e2e remains pending until SIT deploy/reauthorization refreshes the new Storefront cart scopes and serves widget `2.9.25`.
+
+### 2026-06-02 10:52 - Cart `bundle_details` metafield route fix started
+- EB ground truth: both FPB and PPB merge `{offerId}_{sessionKey}` entries into the cart `bundle_details` JSON metafield after each add flow.
+- Current WPB gap: widgets attempt direct Storefront GraphQL at `/api/{version}/graphql.json` without a Storefront access token, so the token-bearing cart metafield operation is expected to fail on storefront.
+- Scope: replace direct widget GraphQL with one signed app-proxy route that reads and writes the same `bundle_details` Storefront API metafield server-side using the stored Storefront access token.
+- Test plan: route unit coverage for signed request, merge behavior, invalid signature, and widget source tests for FPB/PPB proxy calls.

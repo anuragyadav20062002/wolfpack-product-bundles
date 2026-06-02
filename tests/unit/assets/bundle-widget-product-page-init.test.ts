@@ -443,4 +443,40 @@ describe('Product Page bundle cart add transport contract', () => {
     expect(source).toContain("'Content-Type': 'application/json'");
     expect(source).toContain('JSON.stringify({ items })');
   });
+
+  it('syncs EB-style bundle_details cart metafields for PPB and FPB', () => {
+    const ppbSource = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const fpbSource = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
+      'utf8',
+    );
+    const prodConfig = readFileSync(
+      join(process.cwd(), 'shopify.app.toml'),
+      'utf8',
+    );
+    const sitConfig = readFileSync(
+      join(process.cwd(), 'shopify.app.wolfpack-product-bundles-sit.toml'),
+      'utf8',
+    );
+
+    [ppbSource, fpbSource].forEach((source) => {
+      expect(source).toContain('query GetCartMetafield');
+      expect(source).toContain('cartMetafieldsSet');
+      expect(source).toContain("key: 'bundle_details'");
+      expect(source).toContain("fetch('/cart.js?app=wolfpackProductBundles'");
+      expect(source).toContain('Failed to sync bundle_details cart metafield');
+      expect(source).toContain("|| '2025-04'");
+    });
+
+    expect(ppbSource).toContain('bundleDetailsKey: `${offerId}_${sessionKey}`');
+    expect(ppbSource).toContain('await this.syncBundleDetailsCartMetafield(cartContext.bundleDetailsKey, cartContext.sourceProperties)');
+    expect(fpbSource).toContain('await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties)');
+    expect(prodConfig).toContain('unauthenticated_read_checkouts');
+    expect(prodConfig).toContain('unauthenticated_write_checkouts');
+    expect(sitConfig).toContain('unauthenticated_read_checkouts');
+    expect(sitConfig).toContain('unauthenticated_write_checkouts');
+  });
 });
