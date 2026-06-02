@@ -2385,9 +2385,9 @@ class BundleWidgetProductPage {
       && this._getProductPageDesignPreset() === 'COGNIVE';
   }
 
-  _isProductPageSimplifiedTemplate() {
+  _usesVerticalModalSlotLayout() {
     return this._getProductPageTemplateType() === 'PDP_MODAL'
-      && this._getProductPageDesignPreset() === 'SIMPLIFIED';
+      && this.selectedBundle?.renderFilledSlotsAsHorizontalStacked !== true;
   }
 
   _markProductPageTemplate() {
@@ -2400,6 +2400,15 @@ class BundleWidgetProductPage {
     this.container.dataset.ppbDesignPreset = designPreset;
     this.elements.stepsContainer.dataset.ppbTemplateType = templateType;
     this.elements.stepsContainer.dataset.ppbDesignPreset = designPreset;
+
+    if (templateType === 'PDP_MODAL') {
+      const slotOrientation = this._usesVerticalModalSlotLayout() ? 'vertical' : 'horizontal';
+      this.container.dataset.ppbSlotOrientation = slotOrientation;
+      this.elements.stepsContainer.dataset.ppbSlotOrientation = slotOrientation;
+    } else {
+      delete this.container.dataset.ppbSlotOrientation;
+      delete this.elements.stepsContainer.dataset.ppbSlotOrientation;
+    }
   }
 
   /** Steps that are neither free gift nor default — require user selection */
@@ -3110,9 +3119,9 @@ class BundleWidgetProductPage {
 
   _createModalSlotStepSection(step) {
     const section = document.createElement('div');
-    const isSimplified = this._isProductPageSimplifiedTemplate();
+    const isVertical = this._usesVerticalModalSlotLayout();
 
-    section.className = `bw-ppb-modal-slot-section${isSimplified ? ' bw-ppb-modal-slot-section--simplified' : ''}`;
+    section.className = `bw-ppb-modal-slot-section${isVertical ? ' bw-ppb-modal-slot-section--simplified' : ''}`;
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-modal-slot-title';
@@ -3120,7 +3129,7 @@ class BundleWidgetProductPage {
     section.appendChild(title);
 
     const grid = document.createElement('div');
-    grid.className = `bw-ppb-modal-slot-grid${isSimplified ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
+    grid.className = `bw-ppb-modal-slot-grid${isVertical ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
     section.appendChild(grid);
 
     return section;

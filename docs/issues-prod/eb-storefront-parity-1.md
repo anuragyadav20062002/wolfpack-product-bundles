@@ -263,3 +263,8 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped `WIDGET_VERSION` to `2.9.23`, rebuilt widget assets, and minified CSS assets.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, focused Jest for bundle config contracts, bundle formatter, PPB select-template metafield sync, and product-page widget source contracts, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors.
 - Live modal-orientation e2e remains pending until the rebuilt widget is deployed to SIT and the PPB product metafield is rewritten through Select Template or bundle sync.
+
+### 2026-06-02 10:18 - PPB configure save/sync orientation contract fix prepared
+- Extended the PPB configure handler's save and sync bundle configuration builders to emit `renderFilledSlotsAsHorizontalStacked` from the EB template mapping.
+- Kept template resolution data-driven from `bundleDesignTemplate` + merchant-selected `bundleDesignPresetId` instead of hardcoded template names.
+- Generated storefront assets already reflect the widget/CSS orientation contract and are included with this slice.
