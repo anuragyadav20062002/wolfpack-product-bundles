@@ -4,6 +4,7 @@ function createState() {
   return {
     isReady: false,
     bundleId: null,
+    offerId: null,
     bundleName: null,
     bundleData: null,
     steps: [],

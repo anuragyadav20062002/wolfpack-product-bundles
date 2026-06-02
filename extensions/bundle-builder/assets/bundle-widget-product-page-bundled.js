@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.29
+ * Version : 2.9.31
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.29';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.31';
 (function() {
   'use strict';
 
@@ -2355,7 +2355,10 @@ class BundleWidgetProductPage {
   }
 
   _getProductPageTemplateType() {
-    return this.selectedBundle?.bundleDesignTemplate || '';
+    const templateType = this.selectedBundle?.bundleDesignTemplate;
+    return templateType === 'PDP_INPAGE' || templateType === 'PDP_MODAL'
+      ? templateType
+      : 'PDP_MODAL';
   }
 
   _getProductPageDesignPreset() {
@@ -2398,8 +2401,14 @@ class BundleWidgetProductPage {
 
     this.container.dataset.ppbTemplateType = templateType;
     this.container.dataset.ppbDesignPreset = designPreset;
+    this.container.setAttribute('template-id', designPreset);
+    this.container.setAttribute('template-type', templateType);
     this.elements.stepsContainer.dataset.ppbTemplateType = templateType;
     this.elements.stepsContainer.dataset.ppbDesignPreset = designPreset;
+
+    document.body?.setAttribute('gbbmix-template-id', designPreset);
+    document.body?.setAttribute('gbbmix-template-type', templateType);
+    document.body?.setAttribute('gbb-mix-consolidated-design', 'true');
 
     if (templateType === 'PDP_MODAL') {
       const slotOrientation = this._usesVerticalModalSlotLayout() ? 'vertical' : 'horizontal';

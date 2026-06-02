@@ -3,12 +3,35 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 12:04
+**Last Updated:** 2026-06-02 12:41
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 12:40 - Started PPB EB template body marker slice
+- Live storefront remains deploy-gated: FPB serves widget `2.9.17`, PPB serves widget `2.9.21`, while local source is `2.9.30`.
+- EB evidence confirms PPB writes `gbbmix-template-id`, `gbbmix-template-type`, and consolidated design state onto `document.body` after bundle data loads.
+- Added EB-aligned PPB body markers: `gbbmix-template-id`, `gbbmix-template-type`, and `gbb-mix-consolidated-design="true"`.
+- Added EB-style `template-id` and `template-type` attributes on the widget container while preserving existing `data-ppb-*` markers.
+- Updated the PPB missing-template fallback to EB's `PDP_MODAL` default, bumped widget version to `2.9.31`, and rebuilt widget deployables.
+- Verification: `node --check app/assets/bundle-widget-product-page.js`, `npm run build:widgets`, and graphify rebuild completed successfully.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js` completed with 0 errors; both files are ignored by the current ESLint config.
+
+### 2026-06-02 12:28 - Started PPB SDK cart contract parity slice
+- Grounded the gap in EB cart evidence: PPB uses multipart `/cart/add`, public `_easyBundle:OfferId` properties, and post-add `bundle_details` cart metafield sync.
+- Found SDK mode still emitted `_bundle_id`, `_bundle_name`, and `_step_index` with JSON `/cart/add.js`, which breaks the EB PPB storefront contract when `bundle_ui_config.sdkMode` is true.
+- Updated SDK state/config to carry `offerId`, changed SDK cart lines to EB-compatible public properties, switched SDK add-to-cart to multipart `/cart/add`, and reused the app-proxy `bundle_details` sync route.
+- Added `test-spec/sdk-cart-eb-contract.spec.md` and updated focused SDK cart tests for the EB contract.
+
+### 2026-06-02 12:39 - PPB SDK cart contract parity slice completed
+- Bumped storefront widget version to `2.9.30` and rebuilt all widget JS assets so FPB, PPB, and SDK deployables report the same version.
+- Verification: `node --check app/assets/sdk/cart.js && node --check app/assets/sdk/state.js && node --check app/assets/sdk/config-loader.js` completed successfully.
+- Verification: `npx jest tests/unit/assets/sdk-cart.test.ts` passed with 8 tests.
+- Verification: `npm run build:sdk` and `npm run build:widgets` completed successfully.
+- Verification: `npx eslint --max-warnings 9999 app/assets/sdk/cart.js app/assets/sdk/state.js app/assets/sdk/config-loader.js scripts/build-widget-bundles.js tests/unit/assets/sdk-cart.test.ts` completed with 0 errors and warnings only.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+
 ### 2026-06-02 11:10 - FPB COMPACT card density parity slice
 - Grounded the next storefront template fix in EB COMPACT screenshot evidence and current FPB CSS.
 - Real source gap: COMPACT overrides the product grid to 220px columns, but generic icon-mode card/image rules still force 300px cards and 284px images.

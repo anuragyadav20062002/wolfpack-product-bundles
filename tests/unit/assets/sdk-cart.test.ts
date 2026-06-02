@@ -5,11 +5,15 @@
 export {};
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { buildCartItems } = require('../../../app/assets/sdk/cart.js');
+const {
+  buildCartItems,
+  buildBundleDetailsDisplayProperties,
+} = require('../../../app/assets/sdk/cart.js');
 
 function makeState(overrides: object = {}) {
   return {
     bundleId: 'bundle_1',
+    offerId: 'MIX-894502',
     bundleName: 'Test Bundle',
     isReady: true,
     steps: [
@@ -30,7 +34,7 @@ function makeState(overrides: object = {}) {
 }
 
 describe('buildCartItems', () => {
-  it('produces correct id, quantity, and _bundle_id property', () => {
+  it('produces EB-compatible product-page cart line properties', () => {
     const state = makeState();
     const { items } = buildCartItems(state);
     expect(items).toHaveLength(2);
@@ -38,15 +42,25 @@ describe('buildCartItems', () => {
     const itemA = items.find((i: { id: number }) => i.id === 123456);
     expect(itemA).toBeDefined();
     expect(itemA.quantity).toBe(2);
-    expect(itemA.properties['_bundle_id']).toBeTruthy();
-    expect(itemA.properties['_bundle_name']).toBe('Test Bundle');
+    expect(itemA.properties.Box).toBe('1');
+    expect(itemA.properties._bundleName).toBe('Test Bundle');
+    expect(itemA.properties['_easyBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
+    expect(itemA.properties['_easyBundle:prodQty']).toBe('2');
+    expect(itemA.properties).not.toHaveProperty('_bundle_id');
+    expect(itemA.properties).not.toHaveProperty('_bundle_name');
+    expect(itemA.properties).not.toHaveProperty('_step_index');
   });
 
-  it('all items in one call share the same _bundle_id', () => {
+  it('all items in one call share the same EB offer-session key with unique item indexes', () => {
     const state = makeState();
     const { items } = buildCartItems(state);
-    const ids = items.map((i: { properties: { _bundle_id: string } }) => i.properties['_bundle_id']);
-    expect(new Set(ids).size).toBe(1);
+    const offerIds = items.map((i: { properties: { '_easyBundle:OfferId': string } }) => i.properties['_easyBundle:OfferId']);
+    const bases = offerIds.map((value: string) => value.replace(/_[0-9]+$/, ''));
+    expect(new Set(bases).size).toBe(1);
+    expect(offerIds).toEqual([
+      `${bases[0]}_1`,
+      `${bases[0]}_2`,
+    ]);
   });
 
   it('tags free gift steps with _bundle_step_type = free_gift', () => {
@@ -72,10 +86,10 @@ describe('buildCartItems', () => {
     expect(items).toHaveLength(0);
   });
 
-  it('_bundle_id includes bundle id prefix', () => {
-    const state = makeState();
+  it('prefixes numeric product-page offers with MIX-', () => {
+    const state = makeState({ offerId: '894502' });
     const { items } = buildCartItems(state);
-    expect(items[0].properties['_bundle_id']).toMatch(/^bundle_1_/);
+    expect(items[0].properties['_easyBundle:OfferId']).toMatch(/^MIX-894502_[A-Z0-9]{3}_1$/);
   });
 
   it('adds preformatted private source properties for cart-line messaging', () => {
@@ -102,6 +116,21 @@ describe('buildCartItems', () => {
         percentage: '25%',
         amountPercentage: '$5.00 (25%)',
       },
+    });
+  });
+
+  it('builds bundle_details display properties from SDK source metadata', () => {
+    const state = makeState({
+      discountAmount: 500,
+      discountPercentage: 25,
+    });
+    const { sourceProperties } = buildCartItems(state);
+
+    expect(buildBundleDetailsDisplayProperties(sourceProperties)).toEqual({
+      Box: '1',
+      Items: '2 x Product A, 1 x Product B (Gift)',
+      'Retail Price': '$20.00',
+      'You Save': '$5.00 (25%)',
     });
   });
 });

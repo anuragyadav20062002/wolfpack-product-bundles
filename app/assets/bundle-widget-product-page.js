@@ -341,7 +341,10 @@ class BundleWidgetProductPage {
   }
 
   _getProductPageTemplateType() {
-    return this.selectedBundle?.bundleDesignTemplate || '';
+    const templateType = this.selectedBundle?.bundleDesignTemplate;
+    return templateType === 'PDP_INPAGE' || templateType === 'PDP_MODAL'
+      ? templateType
+      : 'PDP_MODAL';
   }
 
   _getProductPageDesignPreset() {
@@ -384,8 +387,14 @@ class BundleWidgetProductPage {
 
     this.container.dataset.ppbTemplateType = templateType;
     this.container.dataset.ppbDesignPreset = designPreset;
+    this.container.setAttribute('template-id', designPreset);
+    this.container.setAttribute('template-type', templateType);
     this.elements.stepsContainer.dataset.ppbTemplateType = templateType;
     this.elements.stepsContainer.dataset.ppbDesignPreset = designPreset;
+
+    document.body?.setAttribute('gbbmix-template-id', designPreset);
+    document.body?.setAttribute('gbbmix-template-type', templateType);
+    document.body?.setAttribute('gbb-mix-consolidated-design', 'true');
 
     if (templateType === 'PDP_MODAL') {
       const slotOrientation = this._usesVerticalModalSlotLayout() ? 'vertical' : 'horizontal';
