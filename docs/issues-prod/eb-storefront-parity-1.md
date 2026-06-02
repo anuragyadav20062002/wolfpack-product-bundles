@@ -3,12 +3,25 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 11:50
+**Last Updated:** 2026-06-02 16:32
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 16:32 IST - Started PPB modal shell gating parity slice
+- EB PPB modal templates keep selection UI gated behind the slot trigger; WPB creates the bottom-sheet dialog during initialization.
+- Current SIT smoke exposed the modal shell in the page accessibility tree before a customer opens a slot, which is not EB-aligned behavior.
+- Scope: gate the existing PPB bottom-sheet panel with hidden/inert/aria-hidden until open, then restore the gate on close without changing product hydration or cart contracts.
+### 2026-06-02 16:39 IST - PPB modal shell gating parity slice completed
+- Created the PPB bottom-sheet dialog as `hidden`, `aria-hidden`, and `inert` until a slot is clicked.
+- Opening a slot now removes the gate before applying the open class; closing through Escape restores hidden/inert state after the close transition window.
+- Bumped widget version to `2.9.39` and rebuilt storefront widget assets.
+- Verification: `node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
+- Verification: `npm run build:widgets` passed.
+- Verification: targeted ESLint completed with 0 errors; the checked JS files are ignored by the current ESLint config.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+- Chrome SIT PPB smoke on `wpb-sit-sanity-ppb-2026-06-02`: closed modal is hidden/inert and absent from the accessibility tree; slot click opens the dialog, hydrates the Cross Necklace card, and Escape restores hidden/inert state.
 ### 2026-06-02 16:11 IST - SIT fixture storefront sanity
 - Created fresh SIT PPB and FPB fixtures after the Render DB reset and activated both through the normal configure save flow.
 - PPB storefront product URL bootstrapped `bundle-widget-product-page-bundled.js` at widget version 2.9.36 with product-page markers and compare-at text gated off.

@@ -866,6 +866,9 @@ class BundleWidgetProductPage {
       panel.className = 'bw-bs-panel bundle-builder-modal';
       panel.setAttribute('role', 'dialog');
       panel.setAttribute('aria-modal', 'true');
+      panel.setAttribute('aria-hidden', 'true');
+      panel.setAttribute('inert', '');
+      panel.hidden = true;
       panel.innerHTML = `
         <div class="modal-header bw-bs-header">
           <!-- Desktop close: × absolute top-right -->
@@ -918,6 +921,30 @@ class BundleWidgetProductPage {
     }
 
     return panel;
+  }
+
+  setBottomSheetVisibility(isOpen) {
+    const modal = this.elements?.modal;
+    if (!modal) return;
+
+    if (isOpen) {
+      modal.hidden = false;
+      modal.removeAttribute('aria-hidden');
+      modal.removeAttribute('inert');
+      return;
+    }
+
+    const hideModal = () => {
+      if (modal.classList.contains('bw-bs-panel--open')) return;
+      modal.hidden = true;
+      modal.setAttribute('aria-hidden', 'true');
+      modal.setAttribute('inert', '');
+    };
+
+    if (typeof modal.addEventListener === 'function') {
+      modal.addEventListener('transitionend', hideModal, { once: true });
+    }
+    window.setTimeout(hideModal, 350);
   }
 
   createStepsContainer() {
@@ -2172,6 +2199,7 @@ class BundleWidgetProductPage {
     this.updateModalFooterMessaging();
 
     // Show bottom-sheet
+    this.setBottomSheetVisibility(true);
     if (this.elements.bsOverlay) this.elements.bsOverlay.classList.add('bw-bs-overlay--open');
     requestAnimationFrame(() => {
       modal.classList.add('bw-bs-panel--open');
@@ -2201,6 +2229,7 @@ class BundleWidgetProductPage {
     this.elements.modal.classList.remove('bw-bs-panel--open');
     if (this.elements.bsOverlay) this.elements.bsOverlay.classList.remove('bw-bs-overlay--open');
     document.body.style.overflow = '';
+    this.setBottomSheetVisibility(false);
 
     // Update main UI
     this.renderSteps();
