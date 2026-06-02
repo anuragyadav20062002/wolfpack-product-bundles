@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.52
+ * Version : 2.9.53
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.52';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.53';
 (function() {
   'use strict';
 
@@ -5036,7 +5036,7 @@ class BundleWidgetFullPage {
 
     const style = document.createElement('style');
     style.id = 'wpb-fpb-horizontal-slots-runtime-styles';
-    style.textContent = '.side-panel-products--slots{display:flex;flex:initial;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:12px;margin:12px 0 18px;overflow:visible}.side-panel-product-slot{width:70px;height:70px;flex:0 0 70px;padding:0;border:0;border-radius:8px;overflow:visible;background:transparent;display:block}.side-panel-product-slot .side-panel-product-img-wrap,.side-panel-product-slot .side-panel-product-img,.side-panel-product-slot .side-panel-product-img-placeholder{width:70px;height:70px;border-radius:8px}.side-panel-product-slot .side-panel-product-info,.side-panel-product-slot .side-panel-product-price{display:none}.side-panel-product-slot .side-panel-product-remove{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:2px;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.18)}.side-panel-product-slot--empty{display:flex;align-items:center;justify-content:center;border:2px dashed #111;color:#111;font-size:24px;font-weight:400;line-height:1;box-sizing:border-box}';
+    style.textContent = '.side-panel-products--slots{display:flex;flex:initial;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:12px;margin:12px 0 18px;overflow:visible}.side-panel-product-slot{width:70px;height:70px;flex:0 0 70px;padding:0;border:0;border-radius:8px;overflow:visible;background:transparent;display:block}.side-panel-product-slot .side-panel-product-img-wrap,.side-panel-product-slot .side-panel-product-img,.side-panel-product-slot .side-panel-product-img-placeholder{width:70px;height:70px;border-radius:8px}.side-panel-product-slot .side-panel-product-info,.side-panel-product-slot .side-panel-product-price{display:none}.side-panel-product-slot .side-panel-product-remove{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:2px;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.18)}.side-panel-product-slot--empty{display:flex;align-items:center;justify-content:center;border:2px dashed #111;color:#111;font-size:24px;font-weight:400;line-height:1;box-sizing:border-box}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content{width:100%;max-width:none;align-items:stretch}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid{width:100%;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;overflow:visible;padding-top:20px}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card{width:auto;min-width:0;height:128px;min-height:128px;grid-template-columns:112px minmax(0,1fr);align-items:stretch}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image{width:112px;height:124px;min-height:124px}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-content-wrapper{width:auto;min-height:124px;display:grid;grid-template-rows:auto auto 1fr auto}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-add-btn{min-width:145px;height:32px;justify-self:end}';
     document.head.appendChild(style);
   }
 

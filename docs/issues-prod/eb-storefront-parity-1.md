@@ -722,3 +722,19 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Kept CLASSIC, COMPACT, and DEFAULT side-panel product rows unchanged; HORIZONTAL slot styling is injected as a runtime stylesheet to keep `bundle-widget-full-page.css` below Shopify's 100,000 B asset limit.
 - Bumped widget assets to `2.9.52`, rebuilt widget/minified assets, and rebuilt graph output.
 - Chrome SIT proof: FPB HORIZONTAL page loaded `2.9.52`, selected Cross Necklace, side panel received `side-panel-products--slots`, selected slot measured `70px x 70px`, selected image measured `70px x 70px` with `8px` radius, title/price row details computed `display:none`, dashed empty slot measured `70px x 70px`, and Add to Cart remained enabled.
+
+### 2026-06-02 19:09 - FPB HORIZONTAL product-card width parity started
+- Deferred FPB page-level bundle-title removal until the end of the full parity goal per latest direction.
+- Grounded the next slice on EB HORIZONTAL storefront evidence and live WPB 2.9.52 metrics: WPB left column is wide, but `.sidebar-content` is constrained to ~472px, making product cards ~228x214 instead of EB-like wide horizontal cards.
+- Next: widen the HORIZONTAL product grid/card runtime styles only, rebuild widget assets, smoke test in Chrome, and commit.
+
+### 2026-06-02 19:18 - FPB HORIZONTAL product-card width parity built
+- Added HORIZONTAL-only runtime styles to expand the FPB product grid/cards toward EB's wide horizontal product-card geometry while preserving the previously fixed selected-slot side panel.
+- Bumped widget version to 2.9.53 and rebuilt widget assets.
+- Verified locally: `npm run minify:assets css`, `npm run build:widgets`, `node --check app/assets/bundle-widget-full-page.js`, `node --check scripts/build-widget-bundles.js`, `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js`, and graphify rebuild.
+- Chrome storefront smoke on the SIT FPB HORIZONTAL page remains blocked by Shopify serving the deployed CDN app-extension bundle at widget version 2.9.52; ignore-cache reload and URL cache-bust still returned 2.9.52, so the 2.9.53 geometry cannot be live-proven until the next SIT extension deploy/CDN refresh.
+
+### 2026-06-02 19:28 - FPB HORIZONTAL manual geometry proof
+- Since the live page still served widget 2.9.52 from Shopify CDN, manually injected the same HORIZONTAL runtime CSS into Chrome for geometry proof.
+- Result: product cards changed from ~228x214 to ~285x128, images to ~112x124, and Add To Box button to ~145px wide while preserving the HORIZONTAL preset and page layout.
+- Remaining proof item after SIT deploy/CDN refresh: reload the page with widget 2.9.53 and confirm the same geometry comes from the deployed bundle, then compare against EB again for any final width/spacing refinements.
