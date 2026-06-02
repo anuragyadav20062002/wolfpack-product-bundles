@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:04
+**Last Updated:** 2026-06-02 10:29
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -178,3 +178,16 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Rebuilt widget bundles with `WIDGET_VERSION=2.9.19`; generated PPB bundled asset contains the same app-proxy fallback.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
 - Chrome storefront retry after reload still shows the old product-loading error modal; live asset proof is pending until the Shopify extension/CDN serves the rebuilt `2.9.19` widget.
+
+### 2026-06-02 10:17 - PPB SIMPLIFIED slot-grid CSS parity slice started
+- EB reference confirms MODAL and SIMPLIFIED both use `PDP_MODAL`; MODAL is a 3-column mini-slot grid and SIMPLIFIED is a single-column full-width slot row.
+- Live Chrome proof on the SIT PPB page shows `data-ppb-design-preset="SIMPLIFIED"` but computed `.bw-ppb-modal-slot-grid` remains `104.32px 104.32px 104.32px`.
+- Root cause: `.bw-ppb-modal-slot-grid--simplified` is declared before the base `.bw-ppb-modal-slot-grid`, so the base grid rule wins.
+- Scope this slice to increase SIMPLIFIED selector specificity/order without changing MODAL behavior.
+
+### 2026-06-02 10:29 - PPB SIMPLIFIED slot-grid CSS parity fix prepared
+- Added a high-specificity SIMPLIFIED grid override after the base PPB modal grid so SIMPLIFIED resolves to one column while MODAL stays three columns.
+- Added SIMPLIFIED empty-slot row overrides after the base modal empty-card styles so EB's label-left/icon-right short row can win after minification.
+- Bumped `WIDGET_VERSION` to `2.9.20`, rebuilt widget bundles, and minified CSS assets.
+- Verification passed: `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, `npm run minify:assets css`, and `npx eslint --max-warnings 9999 scripts/build-widget-bundles.js` with 0 errors and an ignore-pattern warning only.
+- Chrome storefront reload still serves the older Shopify CDN stylesheet; computed SIMPLIFIED grid remains `104.32px 104.32px 104.32px`, so live e2e proof is pending after SIT deploy/CDN propagation.
