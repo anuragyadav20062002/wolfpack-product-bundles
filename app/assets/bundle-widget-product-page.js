@@ -112,6 +112,7 @@ class BundleWidgetProductPage {
     this.selectedProducts = [];
     this.stepProductData = [];
     this.directDefaultProducts = [];
+    this.activeInpageCategoryIndexes = {};
     this.currentStepIndex = 0;
     this.isInitialized = false;
     this.config = {};
@@ -370,9 +371,9 @@ class BundleWidgetProductPage {
       && this._getProductPageDesignPreset() === 'COGNIVE';
   }
 
-  _isProductPageSimplifiedTemplate() {
+  _usesVerticalModalSlotLayout() {
     return this._getProductPageTemplateType() === 'PDP_MODAL'
-      && this._getProductPageDesignPreset() === 'SIMPLIFIED';
+      && this.selectedBundle?.renderFilledSlotsAsHorizontalStacked !== true;
   }
 
   _markProductPageTemplate() {
@@ -385,6 +386,15 @@ class BundleWidgetProductPage {
     this.container.dataset.ppbDesignPreset = designPreset;
     this.elements.stepsContainer.dataset.ppbTemplateType = templateType;
     this.elements.stepsContainer.dataset.ppbDesignPreset = designPreset;
+
+    if (templateType === 'PDP_MODAL') {
+      const slotOrientation = this._usesVerticalModalSlotLayout() ? 'vertical' : 'horizontal';
+      this.container.dataset.ppbSlotOrientation = slotOrientation;
+      this.elements.stepsContainer.dataset.ppbSlotOrientation = slotOrientation;
+    } else {
+      delete this.container.dataset.ppbSlotOrientation;
+      delete this.elements.stepsContainer.dataset.ppbSlotOrientation;
+    }
   }
 
   // ========================================================================
@@ -1046,7 +1056,7 @@ class BundleWidgetProductPage {
   renderProductPageLayout() {
     this.selectedBundle.steps.forEach((step, stepIndex) => {
       if (this._isProductPageInpageTemplate()) {
-        const section = this._createInpageStepSection(step);
+        const section = this._createInpageStepSection(step, stepIndex);
         const target = section.querySelector('.bw-ppb-inpage-step-grid');
         this.elements.stepsContainer.appendChild(section);
 
@@ -1060,7 +1070,7 @@ class BundleWidgetProductPage {
       const section = this._isProductPageModalSlotTemplate()
         ? this._createModalSlotStepSection(step)
         : this._isProductPageCogniveTemplate()
-          ? this._createInpageStepSection(step)
+          ? this._createInpageStepSection(step, stepIndex)
         : null;
       const target =
         section?.querySelector('.bw-ppb-modal-slot-grid')
@@ -1125,9 +1135,9 @@ class BundleWidgetProductPage {
 
   _createModalSlotStepSection(step) {
     const section = document.createElement('div');
-    const isSimplified = this._isProductPageSimplifiedTemplate();
+    const isVertical = this._usesVerticalModalSlotLayout();
 
-    section.className = `bw-ppb-modal-slot-section${isSimplified ? ' bw-ppb-modal-slot-section--simplified' : ''}`;
+    section.className = `bw-ppb-modal-slot-section${isVertical ? ' bw-ppb-modal-slot-section--simplified' : ''}`;
 
     const title = document.createElement('div');
     title.className = 'bw-ppb-modal-slot-title';
@@ -1135,13 +1145,13 @@ class BundleWidgetProductPage {
     section.appendChild(title);
 
     const grid = document.createElement('div');
-    grid.className = `bw-ppb-modal-slot-grid${isSimplified ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
+    grid.className = `bw-ppb-modal-slot-grid${isVertical ? ' bw-ppb-modal-slot-grid--simplified' : ''}`;
     section.appendChild(grid);
 
     return section;
   }
 
-  _createInpageStepSection(step) {
+  _createInpageStepSection(step, stepIndex) {
     const section = document.createElement('div');
     const preset = this._getProductPageDesignPreset();
     section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}`;
@@ -1151,11 +1161,87 @@ class BundleWidgetProductPage {
     title.textContent = step.pageTitle || step.name || '';
     section.appendChild(title);
 
+    const tabs = this._createInpageCategoryTabs(step, stepIndex);
+    if (tabs) section.appendChild(tabs);
+
     const grid = document.createElement('div');
     grid.className = 'bw-ppb-inpage-step-grid';
     section.appendChild(grid);
 
     return section;
+  }
+
+  _createInpageCategoryTabs(step, stepIndex) {
+    const categories = Array.isArray(step?.categories) ? step.categories : [];
+    if (categories.length <= 1) return null;
+
+    if (typeof this.activeInpageCategoryIndexes[stepIndex] !== 'number') {
+      this.activeInpageCategoryIndexes[stepIndex] = 0;
+    }
+
+    const tabs = document.createElement('div');
+    tabs.className = 'bw-ppb-inpage-category-tabs';
+
+    categories.forEach((category, categoryIndex) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `bw-ppb-inpage-category-tab${categoryIndex === this.activeInpageCategoryIndexes[stepIndex] ? ' active' : ''}`;
+      button.dataset.categoryIndex = String(categoryIndex);
+      button.textContent = this._getInpageCategoryLabel(category, categoryIndex);
+      button.addEventListener('click', () => {
+        this.activeInpageCategoryIndexes[stepIndex] = categoryIndex;
+        tabs.querySelectorAll('.bw-ppb-inpage-category-tab').forEach(tab => {
+          tab.classList.toggle('active', tab === button);
+        });
+        const grid = tabs.parentElement?.querySelector('.bw-ppb-inpage-step-grid');
+        if (grid) this._renderInpageStepProducts(stepIndex, grid);
+      });
+      tabs.appendChild(button);
+    });
+
+    return tabs;
+  }
+
+  _getInpageCategoryLabel(category, categoryIndex) {
+    return category?.title || category?.name || `Category ${categoryIndex + 1}`;
+  }
+
+  _getCategoryProductIds(category) {
+    const ids = new Set();
+    const addProductId = (product) => {
+      const id = product?.id || product?.graphqlId || product?.productId;
+      if (id) ids.add(this.extractId(id));
+    };
+
+    (category?.products || []).forEach(addProductId);
+    (category?.selectedProducts || []).forEach(addProductId);
+    return ids;
+  }
+
+  _categoryHasCollections(category) {
+    return Boolean(
+      category?.collections?.length
+      || category?.collectionsData?.length
+      || category?.collectionsSelectedData?.length
+    );
+  }
+
+  _filterProductsForInpageCategory(step, products, stepIndex) {
+    const categories = Array.isArray(step?.categories) ? step.categories : [];
+    if (categories.length <= 1) return products;
+
+    const activeIndex = this.activeInpageCategoryIndexes[stepIndex] || 0;
+    const category = categories[activeIndex];
+    const categoryProductIds = this._getCategoryProductIds(category);
+
+    if (categoryProductIds.size === 0) {
+      return this._categoryHasCollections(category) ? products : [];
+    }
+
+    return products.filter(product => {
+      const productId = this.extractId(product.parentProductId || product.id);
+      return categoryProductIds.has(productId);
+    });
   }
 
   _renderInpageStepProducts(stepIndex, target) {
@@ -1173,7 +1259,12 @@ class BundleWidgetProductPage {
       return;
     }
 
-    const products = this.expandProductsByVariant(rawProducts);
+    const currentStep = this.selectedBundle?.steps?.[stepIndex];
+    const products = this._filterProductsForInpageCategory(
+      currentStep,
+      this.expandProductsByVariant(rawProducts),
+      stepIndex
+    );
     if (products.length === 0) {
       target.innerHTML = this._stepFetchFailed?.[stepIndex]
         ? '<p class="modal-fetch-error">Could not load products. Please check your connection and try again.</p>'
@@ -1181,7 +1272,6 @@ class BundleWidgetProductPage {
       return;
     }
 
-    const currentStep = this.selectedBundle?.steps?.[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex] || {};
     const showQuantitySelector = this.config.showQuantitySelectorOnCard;
     const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(

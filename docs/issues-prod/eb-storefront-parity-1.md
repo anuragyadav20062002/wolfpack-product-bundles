@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:13
+**Last Updated:** 2026-06-02 10:17
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -227,3 +227,23 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Ran `npm run minify:assets css`; generated `extensions/bundle-builder/assets/bundle-widget.css` from the raw product-page widget CSS.
 - Ran `npx eslint --max-warnings 9999 app/assets/widgets/product-page-css/bundle-widget.css`; ESLint reported the CSS file is ignored by config and produced 0 errors.
 - Chrome Admin e2e switching is currently blocked: the SIT embedded app iframe loads `chrome-error://chromewebdata/` and reports the Cloudflare origin refused to connect. Storefront MODAL smoke must be rerun after the dev preview origin is healthy or after the next SIT deploy.
+
+### 2026-06-02 10:18 - PPB in-page category tabs slice started
+- Ground truth: EB PPB CASCADE and COGNIVE screenshots show category tabs inside the in-page widget before products.
+- Live WPB storefront config proof: the PPB fixture has one step with two `categories`, so tabs must be rendered from step categories rather than separate step sections.
+- Planned change: add in-page category tab rendering and filter product cards to the active category while preserving the existing app-proxy product loader and DTO shape.
+
+### 2026-06-02 10:17 - PPB modal slot orientation JSON contract slice started
+- EB ground truth: `PDP_MODAL` uses the modal widget path for both Horizontal Slots and Vertical Slots, while consumed runtime JSON exposes `renderFilledSlotsAsHorizontalStacked` to drive selected-slot orientation.
+- Current WPB widget coupled vertical slot layout to `templateId: SIMPLIFIED`; this is weaker than EB's consumed-JSON contract.
+- Added RED tests/spec for the shared template-runtime helper, formatted bundle JSON, product metafield sync payload, widget source contract, CSS orientation selector, and duplicated in-page quantity button regression.
+- Implementation target: expose `renderFilledSlotsAsHorizontalStacked` in PPB runtime JSON/metafields and make the widget read that field for modal slot orientation.
+
+### 2026-06-02 10:18 - PPB in-page category tabs fix prepared
+- Added EB-style in-page category tabs for PPB `PDP_INPAGE` templates, derived from `step.categories` in the existing storefront DTO.
+- Active tab now filters visible product cards to that category's configured product IDs while preserving the existing app-proxy product fetch and normalized `stepProductData` cache.
+- Added scoped CASCADE/COGNIVE tab styles matching EB's active black pill and inactive outlined pill layout.
+- Bumped widget version to `2.9.23` and ran `npm run build:widgets && npm run minify:assets css`.
+- Verification passed: `node --check app/assets/bundle-widget-product-page.js` and `node --check scripts/build-widget-bundles.js`.
+- Modified-file ESLint returned 0 errors and ignored-file warnings only for widget/script files.
+- Live CASCADE/COGNIVE e2e remains pending because the Admin iframe is currently refusing the Cloudflare origin and the live storefront is still serving widget `2.9.21`.
