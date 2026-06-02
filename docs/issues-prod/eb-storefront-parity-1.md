@@ -588,3 +588,9 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Confirmed the CASCADE in-page product list now renders the category tab even when the bundle has a single category.
 - Confirmed the Cross Necklace product row still renders with price and Add control, and selecting it updates the product button to Selected and enables the main Add Bundle to Cart CTA with .97 total.
 - Checks completed: npm run build:widgets, node --check for modified JS files, eslint on modified JS files, graphify code rebuild, and Chrome SIT PPB CASCADE smoke.
+
+### 2026-06-02 17:14 IST - Completed PPB COGNIVE persisted storefront smoke
+- Persisted SIT PPB fixture to EB Product Grid contract: bundleDesignTemplate PDP_INPAGE and bundleDesignTemplateData.templateId COGNIVE.
+- Storefront loaded widget version 2.9.42 with body marker COGNIVE, a three-column in-page product grid, square product image crop, centered product title/price, and full-width black Add button.
+- Confirmed selecting Cross Necklace changes the product button to Selected and enables Add Bundle to Cart with .97 total.
+- No code changes were required for this slice; this validates the existing COGNIVE grid rendering after the CASCADE tab fix.
