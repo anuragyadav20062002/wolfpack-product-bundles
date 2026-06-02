@@ -3,12 +3,24 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 13:34
+**Last Updated:** 2026-06-02 13:48
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 13:44 - Started PPB compare-at price visibility parity slice
+- EB PPB runtime settings include `showProductComparedAtPrice` with default `false`.
+- Current WPB PPB widget renders compare-at strike prices whenever product data includes `compareAtPrice`.
+- Added `showProductComparedAtPrice` to the product-page storefront DTO with EB's default `false`.
+- Added `_shouldShowProductComparedAtPrice()` in the PPB widget and gated both in-page and modal product-card compare-at strike markup behind the setting.
+- Bumped storefront widget version to `2.9.35` and rebuilt widget JS assets.
+- Added `test-spec/ppb-compare-at-price-visibility.spec.md` and focused source-contract coverage.
+- Verification: `node --check app/assets/bundle-widget-product-page.js` completed successfully.
+- Verification: `npx jest tests/unit/assets/bundle-widget-product-page-compare-at-price.test.ts --runInBand` passed with 2 tests.
+- Verification: `npm run build:widgets` completed successfully.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-product-page.js app/services/bundles/metafield-sync/types.ts app/services/bundles/metafield-sync/operations/bundle-product.server.ts scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-product-page-compare-at-price.test.ts` completed with 0 errors; warnings are pre-existing unsafe-any warnings in the metafield sync file plus ignored asset JS.
+
 ### 2026-06-02 13:25 - Started FPB sidebar CTA label parity slice
 - EB storefront audit shows the FPB sidebar primary CTA uses bundle tier language such as the selected box/discount label, while WPB still used generic `Add to Cart` / `Next Step` text in the dark button.
 - Current source already has `createSidebarTierCta(nextRule)` using configured box/tier DTO text; scope is to reuse that source for the primary add-to-cart button label without changing cart behavior.

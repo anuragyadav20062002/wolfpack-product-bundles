@@ -422,6 +422,10 @@ class BundleWidgetProductPage {
       && this.selectedBundle?.renderFilledSlotsAsHorizontalStacked !== true;
   }
 
+  _shouldShowProductComparedAtPrice() {
+    return this.selectedBundle?.showProductComparedAtPrice === true;
+  }
+
   _markProductPageTemplate() {
     if (!this.container || !this.elements?.stepsContainer || !this.selectedBundle) return;
 
@@ -1354,7 +1358,7 @@ class BundleWidgetProductPage {
             <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
                 <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}
@@ -2887,7 +2891,7 @@ class BundleWidgetProductPage {
 
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
                 <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}

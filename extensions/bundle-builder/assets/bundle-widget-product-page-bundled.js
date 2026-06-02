@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.34
+ * Version : 2.9.35
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.34';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.35';
 (function() {
   'use strict';
 
@@ -2436,6 +2436,10 @@ class BundleWidgetProductPage {
       && this.selectedBundle?.renderFilledSlotsAsHorizontalStacked !== true;
   }
 
+  _shouldShowProductComparedAtPrice() {
+    return this.selectedBundle?.showProductComparedAtPrice === true;
+  }
+
   _markProductPageTemplate() {
     if (!this.container || !this.elements?.stepsContainer || !this.selectedBundle) return;
 
@@ -3338,7 +3342,7 @@ class BundleWidgetProductPage {
             <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
                 <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}
@@ -4796,7 +4800,7 @@ class BundleWidgetProductPage {
 
             ${product.price ? `
               <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
                 <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
               </div>
             ` : ''}

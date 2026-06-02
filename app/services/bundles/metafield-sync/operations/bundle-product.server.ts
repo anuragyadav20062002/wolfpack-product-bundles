@@ -447,6 +447,7 @@ export async function updateBundleProductMetafields(
         bundleConfiguration.bundleDesignTemplate,
         bundleDesignTemplateData?.templateId,
       ),
+    showProductComparedAtPrice: bundleConfiguration.showProductComparedAtPrice ?? false,
     bundleVariantId: bundleVariantId, // Bundle parent variant ID for cart transform EXPAND operation
     steps: (bundleConfiguration.steps || []).map((step: any) => ({
       id: step.id,
