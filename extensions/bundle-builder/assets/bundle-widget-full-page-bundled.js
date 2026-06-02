@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.28
+ * Version : 2.9.29
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.28';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.29';
 (function() {
   'use strict';
 
@@ -3763,6 +3763,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
+    this.ensureCompactPresetRuntimeStyles();
 
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section';
@@ -3837,6 +3838,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
+    this.ensureCompactPresetRuntimeStyles();
 
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
@@ -4966,6 +4968,16 @@ class BundleWidgetFullPage {
         container.style.display = 'none';
       }
     });
+  }
+
+  ensureCompactPresetRuntimeStyles() {
+    if (this.getFullPageDesignPreset() !== 'COMPACT') return;
+    if (document.getElementById('wpb-fpb-compact-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-compact-runtime-styles';
+    style.textContent = '@media (min-width:769px){.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-product-grid{grid-template-columns:repeat(2,220px);gap:12px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-card{width:220px;min-width:220px;height:332px;min-height:332px;padding:6px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-image{width:208px;height:208px;min-height:208px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-content-wrapper{width:208px}}';
+    document.head.appendChild(style);
   }
 
   createPromoBanner() {

@@ -5128,9 +5128,6 @@ minmax(0,
 .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-btn-next {
   width:100%}
 
-.layout-sidebar[data-fpb-design-preset="COMPACT"] .sidebar-content .full-page-product-grid {
-  grid-template-columns:repeat(2,220px);
-  gap:12px}
 }
 
 .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab,
@@ -5183,9 +5180,16 @@ body:has([data-fpb-design-preset]),
   font-weight:700}
 
 @media (min-width:1024px) {
+  [data-fpb-design-preset=COMPACT] {
+  --cw:220px;
+  --ch:332px;
+  --cp:6px;
+  --is:208px;
+  --cg:12px}
+
   .layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .full-page-product-grid {
-  grid-template-columns:repeat(2, 300px);
-  gap:15px;
+  grid-template-columns:repeat(2, var(--cw,300px));
+  gap:var(--cg,15px);
   justify-content:flex-start;
   padding:0;
   margin:12px 0 20px}
@@ -5202,24 +5206,20 @@ body:has([data-fpb-design-preset]),
   grid-template-columns:326px}
 
 .layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card {
-  width:300px;
-  min-width:300px;
-  max-width:300px;
-  height:420px;
-  min-height:420px;
-  padding:8px;
+  width:var(--cw,300px);
+  min-width:var(--cw,300px);
+  max-width:var(--cw,300px);
+  height:var(--ch,420px);
+  min-height:var(--ch,420px);
+  padding:var(--cp,8px);
   border:0;
   border-radius:10px;
   box-shadow:none;}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card.selected {
-  border:0;
-  box-shadow:none}
-
 .layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-image {
-  width:284px;
-  height:284px;
-  min-height:284px;
+  width:var(--is,284px);
+  height:var(--is,284px);
+  min-height:var(--is,284px);
   aspect-ratio:auto;
   margin:0;
   border-radius:8px;
@@ -5228,7 +5228,7 @@ body:has([data-fpb-design-preset]),
 .layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-content-wrapper {
   flex:0 0 auto;
   min-height:0;
-  width:284px;
+  width:var(--is,284px);
   padding:0}
 
 .layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-title {
@@ -5245,6 +5245,7 @@ body:has([data-fpb-design-preset]),
   gap:1px;
   align-items:flex-start;
   text-align:left}
+
 }
 
 @media (max-width:767px) {

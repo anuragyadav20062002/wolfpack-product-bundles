@@ -3,12 +3,19 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 11:45
+**Last Updated:** 2026-06-02 12:04
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 11:10 - FPB COMPACT card density parity slice
+- Grounded the next storefront template fix in EB COMPACT screenshot evidence and current FPB CSS.
+- Real source gap: COMPACT overrides the product grid to 220px columns, but generic icon-mode card/image rules still force 300px cards and 284px images.
+- Moved COMPACT card/image/content sizing into a tiny runtime stylesheet injected only for the COMPACT preset so the Shopify app-block CSS asset stays under the 100,000 byte limit.
+- Bumped widget version to `2.9.29`, rebuilt widget bundles, regenerated CSS assets, and verified `node --check app/assets/bundle-widget-full-page.js`.
+- Lint command completed with 0 errors; both changed JS files are ignored by the current ESLint ignore patterns.
+
 ### 2026-06-02 01:21 - Goal started and fast-track architecture initiated
 - User set the active goal to 100% EB storefront parity for FPB and PPB.
 - Stage 1 requirements are fast-tracked from existing EB evidence docs instead of re-researching known behavior.
@@ -389,3 +396,9 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: `npx jest tests/unit/extensions/cart-transform-run-query.test.ts tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 38 tests.
 - Verification: `cargo test` in `extensions/bundle-cart-transform-rs` passed with 38 Rust tests.
 - Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts tests/unit/extensions/cart-transform-run-query.test.ts` completed with 0 errors and warnings only.
+
+### 2026-06-02 12:04 - FPB COMPACT card density parity slice completed
+- Added COMPACT-specific desktop icon-mode sizing through compact CSS variables: 220px product cards, 332px card height, 208px images, 12px grid gap, and 6px card padding.
+- Preserved the existing generic icon-mode layout for other FPB templates while letting COMPACT override the later desktop icon-mode rule through variables.
+- Removed a redundant icon-mode selected-card override to keep the generated full-page CSS below Shopify's app-block asset limit.
+- Verification: `npm run minify:assets css` completed successfully; `extensions/bundle-builder/assets/bundle-widget-full-page.css` generated under the 100,000 B Shopify limit.

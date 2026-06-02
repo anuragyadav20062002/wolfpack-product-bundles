@@ -957,6 +957,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
+    this.ensureCompactPresetRuntimeStyles();
 
     // Wrap content in full-page-content-section for proper padding
     const contentSection = document.createElement('div');
@@ -1047,6 +1048,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
+    this.ensureCompactPresetRuntimeStyles();
 
     // Hide the bottom footer — sidebar replaces it
     if (this.elements.footer) {
@@ -2220,6 +2222,16 @@ class BundleWidgetFullPage {
         container.style.display = 'none';
       }
     });
+  }
+
+  ensureCompactPresetRuntimeStyles() {
+    if (this.getFullPageDesignPreset() !== 'COMPACT') return;
+    if (document.getElementById('wpb-fpb-compact-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-compact-runtime-styles';
+    style.textContent = '@media (min-width:769px){.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-product-grid{grid-template-columns:repeat(2,220px);gap:12px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-card{width:220px;min-width:220px;height:332px;min-height:332px;padding:6px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-image{width:208px;height:208px;min-height:208px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-content-wrapper{width:208px}}';
+    document.head.appendChild(style);
   }
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
