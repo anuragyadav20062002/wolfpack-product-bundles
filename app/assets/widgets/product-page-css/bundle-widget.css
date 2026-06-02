@@ -2837,9 +2837,23 @@ var(--bundle-global-primary-button,
   align-items:center;
   justify-content:center}
 
+#bundle-builder-modal .bw-bs-footer {
+  position:absolute;
+  left:50%;
+  bottom:18px;
+  transform:translateX(-50%);
+  width:300px;
+  height:84px;
+  display:block;
+  background:#ffffff;
+  border-radius:10px;
+  padding:0;
+  box-shadow:rgba(0,0,0,0) 93px 48px 29px 0px,rgba(0,0,0,0.03) 60px 31px 27px 0px,rgba(0,0,0,0.1) 34px 17px 23px 0px,rgba(0,0,0,0.17) 15px 8px 17px 0px,rgba(0,0,0,0.2) 4px 2px 9px 0px;
+  z-index:2}
+
 #bundle-builder-modal .bw-bs-footer,
 #bundle-builder-modal .modal-footer {
-  background:transparent}
+  background:#ffffff}
 
 .bw-bs-cart-pill {
   position:absolute;
@@ -2861,6 +2875,58 @@ var(--bundle-global-primary-button,
   font-weight:600;
   color:#333}
 
+#bundle-builder-modal .bw-bs-cart-pill {
+  top:-15px;
+  bottom:auto;
+  left:50%;
+  transform:translateX(-50%);
+  display:grid;
+  grid-template-columns:auto 1px auto 20px;
+  align-items:center;
+  min-width:125px;
+  height:29px;
+  box-sizing:border-box;
+  gap:10px;
+  background:#000000;
+  color:#ffffff;
+  border-radius:16px;
+  padding:4px 12px;
+  font-size:16px;
+  font-weight:700;
+  line-height:normal;
+  box-shadow:rgba(0,0,0,0) 93px 48px 29px 0px,rgba(0,0,0,0.03) 60px 31px 27px 0px,rgba(0,0,0,0.1) 34px 17px 23px 0px,rgba(0,0,0,0.17) 15px 8px 17px 0px,rgba(0,0,0,0.2) 4px 2px 9px 0px}
+
+#bundle-builder-modal .bw-bs-cart-price {
+  display:grid;
+  gap:2px;
+  grid-template-columns:auto;
+  color:#ffffff;
+  line-height:normal}
+
+#bundle-builder-modal .total-price-strike {
+  color:#ffffff;
+  font-size:12px;
+  line-height:12px;
+  opacity:0.8;
+  text-decoration:line-through}
+
+#bundle-builder-modal .total-price-final,
+#bundle-builder-modal .cart-badge-count {
+  color:#ffffff;
+  font-size:16px;
+  font-weight:700;
+  line-height:21px}
+
+#bundle-builder-modal .bw-bs-cart-divider {
+  display:block;
+  width:1px;
+  height:21px;
+  background:#ffffff}
+
+#bundle-builder-modal .bw-bs-cart-pill svg,
+#bundle-builder-modal .bw-bs-cart-pill svg path {
+  fill:#ffffff}
+
 .bw-bs-nav-pill {
   display:flex;
   align-items:center;
@@ -2875,6 +2941,23 @@ rgb(30,
 58,
 138,
 0.35) 0px 8px 20px 0px}
+
+#bundle-builder-modal .bw-bs-nav-pill {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  width:100%;
+  box-sizing:border-box;
+  background:transparent;
+  border-radius:0;
+  box-shadow:none;
+  padding:20px 15px 18px}
+
+#bundle-builder-modal .bw-bs-footer--single-step .bw-bs-nav-pill {
+  grid-template-columns:1fr}
+
+#bundle-builder-modal .bw-bs-footer--single-step .prev-button {
+  display:none}
 
 @media (max-width:767px) {
   .bw-bs-nav-pill {
@@ -2902,8 +2985,25 @@ rgb(30,
 
 #bundle-builder-modal .bw-bs-nav-btn.prev-button,
 #bundle-builder-modal .bw-bs-nav-btn.next-button {
-  padding:6px 14px;
-  border-radius:30px}
+  justify-content:center;
+  width:100%;
+  height:41px;
+  border-radius:10px;
+  padding:10px 8px;
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:none}
+
+#bundle-builder-modal .bw-bs-nav-btn.next-button {
+  background:#000000;
+  border-color:#000000;
+  color:#ffffff}
+
+#bundle-builder-modal .bw-bs-nav-btn.prev-button {
+  background:#ffffff;
+  border:1px solid rgb(227,227,227);
+  color:#000000}
 
 @media (max-width:767px) {
   #bundle-builder-modal .bw-bs-nav-btn.prev-button,

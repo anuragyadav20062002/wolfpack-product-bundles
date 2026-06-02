@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:35
+**Last Updated:** 2026-06-02 18:42
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -688,3 +688,15 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped widget assets to `2.9.49`, rebuilt widget/minified assets, and rebuilt graph output.
 - Chrome SIT proof: SIMPLIFIED PPB product loaded `2.9.49`, opened modal from slot, grid measured five `200px` columns at current viewport, product card measured `200px x 343px`, quantity wrapper computed `display:none`, Add to Cart measured `174px x 33px` with `5px` radius and `16px/400` typography.
 - Selection smoke passed: clicking modal Add to Cart changed the card to `product-card selected` and enabled the main CTA as `Add Bundle to Cart • $4.97`.
+
+### 2026-06-02 18:39 - PPB modal footer visual parity started
+- Live EB PPB modal footer measured as a centered `300px x 84px` white floating card with 10px radius and strong multi-layer shadow, a black price/count pill above it, and a single 270px Done button for the current single-step modal state.
+- Live WPB PPB modal footer on widget `2.9.49` still renders as a full-width transparent footer with separate floating count pill, black nav pill, and visible Prev/Done buttons.
+- Scope: align the PPB bottom-sheet footer shell, cart pill, and single-step button treatment with EB while preserving modal selection and main CTA behavior.
+
+### 2026-06-02 18:42 - PPB modal footer visual parity verified
+- Added EB-style bottom-sheet footer state classes and price/count pill markup that reuses the existing `total-price-final` / `total-price-strike` footer updater.
+- Updated the PPB modal footer CSS to a centered `300px x 84px` white floating card with EB-style shadow, black price/count pill above it, hidden Prev button in single-step modal state, and a full-width 270px Done button.
+- Bumped widget assets to `2.9.50`, rebuilt widget/minified assets, and rebuilt graph output.
+- Chrome SIT proof: SIMPLIFIED PPB product loaded `2.9.50`, opened modal from slot, footer measured `300px x 84px`, pill measured `133px x 29px`, Prev computed `display:none`, Done measured `270px x 41px`, and pre-selection pill displayed `$0.00 0`.
+- Selection smoke passed: clicking modal Add to Cart updated the pill to `$4.97 1` and enabled the main CTA as `Add Bundle to Cart • $4.97`.

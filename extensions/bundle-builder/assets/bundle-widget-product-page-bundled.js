@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.49
+ * Version : 2.9.50
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.49';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.50';
 (function() {
   'use strict';
 
@@ -2900,6 +2900,11 @@ class BundleWidgetProductPage {
         <div class="modal-footer bw-bs-footer">
           <!-- Cart count pill (white, floats above nav pill) -->
           <div class="bw-bs-cart-pill">
+            <span class="bw-bs-cart-price">
+              <span class="total-price-strike"></span>
+              <span class="total-price-final">$0.00</span>
+            </span>
+            <span class="bw-bs-cart-divider"></span>
             <span class="cart-badge-count">0</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M3 4.5C3 4.22386 3.22386 4 3.5 4H5.5C5.73 4 5.93 4.16 5.98 4.385L6.52 7H20.5C20.76 7 20.99 7.14 21.1 7.37C21.21 7.6 21.18 7.88 21.02 8.08L17.02 13.08C16.85 13.29 16.6 13.41 16.33 13.41H8.66L8.07 16H19.5C19.78 16 20 16.22 20 16.5C20 16.78 19.78 17 19.5 17H7.5C7.27 17 7.07 16.84 7.02 16.615L5.02 7.615L4.5 5H3.5C3.22 5 3 4.78 3 4.5ZM8 19.5C8 20.33 7.33 21 6.5 21C5.67 21 5 20.33 5 19.5C5 18.67 5.67 18 6.5 18C7.33 18 8 18.67 8 19.5ZM19 19.5C19 20.33 18.33 21 17.5 21C16.67 21 16 20.33 16 19.5C16 18.67 16.67 18 17.5 18C18.33 18 19 18.67 19 19.5Z" fill="#333"/>
@@ -5369,6 +5374,11 @@ class BundleWidgetProductPage {
     prevButton.disabled = false;
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+    const footer = this.elements.modal?.querySelector('.bw-bs-footer');
+    footer?.classList.toggle('bw-bs-footer--single-step', this.selectedBundle.steps.length <= 1);
+    footer?.classList.toggle('bw-bs-footer--first-step', this.currentStepIndex === 0);
+    footer?.classList.toggle('bw-bs-footer--last-step', isLastStep);
+
     nextButton.textContent = isLastStep ? this._resolveText('doneButton', 'Done') : this._resolveText('nextButton', 'Next');
     nextButton.disabled = false;
   }
