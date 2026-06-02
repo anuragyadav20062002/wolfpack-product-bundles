@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.24
+ * Version : 2.9.25
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.24';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.25';
 (function() {
   'use strict';
 
@@ -6700,7 +6700,10 @@ class BundleWidgetFullPage {
 
       const bundleInstanceId = crypto.randomUUID();
       const bundleName = this.selectedBundle.name || 'Bundle';
+      const sessionKey = this.generateBundleSessionKey();
+      const offerId = this.resolveFullPageOfferId();
       const selectedLines = [];
+      let itemNumber = 0;
 
       this.selectedBundle.steps.forEach((step, stepIndex) => {
         const stepSelections = this.selectedProducts[stepIndex] || {};
@@ -6713,11 +6716,13 @@ class BundleWidgetFullPage {
             const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
               || { id: variantId, title: variantId };
 
+            itemNumber += 1;
             const properties = {
               '_bundle_id': bundleInstanceId,
-              '_bundle_name': bundleName,
-              '_step_index': String(stepIndex),
-              '_step_name': step.name
+              Box: String(itemNumber),
+              '_bundleName': bundleName,
+              '_easyBundle:prodQty': String(quantity),
+              '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
             };
             const addonDiscount = this.getAddonLineDiscount(step);
             if (addonDiscount && step?.addonDisplayFree !== true) {
@@ -8392,6 +8397,19 @@ class BundleWidgetFullPage {
     const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
     return bundleInstanceId;
+  }
+
+  resolveFullPageOfferId() {
+    const rawOfferId = this.selectedBundle?.offerId
+      || this.selectedBundle?.bundleOfferId
+      || this.selectedBundle?.id
+      || 'UNKNOWN';
+    const offerId = String(rawOfferId);
+    return offerId.startsWith('FBP-') ? offerId : `FBP-${offerId}`;
+  }
+
+  generateBundleSessionKey() {
+    return Math.random().toString(36).slice(2, 5).toUpperCase();
   }
 
   parseTierConfig(rawJson) {

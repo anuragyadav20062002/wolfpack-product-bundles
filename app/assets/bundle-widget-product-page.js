@@ -3663,8 +3663,7 @@ class BundleWidgetProductPage {
             const addonDiscount = this.getAddonLineDiscount(step);
             const properties = {
               '_bundle_id': bundleInstanceId,
-              '_bundle_name': this.selectedBundle.name,
-              '_step_index': stepIndex.toString()
+              '_bundle_name': this.selectedBundle.name
             };
             if (addonDiscount && step?.addonDisplayFree !== true) {
               properties['_bundle_step_type'] = addonDiscount
@@ -3745,6 +3744,7 @@ class BundleWidgetProductPage {
         formData.append(`items[${index}][properties][${key}]`, String(value));
       });
       formData.append(`items[${index}][properties][Box]`, String(itemNumber));
+      formData.append(`items[${index}][properties][_bundleName]`, this.selectedBundle?.name || '');
       formData.append(`items[${index}][properties][_easyBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
       formData.append(`items[${index}][properties][_easyBundle:prodQty]`, String(item.quantity));
     });

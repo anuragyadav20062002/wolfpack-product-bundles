@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:27
+**Last Updated:** 2026-06-02 10:37
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -304,3 +304,24 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Bumped `WIDGET_VERSION` to `2.9.24` and rebuilt widget bundles.
 - Verification passed: `npm run build:widgets`, `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, and `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (27 tests).
 - ESLint returned 0 errors with ignored-file/existing warnings only.
+
+### 2026-06-02 10:33 - FPB/PPB EB cart-line property DTO slice started
+- EB ground truth: FPB and PPB cart component lines send `Box`, `_bundleName`, `_easyBundle:prodQty`, and `_easyBundle:OfferId`; step/category details are client-only and not sent to cart.
+- Current WPB widgets still send private `_step_index` and FPB sends `_step_name`; these diverge from EB cart DTOs.
+- Scope: add EB public cart properties to FPB and PPB line payloads and remove step attribution from cart properties, while retaining `_bundle_id` and `_bundle_display_properties` for the current WPB Cart Transform until the transform itself is migrated.
+
+### 2026-06-02 10:36 - Bundle details cart metafield parity slice started
+- EB reference confirms FPB and PPB both merge a `bundle_details` cart metafield through the Storefront API around cart add.
+- Current WPB widgets send EB-style `_easyBundle:OfferId` line properties but do not write the accumulated `bundle_details` cart metafield.
+- Live Storefront API probing showed cart metafield access is currently denied, and app config is missing Storefront cart access scopes.
+- Scope: add required storefront cart scopes and implement non-fatal EB-style `bundle_details` merge for both FPB and PPB widgets.
+
+### 2026-06-02 10:37 - FPB/PPB EB cart-line property DTO slice completed
+- Aligned FPB cart JSON public line properties with EB evidence: `Box`, `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId`.
+- Aligned PPB multipart cart form properties with EB evidence while preserving private `_bundle_id` needed by the current Cart Transform grouping.
+- Removed step attribution from storefront cart payloads for this slice (`_step_index` / `_step_name` are no longer emitted in the touched FPB/PPB cart paths).
+- Bumped storefront widget version to `2.9.25` and rebuilt widget deploy assets.
+- Verification: `node --check app/assets/bundle-widget-full-page.js && node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js && npx jest tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` passed with 29 tests.
+- Verification: `npm run build:widgets` completed and regenerated FPB/PPB bundled widget assets.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/bundle-widget-product-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-cart-properties.test.ts tests/unit/assets/bundle-widget-product-page-init.test.ts` completed with 0 errors and warnings only.
+- Graph: default `python3` could not import `graphify`; reran with `/Users/adityaawasthi/.local/pipx/venvs/graphifyy/bin/python` and graph rebuild completed.

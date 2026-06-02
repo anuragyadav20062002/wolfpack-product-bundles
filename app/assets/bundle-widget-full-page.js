@@ -4071,7 +4071,10 @@ class BundleWidgetFullPage {
       // consolidating separate bundle instances added at different times
       const bundleInstanceId = crypto.randomUUID();
       const bundleName = this.selectedBundle.name || 'Bundle';
+      const sessionKey = this.generateBundleSessionKey();
+      const offerId = this.resolveFullPageOfferId();
       const selectedLines = [];
+      let itemNumber = 0;
 
 
       this.selectedBundle.steps.forEach((step, stepIndex) => {
@@ -4087,11 +4090,13 @@ class BundleWidgetFullPage {
               || { id: variantId, title: variantId };
 
 
+            itemNumber += 1;
             const properties = {
               '_bundle_id': bundleInstanceId,
-              '_bundle_name': bundleName,
-              '_step_index': String(stepIndex),
-              '_step_name': step.name
+              Box: String(itemNumber),
+              '_bundleName': bundleName,
+              '_easyBundle:prodQty': String(quantity),
+              '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
             };
             const addonDiscount = this.getAddonLineDiscount(step);
             if (addonDiscount && step?.addonDisplayFree !== true) {
@@ -5902,6 +5907,19 @@ class BundleWidgetFullPage {
     const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
     return bundleInstanceId;
+  }
+
+  resolveFullPageOfferId() {
+    const rawOfferId = this.selectedBundle?.offerId
+      || this.selectedBundle?.bundleOfferId
+      || this.selectedBundle?.id
+      || 'UNKNOWN';
+    const offerId = String(rawOfferId);
+    return offerId.startsWith('FBP-') ? offerId : `FBP-${offerId}`;
+  }
+
+  generateBundleSessionKey() {
+    return Math.random().toString(36).slice(2, 5).toUpperCase();
   }
   // ========================================================================
   // EVENT HANDLERS

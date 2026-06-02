@@ -15,4 +15,19 @@ describe("Full Page widget cart display properties", () => {
     expect(source).toContain("properties['You Save'] = displayProperties.youSave.amountPercentage;");
     expect(source).toContain("'_bundle_display_properties': JSON.stringify(displayProperties)");
   });
+
+  it("emits EB public bundle cart properties without step attribution", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+
+    expect(source).toContain("Box: String(itemNumber)");
+    expect(source).toContain("'_bundleName': bundleName");
+    expect(source).toContain("'_easyBundle:prodQty': String(quantity)");
+    expect(source).toContain("'_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`");
+    expect(source).toContain("'_bundle_id': bundleInstanceId");
+    expect(source).not.toContain("'_step_index'");
+    expect(source).not.toContain("'_step_name'");
+  });
 });
