@@ -220,3 +220,10 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, and `npm run minify:assets css`.
 - Modified-file ESLint returned 0 errors and ignored-file warnings only.
 - Live CASCADE/COGNIVE e2e remains pending until the PPB fixture is switched from the current `PDP_MODAL`/`SIMPLIFIED` live template to `PDP_INPAGE`.
+
+### 2026-06-02 10:09 - PPB MODAL empty-slot visual parity fix prepared
+- Changed PPB `PDP_MODAL` base slot CSS to match EB's MODAL screenshot: narrow vertical dashed card, salmon visual block, and label below the visual.
+- Kept the existing `SIMPLIFIED` horizontal row override separate so Vertical Slots continue to render as the EB SIMPLIFIED row.
+- Ran `npm run minify:assets css`; generated `extensions/bundle-builder/assets/bundle-widget.css` from the raw product-page widget CSS.
+- Ran `npx eslint --max-warnings 9999 app/assets/widgets/product-page-css/bundle-widget.css`; ESLint reported the CSS file is ignored by config and produced 0 errors.
+- Chrome Admin e2e switching is currently blocked: the SIT embedded app iframe loads `chrome-error://chromewebdata/` and reports the Cloudflare origin refused to connect. Storefront MODAL smoke must be rerun after the dev preview origin is healthy or after the next SIT deploy.
