@@ -55,6 +55,17 @@ describe("Full Page widget discount display contract", () => {
     expect(css).toContain(".promo-banner.has-discount .promo-banner-note");
   });
 
+  it("uses EB-style sidebar tier labels for the primary add-to-cart CTA", () => {
+    const source = widgetSource();
+
+    expect(source).toContain("getSidebarTierCtaContent(");
+    expect(source).toContain("const sidebarTierCtaContent = (conditionless || isLastStep)");
+    expect(source).toContain("side-panel-btn-tier-label");
+    expect(source).toContain("side-panel-btn-tier-subtext");
+    expect(source).toContain("nextBtn.innerHTML = sidebarTierCtaContent");
+    expect(source).toContain("nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';");
+  });
+
   it("includes styles for box options and step progress labels", () => {
     const css = widgetStyles();
 

@@ -1637,10 +1637,27 @@ class BundleWidgetFullPage {
     const canProceed = this.canProceedToNextStep();
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
+    const sidebarTierCtaContent = (conditionless || isLastStep)
+      ? this.getSidebarTierCtaContent(nextRule)
+      : null;
+    if (sidebarTierCtaContent) {
+      actionSection.style.gridTemplateColumns = '1fr';
+      actionSection.style.gap = '8px';
+      totalSection.style.alignItems = 'center';
+    }
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
     nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    if (sidebarTierCtaContent) {
+      const labelHtml = sidebarTierCtaContent.label
+        ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
+        : '';
+      const subtextHtml = sidebarTierCtaContent.subtext
+        ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
+        : '';
+      nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+    }
     if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
       nextBtn.disabled = true;
     }
@@ -1666,24 +1683,10 @@ class BundleWidgetFullPage {
   }
 
   createSidebarTierCta(nextRule) {
-    const pricing = this.selectedBundle?.pricing;
-    if (!pricing?.enabled) return null;
+    const content = this.getSidebarTierCtaContent(nextRule);
+    if (!content) return null;
 
-    const displayOptions = pricing.messages?.displayOptions || {};
-    const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
-    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
-    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
-    const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
-    const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
-    const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
-    const label = typeof option?.label === 'string' && option.label.trim()
-      ? option.label.trim()
-      : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
-    const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
-      ? option.subtext.trim()
-      : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
-
-    if (!label && !subtext) return null;
+    const { label, subtext } = content;
 
     const cta = document.createElement('div');
     cta.className = 'fpb-sidebar-tier-cta';
@@ -1704,6 +1707,28 @@ class BundleWidgetFullPage {
     }
 
     return cta;
+  }
+
+  getSidebarTierCtaContent(nextRule) {
+    const pricing = this.selectedBundle?.pricing;
+    if (!pricing?.enabled) return null;
+
+    const displayOptions = pricing.messages?.displayOptions || {};
+    const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
+    const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+    const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+    const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
+    const label = typeof option?.label === 'string' && option.label.trim()
+      ? option.label.trim()
+      : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
+    const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+      ? option.subtext.trim()
+      : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+
+    if (!label && !subtext) return null;
+    return { label, subtext };
   }
 
   getBoxSelectionRules() {

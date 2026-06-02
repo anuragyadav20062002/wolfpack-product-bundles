@@ -3,12 +3,28 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 13:10
+**Last Updated:** 2026-06-02 13:34
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
 
 ## Progress Log
+### 2026-06-02 13:25 - Started FPB sidebar CTA label parity slice
+- EB storefront audit shows the FPB sidebar primary CTA uses bundle tier language such as the selected box/discount label, while WPB still used generic `Add to Cart` / `Next Step` text in the dark button.
+- Current source already has `createSidebarTierCta(nextRule)` using configured box/tier DTO text; scope is to reuse that source for the primary add-to-cart button label without changing cart behavior.
+- Intermediate navigation must keep `Next Step`; only add-to-cart states should use tier label/subtext.
+
+### 2026-06-02 13:34 - FPB sidebar CTA label parity slice completed
+- Added `getSidebarTierCtaContent()` so the sidebar summary card and primary add-to-cart button share the same configured EB-style tier/box DTO text.
+- The main dark sidebar button now renders tier label/subtext spans only in add-to-cart states; intermediate step navigation remains `Next Step`.
+- Bumped storefront widget version to `2.9.34` and rebuilt widget JS assets.
+- Added `test-spec/fpb-sidebar-tier-cta.spec.md` and focused source-contract coverage.
+- Verification: `node --check app/assets/bundle-widget-full-page.js` completed successfully.
+- Verification: `npx jest tests/unit/assets/bundle-widget-full-page-discount-display.test.ts --runInBand` passed with 10 tests.
+- Verification: `npm run build:widgets` completed successfully.
+- Verification: `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js tests/unit/assets/bundle-widget-full-page-discount-display.test.ts` completed with 0 errors and warnings only.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+
 ### 2026-06-02 13:06 - Started PPB single-step categories-as-steps slice
 - EB evidence confirms `useSingleStepCategoriesAsBundleSteps` is a store-level PPB setting and maps into storefront runtime settings.
 - Current WPB server writes `useSingleStepCategoriesAsBundleSteps`, but the PPB widget does not consume it and still renders multi-category single steps as tabs.
