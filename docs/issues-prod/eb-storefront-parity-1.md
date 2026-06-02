@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 18:16 IST
+**Last Updated:** 2026-06-02 18:26
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -665,3 +665,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: npm run minify:assets css and npm run build:widgets.
 - Verification passed: node --check scripts/build-widget-bundles.js and modified-file ESLint with 0 errors and the existing ignored-file warning.
 - Chrome SIT HORIZONTAL verification loaded widget 2.9.45 with no horizontal overflow; computed tab style was transparent background, black text, 3px solid black bottom border, and 0px border radius.
+
+### 2026-06-02 18:20 IST - PPB SIMPLIFIED empty-slot visual parity fix started
+- Live SIT PPB SIMPLIFIED loaded widget 2.9.45 and has correct template markers, but the empty slot renders as an overly wide/tall centered dashed box.
+- EB SIMPLIFIED evidence renders a compact horizontal empty slot with Product label on the left and a placeholder block on the right.
+- Scope: align the SIMPLIFIED empty-slot dimensions/content treatment while preserving proven modal selection and cart behavior.
+
+### 2026-06-02 18:26 - PPB SIMPLIFIED empty-slot parity verified
+- Updated PPB SIMPLIFIED vertical storefront CSS so the empty slot uses a left-aligned product label and EB-style right placeholder block instead of a centered label-only card.
+- Restored disabled `Add Bundle to Cart` visual state to gray for SIMPLIFIED PDP modal while preserving enabled/hover black styling.
+- Bumped widget assets to `2.9.47`, rebuilt widget/minified assets, and rebuilt graph output.
+- Chrome SIT proof: PPB product `cmpwhs56g0000v02va4z44oxd` loaded `2.9.47`, markers `PDP_MODAL`/`SIMPLIFIED`/`vertical`, slot measured 345x104 with 226px/70px columns, CTA disabled background `rgb(138, 138, 138)`, and clicking the empty slot opened the product-selection modal with Cross Necklace controls.

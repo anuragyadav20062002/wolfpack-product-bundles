@@ -3485,15 +3485,22 @@ to {
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card--empty {
   display:grid;
-  grid-template-columns:1fr;
+  grid-template-columns:minmax(0, 1fr) 70px;
+  column-gap:16px;
   min-height:104px;
   height:104px;
-  padding:0;
+  padding:14px 13px 14px 16px;
   align-items:center;
-  justify-items:center}
+  justify-items:stretch}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__empty-visual {
-  display:none}
+  display:block;
+  grid-column:2;
+  grid-row:1;
+  width:70px;
+  height:72px;
+  margin:0;
+  justify-self:end}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__plus-icon--plain {
   display:none}
@@ -3504,9 +3511,9 @@ to {
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card__label {
   grid-column:1;
   grid-row:1;
-  text-align:center;
+  text-align:left;
   margin:0;
-  justify-self:center;
+  justify-self:start;
   font-size:16px;
   line-height:21px}
 
@@ -3544,10 +3551,12 @@ to {
   background:#000000}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart,
-#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart:disabled,
-#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart.disabled,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart:hover {
   background:#000000}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart:disabled,
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart.disabled {
+  background:#8a8a8a !important}
 
 .bw-ppb-dynamic-checkout-visual {
   display:none}
