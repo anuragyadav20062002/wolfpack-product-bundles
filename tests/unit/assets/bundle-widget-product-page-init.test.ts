@@ -380,4 +380,63 @@ describe('Product Page modal-slot visual contract', () => {
     const increaseButtonMatches = inpageRenderer.match(/class="qty-btn qty-increase"/g) ?? [];
     expect(increaseButtonMatches).toHaveLength(1);
   });
+
+  it('renders EB-style PPB in-page category tabs from the consumed step categories', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_createInpageCategoryTabs');
+    expect(source).toContain('Array.isArray(step?.categories) ? step.categories : []');
+    expect(source).toContain('this.activeInpageCategoryIndexes[stepIndex]');
+    expect(source).toContain('bw-ppb-inpage-category-tab');
+    expect(source).toContain('_getInpageCategoryLabel');
+    const expectedCategoryFallback = [
+      'category?.title || category?.name || `Category $',
+      '{categoryIndex + 1}`',
+    ].join('');
+    expect(source).toContain(expectedCategoryFallback);
+    expect(source).toContain('_filterProductsForInpageCategory');
+    expect(source).toContain('_getCategoryProductIds');
+    expect(source).toContain('categoryProductIds.has(productId)');
+
+    expect(css).toContain('.bw-ppb-inpage-category-tabs');
+    expect(css).toContain('.bw-ppb-inpage-category-tab.active');
+    expect(css).toContain('background:#111111');
+    expect(css).toContain('color:#ffffff');
+  });
+});
+
+describe('Product Page bundle cart add transport contract', () => {
+  it('submits PPB cart adds as EB-style multipart fields to /cart/add', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain("fetch('/cart/add',");
+    expect(source).toContain('new FormData()');
+    expect(source).toContain('items[${index}][id]');
+    expect(source).toContain('items[${index}][quantity]');
+    expect(source).toContain('items[${index}][properties][Box]');
+    expect(source).toContain('items[${index}][properties][_easyBundle:OfferId]');
+    expect(source).toContain('items[${index}][properties][_easyBundle:prodQty]');
+    expect(source).not.toContain("fetch('/cart/add.js', {");
+  });
+
+  it('keeps FPB cart adds on JSON /cart/add.js', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
+      'utf8',
+    );
+
+    expect(source).toContain("fetch('/cart/add.js',");
+    expect(source).toContain("'Content-Type': 'application/json'");
+    expect(source).toContain('JSON.stringify({ items })');
+  });
 });

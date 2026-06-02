@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:17
+**Last Updated:** 2026-06-02 10:27
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -268,3 +268,18 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Extended the PPB configure handler's save and sync bundle configuration builders to emit `renderFilledSlotsAsHorizontalStacked` from the EB template mapping.
 - Kept template resolution data-driven from `bundleDesignTemplate` + merchant-selected `bundleDesignPresetId` instead of hardcoded template names.
 - Generated storefront assets already reflect the widget/CSS orientation contract and are included with this slice.
+
+### 2026-06-02 10:26 - PPB in-page category tabs contract coverage started
+- Live storefront proof still shows widget `2.9.21`; source-side parity coverage continues while deployed e2e is pending.
+- Planned change: add focused tests/spec that PPB in-page templates render category tabs from `step.categories`, track active tab state, and filter products by active category.
+
+### 2026-06-02 10:26 - PPB in-page category tabs contract coverage completed
+- Added `test-spec/ppb-inpage-category-tabs.spec.md` for the EB PPB in-page category tab contract.
+- Added widget source/CSS contract coverage that verifies category tabs are rendered from `step.categories`, active category state is tracked, products are filtered by category product IDs, and active tabs use EB-style black/white states.
+- Verification passed: `npx jest tests/unit/assets/bundle-widget-product-page-init.test.ts --runInBand` (25 tests).
+- ESLint on the modified test file returned 0 errors and existing warnings only.
+
+### 2026-06-02 10:27 - PPB multipart cart API parity slice started
+- EB ground truth: PPB posts selected component lines to `/cart/add` as multipart form fields, while FPB posts JSON to `/cart/add.js`.
+- Current WPB PPB storefront widget still posts JSON to `/cart/add.js`, which diverges from EB's PPB Cart Transform `OVERWRITE_LINE_ITEM` flow.
+- Scope: change only PPB storefront add-to-cart transport to EB-style multipart `/cart/add` fields while preserving existing selected component DTOs and line properties.
