@@ -2106,12 +2106,9 @@ class BundleWidgetProductPage {
           });
       } else {
         // Display product with the first available variant when variants are not separate cards.
+        // If all variants are unavailable, keep the configured product visible and
+        // render it as out of stock instead of turning a valid DTO into a load error.
         const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
-
-        // Skip product if default variant is not available
-        if (defaultVariant && defaultVariant.available !== true) {
-          return [];
-        }
 
         // Storefront API: prioritize variant image, fallback to product featured image
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
@@ -2156,6 +2153,9 @@ class BundleWidgetProductPage {
     const product = this.findProductBySelectionKey(products, variantId);
     if (!product) {
       return { available: null, outOfStock: false, acceptsBackorder: false };
+    }
+    if (product.available === false) {
+      return { available: 0, outOfStock: true, acceptsBackorder: false };
     }
     const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
     const backorder = product.currentlyNotInStock === true;

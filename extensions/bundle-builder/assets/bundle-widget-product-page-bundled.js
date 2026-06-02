@@ -4038,10 +4038,6 @@ class BundleWidgetProductPage {
 
         const defaultVariant = product.variants?.find(variant => variant.available === true) || product.variants?.[0];
 
-        if (defaultVariant && defaultVariant.available !== true) {
-          return [];
-        }
-
         const imageUrl = defaultVariant?.image?.src || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
         const processedVariants = (product.variants || []).map(normalizeVariant);
@@ -4082,6 +4078,9 @@ class BundleWidgetProductPage {
     const product = this.findProductBySelectionKey(products, variantId);
     if (!product) {
       return { available: null, outOfStock: false, acceptsBackorder: false };
+    }
+    if (product.available === false) {
+      return { available: 0, outOfStock: true, acceptsBackorder: false };
     }
     const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
     const backorder = product.currentlyNotInStock === true;

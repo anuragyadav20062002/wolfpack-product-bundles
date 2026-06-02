@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:29
+**Last Updated:** 2026-06-02 10:41
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -178,6 +178,10 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Rebuilt widget bundles with `WIDGET_VERSION=2.9.19`; generated PPB bundled asset contains the same app-proxy fallback.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
 - Chrome storefront retry after reload still shows the old product-loading error modal; live asset proof is pending until the Shopify extension/CDN serves the rebuilt `2.9.19` widget.
+- Follow-up Chrome proof after live `2.9.19` served: the modal now requests `/apps/product-bundles/api/storefront-products`; the API returns `200` with the configured product DTO, but the widget still shows the load error because the only returned variant is unavailable and PPB filters it into an empty list.
+- Patched PPB product normalization so unavailable configured products remain visible as out-of-stock cards instead of becoming a false product-loading failure.
+- Patched PPB stock lookup so `available:false` from the Storefront DTO disables the card as out of stock even when `quantityAvailable` is null.
+- Rebuilt widget bundles and re-smoked live PPB after SIT served the new extension asset path: SIMPLIFIED computes to a single 345px slot column, clicking the slot opens the modal, `fetchErrorVisible=false`, and the configured product renders in the product grid.
 
 ### 2026-06-02 10:17 - PPB SIMPLIFIED slot-grid CSS parity slice started
 - EB reference confirms MODAL and SIMPLIFIED both use `PDP_MODAL`; MODAL is a 3-column mini-slot grid and SIMPLIFIED is a single-column full-width slot row.
