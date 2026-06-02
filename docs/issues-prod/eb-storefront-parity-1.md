@@ -34,6 +34,9 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - FPB fixture: active bundle, linked Shopify page, full-page assets served from Shopify CDN, embedded marker config/settings present, product selection worked, Add to Cart succeeded, and cart redirect completed.
 - PPB fixture: product-page widget served version 2.9.38, category product hydrated through storefront-products API, modal selection worked, multipart cart add redirected to `/cart`, and cart showed the new bundle line.
 - Remaining known gaps: EB pixel/template parity still needs deeper per-template comparison; this pass covered bootstrap, marker/config flow, product hydration, and base cart add for fresh SIT fixtures.
+### 2026-06-02 16:11 IST - Post-commit graph drift
+- The commit hook rebuilt graphify after the storefront smoke commit and dirtied `graphify-out/GRAPH_REPORT.md`.
+- Next: commit the graph report refresh separately without amending the completed storefront smoke commit.
 
 
 
