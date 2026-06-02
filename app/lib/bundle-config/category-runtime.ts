@@ -35,6 +35,34 @@ function compactProductReference(value: unknown): Record<string, unknown> | null
     }
   }
 
+  for (const key of ["imageUrl", "description"]) {
+    const fieldValue = product[key];
+    if (typeof fieldValue === "string" && fieldValue.trim()) {
+      reference[key] = fieldValue;
+    }
+  }
+
+  for (const key of ["price", "compareAtPrice"]) {
+    const fieldValue = product[key];
+    if (typeof fieldValue === "number" || (typeof fieldValue === "string" && fieldValue.trim())) {
+      reference[key] = fieldValue;
+    }
+  }
+
+  for (const key of ["images", "variants", "options"]) {
+    const fieldValue = product[key];
+    if (Array.isArray(fieldValue) && fieldValue.length > 0) {
+      reference[key] = fieldValue;
+    }
+  }
+
+  for (const key of ["featuredImage", "image"]) {
+    const fieldValue = product[key];
+    if (fieldValue && typeof fieldValue === "object" && !Array.isArray(fieldValue)) {
+      reference[key] = fieldValue;
+    }
+  }
+
   return Object.keys(reference).length > 0 ? reference : null;
 }
 

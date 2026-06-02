@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.53
+ * Version : 2.9.54
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.53';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.54';
 (function() {
   'use strict';
 
@@ -7469,17 +7469,39 @@ class BundleWidgetFullPage {
 
           if (!response.ok) {
             await response.text();
-            return;
-          }
+          } else {
+            const data = await response.json();
 
-          const data = await response.json();
-
-          if (data.products && data.products.length > 0) {
-            allProducts = allProducts.concat(data.products);
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+            }
           }
         } catch (error) {
         }
       }
+    }
+
+    if (allProducts.length === 0 && Array.isArray(step.categories)) {
+      const hasRenderableCachedProductData = (product) => Boolean(
+        product
+        && typeof product === 'object'
+        && (
+          (Array.isArray(product.variants) && product.variants.length > 0)
+          || (Array.isArray(product.images) && product.images.length > 0)
+          || product.imageUrl
+          || product.featuredImage
+          || product.price
+        )
+      );
+
+      step.categories.forEach(category => {
+        (category.products || []).forEach(product => {
+          if (hasRenderableCachedProductData(product)) allProducts.push(product);
+        });
+        (category.selectedProducts || []).forEach(product => {
+          if (hasRenderableCachedProductData(product)) allProducts.push(product);
+        });
+      });
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {

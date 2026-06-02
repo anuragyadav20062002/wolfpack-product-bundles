@@ -738,3 +738,18 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Since the live page still served widget 2.9.52 from Shopify CDN, manually injected the same HORIZONTAL runtime CSS into Chrome for geometry proof.
 - Result: product cards changed from ~228x214 to ~285x128, images to ~112x124, and Add To Box button to ~145px wide while preserving the HORIZONTAL preset and page layout.
 - Remaining proof item after SIT deploy/CDN refresh: reload the page with widget 2.9.53 and confirm the same geometry comes from the deployed bundle, then compare against EB again for any final width/spacing refinements.
+
+### 2026-06-02 19:52 - FPB category product metafield fallback slice started
+- Live SIT FPB HORIZONTAL reload still served widget 2.9.52, and `storefront-products` returned 500 because the active Cloudflare dev tunnel is unavailable through Shopify app proxy.
+- The page metafield `data-bundle-config` is present, but the active category product is compacted to only `{id,title}`, so the widget cannot render products without the app-proxy product hydration call.
+- Internal architecture says FPB `custom.bundle_config` should eliminate app-proxy dependency for first paint; EB runtime likewise embeds steps/categories as the primary storefront source.
+- Scope: preserve enriched category product fields in the runtime/metafield formatter, and make the widget continue to cached category products when fresh hydration fails instead of returning early.
+
+### 2026-06-02 20:00 - FPB category product metafield fallback slice verified locally
+- Updated `formatStepCategoryForRuntime` so category `products` and `selectedProducts` preserve render-critical product fields (`imageUrl`, images, featured image, price, compare-at price, variants, options, description) instead of reducing every product to ID/title only.
+- Updated FPB `loadStepProducts()` so a non-OK `storefront-products` response no longer returns early and skips later fallback paths.
+- Added a guarded category-product fallback that uses cached category products only when they contain renderable enriched data; ID/title-only stubs are not rendered as broken placeholder products.
+- Bumped widget assets to `2.9.54` and rebuilt widget bundles.
+- Verification passed: `npm run build:widgets`, `node --check app/assets/bundle-widget-full-page.js`, `node --check scripts/build-widget-bundles.js`, modified-file ESLint with 0 errors, and graphify rebuild.
+- Formatter proof passed with `npx tsx`: enriched category products retain image/price/variants in runtime output while compact product references remain compact.
+- Chrome live proof is pending until SIT deploy serves widget 2.9.54 and the FPB page/bundle is re-synced so `custom.bundle_config` contains enriched category products; the current live metafield still contains only `{id,title}` and the app-proxy product API is blocked by the unavailable Cloudflare tunnel.
