@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 17:50 IST
+**Last Updated:** 2026-06-02 18:01 IST
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -635,3 +635,10 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - SIMPLIFIED: persisted SIT PPB fixture to PDP_MODAL/SIMPLIFIED with renderFilledSlotsAsHorizontalStacked false, storefront loaded widget 2.9.43 with body marker SIMPLIFIED, measured closed slot as 345px x 104px, opened modal, selected Cross Necklace, clicked enabled black Add Bundle to Cart • .97, and cart rendered the PPB bundle line with Cross Necklace, Box: 1, and .97.
 - Network proof for the SIMPLIFIED add: cart-bundle-details app-proxy call returned 200, Shopify /cart/add returned 302 to /cart, and the multipart request body carried EB component fields Box, _bundleName, _easyBundle:OfferId, and _easyBundle:prodQty.
 - Cart.js note: merged parent cart lines expose _bundle_name from the Cart Transform output for checkout/display metadata; the widget component add payload itself uses the EB _bundleName/_easyBundle fields.
+
+### 2026-06-02 18:01 IST - Resynced FPB fixture metafield cache and verified cache-first marker
+- Found the current FPB page marker carrying stale cached config with null bundleDesignTemplate and bundleDesignPresetId, causing the widget to use the proxy fallback.
+- Verified the proxy JSON and DB already had bundleDesignTemplate=FBP_SIDE_FOOTER and bundleDesignPresetId=HORIZONTAL, so this was stale fixture/page data rather than a formatter code gap.
+- Reused the app existing full-page page-body refresh and bundle_config/bundle_settings metafield writer helpers for the SIT fixture.
+- Shopify Admin GraphQL confirmed the page metafield now stores FBP_SIDE_FOOTER/HORIZONTAL, and storefront DOM now embeds the same fields in both #bundle-builder-app and the hidden data-wpb-full-page-bundle marker.
+- Remaining bundle JSON request on reload is the intentional post-cache _scheduleLayoutRefresh freshness check, not initial fallback; first-paint marker data is now complete.
