@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 10:54
+**Last Updated:** 2026-06-02 11:08
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -202,6 +202,6 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Live consumed PPB JSON has no slot image fields on the fixture, so the empty visual must use the widget styling fallback unless a merchant image URL is present.
 - Patched PPB modal empty cards to render `.bw-slot-card__empty-visual`; non-modal empty cards keep the previous plus icon.
 - Patched SIMPLIFIED CSS so the empty row uses label-left and visual-right layout with a taller EB-like row.
+- Chrome storefront proof on live widget `2.9.21`: `data-ppb-template-type="PDP_MODAL"`, `data-ppb-design-preset="SIMPLIFIED"`, slot card computes `345px x 100px`, dashed black border, label left, and right visual block computes `76px x 76px` with salmon background.
 - Bumped `WIDGET_VERSION` to `2.9.21`, rebuilt widget bundles, and minified CSS assets.
 - Verification passed: `node --check app/assets/bundle-widget-product-page.js`, `node --check scripts/build-widget-bundles.js`, `npm run build:widgets`, `npm run minify:assets css`, and modified-file ESLint with 0 errors and ignore-pattern warnings only.
-- Chrome storefront reload still serves a widget without `.bw-slot-card__empty-visual`; live e2e proof for the empty visual is pending after SIT deploy/CDN propagation.
