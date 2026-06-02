@@ -6,7 +6,7 @@
  *
  * Note: jest is configured with testEnvironment: 'node' in this repo, so we
  * don't render via testing-library. We unit-test the pure URL helper and
- * lock the JSX contract by reading the component source.
+ * lock the JSX + configure-route wiring contract by reading source.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -52,11 +52,25 @@ describe("UnlistedBundleBanner JSX contract", () => {
     expect(source).toContain("Your bundle is Unlisted");
   });
 
-  it("renders a CTA s-button linking to the Shopify product admin", () => {
-    expect(source).toMatch(/<s-button[^>]*onClick=\{[^}]*window\.open\(adminUrl/);
+  it('renders a "Manage" CTA that delegates navigation to the configure route', () => {
+    expect(source).toMatch(/<s-button[^>]*onClick=\{onManage\}/);
+    expect(source).toMatch(/>\s*Manage\s*<\/s-button>/);
+    expect(source).not.toContain("window.open");
   });
 
-  it("uses the warning tone for the banner", () => {
-    expect(source).toContain('tone="warning"');
+  it("keeps the existing warning presentation", () => {
+    expect(source).toContain('background: "#fff8eb"');
+  });
+});
+
+describe("UnlistedBundleBanner configure route wiring", () => {
+  const routes = [
+    "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx",
+    "app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx",
+  ];
+
+  it.each(routes)("passes the existing product-admin navigation callback in %s", (routePath) => {
+    const source = fs.readFileSync(path.join(process.cwd(), routePath), "utf8");
+    expect(source).toMatch(/<UnlistedBundleBanner[\s\S]*?onManage=\{\(\) => \{[\s\S]*?openProductInAdmin\(productId\);[\s\S]*?\}\}/);
   });
 });

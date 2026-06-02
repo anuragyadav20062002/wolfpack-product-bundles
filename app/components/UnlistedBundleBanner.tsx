@@ -1,6 +1,7 @@
 interface UnlistedBundleBannerProps {
   shop: string;
   bundleProductId: string | null;
+  onManage: () => void;
 }
 
 export function buildShopifyProductAdminUrl(
@@ -16,7 +17,7 @@ export function buildShopifyProductAdminUrl(
   return `https://admin.shopify.com/store/${storeSlug}/products/${numericId}`;
 }
 
-export function UnlistedBundleBanner({ shop, bundleProductId }: UnlistedBundleBannerProps) {
+export function UnlistedBundleBanner({ shop, bundleProductId, onManage }: UnlistedBundleBannerProps) {
   const adminUrl = buildShopifyProductAdminUrl(shop, bundleProductId);
   if (!adminUrl) return null;
 
@@ -62,9 +63,9 @@ export function UnlistedBundleBanner({ shop, bundleProductId }: UnlistedBundleBa
       <s-button
         variant="secondary"
         tone="auto"
-        onClick={() => window.open(adminUrl, "_blank", "noopener,noreferrer")}
+        onClick={onManage}
       >
-        Manage in Shopify Products
+        Manage
       </s-button>
     </div>
   );

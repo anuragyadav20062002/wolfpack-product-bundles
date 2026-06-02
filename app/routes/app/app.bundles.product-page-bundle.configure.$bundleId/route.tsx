@@ -2191,6 +2191,10 @@ export default function ConfigureBundleFlow() {
           <UnlistedBundleBanner
             shop={shop}
             bundleProductId={loadedBundleProduct?.id ?? (bundle as any).shopifyProductId ?? null}
+            onManage={() => {
+              const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
+              if (productId) openProductInAdmin(productId);
+            }}
           />
         )}
 
