@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.39
+ * Version : 2.9.40
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.39';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.40';
 (function() {
   'use strict';
 
@@ -2432,8 +2432,12 @@ class BundleWidgetProductPage {
   }
 
   _usesVerticalModalSlotLayout() {
-    return this._getProductPageTemplateType() === 'PDP_MODAL'
-      && this.selectedBundle?.renderFilledSlotsAsHorizontalStacked !== true;
+    if (this._getProductPageTemplateType() !== 'PDP_MODAL') return false;
+
+    const stackedSetting = this.selectedBundle?.renderFilledSlotsAsHorizontalStacked;
+    if (typeof stackedSetting === 'boolean') return stackedSetting !== true;
+
+    return this._getProductPageDesignPreset() === 'SIMPLIFIED';
   }
 
   _shouldShowProductComparedAtPrice() {

@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 16:32
+**Last Updated:** 2026-06-02 16:44
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -22,6 +22,18 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification: targeted ESLint completed with 0 errors; the checked JS files are ignored by the current ESLint config.
 - Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
 - Chrome SIT PPB smoke on `wpb-sit-sanity-ppb-2026-06-02`: closed modal is hidden/inert and absent from the accessibility tree; slot click opens the dialog, hydrates the Cross Necklace card, and Escape restores hidden/inert state.
+### 2026-06-02 16:44 IST - Started PPB MODAL slot orientation parity slice
+- EB MODAL screenshot shows the closed PDP state as the compact vertical slot card, while WPB fresh SIT MODAL rendered the SIMPLIFIED-style horizontal row when `renderFilledSlotsAsHorizontalStacked` was missing.
+- Scope: keep explicit merchant/runtime `renderFilledSlotsAsHorizontalStacked` behavior when present, but default missing data from the selected PPB template so MODAL and SIMPLIFIED do not collapse into the same closed-state layout.
+### 2026-06-02 16:50 IST - PPB MODAL slot orientation parity slice completed
+- Updated the PPB modal slot orientation fallback: explicit `renderFilledSlotsAsHorizontalStacked` still wins, but missing data now defaults from the selected template preset.
+- Fresh MODAL bundles now default to the EB-style compact slot grid instead of the SIMPLIFIED horizontal row; SIMPLIFIED remains the vertical-row fallback when selected.
+- Bumped widget version to `2.9.40` and rebuilt storefront widget assets.
+- Verification: `node --check app/assets/bundle-widget-product-page.js && node --check scripts/build-widget-bundles.js` passed.
+- Verification: `npm run build:widgets` passed.
+- Verification: targeted ESLint completed with 0 errors; the checked JS files are ignored by the current ESLint config.
+- Verification: graphify rebuild completed; existing graphify invalid `file_type 'source'` warning remains unrelated.
+- Chrome SIT PPB smoke on `wpb-sit-sanity-ppb-2026-06-02`: widget version `2.9.40`, template `PDP_MODAL/MODAL`, `data-ppb-slot-orientation="horizontal"`, slot grid measured `104.32px 104.32px 104.32px`, first slot card measured `104.32px x 178px`, modal remained hidden before slot open.
 ### 2026-06-02 16:11 IST - SIT fixture storefront sanity
 - Created fresh SIT PPB and FPB fixtures after the Render DB reset and activated both through the normal configure save flow.
 - PPB storefront product URL bootstrapped `bundle-widget-product-page-bundled.js` at widget version 2.9.36 with product-page markers and compare-at text gated off.

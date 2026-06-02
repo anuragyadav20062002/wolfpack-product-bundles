@@ -418,8 +418,12 @@ class BundleWidgetProductPage {
   }
 
   _usesVerticalModalSlotLayout() {
-    return this._getProductPageTemplateType() === 'PDP_MODAL'
-      && this.selectedBundle?.renderFilledSlotsAsHorizontalStacked !== true;
+    if (this._getProductPageTemplateType() !== 'PDP_MODAL') return false;
+
+    const stackedSetting = this.selectedBundle?.renderFilledSlotsAsHorizontalStacked;
+    if (typeof stackedSetting === 'boolean') return stackedSetting !== true;
+
+    return this._getProductPageDesignPreset() === 'SIMPLIFIED';
   }
 
   _shouldShowProductComparedAtPrice() {
