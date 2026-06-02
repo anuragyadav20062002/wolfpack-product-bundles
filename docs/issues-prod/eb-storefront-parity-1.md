@@ -602,3 +602,14 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Fixed the PPB MODAL base CTA CSS so enabled state is black while disabled state remains gray; regenerated minified CSS asset.
 - Chrome proof after fix: selecting Cross Necklace closes the modal, fills the slot, enables Add Bundle to Cart • .97, and computes the enabled CTA background as rgb(0, 0, 0).
 - Checks completed: npm run minify:assets css, graphify code rebuild, and Chrome SIT persisted PPB MODAL smoke.
+
+### 2026-06-02 17:33 IST - Completed FPB fresh-SIT preset sanity and stale metafield fallback fix
+- Fresh SIT FPB DEFAULT app-proxy smoke passed: Shopify page preserved store header/footer, widget loaded FBP_SIDE_FOOTER/DEFAULT, gray page background, category tab, product card, selection summary, and cart add produced a cart line for Cross Necklace with Box: 1 and .97.
+- While cycling presets, found DB and Shopify Admin page metafield updated to CLASSIC but Liquid still injected a stale custom.bundle_config payload with null bundleDesignTemplate and null bundleDesignPresetId, causing the widget to keep DEFAULT.
+- Fixed the FPB loader to treat cached full-page config without bundleDesignTemplate and bundleDesignPresetId as incomplete/malformed, preserving metafield-first loading while using the existing proxy fallback when critical template keys are missing.
+- Extended the background layout refresh to compare and update bundleDesignTemplate, bundleDesignPresetId, and bundleDesignTemplateData, not only fullPageLayout.
+- Rebuilt widget version 2.9.43 and verified CLASSIC, COMPACT, and HORIZONTAL by updating the SIT DB row plus page custom.bundle_config metafield, then hard reloading the storefront.
+- CLASSIC proof: marker CLASSIC, header/footer present, compare/current prices rendered, selected product summary rendered, and 198px black Add to Cart CTA enabled.
+- COMPACT proof: marker COMPACT, header/footer present, selected product summary rendered, and 198px black Add to Cart CTA enabled.
+- HORIZONTAL proof: marker HORIZONTAL, header/footer present, product card used horizontal grid sizing, selected product summary rendered, and wide black Add to Cart CTA enabled.
+- Checks completed: npm run build:widgets, npm run minify:assets css, node --check for modified JS files, eslint on modified JS files, graphify code rebuild, and Chrome SIT FPB storefront smokes.

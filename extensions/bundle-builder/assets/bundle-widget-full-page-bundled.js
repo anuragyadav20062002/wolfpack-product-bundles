@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.42
+ * Version : 2.9.43
  * Built   : 2026-06-02
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.42';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.43';
 (function() {
   'use strict';
 
@@ -3248,7 +3248,8 @@ class BundleWidgetFullPage {
       if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
         try {
           const parsed = JSON.parse(cachedConfig);
-          if (parsed && typeof parsed === 'object' && parsed.id) {
+          const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
+          if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
             bundleData = { [parsed.id]: parsed };
           }
         } catch (_e) {
@@ -8927,13 +8928,21 @@ class BundleWidgetFullPage {
 
       const freshLayout = this.resolveFullPageLayout(data.bundle);
       const currentLayout = this.resolveFullPageLayout();
+      const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
+      const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
+      const freshPreset = data.bundle.bundleDesignPresetId ?? null;
+      const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
 
-      if (freshLayout !== currentLayout && this.selectedBundle) {
+      if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
         this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
         this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
+        this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
+        this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
         if (this.bundleData?.[bundleId]) {
           this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
           this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
+          this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
+          this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
         }
         await this.renderSteps();
       }
