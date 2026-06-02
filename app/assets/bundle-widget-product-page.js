@@ -1272,7 +1272,7 @@ class BundleWidgetProductPage {
 
   _createInpageCategoryTabs(step, stepIndex) {
     const categories = Array.isArray(step?.categories) ? step.categories : [];
-    if (categories.length <= 1) return null;
+    if (categories.length === 0) return null;
 
     if (typeof this.activeInpageCategoryIndexes[stepIndex] !== 'number') {
       this.activeInpageCategoryIndexes[stepIndex] = 0;

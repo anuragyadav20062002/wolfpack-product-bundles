@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-02
-**Last Updated:** 2026-06-02 17:02
+**Last Updated:** {ts}
 
 ## Overview
 Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, consumed JSON, metafields, template dispatch/designs, cart behavior, and per-template e2e proof.
@@ -53,6 +53,11 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Closed-state persisted measurements matched the EB SIMPLIFIED target: grid `345px`, slot card `345px x 104px`, dashed black `2px` border, `10px` radius, `0px` padding, visual hidden, centered `16px/700` label, and black `345px x 45px` CTA.
 - Slot click opened the gated modal, hydrated the Cross Necklace product card, selecting it changed the modal button to `SELECTED` and enabled the main CTA as `Add Bundle to Cart • $4.97`.
 - This closes the prior SIMPLIFIED e2e caveat for the fresh SIT fixture; remaining PPB template work still includes persisted MODAL, CASCADE, and COGNIVE per-template smoke and visual comparison.
+### 2026-06-02 17:06 IST - Started PPB CASCADE persisted template smoke
+- Updated the fresh SIT PPB fixture row and Shopify parent variant `$app.bundle_ui_config` metafield to `bundleDesignTemplate: "PDP_INPAGE"`, `bundleDesignPresetId: "CASCADE"`, and `bundleDesignTemplateData.templateId: "CASCADE"`.
+- Storefront reload loaded the persisted config as widget version `2.9.41`, `data-ppb-template-type="PDP_INPAGE"`, `data-ppb-design-preset="CASCADE"`, and body `gbbmix-template-id="CASCADE"`.
+- CASCADE product row rendered and hydrated Cross Necklace with `$4.97` and black `Add +` CTA, but the in-page category tabs were absent because WPB suppressed tabs when a step has only one category.
+- EB CASCADE evidence keeps category/tab UI as part of the in-page product-list surface; scope this slice to render the category tabs whenever at least one category exists.
 ### 2026-06-02 16:11 IST - SIT fixture storefront sanity
 - Created fresh SIT PPB and FPB fixtures after the Render DB reset and activated both through the normal configure save flow.
 - PPB storefront product URL bootstrapped `bundle-widget-product-page-bundled.js` at widget version 2.9.36 with product-page markers and compare-at text gated off.
@@ -577,3 +582,9 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Preserved the existing generic icon-mode layout for other FPB templates while letting COMPACT override the later desktop icon-mode rule through variables.
 - Removed a redundant icon-mode selected-card override to keep the generated full-page CSS below Shopify's app-block asset limit.
 - Verification: `npm run minify:assets css` completed successfully; `extensions/bundle-builder/assets/bundle-widget-full-page.css` generated under the 100,000 B Shopify limit.
+
+### 2026-06-02 17:10 IST - Completed PPB CASCADE single-category storefront smoke
+- Persisted SIT PPB fixture remained on PDP_INPAGE/CASCADE and storefront loaded widget version 2.9.42.
+- Confirmed the CASCADE in-page product list now renders the category tab even when the bundle has a single category.
+- Confirmed the Cross Necklace product row still renders with price and Add control, and selecting it updates the product button to Selected and enables the main Add Bundle to Cart CTA with .97 total.
+- Checks completed: npm run build:widgets, node --check for modified JS files, eslint on modified JS files, graphify code rebuild, and Chrome SIT PPB CASCADE smoke.
