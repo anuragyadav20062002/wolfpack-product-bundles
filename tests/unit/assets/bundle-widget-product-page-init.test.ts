@@ -348,8 +348,8 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty');
     expect(css).toContain('.bw-ppb-dynamic-checkout-visual');
     expect(css).toContain('background:#111111');
-    expect(css).toContain('width:360px');
-    expect(css).toContain('grid-template-columns:repeat(3,110.66px)');
+    expect(css).toContain('width:100%');
+    expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
   });
 
   it('drives EB modal slot orientation from consumed JSON instead of the template label alone', () => {
@@ -423,6 +423,46 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('border:2px dashed #000000');
   });
 
+  it('renders PPB Vertical Slots with EB SIMPLIFIED storefront row styling', () => {
+    const modalSlotTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    const verticalStart = css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .bundle-steps');
+    const horizontalStart = css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"]', verticalStart);
+    const verticalCss = css.slice(verticalStart, horizontalStart);
+
+    expect(verticalStart).toBeGreaterThan(-1);
+    expect(horizontalStart).toBeGreaterThan(verticalStart);
+    expect(modalSlotTemplate).toContain("this._getProductPageDesignPreset() === 'SIMPLIFIED'");
+    expect(modalSlotTemplate).toContain("label.textContent = isModalSlotTemplate ? `Product ${slotNumber}`");
+
+    expect(verticalCss).toContain('width:100%');
+    expect(verticalCss).toContain('max-width:100%');
+    expect(verticalCss).toContain('gap:26px');
+    expect(verticalCss).toContain('height:104px');
+    expect(verticalCss).toContain('min-height:104px');
+    expect(verticalCss).toContain('border:2px dashed #000000');
+    expect(verticalCss).toContain('border-radius:10px');
+    expect(verticalCss).toContain('grid-template-columns:minmax(0, 1fr) 80px');
+    expect(verticalCss).toContain('padding:10px');
+    expect(verticalCss).toContain('width:80px');
+    expect(verticalCss).toContain('height:80px');
+    expect(verticalCss).toContain('object-fit:contain');
+    expect(verticalCss).toContain('font-size:16px');
+    expect(verticalCss).toContain('color:#3e3e3e');
+    expect(verticalCss).toContain('background:#000000 !important');
+    expect(verticalCss).toContain('opacity:0.5');
+    expect(verticalCss).toContain('font-weight:500');
+    expect(verticalCss).toContain('@media (max-width:480px)');
+    expect(verticalCss).toContain('font-size:10px');
+  });
+
   it('keeps PPB Product List and Horizontal Slots container responsive on wider storefront placements', () => {
     const css = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
@@ -434,10 +474,7 @@ describe('Product Page modal-slot visual contract', () => {
       css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid'),
     );
     const modalStart = css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] {');
-    const modalCss = css.slice(
-      modalStart,
-      css.indexOf('@media (max-width:480px)', modalStart),
-    );
+    const modalCss = css.slice(modalStart);
 
     expect(cascadeCss).not.toContain('max-width:345px');
     expect(cascadeCss).toContain('max-width:none');
@@ -445,6 +482,8 @@ describe('Product Page modal-slot visual contract', () => {
 
     expect(modalCss).not.toContain('width:345px');
     expect(modalCss).not.toContain('max-width:345px');
+    expect(modalCss).not.toContain('width:360px');
+    expect(modalCss).not.toContain('max-width:calc(100vw - 30px)');
     expect(modalCss).toContain('width:100%');
     expect(modalCss).toContain('max-width:100%');
     expect(modalCss).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
