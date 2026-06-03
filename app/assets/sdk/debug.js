@@ -25,7 +25,7 @@ function initDebugMode(state, sdk) {
   ];
   events.forEach(function (name) {
     window.addEventListener(name, function (e) {
-      console.log('[WolfpackBundles] Event:', name, (e as CustomEvent).detail);
+      console.log('[WolfpackBundles] Event:', name, e.detail);
     });
   });
 }

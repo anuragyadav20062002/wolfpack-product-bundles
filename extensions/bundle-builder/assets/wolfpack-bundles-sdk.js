@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 2.9.54
- * Built   : 2026-06-02
+ * Version : 2.9.55
+ * Built   : 2026-06-03
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.54';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '2.9.55';
 (function (window) {
   'use strict';
 
@@ -2443,7 +2443,6 @@ function clearStep(state, stepId) {
   return { success: true };
 }
 
-}
 
 
 
@@ -2489,7 +2488,6 @@ function loadBundleConfig(container, state) {
   return { success: true };
 }
 
-}
 
 
 
@@ -2501,7 +2499,6 @@ function emit(eventName, detail) {
   }
 }
 
-}
 
 
 
@@ -2752,7 +2749,6 @@ function addBundleToCart(state, validateBundleFn, emitFn) {
     });
 }
 
-}
 
 
 
@@ -2806,7 +2802,6 @@ function validateBundle(state, ConditionValidator) {
   return { valid: Object.keys(errors).length === 0, errors: errors };
 }
 
-}
 
 
 
@@ -2855,7 +2850,6 @@ function getDisplayPrice(state, PricingCalculator, CurrencyManager) {
   };
 }
 
-}
 
 
 
@@ -2884,7 +2878,7 @@ function initDebugMode(state, sdk) {
   ];
   events.forEach(function (name) {
     window.addEventListener(name, function (e) {
-      console.log('[WolfpackBundles] Event:', name, (e as CustomEvent).detail);
+      console.log('[WolfpackBundles] Event:', name, e.detail);
     });
   });
 }
@@ -2894,7 +2888,6 @@ function debugLog() {
   console.log.apply(console, ['[WolfpackBundles]'].concat(Array.prototype.slice.call(arguments)));
 }
 
-}
 
 
   // ============================================================================

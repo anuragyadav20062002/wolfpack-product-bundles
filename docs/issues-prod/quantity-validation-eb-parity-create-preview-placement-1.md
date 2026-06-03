@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-03
-**Last Updated:** 2026-06-03 15:32
+**Last Updated:** 2026-06-03 19:38
 
 ## Overview
 
@@ -48,6 +48,16 @@ Replicate EB's Enable Quantity Validation card behavior in FPB and PPB configure
 - Preparing the Slot Icon / Design Control Panel constraint commit.
 - Scope: document that the old Design Control Panel implementation is not the owner for Slot Icon and that Slot Icon remains a per-bundle Bundle Settings control only.
 - No code route to the old Design Control Panel is being added for Slot Icon.
+
+### 2026-06-03 19:38 - Post-rebase widget rebuild
+- Rebasing onto `origin/feature/26.05-UI-changes` required resolving widget source conflicts against upstream widget version `2.9.54`.
+- Preparing a final widget version bump to `2.9.55` and rebuild so bundled storefront assets match the rebased FPB/PPB source behavior.
+- Updating the staging Chrome DevTools test plan to expect the post-rebase widget version.
+
+### 2026-06-03 19:43 - Post-rebase rebuild verified
+- Fixed SDK bundle generation to strip CommonJS export guards safely and removed a TypeScript-only cast from `app/assets/sdk/debug.js`.
+- Rebuilt widget assets with `npm run build:widgets`; bundled FPB, PPB, and SDK assets now report version `2.9.55`.
+- Verification: widget and SDK `node --check` passed, 9 focused Jest tests passed, ESLint completed with 0 errors for changed JS files, and `git diff --check` passed.
 
 ## Related Documentation
 

@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-03
-**Last Updated:** 2026-06-03 19:14
+**Last Updated:** 2026-06-03 19:38
 
 ## Overview
 Create a Chrome DevTools test handoff for the latest five commits so the combined staging deployment can be verified in the embedded Shopify Admin UI and storefront.
@@ -27,6 +27,9 @@ Create a Chrome DevTools test handoff for the latest five commits so the combine
 ### 2026-06-03 19:14 - Preparing Final Testing Plan Commit
 - Keeping `docs/testing/chromedevtools-staging-regression-plan.md` as the final testing file for the combined staging push.
 - Preparing a separate docs commit after the implementation checkpoint commit.
+
+### 2026-06-03 19:38 - Post-rebase version update
+- Updating the final staging plan to expect widget version `2.9.55` after rebasing onto the newer upstream widget build.
 
 ## Related Documentation
 - docs/testing/chromedevtools-staging-regression-plan.md

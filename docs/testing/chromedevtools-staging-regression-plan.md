@@ -37,7 +37,7 @@ These commits are expected to be present together on staging:
 console.log(window.__BUNDLE_WIDGET_VERSION__)
 ```
 
-Expected final widget version: `2.9.12`.
+Expected final widget version: `2.9.55`.
 
 If the widget version is lower, stop. The storefront bundle assets are not updated yet.
 
@@ -239,7 +239,7 @@ Save the bundle first to generate a preview URL.
 | Area | Pass/Fail | Notes |
 |---|---|---|
 | Staging app loads in embedded Admin |  |  |
-| Widget version is `2.9.12` |  |  |
+| Widget version is `2.9.55` |  |  |
 | Unlisted banner button says `Manage` |  |  |
 | `Manage` opens Shopify Products modal |  |  |
 | Bundle Product `Edit Product` opens same modal |  |  |
@@ -272,7 +272,7 @@ Save the bundle first to generate a preview URL.
 Stop and report a blocker if any of these happen:
 
 - Staging does not include the pushed commits.
-- Storefront widget version is not `2.9.12`.
+- Storefront widget version is not `2.9.55`.
 - Chrome DevTools cannot access the embedded app iframe and keyboard navigation cannot interact with it.
 - The bundle cannot be saved due to an unrelated backend/auth error.
 - A storefront-visible change cannot be verified on both desktop and mobile.
