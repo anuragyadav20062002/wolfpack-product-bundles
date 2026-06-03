@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import { handleCreateBundle } from "../app.dashboard/handlers/handlers.server";
 import { BundleType } from "../../../constants/bundle";
-import { hidePolarisModal, showPolarisModal } from "../_shared/bundle-configure/modal-utils";
+import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -79,10 +79,6 @@ export default function CreateBundleWizard() {
     showPolarisModal(nameModalRef);
   }, [bundleType, t]);
 
-  const handleCancelNameModal = useCallback(() => {
-    hidePolarisModal(nameModalRef);
-  }, []);
-
   const handleSaveName = useCallback(() => {
     const name = bundleName.trim();
     if (!name) {
@@ -123,7 +119,6 @@ export default function CreateBundleWizard() {
 
         <div className={styles.formContent}>
             <div className={styles.formSection}>
-              <h2 className={styles.sectionTitle}>{t("createBundle.bundleType.heading")}</h2>
               {bundleTypeError && <p className={styles.errorText}>{bundleTypeError}</p>}
               <div className={styles.bundleTypeGrid}>
                 <div
@@ -178,17 +173,6 @@ export default function CreateBundleWizard() {
             ? t("createBundle.bundleType.fullPage.title")
             : t("createBundle.bundleType.productPage.title")}
         >
-          <s-button
-            slot="primaryAction"
-            variant="primary"
-            loading={isSubmitting || undefined}
-            onClick={handleSaveName}
-          >
-            {t("createBundle.actions.next")}
-          </s-button>
-          <s-button slot="secondaryActions" onClick={handleCancelNameModal}>
-            {t("dashboard.deleteModal.cancel")}
-          </s-button>
           <Form method="post" className={styles.modalForm}>
             <s-text-field
               ref={bundleNameRef}
@@ -202,6 +186,15 @@ export default function CreateBundleWizard() {
             />
             {bundleType && <input type="hidden" name="bundleType" value={bundleType} />}
             <button ref={submitButtonRef} type="submit" style={{ display: "none" }} aria-hidden="true" />
+            <div className={styles.modalActions}>
+              <s-button
+                variant="primary"
+                loading={isSubmitting || undefined}
+                onClick={handleSaveName}
+              >
+                Save
+              </s-button>
+            </div>
           </Form>
         </s-modal>
 

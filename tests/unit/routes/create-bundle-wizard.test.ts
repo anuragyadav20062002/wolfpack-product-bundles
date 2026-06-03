@@ -151,7 +151,6 @@ describe("app.bundles.create action", () => {
     const request = makeRequest({
       bundleName: "Full Page Test",
       bundleType: "full_page",
-      description: "A description",
     });
 
     await action({ request, params: {}, context: {} } as any);

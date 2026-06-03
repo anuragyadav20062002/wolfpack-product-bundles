@@ -418,7 +418,6 @@ export async function handleCreateBundle(
   try {
     const productInput: any = {
       title: bundleName,
-      descriptionHtml: "",
       productType: "Bundle",
       vendor: "Wolfpack: Product Bundles",
       status: "DRAFT",
@@ -482,7 +481,6 @@ export async function handleCreateBundle(
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: "",
         shopId: session.shop,
         bundleType: bundleType as any,
         fullPageLayout: bundleType === BundleType.FULL_PAGE ? FullPageLayout.FOOTER_BOTTOM : null,

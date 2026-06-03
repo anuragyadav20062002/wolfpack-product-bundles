@@ -47,6 +47,12 @@
   display: block;
 }
 
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
 .errorText {
   margin: -4px 0 0;
   color: #8e1f0b;

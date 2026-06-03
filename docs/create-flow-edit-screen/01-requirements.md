@@ -23,7 +23,7 @@ Existing references:
 
 ## Out of Scope
 - Storefront widget design changes.
-- New DCP controls.
+- New storefront design controls. Design customization now lives under Settings.
 - Rebuilding EB parity for configure sections in this issue.
 - Shopify extension deploy.
 - Description capture during creation.
