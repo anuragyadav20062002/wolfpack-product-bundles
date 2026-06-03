@@ -1,6 +1,7 @@
 import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { useState, useRef, useEffect, useCallback, Fragment } from "react";
+import { useTranslation } from "react-i18next";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import { handleCreateBundle } from "../app.dashboard/handlers/handlers.server";
 import { BundleType } from "../../../constants/bundle";
@@ -27,15 +28,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 const STEPS = [
-  { num: "01", label: "Bundle name\n& Description" },
-  { num: "02", label: "Configuration" },
-  { num: "03", label: "Pricing" },
-  { num: "04", label: "Assets" },
+  { num: "01", key: "details" },
+  { num: "02", key: "configuration" },
+  { num: "03", key: "pricing" },
+  { num: "04", key: "assets" },
 ];
 
 export default function CreateBundleWizard() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const isSubmitting = navigation.state === "submitting";
 
   const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
@@ -62,38 +64,38 @@ export default function CreateBundleWizard() {
   const handleNext = useCallback(() => {
     const name = bundleName.trim();
     if (!name) {
-      setBundleNameError("Bundle name is required");
+      setBundleNameError(t("createBundle.validation.required"));
       bundleNameRef.current?.focus?.();
       return;
     }
     if (name.length < 3) {
-      setBundleNameError("Bundle name must be at least 3 characters");
+      setBundleNameError(t("createBundle.validation.minLength"));
       bundleNameRef.current?.focus?.();
       return;
     }
     setBundleNameError(null);
     submitButtonRef.current?.click();
-  }, [bundleName]);
+  }, [bundleName, t]);
 
   return (
     <>
-      <ui-title-bar title="Create Bundle">
+      <ui-title-bar title={t("createBundle.title")}>
         <button variant="breadcrumb" onClick={() => window.history.back()}>
-          Dashboard
+          {t("createBundle.dashboard")}
         </button>
       </ui-title-bar>
 
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.pageHeaderLeft}>
-            <h1 className={styles.pageTitle}>Select bundle builder type</h1>
+            <h1 className={styles.pageTitle}>{t("createBundle.heading")}</h1>
           </div>
           <s-button
             variant="secondary"
             href="https://wolfpackapps.com"
             target="_blank"
           >
-            How do bundle builder types work?
+            {t("createBundle.help")}
           </s-button>
         </div>
 
@@ -105,12 +107,12 @@ export default function CreateBundleWizard() {
                 {idx === 0 ? (
                   <>
                     <div className={styles.stepCircleActive}>{step.num}</div>
-                    <span className={styles.stepLabelActive}>{step.label}</span>
+                    <span className={styles.stepLabelActive}>{t(`createBundle.steps.${step.key}`)}</span>
                   </>
                 ) : (
                   <>
                     <span className={styles.stepNumFuture}>{step.num}</span>
-                    <span className={styles.stepLabelFuture}>{step.label}</span>
+                    <span className={styles.stepLabelFuture}>{t(`createBundle.steps.${step.key}`)}</span>
                   </>
                 )}
               </div>
@@ -123,41 +125,41 @@ export default function CreateBundleWizard() {
             <div className={styles.fieldsGroup}>
               <s-text-field
                 ref={bundleNameRef}
-                label="Bundle name"
+                label={t("createBundle.fields.name")}
                 name="bundleName"
-                placeholder="Eg:- T-shirt bundle"
+                placeholder={t("createBundle.fields.namePlaceholder")}
                 autocomplete="off"
                 error={bundleNameError ?? serverError ?? undefined}
               />
               <s-text-area
-                label="Description"
+                label={t("createBundle.fields.description")}
                 name="description"
-                placeholder="Eg:- This is a T-shirt bundle"
+                placeholder={t("createBundle.fields.descriptionPlaceholder")}
                 rows={3}
                 autocomplete="off"
               />
             </div>
 
             <div className={styles.formSection}>
-              <h2 className={styles.sectionTitle}>Bundle Type</h2>
+              <h2 className={styles.sectionTitle}>{t("createBundle.bundleType.heading")}</h2>
               <div className={styles.bundleTypeGrid}>
                 <div
                   className={`${styles.bundleTypeCard} ${bundleType === BundleType.PRODUCT_PAGE ? styles.bundleTypeCardSelected : ""}`}
                   onClick={() => handleSelectBundleType(BundleType.PRODUCT_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <img src="/ppb.png" alt="Product page bundle" className={styles.bundleThumbnailImg} />
+                    <img src="/ppb.png" alt={t("createBundle.bundleType.productPage.alt")} className={styles.bundleThumbnailImg} />
                   </div>
                   <div className={styles.bundleCardBody}>
                     <div className={styles.bundleCardText}>
-                      <strong>Product page bundle builder</strong>
-                      <p>Display bundle builder on existing product pages (recommended for most stores)</p>
+                      <strong>{t("createBundle.bundleType.productPage.title")}</strong>
+                      <p>{t("createBundle.bundleType.productPage.description")}</p>
                     </div>
                     <s-button
                       variant={bundleType === BundleType.PRODUCT_PAGE ? "primary" : "secondary"}
                       onClick={(e: Event) => { e.stopPropagation(); handleSelectBundleType(BundleType.PRODUCT_PAGE); }}
                     >
-                      {bundleType === BundleType.PRODUCT_PAGE ? "Selected" : "Select"}
+                      {bundleType === BundleType.PRODUCT_PAGE ? t("createBundle.actions.selected") : t("createBundle.actions.select")}
                     </s-button>
                   </div>
                 </div>
@@ -167,18 +169,18 @@ export default function CreateBundleWizard() {
                   onClick={() => handleSelectBundleType(BundleType.FULL_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <img src="/fpb.png" alt="Full page bundle" className={styles.bundleThumbnailImg} />
+                    <img src="/fpb.png" alt={t("createBundle.bundleType.fullPage.alt")} className={styles.bundleThumbnailImg} />
                   </div>
                   <div className={styles.bundleCardBody}>
                     <div className={styles.bundleCardText}>
-                      <strong>Full page bundle builder</strong>
-                      <p>Create a dedicated landing page for your bundle with tabs and full customization</p>
+                      <strong>{t("createBundle.bundleType.fullPage.title")}</strong>
+                      <p>{t("createBundle.bundleType.fullPage.description")}</p>
                     </div>
                     <s-button
                       variant={bundleType === BundleType.FULL_PAGE ? "primary" : "secondary"}
                       onClick={(e: Event) => { e.stopPropagation(); handleSelectBundleType(BundleType.FULL_PAGE); }}
                     >
-                      {bundleType === BundleType.FULL_PAGE ? "Selected" : "Select"}
+                      {bundleType === BundleType.FULL_PAGE ? t("createBundle.actions.selected") : t("createBundle.actions.select")}
                     </s-button>
                   </div>
                 </div>
@@ -197,7 +199,7 @@ export default function CreateBundleWizard() {
             loading={isSubmitting || undefined}
             onClick={handleNext}
           >
-            Next
+            {t("createBundle.actions.next")}
           </s-button>
         </div>
       </div>

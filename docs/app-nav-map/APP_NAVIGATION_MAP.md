@@ -44,6 +44,8 @@ Dashboard
 ├── Subheader: "Access your bundles, customer support & more."
 │
 ├── [Button] "Create Bundle"  → opens Create Bundle Modal
+├── Language selector
+│   └── [Button] "Save" → persists one shop-wide embedded Admin UI language for all staff accounts
 │
 ├── Section: "Your Bundles"
 │   └── DataTable of bundles (empty state if none exist)
@@ -87,6 +89,16 @@ Create Bundle Wizard (Step 01 of 05)
 │       ├── Floating cart card (footer_bottom)
 │       └── Side Panel (footer_side)
 └── [Button] "Next" → POST action → redirect to configure page
+```
+
+Create Bundle Configure Wizard (`/app/bundles/create/configure/:bundleId`)
+```
+├── Header
+│   ├── [Button] "Preview" → opens wizard preview URL through app-embed gate
+│   └── [Button] "How to configure?" → help docs
+├── Step indicator
+├── Main wizard content
+└── Footer: [Back] [Next/Finish]
 ```
 
 #### Modal: Delete Bundle Confirmation
@@ -326,7 +338,14 @@ PPB Configure Page
 │   │   ├── Multi Language
 │   │   └── Browse Products (Shopify resource picker)
 │   ├── Enable Quantity Validation
+│   │   ├── Enable toggle
 │   │   ├── Maximum allowed quantity per product
+│   │   ├── Pro Tip banner
+│   │   ├── Product Slots toggle
+│   │   ├── Product Slots helper text
+│   │   ├── Slot Icon: [Change Icon] opens bundle-level image picker; [Reset] clears icon
+│   │   ├── Slot Icon scope: per-bundle Bundle Settings control only; no Design Control Panel route
+│   │   ├── Note: only applies when rules are quantity-based
 │   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
 │   ├── Cart line item discount display
 │   │   └── [Button] "Edit Defaults" → /app/settings

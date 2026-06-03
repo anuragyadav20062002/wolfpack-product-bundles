@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface AppEmbedBannerProps {
   appEmbedEnabled: boolean;
@@ -7,6 +8,7 @@ interface AppEmbedBannerProps {
 
 export function AppEmbedBanner({ appEmbedEnabled, themeEditorUrl }: AppEmbedBannerProps) {
   const [dismissed, setDismissed] = useState(false);
+  const { t } = useTranslation();
 
   if (appEmbedEnabled || dismissed) return null;
 
@@ -45,18 +47,18 @@ export function AppEmbedBanner({ appEmbedEnabled, themeEditorUrl }: AppEmbedBann
         !
       </span>
       <span style={{ flex: 1, minWidth: 0, color: "#202223", fontSize: 13, lineHeight: 1.35 }}>
-        Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle.
+        {t("common.appEmbed.body")}
       </span>
       {themeEditorUrl && (
         <s-button
           variant="secondary"
           onClick={() => window.open(themeEditorUrl, "_blank")}
         >
-          Enable here
+          {t("common.actions.enableHere")}
         </s-button>
       )}
       <button
-        aria-label="Dismiss"
+        aria-label={t("common.actions.dismiss")}
         onClick={() => setDismissed(true)}
         style={{
           flex: "0 0 auto",

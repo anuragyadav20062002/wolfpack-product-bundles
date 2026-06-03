@@ -1430,13 +1430,22 @@ export default function WizardConfigureStep() {
             />
             <h1 className={styles.pageTitle}>{pageTitle}</h1>
           </div>
-          <s-button
-            variant="secondary"
-            href="https://wolfpackapps.com/docs/bundle-configuration"
-            target="_blank"
-          >
-            How to configure?
-          </s-button>
+          <s-stack direction="inline" gap="small">
+            <s-button
+              variant="secondary"
+              icon="view"
+              onClick={handleWizardPreview}
+            >
+              Preview
+            </s-button>
+            <s-button
+              variant="secondary"
+              href="https://wolfpackapps.com/docs/bundle-configuration"
+              target="_blank"
+            >
+              How to configure?
+            </s-button>
+          </s-stack>
         </div>
 
         {/* Step indicator — dynamic based on wizardStep */}
@@ -1881,7 +1890,6 @@ export default function WizardConfigureStep() {
                   filtersCount={filtersCount}
                   searchBarEnabled={searchBarEnabled}
                   customFieldsCount={customFieldsCount}
-                  onPreview={handleWizardPreview}
                 />
 
                 <s-banner tone="info" heading="PRO TIP">
@@ -1892,9 +1900,6 @@ export default function WizardConfigureStep() {
                 <div className={styles.wizardFooter}>
                   <s-button variant="secondary" onClick={handleBack}>
                     Back
-                  </s-button>
-                  <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
-                    Preview
                   </s-button>
                   <s-button
                     variant="primary"
@@ -2248,9 +2253,6 @@ export default function WizardConfigureStep() {
               <s-button variant="secondary" onClick={handleBack}>
                 Back
               </s-button>
-              <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
-                Preview
-              </s-button>
               <s-button
                 variant="primary"
                 disabled={isAnyWizardSaveInFlight || undefined}
@@ -2397,9 +2399,6 @@ export default function WizardConfigureStep() {
             <div className={styles.wizardFooter}>
               <s-button variant="secondary" onClick={handleBack}>
                 Back
-              </s-button>
-              <s-button variant="secondary" icon="view" onClick={handleWizardPreview}>
-                Preview
               </s-button>
               <s-button
                 variant="primary"

@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`UnlistedBundleBanner` warns merchants that the bundle's parent product is Unlisted and provides a direct link to the Shopify Products admin so they can flip Status to Active.
+`UnlistedBundleBanner` warns merchants that the bundle's parent product is Unlisted and provides a `Manage` action so they can flip Status to Active. The configure route supplies the same App Bridge navigation callback used by the Bundle Product card's `Edit Product` button.
 
 Helper `buildShopifyProductAdminUrl(shop, productId)` extracts the numeric product id from a GID like `gid://shopify/Product/12345` and returns `https://admin.shopify.com/store/{store-name}/products/12345`.
 
@@ -25,11 +25,12 @@ Helper `buildShopifyProductAdminUrl(shop, productId)` extracts the numeric produ
 | # | Scenario | Assertion |
 |---|---|---|
 | 6 | `productId = null` → component returns null | `container.innerHTML === ""` |
-| 7 | `productId = "gid://shopify/Product/12345"` → banner mounts | rendered HTML contains "Your bundle is Unlisted" + a link to `/store/s/products/12345` |
-| 8 | Component is a function component (no class) | `typeof UnlistedBundleBanner === "function"` |
+| 7 | `productId = "gid://shopify/Product/12345"` → banner mounts | rendered HTML contains "Your bundle is Unlisted" + CTA label "Manage" |
+| 8 | CTA clicked | supplied `onManage` callback runs instead of opening a new tab directly |
+| 9 | FPB + PPB configure routes render banner | both routes pass their existing `openProductInAdmin` navigation through `onManage` |
 
 ## Acceptance Criteria
 
-- [ ] All 8 test cases pass
-- [ ] Helper is pure
-- [ ] No competitor keywords in source
+- [x] All 9 test cases pass
+- [x] Helper is pure
+- [x] No competitor keywords in source

@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 export interface UpgradeSuccessBannerProps {
   showCelebration: boolean;
   onDismiss: () => void;
@@ -7,6 +9,13 @@ export function UpgradeSuccessBanner({
   showCelebration,
   onDismiss,
 }: UpgradeSuccessBannerProps) {
+  const { t } = useTranslation();
+  const stats = [
+    { label: t("billing.success.bundleLimit"), value: t("billing.success.bundleLimitValue") },
+    { label: t("billing.success.designControl"), value: t("billing.success.fullAccess") },
+    { label: t("billing.success.support"), value: t("billing.success.priority") },
+  ];
+
   return (
     <div
       style={{
@@ -51,20 +60,16 @@ export function UpgradeSuccessBanner({
           </div>
           <s-stack direction="block" gap="small-400">
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "white" }}>
-              Welcome to the Grow Plan! 🎉
+              {t("billing.success.heading")}
             </h2>
             <p style={{ margin: 0, fontSize: 14, color: "rgba(255,255,255,0.9)" }}>
-              Your subscription has been activated. You now have access to all premium features.
+              {t("billing.success.body")}
             </p>
           </s-stack>
         </s-stack>
 
         <s-stack direction="inline" gap="base">
-          {[
-            { label: "Bundle Limit", value: "20 bundles" },
-            { label: "Design Control", value: "Full Access" },
-            { label: "Support", value: "Priority" },
-          ].map(({ label, value }) => (
+          {stats.map(({ label, value }) => (
             <div
               key={label}
               style={{
@@ -83,7 +88,7 @@ export function UpgradeSuccessBanner({
         </s-stack>
 
         <s-button variant="tertiary" onClick={onDismiss}>
-          Dismiss
+          {t("common.actions.dismiss")}
         </s-button>
       </s-stack>
     </div>

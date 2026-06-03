@@ -1,4 +1,13 @@
 {
+  "nav": {
+    "dashboard": "Dashboard",
+    "designControlPanel": "Design Control Panel",
+    "settings": "Settings",
+    "integrations": "Integrations",
+    "analytics": "Analytics",
+    "pricing": "Pricing",
+    "events": "Updates & FAQs"
+  },
   "dashboard": {
     "title": "Dashboard: Wolfpack Bundle Builder",
     "subtitle": "Access your bundles, Customer support and more.",
@@ -95,7 +104,10 @@
       "de": "German",
       "es": "Spanish",
       "ja": "Japanese",
-      "pt-BR": "Portuguese (BR)"
+      "pt-BR": "Portuguese (BR)",
+      "save": "Save",
+      "saveSuccess": "Admin language saved",
+      "saveError": "Unable to save Admin language"
     }
   },
   "tooltips": {
@@ -130,5 +142,79 @@
     "bundleVisibilityPending": {
       "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
     }
+  },
+  "common": {
+    "actions": {
+      "close": "Close", "dismiss": "Dismiss", "manage": "Manage", "enableHere": "Enable here",
+      "maybeLater": "Maybe Later", "setUpVisibility": "Set Up Visibility", "reinstallApp": "Reinstall app",
+      "upgradeNow": "Upgrade Now", "viewPlans": "View Plans", "discardChanges": "Discard Changes",
+      "continueEditing": "Continue Editing"
+    },
+    "appEmbed": { "body": "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle." },
+    "previewGate": {
+      "title": "Your bundle visibility is not set up yet",
+      "body": "Your bundle is live but shoppers have no way to find it. Set up visibility to change that."
+    },
+    "unlistedBundle": {
+      "title": "Your bundle is Unlisted",
+      "body": "Bundle is hidden from your store's search results and collection pages. For discoverability, change the bundle product's status to Active in Shopify Products."
+    },
+    "proxyHealth": {
+      "title": "App proxy not connected",
+      "body": "Full-page bundle widgets won't load on your storefront. Reinstall the app to fix this."
+    },
+    "upgradePrompt": {
+      "limitReachedTitle": "Bundle Limit Reached",
+      "limitReachedBody": "You've used all {{limit}} bundles on the Free plan. Upgrade to Grow for up to 20 bundles.",
+      "approachingTitle": "Approaching Bundle Limit",
+      "approachingBody": "You're using {{current}} of {{limit}} bundles. Upgrade to Grow for up to 20 bundles.",
+      "usageBody": "You're using {{current}} of {{limit}} bundles on the Free plan. Need more? Upgrade to Grow for 20 bundles."
+    },
+    "discardChanges": {
+      "title": "Discard all unsaved changes",
+      "body": "If you discard changes, you'll delete any edits you made since you last saved."
+    },
+    "multiLanguage": {
+      "title": "Customize Text for Multiple Languages", "saveAndClose": "Save and Close",
+      "translations": "Translations", "helper": "Use the dropdown in this section to specify which language you would like to edit",
+      "chooseLanguage": "Choose language to edit", "customText": "Custom Text",
+      "inputHelper": "Input Text for the Selected Language", "textSettings": "Text Settings"
+    },
+    "readiness": {
+      "itemAccessibility": "{{label}} readiness item", "points": "+{{points}} Points",
+      "ready": "Your bundle is ready to sell!", "notReady": "Your bundle isn't ready to sell yet.",
+      "toggleAccessibility": "Toggle readiness score", "title": "Readiness Score",
+      "helper": "Complete all steps to maximise your bundle's success."
+    },
+    "bundleStatus": {
+      "title": "Bundle Status",
+      "options": { "active": "Active", "draft": "Draft", "archived": "Archived", "unlisted": "Unlisted (Ad Campaigns)" }
+    }
+  },
+  "createBundle": {
+    "title": "Create Bundle", "dashboard": "Dashboard", "heading": "Select bundle builder type", "help": "How do bundle builder types work?",
+    "steps": { "details": "Bundle name\n& Description", "configuration": "Configuration", "pricing": "Pricing", "assets": "Assets" },
+    "validation": { "required": "Bundle name is required", "minLength": "Bundle name must be at least 3 characters" },
+    "fields": { "name": "Bundle name", "namePlaceholder": "Eg:- T-shirt bundle", "description": "Description", "descriptionPlaceholder": "Eg:- This is a T-shirt bundle" },
+    "bundleType": {
+      "heading": "Bundle Type",
+      "productPage": { "title": "Product page bundle builder", "description": "Display bundle builder on existing product pages (recommended for most stores)", "alt": "Product page bundle" },
+      "fullPage": { "title": "Full page bundle builder", "description": "Create a dedicated landing page for your bundle with tabs and full customization", "alt": "Full page bundle" }
+    },
+    "actions": { "selected": "Selected", "select": "Select", "next": "Next" }
+  },
+  "billing": {
+    "pricePerMonth": "${{price}}/month",
+    "actions": { "tryAgain": "Try Again", "contactSupport": "Contact Support", "cancel": "Cancel" },
+    "error": { "heading": "Subscription Issue", "missingChargeId": "Subscription confirmation failed: Missing charge ID.", "confirmationFailed": "Failed to confirm subscription with Shopify.", "unexpected": "An unexpected error occurred during subscription setup." },
+    "upgradeModal": {
+      "heading": "Upgrade to Grow Plan", "confirm": "Confirm Upgrade - ${{price}}/month", "redirect": "You'll be redirected to Shopify to complete your subscription.",
+      "benefitsHeading": "What you'll get with Grow:", "bundleLimit": "Up to 20 bundles (currently {{current}}/{{limit}})", "billedMonthly": "Billed monthly through Shopify",
+      "benefits": { "noRevenueCap": "No bundle revenue cap - free plan is limited to $500/mo", "advancedDiscounts": "Advanced discount rules", "prioritySupport": "Priority support" }
+    },
+    "success": { "heading": "Welcome to the Grow Plan!", "body": "Your subscription has been activated. You now have access to all premium features.", "bundleLimit": "Bundle Limit", "bundleLimitValue": "20 bundles", "designControl": "Design Control", "fullAccess": "Full Access", "support": "Support", "priority": "Priority" },
+    "cards": { "currentPlan": "Current Plan", "freePrice": "Free", "freeDescription": "For bundle sales up to $500/month - free until you grow", "includes": "Includes:", "freePlan": "Free Plan", "mostPopular": "Most Popular", "perMonth": "/ month", "growDescription": "For bundle sales above $500/month - no revenue cap", "growIncludes": "Everything in Free, plus:", "upgradeToGrow": "Upgrade to Grow", "cancelAnytimeBilled": "Cancel anytime. Billed through Shopify." },
+    "cta": { "heading": "Ready to grow your bundle business?", "body": "Upgrade to the Grow plan for double the bundles, full design customization, and priority support.", "highlights": { "bundles": "20 bundles", "design": "Design Control Panel", "support": "Priority Support" }, "upgrade": "Upgrade to Grow - ${{price}}/month", "cancelAnytime": "Cancel anytime" },
+    "route": { "title": "Subscription & Billing", "dashboard": "Dashboard", "currentPlan": "Current Plan", "active": "Active", "inactive": "Inactive", "bundleUsage": "Bundle Usage", "bundleCount": "{{current}} / {{limit}} bundles", "limitReached": "You've reached your bundle limit.", "limitUpgrade": "Upgrade to Grow for more bundles.", "overview": "Bundle Overview", "activeBundles": "Active Bundles", "totalSteps": "Total Steps", "productPage": "Product Page", "fullPage": "Full Page", "cancelSubscription": "Cancel Subscription", "cancelHeading": "Cancel Subscription?", "downgradeBody": "You will be downgraded to the Free plan with a limit of {{limit}} bundles.", "archiveWarning": "Warning: You have {{current}} bundles. The excess {{excess}} bundles will be archived (not deleted).", "confirmCancellation": "Confirm Cancellation", "keepSubscription": "Keep Subscription", "features": "Your Plan Features", "wantMore": "Want more features?", "viewPlans": "View all plans", "needHelp": "Need Help?", "helpBody": "Have questions about billing or need a custom plan? Our team is here to help." }
   }
 }

@@ -826,9 +826,14 @@ export default function ConfigureBundleFlow() {
 
   // FR-05: Bundle Settings — new sub-sections
   const [preSelectedProductVariantId, setPreSelectedProductVariantId] = useState<string>((bundle as any).preSelectedProductVariantId ?? "");
-  const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>((bundle as any).maxQtyPerProduct?.toString() ?? "");
+  const initialValidateQuantityPerProduct = ((bundle as any).validateQuantityPerProduct as { isEnabled?: boolean; allowedQuantity?: number } | null) ?? null;
+  const [quantityValidationEnabled, setQuantityValidationEnabled] = useState<boolean>(initialValidateQuantityPerProduct?.isEnabled === true);
+  const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>(
+    (initialValidateQuantityPerProduct?.allowedQuantity ?? (bundle as any).maxQtyPerProduct ?? 1).toString()
+  );
   const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
   const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
+  const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
   const [variantSelectorEnabled, setVariantSelectorEnabled] = useState<boolean>((bundle as any).variantSelectorEnabled ?? true);
   const [showTextOnAddButton, setShowTextOnAddButton] = useState<boolean>((bundle as any).showTextOnAddButton ?? false);
   const [bundleCartTitle, setBundleCartTitle] = useState<string>((bundle as any).bundleCartTitle ?? "");
@@ -1201,7 +1206,7 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleLevelCss", bundleLevelCss);
       formData.append("defaultProductsData", JSON.stringify(buildDefaultProductsData()));
       formData.append("validateQuantityPerProduct", JSON.stringify({
-        isEnabled: productSlotsEnabled,
+        isEnabled: quantityValidationEnabled,
         allowedQuantity: Number.parseInt(maxQtyPerProduct || "1", 10) || 1,
       }));
       formData.append("individualSellingPlanSelection", JSON.stringify({
@@ -1288,6 +1293,7 @@ export default function ConfigureBundleFlow() {
     bundleEmbedSpecificCollectionPages,
     bundleEmbedAddBrowsedProduct,
     productSlotsEnabled,
+    quantityValidationEnabled,
     maxQtyPerProduct,
     individualSellingPlanEnabled,
     individualSellingPlanShowFor,
@@ -2191,6 +2197,10 @@ export default function ConfigureBundleFlow() {
           <UnlistedBundleBanner
             shop={shop}
             bundleProductId={loadedBundleProduct?.id ?? (bundle as any).shopifyProductId ?? null}
+            onManage={() => {
+              const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || (bundle as any).shopifyProductId?.split('/').pop();
+              if (productId) openProductInAdmin(productId);
+            }}
           />
         )}
 
@@ -4367,8 +4377,8 @@ export default function ConfigureBundleFlow() {
                           <span className={productPageBundleStyles.settingInlineSwitch}>
                             <s-checkbox
                               accessibilityLabel="Enable quantity validation"
-                              checked={productSlotsEnabled || undefined}
-                              onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                              checked={quantityValidationEnabled || undefined}
+                              onChange={(e: Event) => { setQuantityValidationEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
                             />
                           </span>
                         </div>
@@ -4377,10 +4387,66 @@ export default function ConfigureBundleFlow() {
                           type="number"
                           min="1"
                           value={maxQtyPerProduct || "1"}
-                          disabled={!productSlotsEnabled}
+                          disabled={!quantityValidationEnabled}
                           onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autoComplete="off"
                         />
+                        <s-banner tone="info">
+                          Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.
+                        </s-banner>
+                        <s-stack direction="block" gap="small-400">
+                          <div className={productPageBundleStyles.settingTitleRow}>
+                            <h3 className={productPageBundleStyles.settingTitle}>Product Slots</h3>
+                            <span className={productPageBundleStyles.settingInlineSwitch}>
+                              <s-switch
+                                accessibilityLabel="Enable product slots display"
+                                checked={productSlotsEnabled || undefined}
+                                onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                              />
+                            </span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                            This feature displays empty slots on the storefront.
+                          </p>
+                        </s-stack>
+                        {/* Slot Icon — nested inside quantity validation */}
+                        <s-stack direction="block" gap="small-400">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>
+                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                            You can change the default icon that renders in the empty slots
+                          </p>
+                          {showSlotIconPicker && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowSlotIconPicker(false)}
+                              value={productSlotIconUrl || null}
+                              onChange={(url: string | null) => {
+                                setProductSlotIconUrl(url ?? "");
+                                setShowSlotIconPicker(false);
+                                markAsDirty();
+                              }}
+                              label="Slot Icon"
+                              hideCropEditor
+                            />
+                          )}
+                          <s-stack direction="inline" gap="small">
+                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
+                              Change Icon
+                            </s-button>
+                            <s-button
+                              variant="secondary"
+                              onClick={() => {
+                                setProductSlotIconUrl("");
+                                markAsDirty();
+                              }}
+                            >
+                              Reset
+                            </s-button>
+                          </s-stack>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
+                            Note: Only applicable when rules are based on quantity
+                          </p>
+                        </s-stack>
                         {individualSellingPlanBlocked && (
                           <s-banner tone="warning">
                             {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.54
- * Built   : 2026-06-02
+ * Version : 2.9.55
+ * Built   : 2026-06-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.54';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.55';
 (function() {
   'use strict';
 
@@ -3986,18 +3986,12 @@ class BundleWidgetFullPage {
     const conditionlessMobile = this.bundleHasNoConditions();
     const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
     const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
-    const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
     ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
-    if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (conditionlessMobile || (isLastStep && isComplete)) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
         if (!this.canCheckoutWithBoxSelection()) {
           this.showBoxSelectionValidationMessage();
           return;
@@ -4152,13 +4146,8 @@ class BundleWidgetFullPage {
     priceSpan.textContent = priceText;
     ctaBtn.append(labelSpan, separatorSpan, priceSpan);
     if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
-    if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (shouldAddToCart) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
         if (!this.canCheckoutWithBoxSelection()) {
           this.showBoxSelectionValidationMessage();
           return;
@@ -4569,49 +4558,6 @@ class BundleWidgetFullPage {
     if (reachedRule) return reachedRule;
 
     return rules.find(rule => rule.isDefaultSelected) || rules[0];
-  }
-
-  getSelectedBoxSelectionQuantity() {
-    return this.getAllSelectedProductsData().reduce((total, item) => {
-      if (item.isDefault === true || item.isFreeGift === true) return total;
-      return total + (Number(item.quantity || 0) || 0);
-    }, 0);
-  }
-
-  getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
-    const boxSelection = this.selectedBundle?.boxSelection;
-    const rules = this.getBoxSelectionRules();
-    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
-    const isEnabled = boxSelection?.isEnabled === true
-      && boxSelection?.validateBoxSelectionQuantity === true
-      && !!activeRule;
-
-    if (!isEnabled) {
-      return {
-        isEnabled: false,
-        isValid: true,
-        activeRule,
-        totalQuantity: Number(totalQuantity || 0),
-      };
-    }
-
-    return {
-      isEnabled: true,
-      isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
-      activeRule,
-      totalQuantity: Number(totalQuantity || 0),
-    };
-  }
-
-  canCheckoutWithBoxSelection() {
-    return this.getBoxSelectionValidationState().isValid;
-  }
-
-  showBoxSelectionValidationMessage() {
-    const state = this.getBoxSelectionValidationState();
-    if (!state.isEnabled || state.isValid) return;
-
-    ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
   }
 
   getSelectedBoxSelectionQuantity() {
@@ -6071,15 +6017,10 @@ class BundleWidgetFullPage {
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
     ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
     if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
-    if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
     ctaBtn.addEventListener('click', () => {
       if (conditionless || isLastStep) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
         if (!this.canCheckoutWithBoxSelection()) {
           this.showBoxSelectionValidationMessage();
           return;
@@ -7921,17 +7862,29 @@ class BundleWidgetFullPage {
     const step = this.selectedBundle?.steps?.[stepIndex] || {};
 
     if (products.length === 0) {
+      if (!this._shouldRenderProductSlots()) {
+        productGrid.innerHTML = `
+          <div class="empty-products-message">
+            <p>No products available for this step.</p>
+          </div>
+        `;
+        return;
+      }
 
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
+      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+      const emptyStateIcon = emptyStateIconUrl
+        ? `<img class="empty-state-card-icon" src="${emptyStateIconUrl}" alt="" width="69" height="69">`
+        : `<svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>`;
 
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
         <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
+          ${emptyStateIcon}
           <p class="empty-state-card-text">${labelText}</p>
         </div>
       `).join('');
@@ -8149,6 +8102,17 @@ class BundleWidgetFullPage {
       return;
     }
 
+    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
+      this.selectedBundle?.validateQuantityPerProduct,
+      currentQuantity,
+      quantity,
+    );
+    if (!productQuantityCheck.allowed) {
+      ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+      return;
+    }
+
     if (quantity > 0) {
       this.selectedProducts[stepIndex][productId] = quantity;
     } else {
@@ -8206,6 +8170,10 @@ class BundleWidgetFullPage {
     } else {
       this.updateFooterMessaging();
     }
+  }
+
+  _shouldRenderProductSlots() {
+    return this.selectedBundle?.productSlotsEnabled === true;
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {

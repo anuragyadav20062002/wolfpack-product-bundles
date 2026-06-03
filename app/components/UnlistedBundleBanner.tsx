@@ -1,6 +1,9 @@
+import { useTranslation } from "react-i18next";
+
 interface UnlistedBundleBannerProps {
   shop: string;
   bundleProductId: string | null;
+  onManage: () => void;
 }
 
 export function buildShopifyProductAdminUrl(
@@ -16,7 +19,8 @@ export function buildShopifyProductAdminUrl(
   return `https://admin.shopify.com/store/${storeSlug}/products/${numericId}`;
 }
 
-export function UnlistedBundleBanner({ shop, bundleProductId }: UnlistedBundleBannerProps) {
+export function UnlistedBundleBanner({ shop, bundleProductId, onManage }: UnlistedBundleBannerProps) {
+  const { t } = useTranslation();
   const adminUrl = buildShopifyProductAdminUrl(shop, bundleProductId);
   if (!adminUrl) return null;
 
@@ -53,18 +57,17 @@ export function UnlistedBundleBanner({ shop, bundleProductId }: UnlistedBundleBa
         !
       </span>
       <div style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.4, color: "#5f3700" }}>
-        <p style={{ margin: 0, fontWeight: 650 }}>Your bundle is Unlisted</p>
+        <p style={{ margin: 0, fontWeight: 650 }}>{t("common.unlistedBundle.title")}</p>
         <p style={{ margin: "2px 0 0" }}>
-          Bundle is hidden from your store&rsquo;s search results and collection pages. <br />
-          For discoverabiity, change the bundle product&rsquo;s status to Active in Shopify Products.
+          {t("common.unlistedBundle.body")}
         </p>
       </div>
       <s-button
         variant="secondary"
         tone="auto"
-        onClick={() => window.open(adminUrl, "_blank", "noopener,noreferrer")}
+        onClick={onManage}
       >
-        Manage in Shopify Products
+        {t("common.actions.manage")}
       </s-button>
     </div>
   );

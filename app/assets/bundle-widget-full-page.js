@@ -76,6 +76,7 @@ import {
   TemplateManager,
   ComponentGenerator
 } from './bundle-widget-components.js';
+import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
 
@@ -5298,17 +5299,30 @@ class BundleWidgetFullPage {
     const step = this.selectedBundle?.steps?.[stepIndex] || {};
 
     if (products.length === 0) {
+      if (!this._shouldRenderProductSlots()) {
+        productGrid.innerHTML = `
+          <div class="empty-products-message">
+            <p>No products available for this step.</p>
+          </div>
+        `;
+        return;
+      }
+
       // Show empty state cards like in Settings design preview
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
+      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+      const emptyStateIcon = emptyStateIconUrl
+        ? `<img class="empty-state-card-icon" src="${emptyStateIconUrl}" alt="" width="69" height="69">`
+        : `<svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>`;
 
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
         <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
+          ${emptyStateIcon}
           <p class="empty-state-card-text">${labelText}</p>
         </div>
       `).join('');
@@ -5548,6 +5562,17 @@ class BundleWidgetFullPage {
       return;
     }
 
+    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
+      this.selectedBundle?.validateQuantityPerProduct,
+      currentQuantity,
+      quantity,
+    );
+    if (!productQuantityCheck.allowed) {
+      ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+      return;
+    }
+
     // Update selection
     if (quantity > 0) {
       this.selectedProducts[stepIndex][productId] = quantity;
@@ -5617,6 +5642,10 @@ class BundleWidgetFullPage {
     } else {
       this.updateFooterMessaging();
     }
+  }
+
+  _shouldRenderProductSlots() {
+    return this.selectedBundle?.productSlotsEnabled === true;
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {

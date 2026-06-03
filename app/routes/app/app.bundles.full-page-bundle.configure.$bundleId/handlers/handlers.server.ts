@@ -508,6 +508,12 @@ function buildFpbBaseConfig(
     boxSelection: updatedBundle.boxSelection ?? directBoxSelection ?? null,
     bundleUpsellConfig: (updatedBundle as any).bundleUpsellConfig ?? null,
     bundleTextConfig: (updatedBundle as any).bundleTextConfig ?? null,
+    productSlotsEnabled: (updatedBundle as any).productSlotsEnabled ?? false,
+    productSlotIconUrl: (updatedBundle as any).productSlotIconUrl ?? null,
+    validateQuantityPerProduct: (updatedBundle as any).validateQuantityPerProduct ?? {
+      isEnabled: false,
+      allowedQuantity: 1,
+    },
     personalizationData: (updatedBundle as any).personalizationData ?? null,
     shopifyProductId: updatedBundle.shopifyProductId,
     shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
@@ -582,6 +588,12 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
     const maxQtyPerProductRaw = formData.get("maxQtyPerProduct") as string | null;
     const maxQtyPerProduct = maxQtyPerProductRaw ? parseInt(maxQtyPerProductRaw, 10) || null : null;
+    const productSlotIconUrlRaw = formData.get("productSlotIconUrl") as string | null;
+    const productSlotIconUrl = productSlotIconUrlRaw || null;
+    const validateQuantityPerProductRaw = formData.get("validateQuantityPerProduct") as string | null;
+    const validateQuantityPerProduct = validateQuantityPerProductRaw
+      ? JSON.parse(validateQuantityPerProductRaw)
+      : { isEnabled: false, allowedQuantity: 1 };
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -744,6 +756,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         bundleLevelCss,
         productSlotsEnabled,
         maxQtyPerProduct,
+        productSlotIconUrl,
+        validateQuantityPerProduct,
         // Update steps if provided
         ...(stepsData && {
           steps: {

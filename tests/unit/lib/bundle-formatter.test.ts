@@ -69,6 +69,14 @@ describe("formatBundleForWidget", () => {
     expect(result.fullPageLayout).toBeNull();
   });
 
+  it("emits the saved product slot icon URL for storefront empty slots", () => {
+    const result = formatBundleForWidget(makeBundle({
+      productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
+    }) as any);
+
+    expect(result.productSlotIconUrl).toBe("https://cdn.example.test/slot-icon.png");
+  });
+
   it("converts variant price strings to integer cents", () => {
     const step = makeStep({
       StepProduct: [
@@ -335,12 +343,14 @@ describe("formatBundleForWidget", () => {
       bundleType: "product_page",
       defaultProductsData,
       validateQuantityPerProduct,
+      productSlotsEnabled: true,
       individualSellingPlanSelection,
       bundleTextConfig,
     }) as any);
 
     expect(result.defaultProductsData).toEqual(defaultProductsData);
     expect(result.validateQuantityPerProduct).toEqual(validateQuantityPerProduct);
+    expect(result.productSlotsEnabled).toBe(true);
     expect(result.individualSellingPlanSelection).toEqual(individualSellingPlanSelection);
     expect(result.bundleTextConfig).toEqual(bundleTextConfig);
   });

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { PLANS } from "../../constants/plans";
-import { GROW_PLAN_BENEFITS } from "../../constants/pricing-data";
 
 export interface UpgradeConfirmationModalProps {
   open: boolean;
@@ -19,7 +19,13 @@ export function UpgradeConfirmationModal({
   onConfirm,
   onClose,
 }: UpgradeConfirmationModalProps) {
+  const { t } = useTranslation();
   const modalRef = useRef<any>(null);
+  const benefits = [
+    t("billing.upgradeModal.benefits.noRevenueCap"),
+    t("billing.upgradeModal.benefits.advancedDiscounts"),
+    t("billing.upgradeModal.benefits.prioritySupport"),
+  ];
 
   useEffect(() => {
     const el = modalRef.current;
@@ -35,7 +41,7 @@ export function UpgradeConfirmationModal({
     <s-modal
       ref={modalRef}
       id="upgrade-confirmation-modal"
-      heading={`Upgrade to Grow Plan`}
+      heading={t("billing.upgradeModal.heading")}
       onHide={onClose}
     >
       <s-button
@@ -44,20 +50,20 @@ export function UpgradeConfirmationModal({
         loading={isLoading || undefined}
         onClick={onConfirm}
       >
-        {`Confirm Upgrade - $${PLANS.grow.price}/month`}
+        {t("billing.upgradeModal.confirm", { price: PLANS.grow.price })}
       </s-button>
       <s-button slot="secondaryActions" onClick={onClose}>
-        Cancel
+        {t("billing.actions.cancel")}
       </s-button>
 
       <s-stack direction="block" gap="base">
         <s-banner tone="info">
-          You&apos;ll be redirected to Shopify to complete your subscription.
+          {t("billing.upgradeModal.redirect")}
         </s-banner>
 
         <s-stack direction="block" gap="small">
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-            What you&apos;ll get with Grow:
+            {t("billing.upgradeModal.benefitsHeading")}
           </h3>
           <s-stack direction="block" gap="small-100">
             <s-stack direction="inline" alignItems="center" gap="small-100">
@@ -65,10 +71,10 @@ export function UpgradeConfirmationModal({
                 <s-icon name="check-minor" />
               </div>
               <span style={{ fontSize: 14 }}>
-                Up to 20 bundles (currently {currentBundleCount}/{bundleLimit})
+                {t("billing.upgradeModal.bundleLimit", { current: currentBundleCount, limit: bundleLimit })}
               </span>
             </s-stack>
-            {GROW_PLAN_BENEFITS.slice(1).map((benefit, index) => (
+            {benefits.map((benefit, index) => (
               <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
                 <div style={{ color: "#008060" }}>
                   <s-icon name="check-minor" />
@@ -82,8 +88,8 @@ export function UpgradeConfirmationModal({
         <s-divider />
 
         <s-stack direction="inline" justifyContent="space-between">
-          <s-text tone="neutral" color="subdued">Billed monthly through Shopify</s-text>
-          <strong style={{ fontSize: 16 }}>${PLANS.grow.price}/month</strong>
+          <s-text tone="neutral" color="subdued">{t("billing.upgradeModal.billedMonthly")}</s-text>
+          <strong style={{ fontSize: 16 }}>{t("billing.pricePerMonth", { price: PLANS.grow.price })}</strong>
         </s-stack>
       </s-stack>
     </s-modal>

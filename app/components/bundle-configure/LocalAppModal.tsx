@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface LocalAppModalProps {
   title: string;
@@ -15,6 +16,8 @@ export function LocalAppModal({
   secondaryAction,
   onClose,
 }: LocalAppModalProps) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -71,7 +74,7 @@ export function LocalAppModal({
           <s-button
             variant="tertiary"
             icon="x"
-            accessibilityLabel="Close"
+            accessibilityLabel={t("common.actions.close")}
             onClick={onClose}
           />
         </header>

@@ -18,20 +18,19 @@ describe("EnablePreviewModal JSX contract", () => {
     expect(source).toMatch(/if\s*\(\s*!\s*open\s*\)\s*return\s+null/);
   });
 
-  it("renders the visibility-not-set-up heading", () => {
-    expect(source).toContain("Your bundle visibility is not set up yet");
+  it("renders the translated visibility-not-set-up heading", () => {
+    expect(source).toContain('t("common.previewGate.title")');
   });
 
   it("renders the body copy directing merchants to set up visibility", () => {
-    expect(source).toContain("shoppers have no way to find it");
-    expect(source).toContain("Set up visibility to change that");
+    expect(source).toContain('t("common.previewGate.body")');
   });
 
   it("wires the primary CTA to open the theme editor URL", () => {
     expect(source).toMatch(/window\.open\(\s*themeEditorUrl/);
   });
 
-  it("renders a Maybe Later dismiss button", () => {
-    expect(source).toContain("Maybe Later");
+  it("renders a translated dismiss button", () => {
+    expect(source).toContain('t("common.actions.maybeLater")');
   });
 });

@@ -1,5 +1,6 @@
 import { useNavigate } from "@remix-run/react";
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 export interface UpgradePromptBannerProps {
   plan: "free" | "grow";
@@ -15,6 +16,7 @@ export function UpgradePromptBanner({
   canCreateBundle,
 }: UpgradePromptBannerProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleUpgrade = useCallback(() => {
     navigate("/app/billing");
@@ -26,10 +28,10 @@ export function UpgradePromptBanner({
     return (
       <s-banner tone="critical">
         <s-button slot="primaryAction" variant="primary" onClick={handleUpgrade}>
-          Upgrade Now
+          {t("common.actions.upgradeNow")}
         </s-button>
-        <strong>Bundle Limit Reached</strong> — You&apos;ve used all {bundleLimit} bundles on the Free
-        plan. Upgrade to Grow for up to 20 bundles.
+        <strong>{t("common.upgradePrompt.limitReachedTitle")}</strong> -{" "}
+        {t("common.upgradePrompt.limitReachedBody", { limit: bundleLimit })}
       </s-banner>
     );
   }
@@ -40,10 +42,10 @@ export function UpgradePromptBanner({
     return (
       <s-banner tone="warning">
         <s-button slot="primaryAction" variant="primary" onClick={handleUpgrade}>
-          View Plans
+          {t("common.actions.viewPlans")}
         </s-button>
-        <strong>Approaching Bundle Limit</strong> — You&apos;re using {currentBundleCount} of{" "}
-        {bundleLimit} bundles. Upgrade to Grow for up to 20 bundles.
+        <strong>{t("common.upgradePrompt.approachingTitle")}</strong> -{" "}
+        {t("common.upgradePrompt.approachingBody", { current: currentBundleCount, limit: bundleLimit })}
       </s-banner>
     );
   }
@@ -52,10 +54,9 @@ export function UpgradePromptBanner({
     return (
       <s-banner tone="info">
         <s-button slot="primaryAction" onClick={handleUpgrade}>
-          View Plans
+          {t("common.actions.viewPlans")}
         </s-button>
-        You&apos;re using {currentBundleCount} of {bundleLimit} bundles on the Free plan. Need more?
-        Upgrade to Grow for 20 bundles.
+        {t("common.upgradePrompt.usageBody", { current: currentBundleCount, limit: bundleLimit })}
       </s-banner>
     );
   }

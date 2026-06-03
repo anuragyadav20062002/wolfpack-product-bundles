@@ -1,4 +1,5 @@
 import { PLANS } from "../../constants/plans";
+import { useTranslation } from "react-i18next";
 
 export interface GrowPlanCardProps {
   isCurrentPlan: boolean;
@@ -11,6 +12,8 @@ export function GrowPlanCard({
   isUpgrading,
   onSelectPlan,
 }: GrowPlanCardProps) {
+  const { t } = useTranslation();
+
   return (
     <div style={{ position: "relative" }}>
       <div
@@ -33,7 +36,7 @@ export function GrowPlanCard({
         }}
       >
         <span style={{ fontSize: "14px" }}>⭐</span>
-        <span>Most Popular</span>
+        <span>{t("billing.cards.mostPopular")}</span>
       </div>
 
       <s-section>
@@ -52,21 +55,21 @@ export function GrowPlanCard({
             <s-stack direction="block" gap="small-100">
               <s-stack direction="inline" justifyContent="space-between" alignItems="center">
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{PLANS.grow.name}</h3>
-                {isCurrentPlan && <s-badge tone="success">Current Plan</s-badge>}
+                {isCurrentPlan && <s-badge tone="success">{t("billing.cards.currentPlan")}</s-badge>}
               </s-stack>
               <s-stack direction="inline" alignItems="baseline" gap="small-400">
                 <span style={{ fontSize: 28, fontWeight: 700 }}>${PLANS.grow.price}</span>
-                <span style={{ fontSize: 16, color: "#6d7175" }}>/ month</span>
+                <span style={{ fontSize: 16, color: "#6d7175" }}>{t("billing.cards.perMonth")}</span>
               </s-stack>
               <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                For bundle sales above $500/month — no revenue cap
+                {t("billing.cards.growDescription")}
               </p>
             </s-stack>
 
             <s-divider />
 
             <s-stack direction="block" gap="small">
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Everything in Free, plus:</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("billing.cards.growIncludes")}</p>
               <s-stack direction="block" gap="small-100">
                 {PLANS.grow.features.map((feature, index) => (
                   <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
@@ -90,11 +93,11 @@ export function GrowPlanCard({
               onClick={onSelectPlan}
               inlineSize="100%"
             >
-              {isCurrentPlan ? "Current Plan" : "Upgrade to Grow"}
+              {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.upgradeToGrow")}
             </s-button>
             {!isCurrentPlan && (
               <p style={{ textAlign: "center", marginTop: "0.5rem", fontSize: 12, color: "#6d7175" }}>
-                Cancel anytime. Billed through Shopify.
+                {t("billing.cards.cancelAnytimeBilled")}
               </p>
             )}
           </div>

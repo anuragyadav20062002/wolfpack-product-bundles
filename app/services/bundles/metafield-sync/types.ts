@@ -66,6 +66,8 @@ export interface BundleUiConfig {
   discountDisplayOverride?: Record<string, unknown> | null;
   individualSellingPlanSelection?: Record<string, unknown>;
   validateQuantityPerProduct?: Record<string, unknown>;
+  productSlotsEnabled?: boolean;
+  productSlotIconUrl?: string | null;
   useSingleStepCategoriesAsBundleSteps?: boolean;
   renderFilledSlotsAsHorizontalStacked?: boolean | null;
   showProductComparedAtPrice?: boolean;

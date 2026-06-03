@@ -36,7 +36,7 @@ const ROOT_DIR = join(__dirname, '..');
 // Verify live version in browser DevTools on the storefront:
 //   console.log(window.__BUNDLE_WIDGET_VERSION__)
 // ---------------------------------------------------------------------------
-const WIDGET_VERSION = '2.9.54';
+const WIDGET_VERSION = '2.9.55';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -138,6 +138,46 @@ function removeUseStrict(code) {
 }
 
 /**
+ * Remove CommonJS module.exports guards from SDK modules before concatenating
+ * them inside the browser IIFE.
+ */
+function removeCommonJsExports(code) {
+  const marker = 'if (typeof module';
+  let result = code;
+  let markerIndex = result.indexOf(marker);
+
+  while (markerIndex !== -1) {
+    const blockStart = result.indexOf('{', markerIndex);
+    if (blockStart === -1) break;
+
+    let depth = 0;
+    let blockEnd = -1;
+    for (let index = blockStart; index < result.length; index += 1) {
+      const char = result[index];
+      if (char === '{') depth += 1;
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          blockEnd = index + 1;
+          break;
+        }
+      }
+    }
+
+    if (blockEnd === -1) break;
+
+    while (blockEnd < result.length && /\s/.test(result[blockEnd])) {
+      blockEnd += 1;
+    }
+
+    result = `${result.slice(0, markerIndex)}${result.slice(blockEnd)}`;
+    markerIndex = result.indexOf(marker);
+  }
+
+  return result;
+}
+
+/**
  * Read and process all shared component modules
  */
 function readSharedComponents() {
@@ -169,8 +209,7 @@ function readSdkModules() {
     }
     const code = readFile(modulePath);
     // Strip CJS module.exports guard — not needed inside the IIFE
-    const processed = removeUseStrict(code)
-      .replace(/if\s*\(typeof module[^}]+\{[^}]+\}\)?;?\s*/g, '');
+    const processed = removeCommonJsExports(removeUseStrict(code));
     moduleCodes.push(processed);
   }
   return moduleCodes.join('\n\n');

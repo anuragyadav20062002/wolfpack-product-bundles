@@ -17,7 +17,8 @@ import { decideDashboardPreviewAction } from "../../../lib/dashboard-preview-act
 import { handleCreatePreviewPage } from "../app.bundles.full-page-bundle.configure.$bundleId/handlers/handlers.server";
 import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
 import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
-import "../../../i18n/config";
+import { normalizeAdminLocale } from "../../../i18n/config";
+import { saveShopAdminLocale } from "../../../services/admin-locale.server";
 
 import {
   handleCloneBundle,
@@ -160,6 +161,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const intent = formData.get("intent");
   if (intent === "cloneBundle") return handleCloneBundle(admin, session, formData);
   if (intent === "deleteBundle") return handleDeleteBundle(admin, session, formData);
+  if (intent === "saveAdminLocale") {
+    try {
+      const locale = await saveShopAdminLocale(session.shop, String(formData.get("locale") || ""));
+      return json({ success: true, locale });
+    } catch {
+      return json({ success: false, error: "Unsupported Admin locale" }, { status: 400 });
+    }
+  }
   if (intent === "createPreviewPage") {
     const bundleId = String(formData.get("bundleId") || "");
     if (!bundleId) return json({ success: false, error: "Missing bundleId" }, { status: 400 });
@@ -221,8 +230,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
+  const localeFetcher = useFetcher<typeof action>();
   const shopify = useAppBridge();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const dashboardState = useDashboardState();
   const {
@@ -325,7 +335,7 @@ export default function Dashboard() {
   const enablePreviewGate = useEnablePreviewGate({
     appEmbedEnabled,
     themeEditorUrl,
-    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+    onSilentBlock: () => shopify.toast.show(t("dashboard.actions.themeEditorUnavailable"), { isError: true }),
   });
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
@@ -383,17 +393,49 @@ export default function Dashboard() {
     { label: t("dashboard.language.pt-BR"), value: "pt-BR" },
   ], [t]);
 
-  const rawLocale = searchParams.get("locale") ?? "en";
-  const selectedLanguage = languageOptions.some(o => o.value === rawLocale) ? rawLocale : "en";
+  const activeLanguage = normalizeAdminLocale(i18n.language);
+  const [selectedLanguage, setSelectedLanguage] = useState(activeLanguage);
 
   const handleLanguageChange = useCallback((locale: string) => {
-    localStorage.setItem("wolfpack-locale", locale);
+    setSelectedLanguage(normalizeAdminLocale(locale));
+  }, []);
+
+  const handleSaveLanguage = useCallback(() => {
+    const formData = new FormData();
+    formData.append("intent", "saveAdminLocale");
+    formData.append("locale", selectedLanguage);
+    localeFetcher.submit(formData, { method: "post" });
+  }, [localeFetcher, selectedLanguage]);
+
+  useEffect(() => {
+    if (localeFetcher.state !== "idle" || !localeFetcher.data) return;
+    const data = localeFetcher.data;
+    if (data.success && "locale" in data) {
+      localStorage.setItem("wolfpack-locale", data.locale);
+      void i18n.changeLanguage(data.locale);
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set("locale", data.locale);
+        return next;
+      });
+      shopify.toast.show(t("dashboard.language.saveSuccess"));
+      return;
+    }
+    shopify.toast.show(t("dashboard.language.saveError"), { isError: true });
+  }, [i18n, localeFetcher.data, localeFetcher.state, setSearchParams, shopify, t]);
+
+  useEffect(() => {
+    setSelectedLanguage(normalizeAdminLocale(i18n.language));
+  }, [i18n.language]);
+
+  useEffect(() => {
+    if (searchParams.get("locale") === activeLanguage) return;
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
-      next.set("locale", locale);
+      next.set("locale", activeLanguage);
       return next;
     });
-  }, [setSearchParams]);
+  }, [activeLanguage, searchParams, setSearchParams]);
 
   useEffect(() => {
     const el = langSelectRef.current;
@@ -526,6 +568,14 @@ export default function Dashboard() {
                     <s-option key={o.value} value={o.value}>{o.label}</s-option>
                   ))}
                 </s-select>
+                <s-button
+                  variant="secondary"
+                  onClick={handleSaveLanguage}
+                  loading={localeFetcher.state !== "idle" || undefined}
+                  disabled={selectedLanguage === activeLanguage || undefined}
+                >
+                  {t("dashboard.language.save")}
+                </s-button>
               </div>
               <s-button icon="refresh" onClick={handleSyncCollections}>{t("dashboard.header.syncCollections")}</s-button>
               <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>{t("dashboard.header.createBundle")}</s-button>

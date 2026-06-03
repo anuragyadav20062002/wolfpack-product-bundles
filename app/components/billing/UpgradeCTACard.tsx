@@ -1,10 +1,18 @@
 import { PLANS } from "../../constants/plans";
+import { useTranslation } from "react-i18next";
 
 export interface UpgradeCTACardProps {
   onUpgrade: () => void;
 }
 
 export function UpgradeCTACard({ onUpgrade }: UpgradeCTACardProps) {
+  const { t } = useTranslation();
+  const highlights = [
+    t("billing.cta.highlights.bundles"),
+    t("billing.cta.highlights.design"),
+    t("billing.cta.highlights.support"),
+  ];
+
   return (
     <s-section>
       <div
@@ -28,17 +36,16 @@ export function UpgradeCTACard({ onUpgrade }: UpgradeCTACardProps) {
               <s-icon name="star-filled" />
             </div>
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
-              Ready to grow your bundle business?
+              {t("billing.cta.heading")}
             </h3>
           </s-stack>
 
           <p style={{ margin: 0, fontSize: 14 }}>
-            Upgrade to the Grow plan for double the bundles, full design customization, and
-            priority support.
+            {t("billing.cta.body")}
           </p>
 
           <s-stack direction="inline" gap="small-100">
-            {["20 bundles", "Settings Design", "Priority Support"].map((label) => (
+            {highlights.map((label) => (
               <div
                 key={label}
                 style={{ backgroundColor: "white", borderRadius: "6px", padding: "8px 12px" }}
@@ -50,9 +57,9 @@ export function UpgradeCTACard({ onUpgrade }: UpgradeCTACardProps) {
 
           <s-stack direction="inline" justifyContent="space-between" alignItems="center">
             <s-button variant="primary" onClick={onUpgrade}>
-              {`Upgrade to Grow - $${PLANS.grow.price}/month`}
+              {t("billing.cta.upgrade", { price: PLANS.grow.price })}
             </s-button>
-            <span style={{ fontSize: 12, color: "#6d7175" }}>Cancel anytime</span>
+            <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.cta.cancelAnytime")}</span>
           </s-stack>
         </s-stack>
       </div>
