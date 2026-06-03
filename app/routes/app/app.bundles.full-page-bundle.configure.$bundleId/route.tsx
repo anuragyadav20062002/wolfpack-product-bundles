@@ -29,6 +29,8 @@ import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../.
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
+import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
+import { FPB_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
 import {
   MultiLanguageTextModal,
   type MultiLanguageField,
@@ -92,6 +94,9 @@ const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
+  const url = new URL(request.url);
+  const configureMode = url.searchParams.get("mode") === "create" ? "create" : "edit";
+  const showFirstLoadTour = configureMode === "create" && url.searchParams.get("first_load") === "true";
 
   if (!bundleId) {
     throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
@@ -150,6 +155,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     bundleProduct,
     availableBundles,
     shop: session.shop,
+    configureMode,
+    showFirstLoadTour,
     apiKey,
     blockHandle,
     shopLocales,
@@ -5748,6 +5755,12 @@ export default function ConfigureBundleFlow() {
         open={readinessOpen}
         onOpenChange={setReadinessOpen}
         onItemClick={handleReadinessItemClick}
+      />
+
+      <BundleGuidedTour
+        steps={FPB_TOUR_STEPS}
+        shop={shop}
+        enabled={loaderData.showFirstLoadTour === true}
       />
 
       <MultiLanguageTextModal

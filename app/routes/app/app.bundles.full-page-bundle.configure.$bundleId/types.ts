@@ -56,6 +56,8 @@ export interface LoaderData {
   shop: string;
   apiKey: string;
   blockHandle: string;
+  configureMode?: "create" | "edit";
+  showFirstLoadTour?: boolean;
 }
 
 export interface SaveBundleResponse extends import("../../../types/bundle-configure").ActionResponse {

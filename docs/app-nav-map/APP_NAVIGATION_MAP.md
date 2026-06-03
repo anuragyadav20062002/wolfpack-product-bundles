@@ -69,36 +69,29 @@ Dashboard preview behavior:
 - Full-page bundle preview opens `/apps/product-bundles/wpb/{bundleId}`.
 
 #### "Create Bundle" Button
-Navigates to: `/app/bundles/create` (full-page wizard — modal removed)
+Navigates to: `/app/bundles/create` (bundle type selection entry)
 
 ---
 
-### 2.1a Create Bundle Wizard — `/app/bundles/create`
+### 2.1a Create Bundle Entry — `/app/bundles/create`
 
 **Route file:** `app/routes/app/app.bundles.create/route.tsx`
 
 ```
-Create Bundle Wizard (Step 01 of 05)
+Create Bundle Entry
 ├── Header: "Select bundle builder type" + "How do bundle builder types work?" link
-├── Step indicator: 01 Bundle name & Description (active) → 02–05 (future)
-├── Form
-│   ├── TextField: Bundle name (required, min 3 chars)
-│   ├── Textarea: Description (optional)
-│   ├── Bundle Type cards: Product Page Builder / Full Page Builder
-│   └── Page Layout cards (visible only when Full Page selected):
-│       ├── Floating cart card (footer_bottom)
-│       └── Side Panel (footer_side)
-└── [Button] "Next" → POST action → redirect to configure page
+├── Bundle Type cards: Product Page Builder / Full Page Builder
+├── [Button] "Next" / Continue
+└── Modal: Bundle name only
+    ├── TextField: Bundle name (required, min 3 chars)
+    └── [Button] Save → POST action → redirect to existing configure page
 ```
 
-Create Bundle Configure Wizard (`/app/bundles/create/configure/:bundleId`)
+Create redirect targets:
 ```
-├── Header
-│   ├── [Button] "Preview" → opens wizard preview URL through app-embed gate
-│   └── [Button] "How to configure?" → help docs
-├── Step indicator
-├── Main wizard content
-└── Footer: [Back] [Next/Finish]
+Product Page: `/app/bundles/product-page-bundle/configure/:bundleId?mode=create`
+Full Page: `/app/bundles/full-page-bundle/configure/:bundleId?mode=create`
+First-install first-bundle tour adds: `&first_load=true`
 ```
 
 #### Modal: Delete Bundle Confirmation

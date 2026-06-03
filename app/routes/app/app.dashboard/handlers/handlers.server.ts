@@ -15,6 +15,7 @@ import { WidgetInstallationService } from "../../../../services/widget-installat
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { calculateBundlePrice } from "../../../../services/bundles/pricing-calculation.server";
+import { getBundleEditPath } from "../../../../lib/bundle-navigation";
 
 // GraphQL Mutations
 const CREATE_BUNDLE_PRODUCT = `
@@ -405,17 +406,19 @@ export async function handleCreateBundle(
   }
 
   const bundleName = formData.get("bundleName");
-  const description = formData.get("description");
-  const bundleType = (formData.get("bundleType") as string) || BundleType.PRODUCT_PAGE;
+  const bundleType = formData.get("bundleType");
 
   if (typeof bundleName !== 'string' || bundleName.length === 0) {
     return json({ error: 'Bundle name is required' }, { status: 400 });
+  }
+  if (bundleType !== BundleType.PRODUCT_PAGE && bundleType !== BundleType.FULL_PAGE) {
+    return json({ error: 'Bundle type is required' }, { status: 400 });
   }
 
   try {
     const productInput: any = {
       title: bundleName,
-      descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
+      descriptionHtml: "",
       productType: "Bundle",
       vendor: "Wolfpack: Product Bundles",
       status: "DRAFT",
@@ -479,7 +482,7 @@ export async function handleCreateBundle(
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
+        description: "",
         shopId: session.shop,
         bundleType: bundleType as any,
         fullPageLayout: bundleType === BundleType.FULL_PAGE ? FullPageLayout.FOOTER_BOTTOM : null,
@@ -523,8 +526,7 @@ export async function handleCreateBundle(
       });
     }
 
-    // Build redirect URL — go to Step 02 of the wizard
-    const redirectUrl = `/app/bundles/create/configure/${newBundle.id}`;
+    const redirectUrl = `${getBundleEditPath(newBundle.id, bundleType)}?mode=create`;
 
     return json({
       success: true,

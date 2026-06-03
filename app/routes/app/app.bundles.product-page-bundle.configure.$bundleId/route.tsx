@@ -51,6 +51,8 @@ import {
 // Types - extracted to separate module for better organization
 import type { LoaderData, BundleProductCardProps } from "./types";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
+import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
+import { PPB_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
 import {
   MultiLanguageTextModal,
   type MultiLanguageField,
@@ -123,6 +125,9 @@ const DISCOUNT_TEMPLATE_VARIABLES: [string, string][] = [
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
+  const url = new URL(request.url);
+  const configureMode = url.searchParams.get("mode") === "create" ? "create" : "edit";
+  const showFirstLoadTour = configureMode === "create" && url.searchParams.get("first_load") === "true";
 
   if (!bundleId) {
     throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
@@ -171,6 +176,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     bundle,
     bundleProduct,
     shop: session.shop,
+    configureMode,
+    showFirstLoadTour,
     apiKey,
     blockHandle,
     shopLocales,
@@ -5725,6 +5732,12 @@ export default function ConfigureBundleFlow() {
         open={readinessOpen}
         onOpenChange={setReadinessOpen}
         onItemClick={handleReadinessItemClick}
+      />
+
+      <BundleGuidedTour
+        steps={PPB_TOUR_STEPS}
+        shop={shop}
+        enabled={loaderData.showFirstLoadTour === true}
       />
 
       <MultiLanguageTextModal
