@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-06-02
+**Last Updated:** 2026-06-03
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -44,8 +44,7 @@ Dashboard
 ├── Subheader: "Access your bundles, customer support & more."
 │
 ├── [Button] "Create Bundle"  → opens Create Bundle Modal
-├── Language selector
-│   └── [Button] "Save" → persists one shop-wide embedded Admin UI language for all staff accounts
+├── Language selector → persists one shop-wide embedded Admin UI language for all staff accounts on change
 │
 ├── Section: "Your Bundles"
 │   └── DataTable of bundles (empty state if none exist)

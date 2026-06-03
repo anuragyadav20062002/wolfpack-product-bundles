@@ -3,7 +3,7 @@
 
 ## Purpose
 
-Verify that the embedded Admin locale is shop-wide, defaults to English, exposes only Polaris-compatible locales, persists only through an explicit dashboard save action, and updates browser cache only after server confirmation. Also verify that supported locale catalogs remain key-compatible.
+Verify that the embedded Admin locale is shop-wide, defaults to English, exposes only Polaris-compatible locales, persists from the dashboard language selector without a separate Save button, and updates browser cache only after server confirmation. Also verify that supported locale catalogs remain key-compatible.
 
 ## Test Cases
 
@@ -20,7 +20,7 @@ Verify that the embedded Admin locale is shop-wide, defaults to English, exposes
 |---|---|---|---|---|
 | 6 | Valid locale save | `intent=saveAdminLocale`, `locale=fr` | `Shop.adminLocale` updated to `fr` | Shop-wide record |
 | 7 | Invalid locale save | `intent=saveAdminLocale`, `locale=xx` | HTTP 400; DB untouched | Fail closed |
-| 8 | Dropdown change before save | select `hi` | no `localStorage.setItem` | Draft only |
+| 8 | Dropdown change submit | select `fr` | submits `saveAdminLocale`; no separate Save button rendered | Selector is the save trigger |
 | 9 | Successful save response | confirmed `fr` | cache, URL, and active i18n locale update | Cache after DB only |
 | 10 | Failed save response | error | cache and active locale unchanged | No optimistic cache |
 
@@ -48,4 +48,5 @@ Verify that the embedded Admin locale is shop-wide, defaults to English, exposes
 - [ ] `Shop.adminLocale` is nullable and defaults to English through application logic
 - [ ] Every selectable language has a Polaris locale resource
 - [ ] Browser cache writes occur only after successful locale save
+- [ ] Dashboard language selector has no separate Save button
 - [ ] No storefront widget source files are modified
