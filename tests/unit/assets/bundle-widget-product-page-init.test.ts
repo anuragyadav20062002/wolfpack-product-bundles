@@ -420,14 +420,18 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
       'utf8',
     );
+    const cascadeTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/cascade-template.js'),
+      'utf8',
+    );
 
-    expect(source).toContain('_isProductPageCascadeTemplate');
-    expect(source).toContain('_renderCascadeFooter');
-    expect(source).toContain('_getSelectedProductEntries');
+    expect(cascadeTemplate).toContain('_isProductPageCascadeTemplate');
+    expect(cascadeTemplate).toContain('_renderCascadeFooter');
+    expect(cascadeTemplate).toContain('_getSelectedProductEntries');
     expect(source).toContain('bw-ppb-cascade-product-list');
     expect(source).toContain('bw-ppb-cascade-product-row');
-    expect(source).toContain('bw-ppb-cascade-selected-toggle');
-    expect(source).toContain('viewBundleItems');
+    expect(cascadeTemplate).toContain('bw-ppb-cascade-selected-toggle');
+    expect(cascadeTemplate).toContain('viewBundleItems');
     expect(source).toContain('const showQuantitySelector = !this._isProductPageCascadeTemplate()');
 
     expect(css).toContain('.bw-ppb-cascade-footer');
@@ -436,6 +440,41 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .bw-ppb-dynamic-checkout-visual');
     expect(css).toContain('border-radius:999px');
     expect(css).toContain('background:#111111');
+  });
+
+  it('loads PPB Product List template code from a dedicated source module before widget initialization', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const buildScript = readFileSync(
+      join(process.cwd(), 'scripts/build-widget-bundles.js'),
+      'utf8',
+    );
+    const cascadeTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/cascade-template.js'),
+      'utf8',
+    );
+
+    expect(buildScript).toContain('const PRODUCT_PAGE_MODULES = [');
+    expect(buildScript).toContain("app/assets/widgets/product-page/templates/cascade-template.js");
+    const productPageBuildFunction = buildScript.slice(
+      buildScript.indexOf('function buildProductPageBundle()'),
+    );
+    expect(productPageBuildFunction.indexOf('${productPageModulesCode}')).toBeLessThan(
+      productPageBuildFunction.indexOf('${processedWidget}'),
+    );
+
+    expect(source).toContain("import { installCascadeTemplate } from './widgets/product-page/templates/cascade-template.js';");
+    expect(source).toContain('installCascadeTemplate(BundleWidgetProductPage);');
+    expect(source.indexOf('installCascadeTemplate(BundleWidgetProductPage);')).toBeLessThan(
+      source.indexOf('initializeProductPageWidget();'),
+    );
+    expect(source).not.toContain('  _renderCascadeFooter(el) {');
+
+    expect(cascadeTemplate).toContain('export function installCascadeTemplate(BundleWidgetProductPage)');
+    expect(cascadeTemplate).toContain('prototype._renderCascadeFooter = function');
+    expect(cascadeTemplate).toContain('prototype._isProductPageCascadeTemplate = function');
   });
 
   it('renders PPB discount tier pills from rule-id display DTOs', () => {
