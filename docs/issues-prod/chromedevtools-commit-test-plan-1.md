@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-03
-**Last Updated:** 2026-06-03 19:38
+**Last Updated:** 2026-06-03 (regression run logged)
 
 ## Overview
 Create a Chrome DevTools test handoff for the latest five commits so the combined staging deployment can be verified in the embedded Shopify Admin UI and storefront.
@@ -31,8 +31,17 @@ Create a Chrome DevTools test handoff for the latest five commits so the combine
 ### 2026-06-03 19:38 - Post-rebase version update
 - Updating the final staging plan to expect widget version `2.9.55` after rebasing onto the newer upstream widget build.
 
+### 2026-06-03 - Regression run executed (partial)
+- Ran the staging regression plan via Chrome DevTools MCP against `test-bundle-store123.myshopify.com` (plan's `wolfpack-store-test-1` was not open; user approved the substitution).
+- Created `SIT Regression FPB` from scratch (Amber Essence product) to enable scenario coverage.
+- **Admin scenarios PASS:** Scenario 1 (Unlisted Manage modal — Manage button label and modal parity with Edit Product confirmed), Scenario 6 (Preview placement across Configuration / Pricing / Assets), Scenario 7 (Slot Icon per-bundle scope, no DCP navigation).
+- **Admin scenarios with caveat:** Scenario 2 — Change Icon opens local file picker with no Step Setup redirect; however, the Slot Icon card renders as a *sibling* of Enable Quantity Validation, not nested inside it. Flagged as `Partial — needs plan author sign-off` in the result checklist. Scenario 3 — structural independence of Quantity Validation and Product Slots confirmed; save→reload persistence sweep was not exercised.
+- **BLOCKED:** Scenarios 4 and 5, and the widget version check, because App Embed is OFF on this store and storefront is password-gated. PPB pass deferred (same code paths as FPB).
+- Full per-scenario evidence and follow-up list written to `docs/testing/staging-regression-result-1.md`.
+
 ## Related Documentation
 - docs/testing/chromedevtools-staging-regression-plan.md
+- docs/testing/staging-regression-result-1.md
 
 ## Phases Checklist
 - [x] Create Chrome DevTools test plan
