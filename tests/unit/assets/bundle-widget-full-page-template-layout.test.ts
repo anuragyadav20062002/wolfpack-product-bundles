@@ -128,4 +128,36 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain('height:35px');
     expect(storefrontStyles).toContain('border-radius:5px');
   });
+
+  it("matches EB Classic Design CLASSIC side-footer storefront contract", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+    const css = readFileSync(
+      join(
+        process.cwd(),
+        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
+      ),
+      "utf8",
+    );
+    const storefrontStyles = `${source}\n${css}`;
+
+    expect(source).toContain("ensureClassicPresetRuntimeStyles()");
+    expect(source).toContain("wpb-fpb-classic-runtime-styles");
+    expect(source).toContain("this.getFullPageDesignPreset(bundle) === 'CLASSIC'");
+    expect(source).not.toContain("pricingMethod === 'fixed_amount_off'");
+
+    expect(storefrontStyles).toContain("[data-fpb-design-preset=CLASSIC]");
+    expect(storefrontStyles).toContain("grid-template-columns:0.6897fr 0.3103fr");
+    expect(storefrontStyles).toContain("grid-template-columns:repeat(4,minmax(0,1fr))");
+    expect(storefrontStyles).toContain("container-type:inline-size");
+    expect(storefrontStyles).toContain("width:95%");
+    expect(storefrontStyles).toContain("--classic-card-height-extra:104px");
+    expect(storefrontStyles).toContain("--classic-image-height-extra:12px");
+    expect(storefrontStyles).toContain("height:calc((100cqw - 45px)/4 + var(--classic-card-height-extra,104px))");
+    expect(storefrontStyles).toContain("grid-template-columns:repeat(2,minmax(0,177.5px))");
+    expect(storefrontStyles).toContain("height:263px");
+    expect(storefrontStyles).toContain("border-radius:99px");
+  });
 });
