@@ -18,15 +18,19 @@ const fullPageRouteSource = fs.readFileSync(
 );
 
 describe("Product Page Step Setup category variant-display contract", () => {
-  it("wires the category checkbox to the direct per-category variant flag", () => {
+  it("renders one variant checkbox outside the category accordion body and writes all categories", () => {
     const checkboxStart = productPageRouteSource.indexOf('label="Display variants as individual products"');
     expect(checkboxStart).toBeGreaterThan(-1);
+    const categoryBodyStart = productPageRouteSource.indexOf("categoryAccordionBody");
+    const categoryBodyEnd = productPageRouteSource.indexOf("{/* ── Rules Configuration card ── */", categoryBodyStart);
+    expect(checkboxStart).toBeGreaterThan(categoryBodyStart);
+    expect(checkboxStart).toBeLessThan(categoryBodyEnd);
 
     const checkboxBlock = productPageRouteSource.slice(checkboxStart, checkboxStart + 700);
 
     expect(checkboxBlock).toContain("displayVariantsAsIndividualProducts");
-    expect(checkboxBlock).toContain("cat.displayVariantsAsIndividualProducts === true");
-    expect(checkboxBlock).toContain("displayVariantsAsIndividualProducts: (e.target as HTMLInputElement).checked");
+    expect(checkboxBlock).toContain("displayVariantsForAllCategories");
+    expect(checkboxBlock).toContain("displayVariantsAsIndividualProducts: checked");
     expect(checkboxBlock).not.toContain("displayVariantsAsIndividual:");
   });
 
@@ -36,15 +40,19 @@ describe("Product Page Step Setup category variant-display contract", () => {
 
     const addCategoryBlock = productPageRouteSource.slice(addCategoryStart, addCategoryStart + 320);
 
-    expect(addCategoryBlock).toContain("displayVariantsAsIndividualProducts: false");
+    expect(addCategoryBlock).toContain("displayVariantsAsIndividualProducts: displayVariantsForAllCategories");
     expect(addCategoryBlock).toContain("displayVariantsAsSwatches: false");
   });
 });
 
 describe("Full Page Step Setup step variant-display contract", () => {
-  it("prefers the canonical displayVariantsAsIndividual field for the checkbox state", () => {
+  it("renders the variant checkbox outside the category accordion with the canonical displayVariantsAsIndividual field", () => {
     const checkboxStart = fullPageRouteSource.indexOf('label="Display variants as individual products"');
     expect(checkboxStart).toBeGreaterThan(-1);
+    const categoryBodyStart = fullPageRouteSource.indexOf("categoryAccordionBody");
+    const categoryBodyEnd = fullPageRouteSource.indexOf("{/* ── Rules Configuration card ── */", categoryBodyStart);
+    expect(checkboxStart).toBeGreaterThan(categoryBodyStart);
+    expect(checkboxStart).toBeLessThan(categoryBodyEnd);
 
     const checkboxBlock = fullPageRouteSource.slice(checkboxStart, checkboxStart + 520);
 

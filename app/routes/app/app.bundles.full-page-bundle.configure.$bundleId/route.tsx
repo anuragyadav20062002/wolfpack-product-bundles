@@ -553,7 +553,7 @@ function QuestionHelpTooltip({
       onBlur={hideTooltip}
     >
       <s-button
-        variant="plain"
+        variant="tertiary"
         icon="info"
         accessibilityLabel={title || description}
         className={fullPageBundleStyles.richHelpTrigger}
@@ -2936,21 +2936,21 @@ export default function ConfigureBundleFlow() {
                         </div>
                         <div className={fullPageBundleStyles.stepSetupActions}>
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             icon="globe"
                             accessibilityLabel="Multi Language"
                             title="Multi Language"
                             onClick={() => openStepMultiLanguageModal(step.id)}
                           />
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             icon="duplicate"
                             accessibilityLabel="Clone current step"
                             title="Clone current step"
                             onClick={() => cloneStep(step.id)}
                           />
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             icon="delete"
                             tone="critical"
                             accessibilityLabel="Delete current step"
@@ -3035,10 +3035,11 @@ export default function ConfigureBundleFlow() {
                                 className={fullPageBundleStyles.categoryActions}
                                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
                               >
-                                <s-button
-                                  variant="plain"
-                                  icon="duplicate"
-                                  accessibilityLabel="Clone category"
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.categoryIconButton}
+                                  aria-label="Clone"
+                                  title="Clone"
                                   onClick={() => {
                                     const cats = (step.StepCategory as any[]) ?? [];
                                     stepsState.updateStepField(step.id, "StepCategory", [
@@ -3047,62 +3048,84 @@ export default function ConfigureBundleFlow() {
                                     ]);
                                     markAsDirty();
                                   }}
-                                />
-                                <s-button
-                                  variant="plain"
-                                  icon="delete"
-                                  accessibilityLabel="Delete category"
+                                >
+                                  <s-icon type="duplicate" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.categoryDeleteIconButton}
+                                  aria-label="Delete"
+                                  title="Delete"
                                   onClick={() => {
                                     const updated = ((step.StepCategory as any[]) ?? []).filter((_: any, i: number) => i !== catIndex);
                                     stepsState.updateStepField(step.id, "StepCategory", updated);
                                     markAsDirty();
                                   }}
-                                />
-                                <button
-                                  className={fullPageBundleStyles.categoryChevron}
-                                  aria-label={isOpen ? "Collapse category" : "Expand category"}
-                                  onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
                                 >
-                                  {isOpen ? (
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                                      <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
-                                  ) : (
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                                      <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
-                                  )}
+                                  <s-icon type="delete" />
                                 </button>
                               </div>
+                              <button
+                                type="button"
+                                className={fullPageBundleStyles.categoryChevron}
+                                aria-label={isOpen ? "Collapse category" : "Expand category"}
+                                onClick={(e: React.MouseEvent) => {
+                                  e.stopPropagation();
+                                  setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }));
+                                }}
+                              >
+                                {isOpen ? (
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                ) : (
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </button>
                             </div>
 
                             {/* Expandable body — only visible when open */}
                             {isOpen && (
                               <div className={fullPageBundleStyles.categoryAccordionBody}>
-                                {/* Category name input and Multi Language control */}
-                                <div className={fullPageBundleStyles.catNameRow}>
-                                  <input
-                                    className={fullPageBundleStyles.categoryNameInput}
-                                    type="text"
-                                    value={cat.name ?? ""}
-                                    placeholder={`Category ${catIndex + 1}`}
-                                    aria-label="Category name"
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                      const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                        i === catIndex ? { ...c, name: e.target.value } : c
-                                      );
-                                      stepsState.updateStepField(step.id, "StepCategory", updated);
-                                      markAsDirty();
-                                    }}
-                                  />
-                                  <s-button
-                                    variant="plain"
-                                    icon="globe"
-                                    accessibilityLabel="Multi Language"
-                                    onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
+                                <div className={fullPageBundleStyles.categoryFieldGroup}>
+                                  <label
+                                    className={fullPageBundleStyles.categoryFieldLabel}
+                                    htmlFor={`fpb-category-name-${catKey}`}
                                   >
-                                    Multi Language
-                                  </s-button>
+                                    Category Name
+                                  </label>
+                                  <div className={fullPageBundleStyles.catNameRow}>
+                                    <div className={fullPageBundleStyles.categoryInputStack}>
+                                      <input
+                                        id={`fpb-category-name-${catKey}`}
+                                        className={fullPageBundleStyles.categoryNameInput}
+                                        type="text"
+                                        value={cat.name ?? ""}
+                                        placeholder={`Category ${catIndex + 1}`}
+                                        aria-label="Category name"
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                          const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                            i === catIndex ? { ...c, name: e.target.value, title: e.target.value } : c
+                                          );
+                                          stepsState.updateStepField(step.id, "StepCategory", updated);
+                                          markAsDirty();
+                                        }}
+                                      />
+                                      <p className={fullPageBundleStyles.categoryInputHelp}>Will be visible on the storefront</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className={fullPageBundleStyles.categoryTextButton}
+                                      onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                        <path d="M2 3.25h5.25M4.63 2v1.25M6.5 3.25c-.38 1.97-1.75 3.5-3.75 4.25M3.38 4.75c.55 1.1 1.45 1.95 2.72 2.55M7.25 12l.7-1.75m0 0L9.5 6.5l1.55 3.75m-3.1 0h3.1M12 12l-.95-1.75" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                      Multi Language
+                                    </button>
+                                  </div>
                                 </div>
                                 <div className={fullPageBundleStyles.tabRow}>
                                   <button
@@ -3127,6 +3150,9 @@ export default function ConfigureBundleFlow() {
 
                                 {catActiveTab === 0 && (
                                   <div>
+                                    <p className={fullPageBundleStyles.categoryPickerHelp}>
+                                      Products selected here will be displayed on this step
+                                    </p>
                                     <div className={fullPageBundleStyles.productActions}>
                                       <s-button
                                         variant="primary"
@@ -3158,17 +3184,18 @@ export default function ConfigureBundleFlow() {
                                       )}
                                     </div>
                                     {catProducts.length > 0 && (
-                                      <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                      <div className={fullPageBundleStyles.categoryProductList}>
                                         {catProducts.map((product: any) => (
-                                          <s-stack key={product.id} direction="inline" gap="small-100">
+                                          <div key={product.id} className={fullPageBundleStyles.categoryProductRow}>
                                             <img
+                                              className={fullPageBundleStyles.categoryProductImage}
                                               src={product.imageUrl || "/bundle.png"}
                                               alt={product.title}
-                                              style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
                                             />
-                                            <span style={{ flex: 1, fontSize: 14 }}>{product.title}</span>
-                                            <s-button
-                                              variant="plain"
+                                            <span className={fullPageBundleStyles.categoryProductTitle}>{product.title}</span>
+                                            <button
+                                              type="button"
+                                              className={fullPageBundleStyles.categoryDangerButton}
                                               onClick={() => {
                                                 const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
                                                   i === catIndex ? { ...c, products: c.products.filter((p: any) => p.id !== product.id) } : c
@@ -3178,16 +3205,19 @@ export default function ConfigureBundleFlow() {
                                               }}
                                             >
                                               Remove
-                                            </s-button>
-                                          </s-stack>
+                                            </button>
+                                          </div>
                                         ))}
-                                      </s-stack>
+                                      </div>
                                     )}
                                   </div>
                                 )}
 
                                 {catActiveTab === 1 && (
                                   <div>
+                                    <p className={fullPageBundleStyles.categoryPickerHelp}>
+                                      Collections selected here will be displayed on this step
+                                    </p>
                                     <div className={fullPageBundleStyles.productActions}>
                                       <s-button
                                         variant="primary"
@@ -3216,17 +3246,18 @@ export default function ConfigureBundleFlow() {
                                       )}
                                     </div>
                                     {catCollections.length > 0 && (
-                                      <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                      <div className={fullPageBundleStyles.categoryProductList}>
                                         {catCollections.map((col: any) => (
-                                          <s-stack key={col.id} direction="inline" gap="small-100">
+                                          <div key={col.id} className={fullPageBundleStyles.categoryProductRow}>
                                             <img
+                                              className={fullPageBundleStyles.categoryProductImage}
                                               src={col.image?.url || "/bundle.png"}
                                               alt={col.title}
-                                              style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
                                             />
-                                            <span style={{ flex: 1, fontSize: 14 }}>{col.title}</span>
-                                            <s-button
-                                              variant="plain"
+                                            <span className={fullPageBundleStyles.categoryProductTitle}>{col.title}</span>
+                                            <button
+                                              type="button"
+                                              className={fullPageBundleStyles.categoryDangerButton}
                                               onClick={() => {
                                                 const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
                                                   i === catIndex ? { ...c, collections: c.collections.filter((col2: any) => col2.id !== col.id) } : c
@@ -3236,10 +3267,10 @@ export default function ConfigureBundleFlow() {
                                               }}
                                             >
                                               Remove
-                                            </s-button>
-                                          </s-stack>
+                                            </button>
+                                          </div>
                                         ))}
-                                      </s-stack>
+                                      </div>
                                     )}
                                   </div>
                                 )}
@@ -3256,7 +3287,7 @@ export default function ConfigureBundleFlow() {
                           const cats = (step.StepCategory as any[]) ?? [];
                           stepsState.updateStepField(step.id, "StepCategory", [
                             ...cats,
-                            { id: `cat-${Date.now()}`, name: "", sortOrder: cats.length, products: [], collections: [] },
+                            { id: `cat-${Date.now()}`, name: "", title: "", sortOrder: cats.length, products: [], collections: [] },
                           ]);
                           markAsDirty();
                         }}
@@ -3267,7 +3298,7 @@ export default function ConfigureBundleFlow() {
                         Add Category
                       </button>
 
-                      <s-divider style={{ marginTop: 16, marginBottom: 16 }} />
+                      <s-divider style={{ marginTop: 12, marginBottom: 12 }} />
                       <s-checkbox
                         label="Display variants as individual products"
                         checked={step.displayVariantsAsIndividual ?? undefined}
@@ -3298,7 +3329,7 @@ export default function ConfigureBundleFlow() {
                       </button>
                       {(() => {
                         const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
-                        const categoryRulesAvailable = stepCategories.length > 1;
+                        const categoryRulesAvailable = stepCategories.length > 0;
                         const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
                         const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
                         const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
@@ -3383,7 +3414,7 @@ export default function ConfigureBundleFlow() {
                                                   <div className={fullPageBundleStyles.ruleHeader}>
                                                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                                     <s-button
-                                                      variant="plain"
+                                                      variant="tertiary"
                                                       tone="critical"
                                                       onClick={() => removeCategoryConditionRule(step.id, catIndex, ruleId)}
                                                     >
@@ -3461,7 +3492,7 @@ export default function ConfigureBundleFlow() {
                                         <div className={fullPageBundleStyles.ruleHeader}>
                                           <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                           <s-button
-                                            variant="plain"
+                                            variant="tertiary"
                                             tone="critical"
                                             onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
                                           >
@@ -3469,33 +3500,37 @@ export default function ConfigureBundleFlow() {
                                           </s-button>
                                         </div>
                                         <div className={fullPageBundleStyles.ruleFields}>
-                                          <s-select
-                                            label="Type"
-                                            value={rule.type}
+                                          <select
+                                            className={fullPageBundleStyles.ruleInlineSelect}
+                                            value={rule.type ?? ""}
                                             onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                            aria-label="Type"
                                           >
-                                            <s-option value="" disabled>Type</s-option>
+                                            <option value="" disabled>Type</option>
                                             {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                              <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                              <option key={opt.value} value={opt.value}>{opt.label}</option>
                                             ))}
-                                          </s-select>
-                                          <s-select
-                                            label="Operator"
-                                            value={rule.operator}
+                                          </select>
+                                          <select
+                                            className={fullPageBundleStyles.ruleInlineSelect}
+                                            value={rule.operator ?? ""}
                                             onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                            aria-label="Condition"
                                           >
-                                            <s-option value="" disabled>Operator</s-option>
+                                            <option value="" disabled>Condition</option>
                                             {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                              <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                              <option key={opt.value} value={opt.value}>{opt.label}</option>
                                             ))}
-                                          </s-select>
-                                          <s-number-field
-                                            label="Value"
+                                          </select>
+                                          <input
+                                            type="number"
+                                            className={fullPageBundleStyles.ruleInlineNumber}
                                             min={0}
                                             placeholder="0"
                                             value={rule.value ?? ""}
                                             onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
                                             autoComplete="off"
+                                            aria-label="Value"
                                           />
                                         </div>
                                         {(conditionsState.stepConditions[step.id] || []).length === 1 && (
@@ -3784,7 +3819,7 @@ export default function ConfigureBundleFlow() {
                                   <div className={fullPageBundleStyles.ruleHeader}>
                                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
                                     <s-button
-                                      variant="plain"
+                                      variant="tertiary"
                                       disabled={addonTiers.length <= 1 || undefined}
                                       onClick={() => {
                                         if (addonTiers.length > 1) {
@@ -3896,7 +3931,7 @@ export default function ConfigureBundleFlow() {
                                               <div className={fullPageBundleStyles.ruleHeader}>
                                                 <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                                 <s-button
-                                                  variant="plain"
+                                                  variant="tertiary"
                                                   tone="critical"
                                                   onClick={() => removeAddonTierCondition(idx, String(rule.id ?? ruleIndex))}
                                                 >
@@ -3969,7 +4004,7 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.panelHeader}>
                         <h3 className={fullPageBundleStyles.panelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
-                          <s-button variant="plain" onClick={() => showPolarisModal(templateVariablesModalRef)}>
+                          <s-button variant="tertiary" onClick={() => showPolarisModal(templateVariablesModalRef)}>
                             Show Variables
                           </s-button>
                           <s-button variant="secondary" icon="globe" disabled>
@@ -4079,7 +4114,7 @@ export default function ConfigureBundleFlow() {
                                 Rule #{index + 1}
                               </h4>
                               <s-button
-                                variant="plain"
+                                variant="tertiary"
                                 tone="critical"
                                 onClick={() => pricingState.removeDiscountRule(rule.id)}
                               >
@@ -4295,7 +4330,7 @@ export default function ConfigureBundleFlow() {
                                     Rule #{index + 1}
                                   </h5>
                                   <s-button
-                                    variant="plain"
+                                    variant="tertiary"
                                     accessibilityLabel="Make this rule default"
                                     onClick={() => pricingState.setBundleQuantityDefaultRule(option.ruleId)}
                                   >
@@ -4478,7 +4513,7 @@ export default function ConfigureBundleFlow() {
                           </s-stack>
                         )}
                         <div style={{ textAlign: "right" }}>
-                          <s-button variant="plain" onClick={() => setIsDiscountVariablesModalOpen(true)}>
+                          <s-button variant="tertiary" onClick={() => setIsDiscountVariablesModalOpen(true)}>
                             Show Variables
                           </s-button>
                         </div>
@@ -4704,7 +4739,7 @@ export default function ConfigureBundleFlow() {
                 <>
                 <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100">
-                    <s-icon name="image-alt-minor" />
+                    <s-icon type="upload" />
                     <s-stack direction="block">
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Media Assets</p>
                       <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
@@ -4718,7 +4753,7 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="base">
                     <s-stack direction="inline">
                       <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
-                        <s-icon name="image-alt-minor" />
+                        <s-icon type="upload" />
                         <s-stack direction="block" gap="small-400">
                           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Promo Banner</p>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Wide banner displayed at the top of the full-page bundle</p>
@@ -4762,7 +4797,7 @@ export default function ConfigureBundleFlow() {
                     <s-stack direction="block" gap="base">
                       <s-stack direction="inline">
                         <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
-                          <s-icon name="image-alt-minor" />
+                          <s-icon type="upload" />
                           <s-stack direction="block" gap="small-400">
                             <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Images</p>
                             <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Tab icon and banner image per step — shown in the widget</p>
@@ -4830,7 +4865,7 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="base">
                     <s-stack direction="inline">
                       <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
-                        <s-icon name="refresh-minor" />
+                        <s-icon type="clock" />
                         <s-stack direction="block" gap="small-400">
                           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Loading Animation</p>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Overlay shown while bundle content is loading</p>
@@ -4884,7 +4919,7 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="base">
                     <s-stack direction="inline">
                       <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
-                        <s-icon name="discount-minor" />
+                        <s-icon type="note" />
                         <s-stack direction="block" gap="small-400">
                           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Floating Promo Badge</p>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Fixed badge at bottom-left of the page — session-dismissed when shopper clicks X</p>
@@ -5429,7 +5464,7 @@ export default function ConfigureBundleFlow() {
 
                     <div style={{ marginTop: 16 }} className={fullPageBundleStyles.messagePreview}>
                       <div className={fullPageBundleStyles.messagePreviewIcon} aria-hidden="true">
-                        <s-icon name="note" />
+                        <s-icon type="note" />
                       </div>
                       <div>
                         <p className={fullPageBundleStyles.messagePreviewTitle}>
@@ -5653,7 +5688,7 @@ export default function ConfigureBundleFlow() {
                         <img src={product.imageUrl || product.image?.url || "/bundle.png"} alt={product.title || 'Product'} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
                         <s-stack direction="block" gap="small-400">
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             onClick={() => {
                               if (!productId) return;
                               openProductInAdmin(productId);
@@ -5954,7 +5989,7 @@ export default function ConfigureBundleFlow() {
                 </div>
                 <div className={fullPageBundleStyles.templateReadyPanel}>
                   <div className={fullPageBundleStyles.templateReadyIcon}>
-                    <s-icon name="view" />
+                    <s-icon type="view" />
                   </div>
                   <h3 className={fullPageBundleStyles.templateReadyTitle}>Enable app embed</h3>
                   <p className={fullPageBundleStyles.templateReadyText}>Open your theme editor, enable the Wolfpack Bundles app embed, then return here to preview your bundle.</p>
@@ -5972,7 +6007,7 @@ export default function ConfigureBundleFlow() {
                 </div>
                 <div className={fullPageBundleStyles.templateReadyPanel}>
                   <div className={fullPageBundleStyles.templateReadyIcon}>
-                    <s-icon name="check" />
+                    <s-icon type="check" />
                   </div>
                   <h3 className={fullPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
                   <p className={fullPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>

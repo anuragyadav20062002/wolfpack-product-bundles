@@ -397,8 +397,8 @@
 .categoryDrag {
   display: grid;
   place-items: center;
-  color: #6b7280;
-  font-size: 16px;
+  color: #303030;
+  font-size: 15px;
   line-height: 1;
   cursor: grab;
   flex-shrink: 0;
@@ -406,7 +406,7 @@
 
 .categoryName {
   overflow: hidden;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #202223;
   text-overflow: ellipsis;
@@ -416,32 +416,101 @@
 .categoryActions {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.categoryIconButton,
+.categoryTextButton,
+.categoryDangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #303030;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.categoryIconButton {
+  width: 28px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.categoryIconButton + .categoryIconButton {
+  border-left-color: #d9d9d9;
+}
+
+.categoryTextButton,
+.categoryDangerButton {
+  gap: 5px;
+  padding: 4px 8px;
+}
+
+.categoryTextButton {
+  min-height: 36px;
+  padding: 0 12px;
+  border-color: #d9d9d9;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.categoryIconButton:hover,
+.categoryTextButton:hover {
+  border-color: #d4d4d4;
+  background: #f7f7f7;
+  color: #111111;
+}
+
+.categoryDangerButton {
+  color: #8e1f0b;
+}
+
+.categoryDeleteIconButton {
+  width: 28px;
+  padding: 0;
+  color: #d72c0d;
+}
+
+.categoryDangerButton:hover {
+  border-color: #fed3c2;
+  background: #fff4f4;
+  color: #5f1507;
 }
 
 .categoryAccordion {
-  margin-bottom: 6px;
-  border: 1px solid #dfe3e8;
-  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06);
+  box-shadow: none;
   overflow: hidden;
 }
 
 .categoryAccordionHeader {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
+  grid-template-columns: 18px minmax(0, 1fr) auto 28px;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px 6px 10px;
-  min-height: 40px;
-  background: #ffffff;
+  gap: 10px;
+  padding: 14px 16px 14px 20px;
+  min-height: 58px;
+  background: #f7f7f7;
   cursor: pointer;
   user-select: none;
 }
 
 .categoryAccordionHeader:hover {
-  background: #f9fafb;
+  background: #f3f3f3;
 }
 
 .categoryAccordionHeader:focus-visible {
@@ -451,12 +520,38 @@
 
 .categoryAccordionHeader[aria-expanded="true"] {
   border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  background: #f7f7f7;
 }
 
 .categoryAccordionBody {
-  padding: 14px 14px 8px;
+  padding: 12px 16px 16px;
   background: #ffffff;
+}
+
+.categoryFieldLabel {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.categoryInputStack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.categoryInputHelp {
+  margin: 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 .categoryDragOver {
@@ -468,14 +563,14 @@
   flex: 1;
   min-width: 0;
   height: 36px;
-  padding: 0 10px;
-  border: 1px solid #c9cccf;
-  border-radius: 8px;
+  padding: 0 12px;
+  border: 1px solid #8c9196;
+  border-radius: 7px;
   background: #ffffff;
   color: #202223;
   font: inherit;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   outline: none;
   box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -488,6 +583,46 @@
 .categoryNameInput:focus {
   border-color: #458fff;
   box-shadow: 0 0 0 2px rgba(69, 143, 255, 0.15);
+}
+
+.categoryPickerHelp {
+  margin: 0 0 14px;
+  color: #303030;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.categoryProductList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.categoryProductRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+}
+
+.categoryProductImage {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #f1f1f1;
+}
+
+.categoryProductTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #303030;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ruleCard {
@@ -510,7 +645,7 @@
 .ruleFields {
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
 }
 
@@ -618,6 +753,15 @@
   gap: 12px;
   padding: 16px;
   background: #ffffff;
+}
+
+.categoryRuleInlinePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 1px solid #e3e3e3;
+  padding-top: 14px;
 }
 
 .categoryRuleHelp {

@@ -597,6 +597,7 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
       makeFormData({
         discountData: JSON.stringify(discountData),
         productSlotsEnabled: "true",
+        validateQuantityPerProduct: JSON.stringify({ isEnabled: true, allowedQuantity: 1 }),
       }),
     );
 
@@ -610,6 +611,94 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
           boxQuantity: 2,
         }),
       ],
+    });
+  });
+
+  it("keeps Product Slots independent from Product Page box-selection quantity validation", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      displayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "5% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+      },
+    });
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({
+        discountData: JSON.stringify(discountData),
+        productSlotsEnabled: "true",
+        validateQuantityPerProduct: JSON.stringify({ isEnabled: false, allowedQuantity: 1 }),
+      }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.productSlotsEnabled).toBe(true);
+    expect(updateCall.data.validateQuantityPerProduct).toEqual({ isEnabled: false, allowedQuantity: 1 });
+    expect(updateCall.data.boxSelection).toMatchObject({
+      isEnabled: true,
+      validateBoxSelectionQuantity: false,
+    });
+  });
+
+  it("enables Product Page box-selection quantity validation even when Product Slots are disabled", async () => {
+    const discountData = makeDiscountData({
+      discountEnabled: true,
+      discountType: "percentage_off",
+      discountRules: [
+        {
+          id: "rule-2",
+          conditionType: "quantity",
+          conditionValue: 2,
+          discountValue: 5,
+        },
+      ],
+      displayOptions: {
+        bundleQuantityOptions: {
+          enabled: true,
+          defaultRuleId: "rule-2",
+          optionsByRuleId: {
+            "rule-2": { label: "Box of 2", subtext: "5% off" },
+          },
+          optionsByLocaleByRuleId: {},
+        },
+      },
+    });
+
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({
+        discountData: JSON.stringify(discountData),
+        productSlotsEnabled: "false",
+        validateQuantityPerProduct: JSON.stringify({ isEnabled: true, allowedQuantity: 1 }),
+      }),
+    );
+
+    const updateCall = getDb().bundle.update.mock.calls[0][0];
+    expect(updateCall.data.productSlotsEnabled).toBe(false);
+    expect(updateCall.data.validateQuantityPerProduct).toEqual({ isEnabled: true, allowedQuantity: 1 });
+    expect(updateCall.data.boxSelection).toMatchObject({
+      isEnabled: true,
+      validateBoxSelectionQuantity: true,
     });
   });
 

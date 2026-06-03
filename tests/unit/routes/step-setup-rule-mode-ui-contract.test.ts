@@ -30,8 +30,8 @@ describe("Step Setup category rule mode contract", () => {
 });
 
 describe.each(Object.entries(routeSources))("%s Step Setup rule mode wiring", (_bundleType, source) => {
-  it("renders category rules only when multiple categories exist", () => {
-    expect(source).toContain("categoryRulesAvailable = stepCategories.length > 1");
+  it("renders category rules when category configuration exists", () => {
+    expect(source).toContain("categoryRulesAvailable = stepCategories.length > 0");
     expect(source).toContain('...(categoryRulesAvailable ? [{ label: "Category rules", value: "category" }] : [])');
   });
 
@@ -55,5 +55,23 @@ describe.each(Object.entries(routeSources))("%s Step Setup rule mode wiring", (_
     expect(source).toContain("cat.name || cat.title || `Category ");
     expect(source).toContain("Add Rule");
     expect(source).toContain("Remove");
+  });
+
+  it("renders Step Rules fields without visible Type, Condition, or Value labels", () => {
+    const stepRulesStart = source.indexOf("(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number)");
+    expect(stepRulesStart).toBeGreaterThan(-1);
+    const addRuleEnd = source.indexOf("conditionsState.addConditionRule(step.id)", stepRulesStart);
+    expect(addRuleEnd).toBeGreaterThan(stepRulesStart);
+    const stepRulesBlock = source.slice(stepRulesStart, addRuleEnd);
+
+    expect(stepRulesBlock).not.toContain("<s-select");
+    expect(stepRulesBlock).not.toContain("<s-number-field");
+    expect(stepRulesBlock).not.toContain('label="Operator"');
+    expect(stepRulesBlock).toContain('aria-label="Type"');
+    expect(stepRulesBlock).toContain('aria-label="Condition"');
+    expect(stepRulesBlock).toContain('aria-label="Value"');
+    expect(stepRulesBlock).toContain('className={');
+    expect(stepRulesBlock).toContain("ruleInlineSelect");
+    expect(stepRulesBlock).toContain("ruleInlineNumber");
   });
 });

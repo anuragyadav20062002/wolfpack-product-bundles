@@ -3,12 +3,41 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-01
-**Last Updated:** 2026-06-01 23:59
+**Last Updated:** 2026-06-04 02:31
 
 ## Overview
 Complete EB parity for the remaining PPB/FPB configure, creation wizard, product edit, storefront template, quantity validation, slot icon, step config, and readiness score card flows. Ground implementation in EB live UI/bundles/docs and validate incrementally in Chrome before committing each slice.
 
 ## Progress Log
+### 2026-06-04 01:33 - PPB Place Widget selected-template parent-product regression started
+- User reported that after selecting a product page template from the PPB `Take your bundle live` / `Place Widget` flow, the merchant is not taken to the bundle parent product with that selected template.
+- Root-cause evidence so far: the route builds a Theme Editor deep link with `template={selectedTemplate}` and `previewPath=/products/{bundleProduct.handle}`, but it does not assign the selected Shopify product template to the bundle parent product before opening the editor. Shopify can therefore preview the parent product through its current/default template instead of the merchant-selected template.
+- Shopify Admin GraphQL schema validation passed for `productUpdate(product: { id, templateSuffix })` against API version `2026-04`; `templateSuffix: null` is valid for the default `product` template.
+- Next: add failing contracts for template suffix assignment, then patch the PPB action/handler and Place Widget selection flow.
+
+### 2026-06-04 01:36 - PPB Place Widget selected-template parent-product regression fixed
+- Added `resolveProductPageTemplateSuffix` so selected product template handles map to Shopify's suffix contract: `product` -> `null`, `product.custom` -> `custom`.
+- Added a PPB `assignProductTemplate` action and handler that updates the bundle parent product via Admin GraphQL `productUpdate(product: { id, templateSuffix })`.
+- Updated PPB `handlePageSelection` so selecting a template posts `assignProductTemplate` for `bundleProduct.id` / stored product ID before building and opening the Theme Editor deep link. The deep link still preserves the selected template handle and parent product preview path.
+- Focused contracts now cover parent product handle selection, template/product context separation, template suffix assignment before editor open, and GraphQL handler wiring.
+- Verification passed: Shopify GraphQL schema validation for the mutation, focused Jest (`ppb-place-widget-product-context`, `product-page-admin-sections`), scoped ESLint with 0 errors, `npm run build`, graphify rebuild with the documented venv, and `git diff --check`.
+
+### 2026-06-04 02:18 - PPB Place Widget parent-product preview context regression reopened
+- User reported the first fix still selects the right template, but Theme Editor previews the wrong product instead of the bundle parent product.
+- Additional root-cause evidence: Shopify's documented app-block deep-link contract covers `template`, `addAppBlockId`, and `target`, while the product resource context is controlled by Theme Editor preview behavior. Shopify Help documents that product template preview can use Active or Draft products, but selecting the resource is a separate preview step; Shopify Admin exposes `onlineStorePreviewUrl` for previewable products.
+- Current code still builds `previewPath` from plain `/products/{handle}` only. For Draft parent products that path can fail to resolve to the draft resource and Theme Editor can fall back to another product.
+- Next: add RED contracts for using the parent product's `onlineStorePreviewUrl` path when available, then patch the deep-link builder and PPB call site.
+
+### 2026-06-04 02:25 - PPB Place Widget draft parent-product preview path fixed
+- Added RED-to-GREEN coverage for draft parent product Theme Editor context.
+- Updated `buildProductPageThemeEditorDeepLink` to prefer the path/query from Shopify's `onlineStorePreviewUrl` when present, falling back to `/products/{handle}` only when no preview URL is available.
+- Updated PPB `handlePageSelection` to pass `bundleProduct.onlineStorePreviewUrl` into the Theme Editor deep-link builder while preserving selected template assignment via `productUpdate(templateSuffix)`.
+- Verification passed: focused Jest for `ppb-place-widget-product-context` and `product-page-admin-sections`.
+
+### 2026-06-04 02:31 - PPB Place Widget and configure parity pre-commit verification
+- Re-ran PPB Place Widget contracts as part of the broad configure parity suite.
+- Verification passed: 9 Jest suites / 127 tests, scoped ESLint with 0 errors, `npm run build`, and `git diff --check` excluding regenerated graph output.
+
 ### 2026-06-01 19:52 - Intake and audit start
 - Scope accepted from user: PPB take-live modal, creation wizard contextual save bar, FPB/PPB product edit workflow, FPB storefront header/footer inheritance, quantity validation, slot icon/step config, and readiness score parity.
 - Feature-pipeline skill is required by project instructions for new features, but no `feature-pipeline` skill/tool is available in this session; proceeding with issue logging, EB evidence audit, implementation, lint, Chrome e2e, graph rebuild, and incremental commits.

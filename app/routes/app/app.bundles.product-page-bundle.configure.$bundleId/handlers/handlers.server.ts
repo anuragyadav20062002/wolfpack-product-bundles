@@ -1035,6 +1035,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       method: discountData.discountType,
     });
     const productSlotsEnabled = formData.get("productSlotsEnabled") === "true";
+    const parsedBundleSettings = parsePPBBundleSettings(formData);
+    const quantityValidationEnabled = parsedBundleSettings.validateQuantityPerProduct?.isEnabled === true;
     const directBoxSelection = discountData.discountEnabled === true
       && discountData.discountType !== "buy_x_get_y"
       ? serializeBoxSelectionFromPricingDisplayOptions(normalizedPricingDisplayOptions)
@@ -1042,7 +1044,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const boxSelection = directBoxSelection
       ? {
           ...directBoxSelection,
-          validateBoxSelectionQuantity: productSlotsEnabled,
+          validateBoxSelectionQuantity: quantityValidationEnabled,
         }
       : null;
     const pricingMessages = {
@@ -1108,7 +1110,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         textOverridesByLocale,
         ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
-        ...parsePPBBundleSettings(formData),
+        ...parsedBundleSettings,
         boxSelection,
         // Update steps if provided
         ...(stepsData && {
@@ -2005,4 +2007,57 @@ export async function handleUpdateBundleDesignTemplate(
   }
 
   return json({ success: true });
+}
+
+export async function handleAssignProductTemplate(
+  admin: ShopifyAdmin,
+  _session: Session,
+  _bundleId: string,
+  formData: FormData,
+) {
+  const rawProductId = String(formData.get("productId") ?? "");
+  const templateSuffixValue = formData.get("templateSuffix");
+  const templateSuffix = typeof templateSuffixValue === "string" ? templateSuffixValue.trim() : "";
+  const productId = normaliseShopifyProductId(rawProductId, {
+    title: "Bundle parent product",
+    stepName: "Place Widget",
+  });
+
+  const ASSIGN_PRODUCT_TEMPLATE = `
+    mutation AssignProductTemplate($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        product {
+          id
+          handle
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(ASSIGN_PRODUCT_TEMPLATE, {
+    variables: {
+      product: {
+        id: productId,
+        templateSuffix: templateSuffix || null,
+      },
+    },
+  });
+  const data = await response.json();
+  const userErrors = data.data?.productUpdate?.userErrors ?? [];
+
+  if (userErrors.length > 0) {
+    const message = userErrors[0]?.message ?? "Failed to assign product template";
+    return json({ success: false, error: message }, { status: 400 });
+  }
+
+  return json({
+    success: true,
+    productId,
+    templateSuffix: templateSuffix || null,
+    handle: data.data?.productUpdate?.product?.handle ?? null,
+  });
 }

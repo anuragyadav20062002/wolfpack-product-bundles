@@ -10,6 +10,9 @@ Ensure PPB `Place Widget` opens Shopify Theme Editor on the merchant-selected te
 |---|---|---|---|---|
 | 1 | Parent product handle source | PPB configure route source | Theme Editor deep link uses `bundleProduct.handle` before `bundle.shopifyProductHandle` | Loader product node is the current Shopify source |
 | 2 | Template and product context separation | Merchant selects any returned template | Selected template remains passed as `template`; product preview context comes from `pageProductHandle` | Avoids hardcoded template names or wrong product preview |
+| 3 | Parent product template assignment | Merchant selects `product.custom` | Route posts `assignProductTemplate` before opening Theme Editor | Prevents Shopify preview from using the product's old/default template |
+| 4 | Template suffix normalization | `product`, `product.custom` | `product` maps to `null`; custom template maps to `custom` | Shopify `templateSuffix` is suffix-only |
+| 5 | Draft parent product preview context | Parent product has `onlineStorePreviewUrl` | Theme Editor deep link uses the preview URL path instead of `/products/{handle}` | Draft products can be previewed, but plain handle paths can fall back to another product |
 
 ## Acceptance Criteria
 - [x] Focused route contract passes.

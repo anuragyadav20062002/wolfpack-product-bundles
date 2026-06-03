@@ -1668,7 +1668,7 @@ export default function WizardConfigureStep() {
                                 <div style={{ display: "flex", gap: 4 }}>
                                   {currentStep.StepCategory.length > 1 && (
                                     <s-button
-                                      variant="plain"
+                                      variant="tertiary"
                                       icon="delete"
                                       tone="critical"
                                       onClick={() => deleteCategory(cat.id)}
@@ -1710,7 +1710,7 @@ export default function WizardConfigureStep() {
                                           <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                             {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover" }} />}
                                             <s-text>{p.title}</s-text>
-                                            <s-button variant="plain" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
+                                            <s-button variant="tertiary" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
                                           </div>
                                         ))}
                                       </div>
@@ -1728,7 +1728,7 @@ export default function WizardConfigureStep() {
                                         {cat.collections.map((c: any) => (
                                           <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                             <s-text>{c.title}</s-text>
-                                            <s-button variant="plain" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
+                                            <s-button variant="tertiary" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
                                           </div>
                                         ))}
                                       </div>
@@ -1742,7 +1742,7 @@ export default function WizardConfigureStep() {
                       </div>
 
                       <div style={{ marginTop: 8 }}>
-                        <s-button variant="plain" icon="plus" onClick={addCategory}>
+                        <s-button variant="tertiary" icon="plus" onClick={addCategory}>
                           Add Category
                         </s-button>
                       </div>
@@ -2001,7 +2001,7 @@ export default function WizardConfigureStep() {
                                 Rule #{index + 1}
                               </h4>
                               <s-button
-                                variant="plain"
+                                variant="tertiary"
                                 tone="critical"
                                 accessibilityLabel={`Remove rule ${index + 1}`}
                                 onClick={() =>

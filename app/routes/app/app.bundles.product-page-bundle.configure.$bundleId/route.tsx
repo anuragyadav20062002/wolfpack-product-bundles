@@ -46,6 +46,7 @@ import {
   handleValidateWidgetPlacement,
   handleUpdateBundleDesignTemplate,
   handleValidateSellingPlanGroups,
+  handleAssignProductTemplate,
 } from "./handlers";
 
 // Types - extracted to separate module for better organization
@@ -82,6 +83,7 @@ import {
   PRODUCT_PAGE_SETUP_ITEMS,
   SUBSCRIPTION_NO_COMMON_PLAN_MESSAGE,
   buildProductPageThemeEditorDeepLink,
+  resolveProductPageTemplateSuffix,
 } from "../../../lib/bundle-config/product-page-admin-sections";
 import {
   buildDefaultProductEntryFromPicker,
@@ -226,6 +228,8 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         return await handleSyncBundle(admin, session, bundleId);
       case "updateBundleDesignTemplate":
         return await handleUpdateBundleDesignTemplate(admin, session, bundleId, formData);
+      case "assignProductTemplate":
+        return await handleAssignProductTemplate(admin, session, bundleId, formData);
       case "validateSellingPlanGroups":
         return await handleValidateSellingPlanGroups(admin, session, bundleId);
       default:
@@ -428,7 +432,7 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
           Bundle Product
         </h3>
         <s-button
-          variant="plain"
+          variant="tertiary"
           tone="critical"
           onClick={onSync}
         >
@@ -446,11 +450,11 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
             />
             <s-stack direction="inline" gap="small-100" style={{ alignItems: "center", flexWrap: "nowrap" }}>
               <s-button
-                variant="plain"
+                variant="tertiary"
                 onClick={onOpenProduct}
                 disabled={!onOpenProduct}
               >
-                <s-icon name="external-minor" />
+                <s-icon type="view" />
                 {productTitle || bundleProduct.title || "Untitled Product"}
               </s-button>
               <s-button
@@ -458,7 +462,7 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
                 onClick={onSelect}
                 aria-label="Change bundle product"
               >
-                <s-icon name="refresh-minor" />
+                <s-icon type="clock" />
               </s-button>
             </s-stack>
           </s-stack>
@@ -466,9 +470,9 @@ const BundleProductCard = memo(({ bundleProduct, productImageUrl, productTitle, 
       ) : (
         <div className={productPageBundleStyles.productSelectionPlaceholder}>
           <s-stack direction="block" gap="small-400" style={{ alignItems: "center" }}>
-            <s-icon name="product-minor" />
+            <s-icon type="product" />
             <s-button
-              variant="plain"
+              variant="tertiary"
               onClick={onSelect}
             >
               Select Bundle Product
@@ -515,7 +519,7 @@ function QuestionHelpTooltip({ tooltipKey }: { tooltipKey: HelpTooltipKey }) {
       onBlur={hideTooltip}
     >
       <s-button
-        variant="plain"
+        variant="tertiary"
         icon="info"
         accessibilityLabel={title || description}
         className={productPageBundleStyles.richHelpTrigger}
@@ -1884,6 +1888,24 @@ export default function ConfigureBundleFlow() {
         ? (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block")
         : blockHandle;
 
+      const productIdForTemplate = bundleProduct?.id ?? (bundle as any).shopifyProductId ?? null;
+      const productTemplateSuffix = resolveProductPageTemplateSuffix(template);
+      if (productIdForTemplate) {
+        const formData = new FormData();
+        formData.append("intent", "assignProductTemplate");
+        formData.append("productId", productIdForTemplate);
+        formData.append("templateSuffix", productTemplateSuffix ?? "");
+
+        const response = await fetch(window.location.href, {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json().catch(() => null);
+        if (!response.ok || result?.success === false) {
+          throw new Error(result?.error || "Failed to assign the selected template to the bundle parent product");
+        }
+      }
+
       // Generate deep link following Shopify's official documentation with bundle ID
       // Official format: template + addAppBlockId + target + bundleId (for auto-population)
       // See: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/deep-links
@@ -1897,6 +1919,7 @@ export default function ConfigureBundleFlow() {
         blockHandle: placementBlockHandle,
         bundleId: bundle.id,
         productHandle: pageProductHandle,
+        productPreviewUrl: bundleProduct?.onlineStorePreviewUrl,
         template,
       });
 
@@ -1919,7 +1942,7 @@ export default function ConfigureBundleFlow() {
       shopify.toast.show(`Failed to open theme editor: ${errorMessage}`, { isError: true, duration: 5000 });
       editorWindow?.close();
     }
-  }, [activeSection, blockHandle, shop, shopify, bundle.id, bundle.shopifyProductHandle, bundleProduct?.handle, upsellWidgetDisplayMode, apiKey]);
+  }, [activeSection, blockHandle, shop, shopify, bundle.id, bundle.shopifyProductHandle, bundleProduct?.handle, bundleProduct?.id, bundleProduct?.onlineStorePreviewUrl, upsellWidgetDisplayMode, apiKey]);
 
   // Sync Bundle modal ref
   const syncModalRef = useRef<HTMLElement>(null);
@@ -2453,21 +2476,21 @@ export default function ConfigureBundleFlow() {
                         </div>
                         <div className={productPageBundleStyles.stepSetupActions}>
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             icon="globe"
                             accessibilityLabel="Multi Language"
                             title="Multi Language"
                             onClick={() => openStepMultiLanguageModal(step.id)}
                           />
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             icon="duplicate"
                             accessibilityLabel="Clone current step"
                             title="Clone current step"
                             onClick={() => cloneStep(step.id)}
                           />
                           <s-button
-                            variant="plain"
+                            variant="tertiary"
                             icon="delete"
                             tone="critical"
                             accessibilityLabel="Delete current step"
@@ -2566,10 +2589,11 @@ export default function ConfigureBundleFlow() {
                                             className={productPageBundleStyles.categoryActions}
                                             onClick={(e: React.MouseEvent) => e.stopPropagation()}
                                           >
-                                            <s-button
-                                              variant="plain"
-                                              icon="duplicate"
-                                              accessibilityLabel="Clone category"
+                                            <button
+                                              type="button"
+                                              className={productPageBundleStyles.categoryIconButton}
+                                              aria-label="Clone"
+                                              title="Clone"
                                               onClick={() => {
                                                 const cats = ((step as any).StepCategory as any[]) ?? [];
                                                 stepsState.updateStepField(step.id, "StepCategory", [
@@ -2578,33 +2602,42 @@ export default function ConfigureBundleFlow() {
                                                 ]);
                                                 markAsDirty();
                                               }}
-                                            />
-                                            <s-button
-                                              variant="plain"
-                                              icon="delete"
-                                              accessibilityLabel="Delete category"
+                                            >
+                                              <s-icon type="duplicate" />
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className={productPageBundleStyles.categoryDeleteIconButton}
+                                              aria-label="Delete"
+                                              title="Delete"
                                               onClick={() => {
                                                 const updated = (((step as any).StepCategory as any[]) ?? []).filter((_: any, i: number) => i !== catIndex);
                                                 stepsState.updateStepField(step.id, "StepCategory", updated);
                                                 markAsDirty();
                                               }}
-                                            />
-                                            <button
-                                              className={productPageBundleStyles.categoryChevron}
-                                              aria-label={isOpen ? "Collapse category" : "Expand category"}
-                                              onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
                                             >
-                                              {isOpen ? (
-                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                                                  <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                                                </svg>
-                                              ) : (
-                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                                                  <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-                                                </svg>
-                                              )}
+                                              <s-icon type="delete" />
                                             </button>
                                           </div>
+                                          <button
+                                            type="button"
+                                            className={productPageBundleStyles.categoryChevron}
+                                            aria-label={isOpen ? "Collapse category" : "Expand category"}
+                                            onClick={(e: React.MouseEvent) => {
+                                              e.stopPropagation();
+                                              setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }));
+                                            }}
+                                          >
+                                            {isOpen ? (
+                                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                                <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                              </svg>
+                                            ) : (
+                                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                                <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                              </svg>
+                                            )}
+                                          </button>
                                         </div>
 
                                         {isOpen && (
@@ -2617,52 +2650,35 @@ export default function ConfigureBundleFlow() {
                                                 Category Name
                                               </label>
                                               <div className={productPageBundleStyles.catNameRow}>
-                                                <input
-                                                  id={`ppb-category-name-${catKey}`}
-                                                  className={productPageBundleStyles.categoryNameInput}
-                                                  type="text"
-                                                  value={cat.name ?? ""}
-                                                  placeholder={`Category ${catIndex + 1}`}
-                                                  aria-label="Category name"
-                                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                                    const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                      i === catIndex ? { ...c, name: e.target.value } : c
-                                                    );
-                                                    stepsState.updateStepField(step.id, "StepCategory", updated);
-                                                    markAsDirty();
-                                                  }}
-                                                />
-                                                <s-button
-                                                  variant="plain"
-                                                  icon="globe"
-                                                  accessibilityLabel="Multi Language"
+                                                <div className={productPageBundleStyles.categoryInputStack}>
+                                                  <input
+                                                    id={`ppb-category-name-${catKey}`}
+                                                    className={productPageBundleStyles.categoryNameInput}
+                                                    type="text"
+                                                    value={cat.name ?? ""}
+                                                    placeholder={`Category ${catIndex + 1}`}
+                                                    aria-label="Category name"
+                                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                                      const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                        i === catIndex ? { ...c, name: e.target.value, title: e.target.value } : c
+                                                      );
+                                                      stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                      markAsDirty();
+                                                    }}
+                                                  />
+                                                  <p className={productPageBundleStyles.categoryInputHelp}>Will be visible on the storefront</p>
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  className={productPageBundleStyles.categoryTextButton}
                                                   onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
                                                 >
+                                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                                    <path d="M2 3.25h5.25M4.63 2v1.25M6.5 3.25c-.38 1.97-1.75 3.5-3.75 4.25M3.38 4.75c.55 1.1 1.45 1.95 2.72 2.55M7.25 12l.7-1.75m0 0L9.5 6.5l1.55 3.75m-3.1 0h3.1M12 12l-.95-1.75" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+                                                  </svg>
                                                   Multi Language
-                                                </s-button>
+                                                </button>
                                               </div>
-                                            </div>
-                                            <div className={productPageBundleStyles.categoryFieldGroup}>
-                                              <label
-                                                className={productPageBundleStyles.categoryFieldLabel}
-                                                htmlFor={`ppb-category-title-${catKey}`}
-                                              >
-                                                Category Title
-                                              </label>
-                                              <input
-                                                id={`ppb-category-title-${catKey}`}
-                                                className={productPageBundleStyles.categoryNameInput}
-                                                type="text"
-                                                value={cat.title ?? ""}
-                                                aria-label="Category title"
-                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, title: e.target.value } : c
-                                                  );
-                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
-                                                  markAsDirty();
-                                                }}
-                                              />
                                             </div>
                                             <div className={productPageBundleStyles.tabRow}>
                                               <button
@@ -2687,6 +2703,9 @@ export default function ConfigureBundleFlow() {
 
                                             {catActiveTab === 0 && (
                                               <div>
+                                                <p className={productPageBundleStyles.categoryPickerHelp}>
+                                                  Products selected here will be displayed on this step
+                                                </p>
                                                 <div className={productPageBundleStyles.productActions}>
                                                   <s-button
                                                     variant="primary"
@@ -2718,17 +2737,18 @@ export default function ConfigureBundleFlow() {
                                                   )}
                                                 </div>
                                                 {catProducts.length > 0 && (
-                                                  <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                                  <div className={productPageBundleStyles.categoryProductList}>
                                                     {catProducts.map((product: any) => (
-                                                      <s-stack key={product.id} direction="inline" gap="small-100">
+                                                      <div key={product.id} className={productPageBundleStyles.categoryProductRow}>
                                                         <img
+                                                          className={productPageBundleStyles.categoryProductImage}
                                                           src={product.imageUrl || "/bundle.png"}
                                                           alt={product.title}
-                                                          style={{ width: 36, height: 36, objectFit: "cover", borderRadius: 4 }}
                                                         />
-                                                        <span style={{ flex: 1, fontSize: 14 }}>{product.title}</span>
-                                                        <s-button
-                                                          variant="plain"
+                                                        <span className={productPageBundleStyles.categoryProductTitle}>{product.title}</span>
+                                                        <button
+                                                          type="button"
+                                                          className={productPageBundleStyles.categoryDangerButton}
                                                           onClick={() => {
                                                             const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
                                                               i === catIndex ? { ...c, products: c.products.filter((p: any) => p.id !== product.id) } : c
@@ -2738,16 +2758,19 @@ export default function ConfigureBundleFlow() {
                                                           }}
                                                         >
                                                           Remove
-                                                        </s-button>
-                                                      </s-stack>
+                                                        </button>
+                                                      </div>
                                                     ))}
-                                                  </s-stack>
+                                                  </div>
                                                 )}
                                               </div>
                                             )}
 
                                             {catActiveTab === 1 && (
                                               <div>
+                                                <p className={productPageBundleStyles.categoryPickerHelp}>
+                                                  Collections selected here will be displayed on this step
+                                                </p>
                                                 <div className={productPageBundleStyles.productActions}>
                                                   <s-button
                                                     variant="primary"
@@ -2776,12 +2799,13 @@ export default function ConfigureBundleFlow() {
                                                   )}
                                                 </div>
                                                 {catCollections.length > 0 && (
-                                                  <s-stack direction="block" gap="small-400" style={{ marginTop: 12 }}>
+                                                  <div className={productPageBundleStyles.categoryProductList}>
                                                     {catCollections.map((col: any) => (
-                                                      <s-stack key={col.id} direction="inline" gap="small-100">
-                                                        <span style={{ flex: 1, fontSize: 14 }}>{col.title}</span>
-                                                        <s-button
-                                                          variant="plain"
+                                                      <div key={col.id} className={productPageBundleStyles.categoryProductRow}>
+                                                        <span className={productPageBundleStyles.categoryProductTitle}>{col.title}</span>
+                                                        <button
+                                                          type="button"
+                                                          className={productPageBundleStyles.categoryDangerButton}
                                                           onClick={() => {
                                                             const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
                                                               i === catIndex ? { ...c, collections: c.collections.filter((col2: any) => col2.id !== col.id) } : c
@@ -2791,26 +2815,13 @@ export default function ConfigureBundleFlow() {
                                                           }}
                                                         >
                                                           Remove
-                                                        </s-button>
-                                                      </s-stack>
+                                                        </button>
+                                                      </div>
                                                     ))}
-                                                  </s-stack>
+                                                  </div>
                                                 )}
                                               </div>
                                             )}
-                                            <div className={productPageBundleStyles.categoryVariantControl}>
-                                              <s-checkbox
-                                                label="Display variants as individual products"
-                                                checked={cat.displayVariantsAsIndividualProducts === true || undefined}
-                                                onChange={(e: Event) => {
-                                                  const updated = (((step as any).StepCategory as any[]) ?? []).map((c: any, i: number) =>
-                                                    i === catIndex ? { ...c, displayVariantsAsIndividualProducts: (e.target as HTMLInputElement).checked } : c
-                                                  );
-                                                  stepsState.updateStepField(step.id, "StepCategory", updated);
-                                                  markAsDirty();
-                                                }}
-                                              />
-                                            </div>
                                           </div>
                                         )}
                                       </div>
@@ -2822,6 +2833,9 @@ export default function ConfigureBundleFlow() {
                                     className={productPageBundleStyles.addSectionButton}
                                     onClick={() => {
                                       const cats = ((step as any).StepCategory as any[]) ?? [];
+                                      const displayVariantsForAllCategories = cats.length > 0 && cats.every(
+                                        (category: any) => category.displayVariantsAsIndividualProducts === true,
+                                      );
                                       stepsState.updateStepField(step.id, "StepCategory", [
                                         ...cats,
                                         {
@@ -2831,7 +2845,7 @@ export default function ConfigureBundleFlow() {
                                           sortOrder: cats.length,
                                           products: [],
                                           collections: [],
-                                          displayVariantsAsIndividualProducts: false,
+                                          displayVariantsAsIndividualProducts: displayVariantsForAllCategories,
                                           displayVariantsAsSwatches: false,
                                         },
                                       ]);
@@ -2843,6 +2857,32 @@ export default function ConfigureBundleFlow() {
                                     </svg>
                                     Add Category
                                   </button>
+
+                                  {(() => {
+                                    const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
+                                    const displayVariantsForAllCategories = stepCategories.length > 0 && stepCategories.every(
+                                      (category: any) => category.displayVariantsAsIndividualProducts === true,
+                                    );
+
+                                    return (
+                                      <>
+                                        <s-divider style={{ marginTop: 12, marginBottom: 12 }} />
+                                        <s-checkbox
+                                          label="Display variants as individual products"
+                                          checked={displayVariantsForAllCategories || undefined}
+                                          onChange={(e: Event) => {
+                                            const checked = (e.target as HTMLInputElement).checked;
+                                            const updated = stepCategories.map((category: any) => ({
+                                              ...category,
+                                              displayVariantsAsIndividualProducts: checked,
+                                            }));
+                                            stepsState.updateStepField(step.id, "StepCategory", updated);
+                                            markAsDirty();
+                                          }}
+                                        />
+                                      </>
+                                    );
+                                  })()}
                                 </div>
 
                     {/* ── Rules Configuration card ── */}
@@ -2864,7 +2904,7 @@ export default function ConfigureBundleFlow() {
                                   </button>
                                   {(() => {
                                     const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
-                                    const categoryRulesAvailable = stepCategories.length > 1;
+                                    const categoryRulesAvailable = stepCategories.length > 0;
                                     const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
                                     const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
                                     const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
@@ -2948,7 +2988,7 @@ export default function ConfigureBundleFlow() {
                                                               <div className={productPageBundleStyles.ruleHeader}>
                                                                 <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                                                 <s-button
-                                                                  variant="plain"
+                                                                  variant="tertiary"
                                                                   tone="critical"
                                                                   onClick={() => removeCategoryConditionRule(step.id, catIndex, ruleId)}
                                                                 >
@@ -3026,7 +3066,7 @@ export default function ConfigureBundleFlow() {
                                                     <div className={productPageBundleStyles.ruleHeader}>
                                                       <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
                                                       <s-button
-                                                        variant="plain"
+                                                        variant="tertiary"
                                                         tone="critical"
                                                         onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
                                                       >
@@ -3034,33 +3074,37 @@ export default function ConfigureBundleFlow() {
                                                       </s-button>
                                                     </div>
                                                     <div className={productPageBundleStyles.ruleFields}>
-                                                      <s-select
-                                                        value={rule.type}
-                                                        label="Type"
+                                                      <select
+                                                        className={productPageBundleStyles.ruleInlineSelect}
+                                                        value={rule.type ?? ""}
                                                         onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                                        aria-label="Type"
                                                       >
-                                                        <s-option value="" disabled>Type</s-option>
+                                                        <option value="" disabled>Type</option>
                                                         {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
-                                                          <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                         ))}
-                                                      </s-select>
-                                                      <s-select
-                                                        value={rule.operator}
-                                                        label="Operator"
+                                                      </select>
+                                                      <select
+                                                        className={productPageBundleStyles.ruleInlineSelect}
+                                                        value={rule.operator ?? ""}
                                                         onChange={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                                        aria-label="Condition"
                                                       >
-                                                        <s-option value="" disabled>Operator</s-option>
+                                                        <option value="" disabled>Condition</option>
                                                         {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                                          <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                                                         ))}
-                                                      </s-select>
-                                                      <s-number-field
-                                                        label="Value"
+                                                      </select>
+                                                      <input
+                                                        type="number"
+                                                        className={productPageBundleStyles.ruleInlineNumber}
                                                         min={0}
                                                         placeholder="0"
                                                         value={rule.value ?? ""}
                                                         onInput={(e: Event) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
                                                         autoComplete="off"
+                                                        aria-label="Value"
                                                       />
                                                     </div>
                                                     {(conditionsState.stepConditions[step.id] || []).length === 1 && (
@@ -3230,7 +3274,7 @@ export default function ConfigureBundleFlow() {
                                   <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                                     Rule #{index + 1}
                                   </h4>
-                                  <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
+                                  <s-button variant="tertiary" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
                                 </div>
@@ -3322,7 +3366,7 @@ export default function ConfigureBundleFlow() {
                                   <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
                                     Rule #{index + 1}
                                   </h4>
-                                  <s-button variant="plain" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
+                                  <s-button variant="tertiary" tone="critical" onClick={() => pricingState.removeDiscountRule(rule.id)}>
                                     Remove
                                   </s-button>
                                 </div>
@@ -3452,7 +3496,7 @@ export default function ConfigureBundleFlow() {
                                         <s-stack direction="inline" gap="small" alignItems="center">
                                           <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>Rule #{i + 1}</h5>
                                           <s-button
-                                            variant="plain"
+                                            variant="tertiary"
                                             accessibilityLabel="Make this rule default"
                                             onClick={() => { setQtyOptionsDefaultRuleId(r.id); markAsDirty(); }}
                                           >
@@ -3630,7 +3674,7 @@ export default function ConfigureBundleFlow() {
                               </s-stack>
                             )}
                             <div style={{ textAlign: "right" }}>
-                              <s-button variant="plain" onClick={() => setIsDiscountVariablesModalOpen(true)}>
+                              <s-button variant="tertiary" onClick={() => setIsDiscountVariablesModalOpen(true)}>
                                 Show Variables
                               </s-button>
                             </div>
@@ -4043,7 +4087,7 @@ export default function ConfigureBundleFlow() {
                   <div className={productPageBundleStyles.visibilitySectionHeader}>
                     <span />
                     <s-button
-                      variant="plain"
+                      variant="tertiary"
                       icon="globe"
                       accessibilityLabel="Multi Language"
                       title="Multi Language"
@@ -4160,7 +4204,7 @@ export default function ConfigureBundleFlow() {
               <s-stack direction="block" gap="base">
                 <div style={{ padding: "var(--s-space-400)", background: "#f6f6f7", borderRadius: 8 }}>
                   <s-stack direction="inline" gap="small-100" style={{ alignItems: "center" }}>
-                    <s-icon name="image-alt-minor" />
+                    <s-icon type="upload" />
                     <s-stack direction="block">
                       <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Media Assets</p>
                       <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
@@ -4175,7 +4219,7 @@ export default function ConfigureBundleFlow() {
                     <s-stack direction="block" gap="base">
                       <s-stack direction="inline">
                         <s-stack direction="inline" gap="small" style={{ flex: 1 }}>
-                          <s-icon name="image-alt-minor" />
+                          <s-icon type="upload" />
                           <s-stack direction="block" gap="small-400">
                             <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Images</p>
                             <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Banner image per step — shown above the step's products in the widget</p>
@@ -4239,7 +4283,7 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="base">
                     <s-stack direction="inline" style={{ justifyContent: "space-between", alignItems: "center" }}>
                       <s-stack direction="inline" gap="small" style={{ alignItems: "center" }}>
-                        <s-icon name="refresh-minor" />
+                        <s-icon type="clock" />
                         <s-stack direction="block" gap="small-400">
                           <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Loading Animation</p>
                           <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Overlay shown while bundle content is loading</p>
@@ -4629,7 +4673,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="inline" alignItems="center" gap="small">
                         <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Subscriptions</h3>
                         <s-button
-                          variant="plain"
+                          variant="tertiary"
                           onClick={() => setShowSubscriptionSetupGuide((visible) => !visible)}
                         >
                           How to setup?
@@ -4658,7 +4702,7 @@ export default function ConfigureBundleFlow() {
                         <s-banner tone="warning">
                           <s-stack direction="block" gap="small-400">
                             <span>{validationMessage}</span>
-                            <s-button variant="plain">Learn More</s-button>
+                            <s-button variant="tertiary">Learn More</s-button>
                           </s-stack>
                         </s-banner>
                       )}
@@ -4941,7 +4985,7 @@ export default function ConfigureBundleFlow() {
                                   <div className={productPageBundleStyles.ruleHeader}>
                                     <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
                                     <s-button
-                                      variant="plain"
+                                      variant="tertiary"
                                       disabled={addonTiers.length <= 1 || undefined}
                                       onClick={() => {
                                         if (addonTiers.length > 1) {
@@ -4982,7 +5026,7 @@ export default function ConfigureBundleFlow() {
                       <div className={productPageBundleStyles.panelHeader}>
                         <h3 className={productPageBundleStyles.panelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
-                          <s-button variant="plain" onClick={() => showPolarisModal(templateVariablesModalRef)}>
+                          <s-button variant="tertiary" onClick={() => showPolarisModal(templateVariablesModalRef)}>
                             Show Variables
                           </s-button>
                           <s-button variant="secondary" icon="globe" disabled>
@@ -5051,7 +5095,7 @@ export default function ConfigureBundleFlow() {
 
                     <div style={{ marginTop: 16 }} className={productPageBundleStyles.messagePreview}>
                       <div className={productPageBundleStyles.messagePreviewIcon} aria-hidden="true">
-                        <s-icon name="note" />
+                        <s-icon type="note" />
                       </div>
                       <div>
                         <p className={productPageBundleStyles.messagePreviewTitle}>
@@ -5251,14 +5295,14 @@ export default function ConfigureBundleFlow() {
                               />
                               <s-stack direction="block">
                                 <s-button
-                                  variant="plain"
+                                  variant="tertiary"
                                   onClick={() => {
                                     if (!productId) return;
                                     openProductInAdmin(productId);
                                   }}
                                   disabled={!productId || undefined}
                                 >
-                                  <s-icon name="external-minor" />
+                                  <s-icon type="view" />
                                   {product.title || product.name || 'Unnamed Product'}
                                 </s-button>
                                 {product.variants && product.variants.length > 0 && (
@@ -5511,7 +5555,7 @@ export default function ConfigureBundleFlow() {
                 </div>
                 <div className={productPageBundleStyles.templateReadyPanel}>
                   <div className={productPageBundleStyles.templateReadyIcon}>
-                    <s-icon name="view" />
+                    <s-icon type="view" />
                   </div>
                   <h3 className={productPageBundleStyles.templateReadyTitle}>Enable app embed</h3>
                   <p className={productPageBundleStyles.templateReadyText}>Open your theme editor, enable the Wolfpack Bundles app embed, then return here to preview your bundle.</p>
@@ -5529,7 +5573,7 @@ export default function ConfigureBundleFlow() {
                 </div>
                 <div className={productPageBundleStyles.templateReadyPanel}>
                   <div className={productPageBundleStyles.templateReadyIcon}>
-                    <s-icon name="check" />
+                    <s-icon type="check" />
                   </div>
                   <h3 className={productPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
                   <p className={productPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
