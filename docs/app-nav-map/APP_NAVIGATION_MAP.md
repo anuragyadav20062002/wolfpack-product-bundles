@@ -89,6 +89,16 @@ Create Bundle Wizard (Step 01 of 05)
 └── [Button] "Next" → POST action → redirect to configure page
 ```
 
+Create Bundle Configure Wizard (`/app/bundles/create/configure/:bundleId`)
+```
+├── Header
+│   ├── [Button] "Preview" → opens wizard preview URL through app-embed gate
+│   └── [Button] "How to configure?" → help docs
+├── Step indicator
+├── Main wizard content
+└── Footer: [Back] [Next/Finish]
+```
+
 #### Modal: Delete Bundle Confirmation
 Triggered by: "Delete" row action
 ```

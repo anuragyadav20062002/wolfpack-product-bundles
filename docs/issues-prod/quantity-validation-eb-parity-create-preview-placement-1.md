@@ -40,6 +40,10 @@ Replicate EB's Enable Quantity Validation card behavior in FPB and PPB configure
 - Scope: FPB/PPB Admin split between Quantity Validation and Product Slots, runtime config propagation, storefront widget enforcement/rendering, widget version/build assets, and focused tests.
 - Leaving create wizard Preview placement and DCP/Slot Icon documentation for separate commits as requested.
 
+### 2026-06-03 15:53 - Commit 2 preparation
+- Preparing the create wizard Preview placement commit.
+- Scope: move the Preview action to the configure wizard header beside "How to configure?", remove the footer and Step Summary Preview placements, and update the source contract test and navigation map.
+
 ## Related Documentation
 
 - `docs/competitor-analysis/14-eb-addon-upsell-analysis.md`

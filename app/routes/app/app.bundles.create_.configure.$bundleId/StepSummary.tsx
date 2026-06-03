@@ -6,7 +6,6 @@ interface StepSummaryProps {
   filtersCount: number;
   searchBarEnabled: boolean;
   customFieldsCount: number;
-  onPreview: () => void;
 }
 
 export function StepSummary({
@@ -15,7 +14,6 @@ export function StepSummary({
   filtersCount,
   searchBarEnabled,
   customFieldsCount,
-  onPreview,
 }: StepSummaryProps) {
   return (
     <div className={styles.sideCard}>
@@ -90,11 +88,6 @@ export function StepSummary({
               {customFieldsCount > 0 ? customFieldsCount : "None"}
             </span>
           </div>
-        </div>
-        <div className={styles.previewButtonWrap}>
-          <s-button variant="primary" icon="view" onClick={onPreview}>
-            Preview
-          </s-button>
         </div>
       </s-stack>
     </div>

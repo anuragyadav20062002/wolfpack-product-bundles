@@ -3,9 +3,9 @@
  *
  * Issue: feedback-jun26-2
  *
- * The Preview button must appear in each of the four `.wizardFooter` blocks
- * (one per wizardStep value 1..4). The loader must expose the data the
- * preview handler needs (shop, themeEditorUrl, product/page handles).
+ * The Preview button must appear in the top page header next to "How to configure?".
+ * The loader must expose the data the preview handler needs (shop,
+ * themeEditorUrl, product/page handles).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -42,22 +42,25 @@ describe("CREATE wizard Preview handler", () => {
   });
 });
 
-describe("CREATE wizard footer Preview button", () => {
-  it("renders a Preview s-button inside the wizard footer at least four times (one per wizardStep branch)", () => {
-    // We assert that every .wizardFooter block contains both a Preview button and the existing Back/Next buttons.
-    const footerBlocks = source.split('className={styles.wizardFooter}');
-    // First chunk is the prefix before the first occurrence — exclude it. Each subsequent chunk corresponds to one footer.
-    const footerChunks = footerBlocks.slice(1);
-    expect(footerChunks.length).toBeGreaterThanOrEqual(4);
+describe("CREATE wizard header Preview button", () => {
+  it("renders Preview next to the How to configure action in the page header", () => {
+    const headerStart = source.indexOf("className={styles.pageHeader}");
+    expect(headerStart).toBeGreaterThan(-1);
+    const headerBlock = source.slice(headerStart, source.indexOf("{/* Step indicator", headerStart));
+    expect(headerBlock).toContain("How to configure?");
+    expect(headerBlock).toContain("handleWizardPreview");
+    expect(headerBlock).toContain("Preview");
+  });
 
-    for (const chunk of footerChunks) {
-      // Each footer must contain Back, Next/Finish, and the new Preview wiring.
+  it("does not render Preview in wizard footers or StepSummary", () => {
+    const footerBlocks = source.split('className={styles.wizardFooter}').slice(1);
+    expect(footerBlocks.length).toBeGreaterThanOrEqual(3);
+    for (const chunk of footerBlocks) {
       const upToClose = chunk.slice(0, chunk.indexOf("</div>"));
-      expect(upToClose).toMatch(/handleBack/);
-      expect(upToClose).toMatch(/handleNext/);
-      expect(upToClose).toMatch(/handleWizardPreview/);
-      expect(upToClose).toMatch(/Preview/);
+      expect(upToClose).not.toMatch(/handleWizardPreview/);
+      expect(upToClose).not.toMatch(/Preview/);
     }
+    expect(source).not.toContain("onPreview={handleWizardPreview}");
   });
 
   it("does not leave the legacy placeholder onPreview that only toasted", () => {
