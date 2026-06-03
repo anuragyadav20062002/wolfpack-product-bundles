@@ -1,11 +1,11 @@
 # Graph Report - .  (2026-06-04)
 
 ## Corpus Check
-- 473 files · ~4,330,508 words
+- 473 files · ~4,331,180 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3931 nodes · 5824 edges · 575 communities detected
+- 3933 nodes · 5828 edges · 575 communities detected
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
@@ -587,8 +587,8 @@
 - [[_COMMUNITY_Community 574|Community 574]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `BundleWidgetFullPage` - 199 edges
-2. `BundleWidgetFullPage` - 199 edges
+1. `BundleWidgetFullPage` - 200 edges
+2. `BundleWidgetFullPage` - 200 edges
 3. `BundleWidgetProductPage` - 135 edges
 4. `BundleWidgetProductPage` - 135 edges
 5. `bundle-widget-full-page.js Widget Source` - 82 edges
@@ -634,7 +634,7 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (293): Add-to-Bundle Button Selected-State Colour DCP Control, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget, API Route: api.bundle.$bundleId.json.tsx, api.design-settings.$shopDomain.tsx Route, api.preview.$type.tsx (DCP Storefront Preview Route), api.storefront-products Route, app.billing.tsx Route, Source: app/constants/api.ts (new) (+285 more)
+Nodes (294): Add-to-Bundle Button Selected-State Colour DCP Control, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget, Admin Tier Config Architecture Decision Record, Admin Tier Config BR, Admin Tier Config PO Requirements, PricingTiersSection UI Component, Admin Tier Config SDE Implementation Plan, validateTierConfig Server Function (+286 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.02
@@ -649,32 +649,32 @@ Cohesion: 0.03
 Nodes (16): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, hideLoadingOverlayElement() (+8 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.02
-Nodes (155): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundles Architecture Decision Record, Ad-Ready Bundles PO Requirements, Ad-Ready Bundles SDE Implementation Plan, Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected (+147 more)
-
-### Community 5 - "Community 5"
-Cohesion: 0.02
-Nodes (142): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Admin Tier Config BR, Admin Tier Config PO Requirements, PricingTiersSection UI Component (+134 more)
-
-### Community 6 - "Community 6"
 Cohesion: 0.03
 Nodes (5): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ppbExpandSingleStepCategoriesAsSteps()
 
+### Community 5 - "Community 5"
+Cohesion: 0.02
+Nodes (133): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Shopify afterAuth Hook (shopify.server.ts), Bottom-Sheet CSS Variable Output Fix in CSS Generator, Bottom-Sheet Product Selection Modal (+125 more)
+
+### Community 6 - "Community 6"
+Cohesion: 0.02
+Nodes (129): Rationale: Option C (tierConfig on Bundle DB + existing API) Selected, Bundle.tierConfig JSON Field, Analytics Pixel Toggle Architecture, deactivateUtmPixel Service Function, getPixelStatus Service Function, Remove Pixel Auto-Activation from afterAuth, AppLogger (Structured Logger Utility), App Proxy 504 / Render Cold-Start Issue (+121 more)
+
 ### Community 7 - "Community 7"
 Cohesion: 0.03
-Nodes (104): api.bundle-product-manager.test.ts, $app Namespace Reserved Prefix, npm run build:widgets Command, BundleAnalytics Preservation During Sync, Cron Endpoint POST /api/cron/sync-bundles (shared secret auth), Bundle Auto Re-sync — Requirements & Discussion Notes, Soft Sync Operation (re-writes metafields without deleting Shopify page), Version-Gated Lazy Migration Pattern (syncedAtVersion vs BUNDLE_SYNC_VERSION) (+96 more)
+Nodes (107): Ad-Ready Bundles Business Requirement (BR), OAuth Scope Changes Requiring Re-Authentication, API Endpoints Reference, Application Architecture Document, Architecture Overview, Route: auth.login/route.tsx, Beco BYOB Bundle Page Design Analysis, Beco Layout Transformation Plan (+99 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.03
-Nodes (93): Ad-Ready Bundles Business Requirement (BR), OAuth Scope Changes Requiring Re-Authentication, API Endpoints Reference, Application Architecture Document, Architecture Overview, Route: auth.login/route.tsx, Beco BYOB Bundle Page Design Analysis, Beco Layout Transformation Plan (+85 more)
+Cohesion: 0.02
+Nodes (101): Storefront Collections API Route (api.storefront-collections.tsx), Dashboard Route (app.dashboard.tsx), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Issue: Beco BYOB Expandable Floating Footer, Bottom-Sheet Panel DCP CSS Targeting Fix, npm run build:widgets Command, BundleAnalytics Preservation During Sync (+93 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.03
-Nodes (79): Storefront Collections API Route (api.storefront-collections.tsx), Dashboard Route (app.dashboard.tsx), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Issue: Beco BYOB Expandable Floating Footer, Bottom-Sheet Product Selection Modal, Bottom-Sheet Panel DCP CSS Targeting Fix, Component: BundleFooterPreview.tsx (DCP Footer Preview) (+71 more)
+Cohesion: 0.04
+Nodes (35): addBundleToCart(), addItem(), _bootstrap(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), _buildNoOp(), buildProductPageCartFormData() (+27 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.06
-Nodes (34): addBundleToCart(), addItem(), _bootstrap(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), _buildNoOp(), buildProductPageCartFormData() (+26 more)
+Cohesion: 0.04
+Nodes (69): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundles Architecture Decision Record, Ad-Ready Bundles PO Requirements, Ad-Ready Bundles SDE Implementation Plan, Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected (+61 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.05
@@ -697,8 +697,8 @@ Cohesion: 0.06
 Nodes (39): Architecture Comparison - Hybrid Approach (3 Standard + 1 UI Config) Recommended, Architecture Comparison - Pure API Approach, Architecture Comparison - Widget Reconstructs from Minimal Data, Bundle Widget Configuration Structure, Bundle Widget Cart Transform Integration (_wolfpack_bundle_id), Cart Transform Optimization - InstructionCountLimitExceededError (2025-10-06), Minimal Bundle Config: 5 Essential Fields (~200 bytes vs 40KB), bundleParentVariantId (Critical Field for MERGE) (+31 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.08
-Nodes (31): Concept: Webhook Worker (HTTP server on Render), GCP Pub/Sub Removal (@google-cloud/pubsub), Remove inventoryManagement from GraphQL variant inputs, Inngest Client (app/inngest/client.ts), Inngest — Managed Durable Event Queue, Inngest Fallback Guard (INNGEST_AVAILABLE), Inngest Functions (app/inngest/functions.ts), Inngest Remix Serve Route (api.inngest.tsx) (+23 more)
+Cohesion: 0.07
+Nodes (38): Admin Performance Optimization Report, App Proxy API (/apps/product-bundles/api/bundle/), App Store Compliance (No Theme Writes), Bundle.active Column (Redundant), BundleConfig Database Table, Bundle Prisma Model, BundlePricing Prisma Model, bundleType Field (product_page | full_page) (+30 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.13
@@ -713,44 +713,44 @@ Cohesion: 0.09
 Nodes (27): Admin Form Discount Implementation, Cart Bundle ID Property Fix (_wolfpack_bundle_id → _bundle_id), Bundle Widget Fixes Summary, Cart Transform Primary vs Fallback Fields (percentageOff vs discountValue), Cart Transform Field Requirements Reference, Cart Transform Function ID (527a500e...), Cart Transform Activation & Setup Guide, Clean Discount Fix (discountOn → conditionType mapping) (+19 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.1
-Nodes (23): Preview API Route (app/routes/api/api.preview.$type.tsx), Bundle Modal Component (bundle-modal-component.js), Bundle Modal Variant Selector + Image Carousel, DCP Storefront Iframe Preview — PDP Preview URL, DCP Modular Component Extraction (Settings, Preview, Common, Config), DCP Preview — Inject Storefront Theme Fonts, Design Control Panel Route (app/routes/app/app.design-control-panel/route.tsx), Design Control Panel Refactoring (3,908 → 765 lines) (+15 more)
+Cohesion: 0.12
+Nodes (25): api.bundle-product-manager.test.ts, $app Namespace Reserved Prefix, BundleIsolationService (bundle-isolation.server.ts), bundle-product-manager.test.ts, bundle-widget.test.ts, bundle-workflow.test.ts (Integration), cart-transform-bundle-utils.test.ts, Cart Transform Test Environment Variables (+17 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.1
-Nodes (0): 
+Nodes (23): Preview API Route (app/routes/api/api.preview.$type.tsx), Bundle Modal Component (bundle-modal-component.js), Bundle Modal Variant Selector + Image Carousel, DCP Storefront Iframe Preview — PDP Preview URL, DCP Modular Component Extraction (Settings, Preview, Common, Config), DCP Preview — Inject Storefront Theme Fonts, Design Control Panel Route (app/routes/app/app.design-control-panel/route.tsx), Design Control Panel Refactoring (3,908 → 765 lines) (+15 more)
 
 ### Community 22 - "Community 22"
+Cohesion: 0.1
+Nodes (0): 
+
+### Community 23 - "Community 23"
 Cohesion: 0.21
 Nodes (20): adj(), adj_with_condition(), buy_x_get_y_condition_not_met_returns_zero(), buy_x_get_y_discounted_quantity(), calculate_buy_x_get_y_discount_percentage(), calculate_discount_percentage(), calculate_selected_addon_discount_amount(), condition_is_met() (+12 more)
 
-### Community 23 - "Community 23"
+### Community 24 - "Community 24"
 Cohesion: 0.15
 Nodes (1): BundleDataManager
 
-### Community 24 - "Community 24"
+### Community 25 - "Community 25"
 Cohesion: 0.13
 Nodes (13): CartLineDiscountDisplaySettings, CartLineDisplayProperties, CartLineDisplaySavings, CartLineMessagingSettings, ComponentParent, ComponentPricingItem, Condition, ConditionType (+5 more)
 
-### Community 25 - "Community 25"
+### Community 26 - "Community 26"
+Cohesion: 0.12
+Nodes (17): app.state.service.ts — Singleton State Service, Centralized State Service Implementation Issue, DCP Audit — Full Page Bundle (FPB) 2026-03-27, DCP Audit Finding: 'Header Text' Section Mislabeled (should be 'Conditions & Discount Text'), DCP Audit Finding: Mobile Tab Truncation and Invisible 3rd Tab, DCP Audit Finding: #7132FF Purple Default Color Contamination (5 sections), DCP Audit Finding: Skeleton Loading Cannot Be Previewed, DCP Audit Finding: Inconsistent Slider Value Labels Across Sections (+9 more)
+
+### Community 27 - "Community 27"
 Cohesion: 0.18
 Nodes (10): useAppStateStandalone(), useDesignSetting(), useDesignSettingsState(), useLoadingState(), useModal(), useNavigationState(), useSelectorStandalone(), useStateInitialized() (+2 more)
 
-### Community 26 - "Community 26"
+### Community 28 - "Community 28"
 Cohesion: 0.17
 Nodes (7): action(), buildControlsRuntimeData(), buildDesignRuntimeData(), buildLanguageRuntimeData(), buildPageCustomizationData(), numberFromSettings(), weightToNumber()
 
-### Community 27 - "Community 27"
+### Community 29 - "Community 29"
 Cohesion: 0.12
 Nodes (0): 
-
-### Community 28 - "Community 28"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
-
-### Community 29 - "Community 29"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
 
 ### Community 30 - "Community 30"
 Cohesion: 0.17
@@ -758,7 +758,7 @@ Nodes (1): BundleDataManager
 
 ### Community 31 - "Community 31"
 Cohesion: 0.17
-Nodes (16): Cart Transform Input 10KB Limit, Architecture #3: Hybrid Per-Product + Shop Index, Rationale: Use 'custom' namespace for Liquid-accessible metafields, Metafield Namespace Fix ($app → custom), Metafield Namespace Mismatch Bug (write $app vs read custom), Architecture #2: Optimized Shop Metafield, Architecture #1: Per-Product Metafields (Recommended), Scalable Metafield Architecture Proposal (+8 more)
+Nodes (1): BundleDataManager
 
 ### Community 32 - "Community 32"
 Cohesion: 0.16
@@ -3603,11 +3603,11 @@ Nodes (1): Step Transition Loading State
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 0` to `Community 4`, `Community 5`, `Community 68`, `Community 7`, `Community 9`, `Community 14`, `Community 20`?**
+- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 0` to `Community 68`, `Community 6`, `Community 8`, `Community 14`, `Community 16`, `Community 21`?**
   _High betweenness centrality (0.030) - this node is a cross-community bridge._
-- **Why does `Prisma Schema (prisma/schema.prisma)` connect `Community 4` to `Community 0`, `Community 5`?**
+- **Why does `Prisma Schema (prisma/schema.prisma)` connect `Community 6` to `Community 0`, `Community 10`, `Community 5`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `Ad-Ready Bundles Architecture Decision Record` connect `Community 4` to `Community 16`, `Community 8`?**
+- **Why does `Ad-Ready Bundles Architecture Decision Record` connect `Community 10` to `Community 6`, `Community 7`?**
   _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **What connects `Source: app/constants/errors.ts (new)`, `Source: app/constants/api.ts (new)`, `Source: app/constants/bundle.ts` to the rest of the system?**
   _529 weakly-connected nodes found - possible documentation gaps or missing edges._

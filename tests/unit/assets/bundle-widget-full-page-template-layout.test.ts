@@ -33,7 +33,10 @@ describe("Full Page widget template layout contract", () => {
 
     expect(source).toContain("getFullPageDesignPreset()");
     expect(source).toContain(
-      "this.elements.stepsContainer.dataset.fpbDesignPreset = this.getFullPageDesignPreset();",
+      "const fullPageDesignPreset = this.getFullPageDesignPreset();",
+    );
+    expect(source).toContain(
+      "this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;",
     );
   });
 
@@ -88,5 +91,41 @@ describe("Full Page widget template layout contract", () => {
     expect(css).toContain("grid-template-columns:112px minmax(0,1fr)");
     expect(css).toContain("min-height:112px");
     expect(css).toContain("height:100px");
+  });
+
+  it("matches EB Standard Design DEFAULT side-footer storefront contract", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+    const css = readFileSync(
+      join(
+        process.cwd(),
+        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
+      ),
+      "utf8",
+    );
+    const storefrontStyles = `${source}\n${css}`;
+
+    expect(source).toContain("return 'DEFAULT';");
+    expect(source).toContain("if (preset === 'STANDARD') return 'DEFAULT';");
+    expect(source).not.toContain("pricingMethod === 'fixed_amount_off'");
+    expect(source).not.toContain("cardElement.querySelector('.product-price-row')?.remove();");
+
+    expect(source).toContain("ensureStandardPresetRuntimeStyles()");
+    expect(source).toContain("wpb-fpb-standard-runtime-styles");
+    expect(storefrontStyles).toContain('[data-fpb-design-preset=DEFAULT]');
+    expect(storefrontStyles).toContain('--cw:321px');
+    expect(storefrontStyles).toContain('--ch:352px');
+    expect(storefrontStyles).toContain('--iw:305px');
+    expect(storefrontStyles).toContain('--ih:240px');
+    expect(storefrontStyles).toContain('--mw:177.5px');
+    expect(storefrontStyles).toContain('--mh:264px');
+    expect(storefrontStyles).toContain('--mih:150px');
+    expect(storefrontStyles).toContain('grid-template-columns:minmax(0,993px) 447px');
+    expect(storefrontStyles).toContain('grid-template-columns:repeat(3,var(--cw,321px))');
+    expect(storefrontStyles).toContain('width:35px');
+    expect(storefrontStyles).toContain('height:35px');
+    expect(storefrontStyles).toContain('border-radius:5px');
   });
 });
