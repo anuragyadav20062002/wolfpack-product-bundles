@@ -31,6 +31,13 @@ Create a Chrome DevTools test handoff for the latest five commits so the combine
 ### 2026-06-03 19:38 - Post-rebase version update
 - Updating the final staging plan to expect widget version `2.9.55` after rebasing onto the newer upstream widget build.
 
+### 2026-06-03 - Regression run continued (App Embed + widget version verified, new Save 500 finding)
+- Retraction: the earlier "Slot Icon sibling card" finding was a visual misread. Source (`full-page-bundle/.../route.tsx:4953–5030` and `product-page-bundle/.../route.tsx:4373–4449`) confirms Slot Icon is nested inside the same `<s-section>` as Enable Quantity Validation. No code change needed; corrected in result file.
+- Enabled the Wolfpack Bundle App Embed in the OS2 theme editor on `test-bundle-store123` and saved.
+- Verified live widget version on `/pages/preview-sit-regression-fpb`: `window.__BUNDLE_WIDGET_VERSION__ === "2.9.55"` ✓ (matches plan target).
+- **New blocker found:** Bundle Settings Save action returns HTTP 500 (`{"success":false,"error":"An error occurred"}`) when enabling `productSlotsEnabled` + `validateQuantityPerProduct` on the SIT backend. Save UI hangs on spinner with no surfaced error. Likely missing migration for new columns on SIT DB or a Render-side runtime error. Storefront Scenarios 4/5 and the FPB persistence sweep are blocked behind this fix. PPB pass deferred for the same reason.
+- Result file updated with all findings; checklist rows updated; follow-up list reprioritised to triage the Save 500 first.
+
 ### 2026-06-03 - Regression run executed (partial)
 - Ran the staging regression plan via Chrome DevTools MCP against `test-bundle-store123.myshopify.com` (plan's `wolfpack-store-test-1` was not open; user approved the substitution).
 - Created `SIT Regression FPB` from scratch (Amber Essence product) to enable scenario coverage.
