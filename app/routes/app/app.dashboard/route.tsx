@@ -539,8 +539,8 @@ export default function Dashboard() {
         id="delete-bundle-modal"
         heading={t("dashboard.deleteModal.heading")}
       >
-        <s-button slot="primaryAction" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
-        <s-button slot="secondaryActions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
+        <s-button slot="primary-action" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
+        <s-button slot="secondary-actions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
         <s-text color="subdued">
           {t("dashboard.deleteModal.body")}
         </s-text>

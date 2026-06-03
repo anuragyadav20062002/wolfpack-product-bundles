@@ -275,7 +275,7 @@ export default function BillingPage() {
                   <s-badge
                     tone={
                       usagePercentage >= 90 ? "critical" :
-                      usagePercentage >= 70 ? "attention" : "success"
+                      usagePercentage >= 70 ? "warning" : "success"
                     }
                   >
                     {t("billing.route.bundleCount", { current: data.subscription?.currentBundleCount || 0, limit: data.subscription?.bundleLimit || 0 })}

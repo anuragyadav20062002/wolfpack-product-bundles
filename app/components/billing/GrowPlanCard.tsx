@@ -51,7 +51,7 @@ export function GrowPlanCard({
             padding: "16px",
           }}
         >
-          <s-stack direction="block" gap="loose">
+          <s-stack direction="block" gap="large">
             <s-stack direction="block" gap="small-100">
               <s-stack direction="inline" justifyContent="space-between" alignItems="center">
                 <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{PLANS.grow.name}</h3>

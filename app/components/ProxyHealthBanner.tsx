@@ -11,7 +11,7 @@ export function ProxyHealthBanner({ shop, appUrl }: ProxyHealthBannerProps) {
 
   return (
     <s-banner tone="critical">
-      <s-button slot="primaryAction" variant="primary" href={reinstallUrl} target="_blank">
+      <s-button slot="primary-action" variant="primary" href={reinstallUrl} target="_blank">
         {t("common.actions.reinstallApp")}
       </s-button>
       <strong>{t("common.proxyHealth.title")}</strong> - {t("common.proxyHealth.body")}

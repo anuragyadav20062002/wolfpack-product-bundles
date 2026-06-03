@@ -1,4 +1,5 @@
-import { useTranslation, type TFunction } from "react-i18next";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 export interface SubscriptionErrorBannerProps {
   errorCode: string | null;
@@ -25,23 +26,28 @@ export function SubscriptionErrorBanner({
   const { t } = useTranslation();
 
   return (
-    <s-banner tone="critical" heading={t("billing.error.heading")} dismissible onHide={onDismiss} suppressHydrationWarning>
-      <s-button slot="primaryAction" onClick={onRetry}>
+    <s-banner tone="critical" heading={t("billing.error.heading")}>
+      <s-button slot="primary-action" onClick={onRetry}>
         {t("billing.actions.tryAgain")}
       </s-button>
       {getErrorMessage(errorCode, t)}
-      <s-stack direction="inline" gap="small" style={{ marginTop: 8 }}>
-        <s-button
-          variant="tertiary"
-          onClick={() => {
-            if (typeof window !== "undefined" && window.$crisp) {
-              window.$crisp.push(["do", "chat:open"]);
-            }
-          }}
-        >
-          {t("billing.actions.contactSupport")}
-        </s-button>
-      </s-stack>
+      <div style={{ marginTop: 8 }}>
+        <s-stack direction="inline" gap="small">
+          <s-button
+            variant="tertiary"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.$crisp) {
+                window.$crisp.push(["do", "chat:open"]);
+              }
+            }}
+          >
+            {t("billing.actions.contactSupport")}
+          </s-button>
+          <s-button variant="tertiary" onClick={onDismiss}>
+            {t("common.actions.dismiss")}
+          </s-button>
+        </s-stack>
+      </div>
     </s-banner>
   );
 }

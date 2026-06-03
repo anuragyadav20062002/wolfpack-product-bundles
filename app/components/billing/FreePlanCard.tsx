@@ -11,7 +11,7 @@ export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
   return (
     <s-section>
       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <s-stack direction="block" gap="loose">
+        <s-stack direction="block" gap="large">
           <s-stack direction="block" gap="small-100">
             <s-stack direction="inline" justifyContent="space-between" alignItems="center">
               <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{PLANS.free.name}</h3>
@@ -43,7 +43,7 @@ export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
         </s-stack>
 
         <div style={{ marginTop: "auto", paddingTop: "1.5rem" }}>
-          <s-button variant={isCurrentPlan ? "secondary" : "primary"} disabled inlineSize="100%">
+          <s-button variant={isCurrentPlan ? "secondary" : "primary"} disabled inlineSize="fill">
               {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.freePlan")}
           </s-button>
         </div>

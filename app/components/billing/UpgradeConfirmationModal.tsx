@@ -45,14 +45,14 @@ export function UpgradeConfirmationModal({
       onHide={onClose}
     >
       <s-button
-        slot="primaryAction"
+        slot="primary-action"
         variant="primary"
         loading={isLoading || undefined}
         onClick={onConfirm}
       >
         {t("billing.upgradeModal.confirm", { price: PLANS.grow.price })}
       </s-button>
-      <s-button slot="secondaryActions" onClick={onClose}>
+      <s-button slot="secondary-actions" onClick={onClose}>
         {t("billing.actions.cancel")}
       </s-button>
 
