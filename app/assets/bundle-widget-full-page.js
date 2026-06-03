@@ -2237,6 +2237,18 @@ class BundleWidgetFullPage {
   // Hide the page title element from the theme template
   // This prevents showing the page name (e.g., "StrangeObjectsinmirror") above the bundle
   hidePageTitle() {
+    const configName = (() => {
+      if (this.selectedBundle?.name) return this.selectedBundle.name;
+      try {
+        const rawConfig = this.container?.dataset?.bundleConfig;
+        if (!rawConfig) return '';
+        return JSON.parse(rawConfig)?.name || '';
+      } catch (e) {
+        return '';
+      }
+    })();
+    const normalizedConfigName = String(configName || '').trim().toLowerCase();
+
     // Try multiple selectors to find the page title element
     const selectors = [
       '.main-page-title',
@@ -2271,6 +2283,27 @@ class BundleWidgetFullPage {
 
       if (hasPageTitle && !hasOtherContent) {
         container.style.display = 'none';
+      }
+    });
+
+    if (!normalizedConfigName) return;
+
+    document.querySelectorAll('h1').forEach(el => {
+      if (el.closest('.bundle-widget-container, .promo-banner')) return;
+      const normalizedTitle = String(el.textContent || '').trim().toLowerCase();
+      if (normalizedTitle !== normalizedConfigName) return;
+
+      const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
+      if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
+        titleSection.style.display = 'none';
+        return;
+      }
+
+      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
+        titleBlock.style.display = 'none';
+      } else {
+        el.style.display = 'none';
       }
     });
   }

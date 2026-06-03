@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.55
+ * Version : 2.9.56
  * Built   : 2026-06-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.55';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.56';
 (function() {
   'use strict';
 
@@ -4984,6 +4984,17 @@ class BundleWidgetFullPage {
   }
 
   hidePageTitle() {
+    const configName = (() => {
+      if (this.selectedBundle?.name) return this.selectedBundle.name;
+      try {
+        const rawConfig = this.container?.dataset?.bundleConfig;
+        if (!rawConfig) return '';
+        return JSON.parse(rawConfig)?.name || '';
+      } catch (e) {
+        return '';
+      }
+    })();
+    const normalizedConfigName = String(configName || '').trim().toLowerCase();
 
     const selectors = [
       '.main-page-title',
@@ -5016,6 +5027,27 @@ class BundleWidgetFullPage {
 
       if (hasPageTitle && !hasOtherContent) {
         container.style.display = 'none';
+      }
+    });
+
+    if (!normalizedConfigName) return;
+
+    document.querySelectorAll('h1').forEach(el => {
+      if (el.closest('.bundle-widget-container, .promo-banner')) return;
+      const normalizedTitle = String(el.textContent || '').trim().toLowerCase();
+      if (normalizedTitle !== normalizedConfigName) return;
+
+      const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
+      if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
+        titleSection.style.display = 'none';
+        return;
+      }
+
+      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
+        titleBlock.style.display = 'none';
+      } else {
+        el.style.display = 'none';
       }
     });
   }
