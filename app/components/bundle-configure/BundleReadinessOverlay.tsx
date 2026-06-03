@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./BundleReadinessOverlay.module.css";
 
 export interface BundleReadinessItem {
@@ -25,14 +26,8 @@ function scoreColor(score: number) {
   return "#d82c0d";
 }
 
-function readinessStatusText(score: number, allDone: boolean) {
-  if (allDone) return "Your bundle is ready to sell!";
-  if (score >= 80) return "Almost there. A few more steps to go.";
-  if (score >= 40) return "Almost there. A few more steps to go.";
-  return "Complete the remaining steps to get your bundle ready.";
-}
-
 export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapsedTrigger = false, onItemClick, variant = "detailed" }: Props) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const isCompact = variant === "compact";
 
@@ -131,7 +126,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                           activateItem(item.key);
                         }}
                         onKeyDown={(event) => handleItemKeyDown(event, item.key)}
-                        aria-label={`${item.label} readiness item`}
+                        aria-label={t("common.readiness.itemAccessibility", { label: item.label })}
                       >
                         <div className={styles.itemIndicator}>
                           {item.done ? (
@@ -149,7 +144,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                           <div className={styles.itemMainRow}>
                             <span className={styles.itemLabel}>{item.label}</span>
                             <span className={`${styles.itemPoints} ${item.done ? styles.itemPointsDone : ""}`}>
-                              +{item.points} Points
+                              {t("common.readiness.points", { points: item.points })}
                             </span>
                           </div>
                           {showActionHint && (
@@ -168,7 +163,7 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
                   })}
                 </div>
                 <div className={allDone ? styles.statusReady : styles.statusNotReady}>
-                  {readinessStatusText(score, allDone)}
+                  {allDone ? t("common.readiness.ready") : t("common.readiness.notReady")}
                 </div>
               </div>
             </div>
@@ -181,15 +176,15 @@ export function BundleReadinessOverlay({ items, open, onOpenChange, hideCollapse
             data-tour-target="fpb-readiness-score"
             className={`${styles.collapsed} ${expanded && !isCompact ? styles.collapsedOpen : ""} ${isCompact ? styles.collapsedCompact : ""}`}
             onClick={toggle}
-            aria-label="Toggle readiness score"
+            aria-label={t("common.readiness.toggleAccessibility")}
             aria-disabled={isCompact}
           >
             {donut}
             {expanded && !isCompact && (
               <div className={styles.scoreLabel}>
-                <span className={styles.scoreLabelTitle}>Readiness Score</span>
+                <span className={styles.scoreLabelTitle}>{t("common.readiness.title")}</span>
                 <span className={styles.scoreLabelSub}>
-                  Complete all steps to maximise your bundle's success.
+                  {t("common.readiness.helper")}
                 </span>
               </div>
             )}

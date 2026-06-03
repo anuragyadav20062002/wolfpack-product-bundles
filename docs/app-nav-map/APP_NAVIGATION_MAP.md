@@ -44,6 +44,8 @@ Dashboard
 ├── Subheader: "Access your bundles, customer support & more."
 │
 ├── [Button] "Create Bundle"  → opens Create Bundle Modal
+├── Language selector
+│   └── [Button] "Save" → persists one shop-wide embedded Admin UI language for all staff accounts
 │
 ├── Section: "Your Bundles"
 │   └── DataTable of bundles (empty state if none exist)

@@ -1,18 +1,20 @@
+import { useTranslation } from "react-i18next";
+
 interface ProxyHealthBannerProps {
   shop: string;
   appUrl: string;
 }
 
 export function ProxyHealthBanner({ shop, appUrl }: ProxyHealthBannerProps) {
+  const { t } = useTranslation();
   const reinstallUrl = `${appUrl}/?shop=${shop}`;
 
   return (
     <s-banner tone="critical">
       <s-button slot="primaryAction" variant="primary" href={reinstallUrl} target="_blank">
-        Reinstall app
+        {t("common.actions.reinstallApp")}
       </s-button>
-      <strong>App proxy not connected</strong> — Full-page bundle widgets won&apos;t load on your storefront.
-      Reinstall the app to fix this.
+      <strong>{t("common.proxyHealth.title")}</strong> - {t("common.proxyHealth.body")}
     </s-banner>
   );
 }

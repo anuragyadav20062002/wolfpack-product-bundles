@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface UnlistedBundleBannerProps {
   shop: string;
   bundleProductId: string | null;
@@ -18,6 +20,7 @@ export function buildShopifyProductAdminUrl(
 }
 
 export function UnlistedBundleBanner({ shop, bundleProductId, onManage }: UnlistedBundleBannerProps) {
+  const { t } = useTranslation();
   const adminUrl = buildShopifyProductAdminUrl(shop, bundleProductId);
   if (!adminUrl) return null;
 
@@ -54,10 +57,9 @@ export function UnlistedBundleBanner({ shop, bundleProductId, onManage }: Unlist
         !
       </span>
       <div style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.4, color: "#5f3700" }}>
-        <p style={{ margin: 0, fontWeight: 650 }}>Your bundle is Unlisted</p>
+        <p style={{ margin: 0, fontWeight: 650 }}>{t("common.unlistedBundle.title")}</p>
         <p style={{ margin: "2px 0 0" }}>
-          Bundle is hidden from your store&rsquo;s search results and collection pages. <br />
-          For discoverabiity, change the bundle product&rsquo;s status to Active in Shopify Products.
+          {t("common.unlistedBundle.body")}
         </p>
       </div>
       <s-button
@@ -65,7 +67,7 @@ export function UnlistedBundleBanner({ shop, bundleProductId, onManage }: Unlist
         tone="auto"
         onClick={onManage}
       >
-        Manage
+        {t("common.actions.manage")}
       </s-button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { LocalAppModal } from "./LocalAppModal";
 
@@ -81,6 +82,7 @@ export function MultiLanguageTextModal({
   onSave,
   onClose,
 }: MultiLanguageTextModalProps) {
+  const { t } = useTranslation();
   const [draftByLocale, setDraftByLocale] = useState<Record<string, Record<string, string>>>({});
 
   const visibleLocales = useMemo(() => {
@@ -131,22 +133,22 @@ export function MultiLanguageTextModal({
 
   return (
     <LocalAppModal
-      title="Customize Text for Multiple Languages"
+      title={t("common.multiLanguage.title")}
       onClose={onClose}
       primaryAction={(
         <s-button variant="primary" onClick={saveAndClose}>
-          Save and Close
+          {t("common.multiLanguage.saveAndClose")}
         </s-button>
       )}
     >
       <s-stack direction="block" gap="base">
         <s-stack direction="block" gap="small-100">
-          <s-heading>Translations</s-heading>
-          <s-text tone="subdued">Use the dropdown in this section to specify which language you would like to edit</s-text>
+          <s-heading>{t("common.multiLanguage.translations")}</s-heading>
+          <s-text tone="subdued">{t("common.multiLanguage.helper")}</s-text>
         </s-stack>
-        <s-heading>Choose language to edit</s-heading>
+        <s-heading>{t("common.multiLanguage.chooseLanguage")}</s-heading>
         <s-select
-          label="Choose language to edit"
+          label={t("common.multiLanguage.chooseLanguage")}
           value={selectedLocale}
           onChange={(event: Event) => onActiveLocaleChange((event.target as HTMLSelectElement).value)}
         >
@@ -158,10 +160,10 @@ export function MultiLanguageTextModal({
         </s-select>
 
         <s-stack direction="block" gap="small-100">
-          <s-heading>Custom Text</s-heading>
-          <s-text tone="subdued">Input Text for the Selected Language</s-text>
+          <s-heading>{t("common.multiLanguage.customText")}</s-heading>
+          <s-text tone="subdued">{t("common.multiLanguage.inputHelper")}</s-text>
         </s-stack>
-        <s-heading>Text Settings</s-heading>
+        <s-heading>{t("common.multiLanguage.textSettings")}</s-heading>
 
         <s-stack direction="block" gap="base">
           {fields.map((field) => (

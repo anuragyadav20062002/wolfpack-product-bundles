@@ -48,13 +48,13 @@ describe("UnlistedBundleBanner JSX contract", () => {
     expect(source).toMatch(/if\s*\(\s*!\s*adminUrl\s*\)\s*return\s+null/);
   });
 
-  it("renders the Unlisted headline copy", () => {
-    expect(source).toContain("Your bundle is Unlisted");
+  it("renders the translated Unlisted headline copy", () => {
+    expect(source).toContain('t("common.unlistedBundle.title")');
   });
 
   it('renders a "Manage" CTA that delegates navigation to the configure route', () => {
     expect(source).toMatch(/<s-button[^>]*onClick=\{onManage\}/);
-    expect(source).toMatch(/>\s*Manage\s*<\/s-button>/);
+    expect(source).toContain('{t("common.actions.manage")}');
     expect(source).not.toContain("window.open");
   });
 

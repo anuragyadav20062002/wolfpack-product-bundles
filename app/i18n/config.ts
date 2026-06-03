@@ -14,6 +14,10 @@ export function isSupportedLocale(locale: string): locale is SupportedLocale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(locale);
 }
 
+export function normalizeAdminLocale(locale: string | null | undefined): SupportedLocale {
+  return locale && isSupportedLocale(locale) ? locale : "en";
+}
+
 if (!i18n.isInitialized) {
   void i18n.use(initReactI18next).init({
     resources: {

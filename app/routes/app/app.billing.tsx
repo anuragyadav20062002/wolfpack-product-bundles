@@ -13,6 +13,7 @@ import { BundleAnalyticsService } from "../../services/bundle-analytics.server";
 import { PLANS } from "../../constants/plans";
 import { AppLogger } from "../../lib/logger";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import billingStyles from "../../styles/routes/app-billing.module.css";
 import { useBillingState } from "../../hooks/useBillingState";
 import {
@@ -159,6 +160,7 @@ export default function BillingPage() {
   const data = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [showCelebration, setShowCelebration] = useState(data.upgraded);
 
@@ -212,9 +214,9 @@ export default function BillingPage() {
 
   return (
     <>
-      <ui-title-bar title="Subscription & Billing">
+      <ui-title-bar title={t("billing.route.title")}>
         <button variant="breadcrumb" onClick={() => navigate("/app/dashboard")}>
-          Dashboard
+          {t("billing.route.dashboard")}
         </button>
       </ui-title-bar>
 
@@ -242,7 +244,7 @@ export default function BillingPage() {
               <s-stack direction="inline" justifyContent="space-between" alignItems="start">
                 <s-stack direction="block" gap="small-100">
                   <s-stack direction="inline" alignItems="center" gap="small-100">
-                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Current Plan</h2>
+                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{t("billing.route.currentPlan")}</h2>
                     {isGrowPlan && (
                       <div className={billingStyles.starIcon}>
                         <s-icon name="star-filled" />
@@ -252,14 +254,14 @@ export default function BillingPage() {
                   <s-stack direction="inline" alignItems="center" gap="small">
                     <span style={{ fontSize: 20, fontWeight: 700 }}>{PLANS[currentPlan].name}</span>
                     <s-badge tone={isGrowPlan ? "success" : "info"}>
-                      {data.subscription?.isActive ? "Active" : "Inactive"}
+                      {data.subscription?.isActive ? t("billing.route.active") : t("billing.route.inactive")}
                     </s-badge>
                   </s-stack>
                 </s-stack>
                 {isGrowPlan && (
                   <s-stack direction="block" gap="small-400" alignItems="end">
                     <span style={{ fontSize: 28, fontWeight: 700 }}>${PLANS.grow.price}</span>
-                    <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>per month</p>
+                    <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>{t("billing.cards.perMonth")}</p>
                   </s-stack>
                 )}
               </s-stack>
@@ -269,21 +271,21 @@ export default function BillingPage() {
               {/* Bundle Usage */}
               <s-stack direction="block" gap="small">
                 <s-stack direction="inline" justifyContent="space-between" alignItems="center">
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Usage</p>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("billing.route.bundleUsage")}</p>
                   <s-badge
                     tone={
                       usagePercentage >= 90 ? "critical" :
                       usagePercentage >= 70 ? "attention" : "success"
                     }
                   >
-                    {`${data.subscription?.currentBundleCount || 0} / ${data.subscription?.bundleLimit || 0} bundles`}
+                    {t("billing.route.bundleCount", { current: data.subscription?.currentBundleCount || 0, limit: data.subscription?.bundleLimit || 0 })}
                   </s-badge>
                 </s-stack>
                 <CustomProgressBar progress={usagePercentage} tone={progressBarTone} />
                 {!data.subscription?.canCreateBundle && (
                   <s-banner tone="warning">
-                    You&apos;ve reached your bundle limit.
-                    {isFreePlan && " Upgrade to Grow for more bundles."}
+                    {t("billing.route.limitReached")}
+                    {isFreePlan && ` ${t("billing.route.limitUpgrade")}`}
                   </s-banner>
                 )}
               </s-stack>
@@ -293,23 +295,23 @@ export default function BillingPage() {
                 <>
                   <s-divider />
                   <s-stack direction="block" gap="small-100">
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Overview</p>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("billing.route.overview")}</p>
                     <s-stack direction="inline" gap="base">
                       <s-stack direction="block" gap="small-400">
                         <span style={{ fontSize: 16, fontWeight: 700 }}>{data.stats.activeBundles}</span>
-                        <span style={{ fontSize: 12, color: "#6d7175" }}>Active Bundles</span>
+                        <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.route.activeBundles")}</span>
                       </s-stack>
                       <s-stack direction="block" gap="small-400">
                         <span style={{ fontSize: 16, fontWeight: 700 }}>{data.stats.totalSteps}</span>
-                        <span style={{ fontSize: 12, color: "#6d7175" }}>Total Steps</span>
+                        <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.route.totalSteps")}</span>
                       </s-stack>
                       <s-stack direction="block" gap="small-400">
                         <span style={{ fontSize: 16, fontWeight: 700 }}>{data.stats.bundleTypes.productPage}</span>
-                        <span style={{ fontSize: 12, color: "#6d7175" }}>Product Page</span>
+                        <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.route.productPage")}</span>
                       </s-stack>
                       <s-stack direction="block" gap="small-400">
                         <span style={{ fontSize: 16, fontWeight: 700 }}>{data.stats.bundleTypes.fullPage}</span>
-                        <span style={{ fontSize: 12, color: "#6d7175" }}>Full Page</span>
+                        <span style={{ fontSize: 12, color: "#6d7175" }}>{t("billing.route.fullPage")}</span>
                       </s-stack>
                     </s-stack>
                   </s-stack>
@@ -333,7 +335,7 @@ export default function BillingPage() {
                     onClick={openCancelConfirm}
                     disabled={isCancelling}
                   >
-                    Cancel Subscription
+                    {t("billing.route.cancelSubscription")}
                   </button>
                 </>
               )}
@@ -341,15 +343,14 @@ export default function BillingPage() {
               {showCancelConfirm && (
                 <>
                   <s-divider />
-                  <s-banner tone="warning" heading="Cancel Subscription?">
+                  <s-banner tone="warning" heading={t("billing.route.cancelHeading")}>
                     <s-stack direction="block" gap="small">
                       <p style={{ margin: 0, fontSize: 14 }}>
-                        You will be downgraded to the Free plan with a limit of {PLANS.free.bundleLimit} bundles.
+                        {t("billing.route.downgradeBody", { limit: PLANS.free.bundleLimit })}
                       </p>
                       {data.subscription && data.subscription.currentBundleCount > PLANS.free.bundleLimit && (
                         <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                          Warning: You have {data.subscription.currentBundleCount} bundles. The excess{" "}
-                          {data.subscription.currentBundleCount - PLANS.free.bundleLimit} bundles will be archived (not deleted).
+                          {t("billing.route.archiveWarning", { current: data.subscription.currentBundleCount, excess: data.subscription.currentBundleCount - PLANS.free.bundleLimit })}
                         </p>
                       )}
                       <s-stack direction="inline" gap="small-100">
@@ -358,10 +359,10 @@ export default function BillingPage() {
                           onClick={handleCancelSubscription}
                           loading={isCancelling || undefined}
                         >
-                          Confirm Cancellation
+                          {t("billing.route.confirmCancellation")}
                         </s-button>
                         <s-button onClick={closeCancelConfirm}>
-                          Keep Subscription
+                          {t("billing.route.keepSubscription")}
                         </s-button>
                       </s-stack>
                     </s-stack>
@@ -377,7 +378,7 @@ export default function BillingPage() {
           {/* Plan Features */}
           <s-section>
             <s-stack direction="block" gap="base">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Your Plan Features</h3>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{t("billing.route.features")}</h3>
               <div className={billingStyles.featuresGrid}>
                 {PLANS[currentPlan].features.map((feature, index) => (
                   <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
@@ -392,9 +393,9 @@ export default function BillingPage() {
                 <>
                   <s-divider />
                   <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                    Want more features?{" "}
+                    {t("billing.route.wantMore")}{" "}
                     <s-button variant="tertiary" onClick={handleViewPricing}>
-                      View all plans
+                      {t("billing.route.viewPlans")}
                     </s-button>
                   </p>
                 </>
@@ -405,9 +406,9 @@ export default function BillingPage() {
           {/* Help Section */}
           <s-section>
             <s-stack direction="block" gap="small-100">
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Need Help?</h3>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{t("billing.route.needHelp")}</h3>
               <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
-                Have questions about billing or need a custom plan? Our team is here to help.
+                {t("billing.route.helpBody")}
               </p>
               <s-button
                 onClick={() => {
@@ -416,7 +417,7 @@ export default function BillingPage() {
                   }
                 }}
               >
-                Contact Support
+                {t("billing.actions.contactSupport")}
               </s-button>
             </s-stack>
           </s-section>

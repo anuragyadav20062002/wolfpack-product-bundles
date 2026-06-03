@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface EnablePreviewModalProps {
   open: boolean;
   onClose: () => void;
@@ -5,6 +7,8 @@ interface EnablePreviewModalProps {
 }
 
 export function EnablePreviewModal({ open, onClose, themeEditorUrl }: EnablePreviewModalProps) {
+  const { t } = useTranslation();
+
   if (!open) return null;
 
   return (
@@ -56,13 +60,13 @@ export function EnablePreviewModal({ open, onClose, themeEditorUrl }: EnablePrev
           id="enable-preview-modal-title"
           style={{ margin: "0 0 10px", fontSize: 16, fontWeight: 700, color: "#111" }}
         >
-          Your bundle visibility is not set up yet
+          {t("common.previewGate.title")}
         </h2>
         <p style={{ margin: "0 0 24px", fontSize: 14, color: "#6b7280", lineHeight: 1.55 }}>
-          Your bundle is live but shoppers have no way to find it. Set up visibility to change that.
+          {t("common.previewGate.body")}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-          <s-button variant="secondary" onClick={onClose}>Maybe Later</s-button>
+          <s-button variant="secondary" onClick={onClose}>{t("common.actions.maybeLater")}</s-button>
           <s-button
             variant="primary"
             onClick={() => {
@@ -70,7 +74,7 @@ export function EnablePreviewModal({ open, onClose, themeEditorUrl }: EnablePrev
               onClose();
             }}
           >
-            Set Up Visibility
+            {t("common.actions.setUpVisibility")}
           </s-button>
         </div>
       </div>

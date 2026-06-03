@@ -1,4 +1,13 @@
 {
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "designControlPanel": "デザインコントロールパネル",
+    "settings": "設定",
+    "integrations": "連携",
+    "analytics": "分析",
+    "pricing": "料金",
+    "events": "アップデートとFAQ"
+  },
   "dashboard": {
     "title": "Dashboard: Wolfpack Bundle Builder",
     "subtitle": "バンドル、カスタマーサポートなどにアクセスできます。",
@@ -8,6 +17,8 @@
       "changelog": "変更履歴"
     },
     "support": {
+      "heroTitle": "ストアの可能性を最大限に引き出しましょう。",
+      "heroDesc": "専門家が無料の1対1戦略セッションで、コンバージョン率の高いバンドル作成をサポートします。",
       "heading": "サポートが必要ですか？創業者のParthにお話しください！",
       "body": "バンドルの設定、カスタムスタイル、技術的な問題についてサポートを受けられます。",
       "onlineNow": "オンライン中",
@@ -17,7 +28,8 @@
       "imageLoading": "Parthのプロフィール写真を読み込み中"
     },
     "appEmbeds": {
-      "heading": "アプリの埋め込み",
+      "headingMain": "アプリの埋め込み",
+      "headingHint": "（オンにするとストアにバンドルが表示されます）",
       "instruction": "オンラインストア → テーマを編集 → トグルを有効にして保存"
     },
     "filters": {
@@ -92,7 +104,10 @@
       "de": "Deutsch",
       "es": "Español",
       "ja": "日本語",
-      "pt-BR": "Português (BR)"
+      "pt-BR": "Português (BR)",
+      "save": "保存",
+      "saveSuccess": "管理画面の言語を保存しました",
+      "saveError": "管理画面の言語を保存できませんでした"
     }
   },
   "tooltips": {
@@ -127,5 +142,59 @@
     "bundleVisibilityPending": {
       "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
     }
+  },
+  "common": {
+    "actions": {
+      "close": "閉じる", "dismiss": "閉じる", "manage": "管理", "enableHere": "ここで有効にする",
+      "maybeLater": "後で行う", "setUpVisibility": "公開設定を行う", "reinstallApp": "アプリを再インストール",
+      "upgradeNow": "今すぐアップグレード", "viewPlans": "プランを見る", "discardChanges": "変更を破棄", "continueEditing": "編集を続ける"
+    },
+    "appEmbed": { "body": "バンドルを配置してプレビューするには、Wolfpack Bundles のテーマアプリ拡張機能を有効にしてください。" },
+    "previewGate": { "title": "バンドルの公開設定がまだ完了していません", "body": "バンドルは有効ですが、購入者が見つける方法がありません。公開設定を行ってください。" },
+    "unlistedBundle": { "title": "バンドルは非掲載です", "body": "バンドルはストアの検索結果とコレクションページに表示されません。見つけられるようにするには、Shopifyの商品でバンドル商品のステータスを有効に変更してください。" },
+    "proxyHealth": { "title": "アプリプロキシが接続されていません", "body": "フルページのバンドルウィジェットはストアフロントに読み込まれません。修正するにはアプリを再インストールしてください。" },
+    "upgradePrompt": {
+      "limitReachedTitle": "バンドル数の上限に達しました", "limitReachedBody": "無料プランのバンドル {{limit}} 件をすべて使用しました。Grow にアップグレードすると最大20件まで利用できます。",
+      "approachingTitle": "バンドル数の上限が近づいています", "approachingBody": "{{limit}} 件中 {{current}} 件のバンドルを使用しています。Grow にアップグレードすると最大20件まで利用できます。",
+      "usageBody": "無料プランで {{limit}} 件中 {{current}} 件のバンドルを使用しています。さらに必要ですか？Grow にアップグレードすると20件まで利用できます。"
+    },
+    "discardChanges": { "title": "未保存の変更をすべて破棄", "body": "変更を破棄すると、最後に保存してから行った編集内容が削除されます。" },
+    "multiLanguage": {
+      "title": "複数言語のテキストをカスタマイズ", "saveAndClose": "保存して閉じる", "translations": "翻訳",
+      "helper": "このセクションのドロップダウンから編集する言語を選択してください", "chooseLanguage": "編集する言語を選択",
+      "customText": "カスタムテキスト", "inputHelper": "選択した言語のテキストを入力", "textSettings": "テキスト設定"
+    },
+    "readiness": {
+      "itemAccessibility": "{{label}} の準備項目", "points": "+{{points}} ポイント", "ready": "バンドルを販売できます！",
+      "notReady": "バンドルはまだ販売準備ができていません。", "toggleAccessibility": "準備スコアを切り替える",
+      "title": "準備スコア", "helper": "すべての手順を完了して、バンドルの成果を最大化しましょう。"
+    },
+    "bundleStatus": { "title": "バンドルステータス", "options": { "active": "有効", "draft": "下書き", "archived": "アーカイブ済み", "unlisted": "非掲載（広告キャンペーン）" } }
+  },
+  "createBundle": {
+    "title": "バンドルを作成", "dashboard": "ダッシュボード", "heading": "バンドルビルダーのタイプを選択", "help": "バンドルビルダーのタイプについて",
+    "steps": { "details": "バンドル名\nと説明", "configuration": "設定", "pricing": "価格設定", "assets": "アセット" },
+    "validation": { "required": "バンドル名は必須です", "minLength": "バンドル名は3文字以上で入力してください" },
+    "fields": { "name": "バンドル名", "namePlaceholder": "例：Tシャツバンドル", "description": "説明", "descriptionPlaceholder": "例：これはTシャツバンドルです" },
+    "bundleType": {
+      "heading": "バンドルタイプ",
+      "productPage": { "title": "商品ページバンドルビルダー", "description": "既存の商品ページにバンドルビルダーを表示します（ほとんどのストアにおすすめ）", "alt": "商品ページバンドル" },
+      "fullPage": { "title": "フルページバンドルビルダー", "description": "タブと完全なカスタマイズ機能を備えたバンドル専用ランディングページを作成します", "alt": "フルページバンドル" }
+    },
+    "actions": { "selected": "選択済み", "select": "選択", "next": "次へ" }
+  },
+  "billing": {
+    "pricePerMonth": "${{price}}/月",
+    "actions": { "tryAgain": "再試行", "contactSupport": "サポートに連絡", "cancel": "キャンセル" },
+    "error": { "heading": "サブスクリプションの問題", "missingChargeId": "サブスクリプションの確認に失敗しました：請求IDがありません。", "confirmationFailed": "Shopifyでサブスクリプションを確認できませんでした。", "unexpected": "サブスクリプションの設定中に予期しないエラーが発生しました。" },
+    "upgradeModal": {
+      "heading": "Growプランにアップグレード", "confirm": "アップグレードを確認 - ${{price}}/月", "redirect": "サブスクリプションを完了するためShopifyに移動します。",
+      "benefitsHeading": "Growで利用できる内容：", "bundleLimit": "最大20件のバンドル（現在 {{current}}/{{limit}}）", "billedMonthly": "Shopify経由で毎月請求",
+      "benefits": { "noRevenueCap": "バンドル売上の上限なし - 無料プランは月額$500まで", "advancedDiscounts": "高度な割引ルール", "prioritySupport": "優先サポート" }
+    },
+    "success": { "heading": "Growプランへようこそ！", "body": "サブスクリプションが有効になりました。すべてのプレミアム機能をご利用いただけます。", "bundleLimit": "バンドル上限", "bundleLimitValue": "20件のバンドル", "designControl": "デザイン管理", "fullAccess": "フルアクセス", "support": "サポート", "priority": "優先" },
+    "cards": { "currentPlan": "現在のプラン", "freePrice": "無料", "freeDescription": "バンドル売上が月額$500まで - 成長するまで無料", "includes": "含まれる内容：", "freePlan": "無料プラン", "mostPopular": "一番人気", "perMonth": "/ 月", "growDescription": "バンドル売上が月額$500以上 - 売上上限なし", "growIncludes": "無料プランのすべてに加えて：", "upgradeToGrow": "Growにアップグレード", "cancelAnytimeBilled": "いつでもキャンセルできます。Shopify経由で請求されます。" },
+    "cta": { "heading": "バンドルビジネスを成長させる準備はできましたか？", "body": "Growプランにアップグレードすると、バンドル数が倍増し、デザインを完全にカスタマイズでき、優先サポートを利用できます。", "highlights": { "bundles": "20件のバンドル", "design": "デザインコントロールパネル", "support": "優先サポート" }, "upgrade": "Growにアップグレード - ${{price}}/月", "cancelAnytime": "いつでもキャンセル可能" },
+    "route": { "title": "サブスクリプションと請求", "dashboard": "ダッシュボード", "currentPlan": "現在のプラン", "active": "有効", "inactive": "無効", "bundleUsage": "バンドル使用状況", "bundleCount": "{{current}} / {{limit}} バンドル", "limitReached": "バンドルの上限に達しました。", "limitUpgrade": "バンドル数を増やすにはGrowにアップグレードしてください。", "overview": "バンドル概要", "activeBundles": "有効なバンドル", "totalSteps": "合計ステップ", "productPage": "商品ページ", "fullPage": "フルページ", "cancelSubscription": "サブスクリプションをキャンセル", "cancelHeading": "サブスクリプションをキャンセルしますか？", "downgradeBody": "{{limit}}件のバンドル上限がある無料プランに変更されます。", "archiveWarning": "注意：{{current}}件のバンドルがあります。超過した{{excess}}件のバンドルはアーカイブされます（削除はされません）。", "confirmCancellation": "キャンセルを確定", "keepSubscription": "サブスクリプションを維持", "features": "プランの機能", "wantMore": "さらに機能が必要ですか？", "viewPlans": "すべてのプランを見る", "needHelp": "お困りですか？", "helpBody": "請求に関する質問やカスタムプランのご相談がありますか？サポートチームがお手伝いします。" }
   }
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { LocalAppModal } from "./LocalAppModal";
 
 interface DiscardChangesModalProps {
@@ -11,25 +12,27 @@ export function DiscardChangesModal({
   onDiscard,
   onContinue,
 }: DiscardChangesModalProps) {
+  const { t } = useTranslation();
+
   if (!open) return null;
 
   return (
     <LocalAppModal
-      title="Discard all unsaved changes"
+      title={t("common.discardChanges.title")}
       onClose={onContinue}
       primaryAction={(
         <s-button tone="critical" variant="primary" onClick={onDiscard}>
-          Discard Changes
+          {t("common.actions.discardChanges")}
         </s-button>
       )}
       secondaryAction={(
         <s-button variant="secondary" onClick={onContinue}>
-          Continue Editing
+          {t("common.actions.continueEditing")}
         </s-button>
       )}
     >
       <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>
-        If you discard changes, you'll delete any edits you made since you last saved.
+        {t("common.discardChanges.body")}
       </p>
     </LocalAppModal>
   );

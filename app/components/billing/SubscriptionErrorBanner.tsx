@@ -1,17 +1,19 @@
+import { useTranslation, type TFunction } from "react-i18next";
+
 export interface SubscriptionErrorBannerProps {
   errorCode: string | null;
   onRetry: () => void;
   onDismiss: () => void;
 }
 
-function getErrorMessage(errorCode: string | null): string {
+function getErrorMessage(errorCode: string | null, t: TFunction): string {
   switch (errorCode) {
     case "missing_charge_id":
-      return "Subscription confirmation failed: Missing charge ID.";
+      return t("billing.error.missingChargeId");
     case "confirmation_failed":
-      return "Failed to confirm subscription with Shopify.";
+      return t("billing.error.confirmationFailed");
     default:
-      return "An unexpected error occurred during subscription setup.";
+      return t("billing.error.unexpected");
   }
 }
 
@@ -20,12 +22,14 @@ export function SubscriptionErrorBanner({
   onRetry,
   onDismiss,
 }: SubscriptionErrorBannerProps) {
+  const { t } = useTranslation();
+
   return (
-    <s-banner tone="critical" heading="Subscription Issue" dismissible onHide={onDismiss} suppressHydrationWarning>
+    <s-banner tone="critical" heading={t("billing.error.heading")} dismissible onHide={onDismiss} suppressHydrationWarning>
       <s-button slot="primaryAction" onClick={onRetry}>
-        Try Again
+        {t("billing.actions.tryAgain")}
       </s-button>
-      {getErrorMessage(errorCode)}
+      {getErrorMessage(errorCode, t)}
       <s-stack direction="inline" gap="small" style={{ marginTop: 8 }}>
         <s-button
           variant="tertiary"
@@ -35,7 +39,7 @@ export function SubscriptionErrorBanner({
             }
           }}
         >
-          Contact Support
+          {t("billing.actions.contactSupport")}
         </s-button>
       </s-stack>
     </s-banner>
