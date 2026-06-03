@@ -160,4 +160,38 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain("height:263px");
     expect(storefrontStyles).toContain("border-radius:99px");
   });
+
+  it("matches EB Compact Design COMPACT side-footer storefront contract", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+    const css = readFileSync(
+      join(
+        process.cwd(),
+        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
+      ),
+      "utf8",
+    );
+    const storefrontStyles = `${source}\n${css}`;
+
+    expect(source).toContain("ensureCompactPresetRuntimeStyles()");
+    expect(source).toContain("wpb-fpb-compact-runtime-styles");
+    expect(source).toContain("this.getFullPageDesignPreset(bundle) === 'COMPACT'");
+    expect(source).toContain("preset === 'COMPACT'");
+
+    expect(storefrontStyles).toContain("[data-fpb-design-preset=COMPACT]");
+    expect(storefrontStyles).toContain("grid-template-columns:0.6fr 0.4fr");
+    expect(storefrontStyles).toContain("gap:30px");
+    expect(storefrontStyles).toContain("grid-template-columns:repeat(3,minmax(0,1fr))");
+    expect(storefrontStyles).toContain("container-type:inline-size");
+    expect(storefrontStyles).toContain("--compact-card-height-extra:104px");
+    expect(storefrontStyles).toContain("--compact-image-height-extra:12px");
+    expect(storefrontStyles).toContain("height:min(352px,calc((100cqw - 30px)/3 + var(--compact-card-height-extra,104px)))");
+    expect(storefrontStyles).toContain("height:min(240px,calc((100cqw - 30px)/3 - var(--compact-image-height-extra,12px)))");
+    expect(storefrontStyles).toContain("grid-template-columns:repeat(2,minmax(0,177.5px))");
+    expect(storefrontStyles).toContain("height:263px");
+    expect(storefrontStyles).toContain("width:35px");
+    expect(storefrontStyles).toContain("height:35px");
+  });
 });
