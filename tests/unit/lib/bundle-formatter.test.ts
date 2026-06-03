@@ -69,6 +69,14 @@ describe("formatBundleForWidget", () => {
     expect(result.fullPageLayout).toBeNull();
   });
 
+  it("emits the saved product slot icon URL for storefront empty slots", () => {
+    const result = formatBundleForWidget(makeBundle({
+      productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
+    }) as any);
+
+    expect(result.productSlotIconUrl).toBe("https://cdn.example.test/slot-icon.png");
+  });
+
   it("converts variant price strings to integer cents", () => {
     const step = makeStep({
       StepProduct: [

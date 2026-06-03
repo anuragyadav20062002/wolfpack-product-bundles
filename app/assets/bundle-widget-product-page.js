@@ -1470,9 +1470,7 @@ class BundleWidgetProductPage {
         justify-content: center;
         margin-bottom: 10px;
       `;
-      iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
-      </svg>`;
+      this._appendSlotIcon(iconWrapper);
       iconWrapper.style.color = primaryColor;
       stepBox.appendChild(iconWrapper);
     }
@@ -1488,6 +1486,22 @@ class BundleWidgetProductPage {
     stepBox.addEventListener('click', () => this.openModal(stepIndex));
 
     return stepBox;
+  }
+
+  _appendSlotIcon(iconWrapper) {
+    const productSlotIconUrl = this.selectedBundle?.productSlotIconUrl || null;
+    if (productSlotIconUrl) {
+      const slotIconImg = document.createElement('img');
+      slotIconImg.src = productSlotIconUrl;
+      slotIconImg.alt = '';
+      slotIconImg.style.cssText = 'width:28px;height:28px;object-fit:contain;display:block;';
+      iconWrapper.appendChild(slotIconImg);
+      return;
+    }
+
+    iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
+    </svg>`;
   }
 
 
@@ -1744,9 +1758,7 @@ class BundleWidgetProductPage {
       justify-content: center;
       margin-bottom: 10px;
     `;
-    iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
-    </svg>`;
+    this._appendSlotIcon(iconWrapper);
     iconWrapper.style.color = primaryColorBS;
     stepBox.appendChild(iconWrapper);
 

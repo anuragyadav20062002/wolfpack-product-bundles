@@ -829,6 +829,7 @@ export default function ConfigureBundleFlow() {
   const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>((bundle as any).maxQtyPerProduct?.toString() ?? "");
   const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
   const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
+  const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
   const [variantSelectorEnabled, setVariantSelectorEnabled] = useState<boolean>((bundle as any).variantSelectorEnabled ?? true);
   const [showTextOnAddButton, setShowTextOnAddButton] = useState<boolean>((bundle as any).showTextOnAddButton ?? false);
   const [bundleCartTitle, setBundleCartTitle] = useState<string>((bundle as any).bundleCartTitle ?? "");
@@ -4385,6 +4386,44 @@ export default function ConfigureBundleFlow() {
                           onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autoComplete="off"
                         />
+                        {/* Slot Icon — nested inside quantity validation */}
+                        <s-stack direction="block" gap="small-400">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>
+                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                            You can change the default icon that renders in the empty slots
+                          </p>
+                          {showSlotIconPicker && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowSlotIconPicker(false)}
+                              value={productSlotIconUrl || null}
+                              onChange={(url: string | null) => {
+                                setProductSlotIconUrl(url ?? "");
+                                setShowSlotIconPicker(false);
+                                markAsDirty();
+                              }}
+                              label="Slot Icon"
+                              hideCropEditor
+                            />
+                          )}
+                          <s-stack direction="inline" gap="small">
+                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
+                              Change Icon
+                            </s-button>
+                            <s-button
+                              variant="secondary"
+                              onClick={() => {
+                                setProductSlotIconUrl("");
+                                markAsDirty();
+                              }}
+                            >
+                              Reset
+                            </s-button>
+                          </s-stack>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
+                            Note: Only applicable when rules are based on quantity
+                          </p>
+                        </s-stack>
                         {individualSellingPlanBlocked && (
                           <s-banner tone="warning">
                             {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}

@@ -5302,13 +5302,17 @@ class BundleWidgetFullPage {
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
+      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+      const emptyStateIcon = emptyStateIconUrl
+        ? `<img class="empty-state-card-icon" src="${emptyStateIconUrl}" alt="" width="69" height="69">`
+        : `<svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>`;
 
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
         <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
+          ${emptyStateIcon}
           <p class="empty-state-card-text">${labelText}</p>
         </div>
       `).join('');

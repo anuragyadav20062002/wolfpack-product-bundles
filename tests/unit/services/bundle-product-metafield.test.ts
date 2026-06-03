@@ -420,6 +420,7 @@ describe("updateBundleProductMetafields", () => {
         isEnabled: true,
         allowedQuantity: 1,
       },
+      productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
       individualSellingPlanSelection: {
         isEnabled: false,
         showFor: "ALL_PRODUCTS",

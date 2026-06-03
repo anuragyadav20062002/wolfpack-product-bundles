@@ -36,6 +36,7 @@ export interface FormattedBundle {
   discountDisplayOverride: Record<string, unknown> | null;
   individualSellingPlanSelection: Record<string, unknown>;
   validateQuantityPerProduct: Record<string, unknown>;
+  productSlotIconUrl: string | null;
   useSingleStepCategoriesAsBundleSteps: boolean;
   renderFilledSlotsAsHorizontalStacked: boolean | null;
   shopifyProductId: string | null;
@@ -217,6 +218,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       isEnabled: false,
       allowedQuantity: 1,
     },
+    productSlotIconUrl: bundle.productSlotIconUrl ?? null,
     useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
       bundle.bundleDesignTemplate,

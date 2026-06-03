@@ -1056,6 +1056,8 @@ export default function ConfigureBundleFlow() {
   const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
   const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
   const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>((bundle as any).maxQtyPerProduct?.toString() ?? "");
+  const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
+  const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
   const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
   const [showTextOnPlusEnabled, setShowTextOnPlusEnabled] = useState<boolean>(
     !!((bundle as any).textOverrides?.addToCartButton)
@@ -1814,6 +1816,7 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleLevelCss", bundleLevelCss);
       formData.append("productSlotsEnabled", String(productSlotsEnabled));
       formData.append("maxQtyPerProduct", maxQtyPerProduct);
+      formData.append("productSlotIconUrl", productSlotIconUrl);
 
       // Submit to server action using fetcher
 
@@ -1887,6 +1890,7 @@ export default function ConfigureBundleFlow() {
     bundleLevelCss,
     productSlotsEnabled,
     maxQtyPerProduct,
+    productSlotIconUrl,
     shopify
   ]);
 
@@ -5002,45 +5006,34 @@ export default function ConfigureBundleFlow() {
                           <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                             You can change the default icon that renders in the empty slots
                           </p>
-                          <s-stack direction="inline" gap="small">
-                            <s-button
-                              variant="primary"
-                              icon="upload"
-                              disabled={!settingsStep || undefined}
-                              onClick={() => {
-                                if (!settingsStep) return;
-                                setShowIconPickerForStep(prev => prev === settingsStep.id ? null : settingsStep.id);
+                          {showSlotIconPicker && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowSlotIconPicker(false)}
+                              value={productSlotIconUrl || null}
+                              onChange={(url: string | null) => {
+                                setProductSlotIconUrl(url ?? "");
+                                setShowSlotIconPicker(false);
+                                markAsDirty();
                               }}
-                            >
-                              {settingsStep && showIconPickerForStep === settingsStep.id ? "Close picker" : "Change Icon"}
+                              label="Slot Icon"
+                              hideCropEditor
+                            />
+                          )}
+                          <s-stack direction="inline" gap="small">
+                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
+                              Change Icon
                             </s-button>
                             <s-button
                               variant="secondary"
                               onClick={() => {
-                                if (settingsStep) {
-                                  stepsState.updateStepField(settingsStep.id, "stepImage", null);
-                                  setShowIconPickerForStep(null);
-                                  markAsDirty();
-                                }
+                                setProductSlotIconUrl("");
+                                markAsDirty();
                               }}
                             >
                               Reset
                             </s-button>
                           </s-stack>
-                          {settingsStep && showIconPickerForStep === settingsStep.id && (
-                            <FilePicker
-                              autoOpen
-                              onClose={() => setShowIconPickerForStep(null)}
-                              value={(settingsStep as any).stepImage ?? null}
-                              onChange={(url: string | null) => {
-                                stepsState.updateStepField(settingsStep.id, "stepImage", url);
-                                setShowIconPickerForStep(null);
-                                markAsDirty();
-                              }}
-                              label=""
-                              hideCropEditor
-                            />
-                          )}
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                             Note: Only applicable when rules are based on quantity
                           </p>
