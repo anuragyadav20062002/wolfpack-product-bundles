@@ -489,7 +489,7 @@ describe('Product Page modal-slot visual contract', () => {
     expect(source).toContain('bw-ppb-cascade-product-row');
     expect(cascadeTemplate).toContain('bw-ppb-cascade-selected-toggle');
     expect(cascadeTemplate).toContain('viewBundleItems');
-    expect(source).toContain('const showQuantitySelector = !this._isProductPageCascadeTemplate()');
+    expect(source).toContain('const showQuantitySelector = !this._usesCompactInpageProductCards()');
 
     expect(css).toContain('.bw-ppb-cascade-footer');
     expect(css).toContain('.bw-ppb-cascade-selected-toggle');
@@ -532,6 +532,56 @@ describe('Product Page modal-slot visual contract', () => {
     expect(cascadeTemplate).toContain('export function installCascadeTemplate(BundleWidgetProductPage)');
     expect(cascadeTemplate).toContain('prototype._renderCascadeFooter = function');
     expect(cascadeTemplate).toContain('prototype._isProductPageCascadeTemplate = function');
+  });
+
+  it('renders the PPB Product Grid template from a dedicated COGNIVE module with EB-style responsive cards', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const buildScript = readFileSync(
+      join(process.cwd(), 'scripts/build-widget-bundles.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+    const cogniveTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/cognive-template.js'),
+      'utf8',
+    );
+
+    expect(buildScript).toContain("app/assets/widgets/product-page/templates/cognive-template.js");
+    expect(source).toContain("import { installCogniveTemplate } from './widgets/product-page/templates/cognive-template.js';");
+    expect(source).toContain('installCogniveTemplate(BundleWidgetProductPage);');
+    expect(source.indexOf('installCascadeTemplate(BundleWidgetProductPage);')).toBeLessThan(
+      source.indexOf('installCogniveTemplate(BundleWidgetProductPage);'),
+    );
+    expect(source.indexOf('installCogniveTemplate(BundleWidgetProductPage);')).toBeLessThan(
+      source.indexOf('initializeProductPageWidget();'),
+    );
+
+    expect(cogniveTemplate).toContain('export function installCogniveTemplate(BundleWidgetProductPage)');
+    expect(cogniveTemplate).toContain('prototype._isProductPageGridTemplate = function');
+    expect(cogniveTemplate).toContain("this._getProductPageDesignPreset() === 'COGNIVE'");
+    expect(cogniveTemplate).toContain('prototype._renderCogniveFooter = function');
+    expect(cogniveTemplate).toContain('this._renderCascadeFooter(el);');
+    expect(source).toContain('this._isProductPageGridTemplate()');
+    expect(source).toContain('this._renderCogniveFooter(el);');
+    expect(source).toContain("target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate())");
+    expect(source).toContain('const showQuantitySelector = !this._usesCompactInpageProductCards()');
+
+    expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid');
+    expect(css).toContain('grid-template-columns:repeat(3, minmax(0, 1fr))');
+    expect(css).toContain('gap:15px');
+    expect(css).toContain('padding:0 8px 15px');
+    expect(css).toContain('.bw-ppb-cognive-product-grid .product-card');
+    expect(css).toContain('gap:10px');
+    expect(css).toContain('.bw-ppb-cognive-product-grid .product-image');
+    expect(css).toContain('aspect-ratio:1');
+    expect(css).toContain('.bw-ppb-cognive-product-grid .product-add-btn');
+    expect(css).toContain('height:32px');
   });
 
   it('renders PPB discount tier pills from rule-id display DTOs', () => {

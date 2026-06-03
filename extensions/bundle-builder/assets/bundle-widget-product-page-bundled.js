@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.60
+ * Version : 2.9.61
  * Built   : 2026-06-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.60';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.61';
 (function() {
   'use strict';
 
@@ -2267,7 +2267,11 @@ function installCascadeTemplate(BundleWidgetProductPage) {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'bw-ppb-cascade-selected-toggle';
-    toggle.textContent = this._resolveText('viewBundleItems', 'View Bundle Items');
+    const totalSelectedQuantity = selectedEntries.reduce((sum, entry) => sum + entry.quantity, 0);
+    toggle.innerHTML = `
+      <span class="bw-ppb-cascade-selected-toggle-label">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
+      <span class="bw-ppb-cascade-selected-toggle-count">${totalSelectedQuantity}</span>
+    `;
     toggle.addEventListener('click', () => {
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
     });
@@ -2301,6 +2305,28 @@ function installCascadeTemplate(BundleWidgetProductPage) {
       messageEl.textContent = message;
       el.appendChild(messageEl);
     }
+  };
+}
+
+function installCogniveTemplate(BundleWidgetProductPage) {
+  const prototype = BundleWidgetProductPage.prototype;
+
+  prototype._isProductPageGridTemplate = function() {
+    return this._getProductPageTemplateType() === 'PDP_INPAGE'
+      && this._getProductPageDesignPreset() === 'COGNIVE';
+  };
+
+  prototype._isProductPageCogniveTemplate = function() {
+    return this._isProductPageGridTemplate();
+  };
+
+  prototype._usesCompactInpageProductCards = function() {
+    return Boolean(this._isProductPageCascadeTemplate?.() || this._isProductPageGridTemplate());
+  };
+
+  prototype._renderCogniveFooter = function(el) {
+    this._renderCascadeFooter(el);
+    el.classList.add('bw-ppb-cognive-footer');
   };
 }
 
@@ -2660,11 +2686,6 @@ class BundleWidgetProductPage {
 
   _isProductPageInpageTemplate() {
     return this._getProductPageTemplateType() === 'PDP_INPAGE';
-  }
-
-  _isProductPageCogniveTemplate() {
-    return this._getProductPageTemplateType() === 'PDP_INPAGE'
-      && this._getProductPageDesignPreset() === 'COGNIVE';
   }
 
   _shouldShowProductComparedAtPrice() {
@@ -3566,10 +3587,13 @@ class BundleWidgetProductPage {
       return;
     }
 
-    target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
+    const usesCascadeCards = this._isProductPageCascadeTemplate();
+    const usesGridCards = this._isProductPageGridTemplate();
+    target.classList.toggle('bw-ppb-cascade-product-list', usesCascadeCards);
+    target.classList.toggle('bw-ppb-cognive-product-grid', this._isProductPageGridTemplate());
 
     const selectedProducts = this.selectedProducts[stepIndex] || {};
-    const showQuantitySelector = !this._isProductPageCascadeTemplate()
+    const showQuantitySelector = !this._usesCompactInpageProductCards()
       && this.config.showQuantitySelectorOnCard;
     const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
       this.selectedBundle?.validateQuantityPerProduct
@@ -3589,7 +3613,7 @@ class BundleWidgetProductPage {
         : '';
 
       return `
-        <div class="product-card ${this._isProductPageCascadeTemplate() ? 'bw-ppb-cascade-product-row' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card ${usesCascadeCards ? 'bw-ppb-cascade-product-row' : ''} ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
           <div class="product-image">
             <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
@@ -3957,6 +3981,11 @@ class BundleWidgetProductPage {
 
     if (this._isProductPageCascadeTemplate()) {
       this._renderCascadeFooter(el);
+      return;
+    }
+
+    if (this._isProductPageGridTemplate()) {
+      this._renderCogniveFooter(el);
       return;
     }
 
@@ -6143,6 +6172,7 @@ class BundleWidgetProductPage {
 
 installModalSlotTemplate(BundleWidgetProductPage);
 installCascadeTemplate(BundleWidgetProductPage);
+installCogniveTemplate(BundleWidgetProductPage);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeProductPageWidget);

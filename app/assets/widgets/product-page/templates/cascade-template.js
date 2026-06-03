@@ -91,7 +91,11 @@ export function installCascadeTemplate(BundleWidgetProductPage) {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'bw-ppb-cascade-selected-toggle';
-    toggle.textContent = this._resolveText('viewBundleItems', 'View Bundle Items');
+    const totalSelectedQuantity = selectedEntries.reduce((sum, entry) => sum + entry.quantity, 0);
+    toggle.innerHTML = `
+      <span class="bw-ppb-cascade-selected-toggle-label">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
+      <span class="bw-ppb-cascade-selected-toggle-count">${totalSelectedQuantity}</span>
+    `;
     toggle.addEventListener('click', () => {
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
     });

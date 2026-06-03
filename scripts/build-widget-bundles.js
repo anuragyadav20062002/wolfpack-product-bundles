@@ -36,7 +36,7 @@ const ROOT_DIR = join(__dirname, '..');
 // Verify live version in browser DevTools on the storefront:
 //   console.log(window.__BUNDLE_WIDGET_VERSION__)
 // ---------------------------------------------------------------------------
-const WIDGET_VERSION = '2.9.60';
+const WIDGET_VERSION = '2.9.61';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -76,6 +76,7 @@ const SDK_MODULES = [
 const PRODUCT_PAGE_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cascade-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cognive-template.js'),
 ];
 
 // Output files
