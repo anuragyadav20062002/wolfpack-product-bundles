@@ -74,7 +74,7 @@ export function GrowPlanCard({
                 {PLANS.grow.features.map((feature, index) => (
                   <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
                     <div style={{ color: "#008060" }}>
-                      <s-icon name="check-minor" />
+                      <s-icon type="check" />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: index < 4 ? 600 : 400 }}>
                       {feature}
@@ -91,7 +91,7 @@ export function GrowPlanCard({
               disabled={isCurrentPlan || undefined}
               loading={isUpgrading || undefined}
               onClick={onSelectPlan}
-              inlineSize="100%"
+              inlineSize="fill"
             >
               {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.upgradeToGrow")}
             </s-button>

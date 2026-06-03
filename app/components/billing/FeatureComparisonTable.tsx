@@ -4,14 +4,14 @@ function renderFeatureValue(value: boolean | string) {
   if (value === true) {
     return (
       <div style={{ color: "#008060", display: "flex", justifyContent: "center" }}>
-        <s-icon name="check-minor" />
+        <s-icon type="check" />
       </div>
     );
   }
   if (value === false) {
     return (
       <div style={{ color: "#8c9196", display: "flex", justifyContent: "center" }}>
-        <s-icon name="x-small" />
+        <s-icon type="x" />
       </div>
     );
   }

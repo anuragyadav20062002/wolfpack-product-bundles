@@ -33,7 +33,7 @@ export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
               {PLANS.free.features.map((feature, index) => (
                 <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
                   <div style={{ color: "#008060" }}>
-                    <s-icon name="check-minor" />
+                    <s-icon type="check" />
                   </div>
                   <span style={{ fontSize: 14 }}>{feature}</span>
                 </s-stack>

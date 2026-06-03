@@ -56,7 +56,7 @@ export function UpgradeSuccessBanner({
               display: "flex",
             }}
           >
-            <s-icon name="check-circle" />
+            <s-icon type="check" />
           </div>
           <s-stack direction="block" gap="small-400">
             <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "white" }}>

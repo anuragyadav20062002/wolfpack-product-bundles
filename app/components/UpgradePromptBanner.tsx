@@ -1,6 +1,8 @@
 import { useNavigate } from "@remix-run/react";
 import { useCallback } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import styles from "./UpgradePromptBanner.module.css";
 
 export interface UpgradePromptBannerProps {
   plan: "free" | "grow";
@@ -22,42 +24,58 @@ export function UpgradePromptBanner({
     navigate("/app/billing");
   }, [navigate]);
 
+  const renderPrompt = (
+    tone: "info" | "warning" | "critical",
+    actionLabel: string,
+    message: ReactNode,
+    actionVariant: "primary" | "secondary" = "secondary",
+  ) => (
+    <div className={`${styles.upgradePromptBanner} ${styles[tone]}`} role={tone === "critical" ? "alert" : "status"}>
+      <span className={styles.upgradePromptIcon} aria-hidden="true">
+        <s-icon type={tone === "info" ? "info" : "alert-triangle"} />
+      </span>
+      <span className={styles.upgradePromptMessage}>{message}</span>
+      <span className={styles.upgradePromptAction}>
+        <s-button variant={actionVariant} onClick={handleUpgrade}>
+          {actionLabel}
+        </s-button>
+      </span>
+    </div>
+  );
+
   if (plan !== "free") return null;
 
   if (!canCreateBundle) {
-    return (
-      <s-banner tone="critical">
-        <s-button slot="primaryAction" variant="primary" onClick={handleUpgrade}>
-          {t("common.actions.upgradeNow")}
-        </s-button>
+    return renderPrompt(
+      "critical",
+      t("common.actions.upgradeNow"),
+      <>
         <strong>{t("common.upgradePrompt.limitReachedTitle")}</strong> -{" "}
         {t("common.upgradePrompt.limitReachedBody", { limit: bundleLimit })}
-      </s-banner>
+      </>,
+      "primary",
     );
   }
 
   const usagePercentage = (currentBundleCount / bundleLimit) * 100;
 
   if (usagePercentage >= 80) {
-    return (
-      <s-banner tone="warning">
-        <s-button slot="primaryAction" variant="primary" onClick={handleUpgrade}>
-          {t("common.actions.viewPlans")}
-        </s-button>
+    return renderPrompt(
+      "warning",
+      t("common.actions.viewPlans"),
+      <>
         <strong>{t("common.upgradePrompt.approachingTitle")}</strong> -{" "}
         {t("common.upgradePrompt.approachingBody", { current: currentBundleCount, limit: bundleLimit })}
-      </s-banner>
+      </>,
+      "primary",
     );
   }
 
   if (usagePercentage >= 50) {
-    return (
-      <s-banner tone="info">
-        <s-button slot="primaryAction" onClick={handleUpgrade}>
-          {t("common.actions.viewPlans")}
-        </s-button>
-        {t("common.upgradePrompt.usageBody", { current: currentBundleCount, limit: bundleLimit })}
-      </s-banner>
+    return renderPrompt(
+      "info",
+      t("common.actions.viewPlans"),
+      t("common.upgradePrompt.usageBody", { current: currentBundleCount, limit: bundleLimit }),
     );
   }
 

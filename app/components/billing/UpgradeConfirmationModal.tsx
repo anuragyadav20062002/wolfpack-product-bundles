@@ -68,7 +68,7 @@ export function UpgradeConfirmationModal({
           <s-stack direction="block" gap="small-100">
             <s-stack direction="inline" alignItems="center" gap="small-100">
               <div style={{ color: "#008060" }}>
-                <s-icon name="check-minor" />
+                <s-icon type="check" />
               </div>
               <span style={{ fontSize: 14 }}>
                 {t("billing.upgradeModal.bundleLimit", { current: currentBundleCount, limit: bundleLimit })}
@@ -77,7 +77,7 @@ export function UpgradeConfirmationModal({
             {benefits.map((benefit, index) => (
               <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
                 <div style={{ color: "#008060" }}>
-                  <s-icon name="check-minor" />
+                  <s-icon type="check" />
                 </div>
                 <span style={{ fontSize: 14 }}>{benefit}</span>
               </s-stack>

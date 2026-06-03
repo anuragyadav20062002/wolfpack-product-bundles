@@ -13,7 +13,7 @@ export function ValuePropsSection({
       <s-stack direction="block" gap="base">
         <s-stack direction="inline" alignItems="center" gap="small-100">
           <div style={{ color: "#ffc453" }}>
-            <s-icon name="star-filled" />
+            <s-icon type="check" />
           </div>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Why Upgrade to Grow?</h3>
         </s-stack>
