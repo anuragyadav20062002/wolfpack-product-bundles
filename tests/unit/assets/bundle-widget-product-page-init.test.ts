@@ -411,6 +411,33 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('color:#ffffff');
   });
 
+  it('renders the PPB Product List template with EB-style cascade rows and footer controls', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(source).toContain('_isProductPageCascadeTemplate');
+    expect(source).toContain('_renderCascadeFooter');
+    expect(source).toContain('_getSelectedProductEntries');
+    expect(source).toContain('bw-ppb-cascade-product-list');
+    expect(source).toContain('bw-ppb-cascade-product-row');
+    expect(source).toContain('bw-ppb-cascade-selected-toggle');
+    expect(source).toContain('viewBundleItems');
+    expect(source).toContain('const showQuantitySelector = !this._isProductPageCascadeTemplate()');
+
+    expect(css).toContain('.bw-ppb-cascade-footer');
+    expect(css).toContain('.bw-ppb-cascade-selected-toggle');
+    expect(css).toContain('.bw-ppb-cascade-product-row');
+    expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .bw-ppb-dynamic-checkout-visual');
+    expect(css).toContain('border-radius:999px');
+    expect(css).toContain('background:#111111');
+  });
+
   it('renders PPB discount tier pills from rule-id display DTOs', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),

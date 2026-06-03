@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.57
+ * Version : 2.9.58
  * Built   : 2026-06-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.57';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.58';
 (function() {
   'use strict';
 
@@ -2426,6 +2426,11 @@ class BundleWidgetProductPage {
     return this._getProductPageTemplateType() === 'PDP_INPAGE';
   }
 
+  _isProductPageCascadeTemplate() {
+    return this._getProductPageTemplateType() === 'PDP_INPAGE'
+      && this._getProductPageDesignPreset() === 'CASCADE';
+  }
+
   _isProductPageCogniveTemplate() {
     return this._getProductPageTemplateType() === 'PDP_INPAGE'
       && this._getProductPageDesignPreset() === 'COGNIVE';
@@ -3369,8 +3374,11 @@ class BundleWidgetProductPage {
       return;
     }
 
+    target.classList.toggle('bw-ppb-cascade-product-list', this._isProductPageCascadeTemplate());
+
     const selectedProducts = this.selectedProducts[stepIndex] || {};
-    const showQuantitySelector = this.config.showQuantitySelectorOnCard;
+    const showQuantitySelector = !this._isProductPageCascadeTemplate()
+      && this.config.showQuantitySelectorOnCard;
     const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
       this.selectedBundle?.validateQuantityPerProduct
     );
@@ -3389,7 +3397,7 @@ class BundleWidgetProductPage {
         : '';
 
       return `
-        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card ${this._isProductPageCascadeTemplate() ? 'bw-ppb-cascade-product-row' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
           <div class="product-image">
             <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
@@ -3825,6 +3833,11 @@ class BundleWidgetProductPage {
     if (!el) return;
     el.innerHTML = '';
 
+    if (this._isProductPageCascadeTemplate()) {
+      this._renderCascadeFooter(el);
+      return;
+    }
+
     const displayOptions = this.selectedBundle?.messaging?.displayOptions;
     const pbConfig = displayOptions?.progressBar;
     if (!pbConfig?.enabled) {
@@ -3891,6 +3904,120 @@ class BundleWidgetProductPage {
     fill.style.cssText = `height:100%;width:${Math.round(progress * 100)}%;background:${primary};border-radius:3px;transition:width 0.3s ease;`;
     track.appendChild(fill);
     el.appendChild(track);
+  }
+
+  _getSelectedProductEntries() {
+    const entries = [];
+    (this.selectedProducts || []).forEach((stepSelections, stepIndex) => {
+      const products = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
+      Object.entries(stepSelections || {}).forEach(([variantId, quantity]) => {
+        const normalizedQuantity = Number(quantity) || 0;
+        if (normalizedQuantity <= 0) return;
+
+        const product = products.find(candidate =>
+          this.normalizeSelectionKey(candidate.variantId || candidate.id) === this.normalizeSelectionKey(variantId)
+        );
+        if (!product) return;
+
+        entries.push({
+          stepIndex,
+          variantId,
+          quantity: normalizedQuantity,
+          product,
+        });
+      });
+    });
+    return entries;
+  }
+
+  _getCascadeFooterMessage() {
+    const displayOptions = this.selectedBundle?.messaging?.displayOptions;
+    const pbConfig = displayOptions?.progressBar;
+    const rules = this.selectedBundle?.pricing?.rules || [];
+
+    if (rules.length === 0 || !this.selectedBundle?.pricing?.enabled) return '';
+
+    const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const rule = rules[0];
+    const discountMethod = PricingCalculator.getDiscountMethod(this.selectedBundle);
+    const conditionValue = PricingCalculator.getRuleConditionValue(rule, discountMethod);
+    const conditionType = PricingCalculator.getRuleConditionType(rule);
+    const current = conditionType === 'quantity' ? totalQuantity : totalPrice / 100;
+    const progress = conditionValue > 0 ? Math.min(1, current / conditionValue) : 1;
+    const met = progress >= 1;
+    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountText = combinedDiscountInfo.hasDiscount
+      ? (this.selectedBundle.pricing.method === 'percentage_off'
+          ? `${rule.discountValue ?? 0}% off`
+          : CurrencyManager.convertAndFormat(combinedDiscountInfo.savings, CurrencyManager.getCurrencyInfo()))
+      : '';
+    const template = met
+      ? (pbConfig?.successText || this.selectedBundle.messaging?.successTemplate || 'You got {discountText}!')
+      : (pbConfig?.progressText || this.selectedBundle.messaging?.progressTemplate || 'Add {conditionText} more to get {discountText}');
+    const diff = Math.max(0, conditionValue - current);
+    const conditionText = conditionType === 'quantity'
+      ? `${Math.ceil(diff)} item${Math.ceil(diff) !== 1 ? 's' : ''}`
+      : CurrencyManager.convertAndFormat(diff * 100, CurrencyManager.getCurrencyInfo());
+
+    return template
+      .replace(/{discountText}/g, discountText)
+      .replace(/{conditionText}/g, conditionText)
+      .replace(/{amountNeeded}/g, conditionText)
+      .replace(/{itemsNeeded}/g, `${Math.ceil(diff)}`)
+      .replace(/{progressPercentage}/g, `${Math.round(progress * 100)}`);
+  }
+
+  _renderCascadeFooter(el) {
+    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer';
+    el.style.display = '';
+    el.style.cssText = '';
+
+    const selectedEntries = this._getSelectedProductEntries();
+    const drawer = document.createElement('div');
+    drawer.className = 'bw-ppb-cascade-selected-drawer';
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'bw-ppb-cascade-selected-toggle';
+    toggle.textContent = this._resolveText('viewBundleItems', 'View Bundle Items');
+    toggle.addEventListener('click', () => {
+      drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
+    });
+    drawer.appendChild(toggle);
+
+    if (selectedEntries.length > 0) {
+      const list = document.createElement('div');
+      list.className = 'bw-ppb-cascade-selected-list';
+      selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
+        const item = document.createElement('div');
+        item.className = 'bw-ppb-cascade-selected-item';
+        item.innerHTML = `
+          <img src="${product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(product.title || '')}" loading="lazy">
+          <span>${ComponentGenerator.escapeHtml(product.title || '')}${quantity > 1 ? ` × ${quantity}` : ''}</span>
+          <button type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(product.title || 'product')}">×</button>
+        `;
+        item.querySelector('button')?.addEventListener('click', () => {
+          this.removeProductFromSelection(stepIndex, variantId);
+        });
+        list.appendChild(item);
+      });
+      drawer.appendChild(list);
+    }
+
+    el.appendChild(drawer);
+
+    const message = this._getCascadeFooterMessage();
+    if (message) {
+      const messageEl = document.createElement('p');
+      messageEl.className = 'bw-ppb-cascade-discount-message';
+      messageEl.textContent = message;
+      el.appendChild(messageEl);
+    }
   }
 
   updateFooterMessaging() {
@@ -5311,11 +5438,17 @@ class BundleWidgetProductPage {
       }
 
       if (addBtn) {
+        const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
+        const step = this.selectedBundle?.steps?.[stepIndex];
         if (quantity > 0) {
-          addBtn.textContent = this._resolveText('includedBadge', 'Selected ✓');
+          addBtn.textContent = cascadeRow
+            ? (step?.addonReplaceText || this._resolveText('includedBadge', 'Selected ✓'))
+            : this._resolveText('includedBadge', 'Selected ✓');
           addBtn.classList.add('added');
         } else {
-          addBtn.textContent = this._resolveText('addToCartButton', 'Add to Cart');
+          addBtn.textContent = cascadeRow
+            ? (step?.addonAddText || 'Add +')
+            : this._resolveText('addToCartButton', 'Add to Cart');
           addBtn.classList.remove('added');
         }
       }
