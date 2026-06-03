@@ -3841,6 +3841,67 @@ to {
   padding:0;
   white-space:normal}
 
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bundle-steps {
+  gap:10px;
+  margin:20px 0 12px}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-section {
+  display:grid;
+  grid-template-columns:345px;
+  gap:10px;
+  width:345px;
+  max-width:345px}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-title {
+  color:#000000;
+  font-size:16px;
+  font-weight:700;
+  line-height:normal;
+  text-align:left}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid {
+  display:grid;
+  grid-template-columns:104px;
+  gap:16px;
+  width:345px;
+  align-items:start;
+  justify-items:start}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card--empty {
+  display:grid;
+  grid-template-columns:80px;
+  align-content:center;
+  justify-content:center;
+  align-items:center;
+  justify-items:center;
+  gap:8px;
+  width:104px;
+  height:200px;
+  min-height:200px;
+  padding:0;
+  border:2px dashed #000000;
+  border-radius:10px;
+  background:#ffffff;
+  box-shadow:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card__empty-visual {
+  width:80px;
+  height:80px;
+  margin:0;
+  background:#ff9790;
+  background-size:cover;
+  background-repeat:no-repeat;
+  background-position:center}
+
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card__label {
+  width:80px;
+  color:#3e3e3e;
+  font-size:16px;
+  font-weight:700;
+  line-height:normal;
+  margin:0;
+  text-align:center}
+
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid.bw-ppb-modal-slot-grid--simplified .bw-slot-card--empty {
   display:grid;
   grid-template-columns:minmax(0, 1fr) 70px;

@@ -316,21 +316,25 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
       'utf8',
     );
+    const modalSlotTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
+      'utf8',
+    );
     const css = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
       'utf8',
     );
 
-    expect(source).toContain('_isProductPageModalSlotTemplate');
+    expect(modalSlotTemplate).toContain('_isProductPageModalSlotTemplate');
     expect(source).toContain('_markProductPageTemplate');
     expect(source).toContain('this.elements.stepsContainer.dataset.ppbTemplateType');
     expect(source).toContain('this.elements.stepsContainer.dataset.ppbDesignPreset');
-    expect(source).toContain('bw-ppb-modal-slot-section');
-    expect(source).toContain('bw-ppb-modal-slot-title');
-    expect(source).toContain('bw-ppb-modal-slot-grid');
-    expect(source).toContain("title.textContent = step.pageTitle || step.name || '';");
-    expect(source).toContain('const slotNumber = instanceIndex + 1;');
-    expect(source).toMatch(/Product \$\{slotNumber\}/);
+    expect(modalSlotTemplate).toContain('bw-ppb-modal-slot-section');
+    expect(modalSlotTemplate).toContain('bw-ppb-modal-slot-title');
+    expect(modalSlotTemplate).toContain('bw-ppb-modal-slot-grid');
+    expect(modalSlotTemplate).toContain("title.textContent = step.pageTitle || step.name || '';");
+    expect(modalSlotTemplate).toContain('const slotNumber = instanceIndex + 1;');
+    expect(modalSlotTemplate).toMatch(/Product \$\{slotNumber\}/);
     expect(source).toContain('_createDynamicCheckoutVisual');
     expect(source).toContain('bw-ppb-dynamic-checkout-visual');
     expect(source).toContain('Buy it now');
@@ -354,17 +358,70 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
       'utf8',
     );
+    const modalSlotTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
+      'utf8',
+    );
     const css = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
       'utf8',
     );
 
-    expect(source).toContain('_usesVerticalModalSlotLayout');
-    expect(source).toContain('renderFilledSlotsAsHorizontalStacked');
+    expect(modalSlotTemplate).toContain('_usesVerticalModalSlotLayout');
+    expect(modalSlotTemplate).toContain('renderFilledSlotsAsHorizontalStacked');
     expect(source).toContain('this.container.dataset.ppbSlotOrientation');
     expect(source).toContain('this.elements.stepsContainer.dataset.ppbSlotOrientation');
     expect(source).not.toContain('_isProductPageSimplifiedTemplate');
     expect(css).toContain('data-ppb-slot-orientation="vertical"');
+  });
+
+  it('loads PPB Horizontal Slots template code from a dedicated source module before Cascade and widget initialization', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const buildScript = readFileSync(
+      join(process.cwd(), 'scripts/build-widget-bundles.js'),
+      'utf8',
+    );
+    const modalSlotTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
+      'utf8',
+    );
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    expect(buildScript).toContain("app/assets/widgets/product-page/templates/modal-slot-template.js");
+    expect(buildScript.indexOf("app/assets/widgets/product-page/templates/modal-slot-template.js")).toBeLessThan(
+      buildScript.indexOf("app/assets/widgets/product-page/templates/cascade-template.js"),
+    );
+    expect(source).toContain("import { installModalSlotTemplate } from './widgets/product-page/templates/modal-slot-template.js';");
+    expect(source).toContain('installModalSlotTemplate(BundleWidgetProductPage);');
+    expect(source.indexOf('installModalSlotTemplate(BundleWidgetProductPage);')).toBeLessThan(
+      source.indexOf('installCascadeTemplate(BundleWidgetProductPage);'),
+    );
+    expect(source.indexOf('installModalSlotTemplate(BundleWidgetProductPage);')).toBeLessThan(
+      source.indexOf('initializeProductPageWidget();'),
+    );
+    expect(source).not.toContain('  _createModalSlotStepSection(step) {');
+    expect(source).not.toContain('  createEmptyStateCard(step, stepIndex, instanceIndex = 0) {');
+
+    expect(modalSlotTemplate).toContain('export function installModalSlotTemplate(BundleWidgetProductPage)');
+    expect(modalSlotTemplate).toContain('prototype._createModalSlotStepSection = function');
+    expect(modalSlotTemplate).toContain('prototype.createEmptyStateCard = function');
+    expect(modalSlotTemplate).toContain('prototype._appendSlotIcon = function');
+
+    expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"]');
+    expect(css).toContain('grid-template-columns:104px');
+    expect(css).toContain('width:104px');
+    expect(css).toContain('height:200px');
+    expect(css).toContain('min-height:200px');
+    expect(css).toContain('width:80px');
+    expect(css).toContain('height:80px');
+    expect(css).toContain('background:#ff9790');
+    expect(css).toContain('border:2px dashed #000000');
   });
 
   it('renders only one quantity increase button in PPB in-page product cards', () => {
@@ -374,7 +431,7 @@ describe('Product Page modal-slot visual contract', () => {
     );
     const inpageRenderer = source.slice(
       source.indexOf('_renderInpageStepProducts'),
-      source.indexOf('  // Create an empty state card for a step'),
+      source.indexOf('    this.attachProductEventHandlers(target, stepIndex);'),
     );
 
     const increaseButtonMatches = inpageRenderer.match(/class="qty-btn qty-increase"/g) ?? [];

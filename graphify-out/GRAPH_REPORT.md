@@ -1,11 +1,11 @@
-# Graph Report - .  (2026-06-03)
+# Graph Report - .  (2026-06-04)
 
 ## Corpus Check
-- 468 files · ~4,287,466 words
+- 472 files · ~4,328,202 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3934 nodes · 5836 edges · 571 communities detected
+- 3930 nodes · 5825 edges · 571 communities detected
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
@@ -585,8 +585,8 @@
 ## God Nodes (most connected - your core abstractions)
 1. `BundleWidgetFullPage` - 199 edges
 2. `BundleWidgetFullPage` - 199 edges
-3. `BundleWidgetProductPage` - 142 edges
-4. `BundleWidgetProductPage` - 142 edges
+3. `BundleWidgetProductPage` - 136 edges
+4. `BundleWidgetProductPage` - 136 edges
 5. `bundle-widget-full-page.js Widget Source` - 82 edges
 6. `AppStateService` - 61 edges
 7. `bundle-widget-full-page.css` - 29 edges
@@ -597,14 +597,14 @@
 ## Surprising Connections (you probably didn't know these)
 - `Remove Pixel Auto-Activation from afterAuth` --references--> `app/shopify.server.ts (Shopify Auth & Lifecycle Hooks)`  [INFERRED]
   docs/analytics-pixel-toggle/03-architecture.md → app/shopify.server.ts
-- `css-variables-generator.ts (CSS Variable Generator)` --implemented_by--> `DCP CSS Variable Generation Pipeline`  [EXTRACTED]
-  app/lib/css-generators/css-variables-generator.ts → docs/issues-prod/full-page-design-improvements-1.md
 - `Source: app/constants/errors.ts (new)` --creates--> `Issue: Centralize Constants & Mappings (Phase 2)`  [EXTRACTED]
   app/constants/errors.ts → docs/issues-prod/centralize-constants-phase2-1.md
 - `Source: app/constants/api.ts (new)` --creates--> `Issue: Centralize Constants & Mappings (Phase 2)`  [EXTRACTED]
   app/constants/api.ts → docs/issues-prod/centralize-constants-phase2-1.md
 - `Source: app/constants/bundle.ts` --modifies--> `Issue: Centralize Constants & Mappings (Phase 2)`  [EXTRACTED]
   app/constants/bundle.ts → docs/issues-prod/centralize-constants-phase2-1.md
+- `bundle-widget-full-page.css` --references--> `DCP Component: PreviewScope.tsx`  [EXTRACTED]
+  docs/issues-prod/beco-design-alignment-1.md → app/components/design-control-panel/preview/PreviewScope.tsx
 
 ## Hyperedges (group relationships)
 - **Ad-Ready Phase 1: Bundle Creation Price + Inventory Fix** — handlers_server_ts, service_pricing_calculation, service_inventory_sync, ad_ready_bundle_price_fix, ad_ready_inventory_mgmt [EXTRACTED 1.00]
@@ -630,535 +630,535 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (295): api.design-settings.$shopDomain.tsx Route, api.preview.$type.tsx (DCP Storefront Preview Route), api.storefront-products Route, app.billing.tsx Route, Source: app/constants/api.ts (new), Source: app/constants/bundle.ts, Source: app/constants/errors.ts (new), Route: app.dashboard/route.tsx (+287 more)
+Nodes (288): Add-to-Bundle Button Selected-State Colour DCP Control, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget, API Route: api.bundle.$bundleId.json.tsx, api.design-settings.$shopDomain.tsx Route, api.preview.$type.tsx (DCP Storefront Preview Route), api.storefront-products Route, app.billing.tsx Route, Source: app/constants/api.ts (new) (+280 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.01
-Nodes (265): Add-to-Bundle Button Selected Color Architecture, Add-to-Bundle Button Selected-State Colour DCP Control, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget, Admin Tier Config Architecture Decision Record (+257 more)
-
-### Community 2 - "Community 2"
 Cohesion: 0.02
 Nodes (8): BundleWidgetFullPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, hideLoadingOverlayElement(), PricingCalculator, TemplateManager, ToastManager
 
-### Community 3 - "Community 3"
+### Community 2 - "Community 2"
 Cohesion: 0.03
 Nodes (1): BundleWidgetFullPage
 
+### Community 3 - "Community 3"
+Cohesion: 0.01
+Nodes (195): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Shopify afterAuth Hook (shopify.server.ts), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body) (+187 more)
+
 ### Community 4 - "Community 4"
-Cohesion: 0.02
-Nodes (13): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, hideLoadingOverlayElement() (+5 more)
+Cohesion: 0.03
+Nodes (15): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, hideLoadingOverlayElement() (+7 more)
 
 ### Community 5 - "Community 5"
+Cohesion: 0.02
+Nodes (164): Admin Tier Config Architecture Decision Record, Admin Tier Config BR, Admin Tier Config PO Requirements, PricingTiersSection UI Component, Rationale: Option C (tierConfig on Bundle DB + existing API) Selected, Admin Tier Config SDE Implementation Plan, Bundle.tierConfig JSON Field, validateTierConfig Server Function (+156 more)
+
+### Community 6 - "Community 6"
+Cohesion: 0.02
+Nodes (143): Ad-Ready Bundles Architecture Decision Record, Ad-Ready Bundles Business Requirement (BR), Ad-Ready Bundles PO Requirements, Ad-Ready Bundles SDE Implementation Plan, Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected, OAuth Scope Changes Requiring Re-Authentication, unauthenticated.admin() Offline Session Pattern, API Endpoints Reference (+135 more)
+
+### Community 7 - "Community 7"
 Cohesion: 0.03
 Nodes (5): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ppbExpandSingleStepCategoriesAsSteps()
 
-### Community 6 - "Community 6"
-Cohesion: 0.04
-Nodes (85): Ad-Ready Bundles Business Requirement (BR), API Endpoints Reference, Application Architecture Document, Architecture Overview, Beco BYOB Bundle Page Design Analysis, Beco Layout Transformation Plan, Cart Transform: cart_transform_run.ts, Cart Transform: cart-transform-currency-utils.ts (dead code) (+77 more)
-
-### Community 7 - "Community 7"
-Cohesion: 0.06
-Nodes (34): addBundleToCart(), addItem(), _bootstrap(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), _buildNoOp(), buildProductPageCartFormData() (+26 more)
-
 ### Community 8 - "Community 8"
-Cohesion: 0.05
-Nodes (40): action(), addAddonTierCondition(), addonTierToDraft(), asVisibilityArray(), async(), buildAddonDraftFromPersonalizationData(), buildBundleUpsellConfig(), buildGiftMessageConfigFromDraft() (+32 more)
+Cohesion: 0.04
+Nodes (36): addBundleToCart(), addItem(), _bootstrap(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), _buildNoOp(), buildProductPageCartFormData() (+28 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.03
-Nodes (72): Ad-Ready Bundles Architecture Decision Record, Ad-Ready Bundles PO Requirements, Ad-Ready Bundles SDE Implementation Plan, Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected, OAuth Scope Changes Requiring Re-Authentication, unauthenticated.admin() Offline Session Pattern, Shopify afterAuth Hook (shopify.server.ts), Dashboard Route (app.dashboard.tsx) (+64 more)
+Nodes (70): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Web Pixel Extension for UTM Attribution, Admin Form Discount Implementation, Analytics Custom Date Range Architecture, buildBundleTrendSeries Function (until param) (+62 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.03
-Nodes (70): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Web Pixel Extension for UTM Attribution, Admin Form Discount Implementation, Analytics Custom Date Range Architecture, buildBundleTrendSeries Function (until param) (+62 more)
+Cohesion: 0.05
+Nodes (39): action(), addAddonTierCondition(), addonTierToDraft(), asVisibilityArray(), async(), buildAddonDraftFromPersonalizationData(), buildBundleUpsellConfig(), buildGiftMessageConfigFromDraft() (+31 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.05
 Nodes (4): AppStateService, getDesignSettings(), isModalOpen(), showToast()
 
 ### Community 12 - "Community 12"
-Cohesion: 0.04
-Nodes (61): Storefront Collections API Route (api.storefront-collections.tsx), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Issue: Beco BYOB Expandable Floating Footer, Bottom-Sheet Product Selection Modal, Bottom-Sheet Panel DCP CSS Targeting Fix, Component: BundleFooterPreview.tsx (DCP Footer Preview), CSS: Bottom-Sheet Classes (.bw-bs-overlay, .bw-bs-panel, .bw-slot-card) (+53 more)
-
-### Community 13 - "Community 13"
 Cohesion: 0.1
 Nodes (35): activateFpbBundleProductWithParentSequence(), addBundleProductPlaceholderMedia(), buildBundleBaseConfig(), buildFpbBaseConfig(), buildFullPageBundleMetafieldConfig(), buildFullPageBundleMetafieldSteps(), buildFullPageBundlePricing(), buildSyncBundleConfiguration() (+27 more)
 
-### Community 14 - "Community 14"
+### Community 13 - "Community 13"
 Cohesion: 0.06
 Nodes (39): api.install-pdp-widget Route, scripts/build-widget-bundles.js, BundleProductModal — Variant Selection UI Component, bundle-widget-full-page-bundled.js, bundle-widget-product-page-bundled.js, Claude Code Development Guidelines, ESLint Lint-Before-Commit Rule, Feature Pipeline (BR→PO→Architect→SDE) (+31 more)
 
-### Community 15 - "Community 15"
+### Community 14 - "Community 14"
 Cohesion: 0.06
 Nodes (39): Architecture Comparison - Hybrid Approach (3 Standard + 1 UI Config) Recommended, Architecture Comparison - Pure API Approach, Architecture Comparison - Widget Reconstructs from Minimal Data, Bundle Widget Configuration Structure, Bundle Widget Cart Transform Integration (_wolfpack_bundle_id), Cart Transform Optimization - InstructionCountLimitExceededError (2025-10-06), Minimal Bundle Config: 5 Essential Fields (~200 bytes vs 40KB), bundleParentVariantId (Critical Field for MERGE) (+31 more)
 
-### Community 16 - "Community 16"
+### Community 15 - "Community 15"
 Cohesion: 0.07
 Nodes (38): Admin Performance Optimization Report, App Proxy API (/apps/product-bundles/api/bundle/), App Store Compliance (No Theme Writes), Bundle.active Column (Redundant), BundleConfig Database Table, Bundle Prisma Model, BundlePricing Prisma Model, bundleType Field (product_page | full_page) (+30 more)
+
+### Community 16 - "Community 16"
+Cohesion: 0.13
+Nodes (1): BundleProductModal
 
 ### Community 17 - "Community 17"
 Cohesion: 0.13
 Nodes (1): BundleProductModal
 
 ### Community 18 - "Community 18"
-Cohesion: 0.13
-Nodes (1): BundleProductModal
-
-### Community 19 - "Community 19"
 Cohesion: 0.12
 Nodes (25): api.bundle-product-manager.test.ts, $app Namespace Reserved Prefix, BundleIsolationService (bundle-isolation.server.ts), bundle-product-manager.test.ts, bundle-widget.test.ts, bundle-workflow.test.ts (Integration), cart-transform-bundle-utils.test.ts, Cart Transform Test Environment Variables (+17 more)
 
-### Community 20 - "Community 20"
+### Community 19 - "Community 19"
 Cohesion: 0.1
 Nodes (23): Preview API Route (app/routes/api/api.preview.$type.tsx), Bundle Modal Component (bundle-modal-component.js), Bundle Modal Variant Selector + Image Carousel, DCP Storefront Iframe Preview — PDP Preview URL, DCP Modular Component Extraction (Settings, Preview, Common, Config), DCP Preview — Inject Storefront Theme Fonts, Design Control Panel Route (app/routes/app/app.design-control-panel/route.tsx), Design Control Panel Refactoring (3,908 → 765 lines) (+15 more)
 
-### Community 21 - "Community 21"
+### Community 20 - "Community 20"
 Cohesion: 0.1
 Nodes (0): 
 
-### Community 22 - "Community 22"
+### Community 21 - "Community 21"
 Cohesion: 0.21
 Nodes (20): adj(), adj_with_condition(), buy_x_get_y_condition_not_met_returns_zero(), buy_x_get_y_discounted_quantity(), calculate_buy_x_get_y_discount_percentage(), calculate_discount_percentage(), calculate_selected_addon_discount_amount(), condition_is_met() (+12 more)
 
-### Community 23 - "Community 23"
+### Community 22 - "Community 22"
 Cohesion: 0.15
 Nodes (1): BundleDataManager
 
-### Community 24 - "Community 24"
+### Community 23 - "Community 23"
 Cohesion: 0.13
 Nodes (13): CartLineDiscountDisplaySettings, CartLineDisplayProperties, CartLineDisplaySavings, CartLineMessagingSettings, ComponentParent, ComponentPricingItem, Condition, ConditionType (+5 more)
 
-### Community 25 - "Community 25"
+### Community 24 - "Community 24"
 Cohesion: 0.12
 Nodes (17): app.state.service.ts — Singleton State Service, Centralized State Service Implementation Issue, DCP Audit — Full Page Bundle (FPB) 2026-03-27, DCP Audit Finding: 'Header Text' Section Mislabeled (should be 'Conditions & Discount Text'), DCP Audit Finding: Mobile Tab Truncation and Invisible 3rd Tab, DCP Audit Finding: #7132FF Purple Default Color Contamination (5 sections), DCP Audit Finding: Skeleton Loading Cannot Be Previewed, DCP Audit Finding: Inconsistent Slider Value Labels Across Sections (+9 more)
 
-### Community 26 - "Community 26"
+### Community 25 - "Community 25"
 Cohesion: 0.18
 Nodes (10): useAppStateStandalone(), useDesignSetting(), useDesignSettingsState(), useLoadingState(), useModal(), useNavigationState(), useSelectorStandalone(), useStateInitialized() (+2 more)
 
-### Community 27 - "Community 27"
+### Community 26 - "Community 26"
 Cohesion: 0.17
 Nodes (7): action(), buildControlsRuntimeData(), buildDesignRuntimeData(), buildLanguageRuntimeData(), buildPageCustomizationData(), numberFromSettings(), weightToNumber()
 
-### Community 28 - "Community 28"
+### Community 27 - "Community 27"
 Cohesion: 0.12
 Nodes (0): 
+
+### Community 28 - "Community 28"
+Cohesion: 0.17
+Nodes (1): BundleDataManager
 
 ### Community 29 - "Community 29"
 Cohesion: 0.17
 Nodes (1): BundleDataManager
 
 ### Community 30 - "Community 30"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
-
-### Community 31 - "Community 31"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
-
-### Community 32 - "Community 32"
 Cohesion: 0.16
 Nodes (16): Attribution API Route (api.attribution.tsx), Pixel Auto-Activate Logic (afterAuth + dashboard loader), Customer Events API (Shopify Web Pixel), OrderAttribution Records, Pixel On By Default, Last-Touch, Track All Bundle Revenue, pixelEnabled DB Flag (Shop/AppSettings model), UTM Pixel Fetch URL + CORS Headers Fix, UTM Last-Touch Attribution with localStorage (+8 more)
 
-### Community 33 - "Community 33"
+### Community 31 - "Community 31"
 Cohesion: 0.18
 Nodes (2): CachedSessionStorage, sleep()
 
-### Community 34 - "Community 34"
+### Community 32 - "Community 32"
 Cohesion: 0.18
 Nodes (8): getCompatibility(), getDefaultDiscountRuleSuccessMessage(), getDisplayOptions(), getStepQuantityCapacity(), normalizePricingDisplayOptions(), normalizePricingRuleMessages(), normalizeProgressType(), normalizeTemplate()
 
-### Community 35 - "Community 35"
+### Community 33 - "Community 33"
 Cohesion: 0.28
 Nodes (13): asArray(), buildProductSourceMap(), compactCollectionReferences(), compactProductReference(), compactProductReferences(), formatStepCategoriesForRuntime(), formatStepCategoryForRuntime(), normalizeReferenceKey() (+5 more)
 
-### Community 36 - "Community 36"
+### Community 34 - "Community 34"
 Cohesion: 0.25
 Nodes (1): VariantSelectorComponent
 
-### Community 37 - "Community 37"
+### Community 35 - "Community 35"
 Cohesion: 0.19
 Nodes (6): merge_attributes(), messaging_merge_input(), test_merge_applies_selected_addon_discount_attributes(), test_merge_buy_x_get_y_component_parent(), test_merge_emits_public_cart_line_messaging_by_default(), test_merge_uses_cart_line_messaging_settings_from_function_owner()
 
+### Community 36 - "Community 36"
+Cohesion: 0.27
+Nodes (1): VariantSelectorComponent
+
+### Community 37 - "Community 37"
+Cohesion: 0.27
+Nodes (1): VariantSelectorComponent
+
 ### Community 38 - "Community 38"
-Cohesion: 0.27
-Nodes (1): VariantSelectorComponent
-
-### Community 39 - "Community 39"
-Cohesion: 0.27
-Nodes (1): VariantSelectorComponent
-
-### Community 40 - "Community 40"
 Cohesion: 0.35
 Nodes (1): PricingCalculator
 
-### Community 41 - "Community 41"
+### Community 39 - "Community 39"
 Cohesion: 0.32
 Nodes (1): CartTransformService
 
-### Community 42 - "Community 42"
-Cohesion: 0.31
-Nodes (1): VariantSelectorComponent
+### Community 40 - "Community 40"
+Cohesion: 0.51
+Nodes (12): buildBanner(), buildFullPageBundle(), buildProductPageBundle(), buildSdkBundle(), main(), readFile(), readProductPageModules(), readSdkModules() (+4 more)
 
-### Community 43 - "Community 43"
+### Community 41 - "Community 41"
 Cohesion: 0.22
 Nodes (13): Discount Messaging Data Flow (form → handler → metafield → widget), ensureBundleMetafieldDefinitions() Dead Wrapper, getStepSelectionText() Dead Method (PDP Widget), ADR: Legacy Code Removal Architecture, BR: Legacy Code Removal, PO Requirements: Legacy Code Removal, Metafield Sync Index (metafield-sync/index.ts), Issue: PDP Step Limit Enforcement & Discount Messaging Fix (+5 more)
 
-### Community 44 - "Community 44"
+### Community 42 - "Community 42"
 Cohesion: 0.29
 Nodes (9): useAppState(), useBundleConfiguration(), useDesignSettings(), useModals(), usePreferences(), useSelector(), useSubscription(), useToasts() (+1 more)
 
-### Community 45 - "Community 45"
+### Community 43 - "Community 43"
 Cohesion: 0.32
 Nodes (11): addBundleToCart(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), buildProductPageCartFormData(), _formatCartAmount(), _generateBundleInstanceId(), _generateBundleSessionKey() (+3 more)
 
-### Community 46 - "Community 46"
+### Community 44 - "Community 44"
 Cohesion: 0.29
 Nodes (1): TemplateManager
 
-### Community 47 - "Community 47"
+### Community 45 - "Community 45"
 Cohesion: 0.24
 Nodes (1): BillingService
 
-### Community 48 - "Community 48"
+### Community 46 - "Community 46"
 Cohesion: 0.3
 Nodes (1): TestRunner
 
-### Community 49 - "Community 49"
-Cohesion: 0.53
-Nodes (11): buildBanner(), buildFullPageBundle(), buildProductPageBundle(), buildSdkBundle(), main(), readFile(), readSdkModules(), readSharedComponents() (+3 more)
-
-### Community 50 - "Community 50"
-Cohesion: 0.17
-Nodes (12): bundle-cart-transform-ts Extension (cart_transform_run.ts), Bundle Checkout UI Extension, Cart Transform safeParseFloat + NaN Clamp Fix, src/Checkout.jsx (Checkout UI Extension Source), Shopify Checkout UI API Version 2026-01 Migration, Fix All Issues in bundle-checkout-ui Extension, Checkout UI Extension Targets, shopify.extension.toml (Checkout UI Extension Config) (+4 more)
-
-### Community 51 - "Community 51"
+### Community 47 - "Community 47"
 Cohesion: 0.33
 Nodes (1): AppLogger
 
-### Community 52 - "Community 52"
+### Community 48 - "Community 48"
+Cohesion: 0.33
+Nodes (10): addUnique(), asArray(), buildProductPageThemeEditorDeepLink(), deriveCommonSellingPlanGroups(), extractSellingPlanValidationSources(), normalizeCollectionId(), normalizeProductId(), resolveProductPageTemplateSuffix() (+2 more)
+
+### Community 49 - "Community 49"
 Cohesion: 0.2
 Nodes (2): chartXFormatter(), formatDateKey()
 
-### Community 53 - "Community 53"
+### Community 50 - "Community 50"
 Cohesion: 0.42
 Nodes (10): bool(), int(), jsonObject(), normalizeIndividualSellingPlanSelection(), normalizeSellingPlanSelectionShowFor(), parseBundleDesignTemplate(), parsePPBBundleSettings(), parsePPBBundleVisibility() (+2 more)
 
-### Community 54 - "Community 54"
+### Community 51 - "Community 51"
 Cohesion: 0.38
 Nodes (9): buildBundleSettings(), buildFullPageBundleBodyHtml(), createFullPageBundle(), escapeHtmlAttribute(), getPreviewPageUrl(), publishPreviewPage(), refreshFullPageBundlePageBody(), updateFullPageBundlePageBody() (+1 more)
 
-### Community 55 - "Community 55"
+### Community 52 - "Community 52"
 Cohesion: 0.25
 Nodes (5): canNavigateToStep(), getFreeGiftRemainingCount(), getFreeGiftStep(), getPaidSteps(), isFreeGiftUnlocked()
 
-### Community 56 - "Community 56"
+### Community 53 - "Community 53"
 Cohesion: 0.18
 Nodes (1): FakeElement
 
-### Community 57 - "Community 57"
+### Community 54 - "Community 54"
 Cohesion: 0.18
 Nodes (11): Analytics Route /app/attribution, App API Routes Reference, Create Bundle Modal, Dashboard Route /app/dashboard, Design Control Panel Route /app/design-control-panel, FPB Bundle Configure Route, FPB DCP Customization Modal (3-column max overlay), App Navigation Map (+3 more)
 
-### Community 58 - "Community 58"
+### Community 55 - "Community 55"
 Cohesion: 0.2
 Nodes (0): 
 
-### Community 59 - "Community 59"
+### Community 56 - "Community 56"
 Cohesion: 0.31
 Nodes (1): MetafieldCleanupService
 
-### Community 60 - "Community 60"
+### Community 57 - "Community 57"
 Cohesion: 0.38
 Nodes (7): calculateBundlePrice(), calculateBundleTotalPrice(), cleanExpiredCache(), getCachedPrice(), getPriceCacheStats(), getProductPrice(), setCachedPrice()
 
-### Community 61 - "Community 61"
+### Community 58 - "Community 58"
 Cohesion: 0.22
 Nodes (2): getShopifyStatusFromBundleStatus(), handleUpdateBundleStatus()
 
-### Community 62 - "Community 62"
+### Community 59 - "Community 59"
 Cohesion: 0.4
 Nodes (9): fmtBytes(), main(), minifyCSS(), minifyJS(), printSummary(), processFile(), removeJSBlockComments(), removeJSSingleLineComments() (+1 more)
 
-### Community 63 - "Community 63"
+### Community 60 - "Community 60"
 Cohesion: 0.2
 Nodes (10): Compact Sticky Footer Bar (72px height, fixed to bottom of viewport), CSS is-open Class Toggle for Footer Expand/Collapse (no inline style manipulation), DCP CSS Variables Mapping for New Beco Footer Elements, Deal-Unlock Callout Banner (green, appears when bundle goal met), Expandable Product List Panel (upward-expanding, max-height 60vh), Beco BYOB Expandable Floating Footer — Architecture Decision Record, Beco BYOB Expandable Floating Footer — Business Requirement, Beco BYOB Expandable Floating Footer — PO Requirements (+2 more)
 
-### Community 64 - "Community 64"
-Cohesion: 0.39
-Nodes (8): addUnique(), asArray(), buildProductPageThemeEditorDeepLink(), deriveCommonSellingPlanGroups(), extractSellingPlanValidationSources(), normalizeCollectionId(), normalizeProductId(), resolveProductPageThemeEditorTemplateHandle()
-
-### Community 65 - "Community 65"
+### Community 61 - "Community 61"
 Cohesion: 0.28
 Nodes (1): ComponentGenerator
 
-### Community 66 - "Community 66"
+### Community 62 - "Community 62"
 Cohesion: 0.39
 Nodes (1): CurrencyManager
 
-### Community 67 - "Community 67"
+### Community 63 - "Community 63"
 Cohesion: 0.33
 Nodes (7): collectCachedStepVariants(), collectStepProductReferences(), ensureBundleParentVariantRequiresComponents(), getCachedVariantId(), getProductReferenceId(), normalizeShopifyGid(), updateBundleProductMetafields()
 
-### Community 68 - "Community 68"
+### Community 64 - "Community 64"
 Cohesion: 0.31
 Nodes (4): makeDiscountData(), makeFormData(), makeStepsData(), makeStepWithProduct()
 
-### Community 69 - "Community 69"
+### Community 65 - "Community 65"
 Cohesion: 0.25
 Nodes (9): buildSettingsData() — DCP Settings Handler, DCP Config-Driven Section Filtering (app/lib/dcp-config/), DCP NavigationSidebar Component, Issue: DCP Settings Silently Not Saved to DB, Issue: DCP UI Fixes (5 targeted improvements), Issue: Free Gift Badge — DCP Asset Picker, Issue: UX Gap Fixes — Batch 2, PreviewScope Component — DCP CSS Injection (+1 more)
+
+### Community 66 - "Community 66"
+Cohesion: 0.25
+Nodes (0): 
+
+### Community 67 - "Community 67"
+Cohesion: 0.29
+Nodes (2): FeatureGate(), formatFeatureName()
+
+### Community 68 - "Community 68"
+Cohesion: 0.43
+Nodes (6): action(), mergeBundleDetailsValue(), normalizeCartId(), postStorefrontGraphql(), sanitizeDisplayProperties(), validateBundleDetailsKey()
+
+### Community 69 - "Community 69"
+Cohesion: 0.36
+Nodes (4): makeDiscountData(), makeFormData(), makeStep(), makeStepWithProduct()
 
 ### Community 70 - "Community 70"
 Cohesion: 0.25
 Nodes (0): 
 
 ### Community 71 - "Community 71"
-Cohesion: 0.29
-Nodes (2): FeatureGate(), formatFeatureName()
-
-### Community 72 - "Community 72"
-Cohesion: 0.43
-Nodes (6): action(), mergeBundleDetailsValue(), normalizeCartId(), postStorefrontGraphql(), sanitizeDisplayProperties(), validateBundleDetailsKey()
-
-### Community 73 - "Community 73"
-Cohesion: 0.36
-Nodes (4): makeDiscountData(), makeFormData(), makeStep(), makeStepWithProduct()
-
-### Community 74 - "Community 74"
-Cohesion: 0.25
-Nodes (0): 
-
-### Community 75 - "Community 75"
 Cohesion: 0.46
 Nodes (7): display_properties_for_group(), easy_bundle_offer_group_id(), non_empty(), parent_match_count(), process_merge_operations(), select_component_parent(), select_you_save_value()
 
-### Community 76 - "Community 76"
+### Community 72 - "Community 72"
 Cohesion: 0.29
 Nodes (8): BundlePricing.messages JSON Field, i18n Discount Messaging — Architecture ADR, i18n Discount Messaging — Business Requirement, i18n Discount Messaging — PO Requirements, i18n Discount Messaging — Shopify i18n Research, i18n Discount Messaging — SDE Implementation Plan, LocalizedPricingMessages — Locale-Keyed Message Data Model, window.Shopify.locale — Storefront Locale Detection
 
-### Community 77 - "Community 77"
+### Community 73 - "Community 73"
 Cohesion: 0.48
 Nodes (6): buildBundleProductMediaFileUpdates(), buildBundleProductPlaceholderMediaInput(), buildStaleBundleProductMediaReferenceRemovals(), getBundleProductPlaceholderAlt(), hasBundleProductPlaceholderMedia(), isBundleProductPlaceholderMedia()
 
-### Community 78 - "Community 78"
+### Community 74 - "Community 74"
 Cohesion: 0.43
 Nodes (3): buildBundleTrendSeries(), getWeekStart(), toDateKey()
 
-### Community 79 - "Community 79"
+### Community 75 - "Community 75"
 Cohesion: 0.43
 Nodes (4): generateThemeEditorLink(), handleOpenThemeEditor(), handleStepAction(), markStepComplete()
 
-### Community 80 - "Community 80"
+### Community 76 - "Community 76"
 Cohesion: 0.43
 Nodes (4): buildInngestPayload(), handleRequest(), readRawBody(), validateHmac()
 
-### Community 81 - "Community 81"
+### Community 77 - "Community 77"
 Cohesion: 0.43
 Nodes (1): BundleAnalyticsService
 
-### Community 82 - "Community 82"
+### Community 78 - "Community 78"
 Cohesion: 0.33
 Nodes (1): SubscriptionGuard
 
-### Community 83 - "Community 83"
+### Community 79 - "Community 79"
 Cohesion: 0.29
 Nodes (0): 
 
-### Community 84 - "Community 84"
+### Community 80 - "Community 80"
 Cohesion: 0.29
 Nodes (7): Fix: $app:serverUrl Metafield Sync Moved to afterAuth, Fix: BillingService.getSubscriptionInfo try-catch guard, Concept: Embedded Context Guard (auth.login redirect), Issue: Homepage Login Redirect (homepage-login-redirect-2), Issue: Login Screen Fix (login-screen-fix-1), Bug: Parallel Loader Race Condition (app.tsx + app._index.tsx), Fix: Root Route Embedded Detection (host, id_token, sec-fetch-dest header)
 
-### Community 85 - "Community 85"
+### Community 81 - "Community 81"
 Cohesion: 0.29
 Nodes (7): Module: auth-guards.server.ts (requireAdminSession, requireAppProxy, requireInternalSecret), Auth Tier: Admin (requireAdminSession), Auth Tier: App Proxy (requireAppProxy), Auth Tier: Internal Secret (requireInternalSecret), Issue: Centralized Auth Layer for API Routes (centralized-auth-layer-1), Issue: Routes Directory Refactor (routes-directory-refactor-1), Architecture: Routes Directory Structure (root, api, app, auth, assets, webhooks)
 
-### Community 86 - "Community 86"
+### Community 82 - "Community 82"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 87 - "Community 87"
+### Community 83 - "Community 83"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 88 - "Community 88"
+### Community 84 - "Community 84"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 89 - "Community 89"
+### Community 85 - "Community 85"
 Cohesion: 0.6
 Nodes (4): buildDefaultProductEntryFromPicker(), extractShopifyNumericId(), firstImageUrl(), normalizeVariant()
 
-### Community 90 - "Community 90"
+### Community 86 - "Community 86"
 Cohesion: 0.6
 Nodes (5): asObjectArray(), buildStepCategoryCreateInput(), numberValue(), objectRecord(), stringValue()
 
-### Community 91 - "Community 91"
+### Community 87 - "Community 87"
 Cohesion: 0.53
 Nodes (4): addItem(), clearStep(), _findStep(), removeItem()
 
-### Community 92 - "Community 92"
+### Community 88 - "Community 88"
 Cohesion: 0.6
 Nodes (1): ToastManager
 
-### Community 93 - "Community 93"
+### Community 89 - "Community 89"
 Cohesion: 0.53
 Nodes (4): discoverSalesChannels(), handleCloneBundle(), handleCreateBundle(), publishToSalesChannels()
 
-### Community 94 - "Community 94"
+### Community 90 - "Community 90"
 Cohesion: 0.4
 Nodes (1): MetafieldValidationService
 
-### Community 95 - "Community 95"
+### Community 91 - "Community 91"
 Cohesion: 0.4
 Nodes (2): handleSubscriptionUpdate(), mapSubscriptionStatus()
 
-### Community 96 - "Community 96"
+### Community 92 - "Community 92"
 Cohesion: 0.67
 Nodes (5): addonProductId(), addonVariantId(), collectAddonComponentVariants(), normalizeGid(), parsePriceCents()
 
-### Community 97 - "Community 97"
+### Community 93 - "Community 93"
 Cohesion: 0.4
 Nodes (2): bsFindNextIncompleteStep(), validateFn()
 
-### Community 98 - "Community 98"
+### Community 94 - "Community 94"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 99 - "Community 99"
+### Community 95 - "Community 95"
 Cohesion: 0.4
 Nodes (2): getDb(), mockFindFirst()
 
-### Community 100 - "Community 100"
+### Community 96 - "Community 96"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 101 - "Community 101"
+### Community 97 - "Community 97"
 Cohesion: 0.33
 Nodes (6): Bundle Widget Installation Guide for Merchants, Place Widget Modal Fix - Show Shopify Pages for Full-Page Bundles, Theme Editor URL Format: page.{handle} vs {handle}, Problem: addAppBlockId Creates Duplicate Blocks Per Bundle, Onboarding Route: app.onboarding.widget.tsx, Widget Installation Refactor - One-Time Setup Flow
 
-### Community 102 - "Community 102"
+### Community 98 - "Community 98"
 Cohesion: 0.33
 Nodes (6): CartPropertyFixCard Component (Polaris Card on Dashboard), Liquid Snippet for Hiding _-Prefixed Cart Properties, Rationale: Rejected App Embed JS Block for Cart Property Hiding (fragile DOM selectors, AJAX cart issues), Cart Property Visibility Fix — Architecture Decision Record, Cart Property Visibility Fix — Business Requirement, Cart Property Visibility Fix — PO Requirements
 
-### Community 103 - "Community 103"
+### Community 99 - "Community 99"
 Cohesion: 0.33
 Nodes (6): app._index.tsx Welcome Landing Screen, FPB Widget Bundle API 404 on Storefront Issue, verifyAppProxyRequest() — HMAC App Proxy Verification, Restore Landing Screen + Update Onboarding Page Issue, Login Screen Fix 2 — Token Exchange Auth Flow Issue, unstable_newEmbeddedAuthStrategy Token-Based Auth Pattern
 
-### Community 104 - "Community 104"
+### Community 100 - "Community 100"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 105 - "Community 105"
+### Community 101 - "Community 101"
 Cohesion: 0.5
 Nodes (2): addTier(), doAddTier()
 
-### Community 106 - "Community 106"
+### Community 102 - "Community 102"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 107 - "Community 107"
+### Community 103 - "Community 103"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 108 - "Community 108"
+### Community 104 - "Community 104"
 Cohesion: 0.6
 Nodes (4): migrateNestedRule(), parseMessages(), parsePricingConfiguration(), parsePricingRule()
 
-### Community 109 - "Community 109"
+### Community 105 - "Community 105"
 Cohesion: 0.7
 Nodes (4): buildBundleProductDescriptionHtml(), escapeHtml(), getBundleProductTroubleshootingCategory(), hasBundleProductSoftError()
 
-### Community 110 - "Community 110"
+### Community 106 - "Community 106"
 Cohesion: 0.5
 Nodes (2): buildThemeEditorUrl(), fetchEmbedData()
 
-### Community 111 - "Community 111"
+### Community 107 - "Community 107"
 Cohesion: 0.7
 Nodes (4): _bootstrap(), _buildNoOp(), _buildSdk(), _findContainer()
 
-### Community 112 - "Community 112"
+### Community 108 - "Community 108"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 113 - "Community 113"
+### Community 109 - "Community 109"
 Cohesion: 0.6
 Nodes (4): action(), errorResponse(), filenameFromUrl(), loader()
 
-### Community 114 - "Community 114"
+### Community 110 - "Community 110"
 Cohesion: 0.6
 Nodes (3): filterFields(), loader(), parseFieldsParam()
 
-### Community 115 - "Community 115"
+### Community 111 - "Community 111"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 116 - "Community 116"
+### Community 112 - "Community 112"
 Cohesion: 0.4
 Nodes (1): ThemeTemplateService
 
-### Community 117 - "Community 117"
+### Community 113 - "Community 113"
 Cohesion: 0.7
 Nodes (4): calculateBundleInventory(), calculateMinInventory(), setInventoryLevel(), syncBundleInventory()
 
-### Community 118 - "Community 118"
+### Community 114 - "Community 114"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 119 - "Community 119"
+### Community 115 - "Community 115"
 Cohesion: 0.5
 Nodes (5): Attribution Route (app.attribution.tsx), Billing Route (app.billing.tsx), App Index Route (app._index.tsx), Issue: Landing Page Flash + navigate(-1) Login Screen Bug, Shopify Embedded Iframe Navigation Constraint
 
-### Community 120 - "Community 120"
+### Community 116 - "Community 116"
 Cohesion: 0.5
 Nodes (5): conditionOperator2 DB Column (Step model), conditionValue2 DB Column (Step model), Multi-Condition Step Support Feature, Prisma Step Model, Test-Driven Development (TDD) Approach
+
+### Community 117 - "Community 117"
+Cohesion: 0.5
+Nodes (0): 
+
+### Community 118 - "Community 118"
+Cohesion: 0.5
+Nodes (0): 
+
+### Community 119 - "Community 119"
+Cohesion: 0.83
+Nodes (3): processCss(), sanitizeCss(), validateCssSyntax()
+
+### Community 120 - "Community 120"
+Cohesion: 0.67
+Nodes (2): buildBadgePositionVars(), generateCSSVariables()
 
 ### Community 121 - "Community 121"
 Cohesion: 0.5
 Nodes (0): 
 
 ### Community 122 - "Community 122"
-Cohesion: 0.5
-Nodes (0): 
+Cohesion: 0.83
+Nodes (3): _stepIsCategoryRuleMode(), validateBundle(), validateStep()
 
 ### Community 123 - "Community 123"
-Cohesion: 0.83
-Nodes (3): processCss(), sanitizeCss(), validateCssSyntax()
+Cohesion: 0.67
+Nodes (2): initDebugMode(), isDebugMode()
 
 ### Community 124 - "Community 124"
-Cohesion: 0.67
-Nodes (2): buildBadgePositionVars(), generateCSSVariables()
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 125 - "Community 125"
 Cohesion: 0.5
 Nodes (0): 
 
 ### Community 126 - "Community 126"
-Cohesion: 0.83
-Nodes (3): _stepIsCategoryRuleMode(), validateBundle(), validateStep()
+Cohesion: 0.67
+Nodes (2): getHealCache(), loader()
 
 ### Community 127 - "Community 127"
-Cohesion: 0.67
-Nodes (2): initDebugMode(), isDebugMode()
-
-### Community 128 - "Community 128"
 Cohesion: 0.5
 Nodes (0): 
+
+### Community 128 - "Community 128"
+Cohesion: 0.67
+Nodes (1): WebhookProcessor
 
 ### Community 129 - "Community 129"
 Cohesion: 0.5
 Nodes (0): 
 
 ### Community 130 - "Community 130"
-Cohesion: 0.67
-Nodes (2): getHealCache(), loader()
-
-### Community 131 - "Community 131"
 Cohesion: 0.5
 Nodes (0): 
 
+### Community 131 - "Community 131"
+Cohesion: 0.83
+Nodes (3): buildPriceAdjustmentConfig(), toNumber(), toPositiveNumber()
+
 ### Community 132 - "Community 132"
-Cohesion: 0.67
-Nodes (1): WebhookProcessor
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 133 - "Community 133"
 Cohesion: 0.5
@@ -1169,8 +1169,8 @@ Cohesion: 0.5
 Nodes (0): 
 
 ### Community 135 - "Community 135"
-Cohesion: 0.83
-Nodes (3): buildPriceAdjustmentConfig(), toNumber(), toPositiveNumber()
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 136 - "Community 136"
 Cohesion: 0.5
@@ -1181,8 +1181,8 @@ Cohesion: 0.5
 Nodes (0): 
 
 ### Community 138 - "Community 138"
-Cohesion: 0.5
-Nodes (0): 
+Cohesion: 0.67
+Nodes (2): buildFreeBadge(), createFakeElement()
 
 ### Community 139 - "Community 139"
 Cohesion: 0.5
@@ -1193,12 +1193,12 @@ Cohesion: 0.5
 Nodes (0): 
 
 ### Community 141 - "Community 141"
-Cohesion: 0.5
-Nodes (0): 
+Cohesion: 0.67
+Nodes (2): getDb(), mockFindMany()
 
 ### Community 142 - "Community 142"
-Cohesion: 0.67
-Nodes (2): buildFreeBadge(), createFakeElement()
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 143 - "Community 143"
 Cohesion: 0.5
@@ -1209,80 +1209,80 @@ Cohesion: 0.5
 Nodes (0): 
 
 ### Community 145 - "Community 145"
-Cohesion: 0.67
-Nodes (2): getDb(), mockFindMany()
+Cohesion: 0.5
+Nodes (0): 
 
 ### Community 146 - "Community 146"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 147 - "Community 147"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 148 - "Community 148"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 149 - "Community 149"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 150 - "Community 150"
 Cohesion: 0.67
 Nodes (2): buildReqRes(), makeHmac()
 
-### Community 151 - "Community 151"
+### Community 147 - "Community 147"
 Cohesion: 1.0
 Nodes (3): isPricingRuleLike(), main(), needsNestedMigration()
 
-### Community 152 - "Community 152"
+### Community 148 - "Community 148"
 Cohesion: 0.5
 Nodes (4): Discount Template Variables ({conditionText}, {discountText}, etc.), Available Discount Template Variables (legacy + improved), Discount Variables Documentation, Streamlined Discount Variables Summary
 
-### Community 153 - "Community 153"
+### Community 149 - "Community 149"
 Cohesion: 0.5
 Nodes (4): Cart Transform Legacy Code Removal, Legacy Removal Implementation Plan, Shop Metafield Single Processing Path, Identified Legacy Fallback Mechanisms for Removal
 
-### Community 154 - "Community 154"
+### Community 150 - "Community 150"
 Cohesion: 0.5
 Nodes (4): Bundle Widget Multi-Currency Support, Bundle Widget Restoration - Currency Handling Functions (Version 109), Multi-Currency Dual Currency System (Calculation vs Display), Shopify Markets Currency Detection Priority
 
-### Community 155 - "Community 155"
+### Community 151 - "Community 151"
 Cohesion: 0.5
 Nodes (4): Design Control Panel (DCP), CSS Generation from Global Colors (generateCSSFromSettings), globalPrimaryButtonColor - Primary Cascade Source, Global Colors Intelligent Mapping System (DCP)
 
-### Community 156 - "Community 156"
+### Community 152 - "Community 152"
 Cohesion: 0.67
 Nodes (4): Centralized Auth Layer for API Routes — Architecture Decision Record, Centralized Auth Layer for API Routes — Business Requirement, Centralized Auth Layer for API Routes — PO Requirements, Centralized Auth Layer for API Routes — SDE Implementation Plan
 
-### Community 157 - "Community 157"
+### Community 153 - "Community 153"
 Cohesion: 0.67
 Nodes (4): Custom Brandable URL Slugs for Full-Page Bundles — Architecture Decision Record, Custom Brandable URL Slugs for Full-Page Bundles — Business Requirement, Custom Brandable URL Slugs for Full-Page Bundles — PO Requirements, Custom Brandable URL Slugs for Full-Page Bundles — SDE Implementation Plan
 
-### Community 158 - "Community 158"
+### Community 154 - "Community 154"
 Cohesion: 0.5
 Nodes (4): Events Page - Architecture Decision Record, Events Page - Business Requirement, Events Page Feature (Release Notes + FAQs), Events Page - PO Requirements
 
-### Community 159 - "Community 159"
+### Community 155 - "Community 155"
 Cohesion: 0.83
 Nodes (4): Issue: Ad-Ready Bundle Infrastructure — Phase 2 & Phase 3, Route: api.attribution.tsx, Issue: Attribution Matching — bundleId Null & orderNumber Null, Extension: wolfpack-utm-pixel/src/index.ts
 
-### Community 160 - "Community 160"
+### Community 156 - "Community 156"
 Cohesion: 0.5
 Nodes (4): Issue: DCP FPB/PDP Preview Redesign (dcp-fpb-preview-redesign-1), Feature: FPB Footer Layout Toggle (Sidebar vs Floating), Fix: PDP Preview Bottom Drawer Structure (.bundle-builder-modal.active), Component: PreviewPanel (DCP Preview)
 
-### Community 161 - "Community 161"
+### Community 157 - "Community 157"
 Cohesion: 0.5
 Nodes (4): Fix: Rename 'Images & GIFs' Tab to 'Bundle Assets' (GAP-11), Fix: Rename 'Events' to 'Updates & FAQs' (GAP-23), Fix: Onboarding Guide Conditional Render + CartPropertyFixCard (GAP-02), Issue: UX Gap Fixes Batch 1 (ux-gap-fixes-batch1-1)
+
+### Community 158 - "Community 158"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 159 - "Community 159"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 160 - "Community 160"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 161 - "Community 161"
+Cohesion: 1.0
+Nodes (2): getBundleProductImageUrl(), useBundleConfigurationState()
 
 ### Community 162 - "Community 162"
 Cohesion: 0.67
 Nodes (0): 
 
 ### Community 163 - "Community 163"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): buildWizardPreviewUrl(), normalizeShop()
 
 ### Community 164 - "Community 164"
 Cohesion: 0.67
@@ -1290,7 +1290,7 @@ Nodes (0):
 
 ### Community 165 - "Community 165"
 Cohesion: 1.0
-Nodes (2): getBundleProductImageUrl(), useBundleConfigurationState()
+Nodes (2): decideDashboardPreviewAction(), normalizeShop()
 
 ### Community 166 - "Community 166"
 Cohesion: 0.67
@@ -1298,31 +1298,31 @@ Nodes (0):
 
 ### Community 167 - "Community 167"
 Cohesion: 1.0
-Nodes (2): buildWizardPreviewUrl(), normalizeShop()
+Nodes (2): normalizeShop(), pickPpbPreviewUrl()
 
 ### Community 168 - "Community 168"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): buildGeneratedBundleProductHandle(), buildGeneratedBundleProductMetadata()
 
 ### Community 169 - "Community 169"
 Cohesion: 1.0
-Nodes (2): decideDashboardPreviewAction(), normalizeShop()
+Nodes (2): isSupportedLocale(), normalizeAdminLocale()
 
 ### Community 170 - "Community 170"
 Cohesion: 0.67
 Nodes (0): 
 
 ### Community 171 - "Community 171"
-Cohesion: 1.0
-Nodes (2): normalizeShop(), pickPpbPreviewUrl()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 172 - "Community 172"
-Cohesion: 1.0
-Nodes (2): buildGeneratedBundleProductHandle(), buildGeneratedBundleProductMetadata()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 173 - "Community 173"
-Cohesion: 1.0
-Nodes (2): isSupportedLocale(), normalizeAdminLocale()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 174 - "Community 174"
 Cohesion: 0.67
@@ -1349,8 +1349,8 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 180 - "Community 180"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): loader(), sanitizeBundleType()
 
 ### Community 181 - "Community 181"
 Cohesion: 0.67
@@ -1365,8 +1365,8 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 184 - "Community 184"
-Cohesion: 1.0
-Nodes (2): loader(), sanitizeBundleType()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 185 - "Community 185"
 Cohesion: 0.67
@@ -1393,12 +1393,12 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 191 - "Community 191"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): isValidHexColor(), syncThemeColors()
 
 ### Community 192 - "Community 192"
-Cohesion: 0.67
-Nodes (0): 
+Cohesion: 1.0
+Nodes (2): discoverSalesChannels(), publishProductToSalesChannels()
 
 ### Community 193 - "Community 193"
 Cohesion: 0.67
@@ -1409,12 +1409,12 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 195 - "Community 195"
-Cohesion: 1.0
-Nodes (2): isValidHexColor(), syncThemeColors()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 196 - "Community 196"
-Cohesion: 1.0
-Nodes (2): discoverSalesChannels(), publishProductToSalesChannels()
+Cohesion: 0.67
+Nodes (0): 
 
 ### Community 197 - "Community 197"
 Cohesion: 0.67
@@ -1521,88 +1521,88 @@ Cohesion: 0.67
 Nodes (0): 
 
 ### Community 223 - "Community 223"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 224 - "Community 224"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 225 - "Community 225"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 226 - "Community 226"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 227 - "Community 227"
 Cohesion: 1.0
 Nodes (2): getDiscountValueFromRule(), updateModalDiscountBar()
 
-### Community 228 - "Community 228"
+### Community 224 - "Community 224"
 Cohesion: 1.0
 Nodes (2): cart_transform_run(), run()
 
-### Community 229 - "Community 229"
+### Community 225 - "Community 225"
 Cohesion: 0.67
 Nodes (3): Add-to-Bundle Button Selected Color BR, Add-to-Bundle Button Selected Color PO Requirements, Rationale: Option B (Sub-section + Separate Preview) Selected for Added Button State
 
-### Community 230 - "Community 230"
+### Community 226 - "Community 226"
 Cohesion: 0.67
 Nodes (3): Custom CSS Section with Per-Bundle-Type Tabs on DCP Landing Page, DCP Landing Page with Two Bundle Type Entry Cards (Full-Page + Product-Page), NavigationSidebar bundleType Prop (hides Promo Banner + Tier Pills for product_page)
 
-### Community 231 - "Community 231"
+### Community 227 - "Community 227"
 Cohesion: 1.0
 Nodes (3): Issue: Widget Asset Cache Management, Shopify CDN Cache Busting via asset_url / shopify app deploy, WIDGET_VERSION — Build Script Version Constant
 
-### Community 232 - "Community 232"
+### Community 228 - "Community 228"
 Cohesion: 0.67
 Nodes (3): Issue: Analytics Dashboard — Recharts + Full Attribution Rebuild, OrderAttribution DB Model — UTM + Revenue Data, Recharts — Charting Library for Analytics Dashboard
 
-### Community 233 - "Community 233"
+### Community 229 - "Community 229"
 Cohesion: 0.67
 Nodes (3): Analytics Custom Date Range (Polaris DatePicker), buildBundleTrendSeries until Param Extension, DateRangeSelector Component with Preset Chips + DatePicker
 
-### Community 234 - "Community 234"
+### Community 230 - "Community 230"
 Cohesion: 0.67
 Nodes (3): Route: api.storefront-collections.tsx, Issue: Fix GraphQL Query Errors (pageByHandle + collections), Service: widget-installation.server.ts
 
-### Community 235 - "Community 235"
+### Community 231 - "Community 231"
 Cohesion: 0.67
 Nodes (3): INTERNAL_WEBHOOK_SECRET (Env Var for Pub/Sub Auth), Webhook Pub/Sub Endpoint Authentication Fix, api.webhooks.pubsub.tsx (Pub/Sub Webhook Endpoint)
 
-### Community 236 - "Community 236"
+### Community 232 - "Community 232"
 Cohesion: 0.67
 Nodes (3): app.dashboard.tsx Route, BundleActionsButtons Component, Dashboard UI Improvements & Bundle Config Cleanup
 
-### Community 237 - "Community 237"
+### Community 233 - "Community 233"
 Cohesion: 0.67
 Nodes (3): ensureBundleMetafieldDefinitions (deprecated), Legacy Code Removal, widget-installation-legacy.server.ts
 
-### Community 238 - "Community 238"
+### Community 234 - "Community 234"
 Cohesion: 0.67
 Nodes (3): bundle-full-page-embed.liquid Block, DOM Relocation JS Pattern, Hide Empty Theme Main-Page Section on FPB Pages
 
-### Community 239 - "Community 239"
+### Community 235 - "Community 235"
 Cohesion: 0.67
 Nodes (3): Issue: Analytics Nav + Web Pixel Fix (analytics-nav-pixel-fix-1), Fix: Add Analytics Link to NavMenu in app.tsx, Bug: Web Pixel Extension Disconnected (deploy required)
 
-### Community 240 - "Community 240"
+### Community 236 - "Community 236"
 Cohesion: 0.67
 Nodes (3): Issue: DCP Widget Style Preview + Free Gift Badge Upload Fix (dcp-widget-style-fixes-1), Fix: FilePicker Input Inside Portal Dialog, Fix: ProductCardPreview Width (explicit 520px containing block)
 
-### Community 241 - "Community 241"
+### Community 237 - "Community 237"
 Cohesion: 0.67
 Nodes (3): Issue: Multilingual Discount Messaging (i18n-discount-messaging-1), Concept: LocalizedMessageEntry / normalizeMessages / getMessageForLocale, Note: i18n Implementation Was Reverted (code only, docs preserved)
 
-### Community 242 - "Community 242"
+### Community 238 - "Community 238"
 Cohesion: 0.67
 Nodes (3): Fix: Onboarding Support Button → Crisp Chat, Fix: CustomCssSettings + CustomCssCard Stale Class Names Audit, Issue: Update DCP CSS Reference + Fix Onboarding Support Button (dcp-css-reference-update-1)
 
-### Community 243 - "Community 243"
+### Community 239 - "Community 239"
 Cohesion: 0.67
 Nodes (3): Script: scripts/bulk-sync-bundles.ts (Backfill component_parents Metafields), Issue: Bulk Bundle Sync Script (bulk-sync-script-1), Concept: component_parents Metafield (Cart Transform MERGE enabler)
+
+### Community 240 - "Community 240"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 241 - "Community 241"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 242 - "Community 242"
+Cohesion: 1.0
+Nodes (0): 
+
+### Community 243 - "Community 243"
+Cohesion: 1.0
+Nodes (0): 
 
 ### Community 244 - "Community 244"
 Cohesion: 1.0
@@ -1846,11 +1846,11 @@ Nodes (0):
 
 ### Community 304 - "Community 304"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): WidgetInstallationService
 
 ### Community 305 - "Community 305"
 Cohesion: 1.0
-Nodes (1): WidgetInstallationService
+Nodes (0): 
 
 ### Community 306 - "Community 306"
 Cohesion: 1.0
@@ -2915,195 +2915,203 @@ Nodes (1): Step Transition Loading State
 ## Knowledge Gaps
 - **529 isolated node(s):** `Source: app/constants/errors.ts (new)`, `Source: app/constants/api.ts (new)`, `Source: app/constants/bundle.ts`, `WidgetInstallationService`, `ComponentParent` (+524 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 244`** (2 nodes): `entry.server.tsx`, `handleRequest()`
+- **Thin community `Community 240`** (2 nodes): `entry.server.tsx`, `handleRequest()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 245`** (2 nodes): `plans.ts`, `isFeatureGatingEnabled()`
+- **Thin community `Community 241`** (2 nodes): `plans.ts`, `isFeatureGatingEnabled()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 246`** (2 nodes): `discount-mappers.ts`, `mapDiscountMethod()`
+- **Thin community `Community 242`** (2 nodes): `discount-mappers.ts`, `mapDiscountMethod()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 247`** (2 nodes): `MantleTracker.tsx`, `MantleTracker()`
+- **Thin community `Community 243`** (2 nodes): `UpgradePromptBanner.tsx`, `renderPrompt()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 248`** (2 nodes): `UnlistedBundleBanner.tsx`, `buildShopifyProductAdminUrl()`
+- **Thin community `Community 244`** (2 nodes): `MantleTracker.tsx`, `MantleTracker()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 249`** (2 nodes): `CrispChat.tsx`, `CrispChat()`
+- **Thin community `Community 245`** (2 nodes): `UnlistedBundleBanner.tsx`, `buildShopifyProductAdminUrl()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 250`** (2 nodes): `BundleReadinessOverlay.tsx`, `scoreColor()`
+- **Thin community `Community 246`** (2 nodes): `CrispChat.tsx`, `CrispChat()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 251`** (2 nodes): `BundleGuidedTour.tsx`, `poll()`
+- **Thin community `Community 247`** (2 nodes): `BundleReadinessOverlay.tsx`, `scoreColor()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 252`** (2 nodes): `LocalAppModal.tsx`, `handleKeyDown()`
+- **Thin community `Community 248`** (2 nodes): `BundleGuidedTour.tsx`, `poll()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 253`** (2 nodes): `SubscriptionErrorBanner.tsx`, `getErrorMessage()`
+- **Thin community `Community 249`** (2 nodes): `LocalAppModal.tsx`, `handleKeyDown()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 254`** (2 nodes): `useBundleSteps.ts`, `useBundleSteps()`
+- **Thin community `Community 250`** (2 nodes): `SubscriptionErrorBanner.tsx`, `getErrorMessage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 255`** (2 nodes): `useBundleForm.ts`, `useBundleForm()`
+- **Thin community `Community 251`** (2 nodes): `useBundleSteps.ts`, `useBundleSteps()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 256`** (2 nodes): `useBillingState.ts`, `useBillingState()`
+- **Thin community `Community 252`** (2 nodes): `useBundleForm.ts`, `useBundleForm()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 257`** (2 nodes): `useBundleConditions.ts`, `useBundleConditions()`
+- **Thin community `Community 253`** (2 nodes): `useBillingState.ts`, `useBillingState()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 258`** (2 nodes): `useCartTransformState.ts`, `useCartTransformState()`
+- **Thin community `Community 254`** (2 nodes): `useBundleConditions.ts`, `useBundleConditions()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 259`** (2 nodes): `useDashboardState.ts`, `useDashboardState()`
+- **Thin community `Community 255`** (2 nodes): `useCartTransformState.ts`, `useCartTransformState()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 260`** (2 nodes): `isAddonStepLocked()`, `addon-step-lock.ts`
+- **Thin community `Community 256`** (2 nodes): `useDashboardState.ts`, `useDashboardState()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 261`** (2 nodes): `parse-condition-value.ts`, `parseConditionValue()`
+- **Thin community `Community 257`** (2 nodes): `isAddonStepLocked()`, `addon-step-lock.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 262`** (2 nodes): `tier-config-validator.server.ts`, `validateTierConfig()`
+- **Thin community `Community 258`** (2 nodes): `parse-condition-value.ts`, `parseConditionValue()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 263`** (2 nodes): `app-proxy.server.ts`, `verifyAppProxyRequest()`
+- **Thin community `Community 259`** (2 nodes): `tier-config-validator.server.ts`, `validateTierConfig()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 264`** (2 nodes): `preview-css-vars.ts`, `settingsToCSSVarRecord()`
+- **Thin community `Community 260`** (2 nodes): `app-proxy.server.ts`, `verifyAppProxyRequest()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 265`** (2 nodes): `getIntegrationCardCount()`, `admin-configuration-surfaces.ts`
+- **Thin community `Community 261`** (2 nodes): `preview-css-vars.ts`, `settingsToCSSVarRecord()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 266`** (2 nodes): `button-generator.ts`, `generateButtonCSS()`
+- **Thin community `Community 262`** (2 nodes): `getIntegrationCardCount()`, `admin-configuration-surfaces.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 267`** (2 nodes): `modal-generator.ts`, `generateModalCSS()`
+- **Thin community `Community 263`** (2 nodes): `button-generator.ts`, `generateButtonCSS()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 268`** (2 nodes): `footer-generator.ts`, `generateFooterCSS()`
+- **Thin community `Community 264`** (2 nodes): `modal-generator.ts`, `generateModalCSS()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 269`** (2 nodes): `responsive-generator.ts`, `generateResponsiveCSS()`
+- **Thin community `Community 265`** (2 nodes): `footer-generator.ts`, `generateFooterCSS()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 270`** (2 nodes): `product-card-generator.ts`, `generateProductCardCSS()`
+- **Thin community `Community 266`** (2 nodes): `responsive-generator.ts`, `generateResponsiveCSS()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 271`** (2 nodes): `index.ts`, `generateCSSFromSettings()`
+- **Thin community `Community 267`** (2 nodes): `product-card-generator.ts`, `generateProductCardCSS()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 272`** (2 nodes): `control-dependencies.ts`, `deriveControlDependencies()`
+- **Thin community `Community 268`** (2 nodes): `index.ts`, `generateCSSFromSettings()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 273`** (2 nodes): `category-contracts.ts`, `buildCategoryContract()`
+- **Thin community `Community 269`** (2 nodes): `control-dependencies.ts`, `deriveControlDependencies()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 274`** (2 nodes): `cart-line-messaging.ts`, `serializeCartLineDisplayProperties()`
+- **Thin community `Community 270`** (2 nodes): `category-contracts.ts`, `buildCategoryContract()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 275`** (2 nodes): `polaris-locales.server.ts`, `getPolarisLocale()`
+- **Thin community `Community 271`** (2 nodes): `cart-line-messaging.ts`, `serializeCartLineDisplayProperties()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 276`** (2 nodes): `events.js`, `emit()`
+- **Thin community `Community 272`** (2 nodes): `polaris-locales.server.ts`, `getPolarisLocale()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 277`** (2 nodes): `get-display-price.js`, `getDisplayPrice()`
+- **Thin community `Community 273`** (2 nodes): `events.js`, `emit()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 278`** (2 nodes): `config-loader.js`, `loadBundleConfig()`
+- **Thin community `Community 274`** (2 nodes): `get-display-price.js`, `getDisplayPrice()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 279`** (2 nodes): `default-loading-animation.js`, `createDefaultLoadingAnimation()`
+- **Thin community `Community 275`** (2 nodes): `config-loader.js`, `loadBundleConfig()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 280`** (2 nodes): `loader()`, `app.integrations.tsx`
+- **Thin community `Community 276`** (2 nodes): `cascade-template.js`, `installCascadeTemplate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 281`** (2 nodes): `loader()`, `app.events.tsx`
+- **Thin community `Community 277`** (2 nodes): `modal-slot-template.js`, `installModalSlotTemplate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 282`** (2 nodes): `StepSummary.tsx`, `StepSummary()`
+- **Thin community `Community 278`** (2 nodes): `default-loading-animation.js`, `createDefaultLoadingAnimation()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 283`** (2 nodes): `BundleStatusSection.tsx`, `handleChange()`
+- **Thin community `Community 279`** (2 nodes): `loader()`, `app.integrations.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 284`** (2 nodes): `auth.$.tsx`, `loader()`
+- **Thin community `Community 280`** (2 nodes): `loader()`, `app.events.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 285`** (2 nodes): `error.server.tsx`, `loginErrorMessage()`
+- **Thin community `Community 281`** (2 nodes): `StepSummary.tsx`, `StepSummary()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 286`** (2 nodes): `wpb.$bundleId.tsx`, `loader()`
+- **Thin community `Community 282`** (2 nodes): `BundleStatusSection.tsx`, `handleChange()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 287`** (2 nodes): `loader()`, `api.get-function-id.ts`
+- **Thin community `Community 283`** (2 nodes): `auth.$.tsx`, `loader()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 288`** (2 nodes): `loader()`, `api.check-bundles.ts`
+- **Thin community `Community 284`** (2 nodes): `error.server.tsx`, `loginErrorMessage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 289`** (2 nodes): `loader()`, `api.billing.status.tsx`
+- **Thin community `Community 285`** (2 nodes): `wpb.$bundleId.tsx`, `loader()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 290`** (2 nodes): `action()`, `api.webhooks.pubsub.tsx`
+- **Thin community `Community 286`** (2 nodes): `loader()`, `api.get-function-id.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 291`** (2 nodes): `action()`, `api.install-pdp-widget.tsx`
+- **Thin community `Community 287`** (2 nodes): `loader()`, `api.check-bundles.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 292`** (2 nodes): `action()`, `api.ensure-product-template.tsx`
+- **Thin community `Community 288`** (2 nodes): `loader()`, `api.billing.status.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 293`** (2 nodes): `loader()`, `api.cleanup-metafields.ts`
+- **Thin community `Community 289`** (2 nodes): `action()`, `api.webhooks.pubsub.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 294`** (2 nodes): `action()`, `api.install-fpb-widget.tsx`
+- **Thin community `Community 290`** (2 nodes): `action()`, `api.install-pdp-widget.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 295`** (2 nodes): `loader()`, `api.activate-pixel.tsx`
+- **Thin community `Community 291`** (2 nodes): `action()`, `api.ensure-product-template.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 296`** (2 nodes): `loader()`, `api.bundles.json.tsx`
+- **Thin community `Community 292`** (2 nodes): `loader()`, `api.cleanup-metafields.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 297`** (2 nodes): `action()`, `api.billing.create.tsx`
+- **Thin community `Community 293`** (2 nodes): `action()`, `api.install-fpb-widget.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 298`** (2 nodes): `loader()`, `api.check-cart-transform.tsx`
+- **Thin community `Community 294`** (2 nodes): `loader()`, `api.activate-pixel.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 299`** (2 nodes): `loader()`, `api.billing.confirm.tsx`
+- **Thin community `Community 295`** (2 nodes): `loader()`, `api.bundles.json.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 300`** (2 nodes): `action()`, `api.billing.cancel.tsx`
+- **Thin community `Community 296`** (2 nodes): `action()`, `api.billing.create.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 301`** (2 nodes): `assets.bundle-widget-full-page-bundled[.]js.ts`, `loader()`
+- **Thin community `Community 297`** (2 nodes): `loader()`, `api.check-cart-transform.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 302`** (2 nodes): `assets.bundle-widget-full-page[.]css.ts`, `loader()`
+- **Thin community `Community 298`** (2 nodes): `loader()`, `api.billing.confirm.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 303`** (2 nodes): `orders.server.ts`, `handleOrderCreate()`
+- **Thin community `Community 299`** (2 nodes): `action()`, `api.billing.cancel.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 304`** (2 nodes): `inventory.server.ts`, `handleInventoryUpdate()`
+- **Thin community `Community 300`** (2 nodes): `assets.bundle-widget-full-page-bundled[.]js.ts`, `loader()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 305`** (2 nodes): `widget-installation-core.server.ts`, `WidgetInstallationService`
+- **Thin community `Community 301`** (2 nodes): `assets.bundle-widget-full-page[.]css.ts`, `loader()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 306`** (2 nodes): `widget-product-bundle.server.ts`, `validateProductBundleWidgetSetup()`
+- **Thin community `Community 302`** (2 nodes): `orders.server.ts`, `handleOrderCreate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 307`** (2 nodes): `pricing.ts`, `calculateComponentPricing()`
+- **Thin community `Community 303`** (2 nodes): `inventory.server.ts`, `handleInventoryUpdate()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 308`** (2 nodes): `component-product.server.ts`, `updateComponentProductMetafields()`
+- **Thin community `Community 304`** (2 nodes): `widget-installation-core.server.ts`, `WidgetInstallationService`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 309`** (2 nodes): `makeRow()`, `analytics-helpers.test.ts`
+- **Thin community `Community 305`** (2 nodes): `widget-product-bundle.server.ts`, `validateProductBundleWidgetSetup()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 310`** (2 nodes): `makeCtx()`, `css-variables-generator.test.ts`
+- **Thin community `Community 306`** (2 nodes): `pricing.ts`, `calculateComponentPricing()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 311`** (2 nodes): `signedProxyUrl()`, `app-proxy.test.ts`
+- **Thin community `Community 307`** (2 nodes): `component-product.server.ts`, `updateComponentProductMetafields()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 312`** (2 nodes): `makeValidConfig()`, `pricing-display-defaults.test.ts`
+- **Thin community `Community 308`** (2 nodes): `makeRow()`, `analytics-helpers.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 313`** (2 nodes): `makeStep()`, `addon-step-lock.test.ts`
+- **Thin community `Community 309`** (2 nodes): `makeCtx()`, `css-variables-generator.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 314`** (2 nodes): `makeAdmin()`, `slug-utils.test.ts`
+- **Thin community `Community 310`** (2 nodes): `signedProxyUrl()`, `app-proxy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 315`** (2 nodes): `readSource()`, `shared-admin-copy-i18n.test.ts`
+- **Thin community `Community 311`** (2 nodes): `makeValidConfig()`, `pricing-display-defaults.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 316`** (2 nodes): `flattenKeys()`, `admin-ui-i18n.test.ts`
+- **Thin community `Community 312`** (2 nodes): `makeStep()`, `addon-step-lock.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 317`** (2 nodes): `readSource()`, `billing-plan-cards-i18n.test.ts`
+- **Thin community `Community 313`** (2 nodes): `makeAdmin()`, `slug-utils.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 318`** (2 nodes): `readSource()`, `billing-feedback-i18n.test.ts`
+- **Thin community `Community 314`** (2 nodes): `readSource()`, `shared-admin-copy-i18n.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 319`** (2 nodes): `makeContainer()`, `full-page-preset.test.ts`
+- **Thin community `Community 315`** (2 nodes): `flattenKeys()`, `admin-ui-i18n.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 320`** (2 nodes): `makeBxyBundle()`, `pricing-calculator-bxy.test.ts`
+- **Thin community `Community 316`** (2 nodes): `readSource()`, `billing-plan-cards-i18n.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 321`** (2 nodes): `createOverlay()`, `loading-overlay.test.ts`
+- **Thin community `Community 317`** (2 nodes): `readSource()`, `billing-feedback-i18n.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 322`** (2 nodes): `resolveTierConfig()`, `fpb-tier-api-source.test.ts`
+- **Thin community `Community 318`** (2 nodes): `makeContainer()`, `full-page-preset.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 323`** (2 nodes): `makeState()`, `sdk-cart.test.ts`
+- **Thin community `Community 319`** (2 nodes): `makeBxyBundle()`, `pricing-calculator-bxy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 324`** (2 nodes): `widgetSource()`, `bundle-widget-full-page-messages.test.ts`
+- **Thin community `Community 320`** (2 nodes): `createOverlay()`, `loading-overlay.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 325`** (2 nodes): `widget-init-error-handler.test.ts`, `readAsset()`
+- **Thin community `Community 321`** (2 nodes): `resolveTierConfig()`, `fpb-tier-api-source.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 326`** (2 nodes): `makeRequest()`, `app.attribution.action.test.ts`
+- **Thin community `Community 322`** (2 nodes): `makeState()`, `sdk-cart.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 327`** (2 nodes): `quantityValidationBlock()`, `quantity-validation-eb-parity-contract.test.ts`
+- **Thin community `Community 323`** (2 nodes): `widgetSource()`, `bundle-widget-full-page-messages.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 328`** (2 nodes): `slotIconBlock()`, `bundle-settings-slot-icon-step-config-parity.test.ts`
+- **Thin community `Community 324`** (2 nodes): `widget-init-error-handler.test.ts`, `readAsset()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 329`** (2 nodes): `makeForm()`, `ppb-bundle-visibility.test.ts`
+- **Thin community `Community 325`** (2 nodes): `makeRequest()`, `app.attribution.action.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 330`** (2 nodes): `getOpenProductInAdminSource()`, `bundle-product-edit-product-admin-modal.test.ts`
+- **Thin community `Community 326`** (2 nodes): `quantityValidationBlock()`, `quantity-validation-eb-parity-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 331`** (2 nodes): `makeForm()`, `ppb-bundle-settings.test.ts`
+- **Thin community `Community 327`** (2 nodes): `slotIconBlock()`, `bundle-settings-slot-icon-step-config-parity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 332`** (2 nodes): `makeSignedRequest()`, `cart-transform-heal.test.ts`
+- **Thin community `Community 328`** (2 nodes): `makeForm()`, `ppb-bundle-visibility.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 333`** (2 nodes): `makeRequest()`, `create-bundle-wizard.test.ts`
+- **Thin community `Community 329`** (2 nodes): `getOpenProductInAdminSource()`, `bundle-product-edit-product-admin-modal.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 334`** (2 nodes): `getDb()`, `full-page-bundle-slug.test.ts`
+- **Thin community `Community 330`** (2 nodes): `makeForm()`, `ppb-bundle-settings.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 335`** (2 nodes): `extractRule()`, `create-bundle-wizard-footer-ui-contract.test.ts`
+- **Thin community `Community 331`** (2 nodes): `makeSignedRequest()`, `cart-transform-heal.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 336`** (2 nodes): `makeSignedRequest()`, `cart-bundle-details.test.ts`
+- **Thin community `Community 332`** (2 nodes): `makeRequest()`, `create-bundle-wizard.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 337`** (2 nodes): `getCategoryBodySource()`, `step-setup-category-content-ui-contract.test.ts`
+- **Thin community `Community 333`** (2 nodes): `getDb()`, `full-page-bundle-slug.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 338`** (2 nodes): `makeForm()`, `ppb-gift-messages.test.ts`
+- **Thin community `Community 334`** (2 nodes): `extractRule()`, `create-bundle-wizard-footer-ui-contract.test.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 335`** (2 nodes): `makeSignedRequest()`, `cart-bundle-details.test.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 336`** (2 nodes): `getCategoryBodySource()`, `step-setup-category-content-ui-contract.test.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 337`** (2 nodes): `makeForm()`, `ppb-gift-messages.test.ts`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 338`** (2 nodes): `categoryBodySource()`, `eb-category-accordion-parity-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 339`** (2 nodes): `makeForm()`, `select-template.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -3195,113 +3203,113 @@ Nodes (1): Step Transition Loading State
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 383`** (1 nodes): `subscription.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 384`** (1 nodes): `UpgradePromptBanner.tsx`
+- **Thin community `Community 384`** (1 nodes): `AccordionItem.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 385`** (1 nodes): `AccordionItem.tsx`
+- **Thin community `Community 385`** (1 nodes): `ProxyHealthBanner.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 386`** (1 nodes): `ProxyHealthBanner.tsx`
+- **Thin community `Community 386`** (1 nodes): `AppEmbedBanner.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 387`** (1 nodes): `AppEmbedBanner.tsx`
+- **Thin community `Community 387`** (1 nodes): `EnablePreviewModal.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 388`** (1 nodes): `EnablePreviewModal.tsx`
+- **Thin community `Community 388`** (1 nodes): `BundleSetupInstructions.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 389`** (1 nodes): `BundleSetupInstructions.tsx`
+- **Thin community `Community 389`** (1 nodes): `CartPropertyFixCard.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 390`** (1 nodes): `CartPropertyFixCard.tsx`
+- **Thin community `Community 390`** (1 nodes): `tourSteps.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 391`** (1 nodes): `tourSteps.ts`
+- **Thin community `Community 391`** (1 nodes): `DiscardChangesModal.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 392`** (1 nodes): `DiscardChangesModal.tsx`
+- **Thin community `Community 392`** (1 nodes): `FreePlanCard.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 393`** (1 nodes): `FreePlanCard.tsx`
+- **Thin community `Community 393`** (1 nodes): `UpgradeSuccessBanner.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 394`** (1 nodes): `UpgradeSuccessBanner.tsx`
+- **Thin community `Community 394`** (1 nodes): `SubscriptionQuotaCard.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 395`** (1 nodes): `SubscriptionQuotaCard.tsx`
+- **Thin community `Community 395`** (1 nodes): `FeatureComparisonTable.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 396`** (1 nodes): `FeatureComparisonTable.tsx`
+- **Thin community `Community 396`** (1 nodes): `FAQSection.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 397`** (1 nodes): `FAQSection.tsx`
+- **Thin community `Community 397`** (1 nodes): `ValuePropsSection.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 398`** (1 nodes): `ValuePropsSection.tsx`
+- **Thin community `Community 398`** (1 nodes): `UpgradeCTACard.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 399`** (1 nodes): `UpgradeCTACard.tsx`
+- **Thin community `Community 399`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 400`** (1 nodes): `index.ts`
+- **Thin community `Community 400`** (1 nodes): `GrowPlanCard.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 401`** (1 nodes): `GrowPlanCard.tsx`
+- **Thin community `Community 401`** (1 nodes): `UpgradeConfirmationModal.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 402`** (1 nodes): `UpgradeConfirmationModal.tsx`
+- **Thin community `Community 402`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 403`** (1 nodes): `types.ts`
+- **Thin community `Community 403`** (1 nodes): `product-page-layout-settings.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 404`** (1 nodes): `product-page-layout-settings.ts`
+- **Thin community `Community 404`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 405`** (1 nodes): `index.ts`
+- **Thin community `Community 405`** (1 nodes): `bundle-widget-components.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 406`** (1 nodes): `bundle-widget-components.js`
+- **Thin community `Community 406`** (1 nodes): `constants.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 407`** (1 nodes): `constants.js`
+- **Thin community `Community 407`** (1 nodes): `full-page-preset.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 408`** (1 nodes): `full-page-preset.js`
+- **Thin community `Community 408`** (1 nodes): `index.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 409`** (1 nodes): `index.js`
+- **Thin community `Community 409`** (1 nodes): `condition-validator.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 410`** (1 nodes): `condition-validator.js`
+- **Thin community `Community 410`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 411`** (1 nodes): `types.ts`
+- **Thin community `Community 411`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 412`** (1 nodes): `index.ts`
+- **Thin community `Community 412`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 413`** (1 nodes): `types.ts`
+- **Thin community `Community 413`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 414`** (1 nodes): `index.ts`
+- **Thin community `Community 414`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 415`** (1 nodes): `types.ts`
+- **Thin community `Community 415`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 416`** (1 nodes): `index.ts`
+- **Thin community `Community 416`** (1 nodes): `api.inngest.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 417`** (1 nodes): `api.inngest.tsx`
+- **Thin community `Community 417`** (1 nodes): `webhook-processor.server.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 418`** (1 nodes): `webhook-processor.server.ts`
+- **Thin community `Community 418`** (1 nodes): `widget-installation.server.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 419`** (1 nodes): `widget-installation.server.ts`
+- **Thin community `Community 419`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 420`** (1 nodes): `types.ts`
+- **Thin community `Community 420`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 421`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 422`** (1 nodes): `index.ts`
+- **Thin community `Community 422`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 423`** (1 nodes): `types.ts`
+- **Thin community `Community 423`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 424`** (1 nodes): `index.ts`
+- **Thin community `Community 424`** (1 nodes): `metafield-sync.server.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 425`** (1 nodes): `metafield-sync.server.ts`
+- **Thin community `Community 425`** (1 nodes): `types.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 426`** (1 nodes): `types.ts`
+- **Thin community `Community 426`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 427`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 428`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 429`** (1 nodes): `index.ts`
+- **Thin community `Community 429`** (1 nodes): `styleMock.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 430`** (1 nodes): `styleMock.js`
+- **Thin community `Community 430`** (1 nodes): `bundle-readiness-score-state-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 431`** (1 nodes): `bundle-readiness-score-state-contract.test.ts`
+- **Thin community `Community 431`** (1 nodes): `bundle-readiness-overlay-variant-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 432`** (1 nodes): `bundle-readiness-overlay-variant-contract.test.ts`
+- **Thin community `Community 432`** (1 nodes): `bundle-readiness-overlay-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 433`** (1 nodes): `bundle-readiness-overlay-contract.test.ts`
+- **Thin community `Community 433`** (1 nodes): `functions.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 434`** (1 nodes): `functions.test.ts`
+- **Thin community `Community 434`** (1 nodes): `client.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 435`** (1 nodes): `client.test.ts`
+- **Thin community `Community 435`** (1 nodes): `cart-transform-run-query.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 436`** (1 nodes): `cart-transform-run-query.test.ts`
+- **Thin community `Community 436`** (1 nodes): `enable-preview-modal.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 437`** (1 nodes): `enable-preview-modal.test.ts`
+- **Thin community `Community 437`** (1 nodes): `upgrade-prompt-banner-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 438`** (1 nodes): `unlisted-bundle-banner.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -3573,17 +3581,17 @@ Nodes (1): Step Transition Loading State
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 0` to `Community 1`, `Community 69`, `Community 12`, `Community 14`, `Community 16`, `Community 20`?**
+- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 0` to `Community 65`, `Community 3`, `Community 5`, `Community 13`, `Community 15`, `Community 19`?**
   _High betweenness centrality (0.030) - this node is a cross-community bridge._
-- **Why does `Prisma Schema (prisma/schema.prisma)` connect `Community 1` to `Community 0`, `Community 9`, `Community 10`, `Community 12`?**
+- **Why does `Prisma Schema (prisma/schema.prisma)` connect `Community 5` to `Community 0`, `Community 9`, `Community 3`, `Community 6`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `Ad-Ready Bundles Architecture Decision Record` connect `Community 9` to `Community 1`, `Community 10`?**
+- **Why does `Ad-Ready Bundles Architecture Decision Record` connect `Community 6` to `Community 9`, `Community 5`?**
   _High betweenness centrality (0.010) - this node is a cross-community bridge._
 - **What connects `Source: app/constants/errors.ts (new)`, `Source: app/constants/api.ts (new)`, `Source: app/constants/bundle.ts` to the rest of the system?**
   _529 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.01 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.01 - nodes in this community are weakly interconnected._
-- **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.02 - nodes in this community are weakly interconnected._
+- **Should `Community 2` be split into smaller, more focused modules?**
+  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
