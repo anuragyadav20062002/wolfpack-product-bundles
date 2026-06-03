@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.56
+ * Version : 2.9.57
  * Built   : 2026-06-03
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.56';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.57';
 (function() {
   'use strict';
 
@@ -5012,7 +5012,7 @@ class BundleWidgetFullPage {
 
           if (el.closest('.promo-banner')) return;
 
-          el.style.display = 'none';
+          el.remove();
         });
       } catch (e) {
 
@@ -5026,7 +5026,7 @@ class BundleWidgetFullPage {
       const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
 
       if (hasPageTitle && !hasOtherContent) {
-        container.style.display = 'none';
+        container.remove();
       }
     });
 
@@ -5039,15 +5039,15 @@ class BundleWidgetFullPage {
 
       const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
       if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
-        titleSection.style.display = 'none';
+        titleSection.remove();
         return;
       }
 
       const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
       if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
-        titleBlock.style.display = 'none';
+        titleBlock.remove();
       } else {
-        el.style.display = 'none';
+        el.remove();
       }
     });
   }

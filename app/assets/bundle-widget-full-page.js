@@ -2266,8 +2266,8 @@ class BundleWidgetFullPage {
           // Check if this is a page title element (not our promo banner)
           if (el.closest('.promo-banner')) return;
 
-          // Hide the element
-          el.style.display = 'none';
+          // Remove the element entirely so the host page title is not left in the DOM.
+          el.remove();
         });
       } catch (e) {
         // Selector might be invalid, continue to next
@@ -2282,7 +2282,7 @@ class BundleWidgetFullPage {
       const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
 
       if (hasPageTitle && !hasOtherContent) {
-        container.style.display = 'none';
+        container.remove();
       }
     });
 
@@ -2295,15 +2295,15 @@ class BundleWidgetFullPage {
 
       const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
       if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
-        titleSection.style.display = 'none';
+        titleSection.remove();
         return;
       }
 
       const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
       if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
-        titleBlock.style.display = 'none';
+        titleBlock.remove();
       } else {
-        el.style.display = 'none';
+        el.remove();
       }
     });
   }
