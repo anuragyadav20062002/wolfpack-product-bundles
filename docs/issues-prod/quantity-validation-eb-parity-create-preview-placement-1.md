@@ -44,6 +44,11 @@ Replicate EB's Enable Quantity Validation card behavior in FPB and PPB configure
 - Preparing the create wizard Preview placement commit.
 - Scope: move the Preview action to the configure wizard header beside "How to configure?", remove the footer and Step Summary Preview placements, and update the source contract test and navigation map.
 
+### 2026-06-03 16:00 - Commit 3 preparation
+- Preparing the Slot Icon / Design Control Panel constraint commit.
+- Scope: document that the old Design Control Panel implementation is not the owner for Slot Icon and that Slot Icon remains a per-bundle Bundle Settings control only.
+- No code route to the old Design Control Panel is being added for Slot Icon.
+
 ## Related Documentation
 
 - `docs/competitor-analysis/14-eb-addon-upsell-analysis.md`

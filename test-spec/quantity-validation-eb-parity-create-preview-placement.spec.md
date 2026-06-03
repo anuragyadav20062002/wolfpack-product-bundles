@@ -36,6 +36,7 @@ Verify that FPB and PPB Bundle Settings expose EB-aligned Quantity Validation co
 - [x] FPB and PPB Quantity Validation card matches EB control set and structure
 - [x] Quantity Validation persists direct bundle-level config
 - [x] Product Slots and Slot Icon remain bundle-level only
+- [x] Slot Icon does not move into the old Design Control Panel path
 - [x] Storefront widgets enforce max per-product quantity when enabled
 - [x] Storefront empty slot rendering follows `productSlotsEnabled`
 - [x] Create wizard Preview button is top-aligned beside "How to configure?"

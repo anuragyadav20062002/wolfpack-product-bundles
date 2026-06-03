@@ -342,6 +342,7 @@ PPB Configure Page
 │   │   ├── Product Slots toggle
 │   │   ├── Product Slots helper text
 │   │   ├── Slot Icon: [Change Icon] opens bundle-level image picker; [Reset] clears icon
+│   │   ├── Slot Icon scope: per-bundle Bundle Settings control only; no Design Control Panel route
 │   │   ├── Note: only applies when rules are quantity-based
 │   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
 │   ├── Cart line item discount display
