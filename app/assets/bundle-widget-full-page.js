@@ -76,6 +76,7 @@ import {
   TemplateManager,
   ComponentGenerator
 } from './bundle-widget-components.js';
+import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
 
@@ -5298,6 +5299,15 @@ class BundleWidgetFullPage {
     const step = this.selectedBundle?.steps?.[stepIndex] || {};
 
     if (products.length === 0) {
+      if (!this._shouldRenderProductSlots()) {
+        productGrid.innerHTML = `
+          <div class="empty-products-message">
+            <p>No products available for this step.</p>
+          </div>
+        `;
+        return;
+      }
+
       // Show empty state cards like in Settings design preview
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
@@ -5552,6 +5562,17 @@ class BundleWidgetFullPage {
       return;
     }
 
+    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
+      this.selectedBundle?.validateQuantityPerProduct,
+      currentQuantity,
+      quantity,
+    );
+    if (!productQuantityCheck.allowed) {
+      ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+      return;
+    }
+
     // Update selection
     if (quantity > 0) {
       this.selectedProducts[stepIndex][productId] = quantity;
@@ -5621,6 +5642,10 @@ class BundleWidgetFullPage {
     } else {
       this.updateFooterMessaging();
     }
+  }
+
+  _shouldRenderProductSlots() {
+    return this.selectedBundle?.productSlotsEnabled === true;
   }
 
   updateProductQuantityDisplay(stepIndex, productId, quantity) {

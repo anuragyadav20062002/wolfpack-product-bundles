@@ -1229,12 +1229,21 @@ class BundleWidgetProductPage {
             target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
           }
         } else {
-          // No selection yet — empty slot card
-          const card = this.createEmptyStateCard(step, stepIndex, 0);
+          // No selection yet — use EB Product Slots when enabled, otherwise show a simple add CTA.
+          let card;
+          if (this._shouldRenderProductSlots()) {
+            card = this.createEmptyStateCard(step, stepIndex, 0);
+          } else {
+            card = this.createAddMoreCard(step, stepIndex, 0);
+          }
           target.appendChild(card);
         }
       }
     });
+  }
+
+  _shouldRenderProductSlots() {
+    return this.selectedBundle?.productSlotsEnabled === true;
   }
 
   _createModalSlotStepSection(step) {

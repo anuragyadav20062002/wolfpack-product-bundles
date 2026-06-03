@@ -326,8 +326,13 @@ PPB Configure Page
 │   │   ├── Multi Language
 │   │   └── Browse Products (Shopify resource picker)
 │   ├── Enable Quantity Validation
+│   │   ├── Enable toggle
 │   │   ├── Maximum allowed quantity per product
+│   │   ├── Pro Tip banner
+│   │   ├── Product Slots toggle
+│   │   ├── Product Slots helper text
 │   │   ├── Slot Icon: [Change Icon] opens bundle-level image picker; [Reset] clears icon
+│   │   ├── Note: only applies when rules are quantity-based
 │   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
 │   ├── Cart line item discount display
 │   │   └── [Button] "Edit Defaults" → /app/settings

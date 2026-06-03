@@ -826,7 +826,11 @@ export default function ConfigureBundleFlow() {
 
   // FR-05: Bundle Settings — new sub-sections
   const [preSelectedProductVariantId, setPreSelectedProductVariantId] = useState<string>((bundle as any).preSelectedProductVariantId ?? "");
-  const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>((bundle as any).maxQtyPerProduct?.toString() ?? "");
+  const initialValidateQuantityPerProduct = ((bundle as any).validateQuantityPerProduct as { isEnabled?: boolean; allowedQuantity?: number } | null) ?? null;
+  const [quantityValidationEnabled, setQuantityValidationEnabled] = useState<boolean>(initialValidateQuantityPerProduct?.isEnabled === true);
+  const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>(
+    (initialValidateQuantityPerProduct?.allowedQuantity ?? (bundle as any).maxQtyPerProduct ?? 1).toString()
+  );
   const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
   const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
   const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
@@ -1202,7 +1206,7 @@ export default function ConfigureBundleFlow() {
       formData.append("bundleLevelCss", bundleLevelCss);
       formData.append("defaultProductsData", JSON.stringify(buildDefaultProductsData()));
       formData.append("validateQuantityPerProduct", JSON.stringify({
-        isEnabled: productSlotsEnabled,
+        isEnabled: quantityValidationEnabled,
         allowedQuantity: Number.parseInt(maxQtyPerProduct || "1", 10) || 1,
       }));
       formData.append("individualSellingPlanSelection", JSON.stringify({
@@ -1289,6 +1293,7 @@ export default function ConfigureBundleFlow() {
     bundleEmbedSpecificCollectionPages,
     bundleEmbedAddBrowsedProduct,
     productSlotsEnabled,
+    quantityValidationEnabled,
     maxQtyPerProduct,
     individualSellingPlanEnabled,
     individualSellingPlanShowFor,
@@ -4372,8 +4377,8 @@ export default function ConfigureBundleFlow() {
                           <span className={productPageBundleStyles.settingInlineSwitch}>
                             <s-checkbox
                               accessibilityLabel="Enable quantity validation"
-                              checked={productSlotsEnabled || undefined}
-                              onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                              checked={quantityValidationEnabled || undefined}
+                              onChange={(e: Event) => { setQuantityValidationEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
                             />
                           </span>
                         </div>
@@ -4382,10 +4387,28 @@ export default function ConfigureBundleFlow() {
                           type="number"
                           min="1"
                           value={maxQtyPerProduct || "1"}
-                          disabled={!productSlotsEnabled}
+                          disabled={!quantityValidationEnabled}
                           onInput={(e: Event) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autoComplete="off"
                         />
+                        <s-banner tone="info">
+                          Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.
+                        </s-banner>
+                        <s-stack direction="block" gap="small-400">
+                          <div className={productPageBundleStyles.settingTitleRow}>
+                            <h3 className={productPageBundleStyles.settingTitle}>Product Slots</h3>
+                            <span className={productPageBundleStyles.settingInlineSwitch}>
+                              <s-switch
+                                accessibilityLabel="Enable product slots display"
+                                checked={productSlotsEnabled || undefined}
+                                onChange={(e: Event) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                              />
+                            </span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                            This feature displays empty slots on the storefront.
+                          </p>
+                        </s-stack>
                         {/* Slot Icon — nested inside quantity validation */}
                         <s-stack direction="block" gap="small-400">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>

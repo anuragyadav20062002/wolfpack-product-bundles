@@ -441,6 +441,7 @@ export async function updateBundleProductMetafields(
       isEnabled: false,
       allowedQuantity: 1,
     },
+    productSlotsEnabled: bundleConfiguration.productSlotsEnabled ?? false,
     productSlotIconUrl: bundleConfiguration.productSlotIconUrl ?? null,
     useSingleStepCategoriesAsBundleSteps: bundleConfiguration.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: bundleConfiguration.renderFilledSlotsAsHorizontalStacked

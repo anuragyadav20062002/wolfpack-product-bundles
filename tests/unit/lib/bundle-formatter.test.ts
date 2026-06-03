@@ -343,12 +343,14 @@ describe("formatBundleForWidget", () => {
       bundleType: "product_page",
       defaultProductsData,
       validateQuantityPerProduct,
+      productSlotsEnabled: true,
       individualSellingPlanSelection,
       bundleTextConfig,
     }) as any);
 
     expect(result.defaultProductsData).toEqual(defaultProductsData);
     expect(result.validateQuantityPerProduct).toEqual(validateQuantityPerProduct);
+    expect(result.productSlotsEnabled).toBe(true);
     expect(result.individualSellingPlanSelection).toEqual(individualSellingPlanSelection);
     expect(result.bundleTextConfig).toEqual(bundleTextConfig);
   });

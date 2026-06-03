@@ -400,6 +400,7 @@ function buildBundleBaseConfig(
     discountDisplayOverride?: unknown;
     individualSellingPlanSelection?: unknown;
     validateQuantityPerProduct?: unknown;
+    productSlotsEnabled?: boolean | null;
     productSlotIconUrl?: string | null;
     useSingleStepCategoriesAsBundleSteps?: boolean | null;
     pricing?: {
@@ -480,6 +481,7 @@ function buildBundleBaseConfig(
       isEnabled: false,
       allowedQuantity: 1,
     },
+    productSlotsEnabled: updatedBundle.productSlotsEnabled ?? false,
     productSlotIconUrl: updatedBundle.productSlotIconUrl ?? null,
     useSingleStepCategoriesAsBundleSteps: updatedBundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
@@ -703,6 +705,7 @@ function buildSyncBundleConfiguration(
       isEnabled: false,
       allowedQuantity: 1,
     },
+    productSlotsEnabled: bundle.productSlotsEnabled ?? false,
     productSlotIconUrl: bundle.productSlotIconUrl ?? null,
     useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(

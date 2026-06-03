@@ -1047,6 +1047,53 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
+  it("persists direct quantity validation and product slots config into metafield sync", async () => {
+    const validateQuantityPerProduct = {
+      isEnabled: true,
+      allowedQuantity: 2,
+    };
+    getDb().bundle.update.mockResolvedValue(
+      makeUpdatedBundle({
+        shopifyProductId: PRODUCT_ID,
+        productSlotsEnabled: true,
+        validateQuantityPerProduct,
+        steps: [
+          {
+            id: "step-db-1",
+            name: "Step 1",
+            StepProduct: [
+              {
+                productId: "gid://shopify/Product/456",
+                title: "Component",
+                imageUrl: null,
+              },
+            ],
+            StepCategory: [],
+          },
+        ],
+      })
+    );
+
+    const fd = makeFormData({
+      stepsData: JSON.stringify(makeStepWithProduct()),
+      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
+      productSlotsEnabled: "true",
+      validateQuantityPerProduct: JSON.stringify(validateQuantityPerProduct),
+    });
+    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
+    const body = await res.json();
+
+    expect(body.success).toBe(true);
+    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
+      MOCK_ADMIN,
+      PRODUCT_ID,
+      expect.objectContaining({
+        productSlotsEnabled: true,
+        validateQuantityPerProduct,
+      }),
+    );
+  });
+
   it("passes step translations into bundle product metafield sync", async () => {
     const multiLangData = {
       es: {
