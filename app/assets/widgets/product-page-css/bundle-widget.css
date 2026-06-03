@@ -3248,8 +3248,8 @@ to {
 }
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] {
-  width:345px;
-  max-width:345px;
+  width:100%;
+  max-width:100%;
   margin:0}
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] {
@@ -3259,7 +3259,7 @@ to {
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"] {
   width:100%;
-  max-width:345px;
+  max-width:none;
   margin:0}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty {
@@ -3271,8 +3271,8 @@ to {
   display:flex;
   flex-direction:column;
   gap:10px;
-  width:345px;
-  max-width:345px;
+  width:100%;
+  max-width:100%;
   margin:20px 0 12px;
   padding:0;
   align-items:stretch;
@@ -3280,10 +3280,10 @@ to {
 
 .bw-ppb-modal-slot-section {
   display:grid;
-  grid-template-columns:345px;
+  grid-template-columns:minmax(0,1fr);
   gap:10px;
-  width:345px;
-  max-width:345px}
+  width:100%;
+  max-width:100%}
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bundle-steps {
   display:flex;
@@ -3601,7 +3601,7 @@ to {
 
 #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .add-bundle-to-cart {
   width:100%;
-  max-width:345px;
+  max-width:none;
   height:45px;
   margin:6px 0 0;
   border-radius:4px;
@@ -3626,7 +3626,7 @@ to {
   align-items:center;
   justify-content:center;
   width:100%;
-  max-width:345px;
+  max-width:none;
   box-sizing:border-box;
   height:47px;
   margin:0 0 20px;
@@ -3908,8 +3908,8 @@ to {
   gap:12px}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] {
-  width:345px;
-  max-width:345px;
+  width:100%;
+  max-width:100%;
   margin:0}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bundle-steps,
@@ -3985,9 +3985,9 @@ to {
 
 .bw-ppb-modal-slot-grid {
   display:grid;
-  grid-template-columns:repeat(3,104.328px);
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:16px;
-  width:345px;
+  width:100%;
   align-items:start;
   justify-items:stretch}
 
@@ -4056,10 +4056,10 @@ to {
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-section {
   display:grid;
-  grid-template-columns:345px;
+  grid-template-columns:minmax(0,1fr);
   gap:10px;
-  width:345px;
-  max-width:345px}
+  width:100%;
+  max-width:100%}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-title {
   color:#000000;
@@ -4070,21 +4070,21 @@ to {
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid {
   display:grid;
-  grid-template-columns:104px;
+  grid-template-columns:repeat(3,minmax(0,1fr));
   gap:16px;
-  width:345px;
+  width:100%;
   align-items:start;
-  justify-items:start}
+  justify-items:stretch}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card--empty {
   display:grid;
-  grid-template-columns:80px;
+  grid-template-columns:minmax(0,76.923%);
   align-content:center;
   justify-content:center;
   align-items:center;
   justify-items:center;
   gap:8px;
-  width:104px;
+  width:100%;
   height:200px;
   min-height:200px;
   padding:0;
@@ -4094,8 +4094,9 @@ to {
   box-shadow:none}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card__empty-visual {
-  width:80px;
-  height:80px;
+  width:100%;
+  height:auto;
+  aspect-ratio:1;
   margin:0;
   background:#ff9790;
   background-size:cover;
@@ -4103,7 +4104,7 @@ to {
   background-position:center}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card__label {
-  width:80px;
+  width:100%;
   color:#3e3e3e;
   font-size:16px;
   font-weight:700;
@@ -4146,8 +4147,8 @@ to {
   line-height:21px}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .add-bundle-to-cart {
-  width:345px;
-  max-width:345px;
+  width:100%;
+  max-width:100%;
   box-sizing:border-box;
   height:45px;
   margin:14px 0 0;
@@ -4193,8 +4194,8 @@ to {
   display:flex;
   align-items:center;
   justify-content:center;
-  width:345px;
-  max-width:345px;
+  width:100%;
+  max-width:100%;
   box-sizing:border-box;
   height:47px;
   background:#111111;

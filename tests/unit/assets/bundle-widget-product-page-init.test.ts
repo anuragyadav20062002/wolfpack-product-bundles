@@ -341,9 +341,8 @@ describe('Product Page modal-slot visual contract', () => {
 
     expect(css).toContain('.bundle-steps[data-ppb-template-type="PDP_MODAL"]');
     expect(css).toContain('.bw-ppb-modal-slot-grid');
-    expect(css).toContain('width:345px');
-    expect(css).toContain('max-width:345px');
-    expect(css).toContain('grid-template-columns:repeat(3,104.328px)');
+    expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"]');
+    expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
     expect(css).toContain('.bw-ppb-modal-slot-grid .bw-slot-card--empty');
     expect(css).toContain('border:2px dashed #111111');
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty');
@@ -414,14 +413,41 @@ describe('Product Page modal-slot visual contract', () => {
     expect(modalSlotTemplate).toContain('prototype._appendSlotIcon = function');
 
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"]');
-    expect(css).toContain('grid-template-columns:104px');
-    expect(css).toContain('width:104px');
+    expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
+    expect(css).toContain('grid-template-columns:minmax(0,76.923%)');
+    expect(css).toContain('width:100%');
     expect(css).toContain('height:200px');
     expect(css).toContain('min-height:200px');
-    expect(css).toContain('width:80px');
-    expect(css).toContain('height:80px');
+    expect(css).toContain('aspect-ratio:1');
     expect(css).toContain('background:#ff9790');
     expect(css).toContain('border:2px dashed #000000');
+  });
+
+  it('keeps PPB Product List and Horizontal Slots container responsive on wider storefront placements', () => {
+    const css = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
+      'utf8',
+    );
+
+    const cascadeCss = css.slice(
+      css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .bundle-steps'),
+      css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid'),
+    );
+    const modalStart = css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] {');
+    const modalCss = css.slice(
+      modalStart,
+      css.indexOf('@media (max-width:480px)', modalStart),
+    );
+
+    expect(cascadeCss).not.toContain('max-width:345px');
+    expect(cascadeCss).toContain('max-width:none');
+    expect(cascadeCss).toContain('width:100%');
+
+    expect(modalCss).not.toContain('width:345px');
+    expect(modalCss).not.toContain('max-width:345px');
+    expect(modalCss).toContain('width:100%');
+    expect(modalCss).toContain('max-width:100%');
+    expect(modalCss).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
   });
 
   it('renders only one quantity increase button in PPB in-page product cards', () => {
