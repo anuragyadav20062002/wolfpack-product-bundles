@@ -43,6 +43,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
+      currencyDisplay: 'narrowSymbol',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);
@@ -97,16 +98,14 @@ export const BundlePricingExtension: FunctionComponent = () => {
 
         <s-stack direction="inline" gap="small-200" justifyContent="space-between">
           <s-text>Savings:</s-text>
-          <s-text type="strong" tone="success">
-            {formatMoney(totalSavingsCents)}
-          </s-text>
-        </s-stack>
-
-        <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text>% Saved:</s-text>
-          <s-text type="strong" tone="success">
-            {formatPercent(savingsPercent)}%
-          </s-text>
+          <s-stack direction="inline" gap="small-100" alignItems="center">
+            <s-text type="strong" tone="success">
+              {formatMoney(totalSavingsCents)}
+            </s-text>
+            <s-text tone="success" type="small">
+              ({formatPercent(savingsPercent)}%)
+            </s-text>
+          </s-stack>
         </s-stack>
       </s-stack>
     </s-stack>

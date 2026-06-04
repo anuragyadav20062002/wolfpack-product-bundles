@@ -13,7 +13,7 @@ describe("Bundle checkout UI contract", () => {
     expect(source).not.toContain("Retail Price:");
     expect(source).toContain("Bundle Price:");
     expect(source).toContain("Savings:");
-    expect(source).toContain("% Saved:");
+    expect(source).not.toContain("% Saved:");
     expect(source).toContain("calculateSavingsPercent(totalSavingsCents, totalRetailCents)");
   });
 
@@ -21,11 +21,20 @@ describe("Bundle checkout UI contract", () => {
     expect(source).toContain("<s-text>Actual Price:</s-text>");
     expect(source).toContain("<s-text>Bundle Price:</s-text>");
     expect(source).toContain("<s-text>Savings:</s-text>");
-    expect(source).toContain("<s-text>% Saved:</s-text>");
 
     expect(source).toContain('<s-text type="strong" color="subdued">');
     expect(source).toContain('<s-text type="strong">');
     expect(source).toContain('<s-text type="strong" tone="success">');
+  });
+
+  it("formats money with narrow currency symbols", () => {
+    expect(source).toContain("currencyDisplay: 'narrowSymbol'");
+  });
+
+  it("shows percent saved inline with the savings amount", () => {
+    expect(source).toContain("formatMoney(totalSavingsCents)");
+    expect(source).toContain("({formatPercent(savingsPercent)}%)");
+    expect(source).toContain('<s-text tone="success" type="small">');
   });
 
   it("does not render redundant bundle item list UI", () => {
