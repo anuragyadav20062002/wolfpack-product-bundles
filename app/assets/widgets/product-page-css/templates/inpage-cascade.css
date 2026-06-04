@@ -353,3 +353,21 @@
   opacity:1;
   cursor:not-allowed;
   transform:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .bw-ppb-dynamic-checkout-visual {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:none;
+  box-sizing:border-box;
+  height:47px;
+  margin:0 0 20px;
+  border-radius:0;
+  background:#111111;
+  color:#ffffff;
+  font-size:15px;
+  font-weight:700;
+  line-height:1;
+  cursor:default;
+  user-select:none}
