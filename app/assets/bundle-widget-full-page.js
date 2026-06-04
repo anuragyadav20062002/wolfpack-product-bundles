@@ -963,6 +963,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
     this.ensureCompactPresetRuntimeStyles();
     this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
@@ -971,6 +972,11 @@ class BundleWidgetFullPage {
     contentSection.className = 'full-page-content-section';
 
     // OPTIMISTIC RENDERING: Render non-product UI immediately
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      contentSection.appendChild(bundleBanners);
+    }
+
     // 0. Render promo banner at the very top (before step timeline)
     const promoBanner = this.createPromoBanner();
     if (promoBanner) {
@@ -1055,6 +1061,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
     this.ensureStandardPresetRuntimeStyles();
     this.ensureClassicPresetRuntimeStyles();
     this.ensureCompactPresetRuntimeStyles();
@@ -1063,6 +1070,11 @@ class BundleWidgetFullPage {
     // Hide the bottom footer — sidebar replaces it
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
+    }
+
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      this.elements.stepsContainer.appendChild(bundleBanners);
     }
 
     // ABOVE: Step timeline sits above the two-column area (same horizontal position as
@@ -2103,6 +2115,41 @@ class BundleWidgetFullPage {
     img.alt = this._escapeHTML(step.name || '');
     wrapper.appendChild(img);
     return wrapper;
+  }
+
+  createBundleBanners() {
+    const desktopBannerUrl = this.selectedBundle?.bundleBannerDesktopUrl;
+    const mobileBannerUrl = this.selectedBundle?.bundleBannerMobileUrl;
+    if (!desktopBannerUrl && !mobileBannerUrl) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bundle-banners';
+    if (desktopBannerUrl) wrapper.classList.add('bundle-banners--has-desktop');
+    if (mobileBannerUrl) wrapper.classList.add('bundle-banners--has-mobile');
+
+    const appendBannerImage = (url, className) => {
+      if (!url) return;
+      const img = document.createElement('img');
+      img.className = className;
+      img.src = url;
+      img.alt = '';
+      img.loading = 'lazy';
+      wrapper.appendChild(img);
+    };
+
+    appendBannerImage(desktopBannerUrl, 'bundle-banner-image bundle-banner-image--desktop');
+    appendBannerImage(mobileBannerUrl, 'bundle-banner-image bundle-banner-image--mobile');
+
+    return wrapper;
+  }
+
+  ensureBundleBannerRuntimeStyles() {
+    if (document.getElementById('wpb-fpb-bundle-banner-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-bundle-banner-runtime-styles';
+    style.textContent = `.bundle-banners{width:100%;margin:0 auto 20px;overflow:hidden;display:block}.bundle-banner-image{width:100%;height:auto;display:block;object-fit:cover}.bundle-banner-image--mobile{display:none}.bundle-banners:not(.bundle-banners--has-desktop) .bundle-banner-image--mobile{display:block}@media (max-width: 639px){.bundle-banners{margin-bottom:16px}.bundle-banners--has-mobile .bundle-banner-image--desktop{display:none}.bundle-banners--has-mobile .bundle-banner-image--mobile{display:block}}`;
+    document.head.appendChild(style);
   }
 
   // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
@@ -6410,7 +6457,8 @@ class BundleWidgetFullPage {
   _mergeBundleSettings(settings) {
     if (!settings || !this.selectedBundle) return;
     const keys = [
-      'promoBannerBgImage', 'promoBannerBgImageCrop', 'loadingGif',
+      'promoBannerBgImage', 'promoBannerBgImageCrop',
+      'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
       'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
     ];
     for (const key of keys) {

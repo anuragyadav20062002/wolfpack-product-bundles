@@ -512,6 +512,8 @@ export async function updateBundleProductMetafields(
     },
     promoBannerBgImage: bundleConfiguration.promoBannerBgImage ?? null,
     promoBannerBgImageCrop: bundleConfiguration.promoBannerBgImageCrop ?? null,
+    bundleBannerDesktopUrl: bundleConfiguration.bundleBannerDesktopUrl ?? null,
+    bundleBannerMobileUrl: bundleConfiguration.bundleBannerMobileUrl ?? null,
     loadingGif: bundleConfiguration.loadingGif ?? null,
     floatingBadgeEnabled: bundleConfiguration.floatingBadgeEnabled ?? false,
     floatingBadgeText: bundleConfiguration.floatingBadgeText ?? '',

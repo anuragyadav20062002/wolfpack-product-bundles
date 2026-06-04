@@ -428,6 +428,8 @@ function buildBundleSettings(bundle: any) {
   return {
     promoBannerBgImage: bundle.promoBannerBgImage ?? null,
     promoBannerBgImageCrop: bundle.promoBannerBgImageCrop ?? null,
+    bundleBannerDesktopUrl: bundle.bundleBannerDesktopUrl ?? null,
+    bundleBannerMobileUrl: bundle.bundleBannerMobileUrl ?? null,
     loadingGif: bundle.loadingGif ?? null,
     showStepTimeline: bundle.showStepTimeline ?? null,
     floatingBadgeEnabled: bundle.floatingBadgeEnabled ?? false,

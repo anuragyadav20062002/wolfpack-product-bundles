@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.68
+ * Version : 2.9.69
  * Built   : 2026-06-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.68';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.69';
 (function() {
   'use strict';
 
@@ -3820,11 +3820,17 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
     this.ensureCompactPresetRuntimeStyles();
     this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section';
+
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      contentSection.appendChild(bundleBanners);
+    }
 
     const promoBanner = this.createPromoBanner();
     if (promoBanner) {
@@ -3896,6 +3902,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
     this.ensureStandardPresetRuntimeStyles();
     this.ensureClassicPresetRuntimeStyles();
     this.ensureCompactPresetRuntimeStyles();
@@ -3903,6 +3910,11 @@ class BundleWidgetFullPage {
 
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
+    }
+
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      this.elements.stepsContainer.appendChild(bundleBanners);
     }
 
     if (this.config.showStepTimeline) {
@@ -4915,6 +4927,41 @@ class BundleWidgetFullPage {
     img.alt = this._escapeHTML(step.name || '');
     wrapper.appendChild(img);
     return wrapper;
+  }
+
+  createBundleBanners() {
+    const desktopBannerUrl = this.selectedBundle?.bundleBannerDesktopUrl;
+    const mobileBannerUrl = this.selectedBundle?.bundleBannerMobileUrl;
+    if (!desktopBannerUrl && !mobileBannerUrl) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bundle-banners';
+    if (desktopBannerUrl) wrapper.classList.add('bundle-banners--has-desktop');
+    if (mobileBannerUrl) wrapper.classList.add('bundle-banners--has-mobile');
+
+    const appendBannerImage = (url, className) => {
+      if (!url) return;
+      const img = document.createElement('img');
+      img.className = className;
+      img.src = url;
+      img.alt = '';
+      img.loading = 'lazy';
+      wrapper.appendChild(img);
+    };
+
+    appendBannerImage(desktopBannerUrl, 'bundle-banner-image bundle-banner-image--desktop');
+    appendBannerImage(mobileBannerUrl, 'bundle-banner-image bundle-banner-image--mobile');
+
+    return wrapper;
+  }
+
+  ensureBundleBannerRuntimeStyles() {
+    if (document.getElementById('wpb-fpb-bundle-banner-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-bundle-banner-runtime-styles';
+    style.textContent = `.bundle-banners{width:100%;margin:0 auto 20px;overflow:hidden;display:block}.bundle-banner-image{width:100%;height:auto;display:block;object-fit:cover}.bundle-banner-image--mobile{display:none}.bundle-banners:not(.bundle-banners--has-desktop) .bundle-banner-image--mobile{display:block}@media (max-width: 639px){.bundle-banners{margin-bottom:16px}.bundle-banners--has-mobile .bundle-banner-image--desktop{display:none}.bundle-banners--has-mobile .bundle-banner-image--mobile{display:block}}`;
+    document.head.appendChild(style);
   }
 
   getStepQuantityHint(step) {
@@ -8905,7 +8952,8 @@ class BundleWidgetFullPage {
   _mergeBundleSettings(settings) {
     if (!settings || !this.selectedBundle) return;
     const keys = [
-      'promoBannerBgImage', 'promoBannerBgImageCrop', 'loadingGif',
+      'promoBannerBgImage', 'promoBannerBgImageCrop',
+      'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
       'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
     ];
     for (const key of keys) {
