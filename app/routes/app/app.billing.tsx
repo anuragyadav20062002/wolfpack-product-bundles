@@ -247,7 +247,7 @@ export default function BillingPage() {
                     <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{t("billing.route.currentPlan")}</h2>
                     {isGrowPlan && (
                       <div className={billingStyles.starIcon}>
-                        <s-icon name="star-filled" />
+                        <s-icon type="check" />
                       </div>
                     )}
                   </s-stack>
@@ -275,7 +275,7 @@ export default function BillingPage() {
                   <s-badge
                     tone={
                       usagePercentage >= 90 ? "critical" :
-                      usagePercentage >= 70 ? "attention" : "success"
+                      usagePercentage >= 70 ? "warning" : "success"
                     }
                   >
                     {t("billing.route.bundleCount", { current: data.subscription?.currentBundleCount || 0, limit: data.subscription?.bundleLimit || 0 })}
@@ -383,7 +383,7 @@ export default function BillingPage() {
                 {PLANS[currentPlan].features.map((feature, index) => (
                   <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
                     <div className={billingStyles.checkIcon}>
-                      <s-icon name="check-circle" />
+                      <s-icon type="check" />
                     </div>
                     <span style={{ fontSize: 14 }}>{feature}</span>
                   </s-stack>

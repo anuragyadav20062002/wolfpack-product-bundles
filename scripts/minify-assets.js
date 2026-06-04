@@ -107,6 +107,9 @@ function minifyCSS(css) {
   // 5. Strip trailing semicolons immediately before }
   css = css.replace(/;}/g, '}');
 
+  // 5b. Shorten six-digit repeat hex colors (#ffffff -> #fff).
+  css = css.replace(/#([0-9a-fA-F])\1([0-9a-fA-F])\2([0-9a-fA-F])\3\b/g, '#$1$2$3');
+
   // 6. Remove empty rules (selector followed by empty braces, including @-rules)
   //    Repeat until no more empty rules remain (handles nested empties).
   let prev;
@@ -117,6 +120,31 @@ function minifyCSS(css) {
 
   // 7. Trim
   return css.trim();
+}
+
+function resolveCssImports(sourcePath, css, seen = new Set()) {
+  const sourceDir = dirname(sourcePath);
+
+  return css.replace(
+    /@import\s+(?:url\()?['"]([^'")]+)['"]\)?\s*;/g,
+    (statement, importPath) => {
+      if (/^(?:https?:)?\/\//.test(importPath) || importPath.startsWith('/')) {
+        return statement;
+      }
+
+      const resolvedPath = join(sourceDir, importPath);
+      if (seen.has(resolvedPath)) {
+        return '';
+      }
+      if (!existsSync(resolvedPath)) {
+        throw new Error(`Missing CSS import ${importPath} from ${sourcePath}`);
+      }
+
+      seen.add(resolvedPath);
+      const importedCss = readFileSync(resolvedPath, 'utf-8');
+      return resolveCssImports(resolvedPath, importedCss, seen);
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -350,7 +378,7 @@ function processFile(fileEntry, type) {
 
   let minified;
   if (type === 'css') {
-    minified = minifyCSS(original);
+    minified = minifyCSS(resolveCssImports(sourcePath, original));
   } else {
     minified = minifyJS(original);
   }

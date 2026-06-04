@@ -397,15 +397,14 @@ export default function Dashboard() {
   const [selectedLanguage, setSelectedLanguage] = useState(activeLanguage);
 
   const handleLanguageChange = useCallback((locale: string) => {
-    setSelectedLanguage(normalizeAdminLocale(locale));
-  }, []);
-
-  const handleSaveLanguage = useCallback(() => {
+    const nextLocale = normalizeAdminLocale(locale);
+    setSelectedLanguage(nextLocale);
+    if (nextLocale === activeLanguage) return;
     const formData = new FormData();
     formData.append("intent", "saveAdminLocale");
-    formData.append("locale", selectedLanguage);
+    formData.append("locale", nextLocale);
     localeFetcher.submit(formData, { method: "post" });
-  }, [localeFetcher, selectedLanguage]);
+  }, [activeLanguage, localeFetcher]);
 
   useEffect(() => {
     if (localeFetcher.state !== "idle" || !localeFetcher.data) return;
@@ -540,8 +539,8 @@ export default function Dashboard() {
         id="delete-bundle-modal"
         heading={t("dashboard.deleteModal.heading")}
       >
-        <s-button slot="primaryAction" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
-        <s-button slot="secondaryActions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
+        <s-button slot="primary-action" variant="primary" tone="critical" loading={fetcher.state === 'submitting' || undefined} onClick={handleConfirmDelete}>{t("dashboard.deleteModal.delete")}</s-button>
+        <s-button slot="secondary-actions" onClick={handleCancelDelete}>{t("dashboard.deleteModal.cancel")}</s-button>
         <s-text color="subdued">
           {t("dashboard.deleteModal.body")}
         </s-text>
@@ -568,14 +567,6 @@ export default function Dashboard() {
                     <s-option key={o.value} value={o.value}>{o.label}</s-option>
                   ))}
                 </s-select>
-                <s-button
-                  variant="secondary"
-                  onClick={handleSaveLanguage}
-                  loading={localeFetcher.state !== "idle" || undefined}
-                  disabled={selectedLanguage === activeLanguage || undefined}
-                >
-                  {t("dashboard.language.save")}
-                </s-button>
               </div>
               <s-button icon="refresh" onClick={handleSyncCollections}>{t("dashboard.header.syncCollections")}</s-button>
               <s-button variant="primary" onClick={() => navigate('/app/bundles/create')}>{t("dashboard.header.createBundle")}</s-button>

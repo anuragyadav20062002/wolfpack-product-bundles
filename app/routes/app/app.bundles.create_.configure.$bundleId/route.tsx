@@ -665,6 +665,19 @@ export default function WizardConfigureStep() {
     };
   }, []);
 
+  useEffect(() => {
+    const modal = localeModalRef.current;
+    if (!modal) return;
+    if (localeModalOpen) {
+      modal.showOverlay?.();
+      modal.show?.();
+    } else {
+      modal.hideOverlay?.();
+      modal.hide?.();
+      modal.close?.();
+    }
+  }, [localeModalOpen]);
+
   // ── Step 03 Pricing state ─────────────────────────────────────
   const pricing = useBundlePricing({
     initialPricing: bundle.pricing
@@ -1610,26 +1623,26 @@ export default function WizardConfigureStep() {
                             label="Step Name"
                             placeholder="Eg:- Add product"
                             value={currentStep.name}
-                            onInput={(e: Event) =>
+                            onInput={(e) =>
                               updateCurrent(
                                 "name",
                                 (e.target as HTMLInputElement).value
                               )
                             }
-                            autoComplete="off"
+                            autocomplete="off"
                           />
                           <div>
                             <s-text-field
                               label="Product Page Title"
                               placeholder="Eg:- Customized T-shirt Bundle for you"
                               value={currentStep.pageTitle}
-                              onInput={(e: Event) =>
+                              onInput={(e) =>
                                 updateCurrent(
                                   "pageTitle",
                                   (e.target as HTMLInputElement).value
                                 )
                               }
-                              autoComplete="off"
+                              autocomplete="off"
                             />
                             <s-text color="subdued">
                               This text will appear as the page header right after the navigation bar.
@@ -1663,12 +1676,12 @@ export default function WizardConfigureStep() {
                                   className={styles.categoryNameInput}
                                   value={cat.name}
                                   placeholder="Category name"
-                                  onInput={(e: Event) => updateStepCategory(cat.id, "name", (e.target as HTMLInputElement).value)}
+                                  onChange={(e) => updateStepCategory(cat.id, "name", e.currentTarget.value)}
                                 />
                                 <div style={{ display: "flex", gap: 4 }}>
                                   {currentStep.StepCategory.length > 1 && (
                                     <s-button
-                                      variant="plain"
+                                      variant="tertiary"
                                       icon="delete"
                                       tone="critical"
                                       onClick={() => deleteCategory(cat.id)}
@@ -1710,7 +1723,7 @@ export default function WizardConfigureStep() {
                                           <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                             {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover" }} />}
                                             <s-text>{p.title}</s-text>
-                                            <s-button variant="plain" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
+                                            <s-button variant="tertiary" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "products", cat.products.filter((x: any) => x.id !== p.id))} />
                                           </div>
                                         ))}
                                       </div>
@@ -1728,7 +1741,7 @@ export default function WizardConfigureStep() {
                                         {cat.collections.map((c: any) => (
                                           <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                                             <s-text>{c.title}</s-text>
-                                            <s-button variant="plain" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
+                                            <s-button variant="tertiary" icon="delete" tone="critical" onClick={() => updateStepCategory(cat.id, "collections", cat.collections.filter((x: any) => x.id !== c.id))} />
                                           </div>
                                         ))}
                                       </div>
@@ -1742,7 +1755,7 @@ export default function WizardConfigureStep() {
                       </div>
 
                       <div style={{ marginTop: 8 }}>
-                        <s-button variant="plain" icon="plus" onClick={addCategory}>
+                        <s-button variant="tertiary" icon="plus" onClick={addCategory}>
                           Add Category
                         </s-button>
                       </div>
@@ -1770,7 +1783,7 @@ export default function WizardConfigureStep() {
                             <div key={rule.id} className={styles.ruleRow}>
                               <s-select
                                 label="Type"
-                                onChange={(e: Event) =>
+                                onChange={(e) =>
                                   updateRule(
                                     rule.id,
                                     "conditionType",
@@ -1794,7 +1807,7 @@ export default function WizardConfigureStep() {
 
                               <s-select
                                 label="Operator"
-                                onChange={(e: Event) =>
+                                onChange={(e) =>
                                   updateRule(
                                     rule.id,
                                     "conditionOperator",
@@ -1818,13 +1831,11 @@ export default function WizardConfigureStep() {
                                 )}
                               </s-select>
 
-                              <s-text-field
+                              <s-number-field
                                 label="Value"
                                 value={rule.conditionValue}
-                                type="number"
-                                min="0"
-                                autoComplete="off"
-                                onInput={(e: Event) =>
+                                min={0}
+                                onInput={(e) =>
                                   updateRule(
                                     rule.id,
                                     "conditionValue",
@@ -1866,7 +1877,7 @@ export default function WizardConfigureStep() {
                     ref={statusSelectRef}
                     label="Bundle status"
                     labelAccessibilityVisibility="exclusive"
-                    onChange={(e: Event) =>
+                    onChange={(e) =>
                       setBundleStatus(
                         (e.target as HTMLSelectElement).value
                       )
@@ -1931,7 +1942,7 @@ export default function WizardConfigureStep() {
                   <s-switch
                     accessibilityLabel="Enable bundle discounts"
                     checked={pricing.discountEnabled || undefined}
-                    onChange={(e: Event) =>
+                    onChange={(e) =>
                       pricing.toggleDiscountEnabled(
                         (e.target as HTMLInputElement).checked
                       )
@@ -1965,7 +1976,7 @@ export default function WizardConfigureStep() {
                     {/* Discount Type */}
                     <s-select
                       label="Discount Type"
-                      onChange={(e: Event) => {
+                      onChange={(e) => {
                         const nextType = (e.target as HTMLSelectElement).value as DiscountMethod;
                         pricing.changeDiscountType(nextType);
                         pricing.setDiscountRules([createNewPricingRule(nextType)]);
@@ -2001,7 +2012,7 @@ export default function WizardConfigureStep() {
                                 Rule #{index + 1}
                               </h4>
                               <s-button
-                                variant="plain"
+                                variant="tertiary"
                                 tone="critical"
                                 accessibilityLabel={`Remove rule ${index + 1}`}
                                 onClick={() =>
@@ -2018,8 +2029,8 @@ export default function WizardConfigureStep() {
                                   <s-number-field
                                     label="Minimum quantity of items"
                                     value={String(rule.customerBuys ?? 2)}
-                                    min="1"
-                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                    min={1}
+                                    onInput={(e) => pricing.updateDiscountRule(rule.id, {
                                       customerBuys: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
                                     })}
                                   />
@@ -2027,21 +2038,21 @@ export default function WizardConfigureStep() {
                                   <s-number-field
                                     label="Quantity"
                                     value={String(rule.customerGets ?? 1)}
-                                    min="1"
-                                    helpText="Customer must add the quantity of items specified above to their cart"
-                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                    min={1}
+                                    onInput={(e) => pricing.updateDiscountRule(rule.id, {
                                       customerGets: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
                                     })}
                                   />
+                                  <s-text color="subdued">Customer must add the quantity of items specified above to their cart</s-text>
                                 <div className={styles.bxyRewardGrid}>
                                   <s-number-field
                                     label="Discount value"
                                     value={String(rule.discountValue ?? 0)}
-                                    min="0"
+                                    min={0}
                                     suffix={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "%" : undefined}
                                     prefix={(rule.bxyDiscountType ?? 'percentage') === 'fixed_amount' ? "₹" : undefined}
-                                    max={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? "100" : undefined}
-                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                    max={(rule.bxyDiscountType ?? 'percentage') === 'percentage' ? 100 : undefined}
+                                    onInput={(e) => pricing.updateDiscountRule(rule.id, {
                                       discountValue: (() => {
                                         const nextValue = Number((e.target as HTMLInputElement).value) || 0;
                                         return (rule.bxyDiscountType ?? 'percentage') === 'percentage'
@@ -2053,7 +2064,7 @@ export default function WizardConfigureStep() {
                                   <s-select
                                     label="Discount type"
                                     value={rule.bxyDiscountType ?? 'percentage'}
-                                    onChange={(e: Event) => {
+                                    onChange={(e) => {
                                       const bxyDiscountType = (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount';
                                       const currentValue = Number(rule.discountValue ?? 0) || 0;
                                       pricing.updateDiscountRule(rule.id, {
@@ -2070,7 +2081,7 @@ export default function WizardConfigureStep() {
                                     <s-select
                                       label="Apply Discount to"
                                       value={rule.bxyApplyMode ?? 'lowest_priced'}
-                                      onChange={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                      onChange={(e) => pricing.updateDiscountRule(rule.id, {
                                         bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
                                       })}
                                     >
@@ -2084,17 +2095,17 @@ export default function WizardConfigureStep() {
                                   <s-number-field
                                     label="Number of Products in Bundle"
                                     value={String(rule.conditionValue ?? 0)}
-                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                    onInput={(e) => pricing.updateDiscountRule(rule.id, {
                                       conditionValue: Number((e.target as HTMLInputElement).value) || 0
                                     })}
-                                    min="0"
+                                    min={0}
                                   />
                                   <s-number-field
                                     label="Price"
                                     value={String(centsToAmount(rule.discountValue))}
-                                    min="0"
+                                    min={0}
                                     prefix="₹"
-                                    onInput={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                    onInput={(e) => pricing.updateDiscountRule(rule.id, {
                                       discountValue: amountToCents(Number((e.target as HTMLInputElement).value) || 0)
                                     })}
                                   />
@@ -2104,7 +2115,7 @@ export default function WizardConfigureStep() {
                                   <s-select
                                     label="Discount on"
                                     value={rule.conditionType ?? 'quantity'}
-                                    onChange={(e: Event) => pricing.updateDiscountRule(rule.id, {
+                                    onChange={(e) => pricing.updateDiscountRule(rule.id, {
                                       conditionType: (e.target as HTMLSelectElement).value as 'quantity' | 'amount'
                                     })}
                                   >
@@ -2114,9 +2125,9 @@ export default function WizardConfigureStep() {
                                   <s-number-field
                                     label={"is greater than or equal to"}
                                     value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
-                                    min="0"
+                                    min={0}
                                     prefix={rule.conditionType === 'amount' ? "₹" : undefined}
-                                    onInput={(e: Event) => {
+                                    onInput={(e) => {
                                       const num = Number((e.target as HTMLInputElement).value) || 0;
                                       pricing.updateDiscountRule(rule.id, {
                                         conditionValue: rule.conditionType === 'amount' ? amountToCents(num) : num
@@ -2134,11 +2145,11 @@ export default function WizardConfigureStep() {
                                           ? rule.discountValue
                                           : centsToAmount(rule.discountValue)
                                       )}
-                                      min="0"
-                                      max={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
+                                      min={0}
+                                      max={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? 100 : undefined}
                                       suffix={pricing.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
                                       prefix={pricing.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
-                                      onInput={(e: Event) => {
+                                      onInput={(e) => {
                                       const num = Number((e.target as HTMLInputElement).value) || 0;
                                       pricing.updateDiscountRule(rule.id, {
                                         discountValue: pricing.discountType === DiscountMethod.PERCENTAGE_OFF
@@ -2159,7 +2170,7 @@ export default function WizardConfigureStep() {
                         <s-button
                           icon="plus"
                           variant="secondary"
-                          style={{ width: "100%" }}
+	                          inlineSize="fill"
                           onClick={pricing.addDiscountRule}
                         >
                           Add rule
@@ -2190,7 +2201,7 @@ export default function WizardConfigureStep() {
                   <s-switch
                     accessibilityLabel="Show discount progress bar"
                     checked={showProgressBar || undefined}
-                    onChange={(e: Event) =>
+                    onChange={(e) =>
                       setShowProgressBar(
                         (e.target as HTMLInputElement).checked
                       )
@@ -2210,7 +2221,7 @@ export default function WizardConfigureStep() {
                   <s-switch
                     accessibilityLabel="Enable discount messaging"
                     checked={discountMessagingEnabled || undefined}
-                    onChange={(e: Event) =>
+                    onChange={(e) =>
                       setDiscountMessagingEnabled(
                         (e.target as HTMLInputElement).checked
                       )
@@ -2224,23 +2235,23 @@ export default function WizardConfigureStep() {
                       label="Progress message"
                       placeholder="Add {{conditionText}} to get {{discountText}}"
                       value={progressMessage}
-                      onInput={(e: Event) =>
+                      onInput={(e) =>
                         setProgressMessage(
                           (e.target as HTMLInputElement).value
                         )
                       }
-                      autoComplete="off"
+                      autocomplete="off"
                     />
                     <s-text-field
                       label="Qualified message"
                       placeholder="Congratulations! You got {{discountText}}!"
                       value={qualifiedMessage}
-                      onInput={(e: Event) =>
+                      onInput={(e) =>
                         setQualifiedMessage(
                           (e.target as HTMLInputElement).value
                         )
                       }
-                      autoComplete="off"
+                      autocomplete="off"
                     />
                     <s-text color="subdued">
                       {"Variables: {{conditionText}}, {{discountText}}, {{bundleName}}"}
@@ -2359,7 +2370,7 @@ export default function WizardConfigureStep() {
                 <s-switch
                   accessibilityLabel="Show search bar"
                   checked={searchBarEnabled || undefined}
-                  onChange={(e: Event) =>
+                  onChange={(e) =>
                     setSearchBarEnabled((e.target as HTMLInputElement).checked)
                   }
                 />
@@ -2418,9 +2429,7 @@ export default function WizardConfigureStep() {
       {/* Multi-Language Modal */}
       <s-modal
         ref={localeModalRef}
-        open={localeModalOpen || undefined}
-        label="Multi Language"
-        suppressHydrationWarning
+        heading="Multi Language"
       >
         <p style={{ margin: 0, fontSize: 14, color: "#6b7280" }}>
           Translating: <strong>Step {currentIdx + 1}</strong> —{" "}
@@ -2440,7 +2449,7 @@ export default function WizardConfigureStep() {
                 ref={localeSelectRef}
                 label="Language"
                 labelAccessibilityVisibility="exclusive"
-                onChange={(e: Event) =>
+                onChange={(e) =>
                   setSelectedLocale(
                     (e.target as HTMLSelectElement).value
                   )
@@ -2477,13 +2486,13 @@ export default function WizardConfigureStep() {
                     currentStep.name || "Step name in English"
                   }
                   value={getTranslation(selectedLocale)}
-                  onInput={(e: Event) =>
+                  onInput={(e) =>
                     setTranslation(
                       selectedLocale,
                       (e.target as HTMLInputElement).value
                     )
                   }
-                  autoComplete="off"
+                  autocomplete="off"
                 />
               </div>
             )}
@@ -2491,14 +2500,14 @@ export default function WizardConfigureStep() {
         )}
 
         <s-button
-          slot="primaryAction"
+          slot="primary-action"
           variant="primary"
           onClick={() => setLocaleModalOpen(false)}
         >
           Save
         </s-button>
         <s-button
-          slot="secondaryActions"
+          slot="secondary-actions"
           variant="secondary"
           onClick={() => setLocaleModalOpen(false)}
         >
@@ -2574,8 +2583,8 @@ export default function WizardConfigureStep() {
                           label="Tab label"
                           value={filter.label}
                           placeholder="e.g. Shirts"
-                          autoComplete="off"
-                          onInput={(e: Event) =>
+                          autocomplete="off"
+                          onInput={(e) =>
                             updateFilter(filtersDrawerStepIdx, filter.id, {
                               label: (e.target as HTMLInputElement).value,
                             })
@@ -2584,7 +2593,7 @@ export default function WizardConfigureStep() {
                         <s-select
                           label="Collection"
                           value={filter.collectionHandle}
-                          onChange={(e: Event) =>
+                          onChange={(e) =>
                             updateFilter(filtersDrawerStepIdx, filter.id, {
                               collectionHandle: (e.target as HTMLSelectElement)
                                 .value,
@@ -2690,8 +2699,8 @@ export default function WizardConfigureStep() {
                           label="Field Label"
                           value={cf.label}
                           placeholder="e.g. Gift message, Engraving text"
-                          autoComplete="off"
-                          onInput={(e: Event) =>
+                          autocomplete="off"
+                          onInput={(e) =>
                             updateCustomField(cf.id, {
                               label: (e.target as HTMLInputElement).value,
                             })
@@ -2699,7 +2708,7 @@ export default function WizardConfigureStep() {
                         />
                         <s-select
                           label="Type"
-                          onChange={(e: Event) =>
+                          onChange={(e) =>
                             updateCustomField(cf.id, {
                               fieldType: (e.target as HTMLSelectElement)
                                 .value as CustomFieldDef["fieldType"],
@@ -2729,7 +2738,7 @@ export default function WizardConfigureStep() {
                       <s-checkbox
                         label="Required"
                         checked={cf.required || undefined}
-                        onChange={(e: Event) =>
+                        onChange={(e) =>
                           updateCustomField(cf.id, {
                             required: (e.target as HTMLInputElement).checked,
                           })
@@ -2745,7 +2754,7 @@ export default function WizardConfigureStep() {
                             labelAccessibilityVisibility="exclusive"
                             value={cf.options.join("\n")}
                             placeholder={"Option 1\nOption 2\nOption 3"}
-                            onInput={(e: Event) =>
+                            onInput={(e) =>
                               updateCustomField(cf.id, {
                                 options: (
                                   e.target as HTMLTextAreaElement

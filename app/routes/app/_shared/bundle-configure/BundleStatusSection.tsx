@@ -11,7 +11,7 @@ const statusOptions = [...BUNDLE_STATUS_OPTIONS];
  * Uses the imperative ref pattern to keep the web component in sync.
  */
 const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => {
-  const selectRef = useRef<HTMLElement>(null);
+  const selectRef = useRef<any>(null);
   const { t } = useTranslation();
   const handleChange = (event: Event) => {
     const nextValue = (

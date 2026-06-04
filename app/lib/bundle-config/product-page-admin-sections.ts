@@ -16,6 +16,7 @@ export interface ProductPageThemeEditorDeepLinkInput {
   blockHandle: string;
   bundleId: string;
   productHandle?: string | null;
+  productPreviewUrl?: string | null;
   template: ProductPageThemeTemplateOption;
 }
 
@@ -141,13 +142,38 @@ export function resolveProductPageThemeEditorTemplateHandle(template: ProductPag
   return handle;
 }
 
+export function resolveProductPageTemplateSuffix(template: ProductPageThemeTemplateOption): string | null {
+  const handle = resolveProductPageThemeEditorTemplateHandle(template);
+  if (handle === "product") return null;
+  return handle.startsWith("product.") ? handle.replace(/^product\./, "") : handle;
+}
+
+function resolveProductPageThemeEditorPreviewPath(input: ProductPageThemeEditorDeepLinkInput): string | null {
+  const previewUrl = typeof input.productPreviewUrl === "string" ? input.productPreviewUrl.trim() : "";
+  if (previewUrl !== "") {
+    if (previewUrl.startsWith("/")) return previewUrl;
+    try {
+      const parsed = new URL(previewUrl);
+      const path = `${parsed.pathname}${parsed.search}`;
+      if (path !== "/") return path;
+    } catch {
+      // Fall back to the product handle below when Shopify returns an unexpected URL shape.
+    }
+  }
+
+  return typeof input.productHandle === "string" && input.productHandle.trim() !== ""
+    ? `/products/${input.productHandle.trim()}`
+    : null;
+}
+
 export function buildProductPageThemeEditorDeepLink(input: ProductPageThemeEditorDeepLinkInput): string {
   const shopDomain = input.shop.includes(".myshopify.com")
     ? input.shop
     : `${input.shop}.myshopify.com`;
   const templateHandle = resolveProductPageThemeEditorTemplateHandle(input.template);
-  const previewPath = typeof input.productHandle === "string" && input.productHandle.trim() !== ""
-    ? `&previewPath=${encodeURIComponent(`/products/${input.productHandle}`)}`
+  const resolvedPreviewPath = resolveProductPageThemeEditorPreviewPath(input);
+  const previewPath = resolvedPreviewPath
+    ? `&previewPath=${encodeURIComponent(resolvedPreviewPath)}`
     : "";
 
   return `https://${shopDomain}/admin/themes/current/editor?template=${templateHandle}&addAppBlockId=${input.apiKey}/${input.blockHandle}&target=newAppsSection&bundleId=${input.bundleId}${previewPath}`;

@@ -8,6 +8,7 @@ import {
   buildProductPageThemeEditorDeepLink,
   deriveCommonSellingPlanGroups,
   extractSellingPlanValidationSources,
+  resolveProductPageTemplateSuffix,
   resolveProductPageThemeEditorTemplateHandle,
 } from "../../../app/lib/bundle-config/product-page-admin-sections";
 
@@ -172,6 +173,30 @@ describe("product page admin sections", () => {
     ).toBe(
       "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product.custom-merch-template&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts%2Fcodex-ppb-2026-05-21"
     );
+  });
+
+  it("uses Shopify's product preview path when the parent product is draft", () => {
+    expect(
+      buildProductPageThemeEditorDeepLink({
+        shop: "agent-5sfidg3m.myshopify.com",
+        apiKey: "app-key",
+        blockHandle: "bundle-product-page",
+        bundleId: "bundle-123",
+        productHandle: "codex-ppb-2026-05-21",
+        productPreviewUrl: "https://abc123.shopifypreview.com/products_preview?preview_key=secret",
+        template: {
+          handle: "product.custom-merch-template",
+          fullKey: "templates/product.custom-merch-template.json",
+        },
+      })
+    ).toBe(
+      "https://agent-5sfidg3m.myshopify.com/admin/themes/current/editor?template=product.custom-merch-template&addAppBlockId=app-key/bundle-product-page&target=newAppsSection&bundleId=bundle-123&previewPath=%2Fproducts_preview%3Fpreview_key%3Dsecret"
+    );
+  });
+
+  it("resolves Shopify product template suffixes from selected product template handles", () => {
+    expect(resolveProductPageTemplateSuffix({ handle: "product" })).toBeNull();
+    expect(resolveProductPageTemplateSuffix({ handle: "product.custom-merch-template" })).toBe("custom-merch-template");
   });
 
   it("lists only merchant theme product templates without generated fallback rows", () => {

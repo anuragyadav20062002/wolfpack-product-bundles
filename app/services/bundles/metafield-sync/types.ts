@@ -77,6 +77,8 @@ export interface BundleUiConfig {
   messaging: BundleUiMessaging;
   promoBannerBgImage?: string | null;
   promoBannerBgImageCrop?: string | null;
+  bundleBannerDesktopUrl?: string | null;
+  bundleBannerMobileUrl?: string | null;
   loadingGif?: string | null;
   /** Widget style for product-page bundle.
    *  Absent = 'classic' — backward-compatible default. */

@@ -13,14 +13,15 @@ describe("FPB Bundle Settings Slot Icon contract", () => {
   it("opens the icon picker in-place instead of navigating to Step Setup", () => {
     expect(slotIconSource).toContain("Change Icon");
     expect(slotIconSource).not.toContain('handleSectionChange("step_setup")');
-    expect(slotIconSource).toContain("setShowIconPickerForStep(prev => prev === settingsStep.id ? null : settingsStep.id)");
-    expect(slotIconSource).toContain("showIconPickerForStep === settingsStep.id");
+    expect(slotIconSource).toContain("setShowSlotIconPicker(true)");
+    expect(slotIconSource).toContain("showSlotIconPicker");
   });
 
-  it("writes Slot Icon changes through the existing stepImage contract", () => {
+  it("writes Slot Icon changes through the bundle-level productSlotIconUrl contract", () => {
     expect(slotIconSource).toContain("<FilePicker");
-    expect(slotIconSource).toContain("value={(settingsStep as any).stepImage ?? null}");
-    expect(slotIconSource).toContain('stepsState.updateStepField(settingsStep.id, "stepImage", url)');
-    expect(slotIconSource).toContain('stepsState.updateStepField(settingsStep.id, "stepImage", null)');
+    expect(slotIconSource).toContain("value={productSlotIconUrl || null}");
+    expect(slotIconSource).toContain("setProductSlotIconUrl(url ?? \"\")");
+    expect(slotIconSource).toContain("setProductSlotIconUrl(\"\")");
+    expect(slotIconSource).not.toContain("stepImage");
   });
 });

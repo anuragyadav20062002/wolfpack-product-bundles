@@ -495,7 +495,7 @@ function PixelStatusCard({ pixelActive }: { pixelActive: boolean }) {
                 }}
               />
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>UTM Pixel Tracking</h2>
-              <s-badge tone={active ? "success" : "new"}>{active ? "Active" : "Not active"}</s-badge>
+              <s-badge tone={active ? "success" : "neutral"}>{active ? "Active" : "Not active"}</s-badge>
             </s-stack>
             {active ? (
               <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
@@ -556,10 +556,10 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
         direction: (pctPpDiff > 0 ? "positive" : pctPpDiff < 0 ? "negative" : "neutral") as "positive" | "negative" | "neutral",
       };
 
-  function deltaTone(dir: string): "success" | "critical" | "new" {
+  function deltaTone(dir: string): "success" | "critical" | "neutral" {
     if (dir === "positive") return "success";
     if (dir === "negative") return "critical";
-    return "new";
+    return "neutral";
   }
 
   return (
@@ -573,7 +573,7 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
         {compare && (revDelta.label !== "—" ? (
           <s-badge tone={deltaTone(revDelta.direction)}>{`${revDelta.label} vs prev`}</s-badge>
         ) : (
-          <s-badge tone="new">{"— no prior data"}</s-badge>
+          <s-badge tone="neutral">{"— no prior data"}</s-badge>
         ))}
       </div>
 
@@ -583,7 +583,7 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
         {compare && (ordDelta.label !== "—" ? (
           <s-badge tone={deltaTone(ordDelta.direction)}>{`${ordDelta.label} vs prev`}</s-badge>
         ) : (
-          <s-badge tone="new">{"— no prior data"}</s-badge>
+          <s-badge tone="neutral">{"— no prior data"}</s-badge>
         ))}
       </div>
 
@@ -595,7 +595,7 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
         {compare && (aovDelta && aovDelta.label !== "—" ? (
           <s-badge tone={deltaTone(aovDelta.direction)}>{`${aovDelta.label} vs prev`}</s-badge>
         ) : (
-          <s-badge tone="new">{"— no prior data"}</s-badge>
+          <s-badge tone="neutral">{"— no prior data"}</s-badge>
         ))}
       </div>
 
@@ -607,7 +607,7 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
         {compare && (pctDelta ? (
           <s-badge tone={deltaTone(pctDelta.direction)}>{`${pctDelta.label} vs prev`}</s-badge>
         ) : (
-          <s-badge tone="new">{"— no prior data"}</s-badge>
+          <s-badge tone="neutral">{"— no prior data"}</s-badge>
         ))}
       </div>
     </div>
@@ -748,22 +748,23 @@ function BundleLeaderboardCard({ leaderboard }: { leaderboard: LeaderboardRow[] 
         {leaderboard.map((row) => {
           const isLong = row.bundleName.length > 40;
           const nameCell = isLong ? (
-            <s-tooltip content={row.bundleName}>
-              <span className={`${styles.dataCell} ${styles.primary} ${styles.truncate}`}>
-                {row.bundleName}
-                {row.bundleStatus === "archived" && (
-                  <span style={{ marginLeft: 6 }}>
-                    <s-badge tone="attention">Archived</s-badge>
-                  </span>
-                )}
-              </span>
-            </s-tooltip>
+            <span
+              className={`${styles.dataCell} ${styles.primary} ${styles.truncate}`}
+              title={row.bundleName}
+            >
+              {row.bundleName}
+              {row.bundleStatus === "archived" && (
+                <span style={{ marginLeft: 6 }}>
+                  <s-badge tone="warning">Archived</s-badge>
+                </span>
+              )}
+            </span>
           ) : (
             <span className={`${styles.dataCell} ${styles.primary}`}>
               {row.bundleName}
               {row.bundleStatus === "archived" && (
                 <span style={{ marginLeft: 6 }}>
-                  <s-badge tone="attention">Archived</s-badge>
+                  <s-badge tone="warning">Archived</s-badge>
                 </span>
               )}
             </span>

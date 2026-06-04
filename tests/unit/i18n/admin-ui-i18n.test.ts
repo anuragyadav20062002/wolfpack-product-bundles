@@ -84,7 +84,17 @@ describe("shop-wide Admin locale wiring contract", () => {
     expect(dashboard).toContain('formData.append("intent", "saveAdminLocale")');
   });
 
-  it("does not write browser cache from the unsaved dropdown change handler", () => {
+  it("saves from the language dropdown without rendering a separate Save button", () => {
+    const handler = dashboard.match(
+      /const handleLanguageChange = useCallback\([\s\S]*?\n  \}, \[[^\]]*\]\);/,
+    )?.[0];
+    expect(handler).toBeDefined();
+    expect(handler).toContain('formData.append("intent", "saveAdminLocale")');
+    expect(dashboard).not.toContain('onClick={handleSaveLanguage}');
+    expect(dashboard).not.toContain('{t("dashboard.language.save")}');
+  });
+
+  it("does not write browser cache from the dropdown change handler", () => {
     const handler = dashboard.match(
       /const handleLanguageChange = useCallback\([\s\S]*?\n  \}, \[[^\]]*\]\);/,
     )?.[0];

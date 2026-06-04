@@ -135,28 +135,28 @@ export const BundlePricingExtension: FunctionComponent = () => {
         {hasDiscount && (
           <>
             <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-              <s-text type="small" color="subdued">Retail Price:</s-text>
-              <s-text type="small" color="subdued">
+              <s-text color="subdued">Retail Price:</s-text>
+              <s-text color="subdued">
                 {formatMoney(totalRetailCents)}
               </s-text>
             </s-stack>
 
             <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-              <s-text type="small">Bundle Price:</s-text>
+              <s-text>Bundle Price:</s-text>
               <s-text type="strong">
                 {formatMoney(totalBundleCents)}
               </s-text>
             </s-stack>
 
             <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-              <s-text type="small" color="subdued">Percentage Savings:</s-text>
+              <s-text color="subdued">Percentage Savings:</s-text>
               <s-text tone="success">
                 {formatPercent(discountPercent)}%
               </s-text>
             </s-stack>
 
             <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-              <s-text type="small" color="subdued">Exact Savings:</s-text>
+              <s-text color="subdued">Exact Savings:</s-text>
               <s-text type="strong" tone="success">
                 {formatMoney(totalSavingsCents)}
               </s-text>
@@ -165,7 +165,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
         )}
 
         {!hasDiscount && (
-          <s-text type="small" color="subdued">
+          <s-text color="subdued">
             Bundle ({componentCount} items)
           </s-text>
         )}
@@ -176,7 +176,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
         <s-stack direction="block" gap="small-100">
           <s-clickable onClick={toggleExpand}>
             <s-stack direction="inline" gap="small-200" justifyContent="start">
-              <s-text type="small" color="subdued">
+              <s-text color="subdued">
                 {isExpanded ? `Hide ${components.length} Items ▲` : `Show ${components.length} Items ▼`}
               </s-text>
             </s-stack>
@@ -192,26 +192,26 @@ export const BundlePricingExtension: FunctionComponent = () => {
                       {component.quantity}x {component.title || `Item ${index + 1}`}
                     </s-text>
                     <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text type="small" color="subdued">Retail Price:</s-text>
-                      <s-text type="small" color="subdued">
+                      <s-text color="subdued">Retail Price:</s-text>
+                      <s-text color="subdued">
                         {formatMoney(component.retailPrice * component.quantity)}
                       </s-text>
                     </s-stack>
                     <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text type="small" color="subdued">Bundle Price:</s-text>
-                      <s-text type="small">
+                      <s-text color="subdued">Bundle Price:</s-text>
+                      <s-text>
                         {formatMoney(component.bundlePrice * component.quantity)}
                       </s-text>
                     </s-stack>
                     <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text type="small" color="subdued">Percentage Savings:</s-text>
-                      <s-text type="small" tone="success">
+                      <s-text color="subdued">Percentage Savings:</s-text>
+                      <s-text tone="success">
                         {formatPercent(component.discountPercent)}%
                       </s-text>
                     </s-stack>
                     <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text type="small" color="subdued">Exact Savings:</s-text>
-                      <s-text type="small" tone="success">
+                      <s-text color="subdued">Exact Savings:</s-text>
+                      <s-text tone="success">
                         {formatMoney(component.savingsAmount * component.quantity)}
                       </s-text>
                     </s-stack>

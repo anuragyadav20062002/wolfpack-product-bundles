@@ -16,4 +16,5 @@ export {
   handleValidateWidgetPlacement,
   handleUpdateBundleDesignTemplate,
   handleValidateSellingPlanGroups,
+  handleAssignProductTemplate,
 } from './handlers.server';

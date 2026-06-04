@@ -775,3 +775,24 @@ Align FPB and PPB storefront behavior with EB end-to-end across APIs, DTOs, cons
 - Verification passed: `npx jest tests/unit/lib/bundle-config-contracts.test.ts` returned 27/27 passing tests.
 - Verification passed: `npx eslint --max-warnings 9999 tests/unit/lib/bundle-config-contracts.test.ts` returned 0 errors, and graphify rebuild completed.
 - Note: ESLint is not configured for `.md` specs; the updated `test-spec/eb-ui-clone-rewrite.spec.md` is docs/test-spec evidence and was not linted as TypeScript.
+
+### 2026-06-03 23:15 - FPB/PPB storefront template e2e sweep and FPB page title end fix
+- Ran FPB template cycling through Admin Select Template for Standard, Classic, Compact, and Horizontal and captured storefront runtime/screenshots in `/tmp`.
+- Confirmed FPB templates persist via app proxy/runtime attributes, while embedded Liquid `data-bundle-config` can lag until proxy refresh.
+- Ran PPB Simplified storefront verification; attempted PPB template cycling through Admin, iframe refresh, app-origin tab, and iframe form POST. PPB cycling remains blocked because the Select Template control did not open via accessibility click and cross-origin form POST returned 500.
+- Next: remove host Shopify page title/hero from FPB storefront pages, then rebuild widget assets and report template parity counts.
+
+### 2026-06-03 23:24 - Implemented FPB host page title suppression
+- Updated `app/assets/bundle-widget-full-page.js` so FPB pages hide the enclosing Shopify title section when the page `h1` exactly matches the bundle name and the section does not contain the widget.
+- Bumped `WIDGET_VERSION` to `2.9.56` in `scripts/build-widget-bundles.js` and ran `npm run build:widgets` to regenerate widget assets.
+- Checks: `node --check app/assets/bundle-widget-full-page.js`; `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js` (files are ignored by project config, zero errors); graph rebuild completed.
+
+### 2026-06-03 23:32 - Replace FPB page title hiding with DOM removal
+- Current FPB page title handling only hides matched Shopify title elements/sections with `display: none`.
+- Required behavior: remove the matched host page title section/block entirely for FPB storefront pages.
+- Next: update the FPB widget helper, bump widget version, rebuild widget assets, and commit the slice.
+
+### 2026-06-03 23:36 - Completed FPB page title DOM removal
+- Replaced FPB host page title suppression from `display: none` to DOM removal for matched title elements, title-only containers, and exact bundle-name Shopify title sections.
+- Bumped widget version to `2.9.57` and rebuilt widget assets with `npm run build:widgets`.
+- Checks: `node --check app/assets/bundle-widget-full-page.js`; `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js scripts/build-widget-bundles.js` (ignored by project config, zero errors); graph rebuild completed.

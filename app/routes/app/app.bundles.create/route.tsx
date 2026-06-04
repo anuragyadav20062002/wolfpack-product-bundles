@@ -1,10 +1,11 @@
 import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
-import { useState, useRef, useEffect, useCallback, Fragment } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import { handleCreateBundle } from "../app.dashboard/handlers/handlers.server";
 import { BundleType } from "../../../constants/bundle";
+import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -15,7 +16,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await requireAdminSession(request);
   const formData = await request.formData();
-  const result = await handleCreateBundle(admin, session, formData);
+  const bundleName = formData.get("bundleName");
+  const bundleType = formData.get("bundleType");
+  const createFormData = new FormData();
+  if (typeof bundleName === "string") createFormData.set("bundleName", bundleName);
+  if (typeof bundleType === "string") createFormData.set("bundleType", bundleType);
+  const result = await handleCreateBundle(admin, session, createFormData);
   const data = await result.json();
   if (data.success && data.redirectTo) {
     if (!data.showFirstLoadTour) {
@@ -27,23 +33,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   return json(data, { status: result.status });
 };
 
-const STEPS = [
-  { num: "01", key: "details" },
-  { num: "02", key: "configuration" },
-  { num: "03", key: "pricing" },
-  { num: "04", key: "assets" },
-];
-
 export default function CreateBundleWizard() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const { t } = useTranslation();
   const isSubmitting = navigation.state === "submitting";
 
-  const [bundleType, setBundleType] = useState<string>(BundleType.PRODUCT_PAGE);
+  const [bundleType, setBundleType] = useState<string | null>(null);
+  const [bundleTypeError, setBundleTypeError] = useState<string | null>(null);
   const [bundleNameError, setBundleNameError] = useState<string | null>(null);
 
   const bundleNameRef = useRef<any>(null);
+  const nameModalRef = useRef<any>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [bundleName, setBundleName] = useState("");
 
@@ -57,11 +58,28 @@ export default function CreateBundleWizard() {
 
   const serverError = actionData && "error" in actionData ? String(actionData.error) : null;
 
+  useEffect(() => {
+    if (serverError) showPolarisModal(nameModalRef);
+  }, [serverError]);
+
   const handleSelectBundleType = useCallback((type: string) => {
     setBundleType(type);
+    setBundleTypeError(null);
   }, []);
 
-  const handleNext = useCallback(() => {
+  const handleBundleNameInput = useCallback((e: Event) => {
+    setBundleName((e.target as HTMLInputElement).value ?? "");
+  }, []);
+
+  const handleContinue = useCallback(() => {
+    if (!bundleType) {
+      setBundleTypeError(t("createBundle.validation.required"));
+      return;
+    }
+    showPolarisModal(nameModalRef);
+  }, [bundleType, t]);
+
+  const handleSaveName = useCallback(() => {
     const name = bundleName.trim();
     if (!name) {
       setBundleNameError(t("createBundle.validation.required"));
@@ -99,49 +117,9 @@ export default function CreateBundleWizard() {
           </s-button>
         </div>
 
-        <div className={styles.stepIndicator}>
-          {STEPS.map((step, idx) => (
-            <Fragment key={step.num}>
-              {idx > 0 && <div className={styles.stepConnector} />}
-              <div className={styles.stepItem}>
-                {idx === 0 ? (
-                  <>
-                    <div className={styles.stepCircleActive}>{step.num}</div>
-                    <span className={styles.stepLabelActive}>{t(`createBundle.steps.${step.key}`)}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className={styles.stepNumFuture}>{step.num}</span>
-                    <span className={styles.stepLabelFuture}>{t(`createBundle.steps.${step.key}`)}</span>
-                  </>
-                )}
-              </div>
-            </Fragment>
-          ))}
-        </div>
-
-        <Form method="post" className={styles.form}>
-          <div className={styles.formContent}>
-            <div className={styles.fieldsGroup}>
-              <s-text-field
-                ref={bundleNameRef}
-                label={t("createBundle.fields.name")}
-                name="bundleName"
-                placeholder={t("createBundle.fields.namePlaceholder")}
-                autocomplete="off"
-                error={bundleNameError ?? serverError ?? undefined}
-              />
-              <s-text-area
-                label={t("createBundle.fields.description")}
-                name="description"
-                placeholder={t("createBundle.fields.descriptionPlaceholder")}
-                rows={3}
-                autocomplete="off"
-              />
-            </div>
-
+        <div className={styles.formContent}>
             <div className={styles.formSection}>
-              <h2 className={styles.sectionTitle}>{t("createBundle.bundleType.heading")}</h2>
+              {bundleTypeError && <p className={styles.errorText}>{bundleTypeError}</p>}
               <div className={styles.bundleTypeGrid}>
                 <div
                   className={`${styles.bundleTypeCard} ${bundleType === BundleType.PRODUCT_PAGE ? styles.bundleTypeCardSelected : ""}`}
@@ -186,18 +164,45 @@ export default function CreateBundleWizard() {
                 </div>
               </div>
             </div>
+        </div>
 
-            <input type="hidden" name="bundleType" value={bundleType} />
-
+        <s-modal
+          ref={nameModalRef}
+          id="create-bundle-name-modal"
+          heading={bundleType === BundleType.FULL_PAGE
+            ? t("createBundle.bundleType.fullPage.title")
+            : t("createBundle.bundleType.productPage.title")}
+        >
+          <Form method="post" className={styles.modalForm}>
+            <s-text-field
+              ref={bundleNameRef}
+              label={t("createBundle.fields.name")}
+              name="bundleName"
+              placeholder={t("createBundle.fields.namePlaceholder")}
+              autocomplete="off"
+              onInput={handleBundleNameInput}
+              onChange={handleBundleNameInput}
+              error={bundleNameError ?? serverError ?? undefined}
+            />
+            {bundleType && <input type="hidden" name="bundleType" value={bundleType} />}
             <button ref={submitButtonRef} type="submit" style={{ display: "none" }} aria-hidden="true" />
-          </div>
-        </Form>
+            <div className={styles.modalActions}>
+              <s-button
+                variant="primary"
+                loading={isSubmitting || undefined}
+                onClick={handleSaveName}
+              >
+                Save
+              </s-button>
+            </div>
+          </Form>
+        </s-modal>
 
         <div className={styles.wizardFooter}>
           <s-button
             variant="primary"
-            loading={isSubmitting || undefined}
-            onClick={handleNext}
+            disabled={!bundleType || undefined}
+            onClick={handleContinue}
           >
             {t("createBundle.actions.next")}
           </s-button>

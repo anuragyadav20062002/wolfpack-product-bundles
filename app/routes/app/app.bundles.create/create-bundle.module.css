@@ -31,74 +31,6 @@
 
 /* ── Step Indicator ──────────────────────────────────────── */
 
-.stepIndicator {
-  display: flex;
-  align-items: center;
-  margin-bottom: 32px;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  gap: 0;
-  padding-bottom: 4px;
-}
-
-.stepItem {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.stepCircleActive {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #1a1a1a;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.stepLabelActive {
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1a1a;
-  line-height: 1.35;
-  white-space: pre-line;
-  max-width: 90px;
-}
-
-.stepNumFuture {
-  font-size: 14px;
-  font-weight: 400;
-  color: #6d7175;
-  flex-shrink: 0;
-}
-
-.stepLabelFuture {
-  font-size: 14px;
-  font-weight: 400;
-  color: #6d7175;
-}
-
-.stepConnector {
-  flex: 1;
-  min-width: 28px;
-  border-top: 2px dashed #c9cccf;
-  margin: 0 8px;
-  align-self: center;
-}
-
-/* ── Form ────────────────────────────────────────────────── */
-
-.form {
-  display: contents;
-}
-
 .formContent {
   display: flex;
   flex-direction: column;
@@ -109,6 +41,22 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.modalForm {
+  display: block;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.errorText {
+  margin: -4px 0 0;
+  color: #8e1f0b;
+  font-size: 13px;
 }
 
 /* ── Form Section ────────────────────────────────────────── */

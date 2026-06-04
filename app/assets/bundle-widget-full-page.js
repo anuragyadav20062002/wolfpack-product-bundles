@@ -79,6 +79,10 @@ import {
 import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
+import { installStandardTemplate } from './widgets/full-page/templates/standard-template.js';
+import { installClassicTemplate } from './widgets/full-page/templates/classic-template.js';
+import { installCompactTemplate } from './widgets/full-page/templates/compact-template.js';
+import { installHorizontalTemplate } from './widgets/full-page/templates/horizontal-template.js';
 
 
 class BundleWidgetFullPage {
@@ -959,6 +963,7 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
     this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
     this.ensureCompactPresetRuntimeStyles();
     this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
@@ -967,6 +972,11 @@ class BundleWidgetFullPage {
     contentSection.className = 'full-page-content-section';
 
     // OPTIMISTIC RENDERING: Render non-product UI immediately
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      contentSection.appendChild(bundleBanners);
+    }
+
     // 0. Render promo banner at the very top (before step timeline)
     const promoBanner = this.createPromoBanner();
     if (promoBanner) {
@@ -1051,12 +1061,20 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
     this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
+    this.ensureStandardPresetRuntimeStyles();
+    this.ensureClassicPresetRuntimeStyles();
     this.ensureCompactPresetRuntimeStyles();
     this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     // Hide the bottom footer — sidebar replaces it
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
+    }
+
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      this.elements.stepsContainer.appendChild(bundleBanners);
     }
 
     // ABOVE: Step timeline sits above the two-column area (same horizontal position as
@@ -1251,7 +1269,8 @@ class BundleWidgetFullPage {
   }
 
   usesCompactMobileSummaryTray() {
-    return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+    const preset = this.getFullPageDesignPreset();
+    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT');
   }
 
   _populateCompactMobileSummaryTray(sheet) {
@@ -1716,7 +1735,6 @@ class BundleWidgetFullPage {
 
     const cta = document.createElement('div');
     cta.className = 'fpb-sidebar-tier-cta';
-    cta.style.cssText = 'width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #000;border-radius:8px;padding:12px 16px;margin:4px 0 12px;text-align:center;font-weight:800;line-height:1.25;';
 
     if (label) {
       const title = document.createElement('div');
@@ -2098,6 +2116,41 @@ class BundleWidgetFullPage {
     return wrapper;
   }
 
+  createBundleBanners() {
+    const desktopBannerUrl = this.selectedBundle?.bundleBannerDesktopUrl;
+    const mobileBannerUrl = this.selectedBundle?.bundleBannerMobileUrl;
+    if (!desktopBannerUrl && !mobileBannerUrl) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bundle-banners';
+    if (desktopBannerUrl) wrapper.classList.add('bundle-banners--has-desktop');
+    if (mobileBannerUrl) wrapper.classList.add('bundle-banners--has-mobile');
+
+    const appendBannerImage = (url, className) => {
+      if (!url) return;
+      const img = document.createElement('img');
+      img.className = className;
+      img.src = url;
+      img.alt = '';
+      img.loading = 'lazy';
+      wrapper.appendChild(img);
+    };
+
+    appendBannerImage(desktopBannerUrl, 'bundle-banner-image bundle-banner-image--desktop');
+    appendBannerImage(mobileBannerUrl, 'bundle-banner-image bundle-banner-image--mobile');
+
+    return wrapper;
+  }
+
+  ensureBundleBannerRuntimeStyles() {
+    if (document.getElementById('wpb-fpb-bundle-banner-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-bundle-banner-runtime-styles';
+    style.textContent = `.bundle-banners{width:100%;margin:0 auto 20px;overflow:hidden;display:block}.bundle-banner-image{width:100%;height:auto;display:block;object-fit:cover}.bundle-banner-image--mobile{display:none}.bundle-banners:not(.bundle-banners--has-desktop) .bundle-banner-image--mobile{display:block}@media (max-width: 639px){.bundle-banners{margin-bottom:16px}.bundle-banners--has-mobile .bundle-banner-image--desktop{display:none}.bundle-banners--has-mobile .bundle-banner-image--mobile{display:block}}`;
+    document.head.appendChild(style);
+  }
+
   // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
   getStepQuantityHint(step) {
     if (!step) return null;
@@ -2237,6 +2290,18 @@ class BundleWidgetFullPage {
   // Hide the page title element from the theme template
   // This prevents showing the page name (e.g., "StrangeObjectsinmirror") above the bundle
   hidePageTitle() {
+    const configName = (() => {
+      if (this.selectedBundle?.name) return this.selectedBundle.name;
+      try {
+        const rawConfig = this.container?.dataset?.bundleConfig;
+        if (!rawConfig) return '';
+        return JSON.parse(rawConfig)?.name || '';
+      } catch (e) {
+        return '';
+      }
+    })();
+    const normalizedConfigName = String(configName || '').trim().toLowerCase();
+
     // Try multiple selectors to find the page title element
     const selectors = [
       '.main-page-title',
@@ -2254,8 +2319,8 @@ class BundleWidgetFullPage {
           // Check if this is a page title element (not our promo banner)
           if (el.closest('.promo-banner')) return;
 
-          // Hide the element
-          el.style.display = 'none';
+          // Remove the element entirely so the host page title is not left in the DOM.
+          el.remove();
         });
       } catch (e) {
         // Selector might be invalid, continue to next
@@ -2270,29 +2335,30 @@ class BundleWidgetFullPage {
       const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
 
       if (hasPageTitle && !hasOtherContent) {
-        container.style.display = 'none';
+        container.remove();
       }
     });
-  }
 
-  ensureCompactPresetRuntimeStyles() {
-    if (this.getFullPageDesignPreset() !== 'COMPACT') return;
-    if (document.getElementById('wpb-fpb-compact-runtime-styles')) return;
+    if (!normalizedConfigName) return;
 
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-compact-runtime-styles';
-    style.textContent = '@media (min-width:769px){.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-product-grid{grid-template-columns:repeat(2,220px);gap:12px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-card{width:220px;min-width:220px;height:332px;min-height:332px;padding:6px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-image{width:208px;height:208px;min-height:208px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-content-wrapper{width:208px}}';
-    document.head.appendChild(style);
-  }
+    document.querySelectorAll('h1').forEach(el => {
+      if (el.closest('.bundle-widget-container, .promo-banner')) return;
+      const normalizedTitle = String(el.textContent || '').trim().toLowerCase();
+      if (normalizedTitle !== normalizedConfigName) return;
 
-  ensureHorizontalSidePanelSlotRuntimeStyles() {
-    if (this.getFullPageDesignPreset() !== 'HORIZONTAL') return;
-    if (document.getElementById('wpb-fpb-horizontal-slots-runtime-styles')) return;
+      const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
+      if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
+        titleSection.remove();
+        return;
+      }
 
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-horizontal-slots-runtime-styles';
-    style.textContent = '.side-panel-products--slots{display:flex;flex:initial;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:12px;margin:12px 0 18px;overflow:visible}.side-panel-product-slot{width:70px;height:70px;flex:0 0 70px;padding:0;border:0;border-radius:8px;overflow:visible;background:transparent;display:block}.side-panel-product-slot .side-panel-product-img-wrap,.side-panel-product-slot .side-panel-product-img,.side-panel-product-slot .side-panel-product-img-placeholder{width:70px;height:70px;border-radius:8px}.side-panel-product-slot .side-panel-product-info,.side-panel-product-slot .side-panel-product-price{display:none}.side-panel-product-slot .side-panel-product-remove{position:absolute;top:-8px;right:-8px;width:20px;height:20px;padding:2px;border-radius:50%;background:#fff;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.18)}.side-panel-product-slot--empty{display:flex;align-items:center;justify-content:center;border:2px dashed #111;color:#111;font-size:24px;font-weight:400;line-height:1;box-sizing:border-box}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content{width:100%;max-width:none;align-items:stretch}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid{width:100%;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;overflow:visible;padding-top:20px}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card{width:auto;min-width:0;height:128px;min-height:128px;grid-template-columns:112px minmax(0,1fr);align-items:stretch}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image{width:112px;height:124px;min-height:124px}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-content-wrapper{width:auto;min-height:124px;display:grid;grid-template-rows:auto auto 1fr auto}.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-add-btn{min-width:145px;height:32px;justify-self:end}';
-    document.head.appendChild(style);
+      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
+        titleBlock.remove();
+      } else {
+        el.remove();
+      }
+    });
   }
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
@@ -2375,14 +2441,11 @@ class BundleWidgetFullPage {
       ${tierBadges}
     `;
 
-    // Apply per-bundle promo banner background image directly as inline style.
-    // Using banner.style.backgroundImage (not a CSS custom property) so the inline style
-    // always wins regardless of theme stylesheet specificity.
     const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
     if (bgImageUrl) {
-      banner.style.backgroundImage = `url('${bgImageUrl}')`;
-      banner.style.backgroundSize = 'cover';
-      banner.style.backgroundPosition = 'center';
+      banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
+      banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
+      banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
 
       // Apply crop offsets when crop data is present (overrides cover/center defaults above)
       const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
@@ -2396,8 +2459,8 @@ class BundleWidgetFullPage {
           const bgSize = `${(1 / cw) * 100}%`;
           const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
           const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-          banner.style.backgroundSize = bgSize;
-          banner.style.backgroundPosition = `${posX}% ${posY}%`;
+          banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
+          banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
         } catch (_e) {
           // Invalid crop JSON — fall back to default cover/center set above
         }
@@ -2935,10 +2998,6 @@ class BundleWidgetFullPage {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
-
-    if (this.getFullPageDesignPreset() === 'DEFAULT') {
-      cardElement.querySelector('.product-price-row')?.remove();
-    }
 
     if (renderSelectedQuantityBadge) {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);
@@ -4533,6 +4592,7 @@ class BundleWidgetFullPage {
   renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement = "default") {
     const bar = document.createElement('div');
     bar.className = `fpb-discount-progress fpb-dp-step_based` + (isReached ? ' reached' : '');
+    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const stepList = document.createElement('div');
     stepList.className = 'fpb-discount-step-list';
@@ -4559,7 +4619,6 @@ class BundleWidgetFullPage {
     track.className = 'fpb-dp-track';
     const fill = document.createElement('div');
     fill.className = 'fpb-dp-fill';
-    fill.style.width = progressPct + '%';
     track.appendChild(fill);
 
     bar.appendChild(stepList);
@@ -4640,6 +4699,7 @@ class BundleWidgetFullPage {
 
     const bar = document.createElement('div');
     bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
+    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const row = document.createElement('div');
     row.className = 'fpb-dp-row';
@@ -4656,7 +4716,6 @@ class BundleWidgetFullPage {
     track.className = 'fpb-dp-track';
     const fill = document.createElement('div');
     fill.className = 'fpb-dp-fill';
-    fill.style.width = progressPct + '%';
     track.appendChild(fill);
 
     bar.appendChild(row);
@@ -6255,14 +6314,11 @@ class BundleWidgetFullPage {
   }
 
   resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
-    const pricingMethod = String(bundle?.pricing?.method || '').toLowerCase();
     const boxSelection = bundle?.boxSelection;
     const boxSelectionEnabled = boxSelection?.isEnabled === true && Array.isArray(boxSelection.rules) && boxSelection.rules.length > 0;
     if (
       this.resolveFullPageLayout(bundle) === 'footer_side' &&
-      this.getFullPageDesignPreset(bundle) === 'DEFAULT' &&
-      bundle?.pricing?.enabled === true &&
-      pricingMethod === 'fixed_amount_off' &&
+      (this.getFullPageDesignPreset(bundle) === 'DEFAULT' || this.getFullPageDesignPreset(bundle) === 'CLASSIC' || this.getFullPageDesignPreset(bundle) === 'COMPACT') &&
       !boxSelectionEnabled
     ) {
       return 'icon';
@@ -6397,7 +6453,8 @@ class BundleWidgetFullPage {
   _mergeBundleSettings(settings) {
     if (!settings || !this.selectedBundle) return;
     const keys = [
-      'promoBannerBgImage', 'promoBannerBgImageCrop', 'loadingGif',
+      'promoBannerBgImage', 'promoBannerBgImageCrop',
+      'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
       'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
     ];
     for (const key of keys) {
@@ -6670,6 +6727,11 @@ class BundleWidgetFullPage {
     }
   }
 }
+
+installStandardTemplate(BundleWidgetFullPage);
+installClassicTemplate(BundleWidgetFullPage);
+installCompactTemplate(BundleWidgetFullPage);
+installHorizontalTemplate(BundleWidgetFullPage);
 
 // ============================================================================
 // INITIALIZATION

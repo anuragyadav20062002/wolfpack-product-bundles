@@ -735,6 +735,10 @@
   composes: categoryRuleBody from "./bundle-configure-shared.module.css";
 }
 
+.categoryRuleInlinePanel {
+  composes: categoryRuleInlinePanel from "./bundle-configure-shared.module.css";
+}
+
 .categoryRuleHelp {
   composes: categoryRuleHelp from "./bundle-configure-shared.module.css";
 }
@@ -1593,6 +1597,22 @@
   composes: categoryActions from "./bundle-configure-shared.module.css";
 }
 
+.categoryIconButton {
+  composes: categoryIconButton from "./bundle-configure-shared.module.css";
+}
+
+.categoryTextButton {
+  composes: categoryTextButton from "./bundle-configure-shared.module.css";
+}
+
+.categoryDangerButton {
+  composes: categoryDangerButton from "./bundle-configure-shared.module.css";
+}
+
+.categoryDeleteIconButton {
+  composes: categoryIconButton categoryDeleteIconButton from "./bundle-configure-shared.module.css";
+}
+
 .categoryAccordion {
   composes: categoryAccordion from "./bundle-configure-shared.module.css";
 }
@@ -1603,6 +1623,14 @@
 
 .categoryAccordionBody {
   composes: categoryAccordionBody from "./bundle-configure-shared.module.css";
+}
+
+.categoryInputStack {
+  composes: categoryInputStack from "./bundle-configure-shared.module.css";
+}
+
+.categoryInputHelp {
+  composes: categoryInputHelp from "./bundle-configure-shared.module.css";
 }
 
 .categoryDragOver {
@@ -1617,9 +1645,9 @@
   height: 28px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: 7px;
   background: transparent;
-  color: #6b7280;
+  color: #303030;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.12s, color 0.12s;
@@ -1631,14 +1659,15 @@
 }
 
 .catNameRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 34px;
 }
 
 .categoryFieldGroup {
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .categoryFieldGroup .catNameRow {
@@ -1646,38 +1675,56 @@
 }
 
 .categoryFieldLabel {
-  display: block;
-  margin: 0 0 6px;
-  color: #303030;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 18px;
+  composes: categoryFieldLabel from "./bundle-configure-shared.module.css";
 }
 
 .categoryVariantControl {
   margin-top: 12px;
 }
 
+.categoryProductList {
+  composes: categoryProductList from "./bundle-configure-shared.module.css";
+}
+
+.categoryProductRow {
+  composes: categoryProductRow from "./bundle-configure-shared.module.css";
+}
+
+.categoryProductImage {
+  composes: categoryProductImage from "./bundle-configure-shared.module.css";
+}
+
+.categoryProductTitle {
+  composes: categoryProductTitle from "./bundle-configure-shared.module.css";
+}
+
 .categoryNameInput {
   composes: categoryNameInput from "./bundle-configure-shared.module.css";
 }
 
+.categoryPickerHelp {
+  composes: categoryPickerHelp from "./bundle-configure-shared.module.css";
+}
+
 .tabRow {
   display: flex;
-  border-bottom: 1.5px solid #e5e7eb;
-  margin-bottom: 16px;
+  justify-content: center;
+  border-bottom: 1px solid #e3e3e3;
+  margin-bottom: 20px;
   gap: 0;
 }
 
 .tab {
-  padding: 10px 0;
-  margin-right: 24px;
+  min-width: 264px;
+  justify-content: center;
+  padding: 12px 0;
+  margin-right: 0;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: #303030;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1.5px;
+  margin-bottom: -1px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1690,14 +1737,16 @@
 .tab:hover { color: #374151; }
 
 .tabActive {
-  padding: 10px 0;
-  margin-right: 24px;
+  min-width: 264px;
+  justify-content: center;
+  padding: 12px 0;
+  margin-right: 0;
   font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
+  font-weight: 500;
+  color: #303030;
   cursor: pointer;
-  border-bottom: 2px solid #1a1a1a;
-  margin-bottom: -1.5px;
+  border-bottom: 2px solid #303030;
+  margin-bottom: -1px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1714,11 +1763,11 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 9px;
-  background: #1a1a1a;
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
+  border-radius: 999px;
+  background: #303030;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .productActions {
@@ -1726,7 +1775,7 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .stepSetupDivider {
@@ -1741,14 +1790,15 @@
   justify-content: center;
   gap: 6px;
   width: 100%;
-  padding: 9px 14px;
+  min-height: 28px;
+  padding: 4px 12px;
   border: 1px solid #c9cccf;
-  border-radius: 8px;
-  background: transparent;
+  border-radius: 7px;
+  background: #ffffff;
   color: #202223;
   font: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
   margin-top: 8px;

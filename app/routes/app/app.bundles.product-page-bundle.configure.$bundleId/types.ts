@@ -49,6 +49,8 @@ export interface LoaderData {
   shop: string;
   apiKey: string;
   blockHandle: string;
+  configureMode?: "create" | "edit";
+  showFirstLoadTour?: boolean;
 }
 
 export interface BundleProductCardProps {

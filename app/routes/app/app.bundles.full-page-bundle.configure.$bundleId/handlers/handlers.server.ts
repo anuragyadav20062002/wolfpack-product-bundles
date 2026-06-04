@@ -594,6 +594,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const validateQuantityPerProduct = validateQuantityPerProductRaw
       ? JSON.parse(validateQuantityPerProductRaw)
       : { isEnabled: false, allowedQuantity: 1 };
+    const quantityValidationEnabled = validateQuantityPerProduct?.isEnabled === true;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
     const stepConditionsData = formData.get("stepConditions") ? JSON.parse(formData.get("stepConditions") as string) : {};
@@ -675,7 +676,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const boxSelection = directBoxSelection
       ? {
           ...directBoxSelection,
-          validateBoxSelectionQuantity: productSlotsEnabled,
+          validateBoxSelectionQuantity: quantityValidationEnabled,
         }
       : null;
 

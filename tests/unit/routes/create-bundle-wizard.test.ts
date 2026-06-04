@@ -49,13 +49,13 @@ beforeEach(() => {
 });
 
 describe("app.bundles.create action", () => {
-  it("redirects to first-load configure page for a newly installed shop", async () => {
+  it("redirects product-page creates to the edit configure page with first-load signal", async () => {
     mockHandleCreateBundle.mockResolvedValue({
       json: () => ({
         success: true,
         bundleId: "bundle-abc",
         bundleProductId: "gid://shopify/Product/1",
-        redirectTo: "/app/bundles/create/configure/bundle-abc",
+        redirectTo: "/app/bundles/product-page-bundle/configure/bundle-abc?mode=create",
         showFirstLoadTour: true,
         widgetStatus: { checked: false },
       }),
@@ -71,17 +71,17 @@ describe("app.bundles.create action", () => {
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      "/app/bundles/create/configure/bundle-abc?first_load=true"
+      "/app/bundles/product-page-bundle/configure/bundle-abc?mode=create&first_load=true"
     );
   });
 
-  it("redirects without first_load for shops that are not first-install eligible", async () => {
+  it("redirects full-page creates to the edit configure page without first_load for ineligible shops", async () => {
     mockHandleCreateBundle.mockResolvedValue({
       json: () => ({
         success: true,
         bundleId: "bundle-def",
         bundleProductId: "gid://shopify/Product/2",
-        redirectTo: "/app/bundles/create/configure/bundle-def",
+        redirectTo: "/app/bundles/full-page-bundle/configure/bundle-def?mode=create",
         showFirstLoadTour: false,
         widgetStatus: { checked: false },
       }),
@@ -90,14 +90,14 @@ describe("app.bundles.create action", () => {
 
     const request = makeRequest({
       bundleName: "Existing Shop Bundle",
-      bundleType: "product_page",
+      bundleType: "full_page",
     });
 
     const response = await action({ request, params: {}, context: {} } as any);
 
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe(
-      "/app/bundles/create/configure/bundle-def"
+      "/app/bundles/full-page-bundle/configure/bundle-def?mode=create"
     );
   });
 
@@ -140,7 +140,7 @@ describe("app.bundles.create action", () => {
         success: true,
         bundleId: "bundle-xyz",
         bundleProductId: "gid://shopify/Product/2",
-        redirectTo: "/app/bundles/create/configure/bundle-xyz",
+        redirectTo: "/app/bundles/full-page-bundle/configure/bundle-xyz?mode=create",
         showFirstLoadTour: false,
         widgetStatus: { checked: false },
       }),
@@ -151,7 +151,6 @@ describe("app.bundles.create action", () => {
     const request = makeRequest({
       bundleName: "Full Page Test",
       bundleType: "full_page",
-      description: "A description",
     });
 
     await action({ request, params: {}, context: {} } as any);
@@ -160,5 +159,6 @@ describe("app.bundles.create action", () => {
     const [, , calledFormData] = mockHandleCreateBundle.mock.calls[0];
     expect(calledFormData.get("bundleName")).toBe("Full Page Test");
     expect(calledFormData.get("bundleType")).toBe("full_page");
+    expect(calledFormData.has("description")).toBe(false);
   });
 });

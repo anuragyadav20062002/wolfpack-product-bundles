@@ -144,7 +144,7 @@ export function MultiLanguageTextModal({
       <s-stack direction="block" gap="base">
         <s-stack direction="block" gap="small-100">
           <s-heading>{t("common.multiLanguage.translations")}</s-heading>
-          <s-text tone="subdued">{t("common.multiLanguage.helper")}</s-text>
+          <s-text color="subdued">{t("common.multiLanguage.helper")}</s-text>
         </s-stack>
         <s-heading>{t("common.multiLanguage.chooseLanguage")}</s-heading>
         <s-select
@@ -161,7 +161,7 @@ export function MultiLanguageTextModal({
 
         <s-stack direction="block" gap="small-100">
           <s-heading>{t("common.multiLanguage.customText")}</s-heading>
-          <s-text tone="subdued">{t("common.multiLanguage.inputHelper")}</s-text>
+          <s-text color="subdued">{t("common.multiLanguage.inputHelper")}</s-text>
         </s-stack>
         <s-heading>{t("common.multiLanguage.textSettings")}</s-heading>
 
@@ -179,7 +179,7 @@ export function MultiLanguageTextModal({
                 key={field.key}
                 label={field.label}
                 value={localeValues[field.key] ?? field.fallback}
-                autoComplete="off"
+                autocomplete="off"
                 onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLInputElement).value)}
               />
             )

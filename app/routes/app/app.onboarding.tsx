@@ -43,8 +43,8 @@ export default function Onboarding() {
   const [selectedTarget, setSelectedTarget] = useState("newAppsSection");
   const [showAdvancedPlacement, setShowAdvancedPlacement] = useState(false);
 
-  const templateSelectRef = useRef<HTMLElement>(null);
-  const targetSelectRef = useRef<HTMLElement>(null);
+  const templateSelectRef = useRef<any>(null);
+  const targetSelectRef = useRef<any>(null);
 
   // s-select doesn't apply the value attribute until after slot children mount
   useEffect(() => {
@@ -166,12 +166,12 @@ export default function Onboarding() {
               </div>
 
               <s-stack direction="block" gap="small-100">
-                <s-stack direction="inline" gap="small-100" wrap>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <span className={styles.featureBadge}>✦ Mix &amp; Match steps</span>
                   <span className={styles.featureBadge}>✦ Quantity conditions</span>
                   <span className={styles.featureBadge}>✦ Collection filters</span>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeGreen}`}>✦ Smart discount rules</span>
-                </s-stack>
+                </div>
               </s-stack>
 
               <s-stack direction="inline" gap="small-100">
@@ -231,18 +231,18 @@ export default function Onboarding() {
 
               <s-section>
                 <s-stack direction="block" gap="base">
-                  <s-select
-                    ref={templateSelectRef}
-                    label="Page template"
-                    helpText="Product pages are recommended — bundles are linked to specific products."
-                    onChange={(e: Event) =>
-                      setSelectedTemplate((e.target as HTMLSelectElement).value)
-                    }
-                  >
-                    <option value="product">Product Pages (Recommended)</option>
-                    <option value="index">Home Page</option>
-                    <option value="collection">Collection Pages</option>
-                  </s-select>
+	                  <s-select
+	                    ref={templateSelectRef}
+	                    label="Page template"
+	                    onChange={(e: Event) =>
+	                      setSelectedTemplate((e.target as HTMLSelectElement).value)
+	                    }
+	                  >
+	                    <s-text slot="details" color="subdued">Product pages are recommended — bundles are linked to specific products.</s-text>
+	                    <s-option value="product">Product Pages (Recommended)</s-option>
+	                    <s-option value="index">Home Page</s-option>
+	                    <s-option value="collection">Collection Pages</s-option>
+	                  </s-select>
 
                   <s-checkbox
                     label="Show advanced placement options"
@@ -253,17 +253,17 @@ export default function Onboarding() {
                   />
 
                   {showAdvancedPlacement && (
-                    <s-select
-                      ref={targetSelectRef}
-                      label="Block placement target"
-                      helpText="Where on the template the bundle widget block will be inserted."
-                      onChange={(e: Event) =>
-                        setSelectedTarget((e.target as HTMLSelectElement).value)
-                      }
-                    >
-                      <option value="newAppsSection">New Apps Section (Recommended)</option>
-                      <option value="mainSection">Main Section</option>
-                      <option value="sectionGroup:header">Header Section Group</option>
+	                    <s-select
+	                      ref={targetSelectRef}
+	                      label="Block placement target"
+	                      onChange={(e: Event) =>
+	                        setSelectedTarget((e.target as HTMLSelectElement).value)
+	                      }
+	                    >
+	                      <s-text slot="details" color="subdued">Where on the template the bundle widget block will be inserted.</s-text>
+	                      <s-option value="newAppsSection">New Apps Section (Recommended)</s-option>
+	                      <s-option value="mainSection">Main Section</s-option>
+	                      <s-option value="sectionGroup:header">Header Section Group</s-option>
                       <option value="sectionGroup:footer">Footer Section Group</option>
                     </s-select>
                   )}
@@ -336,16 +336,16 @@ export default function Onboarding() {
               </p>
 
               <s-stack direction="block" gap="small">
-                <s-stack direction="inline" gap="small-100" wrap>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <span className={styles.featureBadge}>🎨 Colors &amp; typography</span>
                   <span className={styles.featureBadge}>🖼️ Promo banner with images/GIFs</span>
                   <span className={styles.featureBadge}>⚡ Loading animations</span>
-                </s-stack>
-                <s-stack direction="inline" gap="small-100" wrap>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeGreen}`}>📐 Footer &amp; header layouts</span>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeGreen}`}>💅 Custom CSS injection</span>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeGreen}`}>🔢 Discount messaging templates</span>
-                </s-stack>
+                </div>
               </s-stack>
 
               <s-banner tone="info">
@@ -399,11 +399,11 @@ export default function Onboarding() {
               </p>
 
               <s-stack direction="block" gap="small">
-                <s-stack direction="inline" gap="small-100" wrap>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeOrange}`}>📊 Revenue by platform</span>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeOrange}`}>📈 Revenue by campaign</span>
                   <span className={`${styles.featureBadge} ${styles.featureBadgeOrange}`}>🎯 Top bundles by ad revenue</span>
-                </s-stack>
+                </div>
               </s-stack>
 
               <s-banner tone="info">
@@ -460,7 +460,7 @@ export default function Onboarding() {
               <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                 Our support team is here to help. Reach out any time and we&apos;ll get you sorted.
               </p>
-              <s-stack direction="inline" gap="small-100" wrap>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <s-button
                   onClick={() => {
                     if (window.$crisp) {
@@ -476,7 +476,7 @@ export default function Onboarding() {
                 <s-button onClick={() => navigate("/app/dashboard")}>
                   Skip to Dashboard
                 </s-button>
-              </s-stack>
+              </div>
             </s-stack>
           </s-section>
 
