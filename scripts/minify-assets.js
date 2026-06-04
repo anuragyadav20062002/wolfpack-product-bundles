@@ -107,6 +107,9 @@ function minifyCSS(css) {
   // 5. Strip trailing semicolons immediately before }
   css = css.replace(/;}/g, '}');
 
+  // 5b. Shorten six-digit repeat hex colors (#ffffff -> #fff).
+  css = css.replace(/#([0-9a-fA-F])\1([0-9a-fA-F])\2([0-9a-fA-F])\3\b/g, '#$1$2$3');
+
   // 6. Remove empty rules (selector followed by empty braces, including @-rules)
   //    Repeat until no more empty rules remain (handles nested empties).
   let prev;

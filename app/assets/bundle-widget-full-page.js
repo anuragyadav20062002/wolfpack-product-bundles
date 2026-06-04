@@ -1735,7 +1735,6 @@ class BundleWidgetFullPage {
 
     const cta = document.createElement('div');
     cta.className = 'fpb-sidebar-tier-cta';
-    cta.style.cssText = 'width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #000;border-radius:8px;padding:12px 16px;margin:4px 0 12px;text-align:center;font-weight:800;line-height:1.25;';
 
     if (label) {
       const title = document.createElement('div');
@@ -2442,14 +2441,11 @@ class BundleWidgetFullPage {
       ${tierBadges}
     `;
 
-    // Apply per-bundle promo banner background image directly as inline style.
-    // Using banner.style.backgroundImage (not a CSS custom property) so the inline style
-    // always wins regardless of theme stylesheet specificity.
     const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
     if (bgImageUrl) {
-      banner.style.backgroundImage = `url('${bgImageUrl}')`;
-      banner.style.backgroundSize = 'cover';
-      banner.style.backgroundPosition = 'center';
+      banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
+      banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
+      banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
 
       // Apply crop offsets when crop data is present (overrides cover/center defaults above)
       const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
@@ -2463,8 +2459,8 @@ class BundleWidgetFullPage {
           const bgSize = `${(1 / cw) * 100}%`;
           const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
           const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-          banner.style.backgroundSize = bgSize;
-          banner.style.backgroundPosition = `${posX}% ${posY}%`;
+          banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
+          banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
         } catch (_e) {
           // Invalid crop JSON — fall back to default cover/center set above
         }
@@ -4596,6 +4592,7 @@ class BundleWidgetFullPage {
   renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement = "default") {
     const bar = document.createElement('div');
     bar.className = `fpb-discount-progress fpb-dp-step_based` + (isReached ? ' reached' : '');
+    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const stepList = document.createElement('div');
     stepList.className = 'fpb-discount-step-list';
@@ -4622,7 +4619,6 @@ class BundleWidgetFullPage {
     track.className = 'fpb-dp-track';
     const fill = document.createElement('div');
     fill.className = 'fpb-dp-fill';
-    fill.style.width = progressPct + '%';
     track.appendChild(fill);
 
     bar.appendChild(stepList);
@@ -4703,6 +4699,7 @@ class BundleWidgetFullPage {
 
     const bar = document.createElement('div');
     bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
+    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const row = document.createElement('div');
     row.className = 'fpb-dp-row';
@@ -4719,7 +4716,6 @@ class BundleWidgetFullPage {
     track.className = 'fpb-dp-track';
     const fill = document.createElement('div');
     fill.className = 'fpb-dp-fill';
-    fill.style.width = progressPct + '%';
     track.appendChild(fill);
 
     bar.appendChild(row);

@@ -113,6 +113,32 @@ describe("Full Page widget template layout contract", () => {
     expect(componentGenerator).toContain("${this.escapeHtml(addButtonText)}");
   });
 
+  it("keeps static FPB runtime presentation in CSS instead of inline JS styles", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
+    const css = readFullPageStyles();
+
+    expect(source).toContain("fpb-sidebar-tier-cta");
+    expect(source).toContain("--fpb-promo-banner-bg-image");
+    expect(source).toContain("--fpb-promo-banner-bg-size");
+    expect(source).toContain("--fpb-promo-banner-bg-position");
+    expect(source).toContain("--fpb-discount-progress-width");
+
+    expect(source).not.toContain("cta.style.cssText = 'width:100%;box-sizing:border-box;background:#000;color:#fff;border:1px solid #000;border-radius:8px;padding:12px 16px;margin:4px 0 12px;text-align:center;font-weight:800;line-height:1.25;'");
+    expect(source).not.toContain("banner.style.backgroundImage");
+    expect(source).not.toContain("banner.style.backgroundSize");
+    expect(source).not.toContain("banner.style.backgroundPosition");
+    expect(source).not.toContain("fill.style.width = progressPct + '%';");
+
+    expect(css).toContain(".fpb-sidebar-tier-cta");
+    expect(css).toContain("background-image:var(--fpb-promo-banner-bg-image");
+    expect(css).toContain("background-size:var(--fpb-promo-banner-bg-size");
+    expect(css).toContain("background-position:var(--fpb-promo-banner-bg-position");
+    expect(css).toContain("width:var(--fpb-discount-progress-width,0%)");
+  });
+
   it("matches Standard Design DEFAULT side-footer storefront contract", () => {
     const source = readFullPageWidgetSources();
     const css = readFullPageStyles();

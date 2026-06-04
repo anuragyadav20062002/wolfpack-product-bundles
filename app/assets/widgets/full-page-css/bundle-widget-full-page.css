@@ -722,10 +722,10 @@ transparent 100%)}
   justify-content:center;
   background:var(--bundle-promo-banner-bg,
 #F3F4F6);
-  background-image:var(--bundle-promo-banner-bg-image,
-none);
-  background-size:cover;
-  background-position:center;
+  background-image:var(--fpb-promo-banner-bg-image,var(--bundle-promo-banner-bg-image,
+none));
+  background-size:var(--fpb-promo-banner-bg-size,cover);
+  background-position:var(--fpb-promo-banner-bg-position,center);
   text-align:center;
   border-radius:var(--bundle-promo-banner-radius,
 12px);
@@ -852,10 +852,8 @@ rgba(5,
 linear-gradient(135deg,
 #f8fafc 0%,
 #f1f5f9 100%));
-  background-image:var(--bundle-promo-banner-bg-image,
-none);
-  background-size:cover;
-  background-position:center}
+  background-image:var(--fpb-promo-banner-bg-image,var(--bundle-promo-banner-bg-image,
+none))}
 
 .promo-banner.no-discount .promo-banner-note {
   font-style:normal;
@@ -4944,15 +4942,25 @@ none)}
 .layout-sidebar .side-panel-products:not(:empty)+.side-panel-skeleton-slots {
   display:none}
 
+.fpb-sidebar-tier-cta {
+  width:100%;
+  box-sizing:border-box;
+  background:#000000;
+  color:#ffffff;
+  border:1px solid #000000;
+  border-radius:8px;
+  padding:12px 16px;
+  margin:4px 0 12px;
+  text-align:center;
+  font-weight:800;
+  line-height:1.25}
+
 .fpb-discount-progress {
   padding:10px 16px 12px;
   background:var(--bundle-discount-banner-bg, #1a1a1a);
   color:var(--bundle-discount-banner-text, #ffffff);
   width:100%;
   box-sizing:border-box;
-  border-radius:16px 16px 0 0}
-
-.full-page-footer.floating-card>.fpb-discount-progress {
   border-radius:16px 16px 0 0}
 
 .fpb-discount-progress.reached {
@@ -5073,6 +5081,7 @@ none)}
 
 .fpb-dp-fill {
   height:100%;
+  width:var(--fpb-discount-progress-width,0%);
   background:#ffffff;
   border-radius:3px;
   transition:width 400ms ease;
