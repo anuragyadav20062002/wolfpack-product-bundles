@@ -82,8 +82,8 @@ export const BundlePricingExtension: FunctionComponent = () => {
         <s-text type="strong">Bundle Savings</s-text>
 
         <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text color="subdued">Retail Price:</s-text>
-          <s-text color="subdued">
+          <s-text>Actual Price:</s-text>
+          <s-text type="strong" color="subdued">
             {formatMoney(totalRetailCents)}
           </s-text>
         </s-stack>
@@ -96,15 +96,15 @@ export const BundlePricingExtension: FunctionComponent = () => {
         </s-stack>
 
         <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text color="subdued">Savings:</s-text>
+          <s-text>Savings:</s-text>
           <s-text type="strong" tone="success">
             {formatMoney(totalSavingsCents)}
           </s-text>
         </s-stack>
 
         <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-          <s-text color="subdued">% Saved:</s-text>
-          <s-text tone="success">
+          <s-text>% Saved:</s-text>
+          <s-text type="strong" tone="success">
             {formatPercent(savingsPercent)}%
           </s-text>
         </s-stack>

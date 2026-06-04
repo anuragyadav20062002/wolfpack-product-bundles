@@ -9,11 +9,23 @@ describe("Bundle checkout UI contract", () => {
 
   it("renders an aggregate bundle savings panel for discounted bundles", () => {
     expect(source).toContain("Bundle Savings");
-    expect(source).toContain("Retail Price:");
+    expect(source).toContain("Actual Price:");
+    expect(source).not.toContain("Retail Price:");
     expect(source).toContain("Bundle Price:");
     expect(source).toContain("Savings:");
     expect(source).toContain("% Saved:");
     expect(source).toContain("calculateSavingsPercent(totalSavingsCents, totalRetailCents)");
+  });
+
+  it("keeps savings row labels normal and values bold", () => {
+    expect(source).toContain("<s-text>Actual Price:</s-text>");
+    expect(source).toContain("<s-text>Bundle Price:</s-text>");
+    expect(source).toContain("<s-text>Savings:</s-text>");
+    expect(source).toContain("<s-text>% Saved:</s-text>");
+
+    expect(source).toContain('<s-text type="strong" color="subdued">');
+    expect(source).toContain('<s-text type="strong">');
+    expect(source).toContain('<s-text type="strong" tone="success">');
   });
 
   it("does not render redundant bundle item list UI", () => {
