@@ -1185,6 +1185,7 @@ export default function ConfigureBundleFlow() {
   const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>(
     savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
   );
+  const isBundleVisibilityPending = !(Boolean(bundle.shopifyPageHandle) || upsellWidgetEnabled);
 
   const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
   const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
@@ -2188,6 +2189,8 @@ export default function ConfigureBundleFlow() {
     themeEditorUrl,
     onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
     sessionKey: bundle.id,
+    autoShowOnMount: loaderData.configureMode === "edit" && isBundleVisibilityPending,
+    onSetupVisibility: () => setActiveSection("bundle_visibility"),
   });
 
   const handlePreviewBundle = useCallback(() => {

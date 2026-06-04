@@ -29,16 +29,16 @@ describe("decideEnablePreviewGate", () => {
 });
 
 describe("shouldAutoShowOnMount", () => {
-  it("returns true when embed is disabled and modal has not been shown this session", () => {
-    expect(shouldAutoShowOnMount(false, false)).toBe(true);
+  it("returns true when bundle visibility is pending and modal has not been shown this session", () => {
+    expect(shouldAutoShowOnMount(true, false)).toBe(true);
   });
 
-  it("returns false when embed is enabled regardless of session state", () => {
-    expect(shouldAutoShowOnMount(true, false)).toBe(false);
-    expect(shouldAutoShowOnMount(true, true)).toBe(false);
+  it("returns false when bundle visibility is not pending", () => {
+    expect(shouldAutoShowOnMount(false, false)).toBe(false);
+    expect(shouldAutoShowOnMount(false, true)).toBe(false);
   });
 
   it("returns false when modal has already been shown this session", () => {
-    expect(shouldAutoShowOnMount(false, true)).toBe(false);
+    expect(shouldAutoShowOnMount(true, true)).toBe(false);
   });
 });
