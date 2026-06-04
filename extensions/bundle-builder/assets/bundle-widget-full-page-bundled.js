@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.75
+ * Version : 2.9.76
  * Built   : 2026-06-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.75';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.76';
 (function() {
   'use strict';
 
@@ -3028,7 +3028,16 @@ class BundleWidgetFullPage {
     this.selectedProducts = [];
     this.stepProductData = [];
     this.stepCollectionProductIds = {};
-    this.giftMessageState = { message: '', from: '', to: '', error: false };
+    this.giftMessageState = {
+      message: '',
+      from: '',
+      to: '',
+      recipientEmail: '',
+      deliveryDate: '',
+      deliveryOption: 'now',
+      error: false,
+      emailError: false
+    };
     this.selectedBoxSelectionRuleId = null;
     this.currentStepIndex = 0;
     this.isInitialized = false;
@@ -6745,6 +6754,33 @@ class BundleWidgetFullPage {
     return variant?.id || variant?.admin_graphql_api_id || variant?.variantGraphqlId || variant?.variantId || null;
   }
 
+  getGiftMessageLanguageText(section, key, fallback) {
+    const languageValue = this.config?.languageData?.[section]?.[key]?.value;
+    if (typeof languageValue === 'string' && languageValue.trim()) return languageValue;
+
+    const directOverride = this._resolveText(key, null);
+    if (typeof directOverride === 'string' && directOverride.trim()) return directOverride;
+
+    const settingsOverride = this._resolveText(`fpb.${section}.${key}`, fallback);
+    return settingsOverride;
+  }
+
+  updateGiftMessageDeliveryControls(scheduleEl, dateInput) {
+    if (!scheduleEl || !dateInput) return;
+
+    const isSendLater = this.giftMessageState.deliveryOption === 'later';
+    const sendNowContainer = scheduleEl.querySelector('.gbbScheduleMessageSendNowContainer');
+    const sendLaterContainer = scheduleEl.querySelector('.gbbScheduleMessageSendLaterContainer');
+    const nowRadio = scheduleEl.querySelector('input[value="now"]');
+    const laterRadio = scheduleEl.querySelector('input[value="later"]');
+
+    if (sendNowContainer) sendNowContainer.classList.toggle('gbbActiveMsgDeliveryOptions', !isSendLater);
+    if (sendLaterContainer) sendLaterContainer.classList.toggle('gbbActiveMsgDeliveryOptions', isSendLater);
+    if (nowRadio) nowRadio.checked = !isSendLater;
+    if (laterRadio) laterRadio.checked = isSendLater;
+    dateInput.disabled = !isSendLater;
+  }
+
   renderGiftMessageSection(container) {
     const giftMessage = this.getGiftMessageConfig();
     if (!giftMessage || !container) return;
@@ -6788,6 +6824,115 @@ class BundleWidgetFullPage {
       section.appendChild(row);
     }
 
+    if (giftMessage.isEmailEnabled === true) {
+      const emailHtml = document.createElement('div');
+      emailHtml.className = 'gbbEmailAddressHTML';
+
+      const emailWrapper = document.createElement('div');
+      emailWrapper.className = 'gbbEmailAddressWrapper';
+
+      const emailLabel = document.createElement('label');
+      emailLabel.className = 'gbbEmailAddressLabelField';
+      emailLabel.textContent = this.getGiftMessageLanguageText(
+        'personalizePage',
+        'recipientEmailAddressLabel',
+        'Recipient Email Address'
+      );
+
+      const emailInput = document.createElement('input');
+      emailInput.type = 'email';
+      emailInput.className = 'gbbVideoMsgEmailField fpb-gift-message-input';
+      emailInput.placeholder = this.getGiftMessageLanguageText(
+        'personalizePage',
+        'recipientEmailAddressPlaceholder',
+        'Enter a recipient email address here...'
+      );
+      emailInput.value = this.giftMessageState.recipientEmail;
+      emailInput.addEventListener('input', () => {
+        this.giftMessageState.recipientEmail = emailInput.value;
+        if (this.isValidGiftMessageEmail(emailInput.value)) {
+          this.setGiftMessageEmailValidationError(false);
+        }
+      });
+
+      emailWrapper.appendChild(emailLabel);
+      emailWrapper.appendChild(emailInput);
+      emailHtml.appendChild(emailWrapper);
+
+      const deliveryInfo = document.createElement('p');
+      deliveryInfo.className = 'giftMessageDeliveryInfo';
+      deliveryInfo.textContent = this.getGiftMessageLanguageText(
+        'videoMessage',
+        'messageDeliveryInfo',
+        'The message will be sent to the recipient via email as soon as the order is placed'
+      );
+      emailHtml.appendChild(deliveryInfo);
+
+      const schedule = document.createElement('div');
+      schedule.className = 'gbbScheduleMessageDeliveryHTML';
+
+      const sendNowContainer = document.createElement('label');
+      sendNowContainer.className = 'gbbScheduleMessageSendNowContainer';
+      const sendNowRadio = document.createElement('input');
+      sendNowRadio.type = 'radio';
+      sendNowRadio.name = 'gbbMessageDeliveryOption';
+      sendNowRadio.value = 'now';
+      const sendNowText = document.createElement('span');
+      sendNowText.textContent = this.getGiftMessageLanguageText('personalizePage', 'sendNowLabel', 'Send Now');
+      sendNowContainer.appendChild(sendNowRadio);
+      sendNowContainer.appendChild(sendNowText);
+
+      const sendLaterContainer = document.createElement('label');
+      sendLaterContainer.className = 'gbbScheduleMessageSendLaterContainer';
+      const sendLaterRadio = document.createElement('input');
+      sendLaterRadio.type = 'radio';
+      sendLaterRadio.name = 'gbbMessageDeliveryOption';
+      sendLaterRadio.value = 'later';
+      const sendLaterText = document.createElement('span');
+      sendLaterText.textContent = this.getGiftMessageLanguageText('personalizePage', 'sendLaterLabel', 'Send Later');
+      sendLaterContainer.appendChild(sendLaterRadio);
+      sendLaterContainer.appendChild(sendLaterText);
+
+      const dateInput = document.createElement('input');
+      dateInput.type = 'date';
+      dateInput.className = 'gbbScheduleMessageDatePicker';
+      dateInput.value = this.giftMessageState.deliveryDate;
+      dateInput.addEventListener('input', () => {
+        this.giftMessageState.deliveryDate = dateInput.value;
+      });
+
+      sendNowRadio.addEventListener('change', () => {
+        if (!sendNowRadio.checked) return;
+        this.giftMessageState.deliveryOption = 'now';
+        this.giftMessageState.deliveryDate = '';
+        dateInput.value = '';
+        this.updateGiftMessageDeliveryControls(schedule, dateInput);
+      });
+      sendLaterRadio.addEventListener('change', () => {
+        if (!sendLaterRadio.checked) return;
+        this.giftMessageState.deliveryOption = 'later';
+        this.updateGiftMessageDeliveryControls(schedule, dateInput);
+      });
+
+      schedule.appendChild(sendNowContainer);
+      schedule.appendChild(sendLaterContainer);
+      schedule.appendChild(dateInput);
+      emailHtml.appendChild(schedule);
+
+      const emailError = document.createElement('p');
+      emailError.className = 'gbbEmailValidationError';
+      emailError.textContent = this.getGiftMessageLanguageText(
+        'personalizePage',
+        'emailValidationMessage',
+        'Please enter a valid email address'
+      );
+      emailError.style.display = this.giftMessageState.emailError ? 'block' : 'none';
+      emailHtml.appendChild(emailError);
+
+      section.appendChild(emailHtml);
+      this.updateGiftMessageDeliveryControls(schedule, dateInput);
+    }
+
     const textarea = document.createElement('textarea');
     textarea.className = 'gbbGiftMessageV2InputField fpb-gift-message-textarea';
     textarea.placeholder = 'Enter a message here...';
@@ -6818,6 +6963,19 @@ class BundleWidgetFullPage {
     }
   }
 
+  setGiftMessageEmailValidationError(hasError) {
+    this.giftMessageState.emailError = hasError;
+    const errorEl = this.container.querySelector('.gbbEmailValidationError');
+    if (errorEl) {
+      errorEl.style.display = hasError ? 'block' : 'none';
+    }
+  }
+
+  isValidGiftMessageEmail(email) {
+    const value = String(email || '').trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
   validateGiftMessageBeforeCart() {
     const giftMessage = this.getGiftMessageConfig();
     if (!giftMessage?.isGiftMessageMandatory) return true;
@@ -6827,10 +6985,23 @@ class BundleWidgetFullPage {
     return false;
   }
 
+  validateGiftMessageEmailBeforeCart() {
+    const giftMessage = this.getGiftMessageConfig();
+    if (giftMessage?.isEmailEnabled !== true) return true;
+    if (this.isValidGiftMessageEmail(this.giftMessageState.recipientEmail)) return true;
+
+    this.setGiftMessageEmailValidationError(true);
+    return false;
+  }
+
   buildGiftMessageCartItem(bundleInstanceId, bundleName) {
     const giftMessage = this.getGiftMessageConfig();
     const message = this.giftMessageState.message.trim();
-    if (!giftMessage || !message) return null;
+    const senderName = this.giftMessageState.from.trim();
+    const recipientName = this.giftMessageState.to.trim();
+    const recipientEmail = this.giftMessageState.recipientEmail.trim();
+    const hasEmailCapture = giftMessage?.isEmailEnabled === true && recipientEmail;
+    if (!giftMessage || (!message && !senderName && !recipientName && !hasEmailCapture)) return null;
 
     const variantId = this.getGiftMessageProductVariantId(giftMessage);
     const numericVariantId = this.extractId(variantId) || variantId;
@@ -6842,9 +7013,28 @@ class BundleWidgetFullPage {
       '_gift_message': message
     };
 
+    if (message) {
+      properties['Message'] = message;
+    } else {
+      delete properties['_gift_message'];
+    }
     if (giftMessage.isSenderAndRecipientNameEnabled === true) {
-      if (this.giftMessageState.from.trim()) properties['_gift_from'] = this.giftMessageState.from.trim();
-      if (this.giftMessageState.to.trim()) properties['_gift_to'] = this.giftMessageState.to.trim();
+      if (senderName) {
+        properties['Sender Name'] = senderName;
+        properties['_gift_from'] = senderName;
+      }
+      if (recipientName) {
+        properties['Recipient Name'] = recipientName;
+        properties['_gift_to'] = recipientName;
+      }
+    }
+
+    if (hasEmailCapture) {
+      properties['Recipient Email'] = recipientEmail;
+      properties['_gbbEmailDeliveryOption'] = this.giftMessageState.deliveryOption || 'now';
+      if (this.giftMessageState.deliveryOption === 'later' && this.giftMessageState.deliveryDate) {
+        properties['_gbbEmailDeliveryDate'] = this.giftMessageState.deliveryDate;
+      }
     }
 
     return {
@@ -7006,7 +7196,9 @@ class BundleWidgetFullPage {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
       }
-      if (!this.validateGiftMessageBeforeCart()) {
+      const isGiftMessageValid = this.validateGiftMessageBeforeCart();
+      const isGiftMessageEmailValid = this.validateGiftMessageEmailBeforeCart();
+      if (!isGiftMessageValid || !isGiftMessageEmailValid) {
         return;
       }
 

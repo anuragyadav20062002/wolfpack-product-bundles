@@ -815,6 +815,10 @@ function buildGiftMessageDraftFromPersonalizationData(personalizationData: any) 
     isGiftMessageMandatory: giftMessage?.isGiftMessageMandatory === true,
     isMessageLimitEnabled: Boolean(giftMessage?.giftMessageCharacterLimit),
     giftMessageCharacterLimit: giftMessage?.giftMessageCharacterLimit ? String(giftMessage.giftMessageCharacterLimit) : "",
+    isEmailEnabled: giftMessage?.isEmailEnabled === true,
+    recipientEmailRequired: giftMessage?.recipientEmailRequired !== false,
+    deliveryDateEnabled: giftMessage?.deliveryDateEnabled === true,
+    customizeEmailsEnabled: giftMessage?.customizeEmailsEnabled === true,
     messageProduct: giftMessage?.messageProduct || {
       isMessageProductEnabled: false,
       status: "unlisted",
@@ -833,7 +837,10 @@ function buildGiftMessageConfigFromDraft(giftMessageDraft: any) {
     giftMessageCharacterLimit: giftMessageDraft.isMessageLimitEnabled ? String(giftMessageDraft.giftMessageCharacterLimit || "") : "",
     isGiftMessageMandatory: giftMessageDraft.isGiftMessageMandatory === true,
     isVideoMessageEnabled: false,
-    isEmailEnabled: false,
+    isEmailEnabled: giftMessageDraft.isEmailEnabled === true,
+    recipientEmailRequired: giftMessageDraft.recipientEmailRequired !== false,
+    deliveryDateEnabled: giftMessageDraft.deliveryDateEnabled === true,
+    customizeEmailsEnabled: giftMessageDraft.customizeEmailsEnabled === true,
     messageProduct: {
       isMessageProductEnabled: Boolean(messageProduct.product),
       status: messageProduct.status || "unlisted",
@@ -5449,6 +5456,8 @@ export default function ConfigureBundleFlow() {
               const hasSenderRecipientFields = giftMessageDraft.isSenderAndRecipientNameEnabled === true;
               const isGiftMessageRequired = giftMessageDraft.isGiftMessageMandatory === true;
               const hasMessageLimit = giftMessageDraft.isMessageLimitEnabled === true;
+              const isEmailEnabled = giftMessageDraft.isEmailEnabled === true;
+              const emailCaptureDisabled = true;
               const messageProduct = giftMessageDraft.messageProduct?.product || null;
 
               return (
@@ -5534,13 +5543,25 @@ export default function ConfigureBundleFlow() {
                         onInput={(e) => updateGiftMessageDraft({ giftMessageCharacterLimit: (e.target as HTMLInputElement).value })}
                       />
                       <s-divider />
-                      <s-checkbox
-                        label="Send message through email to the customer"
-                        disabled
-                      />
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, color: "#8c9196" }}>
+                      <div
+                        className={fullPageBundleStyles.emailCaptureDisabled}
+                        aria-disabled="true"
+                        tabIndex={-1}
+                      >
+                        <s-switch
+                          accessibilityLabel="Send message through email to the customer"
+                          label="Send message through email to the customer"
+                          checked={isEmailEnabled || undefined}
+                          disabled={emailCaptureDisabled || undefined}
+                        />
+                      </div>
+                      <div
+                        className={fullPageBundleStyles.emailCustomizeDisabled}
+                        aria-disabled="true"
+                        tabIndex={-1}
+                      >
                         <span>Customize your email templates here</span>
-                        <s-button variant="secondary" disabled>Customize Emails</s-button>
+                        <s-button variant="secondary" disabled={emailCaptureDisabled || undefined}>Customize Emails</s-button>
                       </div>
                       <p className={fullPageBundleStyles.messageNote}>
                         Note: Please reach out to us if you wish to change the domain from where the emails are sent.

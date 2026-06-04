@@ -16,7 +16,7 @@ describe("Full Page widget message personalization contract", () => {
     expect(source).toContain("giftMessage.isGiftMessageEnabled === true");
   });
 
-  it("renders the captured non-email message fields and character limit", () => {
+  it("renders the captured message fields and character limit", () => {
     const source = widgetSource();
 
     expect(source).toContain("gbbGiftMessageV2FromField");
@@ -24,7 +24,6 @@ describe("Full Page widget message personalization contract", () => {
     expect(source).toContain("gbbGiftMessageV2InputField");
     expect(source).toContain("Enter a message here...");
     expect(source).toContain("textarea.maxLength = Number(giftMessage.giftMessageCharacterLimit);");
-    expect(source).not.toContain("gbbVideoMsgEmailField");
   });
 
   it("blocks cart add with the captured required-message validation text", () => {
@@ -46,4 +45,42 @@ describe("Full Page widget message personalization contract", () => {
     expect(source).toContain("items.push(giftMessageItem);");
     expect(messageCartBlock?.[0]).not.toContain("'_bundle_id'");
   });
+
+  it("renders EB email capture fields when message email is enabled", () => {
+    const source = widgetSource();
+
+    expect(source).toContain("giftMessage.isEmailEnabled === true");
+    expect(source).toContain("gbbEmailAddressHTML");
+    expect(source).toContain("gbbEmailAddressWrapper");
+    expect(source).toContain("gbbVideoMsgEmailField");
+    expect(source).toContain("gbbEmailAddressLabelField");
+    expect(source).toContain("giftMessageDeliveryInfo");
+    expect(source).toContain("gbbScheduleMessageDeliveryHTML");
+    expect(source).toContain("gbbScheduleMessageSendNowContainer");
+    expect(source).toContain("gbbScheduleMessageSendLaterContainer");
+    expect(source).toContain("gbbScheduleMessageDatePicker");
+    expect(source).toContain("gbbEmailValidationError");
+    expect(source).toContain("Enter a recipient email address here...");
+  });
+
+  it("validates required recipient email before cart add when email capture is enabled", () => {
+    const source = widgetSource();
+
+    expect(source).toContain("validateGiftMessageEmailBeforeCart()");
+    expect(source).toContain("Please enter a valid email address");
+    expect(source).toContain("this.setGiftMessageEmailValidationError(true)");
+    expect(source).toContain("gbbEmailValidationError");
+  });
+
+  it("adds captured recipient email and delivery options to the message cart line", () => {
+    const source = widgetSource();
+
+    expect(source).toContain("Message");
+    expect(source).toContain("Recipient Name");
+    expect(source).toContain("Sender Name");
+    expect(source).toContain("Recipient Email");
+    expect(source).toContain("_gbbEmailDeliveryDate");
+    expect(source).toContain("_gbbEmailDeliveryOption");
+  });
+
 });
