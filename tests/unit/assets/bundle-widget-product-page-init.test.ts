@@ -567,6 +567,49 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('background:#111111');
   });
 
+  it('keeps static PPB runtime presentation in CSS instead of inline JS styles', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+      'utf8',
+    );
+    const modalSlotTemplate = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
+      'utf8',
+    );
+    const css = readProductPageStyles();
+
+    expect(source).toContain('bw-default-products__line');
+    expect(source).toContain('bw-ppb-discount-progress__fill');
+    expect(source).toContain('bw-qty-pill--active');
+    expect(source).toContain('bw-gift-message__textarea');
+    expect(modalSlotTemplate).toContain('bw-slot-card__plus-icon');
+    expect(modalSlotTemplate).toContain('bw-slot-card__slot-icon-img');
+    expect(modalSlotTemplate).toContain('bw-ppb-primary-cta--modal-vertical');
+
+    expect(source).not.toContain("el.style.cssText = 'display:block;margin:0 0 14px;'");
+    expect(source).not.toContain("title.style.cssText = 'font-size:14px;font-weight:700;margin:0 0 10px;color:#1a1a1a;'");
+    expect(source).not.toContain("list.style.cssText = 'display:flex;flex-direction:column;gap:8px;'");
+    expect(source).not.toContain("el.style.cssText = 'margin: 10px 0; padding: 10px 0;'");
+    expect(source).not.toContain('msgEl.style.cssText');
+    expect(source).not.toContain("track.style.cssText = 'height:6px;background:#e1e3e5;border-radius:3px;overflow:hidden;'");
+    expect(source).not.toContain('pill.style.cssText');
+    expect(source).not.toContain("p.style.border = '2px solid #e1e3e5'");
+    expect(source).not.toContain("el.style.cssText = 'display:block;margin:14px 0;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e1e3e5;'");
+    expect(source).not.toContain('fromInput.style.cssText');
+    expect(source).not.toContain('textarea.style.cssText');
+    expect(modalSlotTemplate).not.toContain("button.style.backgroundColor = '#000000'");
+    expect(modalSlotTemplate).not.toContain('iconWrapper.style.cssText = `');
+    expect(modalSlotTemplate).not.toContain('slotIconImg.style.cssText');
+
+    expect(css).toContain('.bw-default-products__line');
+    expect(css).toContain('.bw-ppb-discount-progress__fill');
+    expect(css).toContain('.bw-qty-pill--active');
+    expect(css).toContain('.bw-gift-message__textarea');
+    expect(css).toContain('.bw-slot-card__plus-icon');
+    expect(css).toContain('.bw-slot-card__slot-icon-img');
+    expect(css).toContain('.bw-ppb-primary-cta--modal-vertical');
+  });
+
   it('loads PPB Product List template code from a dedicated source module before widget initialization', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),

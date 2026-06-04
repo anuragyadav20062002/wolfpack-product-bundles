@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.71
+ * Version : 2.9.72
  * Built   : 2026-06-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.71';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.72';
 (function() {
   'use strict';
 
@@ -2084,12 +2084,10 @@ function installModalSlotTemplate(BundleWidgetProductPage) {
     const button = this.elements?.addToCartButton;
     if (!button) return;
 
-    if (this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()) {
-      button.style.backgroundColor = '#000000';
-      return;
-    }
-
-    button.style.backgroundColor = '';
+    button.classList.toggle(
+      'bw-ppb-primary-cta--modal-vertical',
+      this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()
+    );
   };
 
   prototype._createModalSlotStepSection = function(step) {
@@ -2138,18 +2136,8 @@ function installModalSlotTemplate(BundleWidgetProductPage) {
       iconWrapper.className = 'bw-slot-card__plus-icon';
       const primaryColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
-      iconWrapper.style.cssText = `
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: color-mix(in srgb, ${primaryColor} 8%, transparent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
-      `;
+      iconWrapper.style.setProperty('--bw-slot-icon-color', primaryColor);
       this._appendSlotIcon(iconWrapper);
-      iconWrapper.style.color = primaryColor;
       stepBox.appendChild(iconWrapper);
     }
 
@@ -2170,7 +2158,7 @@ function installModalSlotTemplate(BundleWidgetProductPage) {
       const slotIconImg = document.createElement('img');
       slotIconImg.src = productSlotIconUrl;
       slotIconImg.alt = '';
-      slotIconImg.style.cssText = 'width:28px;height:28px;object-fit:contain;display:block;';
+      slotIconImg.className = 'bw-slot-card__slot-icon-img';
       iconWrapper.appendChild(slotIconImg);
       return;
     }
@@ -3314,52 +3302,43 @@ class BundleWidgetProductPage {
     }
 
     el.style.display = 'block';
-    el.style.cssText = 'display:block;margin:0 0 14px;';
 
     if (data.defaultProductsTitle) {
       const title = document.createElement('h3');
       title.className = 'bw-default-products__title';
       title.textContent = data.defaultProductsTitle;
-      title.style.cssText = 'font-size:14px;font-weight:700;margin:0 0 10px;color:#1a1a1a;';
       el.appendChild(title);
     }
 
     const list = document.createElement('div');
     list.className = 'bw-default-products__list';
-    list.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     products.forEach(product => {
       const quantity = this.getSelectedQuantity(0, product.variantId) || product.defaultRequiredQuantity || 1;
       const line = document.createElement('div');
       line.className = 'bw-default-products__line';
-      line.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;';
 
       const details = document.createElement('div');
       details.className = 'bw-default-products__details';
-      details.style.cssText = 'display:flex;align-items:center;gap:10px;min-width:0;';
 
       const image = document.createElement('img');
       image.className = 'bw-default-products__image';
       image.src = product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       image.alt = product.title || '';
-      image.style.cssText = 'width:44px;height:44px;object-fit:cover;border-radius:4px;';
       details.appendChild(image);
 
       const text = document.createElement('div');
       text.className = 'bw-default-products__text';
-      text.style.cssText = 'display:flex;flex-direction:column;gap:3px;min-width:0;';
 
       const name = document.createElement('span');
       name.className = 'bw-default-products__name';
       name.textContent = `${product.title} x ${quantity}`;
-      name.style.cssText = 'font-size:13px;font-weight:700;color:#1a1a1a;';
       text.appendChild(name);
 
       const price = document.createElement('span');
       price.className = 'bw-default-products__price';
       price.textContent = CurrencyManager.convertAndFormat(product.price * quantity, currencyInfo);
-      price.style.cssText = 'font-size:13px;font-weight:700;color:#1a1a1a;';
       text.appendChild(price);
       details.appendChild(text);
       line.appendChild(details);
@@ -3367,7 +3346,6 @@ class BundleWidgetProductPage {
       const quantityBadge = document.createElement('span');
       quantityBadge.className = 'bw-default-products__quantity';
       quantityBadge.textContent = `x ${quantity}`;
-      quantityBadge.style.cssText = 'font-size:13px;color:#1a1a1a;white-space:nowrap;';
       line.appendChild(quantityBadge);
       list.appendChild(line);
     });
@@ -4083,17 +4061,19 @@ class BundleWidgetProductPage {
 
     const primary = getComputedStyle(document.documentElement).getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
     el.style.display = '';
-    el.style.cssText = 'margin: 10px 0; padding: 10px 0;';
+    el.className = 'bundle-footer-messaging bw-ppb-discount-progress' + (met ? ' bw-ppb-discount-progress--met' : '');
+    el.style.setProperty('--bw-discount-progress-color', primary);
+    el.style.setProperty('--bw-discount-progress-width', `${Math.round(progress * 100)}%`);
 
     const msgEl = document.createElement('p');
+    msgEl.className = 'bw-ppb-discount-progress__message';
     msgEl.textContent = message;
-    msgEl.style.cssText = `font-size:13px;text-align:center;margin:0 0 8px;color:${met ? primary : '#1a1a1a'};font-weight:${met ? '600' : '400'};`;
     el.appendChild(msgEl);
 
     const track = document.createElement('div');
-    track.style.cssText = 'height:6px;background:#e1e3e5;border-radius:3px;overflow:hidden;';
+    track.className = 'bw-ppb-discount-progress__track';
     const fill = document.createElement('div');
-    fill.style.cssText = `height:100%;width:${Math.round(progress * 100)}%;background:${primary};border-radius:3px;transition:width 0.3s ease;`;
+    fill.className = 'bw-ppb-discount-progress__fill';
     track.appendChild(fill);
     el.appendChild(track);
   }
@@ -4117,9 +4097,9 @@ class BundleWidgetProductPage {
     }
 
     el.style.display = 'flex';
-    el.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;';
 
     const primary = getComputedStyle(document.documentElement).getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
+    el.style.setProperty('--bw-qty-pill-active-color', primary);
     const defaultIndex = qtyOpts.defaultRuleIndex ?? 0;
 
     rules.forEach((rule, index) => {
@@ -4129,36 +4109,23 @@ class BundleWidgetProductPage {
       const pill = document.createElement('button');
       pill.type = 'button';
       pill.className = 'bw-qty-pill' + (isActive ? ' bw-qty-pill--active' : '');
-      pill.style.cssText = `
-        padding:8px 16px;border-radius:24px;cursor:pointer;transition:all 0.15s;
-        display:flex;flex-direction:column;align-items:center;line-height:1.2;
-        border:2px solid ${isActive ? primary : '#e1e3e5'};
-        background:${isActive ? primary : 'white'};
-        color:${isActive ? 'white' : '#1a1a1a'};
-        font-size:14px;font-weight:600;
-      `;
 
       const labelEl = document.createElement('span');
+      labelEl.className = 'bw-qty-pill__label';
       labelEl.textContent = label;
       pill.appendChild(labelEl);
 
       if (subtext) {
         const subtextEl = document.createElement('span');
+        subtextEl.className = 'bw-qty-pill__subtext';
         subtextEl.textContent = subtext;
-        subtextEl.style.cssText = 'font-size:11px;font-weight:400;opacity:0.8;';
         pill.appendChild(subtextEl);
       }
 
       pill.addEventListener('click', () => {
         el.querySelectorAll('.bw-qty-pill').forEach(p => {
-          p.style.border = '2px solid #e1e3e5';
-          p.style.background = 'white';
-          p.style.color = '#1a1a1a';
           p.classList.remove('bw-qty-pill--active');
         });
-        pill.style.border = `2px solid ${primary}`;
-        pill.style.background = primary;
-        pill.style.color = 'white';
         pill.classList.add('bw-qty-pill--active');
 
         this.renderFooter();
@@ -4230,22 +4197,21 @@ class BundleWidgetProductPage {
     }
 
     el.style.display = 'block';
-    el.style.cssText = 'display:block;margin:14px 0;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e1e3e5;';
 
     const heading = document.createElement('p');
+    heading.className = 'bw-gift-message__heading';
     heading.textContent = bundle.giftMessageProductTitle || 'Gift Message';
-    heading.style.cssText = 'font-size:14px;font-weight:600;margin:0 0 12px;color:#1a1a1a;';
     el.appendChild(heading);
 
     if (bundle.giftMessageEnableSenderRecipient) {
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;';
+      row.className = 'bw-gift-message__row';
 
       const fromInput = document.createElement('input');
       fromInput.type = 'text';
+      fromInput.className = 'bw-gift-message__input';
       fromInput.placeholder = 'From';
       fromInput.value = this.giftMessageState.from;
-      fromInput.style.cssText = 'flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;';
       fromInput.addEventListener('input', () => {
         this.giftMessageState.from = fromInput.value;
         this.updateAddToCartButton();
@@ -4253,9 +4219,9 @@ class BundleWidgetProductPage {
 
       const toInput = document.createElement('input');
       toInput.type = 'text';
+      toInput.className = 'bw-gift-message__input';
       toInput.placeholder = 'To';
       toInput.value = this.giftMessageState.to;
-      toInput.style.cssText = 'flex:1;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;';
       toInput.addEventListener('input', () => {
         this.giftMessageState.to = toInput.value;
         this.updateAddToCartButton();
@@ -4267,16 +4233,16 @@ class BundleWidgetProductPage {
     }
 
     const textarea = document.createElement('textarea');
+    textarea.className = 'bw-gift-message__textarea';
     textarea.placeholder = 'Write your gift message here…';
     textarea.value = this.giftMessageState.message;
     textarea.rows = 3;
-    textarea.style.cssText = 'width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;resize:vertical;';
 
     if (bundle.giftMessageEnableLimit && bundle.giftMessageCharLimit) {
       textarea.maxLength = bundle.giftMessageCharLimit;
 
       const counter = document.createElement('p');
-      counter.style.cssText = 'font-size:11px;color:#6d7175;text-align:right;margin:4px 0 0;';
+      counter.className = 'bw-gift-message__counter';
       counter.textContent = `0 / ${bundle.giftMessageCharLimit}`;
 
       textarea.addEventListener('input', () => {

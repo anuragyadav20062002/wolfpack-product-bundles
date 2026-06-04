@@ -286,6 +286,23 @@
   width:28px;
   height:28px}
 
+.bw-slot-card__plus-icon {
+  width:80px;
+  height:80px;
+  border-radius:50%;
+  background:color-mix(in srgb, var(--bw-slot-icon-color,#1e3a8a) 8%, transparent);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:10px;
+  color:var(--bw-slot-icon-color,#1e3a8a)}
+
+.bw-slot-card__slot-icon-img {
+  width:28px;
+  height:28px;
+  object-fit:contain;
+  display:block}
+
 .bw-ppb-modal-slot-grid .bw-slot-card__empty-visual {
   width:70px;
   height:72px;
@@ -430,7 +447,8 @@
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart:disabled,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart.disabled,
-#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart:hover {
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart:hover,
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bw-ppb-primary-cta--modal-vertical {
   background:#000000}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .add-bundle-to-cart,

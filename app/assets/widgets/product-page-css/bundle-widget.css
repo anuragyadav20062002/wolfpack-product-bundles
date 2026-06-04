@@ -3247,6 +3247,153 @@ to {
 1fr)}
 }
 
+.bw-default-products {
+  margin:0 0 14px}
+
+.bw-default-products__title {
+  font-size:14px;
+  font-weight:700;
+  margin:0 0 10px;
+  color:#1a1a1a}
+
+.bw-default-products__list {
+  display:flex;
+  flex-direction:column;
+  gap:8px}
+
+.bw-default-products__line {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px}
+
+.bw-default-products__details {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0}
+
+.bw-default-products__image {
+  width:44px;
+  height:44px;
+  object-fit:cover;
+  border-radius:4px}
+
+.bw-default-products__text {
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0}
+
+.bw-default-products__name,
+.bw-default-products__price {
+  font-size:13px;
+  font-weight:700;
+  color:#1a1a1a}
+
+.bw-default-products__quantity {
+  font-size:13px;
+  color:#1a1a1a;
+  white-space:nowrap}
+
+.bw-ppb-discount-progress {
+  margin:10px 0;
+  padding:10px 0}
+
+.bw-ppb-discount-progress__message {
+  font-size:13px;
+  text-align:center;
+  margin:0 0 8px;
+  color:#1a1a1a;
+  font-weight:400}
+
+.bw-ppb-discount-progress--met .bw-ppb-discount-progress__message {
+  color:var(--bw-discount-progress-color,#1e3a8a);
+  font-weight:600}
+
+.bw-ppb-discount-progress__track {
+  height:6px;
+  background:#e1e3e5;
+  border-radius:3px;
+  overflow:hidden}
+
+.bw-ppb-discount-progress__fill {
+  height:100%;
+  width:var(--bw-discount-progress-width,0%);
+  background:var(--bw-discount-progress-color,#1e3a8a);
+  border-radius:3px;
+  transition:width 0.3s ease}
+
+.bw-qty-pills {
+  flex-wrap:wrap;
+  gap:8px;
+  margin:12px 0}
+
+.bw-qty-pill {
+  padding:8px 16px;
+  border-radius:24px;
+  cursor:pointer;
+  transition:all 0.15s;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  line-height:1.2;
+  border:2px solid #e1e3e5;
+  background:#ffffff;
+  color:#1a1a1a;
+  font-size:14px;
+  font-weight:600}
+
+.bw-qty-pill--active {
+  border-color:var(--bw-qty-pill-active-color,#1e3a8a);
+  background:var(--bw-qty-pill-active-color,#1e3a8a);
+  color:#ffffff}
+
+.bw-qty-pill__subtext {
+  font-size:11px;
+  font-weight:400;
+  opacity:0.8}
+
+.bw-gift-message {
+  margin:14px 0;
+  padding:16px;
+  background:#f9fafb;
+  border-radius:8px;
+  border:1px solid #e1e3e5}
+
+.bw-gift-message__heading {
+  font-size:14px;
+  font-weight:600;
+  margin:0 0 12px;
+  color:#1a1a1a}
+
+.bw-gift-message__row {
+  display:flex;
+  gap:8px;
+  margin-bottom:10px}
+
+.bw-gift-message__input {
+  flex:1;
+  padding:8px 10px;
+  border:1px solid #d1d5db;
+  border-radius:6px;
+  font-size:13px}
+
+.bw-gift-message__textarea {
+  width:100%;
+  box-sizing:border-box;
+  padding:8px 10px;
+  border:1px solid #d1d5db;
+  border-radius:6px;
+  font-size:13px;
+  resize:vertical}
+
+.bw-gift-message__counter {
+  font-size:11px;
+  color:#6d7175;
+  text-align:right;
+  margin:4px 0 0}
+
 @import "./templates/inpage-cascade.css";
 @import "./templates/inpage-cognive.css";
 @import "./templates/modal-slots.css";

@@ -18,12 +18,10 @@ export function installModalSlotTemplate(BundleWidgetProductPage) {
     const button = this.elements?.addToCartButton;
     if (!button) return;
 
-    if (this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()) {
-      button.style.backgroundColor = '#000000';
-      return;
-    }
-
-    button.style.backgroundColor = '';
+    button.classList.toggle(
+      'bw-ppb-primary-cta--modal-vertical',
+      this._getProductPageTemplateType() === 'PDP_MODAL' && this._usesVerticalModalSlotLayout()
+    );
   };
 
   prototype._createModalSlotStepSection = function(step) {
@@ -73,18 +71,8 @@ export function installModalSlotTemplate(BundleWidgetProductPage) {
       iconWrapper.className = 'bw-slot-card__plus-icon';
       const primaryColor = getComputedStyle(document.documentElement)
         .getPropertyValue('--bundle-global-primary-button').trim() || '#1e3a8a';
-      iconWrapper.style.cssText = `
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: color-mix(in srgb, ${primaryColor} 8%, transparent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
-      `;
+      iconWrapper.style.setProperty('--bw-slot-icon-color', primaryColor);
       this._appendSlotIcon(iconWrapper);
-      iconWrapper.style.color = primaryColor;
       stepBox.appendChild(iconWrapper);
     }
 
@@ -107,7 +95,7 @@ export function installModalSlotTemplate(BundleWidgetProductPage) {
       const slotIconImg = document.createElement('img');
       slotIconImg.src = productSlotIconUrl;
       slotIconImg.alt = '';
-      slotIconImg.style.cssText = 'width:28px;height:28px;object-fit:contain;display:block;';
+      slotIconImg.className = 'bw-slot-card__slot-icon-img';
       iconWrapper.appendChild(slotIconImg);
       return;
     }
