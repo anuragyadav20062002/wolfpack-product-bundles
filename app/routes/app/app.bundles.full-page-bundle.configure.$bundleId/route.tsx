@@ -1015,9 +1015,11 @@ export default function ConfigureBundleFlow() {
   );
   const normalizedPageSlug = useMemo(() => slugify(pageSlug), [pageSlug]);
   const pageSlugError = useMemo(() => validateSlug(pageSlug), [pageSlug]);
-  const pageUrlPreview = useMemo(
-    () => `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`,
-    [shopDomain, bundle.id]
+  const bundlePageUrl = useMemo(
+    () => bundle.shopifyPageHandle
+      ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
+      : "",
+    [shopDomain, bundle.shopifyPageHandle]
   );
 
   useEffect(() => {
@@ -2220,15 +2222,7 @@ export default function ConfigureBundleFlow() {
         ? shop.replace('.myshopify.com', '')
         : shop.split('.')[0];
 
-      // When the theme app extension is enabled AND the bundle is active or
-      // unlisted, open the Shopify Page URL so the merchant sees the live
-      // storefront experience. Otherwise keep the app-proxy URL as the
-      // canonical preview destination.
-      const bundleStatus = String((bundle as any).status ?? "").toLowerCase();
-      const liveEligible = appEmbedEnabled && (bundleStatus === "active" || bundleStatus === "unlisted");
-      const pageUrl = liveEligible
-        ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
-        : `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
+      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
 
 
       open(pageUrl, '_blank');
@@ -4681,28 +4675,30 @@ export default function ConfigureBundleFlow() {
                         <input
                           className={fullPageBundleStyles.visibilityTextInput}
                           aria-label="Bundle link"
-                          value={pageUrlPreview}
+                          value={bundlePageUrl}
                           disabled
                           readOnly
                         />
-                        <button
-                          type="button"
-                          className={fullPageBundleStyles.visibilitySecondaryAction}
-                          onClick={() => {
-                            void navigator.clipboard?.writeText(pageUrlPreview);
-                            shopify.toast.show("Bundle link copied", { isError: false });
-                          }}
-                        >
-                          Copy Link
-                        </button>
                         {bundle.shopifyPageHandle && (
-                          <button
-                            type="button"
-                            className={fullPageBundleStyles.visibilityPlainAction}
-                            onClick={() => window.open(pageUrlPreview, '_blank')}
-                          >
-                            View on Storefront
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.visibilitySecondaryAction}
+                              onClick={() => {
+                                void navigator.clipboard?.writeText(bundlePageUrl);
+                                shopify.toast.show("Bundle link copied", { isError: false });
+                              }}
+                            >
+                              Copy Link
+                            </button>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.visibilityPlainAction}
+                              onClick={() => window.open(bundlePageUrl, '_blank')}
+                            >
+                              View on Storefront
+                            </button>
+                          </>
                         )}
                         {!bundle.shopifyPageHandle && (
                           <button

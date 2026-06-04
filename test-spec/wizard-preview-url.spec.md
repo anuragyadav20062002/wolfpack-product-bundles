@@ -22,11 +22,11 @@ buildWizardPreviewUrl({
 
 | # | Scenario | Input | Expected Output | Notes |
 |---|---|---|---|---|
-| 1 | FPB always returns app-proxy URL | `{ shop: "s.myshopify.com", bundleId: "abc", bundleType: "full_page", productHandle: null, pageHandle: null }` | `{ kind: "url", url: "https://s.myshopify.com/apps/product-bundles/wpb/abc" }` | FPB does not need a page handle — the app proxy route resolves by bundle id |
-| 2 | FPB with page handle still uses app proxy | `{ ..., pageHandle: "build-your-box" }` | Same as #1 | We use the app-proxy URL as the canonical preview destination |
+| 1 | FPB without page handle returns error | `{ shop: "s.myshopify.com", bundleId: "abc", bundleType: "full_page", productHandle: null, pageHandle: null }` | `{ kind: "error", reason: "missing_page_handle" }` | Do not open stale proxy URL |
+| 2 | FPB with page handle opens Shopify page | `{ ..., pageHandle: "build-your-box" }` | `{ kind: "url", url: "https://s.myshopify.com/pages/build-your-box" }` | Page URL is the storefront destination |
 | 3 | PPB with product handle | `{ shop: "s.myshopify.com", bundleId: "abc", bundleType: "product_page", productHandle: "summer-bundle", pageHandle: null }` | `{ kind: "url", url: "https://s.myshopify.com/products/summer-bundle" }` | |
 | 4 | PPB without product handle | `{ shop: "s.myshopify.com", bundleId: "abc", bundleType: "product_page", productHandle: null, pageHandle: null }` | `{ kind: "error", reason: "missing_product_handle" }` | Bundle product not yet created or handle not backfilled |
-| 5 | Shop with `https://` prefix is normalized | `{ shop: "https://s.myshopify.com", bundleId: "abc", bundleType: "full_page", productHandle: null, pageHandle: null }` | URL exactly `https://s.myshopify.com/apps/product-bundles/wpb/abc` (no double-`https://`) | Helper must strip protocol if accidentally passed |
+| 5 | Shop with `https://` prefix is normalized | `{ shop: "https://s.myshopify.com", bundleId: "abc", bundleType: "full_page", productHandle: null, pageHandle: null }` | `{ kind: "error", reason: "missing_page_handle" }` | Helper must not fabricate a proxy URL |
 | 6 | Shop with trailing slash is normalized | `{ shop: "s.myshopify.com/", ... }` | URL with single slash before path | |
 
 ## Acceptance Criteria
