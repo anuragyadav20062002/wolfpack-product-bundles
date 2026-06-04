@@ -40,7 +40,11 @@ describe("Full Page widget template layout contract", () => {
     );
   });
 
-  it("includes horizontal preset CSS for the evidenced FPB card and layout rules", () => {
+  it("matches Horizontal Design HORIZONTAL side-footer storefront contract", () => {
+    const source = readFileSync(
+      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
+      "utf8",
+    );
     const css = readFileSync(
       join(
         process.cwd(),
@@ -48,12 +52,25 @@ describe("Full Page widget template layout contract", () => {
       ),
       "utf8",
     );
+    const storefrontStyles = `${source}\n${css}`;
 
-    expect(css).toContain('.layout-sidebar[data-fpb-design-preset="HORIZONTAL"]');
-    expect(css).toContain("grid-template-columns:0.65fr 0.35fr");
-    expect(css).toContain("grid-template-columns:repeat(2,");
-    expect(css).toContain("grid-template-columns:minmax(120px,0.3fr) minmax(0,0.7fr)");
-    expect(css).toContain("grid-template-columns:1fr");
+    expect(source).toContain("ensureHorizontalSidePanelSlotRuntimeStyles()");
+    expect(source).toContain("wpb-fpb-horizontal-slots-runtime-styles");
+    expect(source).toContain("this.getFullPageDesignPreset() !== 'HORIZONTAL'");
+
+    expect(storefrontStyles).toContain("[data-fpb-design-preset=HORIZONTAL]");
+    expect(storefrontStyles).toContain("[data-bundle-type=full_page][data-fpb-design-preset=HORIZONTAL]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.65fr 0.35fr;gap:15px;max-width:1455px;padding:0;align-items:start}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:12px 0 20px;padding:0;overflow:visible}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:156px;min-height:156px;display:grid;grid-template-columns:0.281fr minmax(0,0.719fr);grid-template-rows:62px 0 62px;");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image{grid-column:1;grid-row:1 / span 3;width:100%;height:140px;min-height:140px;");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;justify-self:end;align-self:end}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .full-page-side-panel{width:100%;flex:initial;min-height:738px;margin-top:115px;padding:20px;");
+    expect(storefrontStyles).toContain("@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-layout-wrapper{display:block;padding:0}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid{grid-template-columns:1fr;gap:15px}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card{height:136px;min-height:136px;grid-template-columns:103.8px minmax(0,1fr);grid-template-rows:52px 0 52px;");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image{width:103.8px;height:120px;min-height:120px}");
+    expect(storefrontStyles).toContain(".side-panel-product-slot{width:70px;height:70px;flex:0 0 70px");
   });
 
   it("renders FPB product-card add buttons with the evidenced text label", () => {
@@ -72,25 +89,6 @@ describe("Full Page widget template layout contract", () => {
     expect(source).toContain("addButtonText: this.getProductAddButtonText()");
     expect(componentGenerator).toContain("const addButtonText = options.addButtonText || '+';");
     expect(componentGenerator).toContain("${this.escapeHtml(addButtonText)}");
-  });
-
-  it("includes compact horizontal mobile card CSS with rectangular card CTAs", () => {
-    const css = readFileSync(
-      join(
-        process.cwd(),
-        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
-      ),
-      "utf8",
-    );
-
-    expect(css).toContain(".layout-sidebar .product-add-btn");
-    expect(css).toContain("height:36px");
-    expect(css).toContain("border-radius:5px");
-    expect(css).toContain("box-shadow:none");
-    expect(css).toContain('.layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .sidebar-content .product-add-btn');
-    expect(css).toContain("grid-template-columns:112px minmax(0,1fr)");
-    expect(css).toContain("min-height:112px");
-    expect(css).toContain("height:100px");
   });
 
   it("matches EB Standard Design DEFAULT side-footer storefront contract", () => {
