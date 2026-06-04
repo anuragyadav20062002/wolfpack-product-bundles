@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 2.9.70
+ * Version : 2.9.71
  * Built   : 2026-06-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.70';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.71';
 (function() {
   'use strict';
 
@@ -2256,21 +2256,21 @@ function installCascadeTemplate(BundleWidgetProductPage) {
   };
 
   prototype._renderCascadeFooter = function(el) {
-    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer';
+    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer gbbMixCascadeFooterWrapper gbbMixCascadeFooterWrapper--bundleATCBtnV2 gbbMixCascadeFooterWrapper--cartDrawerUI';
     el.style.display = '';
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
     const drawer = document.createElement('div');
-    drawer.className = 'bw-ppb-cascade-selected-drawer';
+    drawer.className = 'bw-ppb-cascade-selected-drawer gbbMixCascadeCartDrawerContainer';
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'bw-ppb-cascade-selected-toggle';
+    toggle.className = 'bw-ppb-cascade-selected-toggle gbbMixCascadeSelectedItemsInCartWrappper';
     const totalSelectedQuantity = selectedEntries.reduce((sum, entry) => sum + entry.quantity, 0);
     toggle.innerHTML = `
-      <span class="bw-ppb-cascade-selected-toggle-label">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
-      <span class="bw-ppb-cascade-selected-toggle-count">${totalSelectedQuantity}</span>
+      <span class="bw-ppb-cascade-selected-toggle-label gbbMixCascadeCartDrawerBtnText">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
+      <span class="bw-ppb-cascade-selected-toggle-count gbbMixCascadeSelectedItemsInCart">${totalSelectedQuantity}</span>
     `;
     toggle.addEventListener('click', () => {
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
@@ -2279,13 +2279,13 @@ function installCascadeTemplate(BundleWidgetProductPage) {
 
     if (selectedEntries.length > 0) {
       const list = document.createElement('div');
-      list.className = 'bw-ppb-cascade-selected-list';
+      list.className = 'bw-ppb-cascade-selected-list gbbMixCascadeCartItemsWrapper';
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
         const item = document.createElement('div');
-        item.className = 'bw-ppb-cascade-selected-item';
+        item.className = 'bw-ppb-cascade-selected-item gbbMixCascadeBundleCartItem';
         item.innerHTML = `
-          <img src="${product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(product.title || '')}" loading="lazy">
-          <span>${ComponentGenerator.escapeHtml(product.title || '')}${quantity > 1 ? ` × ${quantity}` : ''}</span>
+          <img class="gbbMixCascadeCartItemImage" src="${product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(product.title || '')}" loading="lazy">
+          <span class="gbbMixCascadeCartItemTitle">${ComponentGenerator.escapeHtml(product.title || '')}${quantity > 1 ? ` × ${quantity}` : ''}</span>
           <button type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(product.title || 'product')}">×</button>
         `;
         item.querySelector('button')?.addEventListener('click', () => {
@@ -2697,6 +2697,15 @@ class BundleWidgetProductPage {
 
     const templateType = this._getProductPageTemplateType();
     const designPreset = this._getProductPageDesignPreset();
+
+    this.container.classList.toggle(
+      'gbbMixPageWrapper',
+      templateType === 'PDP_INPAGE' && designPreset === 'CASCADE'
+    );
+    this.container.classList.toggle(
+      'gbbMixProductPageWrapperV2',
+      templateType === 'PDP_INPAGE' && designPreset === 'CASCADE'
+    );
 
     this.container.dataset.ppbTemplateType = templateType;
     this.container.dataset.ppbDesignPreset = designPreset;
@@ -3469,10 +3478,11 @@ class BundleWidgetProductPage {
   _createInpageStepSection(step, stepIndex) {
     const section = document.createElement('div');
     const preset = this._getProductPageDesignPreset();
-    section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}`;
+    const isCascade = this._isProductPageCascadeTemplate?.() === true;
+    section.className = `bw-ppb-inpage-step-section bw-ppb-inpage-step-section--${preset.toLowerCase()}${isCascade ? ' gbbMixCascadeBodyWrapper' : ''}`;
 
     const title = document.createElement('div');
-    title.className = 'bw-ppb-inpage-step-title';
+    title.className = `bw-ppb-inpage-step-title${isCascade ? ' gbbMixCascadeBodyHeaderCategoryName' : ''}`;
     title.textContent = step.pageTitle || step.name || '';
     section.appendChild(title);
 
@@ -3495,18 +3505,22 @@ class BundleWidgetProductPage {
     }
 
     const tabs = document.createElement('div');
-    tabs.className = 'bw-ppb-inpage-category-tabs';
+    const isCascade = this._isProductPageCascadeTemplate?.() === true;
+    tabs.className = `bw-ppb-inpage-category-tabs${isCascade ? ' gbbMixCascadeCategoryTabsWrapper' : ''}`;
 
     categories.forEach((category, categoryIndex) => {
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = `bw-ppb-inpage-category-tab${categoryIndex === this.activeInpageCategoryIndexes[stepIndex] ? ' active' : ''}`;
+      const isActive = categoryIndex === this.activeInpageCategoryIndexes[stepIndex];
+      button.className = `bw-ppb-inpage-category-tab${isActive ? ' active' : ''}${isCascade ? ` gbbMixCascadeCategoryTab${isActive ? ' gbbMixCascadeCategoryTab--active' : ''}` : ''}`;
       button.dataset.categoryIndex = String(categoryIndex);
       button.textContent = this._getInpageCategoryLabel(category, categoryIndex);
       button.addEventListener('click', () => {
         this.activeInpageCategoryIndexes[stepIndex] = categoryIndex;
         tabs.querySelectorAll('.bw-ppb-inpage-category-tab').forEach(tab => {
-          tab.classList.toggle('active', tab === button);
+          const active = tab === button;
+          tab.classList.toggle('active', active);
+          tab.classList.toggle('gbbMixCascadeCategoryTab--active', active);
         });
         const grid = tabs.parentElement?.querySelector('.bw-ppb-inpage-step-grid');
         if (grid) this._renderInpageStepProducts(stepIndex, grid);
@@ -3612,34 +3626,61 @@ class BundleWidgetProductPage {
         ? '<div class="product-stock-badge product-stock-badge--out">Out of stock</div>'
         : '';
 
+      const productContent = `
+        <div class="product-title${usesCascadeCards ? ' gbbMixCascadeProductTitle' : ''}">${ComponentGenerator.escapeHtml(product.title)}</div>
+        ${product.price ? `
+          <div class="product-price-row${usesCascadeCards ? ' gbbMixCascadeProductsPriceWrapper' : ''}">
+            ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike${usesCascadeCards ? ' gbbMixCascadeProductCompareAtPrice' : ''}">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+            <span class="product-price${usesCascadeCards ? ' gbbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+          </div>
+        ` : ''}
+        ${this.renderVariantSelector(product)}
+        ${showQuantitySelector ? `
+          <div class="product-quantity-wrapper">
+            <div class="product-quantity-selector">
+              <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+              <span class="qty-display">${currentQuantity}</span>
+              <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+            </div>
+          </div>
+        ` : ''}
+      `;
+      const addButton = `
+        <button class="product-add-btn${usesCascadeCards ? ' gbbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+          ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +'))}
+        </button>
+      `;
+
+      if (usesCascadeCards) {
+        return `
+          <div class="product-card bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
+            ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
+            <div class="gbbMixCascadeProductLeftSection">
+              <div class="product-image gbbMixCascadeProductImageWrapper">
+                <img class="gbbMixCascadeProductImage" src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
+                ${stockBadge}
+              </div>
+              <div class="product-content-wrapper gbbMixCascadeProductsDetailsWrapper">
+                ${productContent}
+              </div>
+            </div>
+            <div class="gbbMixCascadeProductRightSection">
+              <div class="gbbMixCascadeProductBtnWrapper">${addButton}</div>
+            </div>
+          </div>
+        `;
+      }
+
       return `
-        <div class="product-card ${usesCascadeCards ? 'bw-ppb-cascade-product-row' : ''} ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+        <div class="product-card ${usesGridCards ? 'bw-ppb-cognive-product-card' : ''} ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
           ${currentQuantity > 0 ? '<div class="selected-overlay">✓</div>' : ''}
           <div class="product-image">
             <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
             ${stockBadge}
           </div>
           <div class="product-content-wrapper">
-            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
-            ${product.price ? `
-              <div class="product-price-row">
-                ${this._shouldShowProductComparedAtPrice() && product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-              </div>
-            ` : ''}
-            ${this.renderVariantSelector(product)}
-            ${showQuantitySelector ? `
-              <div class="product-quantity-wrapper">
-                <div class="product-quantity-selector">
-                  <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                  <span class="qty-display">${currentQuantity}</span>
-                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
-                </div>
-              </div>
-            ` : ''}
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +'))}
-            </button>
+            ${productContent}
+            ${addButton}
           </div>
         </div>
       `;

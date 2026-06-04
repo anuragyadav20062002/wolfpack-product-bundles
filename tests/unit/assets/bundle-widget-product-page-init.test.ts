@@ -542,15 +542,28 @@ describe('Product Page modal-slot visual contract', () => {
     expect(cascadeTemplate).toContain('_getSelectedProductEntries');
     expect(source).toContain('bw-ppb-cascade-product-list');
     expect(source).toContain('bw-ppb-cascade-product-row');
+    expect(source).toContain('gbbMixPageWrapper');
+    expect(source).toContain('gbbMixProductPageWrapperV2');
+    expect(source).toContain('gbbMixCascadeProductWrapper');
+    expect(source).toContain('gbbMixCascadeProductLeftSection');
+    expect(source).toContain('gbbMixCascadeProductRightSection');
+    expect(source).toContain('gbbMixCascadeAddBtn');
     expect(cascadeTemplate).toContain('bw-ppb-cascade-selected-toggle');
+    expect(cascadeTemplate).toContain('gbbMixCascadeFooterWrapper');
+    expect(cascadeTemplate).toContain('gbbMixCascadeSelectedItemsInCartWrappper');
+    expect(cascadeTemplate).toContain('gbbMixCascadeCartDrawerContainer');
     expect(cascadeTemplate).toContain('viewBundleItems');
     expect(source).toContain('const showQuantitySelector = !this._usesCompactInpageProductCards()');
 
     expect(css).toContain('.bw-ppb-cascade-footer');
     expect(css).toContain('.bw-ppb-cascade-selected-toggle');
     expect(css).toContain('.bw-ppb-cascade-product-row');
+    expect(css).toContain('grid-template-columns:minmax(0,1fr) 90px');
+    expect(css).toContain('.gbbMixCascadeProductLeftSection');
+    expect(css).toContain('.gbbMixCascadeFooterWrapper--cartDrawerUI');
+    expect(css).toContain('.gbbMixCascadeSelectedItemsInCartWrappper');
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .bw-ppb-dynamic-checkout-visual');
-    expect(css).toContain('border-radius:999px');
+    expect(css).toContain('border-radius:10px');
     expect(css).toContain('background:#111111');
   });
 

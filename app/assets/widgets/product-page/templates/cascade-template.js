@@ -80,21 +80,21 @@ export function installCascadeTemplate(BundleWidgetProductPage) {
   };
 
   prototype._renderCascadeFooter = function(el) {
-    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer';
+    el.className = 'bundle-footer-messaging bw-ppb-cascade-footer gbbMixCascadeFooterWrapper gbbMixCascadeFooterWrapper--bundleATCBtnV2 gbbMixCascadeFooterWrapper--cartDrawerUI';
     el.style.display = '';
     el.style.cssText = '';
 
     const selectedEntries = this._getSelectedProductEntries();
     const drawer = document.createElement('div');
-    drawer.className = 'bw-ppb-cascade-selected-drawer';
+    drawer.className = 'bw-ppb-cascade-selected-drawer gbbMixCascadeCartDrawerContainer';
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'bw-ppb-cascade-selected-toggle';
+    toggle.className = 'bw-ppb-cascade-selected-toggle gbbMixCascadeSelectedItemsInCartWrappper';
     const totalSelectedQuantity = selectedEntries.reduce((sum, entry) => sum + entry.quantity, 0);
     toggle.innerHTML = `
-      <span class="bw-ppb-cascade-selected-toggle-label">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
-      <span class="bw-ppb-cascade-selected-toggle-count">${totalSelectedQuantity}</span>
+      <span class="bw-ppb-cascade-selected-toggle-label gbbMixCascadeCartDrawerBtnText">${ComponentGenerator.escapeHtml(this._resolveText('viewBundleItems', 'View Bundle Items'))}</span>
+      <span class="bw-ppb-cascade-selected-toggle-count gbbMixCascadeSelectedItemsInCart">${totalSelectedQuantity}</span>
     `;
     toggle.addEventListener('click', () => {
       drawer.classList.toggle('bw-ppb-cascade-selected-drawer--open');
@@ -103,13 +103,13 @@ export function installCascadeTemplate(BundleWidgetProductPage) {
 
     if (selectedEntries.length > 0) {
       const list = document.createElement('div');
-      list.className = 'bw-ppb-cascade-selected-list';
+      list.className = 'bw-ppb-cascade-selected-list gbbMixCascadeCartItemsWrapper';
       selectedEntries.forEach(({ stepIndex, variantId, quantity, product }) => {
         const item = document.createElement('div');
-        item.className = 'bw-ppb-cascade-selected-item';
+        item.className = 'bw-ppb-cascade-selected-item gbbMixCascadeBundleCartItem';
         item.innerHTML = `
-          <img src="${product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(product.title || '')}" loading="lazy">
-          <span>${ComponentGenerator.escapeHtml(product.title || '')}${quantity > 1 ? ` × ${quantity}` : ''}</span>
+          <img class="gbbMixCascadeCartItemImage" src="${product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${ComponentGenerator.escapeHtml(product.title || '')}" loading="lazy">
+          <span class="gbbMixCascadeCartItemTitle">${ComponentGenerator.escapeHtml(product.title || '')}${quantity > 1 ? ` × ${quantity}` : ''}</span>
           <button type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(product.title || 'product')}">×</button>
         `;
         item.querySelector('button')?.addEventListener('click', () => {
