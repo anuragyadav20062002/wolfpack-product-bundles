@@ -31,7 +31,7 @@ import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui"
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
-import { FPB_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
+import { FPB_TOUR_STEPS, type TourStep } from "../../../components/bundle-configure/tourSteps";
 import {
   MultiLanguageTextModal,
   type MultiLanguageField,
@@ -2375,6 +2375,13 @@ export default function ConfigureBundleFlow() {
         break;
     }
   }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle.id, bundleProduct, openProductInAdmin]);
+
+  const handleGuidedTourStepChange = useCallback((step: TourStep) => {
+    if (step.sectionId) {
+      setActiveSection(step.sectionId);
+    }
+    setReadinessOpen(step.targetSection === "fpb-readiness-score");
+  }, []);
 
   const handleTemplatePreview = useCallback(() => {
     void handlePreviewBundle();
@@ -5799,6 +5806,7 @@ export default function ConfigureBundleFlow() {
         steps={FPB_TOUR_STEPS}
         shop={shop}
         enabled={loaderData.showFirstLoadTour === true}
+        onStepChange={handleGuidedTourStepChange}
       />
 
       <MultiLanguageTextModal
