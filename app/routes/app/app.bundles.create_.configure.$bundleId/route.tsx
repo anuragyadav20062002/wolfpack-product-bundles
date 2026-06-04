@@ -28,9 +28,7 @@ import {
 } from "../../../types/pricing";
 import { useBundlePricing } from "../../../hooks/useBundlePricing";
 import { FilePicker } from "../../../components/shared/FilePicker";
-import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
-import { WIZARD_CONFIGURE_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
 import { getBundleWizardConfigurePath } from "../../../lib/bundle-navigation";
 import { buildWizardPreviewUrl } from "../../../lib/wizard-preview-url";
 import { parseConditionValue } from "../../../lib/parse-condition-value";
@@ -296,7 +294,6 @@ const CUSTOM_FIELD_TYPE_OPTIONS = [
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { admin, session } = await requireAdminSession(request);
   const bundleId = params.bundleId!;
-  const showFirstLoadTour = new URL(request.url).searchParams.get("first_load") === "true";
 
   const bundle = await db.bundle.findUnique({
     where: { id: bundleId, shopId: session.shop },
@@ -403,7 +400,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     shopLocales,
     shop: session.shop,
     themeEditorUrl,
-    showFirstLoadTour,
   });
 };
 
@@ -608,7 +604,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // ── Component ─────────────────────────────────────────────────────
 
 export default function WizardConfigureStep() {
-  const { bundle, readiness, shopLocales, shop, themeEditorUrl, showFirstLoadTour } =
+  const { bundle, readiness, shopLocales, shop, themeEditorUrl } =
     useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
@@ -2796,15 +2792,6 @@ export default function WizardConfigureStep() {
           </div>
         </div>
       )}
-
-      {/* Guided Tour */}
-      <BundleGuidedTour
-        steps={WIZARD_CONFIGURE_TOUR_STEPS}
-        shop={shop}
-        enabled={showFirstLoadTour}
-        onComplete={() => setReadinessOpen(true)}
-        onDismiss={() => {}}
-      />
 
       {/* Readiness Score Widget */}
       <BundleReadinessOverlay

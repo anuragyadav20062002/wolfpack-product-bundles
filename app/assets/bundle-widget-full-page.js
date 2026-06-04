@@ -151,6 +151,7 @@ class BundleWidgetFullPage {
       // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
       await this.loadLanguageSettings();
+      await this.loadControlsSettings();
 
       // Storefront self-heal: make sure the shop has an active CartTransform.
       this._scheduleCartTransformSelfHeal();
@@ -315,6 +316,52 @@ class BundleWidgetFullPage {
     } catch (_) {
       // Non-critical: default and bundle-level text still render.
     }
+  }
+
+  async loadControlsSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      this.config.controlsSettings = await response.json();
+    } catch (_) {
+      // Non-critical: the widget keeps its current default behavior.
+    }
+  }
+
+  _getLandingPageControls() {
+    return this.config.controlsSettings?.activeControls
+      || this.config.controlsSettings?.settingsControls?.landingPage
+      || null;
+  }
+
+  _runControlsScript(script) {
+    if (!script || typeof script !== 'string') return;
+    try {
+      new Function(script).call(window);
+    } catch (_) {
+      // Merchant-authored integration script should not block bundle checkout.
+    }
+  }
+
+  _handlePostAddToCartAction(actionConfig) {
+    const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
+    this._runControlsScript(checkout.executeScript);
+
+    if (checkout.action === 'checkout') {
+      setTimeout(() => {
+        window.location.href = '/checkout';
+      }, 1000);
+      return;
+    }
+
+    setTimeout(() => {
+      window.location.href = '/cart';
+    }, 1000);
   }
 
   _scheduleCartTransformSelfHeal() {
@@ -1110,6 +1157,11 @@ class BundleWidgetFullPage {
     const contentHeader = this.createStepContentHeader(this.currentStepIndex);
     if (contentHeader) this.elements.stepsContainer.appendChild(contentHeader);
 
+    if (this.config.showCategoryTabs) {
+      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (categoryTabs) this.elements.stepsContainer.appendChild(categoryTabs);
+    }
+
     // Two-column wrapper: content (center) | sidebar (right)
     const twoColWrapper = document.createElement('div');
     twoColWrapper.className = 'sidebar-layout-wrapper';
@@ -1126,11 +1178,6 @@ class BundleWidgetFullPage {
 
     if (this.shouldRenderFullPageSearch()) {
       contentSection.appendChild(this.createSearchInput());
-    }
-
-    if (this.config.showCategoryTabs) {
-      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-      if (categoryTabs) contentSection.appendChild(categoryTabs);
     }
 
     const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
@@ -2874,7 +2921,16 @@ class BundleWidgetFullPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+            const imageUrl = variant.image?.src
+              || variant.image?.url
+              || (typeof variant.image === 'string' ? variant.image : null)
+              || variant.imageUrl
+              || product.imageUrl
+              || product.featuredImage?.url
+              || product.images?.[0]?.url
+              || product.images?.[0]?.src
+              || product.images?.[0]?.originalSrc
+              || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
@@ -4365,11 +4421,7 @@ class BundleWidgetFullPage {
 
         // Show success message
         ToastManager.show('Bundle added to cart successfully!');
-
-        // Redirect to cart page after short delay
-        setTimeout(() => {
-          window.location.href = '/cart';
-        }, 1000);
+        this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
       } catch (fetchError) {
         ToastManager.show('Failed to add bundle to cart. Please try again.');
@@ -5167,7 +5219,16 @@ class BundleWidgetFullPage {
           .map(variant => {
             // Storefront API: prioritize variant image, fallback to product featured image.
             // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
-            const imageUrl = variant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
+            const imageUrl = variant?.image?.src
+              || variant?.image?.url
+              || (typeof variant?.image === 'string' ? variant.image : null)
+              || variant?.imageUrl
+              || product.imageUrl
+              || product.featuredImage?.url
+              || product.images?.[0]?.url
+              || product.images?.[0]?.src
+              || product.images?.[0]?.originalSrc
+              || 'https://via.placeholder.com/150';
 
             return {
               id: this.extractId(variant.id),
@@ -5199,7 +5260,16 @@ class BundleWidgetFullPage {
 
         // Storefront API: prioritize variant image, fallback to product featured image.
         // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
+        const imageUrl = defaultVariant?.image?.src
+          || defaultVariant?.image?.url
+          || (typeof defaultVariant?.image === 'string' ? defaultVariant.image : null)
+          || defaultVariant?.imageUrl
+          || product.imageUrl
+          || product.featuredImage?.url
+          || product.images?.[0]?.url
+          || product.images?.[0]?.src
+          || product.images?.[0]?.originalSrc
+          || 'https://via.placeholder.com/150';
 
         // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(normalizeVariant);
@@ -6371,6 +6441,7 @@ class BundleWidgetFullPage {
     const fullPageTemplate = this.getFullPageTemplate();
     const fullPageDesignPreset = this.getFullPageDesignPreset();
     const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
+    const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
 
     this.container.dataset.fpbTemplateType = fullPageTemplate;
     this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
@@ -6379,7 +6450,17 @@ class BundleWidgetFullPage {
     this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
     this.container.dataset.fpbTabStyle = fullPageTabStyle;
     this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
-    this.elements.stepsContainer.dataset.fpbCardCtaMode = this.resolveFullPageCardCtaMode();
+    const cardCtaMode = this.resolveFullPageCardCtaMode();
+    this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
+    this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+    this.container.classList.add(presetClass);
+    this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
+    this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+    this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+    this.elements.stepsContainer.classList.add(presetClass);
+    this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
+    this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+    this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
   }
 
   /** Returns true if the given tier index is the currently active one. */

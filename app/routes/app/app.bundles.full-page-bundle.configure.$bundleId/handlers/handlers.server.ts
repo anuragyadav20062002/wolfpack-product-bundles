@@ -1223,7 +1223,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
           handle: `bundle-${bundle.id}`,
           productType: "Bundle",
           vendor: "Bundle Builder",
-          status: "ACTIVE",
+          status: "DRAFT",
           descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
           tags: ["WP-Bundles"]
         }
@@ -1403,7 +1403,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
               handle: `bundle-${bundle.id}`,
               productType: 'Bundle',
               vendor: 'Bundle Builder',
-              status: 'ACTIVE',
+              status: 'DRAFT',
               descriptionHtml: bundle.description || `${bundle.name} - Bundle Product`,
               tags: ['WP-Bundles'],
             },

@@ -16,7 +16,7 @@ export type DashboardPreviewInput = {
 
 export type DashboardPreviewAction =
   | { kind: "open_url"; url: string }
-  | { kind: "create_page_then_open"; url: string }
+  | { kind: "create_preview_page" }
   | { kind: "error"; toast: string };
 
 const PPB_MISSING_HANDLE_TOAST =
@@ -26,24 +26,15 @@ export function decideDashboardPreviewAction(
   input: DashboardPreviewInput,
 ): DashboardPreviewAction {
   const shop = normalizeShop(input.shop);
-  const status = (input.bundleStatus ?? "").toLowerCase();
-  const liveEligible = input.appEmbedEnabled === true && (status === "active" || status === "unlisted");
-
   if (input.bundleType === "full_page") {
-    if (liveEligible && input.shopifyPageHandle) {
+    if (input.shopifyPageHandle) {
       return {
         kind: "open_url",
         url: `https://${shop}/pages/${input.shopifyPageHandle}`,
       };
     }
 
-    const url = `https://${shop}/apps/product-bundles/wpb/${input.bundleId}`;
-    if (!input.shopifyPageHandle) {
-      // Proxy URL works regardless; kick off Shopify Page creation in the
-      // background so the bundle has a real Page next time.
-      return { kind: "create_page_then_open", url };
-    }
-    return { kind: "open_url", url };
+    return { kind: "create_preview_page" };
   }
 
   if (!input.shopifyProductHandle) {

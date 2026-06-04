@@ -1581,7 +1581,7 @@ export async function handleSyncProduct(admin: ShopifyAdmin, session: Session, b
       variables: {
         product: {
           ...productMetadata,
-          status: "ACTIVE",
+          status: "DRAFT",
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
             customDescription: bundle.description,
@@ -1803,7 +1803,7 @@ export async function handleSyncBundle(admin: ShopifyAdmin, session: Session, bu
       variables: {
         product: {
           ...productMetadata,
-          status: 'ACTIVE',
+          status: 'DRAFT',
           descriptionHtml: buildBundleProductDescriptionHtml({
             bundleName: bundle.name,
             customDescription: bundle.description,

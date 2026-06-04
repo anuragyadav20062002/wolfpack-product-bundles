@@ -20,6 +20,7 @@ import {
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
+import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
@@ -53,7 +54,7 @@ import {
 import type { LoaderData, BundleProductCardProps } from "./types";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
-import { PPB_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
+import { PPB_TOUR_STEPS, type TourStep } from "../../../components/bundle-configure/tourSteps";
 import {
   MultiLanguageTextModal,
   type MultiLanguageField,
@@ -689,6 +690,7 @@ export default function ConfigureBundleFlow() {
     originalValuesRef,
   } = configState;
 
+  const parentProductStatusUi = getParentProductStatusUi(productStatus || bundleProduct?.status || loadedBundleProduct?.status);
 
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
@@ -1743,6 +1745,13 @@ export default function ConfigureBundleFlow() {
     }
   }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle, bundleProduct, openProductInAdmin]);
 
+  const handleGuidedTourStepChange = useCallback((step: TourStep) => {
+    if (step.sectionId) {
+      setActiveSection(step.sectionId);
+    }
+    setReadinessOpen(step.targetSection === "fpb-readiness-score");
+  }, []);
+
   const handleAddNewStep = useCallback(() => {
     stepsState.addStep();
     setSlideDir("forward");
@@ -2227,7 +2236,7 @@ export default function ConfigureBundleFlow() {
           </div>
         </div>
 
-        {String(productStatus || loadedBundleProduct?.status || "").toLowerCase() !== "active" && (
+        {parentProductStatusUi.showUnlistedBanner && (
           <UnlistedBundleBanner
             shop={shop}
             bundleProductId={loadedBundleProduct?.id ?? (bundle as any).shopifyProductId ?? null}
@@ -2320,19 +2329,9 @@ export default function ConfigureBundleFlow() {
 
                   <div className={productPageBundleStyles.parentProductStatus}>
                     <span>Parent Product Status</span>
-                    {(() => {
-                      const normalizedStatus = String(productStatus || "").toLowerCase();
-                      const statusLabel = normalizedStatus === "active"
-                        ? "Active"
-                        : normalizedStatus === "archived"
-                          ? "Archived"
-                          : "Unlisted";
-                      return (
-                        <s-badge tone={statusLabel === "Active" ? "success" : "warning"}>
-                          {statusLabel}
-                        </s-badge>
-                      );
-                    })()}
+                    <s-badge tone={parentProductStatusUi.tone}>
+                      {parentProductStatusUi.label}
+                    </s-badge>
                   </div>
                 </s-stack>
               </s-section>
@@ -5778,6 +5777,7 @@ export default function ConfigureBundleFlow() {
         steps={PPB_TOUR_STEPS}
         shop={shop}
         enabled={loaderData.showFirstLoadTour === true}
+        onStepChange={handleGuidedTourStepChange}
       />
 
       <MultiLanguageTextModal

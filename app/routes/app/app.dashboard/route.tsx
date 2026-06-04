@@ -263,7 +263,15 @@ export default function Dashboard() {
     if (!intent) return;
     const data = fetcher.data as Record<string, unknown>;
     if (data.success) {
-      if (intent === 'cloneBundle' && data.bundleId) {
+      if (intent === 'createPreviewPage') {
+        const previewUrl = typeof data.shareablePreviewUrl === 'string' ? data.shareablePreviewUrl : '';
+        if (previewUrl) {
+          shopify.toast.show("Opening preview in new tab…", { duration: 2000 });
+          window.open(previewUrl, "_blank", "noopener,noreferrer");
+        } else {
+          shopify.toast.show("Preview page was created, but no preview URL was returned.", { isError: true, duration: 5000 });
+        }
+      } else if (intent === 'cloneBundle' && data.bundleId) {
         shopify.toast.show(t("dashboard.actions.cloneSuccess"));
         navigate(getBundleWizardConfigurePath(String(data.bundleId)));
       } else if (intent === 'deleteBundle') {
@@ -355,12 +363,13 @@ export default function Dashboard() {
         return;
       }
 
-      if (action.kind === "create_page_then_open") {
+      if (action.kind === "create_preview_page") {
         const formData = new FormData();
         formData.append("intent", "createPreviewPage");
         formData.append("bundleId", bundle.id);
         fetcherIntentRef.current = "createPreviewPage";
         fetcher.submit(formData, { method: "post" });
+        return;
       }
 
       window.open(action.url, "_blank", "noopener,noreferrer");

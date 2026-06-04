@@ -7,7 +7,7 @@
 import { buildWizardPreviewUrl } from "../../../app/lib/wizard-preview-url";
 
 describe("buildWizardPreviewUrl", () => {
-  it("returns app-proxy URL for full_page bundles", () => {
+  it("returns missing_page_handle for full_page bundles without a linked page", () => {
     const result = buildWizardPreviewUrl({
       shop: "s.myshopify.com",
       bundleId: "abc",
@@ -15,13 +15,10 @@ describe("buildWizardPreviewUrl", () => {
       productHandle: null,
       pageHandle: null,
     });
-    expect(result).toEqual({
-      kind: "url",
-      url: "https://s.myshopify.com/apps/product-bundles/wpb/abc",
-    });
+    expect(result).toEqual({ kind: "error", reason: "missing_page_handle" });
   });
 
-  it("keeps app-proxy URL for full_page even when page handle is present", () => {
+  it("returns Shopify page URL for full_page when page handle is present", () => {
     const result = buildWizardPreviewUrl({
       shop: "s.myshopify.com",
       bundleId: "abc",
@@ -31,7 +28,7 @@ describe("buildWizardPreviewUrl", () => {
     });
     expect(result).toEqual({
       kind: "url",
-      url: "https://s.myshopify.com/apps/product-bundles/wpb/abc",
+      url: "https://s.myshopify.com/pages/build-your-box",
     });
   });
 
@@ -68,10 +65,7 @@ describe("buildWizardPreviewUrl", () => {
       productHandle: null,
       pageHandle: null,
     });
-    expect(result).toEqual({
-      kind: "url",
-      url: "https://s.myshopify.com/apps/product-bundles/wpb/abc",
-    });
+    expect(result).toEqual({ kind: "error", reason: "missing_page_handle" });
   });
 
   it("strips a trailing slash from shop", () => {

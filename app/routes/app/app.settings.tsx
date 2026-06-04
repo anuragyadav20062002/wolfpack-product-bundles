@@ -2,6 +2,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-r
 import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
 import type { Prisma } from "@prisma/client";
 import { useEffect, useState } from "react";
+import { BundleType } from "../../constants/bundle";
 import { prisma } from "../../db.server";
 import { requireAdminSession } from "../../lib/auth-guards.server";
 import {
@@ -14,6 +15,7 @@ import {
   type SettingsField,
   type SettingsCardId,
 } from "../../lib/admin-configuration-surfaces";
+import { SETTINGS_CONTROLS_BUNDLE_TYPES, buildSettingsControlsRuntime } from "../../lib/settings-controls-runtime";
 import { SETTINGS_DESIGN_BUNDLE_TYPES, buildSettingsDesignRuntime } from "../../lib/settings-design-runtime";
 import { SETTINGS_LANGUAGE_BUNDLE_TYPES, buildSettingsLanguageRuntime } from "../../lib/settings-language-runtime";
 import styles from "../../styles/routes/admin-configuration-surfaces.module.css";
@@ -97,7 +99,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const designRuntime = buildSettingsDesignRuntime(payload);
 
     await Promise.all(SETTINGS_DESIGN_BUNDLE_TYPES.map(async (bundleType) => {
-      const currentForBundleType = bundleType === "product_page"
+      const currentForBundleType = bundleType === BundleType.PRODUCT_PAGE
         ? current
         : await prisma.designSettings.findUnique({
           where: { shopId_bundleType: { shopId: session.shop, bundleType } },
@@ -133,7 +135,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const languageRuntime = buildSettingsLanguageRuntime(payload);
 
     await Promise.all(SETTINGS_LANGUAGE_BUNDLE_TYPES.map(async (bundleType) => {
-      const currentForBundleType = bundleType === "product_page"
+      const currentForBundleType = bundleType === BundleType.PRODUCT_PAGE
         ? current
         : await prisma.designSettings.findUnique({
           where: { shopId_bundleType: { shopId: session.shop, bundleType } },
@@ -171,27 +173,48 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: true, message: "Settings saved successfully" });
   }
 
-  const runtimeSettings = {
-    ...(intent === "saveSettingsControls" ? buildControlsRuntimeData(payload) : {}),
-  };
-  const nextGeneralSettings = {
-    ...currentGeneralSettings,
-    settingsPage: nextSettingsPage,
-  };
-  const updateData = {
-    ...runtimeSettings,
-    generalSettings: nextGeneralSettings as Prisma.InputJsonValue,
-  } as Prisma.DesignSettingsUncheckedUpdateInput;
+  if (intent === "saveSettingsControls") {
+    const controlsRuntime = buildSettingsControlsRuntime(payload);
 
-  await prisma.designSettings.upsert({
-    where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
-    create: {
-      shopId: session.shop,
-      bundleType: "product_page",
-      ...updateData,
-    } as Prisma.DesignSettingsUncheckedCreateInput,
-    update: updateData,
-  });
+    await Promise.all(SETTINGS_CONTROLS_BUNDLE_TYPES.map(async (bundleType) => {
+      const currentForBundleType = bundleType === BundleType.PRODUCT_PAGE
+        ? current
+        : await prisma.designSettings.findUnique({
+          where: { shopId_bundleType: { shopId: session.shop, bundleType } },
+        });
+      const currentBundleGeneralSettings = currentForBundleType?.generalSettings && typeof currentForBundleType.generalSettings === "object"
+        ? currentForBundleType.generalSettings as Record<string, unknown>
+        : {};
+      const nextBundleSettingsPage = {
+        ...(currentBundleGeneralSettings.settingsPage && typeof currentBundleGeneralSettings.settingsPage === "object"
+          ? currentBundleGeneralSettings.settingsPage as Record<string, unknown>
+          : {}),
+        controls: payload,
+      };
+      const nextBundleGeneralSettings = {
+        ...currentBundleGeneralSettings,
+        settingsControls: controlsRuntime.settingsControls,
+        settingsPage: nextBundleSettingsPage,
+      };
+      const updateData = {
+        customCss: bundleType === BundleType.FULL_PAGE
+          ? controlsRuntime.fullPageCustomCss
+          : controlsRuntime.productPageCustomCss,
+        bundleCartLineMessaging: controlsRuntime.bundleCartLineMessaging as Prisma.InputJsonValue,
+        generalSettings: nextBundleGeneralSettings as Prisma.InputJsonValue,
+      } as Prisma.DesignSettingsUncheckedUpdateInput;
+
+      await prisma.designSettings.upsert({
+        where: { shopId_bundleType: { shopId: session.shop, bundleType } },
+        create: {
+          shopId: session.shop,
+          bundleType,
+          ...updateData,
+        } as Prisma.DesignSettingsUncheckedCreateInput,
+        update: updateData,
+      });
+    }));
+  }
 
   return json({ success: true, message: "Settings saved successfully" });
 }
@@ -237,36 +260,6 @@ function getInitialDesignFieldValues() {
 
 function getFieldValueKey(field: SettingsField) {
   return field.key ?? field.label;
-}
-
-function buildControlsRuntimeData(payload: Record<string, unknown>) {
-  const value = (label: string) => String(payload[label] ?? "");
-  const checked = (label: string) => value(label) === "Checked";
-  const customCss = [
-    value("Custom CSS for Mix And Match Bundles"),
-    value("Custom CSS for bundle builder pages"),
-    value("Custom CSS for bundle dummy product page"),
-    value("Custom CSS for theme pages"),
-  ].filter(Boolean).join("\n\n") || null;
-  const discountFormatValue = value("Discount format");
-  const discountFormat = discountFormatValue.includes("Amount only")
-    ? "amount_only"
-    : discountFormatValue.includes("Percentage only")
-      ? "percentage_only"
-      : "amount_percentage";
-
-  return {
-    customCss,
-    bundleCartLineMessaging: {
-      isEnabled: checked("Cart Messaging"),
-      showBundleContains: checked("Bundle Items"),
-      showOriginalPrice: checked("Original Bundle Price"),
-      discountDisplay: {
-        isEnabled: checked("Discount Display"),
-        format: discountFormat,
-      },
-    },
-  };
 }
 
 export default function SettingsRoute() {

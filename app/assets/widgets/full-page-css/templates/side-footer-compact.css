@@ -6,14 +6,14 @@
   --is:208px;
   --cg:12px}
 
-  .layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .full-page-product-grid {
+  .fpb-i .sidebar-content .full-page-product-grid {
   grid-template-columns:repeat(2, var(--cw,300px));
   gap:var(--cg,15px);
   justify-content:flex-start;
   padding:0;
   margin:12px 0 20px}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .full-page-side-panel {
+.fpb-i .full-page-side-panel {
   width:366px;
   flex:0 0 366px;
   min-height:681px;
@@ -24,7 +24,7 @@
   gap:5px;
   grid-template-columns:326px}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card {
+.fpb-i .sidebar-content .product-card {
   width:var(--cw,300px);
   min-width:var(--cw,300px);
   max-width:var(--cw,300px);
@@ -35,7 +35,7 @@
   border-radius:10px;
   box-shadow:none;}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-image {
+.fpb-i .sidebar-content .product-image {
   width:var(--is,284px);
   height:var(--is,284px);
   min-height:var(--is,284px);
@@ -44,13 +44,13 @@
   border-radius:8px;
   border-bottom:none}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-content-wrapper {
+.fpb-i .sidebar-content .product-content-wrapper {
   flex:0 0 auto;
   min-height:0;
   width:var(--is,284px);
   padding:0}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-title {
+.fpb-i .sidebar-content .product-title {
   min-height:49px;
   font-size:16px!important;
   line-height:22px!important;
@@ -58,7 +58,7 @@
   text-align:left;
   letter-spacing:0!important}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-price-row {
+.fpb-i .sidebar-content .product-price-row {
   min-height:0;
   margin:0;
   gap:1px;
@@ -84,20 +84,12 @@
 .fpb-mobile-bottom-sheet .side-panel-btn-back {
   display:none!important}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .full-page-product-grid {
+.fpb-i .sidebar-content .full-page-product-grid {
   gap:15px;
   margin:12px 0;
   padding:0}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card {
-  min-height:263px;
-  height:263px;
-  padding:8px;
-  border:0;
-  border-radius:10px;
-  box-shadow:none;}
-
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-image {
+.fpb-i .sidebar-content .product-image {
   width:100%;
   height:150px;
   min-height:150px;
@@ -106,12 +98,12 @@
   border-radius:8px;
   border-bottom:none}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-content-wrapper {
+.fpb-i .sidebar-content .product-content-wrapper {
   flex:0 0 auto;
   min-height:0;
   padding:0}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-title {
+.fpb-i .sidebar-content .product-title {
   min-height:41px;
   font-size:14px!important;
   font-weight:700!important;
@@ -119,20 +111,20 @@
   letter-spacing:0!important;
   text-align:left}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-price-row {
+.fpb-i .sidebar-content .product-price-row {
   min-height:0;
   margin:0;
   gap:1px;
   align-items:flex-start;
   text-align:left}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-price-strike {
+.fpb-i .sidebar-content .product-price-strike {
   font-size:10px!important}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-price {
+.fpb-i .sidebar-content .product-price {
   font-size:11px!important}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action {
+.fpb-i .sidebar-content .product-card-action {
   position:absolute;
   right:7px;
   bottom:7px;
@@ -142,13 +134,13 @@
   margin:0;
   z-index:20}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action.has-selected-quantity-badge {
+.fpb-i .sidebar-content .product-card-action.has-selected-quantity-badge {
   position:static;
   width:100%;
   height:35px;
   min-height:35px}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn {
+.fpb-i .sidebar-content .product-add-btn {
   width:28px;
   min-width:28px;
   height:28px;
@@ -158,7 +150,7 @@
   line-height:1;
   align-self:center}
 
-.layout-sidebar[data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn::before {
+.fpb-i .sidebar-content .product-add-btn::before {
   content:"+";
   font-size:18px;
   font-weight:700;

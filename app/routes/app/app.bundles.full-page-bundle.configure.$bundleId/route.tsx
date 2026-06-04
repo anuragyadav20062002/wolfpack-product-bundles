@@ -27,10 +27,11 @@ import {
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
+import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
-import { FPB_TOUR_STEPS } from "../../../components/bundle-configure/tourSteps";
+import { FPB_TOUR_STEPS, type TourStep } from "../../../components/bundle-configure/tourSteps";
 import {
   MultiLanguageTextModal,
   type MultiLanguageField,
@@ -979,6 +980,7 @@ export default function ConfigureBundleFlow() {
     originalValuesRef,
   } = configState;
   const suppressTopAppEmbedBannerForVisibility = activeSection === "bundle_visibility" || activeSection === "bundle_widget";
+  const parentProductStatusUi = getParentProductStatusUi(productStatus || bundleProduct?.status || loadedBundleProduct?.status);
 
   const [addonDraft, setAddonDraft] = useState(() =>
     buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
@@ -1013,9 +1015,11 @@ export default function ConfigureBundleFlow() {
   );
   const normalizedPageSlug = useMemo(() => slugify(pageSlug), [pageSlug]);
   const pageSlugError = useMemo(() => validateSlug(pageSlug), [pageSlug]);
-  const pageUrlPreview = useMemo(
-    () => `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`,
-    [shopDomain, bundle.id]
+  const bundlePageUrl = useMemo(
+    () => bundle.shopifyPageHandle
+      ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
+      : "",
+    [shopDomain, bundle.shopifyPageHandle]
   );
 
   useEffect(() => {
@@ -2218,15 +2222,7 @@ export default function ConfigureBundleFlow() {
         ? shop.replace('.myshopify.com', '')
         : shop.split('.')[0];
 
-      // When the theme app extension is enabled AND the bundle is active or
-      // unlisted, open the Shopify Page URL so the merchant sees the live
-      // storefront experience. Otherwise keep the app-proxy URL as the
-      // canonical preview destination.
-      const bundleStatus = String((bundle as any).status ?? "").toLowerCase();
-      const liveEligible = appEmbedEnabled && (bundleStatus === "active" || bundleStatus === "unlisted");
-      const pageUrl = liveEligible
-        ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
-        : `https://${shopDomain}.myshopify.com/apps/product-bundles/wpb/${bundle.id}`;
+      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
 
 
       open(pageUrl, '_blank');
@@ -2373,6 +2369,13 @@ export default function ConfigureBundleFlow() {
         break;
     }
   }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle.id, bundleProduct, openProductInAdmin]);
+
+  const handleGuidedTourStepChange = useCallback((step: TourStep) => {
+    if (step.sectionId) {
+      setActiveSection(step.sectionId);
+    }
+    setReadinessOpen(step.targetSection === "fpb-readiness-score");
+  }, []);
 
   const handleTemplatePreview = useCallback(() => {
     void handlePreviewBundle();
@@ -2687,7 +2690,7 @@ export default function ConfigureBundleFlow() {
           <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
         )}
 
-        {String((bundleProduct as any)?.status || "").toLowerCase() !== "active" && (
+        {parentProductStatusUi.showUnlistedBanner && (
           <UnlistedBundleBanner
             shop={shop}
             bundleProductId={bundleProduct?.id ?? bundle.shopifyProductId ?? null}
@@ -2780,8 +2783,8 @@ export default function ConfigureBundleFlow() {
 
                   <div className={fullPageBundleStyles.parentProductStatus}>
                     <span>Parent Product Status</span>
-                    <s-badge tone={String(productStatus).toLowerCase() === "active" ? "success" : "warning"}>
-                      {String(productStatus || "Unlisted").toLowerCase() === "active" ? "Active" : "Unlisted"}
+                    <s-badge tone={parentProductStatusUi.tone}>
+                      {parentProductStatusUi.label}
                     </s-badge>
                   </div>
                 </s-stack>
@@ -4672,28 +4675,30 @@ export default function ConfigureBundleFlow() {
                         <input
                           className={fullPageBundleStyles.visibilityTextInput}
                           aria-label="Bundle link"
-                          value={pageUrlPreview}
+                          value={bundlePageUrl}
                           disabled
                           readOnly
                         />
-                        <button
-                          type="button"
-                          className={fullPageBundleStyles.visibilitySecondaryAction}
-                          onClick={() => {
-                            void navigator.clipboard?.writeText(pageUrlPreview);
-                            shopify.toast.show("Bundle link copied", { isError: false });
-                          }}
-                        >
-                          Copy Link
-                        </button>
                         {bundle.shopifyPageHandle && (
-                          <button
-                            type="button"
-                            className={fullPageBundleStyles.visibilityPlainAction}
-                            onClick={() => window.open(pageUrlPreview, '_blank')}
-                          >
-                            View on Storefront
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.visibilitySecondaryAction}
+                              onClick={() => {
+                                void navigator.clipboard?.writeText(bundlePageUrl);
+                                shopify.toast.show("Bundle link copied", { isError: false });
+                              }}
+                            >
+                              Copy Link
+                            </button>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.visibilityPlainAction}
+                              onClick={() => window.open(bundlePageUrl, '_blank')}
+                            >
+                              View on Storefront
+                            </button>
+                          </>
                         )}
                         {!bundle.shopifyPageHandle && (
                           <button
@@ -5797,6 +5802,7 @@ export default function ConfigureBundleFlow() {
         steps={FPB_TOUR_STEPS}
         shop={shop}
         enabled={loaderData.showFirstLoadTour === true}
+        onStepChange={handleGuidedTourStepChange}
       />
 
       <MultiLanguageTextModal
