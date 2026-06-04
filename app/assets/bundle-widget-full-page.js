@@ -151,6 +151,7 @@ class BundleWidgetFullPage {
       // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
       await this.loadLanguageSettings();
+      await this.loadControlsSettings();
 
       // Storefront self-heal: make sure the shop has an active CartTransform.
       this._scheduleCartTransformSelfHeal();
@@ -315,6 +316,52 @@ class BundleWidgetFullPage {
     } catch (_) {
       // Non-critical: default and bundle-level text still render.
     }
+  }
+
+  async loadControlsSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      this.config.controlsSettings = await response.json();
+    } catch (_) {
+      // Non-critical: the widget keeps its current default behavior.
+    }
+  }
+
+  _getLandingPageControls() {
+    return this.config.controlsSettings?.activeControls
+      || this.config.controlsSettings?.settingsControls?.landingPage
+      || null;
+  }
+
+  _runControlsScript(script) {
+    if (!script || typeof script !== 'string') return;
+    try {
+      new Function(script).call(window);
+    } catch (_) {
+      // Merchant-authored integration script should not block bundle checkout.
+    }
+  }
+
+  _handlePostAddToCartAction(actionConfig) {
+    const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
+    this._runControlsScript(checkout.executeScript);
+
+    if (checkout.action === 'checkout') {
+      setTimeout(() => {
+        window.location.href = '/checkout';
+      }, 1000);
+      return;
+    }
+
+    setTimeout(() => {
+      window.location.href = '/cart';
+    }, 1000);
   }
 
   _scheduleCartTransformSelfHeal() {
@@ -4365,11 +4412,7 @@ class BundleWidgetFullPage {
 
         // Show success message
         ToastManager.show('Bundle added to cart successfully!');
-
-        // Redirect to cart page after short delay
-        setTimeout(() => {
-          window.location.href = '/cart';
-        }, 1000);
+        this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
       } catch (fetchError) {
         ToastManager.show('Failed to add bundle to cart. Please try again.');

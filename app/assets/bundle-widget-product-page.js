@@ -197,6 +197,7 @@ class BundleWidgetProductPage {
       // Load design settings CSS
       await this.loadDesignSettingsCSS();
       await this.loadLanguageSettings();
+      await this.loadControlsSettings();
 
       // Storefront self-heal: make sure the shop has an active CartTransform.
       this._scheduleCartTransformSelfHeal();
@@ -302,6 +303,73 @@ class BundleWidgetProductPage {
     } catch (_) {
       // Non-critical: default and bundle-level text still render.
     }
+  }
+
+  async loadControlsSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=product_page`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      this.config.controlsSettings = await response.json();
+    } catch (_) {
+      // Non-critical: the widget keeps its current default behavior.
+    }
+  }
+
+  _getProductPageControls() {
+    return this.config.controlsSettings?.activeControls
+      || this.config.controlsSettings?.settingsControls?.productPage
+      || null;
+  }
+
+  _isProductCardClickAddEnabled() {
+    const controls = this._getProductPageControls();
+    return controls?.addToCartWhenProductCardClicked === true;
+  }
+
+  _runControlsScript(script) {
+    if (!script || typeof script !== 'string') return;
+    try {
+      new Function(script).call(window);
+    } catch (_) {
+      // Merchant-authored integration script should not block bundle checkout.
+    }
+  }
+
+  _handlePostAddToCartAction(actionConfig) {
+    const controls = this._getProductPageControls();
+    const redirect = actionConfig || controls?.redirect || {};
+    this._runControlsScript(redirect.executeScript);
+    this._runControlsScript(controls?.scripts?.executeCustomScript);
+
+    const action = redirect.action || 'cart';
+    if (action === 'checkout') {
+      setTimeout(() => {
+        window.location.href = '/checkout';
+      }, 1000);
+      return;
+    }
+
+    if (action === 'side_cart') {
+      const selector = redirect.selectors?.sideCartOpenButton
+        || controls?.selectors?.sideCartOpenButton
+        || controls?.selectors?.sideCart;
+      if (selector) {
+        const sideCartTrigger = document.querySelector(selector);
+        if (sideCartTrigger) {
+          setTimeout(() => sideCartTrigger.click(), 300);
+          return;
+        }
+      }
+    }
+
+    setTimeout(() => {
+      window.location.href = '/cart';
+    }, 1000);
   }
 
   _scheduleCartTransformSelfHeal() {
@@ -3148,22 +3216,45 @@ class BundleWidgetProductPage {
       }
     });
 
-    // Product image/title click - open variant modal if product has variants
+    // Product card click follows Settings -> Controls. Product image/title still opens variants when card add is disabled.
     newProductGrid.addEventListener('click', (e) => {
+      const productCard = e.target.closest('.product-card');
+      if (!productCard) return;
+      if (e.target.closest('.product-add-btn, .qty-btn, .variant-selector, button, input, select, a')) return;
+
       const productImage = e.target.closest('.product-image');
       const productTitle = e.target.closest('.product-title');
+      const canClickCardToAdd = this._isProductCardClickAddEnabled();
+      if (!canClickCardToAdd && !productImage && !productTitle) return;
 
-      if (productImage || productTitle) {
-        const productCard = e.target.closest('.product-card');
-        if (productCard && this.productModal) {
-          const productId = productCard.dataset.productId;
-          const product = findProduct(productId);
+      const productId = productCard.dataset.productId;
+      const product = findProduct(productId);
+      if (!product) return;
 
-          if (product && product.variants && product.variants.length > 1 && step) {
-            // Product has variants - open modal for selection
-            this.productModal.open(product, step);
-          }
-        }
+      if (product.variants && product.variants.length > 1 && this.productModal && step) {
+        this.productModal.open(product, step);
+        return;
+      }
+
+      if (canClickCardToAdd) {
+        const currentQuantity = this.getSelectedQuantity(stepIndex, productId);
+        this.updateProductSelection(stepIndex, productId, currentQuantity > 0 ? 0 : 1);
+      }
+    });
+
+    // Add cursor pointer styles to clickable product cards, images, and titles.
+    newProductGrid.querySelectorAll('.product-card').forEach(card => {
+      const productId = card.dataset.productId;
+      const product = findProduct(productId);
+      const canClickCardToAdd = this._isProductCardClickAddEnabled();
+      if (canClickCardToAdd) {
+        card.style.cursor = 'pointer';
+      }
+      if (product && product.variants && product.variants.length > 1 && this.productModal) {
+        const imageEl = card.querySelector('.product-image');
+        const titleEl = card.querySelector('.product-title');
+        if (imageEl) imageEl.style.cursor = 'pointer';
+        if (titleEl) titleEl.style.cursor = 'pointer';
       }
     });
 
@@ -3229,18 +3320,6 @@ class BundleWidgetProductPage {
         }
       }
     });
-
-    // Add cursor pointer styles to product images and titles for products with variants
-    newProductGrid.querySelectorAll('.product-card').forEach(card => {
-      const productId = card.dataset.productId;
-      const product = findProduct(productId);
-      if (product && product.variants && product.variants.length > 1 && this.productModal) {
-        const imageEl = card.querySelector('.product-image');
-        const titleEl = card.querySelector('.product-title');
-        if (imageEl) imageEl.style.cursor = 'pointer';
-        if (titleEl) titleEl.style.cursor = 'pointer';
-      }
-    });
   }
   updateProductSelection(stepIndex, productId, newQuantity) {
     const selectionKey = this.normalizeSelectionKey(productId);
@@ -3297,6 +3376,25 @@ class BundleWidgetProductPage {
 
     // Auto-step progression
     this._autoProgressBottomSheet(stepIndex);
+    this._maybeAutoAddAfterLastStep();
+  }
+
+  _maybeAutoAddAfterLastStep() {
+    const controls = this._getProductPageControls();
+    if (controls?.addBundleToCartAfterLastStepCompleted !== true) return;
+    if (this._autoAddingFromControls) return;
+    if (!this.selectedBundle?.steps?.length) return;
+
+    const allStepsValid = this.selectedBundle.steps.every((step, index) => {
+      if (step.isFreeGift || step.isDefault) return true;
+      return this.validateStep(index);
+    });
+    if (!allStepsValid) return;
+
+    this._autoAddingFromControls = true;
+    this.addToCart().finally(() => {
+      this._autoAddingFromControls = false;
+    });
   }
 
   /**
@@ -3712,10 +3810,7 @@ class BundleWidgetProductPage {
 
       // Show success message and redirect
       ToastManager.show('Bundle added to cart successfully!');
-
-      setTimeout(() => {
-        window.location.href = '/cart';
-      }, 1000);
+      this._handlePostAddToCartAction(this._getProductPageControls()?.redirect);
 
     } catch (error) {
       ToastManager.show(`Failed to add bundle to cart: ${error.message}`);

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.73
+ * Version : 2.9.74
  * Built   : 2026-06-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.73';
+window.__BUNDLE_WIDGET_VERSION__ = '2.9.74';
 (function() {
   'use strict';
 
@@ -3078,6 +3078,7 @@ class BundleWidgetFullPage {
 
       this.loadDesignSettingsCSS();
       await this.loadLanguageSettings();
+      await this.loadControlsSettings();
 
       this._scheduleCartTransformSelfHeal();
 
@@ -3219,6 +3220,52 @@ class BundleWidgetFullPage {
     } catch (_) {
 
     }
+  }
+
+  async loadControlsSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      this.config.controlsSettings = await response.json();
+    } catch (_) {
+
+    }
+  }
+
+  _getLandingPageControls() {
+    return this.config.controlsSettings?.activeControls
+      || this.config.controlsSettings?.settingsControls?.landingPage
+      || null;
+  }
+
+  _runControlsScript(script) {
+    if (!script || typeof script !== 'string') return;
+    try {
+      new Function(script).call(window);
+    } catch (_) {
+
+    }
+  }
+
+  _handlePostAddToCartAction(actionConfig) {
+    const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
+    this._runControlsScript(checkout.executeScript);
+
+    if (checkout.action === 'checkout') {
+      setTimeout(() => {
+        window.location.href = '/checkout';
+      }, 1000);
+      return;
+    }
+
+    setTimeout(() => {
+      window.location.href = '/cart';
+    }, 1000);
   }
 
   _scheduleCartTransformSelfHeal() {
@@ -7050,10 +7097,7 @@ class BundleWidgetFullPage {
         await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
         ToastManager.show('Bundle added to cart successfully!');
-
-        setTimeout(() => {
-          window.location.href = '/cart';
-        }, 1000);
+        this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
       } catch (fetchError) {
         ToastManager.show('Failed to add bundle to cart. Please try again.');
