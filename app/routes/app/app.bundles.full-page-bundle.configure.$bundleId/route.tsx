@@ -27,6 +27,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
+import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
@@ -979,6 +980,7 @@ export default function ConfigureBundleFlow() {
     originalValuesRef,
   } = configState;
   const suppressTopAppEmbedBannerForVisibility = activeSection === "bundle_visibility" || activeSection === "bundle_widget";
+  const parentProductStatusUi = getParentProductStatusUi(productStatus || bundleProduct?.status || loadedBundleProduct?.status);
 
   const [addonDraft, setAddonDraft] = useState(() =>
     buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
@@ -2687,7 +2689,7 @@ export default function ConfigureBundleFlow() {
           <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
         )}
 
-        {String((bundleProduct as any)?.status || "").toLowerCase() !== "active" && (
+        {parentProductStatusUi.showUnlistedBanner && (
           <UnlistedBundleBanner
             shop={shop}
             bundleProductId={bundleProduct?.id ?? bundle.shopifyProductId ?? null}
@@ -2780,8 +2782,8 @@ export default function ConfigureBundleFlow() {
 
                   <div className={fullPageBundleStyles.parentProductStatus}>
                     <span>Parent Product Status</span>
-                    <s-badge tone={String(productStatus).toLowerCase() === "active" ? "success" : "warning"}>
-                      {String(productStatus || "Unlisted").toLowerCase() === "active" ? "Active" : "Unlisted"}
+                    <s-badge tone={parentProductStatusUi.tone}>
+                      {parentProductStatusUi.label}
                     </s-badge>
                   </div>
                 </s-stack>
