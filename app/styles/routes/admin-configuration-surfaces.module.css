@@ -1665,7 +1665,7 @@
 }
 
 .integrationsPage {
-  max-width: 760px;
+  max-width: 860px;
   padding-top: 24px;
 }
 
@@ -1715,7 +1715,7 @@
   border: 1px solid #d9d9d9;
   border-radius: 8px;
   background: #ffffff;
-  padding: 14px 12px 12px;
+  padding: 16px;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
@@ -1742,26 +1742,28 @@
 .integrationGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-auto-rows: 1fr;
+  gap: 14px;
 }
 
 .integrationTile {
-  display: flex;
-  min-height: 116px;
-  align-items: flex-start;
-  gap: 12px;
+  display: grid;
+  min-height: 164px;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 14px;
   border: 1px solid #d2d5d8;
   border-radius: 8px;
   background: #f1f1f1;
-  padding: 12px;
+  padding: 16px;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
 
 .logo {
   display: inline-flex;
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
@@ -1774,9 +1776,9 @@
 }
 
 .logoImage {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   border-radius: 8px;
   object-fit: contain;
   background: transparent;
@@ -1784,6 +1786,7 @@
 
 .integrationContent {
   display: flex;
+  min-height: 100%;
   min-width: 0;
   flex: 1;
   flex-direction: column;
@@ -1791,6 +1794,9 @@
 }
 
 .integrationName {
+  display: flex;
+  min-height: 34px;
+  align-items: flex-start;
   margin: 0;
   color: #202223;
   font-size: 12px;
@@ -1799,8 +1805,8 @@
 }
 
 .integrationDescription {
-  min-height: 34px;
-  margin: 8px 0 12px;
+  flex: 1;
+  margin: 8px 0 14px;
   color: #616161;
   font-size: 12px;
   font-weight: 500;
@@ -1810,10 +1816,11 @@
 .integrationButton {
   display: inline-flex;
   width: 100%;
-  min-height: 26px;
+  min-height: 30px;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  margin-top: auto;
   border: 1px solid #d2d5d8;
   border-radius: 6px;
   background: #ffffff;
