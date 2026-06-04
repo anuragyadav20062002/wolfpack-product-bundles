@@ -17,6 +17,7 @@ This vault contains audited, authoritative documentation for the Wolfpack Produc
 > **Start here for any EB porting question.** Grounded truth for admin API shapes, data contracts, template IDs, storefront runtime globals, cart add payloads, box selection enforcement, and Wolfpack DB/DTO targets — all captured live from `yash-wolfpack.myshopify.com`.
 
 - [[EB Implementation Reference]] — Admin endpoints, FPB/PPB step-category payloads, Discount & Pricing contracts, Bundle Visibility widget/embed help references, template ID enums, cart integration, box selection, text config, mixAndMatchBundleSettings schema, Wolfpack DB alignment
+- [[EB Settings Design Reference]] — Settings -> Design pageCustomization save contract, control-to-field mappings, FPB/PPB storefront propagation, stylePresets, and PPB CSS variables
 
 Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 

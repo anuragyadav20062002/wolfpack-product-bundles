@@ -203,7 +203,9 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
     title: "Corners",
     description: "Radius controls for bundle buttons and product card/cart shells.",
     fields: [
+      { label: "Bundle Buttons Corner Style", value: "Base", kind: "select", options: ["Sharp", "Base", "Round"] },
       { label: "Bundle Buttons Base", value: "5px", kind: "number" },
+      { label: "Product Card & Cart Corner Style", value: "Base", kind: "select", options: ["Sharp", "Base"] },
       { label: "Product Card & Cart Base", value: "10px", kind: "number" },
     ],
   },
@@ -211,7 +213,7 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
     title: "Images & GIFs",
     description: "Image-fit and loading-media controls.",
     fields: [
-      { label: "Image Fit", value: "Cover", kind: "select" },
+      { label: "Image Fit", value: "Cover", kind: "select", options: ["Cover", "Contain", "Fill"] },
       { label: "Bundle Loading GIF", value: "Loading_Spinner.gif", kind: "text" },
       { label: "Checkout GIF", value: "Loading_Spinner_Checkout.gif", kind: "text" },
     ],

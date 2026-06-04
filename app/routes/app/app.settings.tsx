@@ -1,5 +1,6 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useActionData, useLoaderData, useSubmit } from "@remix-run/react";
+import type { Prisma } from "@prisma/client";
 import { useEffect, useState } from "react";
 import { prisma } from "../../db.server";
 import { requireAdminSession } from "../../lib/auth-guards.server";
@@ -13,6 +14,7 @@ import {
   type SettingsField,
   type SettingsCardId,
 } from "../../lib/admin-configuration-surfaces";
+import { SETTINGS_DESIGN_BUNDLE_TYPES, buildSettingsDesignRuntime } from "../../lib/settings-design-runtime";
 import styles from "../../styles/routes/admin-configuration-surfaces.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -90,27 +92,54 @@ export async function action({ request }: ActionFunctionArgs) {
     ...(intent === "saveSettingsLanguage" ? { language: payload } : {}),
     ...(intent === "saveSettingsControls" ? { controls: payload } : {}),
   };
-  const designRuntimeSettings = intent === "saveSettingsDesign" ? buildDesignRuntimeData(payload) : {};
-  const pageCustomization = "pageCustomization" in designRuntimeSettings
-    ? designRuntimeSettings.pageCustomization
-    : null;
-  const designSettingsUpdate = Object.fromEntries(
-    Object.entries(designRuntimeSettings).filter(([key]) => key !== "pageCustomization"),
-  );
+  if (intent === "saveSettingsDesign") {
+    const designRuntime = buildSettingsDesignRuntime(payload);
+
+    await Promise.all(SETTINGS_DESIGN_BUNDLE_TYPES.map(async (bundleType) => {
+      const currentForBundleType = bundleType === "product_page"
+        ? current
+        : await prisma.designSettings.findUnique({
+          where: { shopId_bundleType: { shopId: session.shop, bundleType } },
+        });
+      const currentBundleGeneralSettings = currentForBundleType?.generalSettings && typeof currentForBundleType.generalSettings === "object"
+        ? currentForBundleType.generalSettings as Record<string, unknown>
+        : {};
+      const nextBundleGeneralSettings = {
+        ...currentBundleGeneralSettings,
+        ...(designRuntime.designSettings.generalSettings as Record<string, unknown>),
+        settingsPage: nextSettingsPage,
+      };
+      const updateData = {
+        ...designRuntime.designSettings,
+        generalSettings: nextBundleGeneralSettings as Prisma.InputJsonValue,
+      } as Prisma.DesignSettingsUncheckedUpdateInput;
+
+      await prisma.designSettings.upsert({
+        where: { shopId_bundleType: { shopId: session.shop, bundleType } },
+        create: {
+          shopId: session.shop,
+          bundleType,
+          ...updateData,
+        } as Prisma.DesignSettingsUncheckedCreateInput,
+        update: updateData,
+      });
+    }));
+
+    return json({ success: true, message: "Settings saved successfully" });
+  }
+
   const runtimeSettings = {
-    ...designSettingsUpdate,
-    ...(intent === "saveSettingsLanguage" ? buildLanguageRuntimeData(payload) : {}),
     ...(intent === "saveSettingsControls" ? buildControlsRuntimeData(payload) : {}),
+    ...(intent === "saveSettingsLanguage" ? buildLanguageRuntimeData(payload) : {}),
   };
   const nextGeneralSettings = {
     ...currentGeneralSettings,
-    ...(pageCustomization ? { pageCustomization } : {}),
     settingsPage: nextSettingsPage,
   };
   const updateData = {
     ...runtimeSettings,
-    generalSettings: nextGeneralSettings,
-  };
+    generalSettings: nextGeneralSettings as Prisma.InputJsonValue,
+  } as Prisma.DesignSettingsUncheckedUpdateInput;
 
   await prisma.designSettings.upsert({
     where: { shopId_bundleType: { shopId: session.shop, bundleType: "product_page" } },
@@ -118,11 +147,11 @@ export async function action({ request }: ActionFunctionArgs) {
       shopId: session.shop,
       bundleType: "product_page",
       ...updateData,
-    },
+    } as Prisma.DesignSettingsUncheckedCreateInput,
     update: updateData,
   });
 
-  return json({ success: true });
+  return json({ success: true, message: "Settings saved successfully" });
 }
 
 function getInitialLanguageFieldValues() {
@@ -159,118 +188,6 @@ function getInitialDesignFieldValues() {
       field.value ?? "",
     ]),
   ) as Record<string, string>;
-}
-
-function weightToNumber(value: string) {
-  const cleaned = value.trim();
-  if (!cleaned) {
-    return undefined;
-  }
-
-  if (cleaned.toLowerCase() === "bold") {
-    return 700;
-  }
-  if (cleaned.toLowerCase() === "regular") {
-    return 400;
-  }
-
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function numberFromSettings(value: string) {
-  const cleaned = String(value).replace(/px$/i, "").trim();
-  if (!cleaned) {
-    return undefined;
-  }
-
-  const parsed = Number(cleaned);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function buildPageCustomizationData(fieldValues: Record<string, unknown>, isExpertControlsEnabled: boolean) {
-  const value = (key: string, fallback: string) => String(fieldValues[key] ?? fallback);
-  return {
-    productCard: {
-      productCardBgColor: isExpertControlsEnabled ? value("expert.productCard.productCardBgColor", "#ffffff") : value("Product Background Color", "#ffffff"),
-      productCardTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardTextColor", "#252525") : value("Primary Text Color", "#000000"),
-      productCardButtonColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonColor", "#000000") : value("Primary Color", "#000000"),
-      productCardButtonTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonTextColor", "#ffffff") : value("Button Text Color", "#ffffff"),
-    },
-    emptyStateCard: {
-      emptyStateCardBorderColor: value("expert.emptyStateCard.emptyStateCardBorderColor", "#000"),
-      emptyStateCardTextColor: value("expert.emptyStateCard.emptyStateCardTextColor", "#3E3E3E"),
-    },
-    navigationBanner: {
-      navigationBannerStepCompletionColor: value("expert.navigationBanner.navigationBannerStepCompletionColor", "#000000"),
-      navigationCheckColor: value("expert.navigationBanner.navigationCheckColor", "#FFFFFF"),
-      navigationBannerStepTextColor: value("expert.navigationBanner.navigationBannerStepTextColor", "#000000"),
-      navigationBannerStepProgressBarEmptyColor: value("expert.navigationBanner.navigationBannerStepProgressBarEmptyColor", "#cccccc"),
-      tabsActiveBgColor: value("expert.navigationBanner.tabsActiveBgColor", "#000000"),
-      tabsActiveTextColor: value("expert.navigationBanner.tabsActiveTextColor", "#F6f6f6"),
-      tabsInactiveBgColor: value("expert.navigationBanner.tabsInactiveBgColor", "#FFFFFF"),
-      tabsInactiveTextColor: value("expert.navigationBanner.tabsInactiveTextColor", "#000000"),
-    },
-    cartFooter: {
-      cartFooterBgColor: value("expert.cartFooter.cartFooterBgColor", "#ffffff"),
-      cartFooterTextColor: value("expert.cartFooter.cartFooterTextColor", "#000000"),
-      cartFooterNextButtonColor: value("expert.cartFooter.cartFooterNextButtonColor", "#000000"),
-      cartFooterNextButtonTextColor: value("expert.cartFooter.cartFooterNextButtonTextColor", "#ffffff"),
-      cartFooterBackButtonColor: value("expert.cartFooter.cartFooterBackButtonColor", "#6d7175"),
-      cartFooterBackButtonTextColor: value("expert.cartFooter.cartFooterBackButtonTextColor", "#000000"),
-      cartFooterDiscountTextColor: value("expert.cartFooter.cartFooterDiscountTextColor", "#000000"),
-      cartFooterDiscountProgressBarEmptyColor: value("expert.cartFooter.cartFooterDiscountProgressBarEmptyColor", "#C1E7C5"),
-      cartFooterDiscountProgressBarFilledColor: value("expert.cartFooter.cartFooterDiscountProgressBarFilledColor", "#15A524"),
-    },
-    generalSettings: {
-      productPageTitleColor: value("expert.generalSettings.productPageTitleColor", "#000000"),
-      loadingBgColor: value("expert.generalSettings.loadingBgColor", "transparent"),
-      conditionToastBgColor: value("expert.generalSettings.conditionToastBgColor", "#000000"),
-      conditionToastTextColor: value("expert.generalSettings.conditionToastTextColor", "#ffffff"),
-    },
-    mixAndMatchConfig: {
-      generalSettings: {
-        bundleUpsellFontColor: value("expert.mixAndMatchConfig.generalSettings.bundleUpsellFontColor", "#000000"),
-        bundleUpsellButtonBg: value("expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonBg", "#000000"),
-        bundleUpsellButtonTextColor: value("expert.mixAndMatchConfig.generalSettings.bundleUpsellButtonTextColor", "#ffffff"),
-      },
-    },
-    stylePresets: {
-      colors: {
-        primaryColor: value("Primary Color", "#000000"),
-        buttonTextColor: value("Button Text Color", "#ffffff"),
-        primaryTextColor: value("Primary Text Color", "#000000"),
-        accentColor: value("Secondary Color", "#eeeeee"),
-        backgroundColor: value("Product Background Color", "#ffffff"),
-      },
-      isExpertControlsEnabled,
-    },
-  };
-}
-
-function buildDesignRuntimeData(payload: Record<string, unknown>) {
-  const fieldValues = payload.fieldValues && typeof payload.fieldValues === "object"
-    ? payload.fieldValues as Record<string, unknown>
-    : {};
-  const isExpertControlsEnabled = payload.isExpertControlsEnabled === true;
-  const value = (label: string) => String(fieldValues[label] ?? "");
-  return {
-    globalColorsSettings: {
-      globalPrimaryButtonColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonColor") || "#000000" : value("Primary Color") || "#000000",
-      globalButtonTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardButtonTextColor") || "#ffffff" : value("Button Text Color") || "#ffffff",
-      globalPrimaryTextColor: isExpertControlsEnabled ? value("expert.productCard.productCardTextColor") || "#252525" : value("Primary Text Color") || "#000000",
-      globalSecondaryTextColor: value("Secondary Color") || "#eeeeee",
-    },
-    productCardBgColor: isExpertControlsEnabled ? value("expert.productCard.productCardBgColor") || "#ffffff" : value("Product Background Color") || "#ffffff",
-    productCardFontSize: numberFromSettings(value("Primary Font Size")),
-    productCardFontWeight: weightToNumber(value("Primary Font Weight")),
-    productFinalPriceFontSize: numberFromSettings(value("Secondary Font Size")),
-    productFinalPriceFontWeight: weightToNumber(value("Secondary Font Weight")),
-    buttonBorderRadius: numberFromSettings(value("Bundle Buttons Base")),
-    productCardBorderRadius: numberFromSettings(value("Product Card & Cart Base")),
-    productCardImageFit: value("Image Fit").toLowerCase() || "cover",
-    pageCustomization: buildPageCustomizationData(fieldValues, isExpertControlsEnabled),
-  };
 }
 
 function buildControlsRuntimeData(payload: Record<string, unknown>) {
@@ -872,7 +789,7 @@ export default function SettingsRoute() {
 function SettingsCardIcon({ icon }: { icon: string }) {
   return (
     <span className={styles.settingsCardIcon} aria-hidden="true">
-      <s-icon type={icon} size="base"></s-icon>
+      <s-icon type={icon as any} size="base"></s-icon>
     </span>
   );
 }
