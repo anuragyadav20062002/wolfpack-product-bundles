@@ -26,7 +26,7 @@ import {
 import { getBundleProductVariantId } from "../../../../utils/variant-lookup.server";
 import { parseConditionValue } from "../../../../lib/parse-condition-value";
 import { mapDiscountMethod } from "../../../../utils/discount-mappers";
-import { parsePPBGiftMessages, parsePPBBundleVisibility, parsePPBBundleSettings, parseBundleDesignTemplate } from "./parsers";
+import { parsePPBBundleVisibility, parsePPBBundleSettings, parseBundleDesignTemplate } from "./parsers";
 import {
   normaliseShopifyProductId,
   safeJsonParse,
@@ -720,14 +720,6 @@ function buildSyncBundleConfiguration(
     textOverrides: bundle.textOverrides ?? null,
     textOverridesByLocale: bundle.textOverridesByLocale ?? null,
     sdkMode: bundle.sdkMode ?? false,
-    giftMessagesEnabled: bundle.giftMessagesEnabled ?? false,
-    giftMessageProductId: bundle.giftMessageProductId ?? null,
-    giftMessageProductTitle: bundle.giftMessageProductTitle ?? null,
-    giftMessageEnableSenderRecipient: bundle.giftMessageEnableSenderRecipient ?? false,
-    giftMessageMandatory: bundle.giftMessageMandatory ?? false,
-    giftMessageEnableLimit: bundle.giftMessageEnableLimit ?? false,
-    giftMessageCharLimit: bundle.giftMessageCharLimit ?? null,
-    giftMessageSendEmail: bundle.giftMessageSendEmail ?? false,
     updatedAt: new Date().toISOString(),
     ...extra,
   };
@@ -1108,7 +1100,6 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         sdkMode,
         textOverrides,
         textOverridesByLocale,
-        ...parsePPBGiftMessages(formData),
         ...parsePPBBundleVisibility(formData),
         ...parsedBundleSettings,
         boxSelection,

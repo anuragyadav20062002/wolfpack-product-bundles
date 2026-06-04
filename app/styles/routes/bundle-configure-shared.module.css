@@ -207,42 +207,6 @@
   align-items: start;
 }
 
-.messagePreview {
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafbfb;
-}
-
-.messagePreviewIcon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  background: #f1f2f4;
-  color: #6d7175;
-  font-size: 24px;
-}
-
-.messagePreviewTitle {
-  margin: 0;
-  color: #202223;
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.messageNote {
-  margin: 0;
-  color: #6d7175;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
 .visibilityGuideGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

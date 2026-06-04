@@ -246,7 +246,6 @@ const bundleSetupItems = [
 
 const stepSetupChildItems = [
   { id: "free_gift_addons", label: "Free Gift & Add Ons" },
-  { id: "messages", label: "Messages" },
 ];
 
 const ADDON_MESSAGE_KEY = "addons-direct";
@@ -780,82 +779,11 @@ function buildAddonDraftFromPersonalizationData(personalizationData: any) {
   };
 }
 
-function normalizeGiftMessageProductForPersonalization(product: any) {
-  if (!product) return null;
-  const variants = Array.isArray(product.variants)
-    ? product.variants.map((variant: any) => ({
-        id: variant.id ?? variant.admin_graphql_api_id ?? variant.variantGraphqlId ?? variant.variantId ?? null,
-        title: variant.title ?? variant.variantTitle ?? variant.option1 ?? "Message",
-        price: variant.price ?? "0.00",
-        taxable: variant.taxable ?? false,
-        inventory_policy: variant.inventory_policy ?? variant.inventoryPolicy ?? "continue",
-        admin_graphql_api_id: variant.admin_graphql_api_id ?? variant.id ?? variant.variantGraphqlId ?? null,
-        option1: variant.option1 ?? variant.title ?? variant.variantTitle ?? "Message",
-        variantImage: variant.variantImage ?? variant.image?.url ?? variant.image?.originalSrc ?? variant.image?.src ?? null,
-      }))
-    : [];
-
-  return {
-    ...product,
-    id: product.id ?? product.admin_graphql_api_id ?? product.productId ?? null,
-    title: product.title ?? "Message",
-    handle: product.handle ?? null,
-    admin_graphql_api_id: product.admin_graphql_api_id ?? product.id ?? null,
-    status: product.status ?? "unlisted",
-    variants,
-    images: Array.isArray(product.images) ? product.images : [],
-  };
-}
-
-function buildGiftMessageDraftFromPersonalizationData(personalizationData: any) {
-  const giftMessage = personalizationData?.giftMessage || {};
-  return {
-    isGiftMessageEnabled: giftMessage?.isGiftMessageEnabled === true,
-    isSenderAndRecipientNameEnabled: giftMessage?.isSenderAndRecipientNameEnabled === true,
-    isGiftMessageMandatory: giftMessage?.isGiftMessageMandatory === true,
-    isMessageLimitEnabled: Boolean(giftMessage?.giftMessageCharacterLimit),
-    giftMessageCharacterLimit: giftMessage?.giftMessageCharacterLimit ? String(giftMessage.giftMessageCharacterLimit) : "",
-    isEmailEnabled: giftMessage?.isEmailEnabled === true,
-    recipientEmailRequired: giftMessage?.recipientEmailRequired !== false,
-    deliveryDateEnabled: giftMessage?.deliveryDateEnabled === true,
-    customizeEmailsEnabled: giftMessage?.customizeEmailsEnabled === true,
-    messageProduct: giftMessage?.messageProduct || {
-      isMessageProductEnabled: false,
-      status: "unlisted",
-      product: null,
-    },
-  };
-}
-
-function buildGiftMessageConfigFromDraft(giftMessageDraft: any) {
-  if (!giftMessageDraft?.isGiftMessageEnabled) return null;
-
-  const messageProduct = giftMessageDraft.messageProduct || {};
-  return {
-    isGiftMessageEnabled: true,
-    isSenderAndRecipientNameEnabled: giftMessageDraft.isSenderAndRecipientNameEnabled === true,
-    giftMessageCharacterLimit: giftMessageDraft.isMessageLimitEnabled ? String(giftMessageDraft.giftMessageCharacterLimit || "") : "",
-    isGiftMessageMandatory: giftMessageDraft.isGiftMessageMandatory === true,
-    isVideoMessageEnabled: false,
-    isEmailEnabled: giftMessageDraft.isEmailEnabled === true,
-    recipientEmailRequired: giftMessageDraft.recipientEmailRequired !== false,
-    deliveryDateEnabled: giftMessageDraft.deliveryDateEnabled === true,
-    customizeEmailsEnabled: giftMessageDraft.customizeEmailsEnabled === true,
-    messageProduct: {
-      isMessageProductEnabled: Boolean(messageProduct.product),
-      status: messageProduct.status || "unlisted",
-      product: messageProduct.product || null,
-    },
-  };
-}
-
 function buildPersonalizationDataFromDraft(
   addonDraft: any,
   addonMessages: { discountText?: string; successMessage?: string } | null,
-  giftMessageDraft?: any,
 ) {
-  const giftMessage = buildGiftMessageConfigFromDraft(giftMessageDraft);
-  if (!addonDraft?.isPersonalizationEnabled && !giftMessage?.isGiftMessageEnabled) return null;
+  if (!addonDraft?.isPersonalizationEnabled) return null;
 
   const addonTiers = Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
     ? addonDraft.addonTiers
@@ -867,7 +795,6 @@ function buildPersonalizationDataFromDraft(
     personalizeStepText: addonDraft?.personalizeStepText || "",
     personalizePageSubtext: addonDraft?.personalizePageSubtext || "",
     stepImage: addonDraft?.stepImage || null,
-    giftMessage: buildGiftMessageConfigFromDraft(giftMessageDraft),
     addonProducts: {
       isEnabled: addonDraft?.addonProductsEnabled === true,
       title: addonDraft?.addonProductsTitle || "",
@@ -884,7 +811,6 @@ function buildPersonalizationDataFromDraft(
     },
   };
 
-  if (!giftMessage) delete personalizationData.giftMessage;
   return personalizationData;
 }
 
@@ -997,15 +923,6 @@ export default function ConfigureBundleFlow() {
     setAddonDraft((current: any) => ({ ...current, ...updates }));
     markAsDirty();
   }, [markAsDirty]);
-  const [giftMessageDraft, setGiftMessageDraft] = useState(() =>
-    buildGiftMessageDraftFromPersonalizationData((bundle as any).personalizationData)
-  );
-  const originalGiftMessageDraftRef = useRef<any>(giftMessageDraft);
-  const updateGiftMessageDraft = useCallback((updates: Record<string, any>) => {
-    setGiftMessageDraft((current: any) => ({ ...current, ...updates }));
-    markAsDirty();
-  }, [markAsDirty]);
-
   const shopDomain = useMemo(
     () => (shop.includes('.myshopify.com') ? shop.replace('.myshopify.com', '') : shop),
     [shop]
@@ -1829,7 +1746,7 @@ export default function ConfigureBundleFlow() {
         },
       }));
       const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || null;
-      const personalizationData = buildPersonalizationDataFromDraft(addonDraft, addonMessages, giftMessageDraft);
+      const personalizationData = buildPersonalizationDataFromDraft(addonDraft, addonMessages);
       formData.append("personalizationData", personalizationData ? JSON.stringify(personalizationData) : "");
       formData.append("bundleUpsellConfig", JSON.stringify(buildBundleUpsellConfig()));
       formData.append("upsellWidgetEnabled", String(upsellWidgetEnabled));
@@ -1896,7 +1813,6 @@ export default function ConfigureBundleFlow() {
     textOverridesByLocale,
     ruleMessages,
     addonDraft,
-    giftMessageDraft,
     discountMessagingMultiLanguageEnabled,
     globalSuccessMessage,
     successMessageByLocale,
@@ -2026,7 +1942,6 @@ export default function ConfigureBundleFlow() {
           originalTextOverridesRef.current = textOverrides;
           originalTextOverridesByLocaleRef.current = textOverridesByLocale;
           originalAddonDraftRef.current = addonDraft;
-          originalGiftMessageDraftRef.current = giftMessageDraft;
           originalDiscountMessagingMultiLanguageEnabledRef.current = discountMessagingMultiLanguageEnabled;
           originalRuleMessagesByLocaleRef.current = ruleMessagesByLocale;
           originalUpsellWidgetEnabledRef.current = upsellWidgetEnabled;
@@ -2163,7 +2078,6 @@ export default function ConfigureBundleFlow() {
     setTextOverrides(originalTextOverridesRef.current);
     setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
     setAddonDraft(originalAddonDraftRef.current);
-    setGiftMessageDraft(originalGiftMessageDraftRef.current);
     setDiscountMessagingMultiLanguageEnabled(originalDiscountMessagingMultiLanguageEnabledRef.current);
     setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
     setUpsellWidgetEnabled(originalUpsellWidgetEnabledRef.current);
@@ -2810,7 +2724,7 @@ export default function ConfigureBundleFlow() {
                     {bundleSetupItems
                       .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
                       .map((item) => {
-                        const isActive = activeSection === item.id || (item.id === "step_setup" && (activeSection === "free_gift_addons" || activeSection === "messages")) || (item.id === "bundle_visibility" && activeSection === "bundle_widget");
+                        const isActive = activeSection === item.id || (item.id === "step_setup" && activeSection === "free_gift_addons") || (item.id === "bundle_visibility" && activeSection === "bundle_widget");
                         let statusBadge: { label: string; tone?: string } | null = null;
                         if (item.id === 'discount_pricing') {
                           statusBadge = pricingState.discountEnabled ? null : { label: 'None' };
@@ -2844,7 +2758,7 @@ export default function ConfigureBundleFlow() {
                                 )}
                               </span>
                             </button>
-                            {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons" || activeSection === "messages") && (
+                            {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons") && (
                               <div className={fullPageBundleStyles.subNav}>
                                 {stepSetupChildItems.map((child) => (
                                   <button
@@ -2853,7 +2767,6 @@ export default function ConfigureBundleFlow() {
                                     className={`${fullPageBundleStyles.subNavItem} ${activeSection === child.id ? fullPageBundleStyles.subNavItemActive : ""}`}
                                     onClick={() => {
                                       if (child.id === "free_gift_addons") handleSectionChange("free_gift_addons");
-                                      if (child.id === "messages") handleSectionChange("messages");
                                     }}
                                   >
                                     {child.label}
@@ -5450,127 +5363,6 @@ export default function ConfigureBundleFlow() {
                 </div>
               </div>
             )}
-
-            {activeSection === "messages" && (() => {
-              const isGiftMessageEnabled = giftMessageDraft.isGiftMessageEnabled === true;
-              const hasSenderRecipientFields = giftMessageDraft.isSenderAndRecipientNameEnabled === true;
-              const isGiftMessageRequired = giftMessageDraft.isGiftMessageMandatory === true;
-              const hasMessageLimit = giftMessageDraft.isMessageLimitEnabled === true;
-              const isEmailEnabled = giftMessageDraft.isEmailEnabled === true;
-              const emailCaptureDisabled = true;
-              const messageProduct = giftMessageDraft.messageProduct?.product || null;
-
-              return (
-                <s-stack direction="block" gap="base">
-                  <div className={fullPageBundleStyles.card}>
-                    <div className={fullPageBundleStyles.panelHeader}>
-                      <div>
-                        <h3 className={fullPageBundleStyles.panelTitle}>Enable Messages</h3>
-                        <p className={fullPageBundleStyles.panelDescription}>
-                          Message will show up as a product at checkout
-                        </p>
-                      </div>
-                      <s-checkbox
-                        accessibilityLabel="Enable messages"
-                        checked={isGiftMessageEnabled || undefined}
-                        onChange={(e) => updateGiftMessageDraft({ isGiftMessageEnabled: (e.target as HTMLInputElement).checked })}
-                      />
-                    </div>
-
-                    <div className={fullPageBundleStyles.messagePreview}>
-                      <div className={fullPageBundleStyles.messagePreviewIcon} aria-hidden="true">
-                        <s-icon type="note" />
-                      </div>
-                      <div>
-                        <p className={fullPageBundleStyles.messagePreviewTitle}>
-                          {messageProduct?.title || "Message"}
-                        </p>
-                        <p className={fullPageBundleStyles.messageNote}>
-                          Add a message product so shoppers can include a note with the bundle.
-                        </p>
-                      </div>
-                      <s-button
-                        variant="secondary"
-                        onClick={async () => {
-                          try {
-                            const picked = await shopify.resourcePicker({
-                              type: "product",
-                              multiple: false,
-                            });
-                            if (picked && picked.length > 0) {
-                              const product = picked[0] as any;
-                              updateGiftMessageDraft({
-                                messageProduct: {
-                                  isMessageProductEnabled: true,
-                                  status: "unlisted",
-                                  product: normalizeGiftMessageProductForPersonalization(product),
-                                },
-                              });
-                            }
-                          } catch (_) {
-                            // user cancelled picker — no-op
-                          }
-                        }}
-                      >
-                        Edit
-                      </s-button>
-                    </div>
-
-                    <s-stack direction="block" gap="small">
-                      <s-checkbox
-                        label="Enable Sender and Recipient Fields"
-                        checked={hasSenderRecipientFields || undefined}
-                        disabled={!isGiftMessageEnabled || undefined}
-                        onChange={(e) => updateGiftMessageDraft({ isSenderAndRecipientNameEnabled: (e.target as HTMLInputElement).checked })}
-                      />
-                      <s-checkbox
-                        label="Make Gift Message mandatory"
-                        checked={isGiftMessageRequired || undefined}
-                        disabled={!isGiftMessageEnabled || undefined}
-                        onChange={(e) => updateGiftMessageDraft({ isGiftMessageMandatory: (e.target as HTMLInputElement).checked })}
-                      />
-                      <s-checkbox
-                        label="Enable Message Limit (Characters)"
-                        checked={hasMessageLimit || undefined}
-                        disabled={!isGiftMessageEnabled || undefined}
-                        onChange={(e) => updateGiftMessageDraft({ isMessageLimitEnabled: (e.target as HTMLInputElement).checked })}
-                      />
-                      <s-number-field
-                        label="Enter Message Limit"
-                        value={giftMessageDraft.giftMessageCharacterLimit ?? ""}
-                        disabled={!isGiftMessageEnabled || !hasMessageLimit}
-                        min={0}
-                        onInput={(e) => updateGiftMessageDraft({ giftMessageCharacterLimit: (e.target as HTMLInputElement).value })}
-                      />
-                      <s-divider />
-                      <div
-                        className={fullPageBundleStyles.emailCaptureDisabled}
-                        aria-disabled="true"
-                        tabIndex={-1}
-                      >
-                        <s-switch
-                          accessibilityLabel="Send message through email to the customer"
-                          label="Send message through email to the customer"
-                          checked={isEmailEnabled || undefined}
-                          disabled={emailCaptureDisabled || undefined}
-                        />
-                      </div>
-                      <div
-                        className={fullPageBundleStyles.emailCustomizeDisabled}
-                        aria-disabled="true"
-                        tabIndex={-1}
-                      >
-                        <span>Customize your email templates here</span>
-                        <s-button variant="secondary" disabled={emailCaptureDisabled || undefined}>Customize Emails</s-button>
-                      </div>
-                      <p className={fullPageBundleStyles.messageNote}>
-                        Note: Please reach out to us if you wish to change the domain from where the emails are sent.
-                      </p>
-                    </s-stack>
-                  </div>
-                </s-stack>
-              );
-            })()}
           </div>
         </div>
 
@@ -5989,7 +5781,7 @@ export default function ConfigureBundleFlow() {
                   <div className={fullPageBundleStyles.templateCustomizationGrid}>
                     <div className={fullPageBundleStyles.templateCustomizationCard}>
                       <h4>Text and language</h4>
-                      <p>Review Product Card, Bundle Cart, Bundle, Popups, Toasts, Addons, and Messages text from Settings Language.</p>
+                      <p>Review Product Card, Bundle Cart, Bundle, Popups, Toasts, and Addons text from Settings Language.</p>
                     </div>
                     <div className={fullPageBundleStyles.templateCustomizationCard}>
                       <h4>Images and GIFs</h4>

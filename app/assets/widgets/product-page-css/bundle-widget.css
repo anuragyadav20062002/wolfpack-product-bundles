@@ -3354,46 +3354,6 @@ to {
   font-weight:400;
   opacity:0.8}
 
-.bw-gift-message {
-  margin:14px 0;
-  padding:16px;
-  background:#f9fafb;
-  border-radius:8px;
-  border:1px solid #e1e3e5}
-
-.bw-gift-message__heading {
-  font-size:14px;
-  font-weight:600;
-  margin:0 0 12px;
-  color:#1a1a1a}
-
-.bw-gift-message__row {
-  display:flex;
-  gap:8px;
-  margin-bottom:10px}
-
-.bw-gift-message__input {
-  flex:1;
-  padding:8px 10px;
-  border:1px solid #d1d5db;
-  border-radius:6px;
-  font-size:13px}
-
-.bw-gift-message__textarea {
-  width:100%;
-  box-sizing:border-box;
-  padding:8px 10px;
-  border:1px solid #d1d5db;
-  border-radius:6px;
-  font-size:13px;
-  resize:vertical}
-
-.bw-gift-message__counter {
-  font-size:11px;
-  color:#6d7175;
-  text-align:right;
-  margin:4px 0 0}
-
 @import "./templates/inpage-cascade.css";
 @import "./templates/inpage-cognive.css";
 @import "./templates/modal-slots.css";

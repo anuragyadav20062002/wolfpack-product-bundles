@@ -38,17 +38,4 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(routeSource).toContain("conditions: Array.isArray(tier?.conditions)");
   });
 
-  it("renders EB Messages email capture controls as disabled Admin UI", () => {
-    [
-      "Send message through email to the customer",
-      "Customize your email templates here",
-      "Customize Emails",
-      "isEmailEnabled",
-      "emailCaptureDisabled",
-      "tabIndex={-1}",
-      "aria-disabled=\"true\"",
-    ].forEach((marker) => {
-      expect(routeSource).toContain(marker);
-    });
-  });
 });

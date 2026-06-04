@@ -607,7 +607,6 @@ class BundleWidgetProductPage {
     // Initialize step product data cache
     this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
     this._stepFetchFailed = {};
-    this.giftMessageState = { message: '', from: '', to: '' };
 
     // Seed default steps into selectedProducts regardless of widget style.
     // Default products are always included in the bundle — no user selection required.
@@ -882,7 +881,6 @@ class BundleWidgetProductPage {
       defaultProducts: this.container.querySelector('.bw-default-products') || this._createDirectDefaultProductsEl(),
       stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
       qtyPillsEl: this.container.querySelector('.bw-qty-pills') || this._createQtyPillsEl(),
-      giftMessageEl: this.container.querySelector('.bw-gift-message') || this._createGiftMessageEl(),
       footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
       addToCartButton: this.container.querySelector('.add-bundle-to-cart') || this.createAddToCartButton(),
       dynamicCheckoutVisual: this.container.querySelector('.bw-ppb-dynamic-checkout-visual') || this._createDynamicCheckoutVisual(),
@@ -890,7 +888,7 @@ class BundleWidgetProductPage {
       bsOverlay: document.getElementById('bw-bs-overlay') || this._createBottomSheetOverlay()
     };
 
-    // Append elements in display order (default products → steps → qty pills → gift message → footer → ATC)
+    // Append elements in display order (default products → steps → qty pills → footer → ATC)
     if (!this.container.querySelector('.bw-default-products')) {
       this.container.appendChild(this.elements.defaultProducts);
     }
@@ -899,9 +897,6 @@ class BundleWidgetProductPage {
     }
     if (!this.container.querySelector('.bw-qty-pills')) {
       this.container.appendChild(this.elements.qtyPillsEl);
-    }
-    if (!this.container.querySelector('.bw-gift-message')) {
-      this.container.appendChild(this.elements.giftMessageEl);
     }
     if (!this.container.querySelector('.bundle-footer-messaging')) {
       this.container.appendChild(this.elements.footer);
@@ -924,13 +919,6 @@ class BundleWidgetProductPage {
   _createDirectDefaultProductsEl() {
     const el = document.createElement('div');
     el.className = 'bw-default-products';
-    el.style.display = 'none';
-    return el;
-  }
-
-  _createGiftMessageEl() {
-    const el = document.createElement('div');
-    el.className = 'bw-gift-message';
     el.style.display = 'none';
     return el;
   }
@@ -1117,7 +1105,6 @@ class BundleWidgetProductPage {
     this._renderDirectDefaultProducts();
     this.renderSteps();
     this.renderQuantityOptionPills();
-    this.renderGiftMessageUI();
     this.renderFooter();
     this.updateAddToCartButton();
   }
@@ -2069,83 +2056,6 @@ class BundleWidgetProductPage {
     };
   }
 
-  renderGiftMessageUI() {
-    const el = this.elements.giftMessageEl;
-    if (!el) return;
-    el.innerHTML = '';
-
-    const bundle = this.selectedBundle;
-    if (!bundle?.giftMessagesEnabled || !bundle?.giftMessageProductId) {
-      el.style.display = 'none';
-      return;
-    }
-
-    el.style.display = 'block';
-
-    const heading = document.createElement('p');
-    heading.className = 'bw-gift-message__heading';
-    heading.textContent = bundle.giftMessageProductTitle || 'Gift Message';
-    el.appendChild(heading);
-
-    if (bundle.giftMessageEnableSenderRecipient) {
-      const row = document.createElement('div');
-      row.className = 'bw-gift-message__row';
-
-      const fromInput = document.createElement('input');
-      fromInput.type = 'text';
-      fromInput.className = 'bw-gift-message__input';
-      fromInput.placeholder = 'From';
-      fromInput.value = this.giftMessageState.from;
-      fromInput.addEventListener('input', () => {
-        this.giftMessageState.from = fromInput.value;
-        this.updateAddToCartButton();
-      });
-
-      const toInput = document.createElement('input');
-      toInput.type = 'text';
-      toInput.className = 'bw-gift-message__input';
-      toInput.placeholder = 'To';
-      toInput.value = this.giftMessageState.to;
-      toInput.addEventListener('input', () => {
-        this.giftMessageState.to = toInput.value;
-        this.updateAddToCartButton();
-      });
-
-      row.appendChild(fromInput);
-      row.appendChild(toInput);
-      el.appendChild(row);
-    }
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'bw-gift-message__textarea';
-    textarea.placeholder = 'Write your gift message here…';
-    textarea.value = this.giftMessageState.message;
-    textarea.rows = 3;
-
-    if (bundle.giftMessageEnableLimit && bundle.giftMessageCharLimit) {
-      textarea.maxLength = bundle.giftMessageCharLimit;
-
-      const counter = document.createElement('p');
-      counter.className = 'bw-gift-message__counter';
-      counter.textContent = `0 / ${bundle.giftMessageCharLimit}`;
-
-      textarea.addEventListener('input', () => {
-        this.giftMessageState.message = textarea.value;
-        counter.textContent = `${textarea.value.length} / ${bundle.giftMessageCharLimit}`;
-        this.updateAddToCartButton();
-      });
-
-      el.appendChild(textarea);
-      el.appendChild(counter);
-    } else {
-      textarea.addEventListener('input', () => {
-        this.giftMessageState.message = textarea.value;
-        this.updateAddToCartButton();
-      });
-      el.appendChild(textarea);
-    }
-  }
-
   updateAddToCartButton() {
     const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
@@ -2176,18 +2086,10 @@ class BundleWidgetProductPage {
       return sum + Object.values(stepSelections || {}).reduce((s, qty) => s + qty, 0);
     }, 0);
 
-    // Check gift message mandatory constraint
-    const giftMandatoryBlocking = this.selectedBundle?.giftMessagesEnabled &&
-      this.selectedBundle?.giftMessageMandatory &&
-      this.selectedBundle?.giftMessageProductId &&
-      (!this.giftMessageState?.message || this.giftMessageState.message.trim() === '');
-
-    // Disable button if no paid products selected OR not all required steps complete OR mandatory gift message missing
-    if (paidTotalQuantity === 0 || !allStepsValid || giftMandatoryBlocking) {
+    // Disable button if no paid products selected or not all required steps are complete.
+    if (paidTotalQuantity === 0 || !allStepsValid) {
       if (paidTotalQuantity === 0) {
         button.textContent = this._resolveText('addToCartButton', 'Add Bundle to Cart');
-      } else if (giftMandatoryBlocking) {
-        button.textContent = 'Add a gift message to continue';
       } else {
         // Some products selected but not all required steps complete
         button.textContent = this._resolveText('completeSteps', 'Complete All Steps to Continue');
@@ -3934,24 +3836,6 @@ class BundleWidgetProductPage {
     cartItems.forEach(item => {
       Object.assign(item.properties, sourceProperties);
     });
-
-    // Add gift message product line item (if enabled and a gift product is configured)
-    const bundle = this.selectedBundle;
-    if (bundle?.giftMessagesEnabled && bundle?.giftMessageProductId && this.giftMessageState?.message?.trim()) {
-      const giftVariantIdRaw = bundle.giftMessageProductId;
-      const giftVariantId = parseInt(this.extractId(giftVariantIdRaw));
-      if (giftVariantId) {
-        const giftProperties = {
-          '_bundle_id': bundleInstanceId,
-          '_gift_message': this.giftMessageState.message.trim(),
-        };
-        if (bundle.giftMessageEnableSenderRecipient) {
-          if (this.giftMessageState.from?.trim()) giftProperties['_gift_from'] = this.giftMessageState.from.trim();
-          if (this.giftMessageState.to?.trim()) giftProperties['_gift_to'] = this.giftMessageState.to.trim();
-        }
-        cartItems.push({ id: giftVariantId, quantity: 1, properties: giftProperties });
-      }
-    }
 
     return cartItems;
   }

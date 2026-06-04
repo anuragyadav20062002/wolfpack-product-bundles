@@ -1247,22 +1247,6 @@
   composes: optionNote from "./bundle-configure-shared.module.css";
 }
 
-.messagePreview {
-  composes: messagePreview from "./bundle-configure-shared.module.css";
-}
-
-.messagePreviewIcon {
-  composes: messagePreviewIcon from "./bundle-configure-shared.module.css";
-}
-
-.messagePreviewTitle {
-  composes: messagePreviewTitle from "./bundle-configure-shared.module.css";
-}
-
-.messageNote {
-  composes: messageNote from "./bundle-configure-shared.module.css";
-}
-
 .templateDialogBackdrop {
   position: fixed;
   inset: 0;

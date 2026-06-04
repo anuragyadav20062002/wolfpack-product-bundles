@@ -69,14 +69,13 @@ All tests run against mocked Prisma and mocked Shopify admin. No real DB or netw
 | 2 | Auto-activate via StepProduct | status=draft, StepProduct present | finalStatus=active |
 | 3 | Auto-activate via StepCategory.products | status=draft, StepCategory with products | finalStatus=active |
 | 4 | No auto-activate when StepCategory empty | status=draft, StepCategory exists but empty | stays draft |
-| 5 | Gift messages parsed from form | giftMessagesEnabled=true, productId set | DB.update includes giftMessagesEnabled:true, giftMessageProductId |
-| 6 | Bundle settings parsed from form | variantSelectorEnabled=false | DB.update includes variantSelectorEnabled:false |
-| 7 | StepCategory records created | step.StepCategory present | nested StepCategory.create in DB call |
-| 8 | UUID product ID rejected | StepProduct.id is UUID | returns 500 with corruption message |
-| 9 | With shopifyProductId — has products | productId set, step has StepProduct | metafield calls invoked; success |
-| 10 | With shopifyProductId — no products | productId set, no products in any step | returns 500 "Please add products…" |
-| 11 | DB throws | db.bundle.update throws | returns 500 |
-| 12 | Fixed bundle price stored | discountType=fixed_bundle_price | rule gets fixedBundlePrice field |
+| 5 | Bundle settings parsed from form | variantSelectorEnabled=false | DB.update includes variantSelectorEnabled:false |
+| 6 | StepCategory records created | step.StepCategory present | nested StepCategory.create in DB call |
+| 7 | UUID product ID rejected | StepProduct.id is UUID | returns 500 with corruption message |
+| 8 | With shopifyProductId — has products | productId set, step has StepProduct | metafield calls invoked; success |
+| 9 | With shopifyProductId — no products | productId set, no products in any step | returns 500 "Please add products…" |
+| 10 | DB throws | db.bundle.update throws | returns 500 |
+| 11 | Fixed bundle price stored | discountType=fixed_bundle_price | rule gets fixedBundlePrice field |
 
 ### Suite 5 — `handleUpdateBundleStatus` (shared, mocked DB + admin)
 

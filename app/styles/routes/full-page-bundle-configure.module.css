@@ -2251,41 +2251,6 @@
   composes: mediaFieldGrid from "./bundle-configure-shared.module.css";
 }
 
-.messagePreview {
-  composes: messagePreview from "./bundle-configure-shared.module.css";
-}
-
-.messagePreviewIcon {
-  composes: messagePreviewIcon from "./bundle-configure-shared.module.css";
-}
-
-.messagePreviewTitle {
-  composes: messagePreviewTitle from "./bundle-configure-shared.module.css";
-}
-
-.messageNote {
-  composes: messageNote from "./bundle-configure-shared.module.css";
-}
-
-.emailCaptureDisabled {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: #6d7175;
-  cursor: default;
-  pointer-events: none;
-}
-
-.emailCustomizeDisabled {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #6d7175;
-  cursor: default;
-  pointer-events: none;
-}
-
 /* ── Empty State ──────────────────────────────────────────────── */
 .emptyState {
   composes: emptyState from "./bundle-configure-shared.module.css";

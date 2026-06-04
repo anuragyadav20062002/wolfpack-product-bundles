@@ -1388,77 +1388,6 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
-  it("persists direct message personalization config and passes it into metafield sync", async () => {
-    const personalizationData = {
-      isPersonalizationEnabled: true,
-      giftMessage: {
-        isGiftMessageEnabled: true,
-        isSenderAndRecipientNameEnabled: true,
-        giftMessageCharacterLimit: "120",
-        isGiftMessageMandatory: true,
-        isVideoMessageEnabled: false,
-        isEmailEnabled: false,
-        messageProduct: {
-          isMessageProductEnabled: true,
-          status: "unlisted",
-          product: {
-            id: "gid://shopify/Product/8600867012804",
-            title: "Message",
-            variants: [
-              {
-                id: "gid://shopify/ProductVariant/46177973534916",
-                title: "Message",
-                price: "0.00",
-                taxable: false,
-                inventory_policy: "continue",
-              },
-            ],
-          },
-        },
-      },
-    };
-    getDb().bundle.update.mockResolvedValue(
-      makeUpdatedBundle({
-        shopifyProductId: PRODUCT_ID,
-        personalizationData,
-        steps: [
-          {
-            id: "step-db-1",
-            name: "Step 1",
-            StepProduct: [
-              {
-                productId: "gid://shopify/Product/456",
-                title: "Component",
-                imageUrl: null,
-              },
-            ],
-            StepCategory: [],
-          },
-        ],
-      })
-    );
-
-    const fd = makeFormData({
-      stepsData: JSON.stringify(makeStepWithProduct()),
-      bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
-      personalizationData: JSON.stringify(personalizationData),
-    });
-    const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    const body = await res.json();
-
-    expect(body.success).toBe(true);
-    expect(getDb().bundle.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ personalizationData }),
-      })
-    );
-    expect(updateBundleProductMetafields).toHaveBeenCalledWith(
-      MOCK_ADMIN,
-      PRODUCT_ID,
-      expect.objectContaining({ personalizationData }),
-    );
-  });
-
   it("passes direct box-selection config into bundle variant metafield sync", async () => {
     const boxSelection = {
       isEnabled: true,
@@ -1551,16 +1480,6 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
     );
   });
 
-  it("serializes messages through the direct personalization draft instead of generic copy overrides", () => {
-    const source = configureRouteSource();
-
-    expect(source).toContain("buildGiftMessageDraftFromPersonalizationData");
-    expect(source).toContain("buildPersonalizationDataFromDraft(addonDraft, addonMessages, giftMessageDraft)");
-    expect(source).toContain("giftMessage: buildGiftMessageConfigFromDraft(giftMessageDraft)");
-    expect(source).not.toContain("textOverrides.giftMessageEnabled");
-    expect(source).not.toContain('setMessageOverride("giftMessageEnabled"');
-  });
-
   it("keeps add-ons discount defaults independent from free-gift display state", () => {
     const source = configureRouteSource();
 
@@ -1573,7 +1492,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
   it("keeps direct add-ons state independent from paid step data", () => {
     const source = configureRouteSource();
 
-    expect(source).toContain("buildPersonalizationDataFromDraft(addonDraft, addonMessages, giftMessageDraft)");
+    expect(source).toContain("buildPersonalizationDataFromDraft(addonDraft, addonMessages)");
     expect(source).toContain("isFreeGift: false,");
     expect(source).not.toContain('stepsState.updateStepField(step.id, "isFreeGift"');
     expect(source).not.toContain("buildPersonalizationDataFromStep(personalizationStep");

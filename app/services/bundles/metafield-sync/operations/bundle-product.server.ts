@@ -525,14 +525,6 @@ export async function updateBundleProductMetafields(
     textOverrides: bundleConfiguration.textOverrides ?? null,
     textOverridesByLocale: bundleConfiguration.textOverridesByLocale ?? null,
     sdkMode: bundleConfiguration.sdkMode ?? false,
-    giftMessagesEnabled:              bundleConfiguration.giftMessagesEnabled ?? false,
-    giftMessageProductId:             bundleConfiguration.giftMessageProductId ?? null,
-    giftMessageProductTitle:          bundleConfiguration.giftMessageProductTitle ?? null,
-    giftMessageEnableSenderRecipient: bundleConfiguration.giftMessageEnableSenderRecipient ?? false,
-    giftMessageMandatory:             bundleConfiguration.giftMessageMandatory ?? false,
-    giftMessageEnableLimit:           bundleConfiguration.giftMessageEnableLimit ?? false,
-    giftMessageCharLimit:             bundleConfiguration.giftMessageCharLimit ?? null,
-    giftMessageSendEmail:             bundleConfiguration.giftMessageSendEmail ?? false,
   };
 
   // Check metafield sizes and log warnings

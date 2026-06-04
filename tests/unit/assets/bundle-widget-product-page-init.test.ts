@@ -581,7 +581,6 @@ describe('Product Page modal-slot visual contract', () => {
     expect(source).toContain('bw-default-products__line');
     expect(source).toContain('bw-ppb-discount-progress__fill');
     expect(source).toContain('bw-qty-pill--active');
-    expect(source).toContain('bw-gift-message__textarea');
     expect(modalSlotTemplate).toContain('bw-slot-card__plus-icon');
     expect(modalSlotTemplate).toContain('bw-slot-card__slot-icon-img');
     expect(modalSlotTemplate).toContain('bw-ppb-primary-cta--modal-vertical');
@@ -604,7 +603,6 @@ describe('Product Page modal-slot visual contract', () => {
     expect(css).toContain('.bw-default-products__line');
     expect(css).toContain('.bw-ppb-discount-progress__fill');
     expect(css).toContain('.bw-qty-pill--active');
-    expect(css).toContain('.bw-gift-message__textarea');
     expect(css).toContain('.bw-slot-card__plus-icon');
     expect(css).toContain('.bw-slot-card__slot-icon-img');
     expect(css).toContain('.bw-ppb-primary-cta--modal-vertical');
@@ -681,7 +679,7 @@ describe('Product Page modal-slot visual contract', () => {
     expect(source).toContain('const showQuantitySelector = !this._usesCompactInpageProductCards()');
 
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid');
-    expect(css).toContain('grid-template-columns:repeat(3, minmax(0, 1fr))');
+    expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
     expect(css).toContain('gap:15px');
     expect(css).toContain('padding:0 8px 15px');
     expect(css).toContain('.bw-ppb-cognive-product-grid .product-card');
