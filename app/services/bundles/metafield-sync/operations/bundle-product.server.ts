@@ -106,11 +106,12 @@ function parseCachedVariantPriceCents(variant: any): number | null {
 
 function collectCachedStepVariants(
   steps: any[],
-): Array<{ variantId: string; quantity: number; priceCents: number | null; title?: string }> {
-  const variants: Array<{ variantId: string; quantity: number; priceCents: number | null; title?: string }> = [];
+): Array<{ variantId: string; quantity: number; priceCents: number | null; title?: string; imageUrl?: string }> {
+  const variants: Array<{ variantId: string; quantity: number; priceCents: number | null; title?: string; imageUrl?: string }> = [];
 
   const appendProductVariants = (product: any, quantity: number) => {
     const cachedVariants = Array.isArray(product?.variants) ? product.variants : [];
+    const imageUrl = typeof product?.imageUrl === "string" ? product.imageUrl : undefined;
     for (const variant of cachedVariants) {
       const variantId = getCachedVariantId(variant);
       if (!variantId) continue;
@@ -120,6 +121,7 @@ function collectCachedStepVariants(
         quantity,
         priceCents: parseCachedVariantPriceCents(variant),
         title: typeof product?.title === "string" ? product.title : undefined,
+        imageUrl,
       });
     }
   };
@@ -325,12 +327,13 @@ export async function updateBundleProductMetafields(
 
   // Batch fetch all variants WITH PRICES in a single query (for component pricing)
   // Array to collect component data for pricing calculation
-  const componentPricingData: Array<{ variantId: string; priceCents: number; quantity: number; title?: string }> = [];
+  const componentPricingData: Array<{ variantId: string; priceCents: number; quantity: number; title?: string; imageUrl?: string }> = [];
   const appendComponentVariant = (
     variantId: string,
     quantity: number,
     priceCents: number | null,
     title?: string,
+    imageUrl?: string,
   ) => {
     if (componentReferences.includes(variantId)) return;
 
@@ -343,13 +346,14 @@ export async function updateBundleProductMetafields(
         priceCents,
         quantity,
         title,
+        imageUrl,
       });
     }
   };
 
   for (const addonVariant of collectAddonComponentVariants(bundleConfiguration.personalizationData)) {
     if (addonVariant.variantId) {
-      appendComponentVariant(addonVariant.variantId, 1, addonVariant.priceCents, addonVariant.title);
+      appendComponentVariant(addonVariant.variantId, 1, addonVariant.priceCents, addonVariant.title, addonVariant.imageUrl);
       continue;
     }
 
@@ -377,7 +381,7 @@ export async function updateBundleProductMetafields(
       const result = variantResults.get(cleanId);
 
       if (result?.success && result.variantId) {
-        appendComponentVariant(result.variantId, item.stepMinQuantity, result.priceCents || 0, result.title);
+        appendComponentVariant(result.variantId, item.stepMinQuantity, result.priceCents || 0, result.title, result.imageUrl);
       } else {
         AppLogger.warn("Could not get variant for bundle product", {
           component: "metafield-sync",
@@ -395,6 +399,7 @@ export async function updateBundleProductMetafields(
       cachedVariant.quantity,
       cachedVariant.priceCents,
       cachedVariant.title,
+      cachedVariant.imageUrl,
     );
   }
 

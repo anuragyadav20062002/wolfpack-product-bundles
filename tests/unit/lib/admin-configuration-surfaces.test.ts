@@ -46,13 +46,20 @@ describe("recovered admin surfaces contract", () => {
       "Addons",
       "Messages",
     ]);
+    expect(LANGUAGE_CONFIGURATION.productPageTemplateSections).toEqual([
+      "Product Card",
+      "Bundle Cart",
+      "Bundle",
+      "Toasts",
+    ]);
     expect(LANGUAGE_CONFIGURATION.productCardFields.map((field) => field.value)).toEqual([
-      "Clear Selection",
-      "Search",
       "Add To Box",
-      "Choose Options",
-      "Load More Products",
-      "Loading Checkout",
+    ]);
+    expect(LANGUAGE_CONFIGURATION.productPageTemplateFields["Product Card"]?.[0]?.fields.map((field) => field.value)).toEqual([
+      "Add to Cart",
+      "Select variant",
+      "Added x{{allowedQuantity}}",
+      "Add +",
     ]);
   });
 
@@ -185,14 +192,12 @@ describe("recovered admin surfaces contract", () => {
     expect(landingIntegrations?.fields.map((field) => field.group)).toEqual([
       "Integrate JS with custom elements from the store theme",
       "Integrate JS with custom elements from the store theme",
-      "Cart page integration",
-      "Cart page integration",
-      "Cart page integration",
-      "Cart page integration",
-      "Cart page integration",
-      "Cart page integration",
-      "Cart page integration",
-      "Integrate with Judge Me",
+      "Integrate JS bundle script with Cart page",
+      "Integrate JS bundle script with Cart page",
+      "Integrate JS bundle script with Cart page",
+      "Integrate JS bundle script with Cart page",
+      "Integrate JS bundle script with Cart page",
+      "Integrate JS bundle script with Cart page",
       "Integrate with Judge Me",
       "Integrate with Judge Me",
     ]);
@@ -228,6 +233,9 @@ describe("recovered admin surfaces contract", () => {
     expect(cards.filter((card) => card.ctaType === "chat").map((card) => card.id)).toEqual(["zapiet"]);
     expect(cards.filter((card) => card.ctaType === "guide")).toHaveLength(9);
     expect(cards.map((card) => card.ctaLabel)).toEqual(Array.from({ length: 10 }, () => "View Setup"));
+    expect(cards.map((card) => card.setupUrl)).toEqual(
+      Array.from({ length: 10 }, () => "https://wolfpackapps.com"),
+    );
     expect(cards.map((card) => card.description)).toEqual([
       "Pre-order out-of-stock items within your bundles",
       "Schedule store pickup & delivery for bundle orders",
@@ -241,16 +249,16 @@ describe("recovered admin surfaces contract", () => {
       "Optimized Indian checkout flow with bundle support",
     ]);
     expect(cards.map((card) => card.logoUrl)).toEqual([
-      "https://d3ks0ngva6go34.cloudfront.net/public/Stoq.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Zapiet.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Skio.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Appstle.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Bold.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Judgeme.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Pagefly.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Gempages.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Gokwik.avif",
-      "https://d3ks0ngva6go34.cloudfront.net/public/Shopflo.avif",
+      "/icons/Stoq.avif",
+      "/icons/Zapiet.avif",
+      "/icons/Skio.avif",
+      "/icons/Appstle.avif",
+      "/icons/Bold.avif",
+      "/icons/Judgeme.avif",
+      "/icons/Pagefly.avif",
+      "/icons/Gempages.avif",
+      "/icons/Gokwik.avif",
+      "/icons/Shopflo.avif",
     ]);
     expect(JSON.stringify(cards)).not.toMatch(/easybundles|skailama|id_token|hmac|session=/i);
   });

@@ -24,6 +24,7 @@ import {useState} from 'preact/hooks';
 
 interface ComponentDetail {
   title: string;
+  imageUrl?: string;
   quantity: number;
   retailPrice: number;
   bundlePrice: number;
@@ -31,10 +32,10 @@ interface ComponentDetail {
   savingsAmount: number;
 }
 
-// Parse compact array format [title, qty, retailCents, bundleCents, discountPct, savingsCents]
+// Parse compact array format [title, qty, retailCents, bundleCents, discountPct, savingsCents, imageUrl?]
 // into ComponentDetail objects.
 function parseComponents(json: string): ComponentDetail[] {
-  const parsed = JSON.parse(json);
+  const parsed: unknown = JSON.parse(json);
   if (!Array.isArray(parsed) || parsed.length === 0) return [];
 
   // Safe number coercion — returns 0 on NaN/Infinity/non-numeric
@@ -43,14 +44,19 @@ function parseComponents(json: string): ComponentDetail[] {
     return Number.isFinite(n) ? n : 0;
   };
 
-  return parsed.map((item: any[]) => ({
-    title: String(item[0] ?? ''),
-    quantity: num(item[1]),
-    retailPrice: num(item[2]),
-    bundlePrice: num(item[3]),
-    discountPercent: num(item[4]),
-    savingsAmount: num(item[5]),
-  }));
+  return parsed.map((item: unknown) => {
+    const values = Array.isArray(item) ? item : [];
+
+    return {
+      title: String(values[0] ?? ''),
+      quantity: num(values[1]),
+      retailPrice: num(values[2]),
+      bundlePrice: num(values[3]),
+      discountPercent: num(values[4]),
+      savingsAmount: num(values[5]),
+      imageUrl: typeof values[6] === 'string' && values[6].trim() ? values[6] : undefined,
+    };
+  });
 }
 
 export const BundlePricingExtension: FunctionComponent = () => {
@@ -58,7 +64,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
 
   // Access cart line via Preact shopify global signal
   const lineItem = shopify.target.value;
-  const currency = shopify.cost.totalAmount.value?.currencyCode || 'USD';
+  const currency = shopify.cost.totalAmount.value?.currencyCode ?? 'USD';
 
   if (!lineItem) {
     return null;
@@ -105,8 +111,6 @@ export const BundlePricingExtension: FunctionComponent = () => {
   };
 
   // Bundle Parent with Expandable Components
-  const bundleName = getAttr('_bundle_name') || 'Bundle';
-  const componentCount = safeInt(getAttr('_bundle_component_count'));
   const totalRetailCents = safeInt(getAttr('_bundle_total_retail_cents'));
   const totalBundleCents = safeInt(getAttr('_bundle_total_price_cents'));
   const totalSavingsCents = safeInt(getAttr('_bundle_total_savings_cents'));
@@ -164,11 +168,7 @@ export const BundlePricingExtension: FunctionComponent = () => {
           </>
         )}
 
-        {!hasDiscount && (
-          <s-text color="subdued">
-            Bundle ({componentCount} items)
-          </s-text>
-        )}
+        {!hasDiscount && null}
       </s-stack>
 
       {/* Expandable Component List */}
@@ -185,35 +185,40 @@ export const BundlePricingExtension: FunctionComponent = () => {
           {isExpanded && (
             <s-stack direction="block" gap="small-100">
               {components.map((component, index) => (
-                <s-stack key={index} direction="block" gap="none">
+                <s-stack key={index} direction="block" gap="small-100">
                   <s-divider />
-                  <s-stack direction="block" gap="none">
-                    <s-text type="strong">
-                      {component.quantity}x {component.title || `Item ${index + 1}`}
-                    </s-text>
-                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text color="subdued">Retail Price:</s-text>
-                      <s-text color="subdued">
-                        {formatMoney(component.retailPrice * component.quantity)}
+                  <s-stack direction="inline" gap="small-200" alignItems="start">
+                    {component.imageUrl && (
+                      <s-product-thumbnail src={component.imageUrl} size="base" />
+                    )}
+                    <s-stack direction="block" gap="none">
+                      <s-text type="strong">
+                        {component.quantity}x {component.title || `Item ${index + 1}`}
                       </s-text>
-                    </s-stack>
-                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text color="subdued">Bundle Price:</s-text>
-                      <s-text>
-                        {formatMoney(component.bundlePrice * component.quantity)}
-                      </s-text>
-                    </s-stack>
-                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text color="subdued">Percentage Savings:</s-text>
-                      <s-text tone="success">
-                        {formatPercent(component.discountPercent)}%
-                      </s-text>
-                    </s-stack>
-                    <s-stack direction="inline" gap="small-200" justifyContent="space-between">
-                      <s-text color="subdued">Exact Savings:</s-text>
-                      <s-text tone="success">
-                        {formatMoney(component.savingsAmount * component.quantity)}
-                      </s-text>
+                      <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                        <s-text color="subdued">Retail Price:</s-text>
+                        <s-text color="subdued">
+                          {formatMoney(component.retailPrice * component.quantity)}
+                        </s-text>
+                      </s-stack>
+                      <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                        <s-text color="subdued">Bundle Price:</s-text>
+                        <s-text>
+                          {formatMoney(component.bundlePrice * component.quantity)}
+                        </s-text>
+                      </s-stack>
+                      <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                        <s-text color="subdued">Percentage Savings:</s-text>
+                        <s-text tone="success">
+                          {formatPercent(component.discountPercent)}%
+                        </s-text>
+                      </s-stack>
+                      <s-stack direction="inline" gap="small-200" justifyContent="space-between">
+                        <s-text color="subdued">Exact Savings:</s-text>
+                        <s-text tone="success">
+                          {formatMoney(component.savingsAmount * component.quantity)}
+                        </s-text>
+                      </s-stack>
                     </s-stack>
                   </s-stack>
                 </s-stack>

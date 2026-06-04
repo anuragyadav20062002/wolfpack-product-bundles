@@ -150,6 +150,7 @@ class BundleWidgetFullPage {
 
       // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
+      await this.loadLanguageSettings();
 
       // Storefront self-heal: make sure the shop has an active CartTransform.
       this._scheduleCartTransformSelfHeal();
@@ -290,6 +291,29 @@ class BundleWidgetFullPage {
 
     } catch (_e) {
       // Non-critical — widget works without design settings CSS
+    }
+  }
+
+  async loadLanguageSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const locale = window.Shopify?.locale || 'en';
+      const endpoint = `/apps/product-bundles/api/language-settings/${encodeURIComponent(shop)}?bundleType=full_page&locale=${encodeURIComponent(locale)}`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      const languageSettings = await response.json();
+      this.config.languageSettings = languageSettings;
+      this.config.languageData = languageSettings.activeLanguageData || null;
+      this.config.sharedCartLabels = languageSettings.sharedCartLabels || null;
+      this.config.textOverrides = {
+        ...(this.config.textOverrides || {}),
+        ...(languageSettings.textOverrides || {})
+      };
+    } catch (_) {
+      // Non-critical: default and bundle-level text still render.
     }
   }
 
@@ -4212,15 +4236,16 @@ class BundleWidgetFullPage {
   }
 
   buildCartLineDisplayProperties(displayProperties) {
+    const cartLineLabels = this.getCartLineLabels();
     const properties = {
       Box: displayProperties.box || '1',
-      Items: displayProperties.items,
-      'Retail Price': displayProperties.retailPrice,
+      [cartLineLabels.items]: displayProperties.items,
+      [cartLineLabels.retailPrice]: displayProperties.retailPrice,
       '_bundle_display_properties': JSON.stringify(displayProperties)
     };
 
     if (displayProperties.youSave?.amountPercentage) {
-      properties['You Save'] = displayProperties.youSave.amountPercentage;
+      properties[cartLineLabels.youSave] = displayProperties.youSave.amountPercentage;
     }
 
     return properties;
@@ -6184,26 +6209,36 @@ class BundleWidgetFullPage {
   buildBundleDetailsDisplayProperties(sourceProperties) {
     const displayProperties = {};
     const raw = sourceProperties?._bundle_display_properties;
+    const cartLineLabels = this.getCartLineLabels();
 
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
         if (parsed?.box) displayProperties.Box = String(parsed.box);
-        if (parsed?.items) displayProperties.Items = String(parsed.items);
-        if (parsed?.retailPrice) displayProperties['Retail Price'] = String(parsed.retailPrice);
-        if (parsed?.youSave?.amountPercentage) displayProperties['You Save'] = String(parsed.youSave.amountPercentage);
+        if (parsed?.items) displayProperties[cartLineLabels.items] = String(parsed.items);
+        if (parsed?.retailPrice) displayProperties[cartLineLabels.retailPrice] = String(parsed.retailPrice);
+        if (parsed?.youSave?.amountPercentage) displayProperties[cartLineLabels.youSave] = String(parsed.youSave.amountPercentage);
       } catch {
         // Ignore malformed display metadata; cart add must remain non-blocking.
       }
     }
 
-    ['Box', 'Items', 'Retail Price', 'You Save'].forEach((key) => {
+    ['Box', cartLineLabels.items, cartLineLabels.retailPrice, cartLineLabels.youSave, 'Items', 'Retail Price', 'You Save'].forEach((key) => {
       if (sourceProperties?.[key] && !displayProperties[key]) {
         displayProperties[key] = String(sourceProperties[key]);
       }
     });
 
     return displayProperties;
+  }
+
+  getCartLineLabels() {
+    const labels = this.config?.sharedCartLabels || {};
+    return {
+      items: labels.bundleContainsLabel || 'Items',
+      retailPrice: labels.bundleOriginalPriceLabel || 'Retail Price',
+      youSave: labels.bundleDiscountDisplayLabel || 'You Save',
+    };
   }
 
   async getBundleDetailsCartToken() {

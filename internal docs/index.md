@@ -18,6 +18,8 @@ This vault contains audited, authoritative documentation for the Wolfpack Produc
 
 - [[EB Implementation Reference]] — Admin endpoints, FPB/PPB step-category payloads, Discount & Pricing contracts, Bundle Visibility widget/embed help references, template ID enums, cart integration, box selection, text config, mixAndMatchBundleSettings schema, Wolfpack DB alignment
 - [[EB Settings Design Reference]] — Settings -> Design pageCustomization save contract, control-to-field mappings, FPB/PPB storefront propagation, stylePresets, and PPB CSS variables
+- [[EB Settings Language Reference]] — Settings -> Language save/read contract, field roots, FPB/PPB storefront globals, and active-locale runtime mappings
+- [[EB Integrations Reference]] — Integrations page UI contract, live quick setup link findings, and WPB supportability notes for Stoq, Zapiet, subscriptions, Judge.me, page builders, and checkout apps
 
 Full evidence record: `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`
 

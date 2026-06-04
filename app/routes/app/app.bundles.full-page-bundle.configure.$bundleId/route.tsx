@@ -82,10 +82,10 @@ import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers"
 import type { LoaderData } from "./types";
 
 const fullPageTemplateOptions = [
-  { presetId: "DEFAULT",    label: "Standard Design",   image: "/fullPageThumbnail.png"     },
-  { presetId: "CLASSIC",    label: "Classic Design",    image: "/sidePanelThumbnail.png"    },
-  { presetId: "COMPACT",    label: "Compact Design",    image: "/floatingCardThumbnail.png" },
-  { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/productPageThumbnail.png"  },
+  { presetId: "DEFAULT",    label: "Standard Design",   image: "/FPB-Standard.png"     },
+  { presetId: "CLASSIC",    label: "Classic Design",    image: "/FPB-Classic.png"      },
+  { presetId: "COMPACT",    label: "Compact Design",    image: "/FPB-Compact..png"    },
+  { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/FPB-Horizontal.png"   },
 ] as const;
 
 const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";

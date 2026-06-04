@@ -3,6 +3,7 @@ export interface AddonComponentVariant {
   variantId: string | null;
   priceCents: number | null;
   title?: string;
+  imageUrl?: string;
 }
 
 function normalizeGid(value: unknown, resource: "Product" | "ProductVariant"): string | null {
@@ -60,6 +61,7 @@ export function collectAddonComponentVariants(personalizationData: any): AddonCo
     for (const product of selectedProducts) {
       const productId = addonProductId(product);
       const title = typeof product?.title === "string" ? product.title : undefined;
+      const imageUrl = typeof product?.imageUrl === "string" ? product.imageUrl : undefined;
       const variants = Array.isArray(product?.variants) ? product.variants : [];
       let addedVariant = false;
 
@@ -74,6 +76,7 @@ export function collectAddonComponentVariants(personalizationData: any): AddonCo
           variantId,
           priceCents: parsePriceCents(variant?.price),
           title,
+          imageUrl,
         });
       }
 
@@ -84,6 +87,7 @@ export function collectAddonComponentVariants(personalizationData: any): AddonCo
           variantId: null,
           priceCents: null,
           title,
+          imageUrl,
         });
       }
     }

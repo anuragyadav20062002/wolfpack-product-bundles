@@ -337,6 +337,12 @@ describe("updateBundleProductMetafields", () => {
           {
             id: "gid://shopify/Product/9427287703811",
             title: "123Luxury Armor Matte Case",
+            variants: [
+              {
+                id: "gid://shopify/ProductVariant/48191691456771",
+                price: "123.00",
+              },
+            ],
           },
         ],
         selectedProducts: [],
@@ -519,6 +525,7 @@ describe("updateBundleProductMetafields", () => {
               {
                 graphqlId: "gid://shopify/Product/9999",
                 title: "Selected Add-on",
+                imageUrl: "https://cdn.shopify.com/addon.jpg",
                 variants: [
                   {
                     variantGraphqlId: "gid://shopify/ProductVariant/ADDON",
@@ -555,6 +562,7 @@ describe("updateBundleProductMetafields", () => {
         expect.objectContaining({
           variantId: "gid://shopify/ProductVariant/ADDON",
           retailPrice: 60000,
+          imageUrl: "https://cdn.shopify.com/addon.jpg",
         }),
       ]),
     );
