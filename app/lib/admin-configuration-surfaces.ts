@@ -47,8 +47,10 @@ export type LanguageConfiguration = {
   supportedLanguages: string[];
   sharedCartFields: SettingsField[];
   templateSections: string[];
+  productPageTemplateSections: string[];
   productCardFields: SettingsField[];
   templateFields: Record<string, SettingsFieldGroup[]>;
+  productPageTemplateFields: Record<string, SettingsFieldGroup[]>;
 };
 
 export type ControlsLayout = {
@@ -67,6 +69,7 @@ export type IntegrationCard = {
   status: "Setup guide" | "Chat setup" | "Custom request";
   ctaLabel: string;
   ctaType: "guide" | "chat" | "request";
+  setupUrl: string;
   guideSummary: string[];
 };
 
@@ -89,14 +92,14 @@ export const SETTINGS_CARDS: SettingsCard[] = [
     id: "language",
     title: "Language",
     description: "Configure all text, labels, and translations for your bundle here",
-    icon: "language",
+    icon: "globe",
     actionLabel: "Configure",
   },
   {
     id: "controls",
     title: "Controls",
     description: "Change loading screen gif, add custom CSS, modify checkout settings and more",
-    icon: "adjust",
+    icon: "filter",
     actionLabel: "Configure",
   },
 ];
@@ -266,13 +269,14 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
   selectedLanguage: "English",
   supportedLanguages: SUPPORTED_LANGUAGE_LABELS,
   sharedCartFields: [
-    { label: "Bundle Contains Label", value: "Items", kind: "text" },
-    { label: "Bundle Original Price Label", value: "Retail Price", kind: "text" },
-    { label: "Bundle Cart Discount Display Label", value: "You Save", kind: "text" },
+    { key: "shared.cartCheckout.bundleContainsLabel", label: "Bundle Contains Label", value: "Items", kind: "text" },
+    { key: "shared.cartCheckout.bundleOriginalPriceLabel", label: "Bundle Original Price Label", value: "Retail Price", kind: "text" },
+    { key: "shared.cartCheckout.bundleDiscountDisplayLabel", label: "Bundle Cart Discount Display Label", value: "You Save", kind: "text" },
   ],
   templateSections: ["Product Card", "Bundle Cart", "Bundle", "Popups", "Toasts", "Addons", "Messages"],
+  productPageTemplateSections: ["Product Card", "Bundle Cart", "Bundle", "Toasts"],
   productCardFields: [
-    { label: "Add Product to Bundle Button", value: "Add To Box", kind: "text" },
+    { key: "fpb.general.addToBoxButtonText", label: "Add Product to Bundle Button", value: "Add To Box", kind: "text" },
   ],
   templateFields: {
     "Product Card": [
@@ -280,7 +284,7 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         title: "Button Configuration",
         description: "Product card button text and action labels",
         fields: [
-          { label: "Add Product to Bundle Button", value: "Add To Box", kind: "text" },
+          { key: "fpb.general.addToBoxButtonText", label: "Add Product to Bundle Button", value: "Add To Box", kind: "text" },
         ],
       },
     ],
@@ -289,13 +293,13 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         title: "Navigation Buttons",
         description: "Bundle cart navigation button text and labels",
         fields: [
-          { label: "Next Button Text", value: "Next", kind: "text" },
-          { label: "Add Bundle to Cart Button", value: "Add To Cart", kind: "text" },
-          { label: "Total Label", value: "Total", kind: "text" },
-          { label: "View Cart Products Label", value: "View Selected Products", kind: "text" },
-          { label: "Discount Badge Suffix", value: "off", kind: "text" },
-          { label: "Cart Inclusion Title", value: "item(s)", kind: "text" },
-          { label: "Subscription Selection Label", value: "Select Subscription Plan", kind: "text" },
+          { key: "fpb.general.nextButtonText", label: "Next Button Text", value: "Next", kind: "text" },
+          { key: "fpb.general.addToCartButtonText", label: "Add Bundle to Cart Button", value: "Add To Cart", kind: "text" },
+          { key: "fpb.general.totalLabelText", label: "Total Label", value: "Total", kind: "text" },
+          { key: "fpb.general.viewCartProductsLabel", label: "View Cart Products Label", value: "View Selected Products", kind: "text" },
+          { key: "fpb.general.discountBadgeSuffix", label: "Discount Badge Suffix", value: "off", kind: "text" },
+          { key: "fpb.general.cartInclusionTitle", label: "Cart Inclusion Title", value: "item(s)", kind: "text" },
+          { key: "fpb.general.subscriptionSelectionLabel", label: "Subscription Selection Label", value: "Select Subscription Plan", kind: "text" },
         ],
       },
     ],
@@ -304,15 +308,15 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         title: "General Settings",
         description: "Basic bundle configuration",
         fields: [
-          { label: "No Products Available label", value: "No Products Available", kind: "text" },
-          { label: "Choose Options Button", value: "Choose Options", kind: "text" },
-          { label: "Load More Products Button", value: "Load More Products", kind: "text" },
-          { label: "Preparing Bundle Label", value: "Preparing Bundle...", kind: "text" },
-          { label: "Redirecting label", value: "Redirecting...", kind: "text" },
-          { label: "Added Label", value: "Added", kind: "text" },
-          { label: "Add Button Text", value: "Add", kind: "text" },
-          { label: "Review Button Text", value: "Review", kind: "text" },
-          { label: "Select Bundle Products label", value: "Select Bundle Products", kind: "text" },
+          { key: "fpb.general.noProductsAvailableText", label: "No Products Available label", value: "No Products Available", kind: "text" },
+          { key: "fpb.general.chooseOptionsButtonText", label: "Choose Options Button", value: "Choose Options", kind: "text" },
+          { key: "fpb.general.loadMoreProductsButtonText", label: "Load More Products Button", value: "Load More Products", kind: "text" },
+          { key: "fpb.general.preparingBundleLabel", label: "Preparing Bundle Label", value: "Preparing Bundle...", kind: "text" },
+          { key: "fpb.general.redirectingLabel", label: "Redirecting label", value: "Redirecting...", kind: "text" },
+          { key: "fpb.general.addedLabel", label: "Added Label", value: "Added", kind: "text" },
+          { key: "fpb.general.addButtonText", label: "Add Button Text", value: "Add", kind: "text" },
+          { key: "fpb.general.reviewButtonText", label: "Review Button Text", value: "Review", kind: "text" },
+          { key: "fpb.general.selectBundleProductsLabel", label: "Select Bundle Products label", value: "Select Bundle Products", kind: "text" },
         ],
       },
     ],
@@ -320,21 +324,22 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
       {
         title: "General Popup Content",
         description: "Popup dialog text, labels, and button text",
-        fields: [{ label: "Quantity Label", value: "Quantity" }],
+        fields: [{ key: "fpb.modals.quantityLabel", label: "Quantity Label", value: "Quantity" }],
       },
       {
         title: "Clear Cart Modal",
         description: "Clear cart confirmation modal text and buttons",
         fields: [
-          { label: "Modal - Title", value: "Are you sure?" },
+          { key: "fpb.modals.clearCartModalTitle", label: "Modal - Title", value: "Are you sure?" },
           {
+            key: "fpb.modals.clearCartModalDescription",
             label: "Modal - Description",
             value:
               "Are you sure you want to clear all items from your cart? This action cannot be undone...",
           },
-          { label: "Clear Cart Button Text", value: "Clear" },
-          { label: "Modal - Cancel Button Text", value: "Cancel" },
-          { label: "Modal - Confirm Button Text", value: "Clear Cart" },
+          { key: "fpb.modals.clearCartButtonText", label: "Clear Cart Button Text", value: "Clear" },
+          { key: "fpb.modals.clearCartCancelButtonText", label: "Modal - Cancel Button Text", value: "Cancel" },
+          { key: "fpb.modals.clearCartConfirmButtonText", label: "Modal - Confirm Button Text", value: "Clear Cart" },
         ],
       },
     ],
@@ -344,10 +349,12 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         description: "General toast messages and alerts",
         fields: [
           {
+            key: "fpb.toasts.boxSelectionEligibilityToast",
             label: "Box Selection Eligibility Toast",
             value: "Remove {{boxSelectionDifference}} item(s) to select this box",
           },
           {
+            key: "fpb.toasts.removeProductFromFooterText",
             label: "Remove Product from Footer Text",
             value: "Remove This Product From {{stepName}}",
           },
@@ -358,38 +365,47 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         description: "Quantity, amount, and weight rule validation messages",
         fields: [
           {
+            key: "fpb.conditions.quantity.greaterThanOrEqualTo",
             label: "Greater than rule message (Quantity)",
             value: "Add at least {{conditionQuantity}} products on this step",
           },
           {
+            key: "fpb.conditions.quantity.lessThanOrEqualTo",
             label: "Less than rule message (Quantity)",
             value: "Add a maximum of {{conditionQuantity}} products to continue",
           },
           {
+            key: "fpb.conditions.quantity.equalTo",
             label: "Equal to rule message (Quantity)",
             value: "Add exactly {{conditionQuantity}} products on this step",
           },
           {
+            key: "fpb.conditions.amount.greaterThanOrEqualTo",
             label: "Greater than rule message (Amount)",
             value: "Add products worth at least {{conditionAmount}} on this step",
           },
           {
+            key: "fpb.conditions.amount.lessThanOrEqualTo",
             label: "Less than rule message (Amount)",
             value: "Add products worth maximum of {{conditionAmount}} on this step",
           },
           {
+            key: "fpb.conditions.amount.equalTo",
             label: "Equal to rule message (Amount)",
             value: "Add products worth {{conditionAmount}} on this step",
           },
           {
+            key: "fpb.conditions.weight.greaterThanOrEqualTo",
             label: "Greater than rule message (Weight)",
             value: "Add products weighing at least {{conditionWeight}} on this step",
           },
           {
+            key: "fpb.conditions.weight.lessThanOrEqualTo",
             label: "Less than rule message (Weight)",
             value: "Add products weighing maximum of {{conditionWeight}} on this step",
           },
           {
+            key: "fpb.conditions.weight.equalTo",
             label: "Equal to rule message (Weight)",
             value: "Add products weighing {{conditionWeight}} on this step",
           },
@@ -402,14 +418,17 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         description: "Addon product configuration and validation messages",
         fields: [
           {
+            key: "fpb.addons.maxAddonProductsAllowed",
             label: "Max Addon Products Allowed message",
             value: "Add a maximum of {{maxAllowedAddons}} addon products on this step",
           },
           {
+            key: "fpb.addons.addonProductsMandatory",
             label: "Addon Products Mandatory message",
             value: "Addon product is mandatory on this step",
           },
           {
+            key: "fpb.addons.mobileAddonNotification",
             label: "Mobile Add On Notification",
             value: "Additional offers to be unlocked",
           },
@@ -422,26 +441,30 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         description:
           "Gift message form labels, placeholders, and validation messages",
         fields: [
-          { label: "Message Label", value: "Message" },
-          { label: "Sender Name Placeholder", value: "From" },
-          { label: "Recipient Name Placeholder", value: "To" },
-          { label: "Message Placeholder", value: "Enter a message here..." },
+          { key: "fpb.personalizePage.messageLabel", label: "Message Label", value: "Message" },
+          { key: "fpb.personalizePage.senderNamePlaceholder", label: "Sender Name Placeholder", value: "From" },
+          { key: "fpb.personalizePage.recipientNamePlaceholder", label: "Recipient Name Placeholder", value: "To" },
+          { key: "fpb.personalizePage.messagePlaceholder", label: "Message Placeholder", value: "Enter a message here..." },
           {
+            key: "fpb.personalizePage.recipientEmailAddressLabel",
             label: "Recipient Email Address Label",
             value: "Recipient Email Address",
           },
           {
+            key: "fpb.personalizePage.recipientEmailAddressPlaceholder",
             label: "Recipient Email Address Placeholder",
             value: "Enter a recipient email address here...",
           },
           {
+            key: "fpb.personalizePage.emailValidationMessage",
             label: "Email Validation Message",
             value: "Please enter a valid email address",
           },
-          { label: "Send Now Label", value: "Send Now" },
-          { label: "Send Later Label", value: "Send Later" },
-          { label: "Personalize Page Subtext", value: "" },
+          { key: "fpb.personalizePage.sendNowLabel", label: "Send Now Label", value: "Send Now" },
+          { key: "fpb.personalizePage.sendLaterLabel", label: "Send Later Label", value: "Send Later" },
+          { key: "fpb.personalizePage.personalizePageSubtext", label: "Personalize Page Subtext", value: "" },
           {
+            key: "fpb.personalizePage.messageRequiredWarning",
             label: "Message is required warning",
             value: "Please enter a message",
           },
@@ -452,24 +475,92 @@ export const LANGUAGE_CONFIGURATION: LanguageConfiguration = {
         description:
           "Video message interface text, recording states, and upload messages",
         fields: [
-          { label: "Permission Denied", value: "Permission Denied" },
+          { key: "fpb.videoMessage.permissionDenied", label: "Permission Denied", value: "Permission Denied" },
           {
+            key: "fpb.videoMessage.uploadConfirmation",
             label: "Upload Confirmation",
             value: "Your video has been successfully uploaded!",
           },
-          { label: "Press to record", value: "Press to record" },
-          { label: "Recording", value: "Recording...." },
-          { label: "Error Message", value: "An error occured, Please try again!" },
-          { label: "Loading", value: "Loading...." },
-          { label: "Uploading", value: "Uploading...." },
-          { label: "Send Video Message Text", value: "Send Video Message" },
+          { key: "fpb.videoMessage.pressToRecord", label: "Press to record", value: "Press to record" },
+          { key: "fpb.videoMessage.recording", label: "Recording", value: "Recording...." },
+          { key: "fpb.videoMessage.videoErrorMessage", label: "Error Message", value: "An error occured, Please try again!" },
+          { key: "fpb.videoMessage.videoLoading", label: "Loading", value: "Loading...." },
+          { key: "fpb.videoMessage.uploading", label: "Uploading", value: "Uploading...." },
+          { key: "fpb.videoMessage.sendVideoMessageText", label: "Send Video Message Text", value: "Send Video Message" },
           {
+            key: "fpb.videoMessage.messageDeliveryInfo",
             label: "Message Delivery Info",
             value:
               "The message will be sent to the recipient via email as soon as the order is placed",
           },
-          { label: "Save Video Text", value: "Save Video" },
-          { label: "Re-Record Video Text", value: "Re-Record Video" },
+          { key: "fpb.videoMessage.saveVideoText", label: "Save Video Text", value: "Save Video" },
+          { key: "fpb.videoMessage.reRecordVideoText", label: "Re-Record Video Text", value: "Re-Record Video" },
+        ],
+      },
+    ],
+  },
+  productPageTemplateFields: {
+    "Product Card": [
+      {
+        title: "Product Card",
+        description: "Product card labels for product-page bundles",
+        fields: [
+          { key: "ppb.productCard.productCardAddBtnText", label: "Product Add to Cart Button", value: "Add to Cart", kind: "text" },
+          { key: "ppb.productCard.productVariantLabelText", label: "Product Variant Label", value: "Select variant", kind: "text" },
+          { key: "ppb.productCard.productAddedBtnText", label: "Product Added label", value: "Added x{{allowedQuantity}}", kind: "text" },
+          { key: "ppb.productCard.productCardAddBtnText_inPage", label: "Inline Product - Add Button Text", value: "Add +", kind: "text" },
+        ],
+      },
+    ],
+    "Bundle Cart": [
+      {
+        title: "Bundle Cart",
+        description: "Product-page bundle cart labels and navigation",
+        fields: [
+          { key: "ppb.general.discountRibbonSuffix", label: "Discount Badge Suffix", value: "off", kind: "text" },
+          { key: "ppb.general.selectSubscriptionPlanButtonText", label: "Subscription Selection Label", value: "Select Subscription Plan", kind: "text" },
+          { key: "ppb.general.boxConditionInitialText_inPage", label: "Inline Add To Cart Button - Quantity Selection message", value: "Select {{quantityDifference}} Items", kind: "text" },
+          { key: "ppb.general.bundleCartDrawerBtnText_inPage", label: "Inline Cart Drawer Button Text", value: "View Bundle Items", kind: "text" },
+          { key: "ppb.general.bundleCartSelectedProductsText_inPage", label: "Inline Cart Selected Products Label", value: "Selected Products", kind: "text" },
+          { key: "ppb.general.subtotalLabelText", label: "Subtotal Text", value: "Subtotal", kind: "text" },
+          { key: "ppb.general.addBundleToCartBtnText", label: "Add Bundle Cart label", value: "Add Bundle to Cart", kind: "text" },
+          { key: "ppb.footer.footerPrevBtnText", label: "Footer Previous Button", value: "Prev", kind: "text" },
+          { key: "ppb.footer.footerNextBtnText", label: "Footer Next Button", value: "Next", kind: "text" },
+          { key: "ppb.footer.footerFinishBtnText", label: "Footer Finish Button", value: "Done", kind: "text" },
+        ],
+      },
+    ],
+    Bundle: [
+      {
+        title: "Bundle",
+        description: "Product-page bundle state labels",
+        fields: [
+          { key: "ppb.general.noProductsAvailable", label: "No Products Available label", value: "No Products Available", kind: "text" },
+          { key: "ppb.general.addToCartBundleBtnLoadingText", label: "Add Bundle Loading label", value: "Adding Bundle...", kind: "text" },
+          { key: "ppb.general.emptyCardText", label: "Add Empty Product Card Text", value: "Product", kind: "text" },
+          { key: "ppb.general.stepsDrawerPillText", label: "Steps Drawer Pill Text", value: "Show all steps", kind: "text" },
+        ],
+      },
+    ],
+    Toasts: [
+      {
+        title: "General Toasts",
+        description: "Product-page bundle toast messages",
+        fields: [
+          { key: "ppb.general.inventoryLimitReachedText", label: "Inventory Limit Reached Label", value: "No More Stock", kind: "text" },
+          { key: "ppb.general.boxSelectionEligibilityToast_inPage", label: "Box Selection Eligibility Toast", value: "Remove {{boxSelectionDifference}} item(s) to select this box", kind: "text" },
+        ],
+      },
+      {
+        title: "Rule Messages",
+        description: "Product-page quantity and amount rule messages",
+        fields: [
+          { key: "ppb.conditions.quantity.greaterThanOrEqualTo", label: "Greater than rule message (Quantity)", value: "Add at least {{conditionQuantity}} products on this step", kind: "text" },
+          { key: "ppb.conditions.quantity.lessThanOrEqualTo", label: "Less than rule message (Quantity)", value: "Add a maximum of {{conditionQuantity}} products to continue", kind: "text" },
+          { key: "ppb.conditions.quantity.equalTo", label: "Equal to rule message (Quantity)", value: "Add exactly {{conditionQuantity}} products on this step", kind: "text" },
+          { key: "ppb.conditions.amount.greaterThanOrEqualTo", label: "Greater than rule message (Amount)", value: "Add products worth at least {{conditionAmount}} on this step", kind: "text" },
+          { key: "ppb.conditions.amount.lessThanOrEqualTo", label: "Less than rule message (Amount)", value: "Add products worth maximum of {{conditionAmount}} on this step", kind: "text" },
+          { key: "ppb.conditions.amount.equalTo", label: "Equal to rule message (Amount)", value: "Add products worth {{conditionAmount}} on this step", kind: "text" },
         ],
       },
     ],
@@ -664,6 +755,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Configure pre-order behavior in the pre-order app for the products that can appear in the bundle.",
           "Sync products or collections after external setup so the bundle builder can use the updated product state.",
@@ -679,6 +771,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Chat setup",
         ctaLabel: "View Setup",
         ctaType: "chat",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "The deployed flow starts a support chat instead of opening a static setup article.",
           "Treat setup as merchant-specific because delivery and pickup routing depends on the store configuration.",
@@ -700,6 +793,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Create one external subscription plan that includes every product that can appear in the bundle.",
           "Name the plan, configure subscription frequency/options, and save it in the subscription app.",
@@ -715,6 +809,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Create one external subscription plan that includes every product that can appear in the bundle.",
           "Name the plan, configure subscription frequency/options, and save it in the subscription app.",
@@ -730,6 +825,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Create one external subscription plan that includes every product that can appear in the bundle.",
           "Name the plan, configure subscription frequency/options, and save it in the subscription app.",
@@ -752,6 +848,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Open Settings, then Controls, then the app configuration area for custom theme-page CSS.",
           "Add a small CSS override that restores review badge text visibility on bundle theme pages.",
@@ -774,6 +871,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Use the product-page bundle wrapper when embedding on a product page.",
           "On non-product pages, configure the parent product handle before loading the product-page bundle assets.",
@@ -789,6 +887,7 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Use the product-page bundle wrapper when embedding on a product page.",
           "On non-product pages, configure the parent product handle before loading the product-page bundle assets.",
@@ -807,9 +906,11 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         title: "Gokwik",
         description: "Streamlined Indian checkout experience for bundles",
         logoLabel: "Gokwik",
+        logoUrl: "/icons/Gokwik.avif",
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Configure a checkout callback that runs after bundle add-to-cart succeeds.",
           "Use the callback to pass control to the downstream checkout app instead of the default checkout redirect.",
@@ -821,9 +922,11 @@ export const INTEGRATION_CATEGORIES: IntegrationCategory[] = [
         title: "Shopflo",
         description: "Optimized Indian checkout flow with bundle support",
         logoLabel: "Shopflo",
+        logoUrl: "/icons/Shopflo.avif",
         status: "Setup guide",
         ctaLabel: "View Setup",
         ctaType: "guide",
+        setupUrl: "https://wolfpackapps.com",
         guideSummary: [
           "Configure a checkout callback that runs after bundle add-to-cart succeeds.",
           "Use the callback to pass control to the downstream checkout app instead of the default checkout redirect.",

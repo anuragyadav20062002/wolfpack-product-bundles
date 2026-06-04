@@ -58,6 +58,10 @@ describe("Select template modal contract", () => {
     expect(fpbSource).toContain('label: "Classic Design"');
     expect(fpbSource).toContain('label: "Compact Design"');
     expect(fpbSource).toContain('label: "Horizontal Design"');
+    expect(fpbSource).toContain('image: "/FPB-Standard.png"');
+    expect(fpbSource).toContain('image: "/FPB-Classic.png"');
+    expect(fpbSource).toContain('image: "/FPB-Compact..png"');
+    expect(fpbSource).toContain('image: "/FPB-Horizontal.png"');
   });
 
   it("keeps the captured PPB template inventory and order", () => {

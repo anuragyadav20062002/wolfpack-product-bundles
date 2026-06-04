@@ -113,7 +113,7 @@ Settings
 ├── Card: Design
 │   └── Shows Settings -> Design controls: brand colors, typography, corners, images and GIFs
 ├── Card: Language
-│   └── Shows multilanguage model, supported languages, shared Cart & Checkout strings, and template language sections
+│   └── Shows multilanguage mode, supported languages, shared Cart & Checkout strings, Landing Page Layout strings, and Product Page Layout strings
 └── Card: Controls
     └── Shows recovered Additional Configurations facts split by Landing Page Layout and Product Page Layout
 ```
@@ -130,23 +130,25 @@ Primary action:
 Recovered Admin Integrations hub:
 ```
 Integrations Hub
-├── Request Integration action
+├── Request Integration action → https://wolfpackapps.com
 ├── Pre-orders, Pickup & Delivery
-│   ├── Stoq
-│   └── Zapiet
+│   ├── Stoq → View Setup
+│   └── Zapiet → View Setup
 ├── Subscriptions
-│   ├── Skio
-│   ├── Appstle
-│   └── Bold
+│   ├── Skio → View Setup
+│   ├── Appstle → View Setup
+│   └── Bold → View Setup
 ├── Reviews
-│   └── Judge.me
+│   └── Judge.me → View Setup
 ├── Page Builders
-│   ├── PageFly
-│   └── GemPages
+│   ├── PageFly → View Setup
+│   └── GemPages → View Setup
 └── Checkout
-    ├── Gokwik
-    └── Shopflo
+    ├── Gokwik → View Setup
+    └── Shopflo → View Setup
 ```
+
+All setup actions currently open `https://wolfpackapps.com` until WPB-owned quick setup guides are published.
 
 Setup behavior:
 - `View Setup` expands an internal recovered setup summary for guide-based integrations.
@@ -444,6 +446,7 @@ Billing Page
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
 | `/apps/product-bundles/api/cart-bundle-details` | Signed storefront route that merges EB-style cart `bundle_details` metafield entries |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
+| `/apps/product-bundles/api/language-settings/:shop` | Settings -> Language JSON for storefront widget text and cart labels |
 | `/api/billing/create` | Initiate subscription |
 | `/api/billing/confirm` | Confirm subscription |
 | `/api/billing/cancel` | Cancel subscription |

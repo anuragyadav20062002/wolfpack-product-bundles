@@ -2481,6 +2481,7 @@ class BundleWidgetProductPage {
       this.showLoadingOverlay(initialGif);
 
       await this.loadDesignSettingsCSS();
+      await this.loadLanguageSettings();
 
       this._scheduleCartTransformSelfHeal();
 
@@ -2546,6 +2547,30 @@ class BundleWidgetProductPage {
       }
 
     } catch (error) {
+
+    }
+  }
+
+  async loadLanguageSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const locale = window.Shopify?.locale || 'en';
+      const endpoint = `/apps/product-bundles/api/language-settings/${encodeURIComponent(shop)}?bundleType=product_page&locale=${encodeURIComponent(locale)}`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      const languageSettings = await response.json();
+      this.config.languageSettings = languageSettings;
+      this.config.languageData = languageSettings.activeLanguageData || null;
+      this.config.ppbCustomTextSettings = languageSettings.ppbCustomTextSettings || null;
+      this.config.sharedCartLabels = languageSettings.sharedCartLabels || null;
+      this.config.textOverrides = {
+        ...(this.config.textOverrides || {}),
+        ...(languageSettings.textOverrides || {})
+      };
+    } catch (_) {
 
     }
   }
@@ -5492,7 +5517,7 @@ class BundleWidgetProductPage {
         } else {
           addBtn.textContent = cascadeRow
             ? (step?.addonAddText || 'Add +')
-            : this._resolveText('addToCartButton', 'Add to Cart');
+            : this._resolveText('productCardAddButton', 'Add to Cart');
           addBtn.classList.remove('added');
         }
       }
@@ -5982,26 +6007,36 @@ class BundleWidgetProductPage {
   buildBundleDetailsDisplayProperties(sourceProperties) {
     const displayProperties = {};
     const raw = sourceProperties?._bundle_display_properties;
+    const cartLineLabels = this.getCartLineLabels();
 
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
         if (parsed?.box) displayProperties.Box = String(parsed.box);
-        if (parsed?.items) displayProperties.Items = String(parsed.items);
-        if (parsed?.retailPrice) displayProperties['Retail Price'] = String(parsed.retailPrice);
-        if (parsed?.youSave?.amountPercentage) displayProperties['You Save'] = String(parsed.youSave.amountPercentage);
+        if (parsed?.items) displayProperties[cartLineLabels.items] = String(parsed.items);
+        if (parsed?.retailPrice) displayProperties[cartLineLabels.retailPrice] = String(parsed.retailPrice);
+        if (parsed?.youSave?.amountPercentage) displayProperties[cartLineLabels.youSave] = String(parsed.youSave.amountPercentage);
       } catch {
 
       }
     }
 
-    ['Box', 'Items', 'Retail Price', 'You Save'].forEach((key) => {
+    ['Box', cartLineLabels.items, cartLineLabels.retailPrice, cartLineLabels.youSave, 'Items', 'Retail Price', 'You Save'].forEach((key) => {
       if (sourceProperties?.[key] && !displayProperties[key]) {
         displayProperties[key] = String(sourceProperties[key]);
       }
     });
 
     return displayProperties;
+  }
+
+  getCartLineLabels() {
+    const labels = this.config?.sharedCartLabels || {};
+    return {
+      items: labels.bundleContainsLabel || 'Items',
+      retailPrice: labels.bundleOriginalPriceLabel || 'Retail Price',
+      youSave: labels.bundleDiscountDisplayLabel || 'You Save',
+    };
   }
 
   async getBundleDetailsCartToken() {

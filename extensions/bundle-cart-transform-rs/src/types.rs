@@ -97,6 +97,8 @@ pub struct ComponentPricingItem {
     pub variant_id: String,
     #[serde(default)]
     pub title: Option<String>,
+    #[serde(default)]
+    pub image_url: Option<String>,
     pub retail_price: i64,
     pub bundle_price: i64,
     pub discount_percent: f64,

@@ -118,7 +118,8 @@ pub fn process_expand_operations(
                     pricing.retail_price,
                     pricing.bundle_price,
                     pricing.discount_percent,
-                    pricing.savings_amount
+                    pricing.savings_amount,
+                    pricing.image_url.as_deref().unwrap_or("")
                 ]));
             } else {
                 has_missing_pricing = true;

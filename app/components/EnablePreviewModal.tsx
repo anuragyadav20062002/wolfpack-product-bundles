@@ -4,9 +4,10 @@ interface EnablePreviewModalProps {
   open: boolean;
   onClose: () => void;
   themeEditorUrl: string | null;
+  onSetupVisibility?: () => void;
 }
 
-export function EnablePreviewModal({ open, onClose, themeEditorUrl }: EnablePreviewModalProps) {
+export function EnablePreviewModal({ open, onClose, themeEditorUrl, onSetupVisibility }: EnablePreviewModalProps) {
   const { t } = useTranslation();
 
   if (!open) return null;
@@ -70,7 +71,11 @@ export function EnablePreviewModal({ open, onClose, themeEditorUrl }: EnablePrev
           <s-button
             variant="primary"
             onClick={() => {
-              if (themeEditorUrl) window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+              if (onSetupVisibility) {
+                onSetupVisibility();
+              } else if (themeEditorUrl) {
+                window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+              }
               onClose();
             }}
           >

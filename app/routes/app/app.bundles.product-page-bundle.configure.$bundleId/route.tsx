@@ -606,6 +606,7 @@ export default function ConfigureBundleFlow() {
   const subscriptionFetcher = useFetcher<SubscriptionValidationResponse>();
   const [showSubscriptionSetupGuide, setShowSubscriptionSetupGuide] = useState(false);
   const revalidator = useRevalidator();
+  const isBundleVisibilityPending = !appEmbedEnabled;
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
   // Use the unified bundle configuration state hook
@@ -1541,6 +1542,8 @@ export default function ConfigureBundleFlow() {
     themeEditorUrl,
     onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
     sessionKey: bundle.id,
+    autoShowOnMount: loaderData.configureMode === "edit" && isBundleVisibilityPending,
+    onSetupVisibility: () => setActiveSection("bundle_visibility"),
   });
 
   const handlePreviewBundle = useCallback(() => {

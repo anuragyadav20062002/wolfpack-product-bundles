@@ -22,21 +22,24 @@ export function decideEnablePreviewGate(input: EnablePreviewGateInput): EnablePr
 
 /**
  * Returns true when the visibility modal should auto-open on configure page mount:
- * embed is disabled AND the modal hasn't already been shown in this browser session.
+ * bundle visibility is pending AND the modal hasn't already been shown in this
+ * browser session.
  * Extracted as a pure function so it can be unit-tested without React or sessionStorage.
  */
-export function shouldAutoShowOnMount(appEmbedEnabled: boolean, hasBeenShownThisSession: boolean): boolean {
-  return !appEmbedEnabled && !hasBeenShownThisSession;
+export function shouldAutoShowOnMount(bundleVisibilityPending: boolean, hasBeenShownThisSession: boolean): boolean {
+  return bundleVisibilityPending && !hasBeenShownThisSession;
 }
 
 export type UseEnablePreviewGateOptions = EnablePreviewGateInput & {
   onSilentBlock?: () => void;
   /**
-   * Bundle ID — when provided, the modal auto-shows on page mount if the embed is
-   * disabled and it hasn't been shown yet this browser session (sessionStorage keyed
+   * Bundle ID — when provided with autoShowOnMount, the modal auto-shows on page
+   * mount if it hasn't been shown yet this browser session (sessionStorage keyed
    * per bundle so navigating between bundles re-triggers the nudge).
    */
   sessionKey?: string;
+  autoShowOnMount?: boolean;
+  onSetupVisibility?: () => void;
 };
 
 /**
@@ -54,7 +57,7 @@ export function useEnablePreviewGate(options: UseEnablePreviewGateOptions) {
     if (!options.sessionKey) return;
     const storageKey = `wpb_visibility_shown_${options.sessionKey}`;
     const hasBeenShown = sessionStorage.getItem(storageKey) === "1";
-    if (shouldAutoShowOnMount(options.appEmbedEnabled, hasBeenShown)) {
+    if (shouldAutoShowOnMount(options.autoShowOnMount === true, hasBeenShown)) {
       setOpen(true);
       sessionStorage.setItem(storageKey, "1");
     }
@@ -84,6 +87,7 @@ export function useEnablePreviewGate(options: UseEnablePreviewGateOptions) {
       open,
       onClose: closeModal,
       themeEditorUrl: options.themeEditorUrl,
+      onSetupVisibility: options.onSetupVisibility,
     },
   };
 }

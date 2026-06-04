@@ -15,6 +15,7 @@ import {
   type SettingsCardId,
 } from "../../lib/admin-configuration-surfaces";
 import { SETTINGS_DESIGN_BUNDLE_TYPES, buildSettingsDesignRuntime } from "../../lib/settings-design-runtime";
+import { SETTINGS_LANGUAGE_BUNDLE_TYPES, buildSettingsLanguageRuntime } from "../../lib/settings-language-runtime";
 import styles from "../../styles/routes/admin-configuration-surfaces.module.css";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -128,9 +129,50 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: true, message: "Settings saved successfully" });
   }
 
+  if (intent === "saveSettingsLanguage") {
+    const languageRuntime = buildSettingsLanguageRuntime(payload);
+
+    await Promise.all(SETTINGS_LANGUAGE_BUNDLE_TYPES.map(async (bundleType) => {
+      const currentForBundleType = bundleType === "product_page"
+        ? current
+        : await prisma.designSettings.findUnique({
+          where: { shopId_bundleType: { shopId: session.shop, bundleType } },
+        });
+      const currentBundleGeneralSettings = currentForBundleType?.generalSettings && typeof currentForBundleType.generalSettings === "object"
+        ? currentForBundleType.generalSettings as Record<string, unknown>
+        : {};
+      const nextBundleSettingsPage = {
+        ...(currentBundleGeneralSettings.settingsPage && typeof currentBundleGeneralSettings.settingsPage === "object"
+          ? currentBundleGeneralSettings.settingsPage as Record<string, unknown>
+          : {}),
+        language: payload,
+      };
+      const nextBundleGeneralSettings = {
+        ...currentBundleGeneralSettings,
+        settingsLanguage: languageRuntime.settingsLanguage,
+        settingsPage: nextBundleSettingsPage,
+      };
+      const updateData = {
+        buttonAddToCartText: languageRuntime.buttonAddToCartText,
+        generalSettings: nextBundleGeneralSettings as Prisma.InputJsonValue,
+      } as Prisma.DesignSettingsUncheckedUpdateInput;
+
+      await prisma.designSettings.upsert({
+        where: { shopId_bundleType: { shopId: session.shop, bundleType } },
+        create: {
+          shopId: session.shop,
+          bundleType,
+          ...updateData,
+        } as Prisma.DesignSettingsUncheckedCreateInput,
+        update: updateData,
+      });
+    }));
+
+    return json({ success: true, message: "Settings saved successfully" });
+  }
+
   const runtimeSettings = {
     ...(intent === "saveSettingsControls" ? buildControlsRuntimeData(payload) : {}),
-    ...(intent === "saveSettingsLanguage" ? buildLanguageRuntimeData(payload) : {}),
   };
   const nextGeneralSettings = {
     ...currentGeneralSettings,
@@ -162,8 +204,11 @@ function getInitialLanguageFieldValues() {
       ...Object.values(LANGUAGE_CONFIGURATION.templateFields).flatMap((groups) =>
         groups.flatMap((group) => group.fields),
       ),
+      ...Object.values(LANGUAGE_CONFIGURATION.productPageTemplateFields).flatMap((groups) =>
+        groups.flatMap((group) => group.fields),
+      ),
     ].map((field) => [
-      field.label,
+      getFieldValueKey(field),
       field.value ?? "",
     ]),
   ) as Record<string, string>;
@@ -188,6 +233,10 @@ function getInitialDesignFieldValues() {
       field.value ?? "",
     ]),
   ) as Record<string, string>;
+}
+
+function getFieldValueKey(field: SettingsField) {
+  return field.key ?? field.label;
 }
 
 function buildControlsRuntimeData(payload: Record<string, unknown>) {
@@ -220,27 +269,19 @@ function buildControlsRuntimeData(payload: Record<string, unknown>) {
   };
 }
 
-function buildLanguageRuntimeData(payload: Record<string, unknown>) {
-  const languageFieldValues = payload.languageFieldValues && typeof payload.languageFieldValues === "object"
-    ? payload.languageFieldValues as Record<string, unknown>
-    : {};
-  const addToBundleText = String(languageFieldValues["Add Product to Bundle Button"] ?? "");
-  return {
-    buttonAddToCartText: addToBundleText || "Add To Box",
-  };
-}
-
 export default function SettingsRoute() {
   const { settingsPage, previewBundles } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [settingsHelpArticle, setSettingsHelpArticle] = useState<"inventory" | null>(null);
+  const [settingsVariablesModal, setSettingsVariablesModal] = useState<{ title: string; variables: string[] } | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const persistedLanguageState = settingsPage?.language && typeof settingsPage.language === "object"
-    ? settingsPage.language as {
+      ? settingsPage.language as {
         isMultilanguageEnabled?: boolean;
         selectedLanguage?: string;
+        activeTemplateLayout?: string;
         languageFieldValues?: Record<string, string>;
       }
     : null;
@@ -259,9 +300,11 @@ export default function SettingsRoute() {
     ...(persistedLanguageState?.languageFieldValues ?? {}),
   });
   const [activeLanguagePanel, setActiveLanguagePanel] = useState<"cartCheckout" | string>("Product Card");
+  const [activeLanguageLayout, setActiveLanguageLayout] = useState(persistedLanguageState?.activeTemplateLayout ?? "Landing Page Layout");
   const [savedLanguageState, setSavedLanguageState] = useState(() => ({
     isMultilanguageEnabled: persistedLanguageState?.isMultilanguageEnabled ?? LANGUAGE_CONFIGURATION.enabled,
     selectedLanguage: persistedLanguageState?.selectedLanguage ?? LANGUAGE_CONFIGURATION.selectedLanguage,
+    activeTemplateLayout: persistedLanguageState?.activeTemplateLayout ?? "Landing Page Layout",
     languageFieldValues: {
       ...getInitialLanguageFieldValues(),
       ...(persistedLanguageState?.languageFieldValues ?? {}),
@@ -305,7 +348,7 @@ export default function SettingsRoute() {
   const selectedControlFields = hasNestedControlGroups
     ? selectedControlTab.fields.filter((field) => (field.group ?? selectedControlTab.contentTitle ?? selectedControlTab.title) === selectedControlGroupTitle)
     : selectedControlTab.fields;
-  const currentLanguageState = { isMultilanguageEnabled, selectedLanguage, languageFieldValues };
+  const currentLanguageState = { isMultilanguageEnabled, selectedLanguage, activeTemplateLayout: activeLanguageLayout, languageFieldValues };
   const isLanguageDirty = JSON.stringify(currentLanguageState) !== JSON.stringify(savedLanguageState);
   const isControlsDirty = JSON.stringify(controlFieldValues) !== JSON.stringify(savedControlFieldValues);
   const currentDesignState = { fieldValues: designFieldValues, isExpertControlsEnabled: isExpertColorControls };
@@ -326,6 +369,7 @@ export default function SettingsRoute() {
     if (settingsView === "language") {
       setIsMultilanguageEnabled(savedLanguageState.isMultilanguageEnabled);
       setSelectedLanguage(savedLanguageState.selectedLanguage);
+      setActiveLanguageLayout(savedLanguageState.activeTemplateLayout);
       setLanguageFieldValues(savedLanguageState.languageFieldValues);
       return;
     }
@@ -382,15 +426,19 @@ export default function SettingsRoute() {
 
     return (
       <>
-        <ui-title-bar title="Design" />
+        <ui-title-bar title="Design Control Panel" />
         <main className={styles.page}>
           <header className={styles.hero}>
-            <button type="button" className={styles.settingsBackButton} onClick={() => setSettingsView("landing")}>
-              <s-icon type="arrow-left" size="small"></s-icon>
-              Back
-            </button>
-            <div>
-              <h1 className={styles.title}>Design</h1>
+            <div className={styles.settingsSubpageHeaderLeft}>
+              <button
+                type="button"
+                className={styles.settingsSubpageBackButton}
+                aria-label="Back to Settings"
+                onClick={() => setSettingsView("landing")}
+              >
+                <s-icon type="arrow-left" size="small"></s-icon>
+              </button>
+              <h1 className={styles.title}>Design Control Panel</h1>
             </div>
             <button type="button" className={styles.settingsPreviewButton} onClick={() => setIsPreviewModalOpen(true)}>
               <s-icon type="view" size="small"></s-icon>
@@ -474,16 +522,16 @@ export default function SettingsRoute() {
                   </div>
                 ) : null}
               </section>
-              {isBrandColorsPanelGated || designGateMessage ? (
-                <div className={styles.designGateAlert} role="alert" aria-live="polite">
-                  {designGateMessage ?? "Disable Expert Color Controls to access brand colors."}
-                </div>
-              ) : null}
               <button type="button" className={styles.designResetButton} onClick={resetSelectedDesignTab}>
                 Reset to default
               </button>
             </aside>
             <section className={styles.designContentCard}>
+              {isBrandColorsPanelGated || designGateMessage ? (
+                <div className={styles.designGateAlert} role="alert" aria-live="polite">
+                  {designGateMessage ?? "Disable Expert Color Controls to access brand colors."}
+                </div>
+              ) : null}
               <div className={isBrandColorsPanelGated ? styles.designGatedPanel : undefined}>
                 <DesignFields
                   title={isExpertColorControls && selectedDesignTab.title === "Brand Colors" && isExpertScopeActive ? activeDesignScope : selectedDesignTab.title}
@@ -512,13 +560,20 @@ export default function SettingsRoute() {
   }
 
   if (settingsView === "language") {
+    const isProductPageLanguageLayout = activeLanguageLayout === "Product Page Layout";
+    const activeLanguageSections = isProductPageLanguageLayout
+      ? LANGUAGE_CONFIGURATION.productPageTemplateSections
+      : LANGUAGE_CONFIGURATION.templateSections;
+    const activeLanguageTemplateFields = isProductPageLanguageLayout
+      ? LANGUAGE_CONFIGURATION.productPageTemplateFields
+      : LANGUAGE_CONFIGURATION.templateFields;
     const languageGroups = activeLanguagePanel === "cartCheckout"
       ? [{
         title: "Cart & Checkout",
         description: "Shared cart and checkout labels",
         fields: LANGUAGE_CONFIGURATION.sharedCartFields,
       }]
-      : LANGUAGE_CONFIGURATION.templateFields[activeLanguagePanel] ?? [];
+      : activeLanguageTemplateFields[activeLanguagePanel] ?? [];
 
     return (
       <>
@@ -527,8 +582,8 @@ export default function SettingsRoute() {
           <header className={styles.languageHero}>
             <button
               type="button"
-              className={styles.languageBackIcon}
-              aria-label="Settings"
+              className={styles.settingsSubpageBackButton}
+              aria-label="Back to Settings"
               onClick={() => setSettingsView("landing")}
             >
               <s-icon type="arrow-left" size="small"></s-icon>
@@ -565,7 +620,6 @@ export default function SettingsRoute() {
                     </option>
                   ))}
                 </select>
-                <s-icon type="caret-down" size="small"></s-icon>
               </span>
             </label>
           </section>
@@ -590,11 +644,25 @@ export default function SettingsRoute() {
                 <section className={styles.languageSidebarSection}>
                   <h2 className={styles.languageSidebarTitle}>Template Language</h2>
                   <p className={styles.languageSidebarDescription}>Edit language for your landing page or product page template</p>
-                  <button type="button" className={styles.languageLayoutButton}>
-                    Landing Page Layout
-                  </button>
+                  <span className={styles.languageLayoutButton}>
+                    <select
+                      className={styles.languageLayoutSelect}
+                      aria-label="Template language layout"
+                      value={activeLanguageLayout}
+                      onChange={(event) => {
+                        const nextLayout = event.currentTarget.value;
+                        setActiveLanguageLayout(nextLayout);
+                        setActiveLanguagePanel(nextLayout === "Product Page Layout"
+                          ? LANGUAGE_CONFIGURATION.productPageTemplateSections[0]
+                          : LANGUAGE_CONFIGURATION.templateSections[0]);
+                      }}
+                    >
+                      <option value="Landing Page Layout">Landing Page Layout</option>
+                      <option value="Product Page Layout">Product Page Layout</option>
+                    </select>
+                  </span>
                   <div className={styles.languageNavList} aria-label="Template Language">
-                    {LANGUAGE_CONFIGURATION.templateSections.map((section) => (
+                    {activeLanguageSections.map((section) => (
                       <button
                         key={section}
                         type="button"
@@ -620,6 +688,7 @@ export default function SettingsRoute() {
                       ...current,
                       [label]: value,
                     }))}
+                    onShowVariables={(title, variables) => setSettingsVariablesModal({ title, variables })}
                   />
                 ))}
                 {activeLanguagePanel !== "cartCheckout" && languageGroups.length === 0 && (
@@ -631,6 +700,7 @@ export default function SettingsRoute() {
             </div>
           </section>
           <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />
+          <SettingsVariablesModal modal={settingsVariablesModal} onClose={() => setSettingsVariablesModal(null)} />
           <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
         </main>
       </>
@@ -643,11 +713,15 @@ export default function SettingsRoute() {
         <ui-title-bar title="Additional Configurations" />
         <main className={styles.page}>
           <header className={styles.hero}>
-            <button type="button" className={styles.buttonLike} onClick={() => setSettingsView("landing")}>
-              <s-icon type="arrow-left" size="small"></s-icon>
-              Back
-            </button>
-            <div>
+            <div className={styles.settingsSubpageHeaderLeft}>
+              <button
+                type="button"
+                className={styles.settingsSubpageBackButton}
+                aria-label="Back to Settings"
+                onClick={() => setSettingsView("landing")}
+              >
+                <s-icon type="arrow-left" size="small"></s-icon>
+              </button>
               <h1 className={styles.title}>Additional Configurations</h1>
             </div>
           </header>
@@ -675,7 +749,6 @@ export default function SettingsRoute() {
                     </option>
                   ))}
                 </select>
-                <s-icon type="caret-down" size="small"></s-icon>
               </span>
               <div className={styles.controlsNavList} role="tablist" aria-label="Configuration tabs">
                 {selectedControlLayout.tabs.map((tab) => (
@@ -730,6 +803,7 @@ export default function SettingsRoute() {
           </section>
           <SettingsContextualSaveBar isOpen={isActiveSubpageDirty} onDiscard={discardActiveSettingsChanges} onSave={saveActiveSettingsChanges} />
           <SettingsHelpModal article={settingsHelpArticle} onClose={() => setSettingsHelpArticle(null)} />
+          <SettingsVariablesModal modal={settingsVariablesModal} onClose={() => setSettingsVariablesModal(null)} />
           <SettingsToast message={saveMessage} onDismiss={() => setSaveMessage(null)} />
         </main>
       </>
@@ -952,40 +1026,40 @@ function BundlePreviewModal({
 
 function getControlTabIcon(title: string) {
   if (title === "CSS & Scripts") {
-    return "code";
+    return "note";
   }
   if (title === "Integrations") {
-    return "link-list";
+    return "plus";
   }
   if (title === "Advanced") {
-    return "adjust";
+    return "filter";
   }
-  return "settings";
+  return "info";
 }
 
 function getDesignIconKey(title: string) {
   if (title === "Brand Colors") {
-    return "color";
+    return "edit";
   }
   if (title === "Typography") {
-    return "text-font";
+    return "note";
   }
   if (title === "Corners") {
-    return "corner-round";
+    return "edit";
   }
   if (title === "Images & GIFs") {
-    return "image-add";
+    return "upload";
   }
   if (title === "Product Card") {
     return "product";
   }
   if (title === "Bundle Cart") {
-    return "cart";
+    return "product";
   }
   if (title === "Upsell") {
-    return "button-press";
+    return "plus";
   }
-  return "settings";
+  return "info";
 }
 
 function ControlsContentCards({
@@ -1056,6 +1130,49 @@ function ControlsContentCards({
   );
 }
 
+function getSettingsVariables(fields: SettingsField[], values: Record<string, string>) {
+  const variables = new Set<string>();
+  for (const field of fields) {
+    const value = String(values[getFieldValueKey(field)] ?? field.value ?? "");
+    const matches = value.match(/\{\{[^{}]+\}\}/g) ?? [];
+    for (const match of matches) {
+      variables.add(match);
+    }
+  }
+  return Array.from(variables);
+}
+
+function SettingsVariablesModal({
+  modal,
+  onClose,
+}: {
+  modal: { title: string; variables: string[] } | null;
+  onClose: () => void;
+}) {
+  if (!modal) {
+    return null;
+  }
+
+  return (
+    <div className={styles.settingsModalBackdrop} role="presentation">
+      <section className={styles.settingsVariablesModal} role="dialog" aria-modal="true" aria-labelledby="settings-variables-title">
+        <div className={styles.settingsVariablesHeader}>
+          <h2 id="settings-variables-title">Variables</h2>
+          <button type="button" className={styles.settingsModalDismiss} aria-label="Dismiss variables modal" onClick={onClose}>
+            <s-icon type="x" size="small"></s-icon>
+          </button>
+        </div>
+        <p className={styles.settingsVariablesDescription}>{modal.title}</p>
+        <div className={styles.settingsVariablesList}>
+          {modal.variables.map((variable) => (
+            <code key={variable}>{variable}</code>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ControlsFormGroup({
   title,
   description,
@@ -1063,6 +1180,7 @@ function ControlsFormGroup({
   values,
   onFieldChange,
   onFieldAction,
+  onShowVariables,
 }: {
   title: string;
   description?: string;
@@ -1070,6 +1188,7 @@ function ControlsFormGroup({
   values: Record<string, string>;
   onFieldChange: (label: string, value: string) => void;
   onFieldAction?: (label: string) => void;
+  onShowVariables?: (title: string, variables: string[]) => void;
 }) {
   const fieldGroups = fields.reduce<Array<{ title: string; fields: SettingsField[] }>>((groups, field) => {
     const groupTitle = field.group ?? "";
@@ -1081,9 +1200,8 @@ function ControlsFormGroup({
     groups.push({ title: groupTitle, fields: [field] });
     return groups;
   }, []);
-  const hasVariables = fields.some((field) =>
-    String(values[field.label] ?? field.value ?? "").includes("{{"),
-  );
+  const variables = getSettingsVariables(fields, values);
+  const hasVariables = variables.length > 0;
 
   return (
     <section className={styles.ebControlsPanel}>
@@ -1091,7 +1209,11 @@ function ControlsFormGroup({
         <div className={styles.ebSectionHeader}>
           <h3 className={styles.detailTitle}>{title}</h3>
           {hasVariables && (
-            <button type="button" className={styles.ebVariablesButton}>
+            <button
+              type="button"
+              className={styles.ebVariablesButton}
+              onClick={() => onShowVariables?.(title, variables)}
+            >
               Show Variables
             </button>
           )}
@@ -1104,10 +1226,10 @@ function ControlsFormGroup({
           <div className={styles.ebControlsStack}>
             {group.fields.map((field) => (
               <ControlsField
-                key={`${title}-${field.label}`}
+                key={`${title}-${getFieldValueKey(field)}`}
                 field={field}
-                value={values[field.label] ?? ""}
-                onChange={(value) => onFieldChange(field.label, value)}
+                value={values[getFieldValueKey(field)] ?? ""}
+                onChange={(value) => onFieldChange(getFieldValueKey(field), value)}
                 onAction={onFieldAction ? () => onFieldAction(field.label) : undefined}
               />
             ))}
@@ -1200,16 +1322,15 @@ function ControlsField({
     return (
       <label className={styles.ebFieldStack}>
         <span>{field.label}</span>
-        <span className={styles.ebSelectWrap}>
-          <select className={styles.ebSelect} value={value || field.options?.[0] || ""} onChange={(event) => onChange(event.currentTarget.value)}>
-            {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <s-icon type="caret-down" size="small"></s-icon>
-        </span>
+            <span className={styles.ebSelectWrap}>
+              <select className={styles.ebSelect} value={value || field.options?.[0] || ""} onChange={(event) => onChange(event.currentTarget.value)}>
+                {(field.options?.length ? field.options : [field.value ?? ""]).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </span>
         {field.description && <span className={styles.ebSettingHelp}>{field.description}</span>}
       </label>
     );

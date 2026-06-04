@@ -319,7 +319,8 @@ pub fn process_merge_operations(
                 retail_cents,
                 bundle_cents,
                 line_pct,
-                retail_cents - bundle_cents
+                retail_cents - bundle_cents,
+                ""
             ]));
         }
 
