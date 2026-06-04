@@ -1,19 +1,35 @@
-.layout-sidebar .sidebar-layout-wrapper {
+.layout-sidebar > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
+  width:calc(100% - 65px);
   max-width:var(--bundle-sidebar-wrapper-max-width,
-1280px);
-  margin:0 auto;
+1455px);
+  margin-left:30px;
+  margin-right:35px}
+
+@media (max-width:768px) {
+  .layout-sidebar > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
+  width:auto;
+  margin:0 10px 0 5px}
+
+  .layout-sidebar .sidebar-layout-wrapper .sidebar-content {
+  padding-inline:0!important}
+}
+
+.layout-sidebar .sidebar-layout-wrapper {
   align-items:flex-start;
   gap:var(--bundle-sidebar-layout-gap,
 24px);
-  padding:0 24px;
-  box-sizing:border-box}
+  padding:0}
 
 .layout-sidebar .sidebar-layout-wrapper .sidebar-content {
   flex:1 1 0%;
-  width:auto;
   max-width:none;
+  min-width:0;
+  margin:0;
   padding:20px 0 96px;
   overflow:visible}
+
+.layout-sidebar > .category-tabs {
+  justify-content:flex-start}
 
 .layout-sidebar .full-page-side-panel {
   width:var(--bundle-sidebar-card-width,
