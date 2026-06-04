@@ -249,6 +249,7 @@ const stepSetupChildItems = [
 ];
 
 const ADDON_MESSAGE_KEY = "addons-direct";
+const ADDONS_HELP_ARTICLE_URL = "https://wolfpackapps.com";
 
 const bundleVisibilityChildItems = [
   { id: "bundle_widget", label: "Bundle Widget" },
@@ -3586,17 +3587,26 @@ export default function ConfigureBundleFlow() {
               return (
                 <div data-tour-target="fpb-free-gift-addons">
                   <s-stack direction="block" gap="base">
-                    <div className={fullPageBundleStyles.card}>
+                    <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsReferenceStepCard}`}>
                       <div className={fullPageBundleStyles.panelHeader}>
                         <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
-                        <s-checkbox
-                          accessibilityLabel="Enable add-ons and gifting step"
-                          checked={addonDraft.isPersonalizationEnabled || undefined}
-                          onChange={(e) => {
-                            const checked = (e.target as HTMLInputElement).checked;
-                            updateAddonDraft({ isPersonalizationEnabled: checked });
-                          }}
-                        />
+                        <div className={fullPageBundleStyles.addonsHeaderActions}>
+                          <label className={`${fullPageBundleStyles.addonsSwitch} ${fullPageBundleStyles.addonsReferenceSwitch}`}>
+                            <input
+                              type="checkbox"
+                              aria-label="Enable add-ons and gifting step"
+                              checked={addonDraft.isPersonalizationEnabled === true}
+                              onChange={(e) => {
+                                const checked = (e.target as HTMLInputElement).checked;
+                                updateAddonDraft({ isPersonalizationEnabled: checked });
+                              }}
+                            />
+                            <span />
+                          </label>
+                          <button type="button" className={fullPageBundleStyles.addonsLanguageButton} disabled>
+                            Multi Language
+                          </button>
+                        </div>
                       </div>
                       <div className={fullPageBundleStyles.mediaFieldGrid}>
                         <div className={fullPageBundleStyles.iconColumn}>
@@ -3627,9 +3637,6 @@ export default function ConfigureBundleFlow() {
                           </s-button>
                         </div>
                         <s-stack direction="block" gap="small">
-                          <s-button variant="secondary" icon="globe" disabled>
-                            Multi Language
-                          </s-button>
                           <s-text-field
                             label="Step Name"
                             value={addonDraft.personalizeStepText ?? ""}
@@ -3656,7 +3663,7 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.addonsHeaderLine}>
                         <div className={fullPageBundleStyles.addonsTitleCluster}>
                           <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons with Bundles</h3>
-                          <label className={fullPageBundleStyles.addonsSwitch}>
+                          <label className={`${fullPageBundleStyles.addonsSwitch} ${fullPageBundleStyles.addonsReferenceSwitch}`}>
                             <input
                               type="checkbox"
                               aria-label="Enable add-ons with bundles"
@@ -3670,7 +3677,7 @@ export default function ConfigureBundleFlow() {
                           <button
                             type="button"
                             className={fullPageBundleStyles.addonsHelpButton}
-                            onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                            onClick={() => window.open(ADDONS_HELP_ARTICLE_URL, "_blank")}
                           >
                             How to setup?
                           </button>
@@ -3796,7 +3803,9 @@ export default function ConfigureBundleFlow() {
                                         Add Products
                                       </s-button>
                                       {Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0 && (
-                                        <span className={fullPageBundleStyles.addonsSelectedCount}>{tier.selectedAddonProducts.length} Selected</span>
+                                        <button type="button" className={`${fullPageBundleStyles.addonsSelectedCount} ${fullPageBundleStyles.addonsSelectedButton}`}>
+                                          {tier.selectedAddonProducts.length} Selected
+                                        </button>
                                       )}
                                     </div>
                                     <s-checkbox
@@ -3930,7 +3939,7 @@ export default function ConfigureBundleFlow() {
                       </div>
                     </div>
 
-                    <div className={fullPageBundleStyles.card}>
+                    <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsFooterCard}`}>
                       <div className={fullPageBundleStyles.panelHeader}>
                         <h3 className={fullPageBundleStyles.panelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
@@ -3957,6 +3966,7 @@ export default function ConfigureBundleFlow() {
                                 discountText: value,
                               },
                             }));
+                            markAsDirty();
                           }}
                           autocomplete="off"
                         />
@@ -3973,6 +3983,7 @@ export default function ConfigureBundleFlow() {
                                 successMessage: value,
                               },
                             }));
+                            markAsDirty();
                           }}
                           autocomplete="off"
                         />

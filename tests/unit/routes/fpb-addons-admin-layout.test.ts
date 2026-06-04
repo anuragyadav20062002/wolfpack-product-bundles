@@ -13,18 +13,69 @@ describe("Full Page Add-ons Admin layout", () => {
 
   it("uses dedicated visual markers for the evidence-backed Add-ons card", () => {
     [
+      "addonsReferenceStepCard",
       "addonsCard",
+      "addonsReferenceSwitch",
       "addonsHeaderLine",
       "addonsHeaderActions",
       "addonsLanguageButton",
       "addonsTierCard",
       "addonsProductSelectionRow",
+      "addonsSelectedButton",
       "addonsDiscountGrid",
       "addonsTierRules",
       "addonsTierButton",
+      "addonsFooterCard",
     ].forEach((marker) => {
       expect(routeSource).toContain(`fullPageBundleStyles.${marker}`);
       expect(cssSource).toContain(`.${marker}`);
+    });
+  });
+
+  it("keeps the Add-ons setup action wired without competitor references", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+
+    expect(section).toContain("ADDONS_HELP_ARTICLE_URL");
+    expect(section).toContain("How to setup?");
+    expect(section).toContain("window.open(ADDONS_HELP_ARTICLE_URL");
+    expect(routeSource).toContain('const ADDONS_HELP_ARTICLE_URL = "https://wolfpackapps.com";');
+  });
+
+  it("keeps the reference Add-ons control order in the Admin section", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    expect(sectionStart).toBeGreaterThan(-1);
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    expect(sectionEnd).toBeGreaterThan(sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+
+    const expectedOrder = [
+      "Add-Ons and Gifting Step",
+      "Step Name",
+      "Step Title",
+      "Add-Ons with Bundles",
+      "How to setup?",
+      "Enable customers to add extra items",
+      "Add on Section title",
+      "addonsTierCard",
+      "Add Products",
+      "addonsSelectedButton",
+      "Display Variants as Individual Products",
+      "Discount Based on",
+      "Discount on Add-ons",
+      "Tier Rules",
+      "Add Add Ons Tier",
+      "Footer Messaging",
+      "Message when rule not met",
+      "Success Message",
+    ];
+
+    let cursor = -1;
+    expectedOrder.forEach((marker) => {
+      const next = section.indexOf(marker, cursor + 1);
+      expect(next).toBeGreaterThan(cursor);
+      cursor = next;
     });
   });
 
@@ -38,4 +89,17 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(routeSource).toContain("conditions: Array.isArray(tier?.conditions)");
   });
 
+  it("dirties the SaveBar from Add-ons footer messaging edits", () => {
+    const footerStart = routeSource.indexOf("Footer Messaging");
+    expect(footerStart).toBeGreaterThan(-1);
+    const footerSource = routeSource.slice(footerStart, routeSource.indexOf('activeSection === "discount_pricing"', footerStart));
+
+    const messageNotMetStart = footerSource.indexOf("discountText: value");
+    const successMessageStart = footerSource.indexOf("successMessage: value");
+    expect(messageNotMetStart).toBeGreaterThan(-1);
+    expect(successMessageStart).toBeGreaterThan(-1);
+
+    expect(footerSource.slice(messageNotMetStart, messageNotMetStart + 260)).toContain("markAsDirty();");
+    expect(footerSource.slice(successMessageStart, successMessageStart + 260)).toContain("markAsDirty();");
+  });
 });

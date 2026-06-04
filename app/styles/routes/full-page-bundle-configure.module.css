@@ -2044,6 +2044,18 @@
   border-radius: 8px;
 }
 
+.addonsReferenceStepCard {
+  padding: 16px 16px 18px;
+  border-color: #dedede;
+  border-radius: 8px;
+}
+
+.addonsFooterCard {
+  padding: 16px 16px 18px;
+  border-color: #dedede;
+  border-radius: 8px;
+}
+
 .addonsHeaderLine {
   display: flex;
   align-items: center;
@@ -2117,6 +2129,10 @@
   outline-offset: 2px;
 }
 
+.addonsReferenceSwitch {
+  flex: 0 0 auto;
+}
+
 .addonsHelpButton {
   min-height: 20px;
   padding: 0;
@@ -2183,6 +2199,22 @@
   font-size: 12px;
   font-weight: 650;
   line-height: 1.2;
+}
+
+.addonsSelectedButton {
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #2c6ecb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.addonsSelectedButton:hover,
+.addonsSelectedButton:focus-visible {
+  text-decoration: underline;
 }
 
 .addonsDiscountGrid {
