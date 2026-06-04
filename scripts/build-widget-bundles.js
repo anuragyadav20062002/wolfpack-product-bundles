@@ -36,7 +36,7 @@ const ROOT_DIR = join(__dirname, '..');
 // Verify live version in browser DevTools on the storefront:
 //   console.log(window.__BUNDLE_WIDGET_VERSION__)
 // ---------------------------------------------------------------------------
-const WIDGET_VERSION = '2.9.67';
+const WIDGET_VERSION = '2.9.68';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -77,6 +77,13 @@ const PRODUCT_PAGE_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cascade-template.js'),
   join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cognive-template.js'),
+];
+
+const FULL_PAGE_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/standard-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/classic-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/compact-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/horizontal-template.js'),
 ];
 
 // Output files
@@ -236,6 +243,21 @@ function readProductPageModules() {
   return moduleCodes.join('\n\n');
 }
 
+function readFullPageModules() {
+  const moduleCodes = [];
+  for (const modulePath of FULL_PAGE_MODULES) {
+    if (!existsSync(modulePath)) {
+      console.error(`Missing full-page module: ${modulePath}`);
+      process.exit(1);
+    }
+
+    const code = readFile(modulePath);
+    const processed = removeUseStrict(removeModuleStatements(code));
+    moduleCodes.push(processed);
+  }
+  return moduleCodes.join('\n\n');
+}
+
 /**
  * Build the Wolfpack Bundles SDK bundle
  */
@@ -298,6 +320,7 @@ function buildFullPageBundle() {
   // Read source files
   const componentsCode = readSharedComponents();
   const modalCode = readFile(SOURCES.modal);
+  const fullPageModulesCode = readFullPageModules();
   const widgetCode = readFile(SOURCES.fullPage);
 
   // Process the code
@@ -327,6 +350,8 @@ ${processedModal}
   // ============================================================================
   // BUNDLE WIDGET FULL PAGE
   // ============================================================================
+
+${fullPageModulesCode}
 
 ${processedWidget}
 

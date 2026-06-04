@@ -13,6 +13,17 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+function readProductPageStyles() {
+  return [
+    'app/assets/widgets/product-page-css/bundle-widget.css',
+    'app/assets/widgets/product-page-css/templates/inpage-cascade.css',
+    'app/assets/widgets/product-page-css/templates/inpage-cognive.css',
+    'app/assets/widgets/product-page-css/templates/modal-slots.css',
+  ]
+    .map((filePath) => readFileSync(join(process.cwd(), filePath), 'utf8'))
+    .join('\n');
+}
+
 // ============================================================
 // Types mirroring bundle-widget-product-page.js
 // ============================================================
@@ -320,10 +331,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
 
     expect(modalSlotTemplate).toContain('_isProductPageModalSlotTemplate');
     expect(source).toContain('_markProductPageTemplate');
@@ -361,10 +369,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
 
     expect(modalSlotTemplate).toContain('_usesVerticalModalSlotLayout');
     expect(modalSlotTemplate).toContain('renderFilledSlotsAsHorizontalStacked');
@@ -387,10 +392,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
 
     expect(buildScript).toContain("app/assets/widgets/product-page/templates/modal-slot-template.js");
     expect(buildScript.indexOf("app/assets/widgets/product-page/templates/modal-slot-template.js")).toBeLessThan(
@@ -428,10 +430,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
 
     const verticalStart = css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .bundle-steps');
     const horizontalStart = css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"]', verticalStart);
@@ -464,10 +463,7 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('keeps PPB Product List and Horizontal Slots container responsive on wider storefront placements', () => {
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
 
     const cascadeCss = css.slice(
       css.indexOf('#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="CASCADE"] .bundle-steps'),
@@ -508,10 +504,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
 
     expect(source).toContain('_createInpageCategoryTabs');
     expect(source).toContain('Array.isArray(step?.categories) ? step.categories : []');
@@ -538,10 +531,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
     const cascadeTemplate = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page/templates/cascade-template.js'),
       'utf8',
@@ -608,10 +598,7 @@ describe('Product Page modal-slot visual contract', () => {
       join(process.cwd(), 'scripts/build-widget-bundles.js'),
       'utf8',
     );
-    const css = readFileSync(
-      join(process.cwd(), 'app/assets/widgets/product-page-css/bundle-widget.css'),
-      'utf8',
-    );
+    const css = readProductPageStyles();
     const cogniveTemplate = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page/templates/cognive-template.js'),
       'utf8',

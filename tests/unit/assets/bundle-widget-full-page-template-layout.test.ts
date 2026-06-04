@@ -1,6 +1,30 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+function readFullPageWidgetSources() {
+  return [
+    "app/assets/bundle-widget-full-page.js",
+    "app/assets/widgets/full-page/templates/standard-template.js",
+    "app/assets/widgets/full-page/templates/classic-template.js",
+    "app/assets/widgets/full-page/templates/compact-template.js",
+    "app/assets/widgets/full-page/templates/horizontal-template.js",
+  ]
+    .map((filePath) => readFileSync(join(process.cwd(), filePath), "utf8"))
+    .join("\n");
+}
+
+function readFullPageStyles() {
+  return [
+    "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
+    "app/assets/widgets/full-page-css/templates/side-footer-standard.css",
+    "app/assets/widgets/full-page-css/templates/side-footer-classic.css",
+    "app/assets/widgets/full-page-css/templates/side-footer-compact.css",
+    "app/assets/widgets/full-page-css/templates/side-footer-horizontal.css",
+  ]
+    .map((filePath) => readFileSync(join(process.cwd(), filePath), "utf8"))
+    .join("\n");
+}
+
 describe("Full Page widget template layout contract", () => {
   it("passes product GID context through to widget configuration", () => {
     const source = readFileSync(
@@ -41,17 +65,8 @@ describe("Full Page widget template layout contract", () => {
   });
 
   it("matches Horizontal Design HORIZONTAL side-footer storefront contract", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
-    const css = readFileSync(
-      join(
-        process.cwd(),
-        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
-      ),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
     const storefrontStyles = `${source}\n${css}`;
 
     expect(source).toContain("ensureHorizontalSidePanelSlotRuntimeStyles()");
@@ -91,18 +106,9 @@ describe("Full Page widget template layout contract", () => {
     expect(componentGenerator).toContain("${this.escapeHtml(addButtonText)}");
   });
 
-  it("matches EB Standard Design DEFAULT side-footer storefront contract", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
-    const css = readFileSync(
-      join(
-        process.cwd(),
-        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
-      ),
-      "utf8",
-    );
+  it("matches Standard Design DEFAULT side-footer storefront contract", () => {
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
     const storefrontStyles = `${source}\n${css}`;
 
     expect(source).toContain("return 'DEFAULT';");
@@ -127,18 +133,9 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain('border-radius:5px');
   });
 
-  it("matches EB Classic Design CLASSIC side-footer storefront contract", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
-    const css = readFileSync(
-      join(
-        process.cwd(),
-        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
-      ),
-      "utf8",
-    );
+  it("matches Classic Design CLASSIC side-footer storefront contract", () => {
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
     const storefrontStyles = `${source}\n${css}`;
 
     expect(source).toContain("ensureClassicPresetRuntimeStyles()");
@@ -159,18 +156,9 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain("border-radius:99px");
   });
 
-  it("matches EB Compact Design COMPACT side-footer storefront contract", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
-    const css = readFileSync(
-      join(
-        process.cwd(),
-        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
-      ),
-      "utf8",
-    );
+  it("matches Compact Design COMPACT side-footer storefront contract", () => {
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
     const storefrontStyles = `${source}\n${css}`;
 
     expect(source).toContain("ensureCompactPresetRuntimeStyles()");
