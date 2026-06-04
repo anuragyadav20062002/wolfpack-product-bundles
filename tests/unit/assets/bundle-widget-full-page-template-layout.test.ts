@@ -68,6 +68,10 @@ describe("Full Page widget template layout contract", () => {
     const source = readFullPageWidgetSources();
     const css = readFullPageStyles();
     const storefrontStyles = `${source}\n${css}`;
+    const horizontalStaticCss = readFileSync(
+      join(process.cwd(), "app/assets/widgets/full-page-css/templates/side-footer-horizontal.css"),
+      "utf8",
+    );
 
     expect(source).toContain("ensureHorizontalSidePanelSlotRuntimeStyles()");
     expect(source).toContain("wpb-fpb-horizontal-slots-runtime-styles");
@@ -79,6 +83,9 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:12px 0 20px;padding:0;overflow:visible}");
     expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:156px;min-height:156px;display:grid;grid-template-columns:0.281fr minmax(0,0.719fr);grid-template-rows:62px 0 62px;");
     expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image{grid-column:1;grid-row:1 / span 3;width:100%;height:140px;min-height:140px;");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-image img{object-fit:cover}");
+    expect(horizontalStaticCss).toContain("object-fit:cover");
+    expect(horizontalStaticCss).not.toContain("object-fit:contain");
     expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;justify-self:end;align-self:end}");
     expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=HORIZONTAL] .full-page-side-panel{width:100%;flex:initial;min-height:738px;margin-top:115px;padding:20px;");
     expect(storefrontStyles).toContain("@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-layout-wrapper{display:block;padding:0}");
@@ -119,15 +126,18 @@ describe("Full Page widget template layout contract", () => {
     expect(source).toContain("ensureStandardPresetRuntimeStyles()");
     expect(source).toContain("wpb-fpb-standard-runtime-styles");
     expect(storefrontStyles).toContain('[data-fpb-design-preset=DEFAULT]');
-    expect(storefrontStyles).toContain('--cw:321px');
-    expect(storefrontStyles).toContain('--ch:352px');
-    expect(storefrontStyles).toContain('--iw:305px');
+    expect(storefrontStyles).toContain('--standard-card-height:352px');
     expect(storefrontStyles).toContain('--ih:240px');
     expect(storefrontStyles).toContain('--mw:177.5px');
     expect(storefrontStyles).toContain('--mh:264px');
     expect(storefrontStyles).toContain('--mih:150px');
-    expect(storefrontStyles).toContain('grid-template-columns:minmax(0,993px) 447px');
-    expect(storefrontStyles).toContain('grid-template-columns:repeat(3,var(--cw,321px))');
+    expect(storefrontStyles).toContain('grid-template-columns:0.6897fr 0.3103fr');
+    expect(storefrontStyles).toContain('container-type:inline-size');
+    expect(storefrontStyles).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
+    expect(storefrontStyles).toContain('height:var(--standard-card-height,352px)');
+    expect(storefrontStyles).toContain('min-height:738px');
+    expect(storefrontStyles).not.toContain('grid-template-columns:minmax(0,993px) 447px');
+    expect(storefrontStyles).not.toContain('grid-template-columns:repeat(3,var(--cw,321px))');
     expect(storefrontStyles).toContain('width:35px');
     expect(storefrontStyles).toContain('height:35px');
     expect(storefrontStyles).toContain('border-radius:5px');

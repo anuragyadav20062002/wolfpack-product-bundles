@@ -35,7 +35,7 @@ minmax(0,
   border-bottom:none}
 
 .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .sidebar-content .product-image img {
-  object-fit:contain}
+  object-fit:cover}
 
 .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .sidebar-content .product-content-wrapper {
   grid-column:2;
@@ -100,7 +100,7 @@ minmax(0,
   border-bottom:none}
 
 .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .sidebar-content .product-image img {
-  object-fit:contain}
+  object-fit:cover}
 
 .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .sidebar-content .product-content-wrapper {
   min-height:100px;
