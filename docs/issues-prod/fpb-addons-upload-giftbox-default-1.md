@@ -3,10 +3,10 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-05
-**Last Updated:** 2026-06-05 06:18
+**Last Updated:** 2026-06-05 06:21
 
 ## Overview
-Match the Free Gift & Add Ons step icon upload area, compact card padding, header control grouping, and Add-ons action button treatment to EB while keeping existing save and upload behavior intact.
+Match the Free Gift & Add Ons compact card padding, header control grouping, and Add-ons action button treatment to EB while keeping existing save behavior intact.
 
 ## Progress Log
 ### 2026-06-05 05:50 - Slice started
@@ -49,13 +49,19 @@ Match the Free Gift & Add Ons step icon upload area, compact card padding, heade
 - Converted top/section Multi Language controls, Add Tier Rule, and Add Add Ons Tier to Polaris secondary button paths.
 - Verified with focused unit tests, Shopify component validation, Chrome screenshot/snapshot, ESLint, and graphify rebuild.
 
+### 2026-06-05 06:21 - Step config controls split out
+- User clarified Step icon, Replace button, Step Name, and Step Title need their own parity slice.
+- Moved dedicated source guard coverage to `fpb-addons-step-config-controls-parity-1`.
+- This issue now remains focused on card padding, title/toggle grouping, and Add-ons action button treatment.
+
 ## Related Documentation
 - `docs/issues-prod/fpb-addons-admin-control-parity-2.md`
 - `test-spec/fpb-addons-admin-control-parity-2.spec.md`
 - `test-spec/fpb-addons-upload-giftbox-default-1.spec.md`
 - `docs/issues-prod/fpb-addons-language-modal-parity-1.md`
+- `docs/issues-prod/fpb-addons-step-config-controls-parity-1.md`
 
 ## Phases Checklist
-- [x] Phase 1: RED test for Add-ons gift-box upload default
-- [x] Phase 2: Implement SVG default, sizing, card padding, header grouping, and button treatment
+- [x] Phase 1: RED test for Add-ons Admin layout controls
+- [x] Phase 2: Implement card padding, header grouping, and button treatment
 - [x] Phase 3: Chrome verification, lint, graphify, and commit-ready status
