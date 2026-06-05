@@ -3,10 +3,10 @@
 **Status:** Completed
 **Priority:** 🟡 Medium
 **Created:** 2026-06-05
-**Last Updated:** 2026-06-05 06:18
+**Last Updated:** 2026-06-05 06:28
 
 ## Overview
-Match the three Free Gift & Add Ons Multi Language modal variants to EB as a dedicated parity slice, separate from the Add-ons card layout and button-density work.
+Match the compact Free Gift & Add Ons Multi Language modal variants to EB as a dedicated parity slice, separate from the Add-ons Step rich language modal, card layout, and button-density work.
 
 ## Progress Log
 ### 2026-06-05 06:14 - Slice split
@@ -21,11 +21,17 @@ Match the three Free Gift & Add Ons Multi Language modal variants to EB as a ded
 - Verified the compact Footer Messaging modal in Chrome: Select Language, Tier 1, Message when rule not met, Success Message, and Save and close.
 - Verified Polaris modal component patterns with Shopify component validation.
 
+### 2026-06-05 06:21 - First modal split out
+- User clarified the first language modal needs its own parity slice.
+- Moved Add-ons Step rich modal tracking to `fpb-addons-step-language-modal-parity-1`.
+- This issue now tracks the two compact modals only: Add-ons Section and Footer Messaging.
+
 ## Related Documentation
 - `docs/issues-prod/fpb-addons-upload-giftbox-default-1.md`
 - `test-spec/fpb-addons-language-modal-parity-1.spec.md`
+- `docs/issues-prod/fpb-addons-step-language-modal-parity-1.md`
 
 ## Phases Checklist
-- [x] Phase 1: Dedicated RED/GREEN test coverage for the three Add-ons language modal variants
+- [x] Phase 1: Dedicated RED/GREEN test coverage for the compact Add-ons language modal variants
 - [x] Phase 2: Modal route/component wiring
-- [x] Phase 3: Chrome verification for all three modal variants
+- [x] Phase 3: Chrome verification for compact modal variants

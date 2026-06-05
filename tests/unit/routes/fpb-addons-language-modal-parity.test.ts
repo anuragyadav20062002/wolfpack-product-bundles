@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-describe("Full Page Add-ons language modal parity", () => {
+describe("Full Page Add-ons compact language modal parity", () => {
   const routeSource = readFileSync(
     join(process.cwd(), "app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx"),
     "utf8",
@@ -11,30 +11,26 @@ describe("Full Page Add-ons language modal parity", () => {
     "utf8",
   );
 
-  it("matches the reference Add-ons Multi Language modal variants", () => {
-    const stepModalStart = routeSource.indexOf("const openAddonStepMultiLanguageModal");
+  it("matches the reference compact Add-ons Multi Language modal variants", () => {
     const sectionModalStart = routeSource.indexOf("const openAddonSectionMultiLanguageModal");
     const footerModalStart = routeSource.indexOf("const openAddonFooterMultiLanguageModal");
     const saveStart = routeSource.indexOf("const updateLocalizedTextOverride");
 
-    expect(stepModalStart).toBeGreaterThan(-1);
-    expect(sectionModalStart).toBeGreaterThan(stepModalStart);
+    expect(sectionModalStart).toBeGreaterThan(-1);
     expect(footerModalStart).toBeGreaterThan(sectionModalStart);
 
-    const stepModalSource = routeSource.slice(stepModalStart, sectionModalStart);
     const sectionModalSource = routeSource.slice(sectionModalStart, footerModalStart);
     const footerModalSource = routeSource.slice(footerModalStart, saveStart);
-
-    expect(stepModalSource).toContain('setMultiLanguageLayout("rich")');
-    expect(stepModalSource).toContain('fallback: "Step Text"');
-    expect(stepModalSource).toContain('fallback: "Step Subtext"');
+    const indexInterpolationToken = ["$", "{index + 1}"].join("");
+    const tierTitleToken = ["label: `Tier#", indexInterpolationToken, " Title`"].join("");
+    const footerTierHeadingToken = ["headingBefore: `Tier ", indexInterpolationToken, "`"].join("");
 
     expect(sectionModalSource).toContain('setMultiLanguageLayout("compact")');
     expect(sectionModalSource).toContain('label: "Add on Section title"');
-    expect(sectionModalSource).toContain('label: `Tier#${index + 1} Title`');
+    expect(sectionModalSource).toContain(tierTitleToken);
 
     expect(footerModalSource).toContain('setMultiLanguageLayout("compact")');
-    expect(footerModalSource).toContain('headingBefore: `Tier ${index + 1}`');
+    expect(footerModalSource).toContain(footerTierHeadingToken);
     expect(footerModalSource).toContain('label: "Message when rule not met"');
     expect(footerModalSource).toContain('label: "Success Message"');
 
@@ -42,10 +38,9 @@ describe("Full Page Add-ons language modal parity", () => {
     expect(routeSource).toContain('saveLabel={multiLanguageLayout === "compact" ? "Save and close" : undefined}');
   });
 
-  it("keeps rich and compact modal bodies distinct", () => {
+  it("keeps compact modal body support for section and footer modals", () => {
     expect(modalSource).toContain('layout?: "rich" | "compact"');
     expect(modalSource).toContain("const compactBody = (");
-    expect(modalSource).toContain("const richBody = (");
     expect(modalSource).toContain('label="Select Language"');
     expect(modalSource).toContain('layout === "compact" ? compactBody : richBody');
     expect(modalSource).toContain('saveLabel ?? t("common.multiLanguage.saveAndClose")');
