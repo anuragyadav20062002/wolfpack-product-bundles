@@ -18,19 +18,22 @@ describe("Full Page Add-ons Admin layout", () => {
       "addonsReferenceSwitch",
       "addonsHeaderLine",
       "addonsHeaderActions",
-      "addonsLanguageButton",
+      "addonsMediaFieldGrid",
       "addonsTierCard",
       "addonsProductSelectionRow",
       "addonsSelectedButton",
       "addonsDiscountGrid",
       "addonsTierRules",
-      "addonsTierButton",
       "addonsFooterCard",
       "addonsTierHeader",
       "addonsTierHeaderActive",
       "addonsTierTitle",
       "addonsTierDeleteButton",
-      "addonsLanguageButtonIcon",
+      "addonsGiftBoxDefault",
+      "addonsIconColumn",
+      "addonsIconBox",
+      "addonsFieldsColumn",
+      "addonsReplaceButton",
     ].forEach((marker) => {
       expect(routeSource).toContain(`fullPageBundleStyles.${marker}`);
       expect(cssSource).toContain(`.${marker}`);
@@ -118,13 +121,13 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(section).toContain("openAddonStepMultiLanguageModal");
     expect(section).toContain("openAddonSectionMultiLanguageModal");
     expect(section).toContain("openAddonFooterMultiLanguageModal");
-    expect(section).not.toContain('className={fullPageBundleStyles.addonsLanguageButton} disabled');
+    expect(section).not.toContain('className={fullPageBundleStyles.addonsLanguageButton}');
     expect(routeSource).toContain('type: "addon-step"');
     expect(routeSource).toContain('type: "addon-section"');
     expect(routeSource).toContain('type: "addon-footer"');
   });
 
-  it("keeps visible globe icons on Add-ons Multi Language buttons", () => {
+  it("keeps Add-ons Multi Language buttons on the same Polaris style", () => {
     const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
     const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
     const section = routeSource.slice(sectionStart, sectionEnd);
@@ -135,12 +138,91 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(topButtonStart).toBeGreaterThan(-1);
     expect(sectionButtonStart).toBeGreaterThan(-1);
     expect(footerButtonStart).toBeGreaterThan(-1);
-    expect(section.slice(topButtonStart, topButtonStart + 420)).toContain('type="globe"');
+    expect(section.slice(topButtonStart - 140, topButtonStart + 220)).toContain('variant="secondary"');
+    expect(section.slice(topButtonStart - 140, topButtonStart + 220)).toContain('icon="globe"');
     expect(section.slice(topButtonStart, topButtonStart + 420)).toContain("Multi Language");
-    expect(section.slice(sectionButtonStart, sectionButtonStart + 420)).toContain('type="globe"');
+    expect(section.slice(sectionButtonStart - 140, sectionButtonStart + 220)).toContain('variant="secondary"');
+    expect(section.slice(sectionButtonStart - 140, sectionButtonStart + 220)).toContain('icon="globe"');
     expect(section.slice(sectionButtonStart, sectionButtonStart + 420)).toContain("Multi Language");
     expect(section.slice(footerButtonStart - 120, footerButtonStart + 160)).toContain('icon="globe"');
     expect(section.slice(footerButtonStart - 120, footerButtonStart + 160)).toContain("Multi Language");
+  });
+
+  it("groups Add-ons toggles with their card titles", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+
+    const stepTitleStart = section.indexOf("Add-Ons and Gifting Step");
+    const bundlesTitleStart = section.indexOf("Add-Ons with Bundles");
+    const stepToggleStart = section.indexOf("Enable add-ons and gifting step");
+    const bundlesToggleStart = section.indexOf("Enable add-ons with bundles");
+    const firstActionsStart = section.indexOf("addonsHeaderActions", stepTitleStart);
+    const secondActionsStart = section.indexOf("addonsHeaderActions", bundlesTitleStart);
+
+    expect(section.slice(stepTitleStart - 140, stepToggleStart)).toContain("addonsTitleCluster");
+    expect(section.slice(bundlesTitleStart - 140, bundlesToggleStart)).toContain("addonsTitleCluster");
+    expect(stepToggleStart).toBeGreaterThan(stepTitleStart);
+    expect(bundlesToggleStart).toBeGreaterThan(bundlesTitleStart);
+    expect(stepToggleStart).toBeLessThan(firstActionsStart);
+    expect(bundlesToggleStart).toBeLessThan(secondActionsStart);
+  });
+
+  it("keeps Add-ons tier action buttons on the Polaris secondary style", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+    const tierRuleStart = section.indexOf("Add Tier Rule");
+    const tierStart = section.indexOf("Add Add Ons Tier");
+    const tierRuleButtonStart = section.lastIndexOf("<s-button", tierRuleStart);
+    const tierButtonStart = section.lastIndexOf("<s-button", tierStart);
+
+    expect(tierRuleStart).toBeGreaterThan(-1);
+    expect(tierStart).toBeGreaterThan(-1);
+    expect(tierRuleButtonStart).toBeGreaterThan(-1);
+    expect(tierButtonStart).toBeGreaterThan(-1);
+    expect(section.slice(tierRuleButtonStart, tierRuleStart + 80)).toContain('variant="secondary"');
+    expect(section.slice(tierButtonStart, tierStart + 80)).toContain('variant="secondary"');
+    expect(section).not.toContain("addonsTierRuleButton");
+    expect(section).not.toContain("addonsTierButton");
+    expect(cssSource).not.toContain(".addonsTierRuleButton");
+    expect(cssSource).not.toContain(".addonsTierButton");
+  });
+
+  it("uses a gift-box SVG default for the Add-ons step icon upload area", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+    const uploadStart = section.indexOf("addonsIconColumn");
+    const uploadSource = section.slice(uploadStart, uploadStart + 4200);
+
+    expect(uploadStart).toBeGreaterThan(-1);
+    expect(uploadSource).toContain("addonsGiftBoxDefault");
+    expect(uploadSource).toContain("addonsIconColumn");
+    expect(uploadSource).toContain("addonsIconBox");
+    expect(uploadSource).toContain("addonsFieldsColumn");
+    expect(uploadSource).toContain("addonsReplaceButton");
+    expect(uploadSource).toContain('viewBox="0 0 48 48"');
+    expect(uploadSource).toContain('aria-hidden="true"');
+    expect(uploadSource).not.toContain("iconPlaceholder}>Upload file");
+    expect(uploadSource).toContain('alt="Add-ons step icon"');
+    expect(uploadSource).toContain('setShowIconPickerForStep(prev => prev === "addon-direct"');
+    expect(cssSource).toContain("--addons-icon-control-width: 96px");
+    expect(cssSource).toContain("width: var(--addons-icon-control-width)");
+    expect(cssSource).toContain("width: 40px");
+    expect(cssSource).toContain("grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr)");
+    expect(cssSource).toContain(".addonsFieldsColumn");
+    expect(cssSource).toContain("min-width: 0");
+  });
+
+  it("keeps Add-ons cards on the compact reference padding contract", () => {
+    expect(cssSource).toContain(".addonsReferenceStepCard");
+    expect(cssSource).toContain(".addonsCard");
+    expect(cssSource).toContain(".addonsFooterCard");
+    expect(cssSource).toContain("--addons-card-padding: 14px");
+    expect(cssSource).toContain("padding: var(--addons-card-padding)");
+    expect(cssSource).toContain(".addonsTierBody");
+    expect(cssSource).toContain("padding: 14px");
   });
 
   it("uses Add-ons-specific variables in the footer variables modal", () => {

@@ -1059,6 +1059,7 @@ export default function ConfigureBundleFlow() {
   const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
   const [multiLanguageFields, setMultiLanguageFields] = useState<MultiLanguageField[]>([]);
   const [multiLanguageTitle, setMultiLanguageTitle] = useState("Multi Language");
+  const [multiLanguageLayout, setMultiLanguageLayout] = useState<"rich" | "compact">("rich");
   const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
   const [multiLanguageTarget, setMultiLanguageTarget] = useState<StepSetupMultiLanguageTarget>({ type: "text-overrides" });
 
@@ -1276,6 +1277,7 @@ export default function ConfigureBundleFlow() {
     if (!step) return;
     setMultiLanguageTarget({ type: "step", stepId });
     setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("rich");
     setMultiLanguageFields([
       { key: "productPageStepText", label: "Step Name", fallback: step.name ?? "" },
       { key: "productPageSubtext", label: "Step Title", fallback: step.pageTitle ?? "" },
@@ -1290,6 +1292,7 @@ export default function ConfigureBundleFlow() {
     if (!category) return;
     setMultiLanguageTarget({ type: "step-category", stepId, categoryIndex });
     setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("rich");
     setMultiLanguageFields([
       { key: "name", label: "Category Name", fallback: category.name ?? `Category ${categoryIndex + 1}` },
       { key: "title", label: "Category Title", fallback: category.title ?? "" },
@@ -1301,18 +1304,20 @@ export default function ConfigureBundleFlow() {
   const openAddonStepMultiLanguageModal = useCallback(() => {
     setMultiLanguageTarget({ type: "addon-step" });
     setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("rich");
     setMultiLanguageFields([
-      { key: "personalizeStepText", label: "Step Name", fallback: addonDraft.personalizeStepText || "Add On" },
-      { key: "personalizePageSubtext", label: "Step Title", fallback: addonDraft.personalizePageSubtext || "" },
+      { key: "personalizeStepText", label: "Step Name", fallback: "Step Text" },
+      { key: "personalizePageSubtext", label: "Step Title", fallback: "Step Subtext" },
     ]);
     setTextOverridesLocale(defaultMultiLanguageLocale());
     setIsMultiLanguageModalOpen(true);
-  }, [addonDraft.personalizePageSubtext, addonDraft.personalizeStepText, defaultMultiLanguageLocale]);
+  }, [defaultMultiLanguageLocale]);
 
   const openAddonSectionMultiLanguageModal = useCallback(() => {
     const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
     setMultiLanguageTarget({ type: "addon-section" });
     setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("compact");
     setMultiLanguageFields([
       { key: "addonProductsTitle", label: "Add on Section title", fallback: addonDraft.addonProductsTitle || "" },
       ...addonTiers.map((tier: any, index: number) => ({
@@ -1334,8 +1339,9 @@ export default function ConfigureBundleFlow() {
     };
     setMultiLanguageTarget({ type: "addon-footer" });
     setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("compact");
     setMultiLanguageFields(addonTiers.flatMap((_: any, index: number) => [
-      { key: `tier${index + 1}MessageWhenRuleNotMet`, label: "Message when rule not met", fallback: addonMessages.discountText || "" },
+      { key: `tier${index + 1}MessageWhenRuleNotMet`, label: "Message when rule not met", fallback: addonMessages.discountText || "", headingBefore: `Tier ${index + 1}` },
       { key: `tier${index + 1}SuccessMessage`, label: "Success Message", fallback: addonMessages.successMessage || "" },
     ]));
     setTextOverridesLocale(defaultMultiLanguageLocale());
@@ -3742,8 +3748,8 @@ export default function ConfigureBundleFlow() {
                   <s-stack direction="block" gap="base">
                     <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsReferenceStepCard}`}>
                       <div className={fullPageBundleStyles.panelHeader}>
-                        <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
-                        <div className={fullPageBundleStyles.addonsHeaderActions}>
+                        <div className={fullPageBundleStyles.addonsTitleCluster}>
+                          <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
                           <label className={`${fullPageBundleStyles.addonsSwitch} ${fullPageBundleStyles.addonsReferenceSwitch}`}>
                             <input
                               type="checkbox"
@@ -3760,25 +3766,55 @@ export default function ConfigureBundleFlow() {
                             />
                             <span />
                           </label>
-                          <button
-                            type="button"
-                            className={fullPageBundleStyles.addonsLanguageButton}
-                            onClick={openAddonStepMultiLanguageModal}
-                          >
-                            <span className={fullPageBundleStyles.addonsLanguageButtonIcon} aria-hidden="true">
-                              <s-icon type="globe" />
-                            </span>
+                        </div>
+                        <div className={fullPageBundleStyles.addonsHeaderActions}>
+                          <s-button variant="secondary" icon="globe" onClick={openAddonStepMultiLanguageModal}>
                             Multi Language
-                          </button>
+                          </s-button>
                         </div>
                       </div>
-                      <div className={fullPageBundleStyles.mediaFieldGrid}>
-                        <div className={fullPageBundleStyles.iconColumn}>
-                          <div className={fullPageBundleStyles.iconBox}>
+                      <div className={`${fullPageBundleStyles.mediaFieldGrid} ${fullPageBundleStyles.addonsMediaFieldGrid}`}>
+                        <div className={fullPageBundleStyles.addonsIconColumn}>
+                          <div className={fullPageBundleStyles.addonsIconBox}>
                             {addonDraft.stepImage ? (
                               <img src={addonDraft.stepImage} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
                             ) : (
-                              <div className={fullPageBundleStyles.iconPlaceholder}>Upload file</div>
+                              <svg
+                                className={fullPageBundleStyles.addonsGiftBoxDefault}
+                                viewBox="0 0 48 48"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M10 20H38V40C38 42.2 36.2 44 34 44H14C11.8 44 10 42.2 10 40V20Z"
+                                  fill="#F6F6F7"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M7 15H41V22H7V15Z"
+                                  fill="#FFFFFF"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinejoin="round"
+                                />
+                                <path d="M24 15V44" stroke="currentColor" strokeWidth="2" />
+                                <path d="M7 22H41" stroke="currentColor" strokeWidth="2" />
+                                <path
+                                  d="M24 15C20.7 10.2 17.7 8 15.5 8C13.3 8 11.5 9.8 11.5 12C11.5 14.2 13.3 15 16 15H24Z"
+                                  fill="#FFFFFF"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M24 15C27.3 10.2 30.3 8 32.5 8C34.7 8 36.5 9.8 36.5 12C36.5 14.2 34.7 15 32 15H24Z"
+                                  fill="#FFFFFF"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
                             )}
                           </div>
                           {showIconPickerForStep === "addon-direct" && (
@@ -3793,6 +3829,7 @@ export default function ConfigureBundleFlow() {
                             />
                           )}
                           <s-button
+                            className={fullPageBundleStyles.addonsReplaceButton}
                             variant="secondary"
                             icon="upload"
                             onClick={() => setShowIconPickerForStep(prev => prev === "addon-direct" ? null : "addon-direct")}
@@ -3800,26 +3837,28 @@ export default function ConfigureBundleFlow() {
                             {showIconPickerForStep === "addon-direct" ? "Close picker" : "Replace"}
                           </s-button>
                         </div>
-                        <s-stack direction="block" gap="small">
-                          <s-text-field
-                            label="Step Name"
-                            value={addonDraft.personalizeStepText ?? ""}
-                            placeholder="Add On"
-                            onInput={(e) => {
-                              const value = (e.target as HTMLInputElement).value;
-                              updateAddonDraft({ personalizeStepText: value });
-                            }}
-                          autocomplete="off"
-                          />
-                          <s-text-field
-                            label="Step Title"
-                            value={addonDraft.personalizePageSubtext ?? ""}
-                            onInput={(e) => {
-                              updateAddonDraft({ personalizePageSubtext: (e.target as HTMLInputElement).value });
-                            }}
-                          autocomplete="off"
-                          />
-                        </s-stack>
+                        <div className={fullPageBundleStyles.addonsFieldsColumn}>
+                          <s-stack direction="block" gap="small">
+                            <s-text-field
+                              label="Step Name"
+                              value={addonDraft.personalizeStepText ?? ""}
+                              placeholder="Add On"
+                              onInput={(e) => {
+                                const value = (e.target as HTMLInputElement).value;
+                                updateAddonDraft({ personalizeStepText: value });
+                              }}
+                              autocomplete="off"
+                            />
+                            <s-text-field
+                              label="Step Title"
+                              value={addonDraft.personalizePageSubtext ?? ""}
+                              onInput={(e) => {
+                                updateAddonDraft({ personalizePageSubtext: (e.target as HTMLInputElement).value });
+                              }}
+                              autocomplete="off"
+                            />
+                          </s-stack>
+                        </div>
                       </div>
                     </div>
 
@@ -3847,16 +3886,9 @@ export default function ConfigureBundleFlow() {
                           </button>
                         </div>
                         <div className={fullPageBundleStyles.addonsHeaderActions}>
-                          <button
-                            type="button"
-                            className={fullPageBundleStyles.addonsLanguageButton}
-                            onClick={openAddonSectionMultiLanguageModal}
-                          >
-                            <span className={fullPageBundleStyles.addonsLanguageButtonIcon} aria-hidden="true">
-                              <s-icon type="globe" />
-                            </span>
+                          <s-button variant="secondary" icon="globe" onClick={openAddonSectionMultiLanguageModal}>
                             Multi Language
-                          </button>
+                          </s-button>
                         </div>
                       </div>
                       <p className={fullPageBundleStyles.panelDescription}>
@@ -4099,13 +4131,12 @@ export default function ConfigureBundleFlow() {
                                                   ))}
                                                 </div>
                                               )}
-                                              <button
-                                                type="button"
-                                                className={fullPageBundleStyles.addonsTierRuleButton}
+                                              <s-button
+                                                variant="secondary"
                                                 onClick={() => addAddonTierCondition(idx)}
                                               >
                                                 Add Tier Rule
-                                              </button>
+                                              </s-button>
                                             </div>
                                           </s-stack>
                                         </div>
@@ -4113,9 +4144,8 @@ export default function ConfigureBundleFlow() {
                                       </div>
                                     );
                                   })}
-                              <button
-                                type="button"
-                                className={fullPageBundleStyles.addonsTierButton}
+                              <s-button
+                                variant="secondary"
                                 onClick={() => {
                                   updateAddonTiers([...addonTiers, {
                                     ...createDefaultAddonDraftTier(addonTiers.length),
@@ -4124,7 +4154,7 @@ export default function ConfigureBundleFlow() {
                                 }}
                               >
                                 Add Add Ons Tier
-                              </button>
+                              </s-button>
                             </>
                           );
                         })()}
@@ -5898,6 +5928,8 @@ export default function ConfigureBundleFlow() {
       <MultiLanguageTextModal
         open={isMultiLanguageModalOpen}
         title={multiLanguageTitle}
+        layout={multiLanguageLayout}
+        saveLabel={multiLanguageLayout === "compact" ? "Save and close" : undefined}
         locales={shopLocales}
         activeLocale={textOverridesLocale}
         fields={multiLanguageFields}

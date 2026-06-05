@@ -1725,6 +1725,38 @@
   composes: iconPlaceholder from "./bundle-configure-shared.module.css";
 }
 
+.addonsIconColumn {
+  composes: iconColumn from "./bundle-configure-shared.module.css";
+  --addons-icon-control-width: 96px;
+  align-items: stretch;
+  width: var(--addons-icon-control-width);
+}
+
+.addonsIconBox {
+  composes: iconBox from "./bundle-configure-shared.module.css";
+  width: var(--addons-icon-control-width);
+}
+
+.addonsGiftBoxDefault {
+  display: block;
+  width: 40px;
+  height: 40px;
+  color: #8c9196;
+}
+
+.addonsReplaceButton {
+  display: block;
+  width: var(--addons-icon-control-width);
+}
+
+.addonsMediaFieldGrid {
+  grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
+}
+
+.addonsFieldsColumn {
+  min-width: 0;
+}
+
 .iconRemoveButton {
   composes: iconRemoveButton from "./bundle-configure-shared.module.css";
 }
@@ -2038,20 +2070,11 @@
   composes: panelDescription from "./bundle-configure-shared.module.css";
 }
 
-.addonsCard {
-  padding: 16px 16px 18px;
-  border-color: #dedede;
-  border-radius: 8px;
-}
-
-.addonsReferenceStepCard {
-  padding: 16px 16px 18px;
-  border-color: #dedede;
-  border-radius: 8px;
-}
-
+.addonsCard,
+.addonsReferenceStepCard,
 .addonsFooterCard {
-  padding: 16px 16px 18px;
+  --addons-card-padding: 14px;
+  padding: var(--addons-card-padding);
   border-color: #dedede;
   border-radius: 8px;
 }
@@ -2152,42 +2175,11 @@
   text-decoration: underline;
 }
 
-.addonsLanguageButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  justify-content: center;
-  min-height: 28px;
-  padding: 4px 10px;
-  border: 1px solid #c9cccf;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #202223;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.2;
-}
-
-.addonsLanguageButtonIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  color: #6d7175;
-}
-
-.addonsLanguageButton:disabled {
-  opacity: 1;
-  cursor: default;
-}
-
 .addonsFormStack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 14px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .addonsTierCard {
@@ -2262,7 +2254,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 16px;
+  padding: 14px;
 }
 
 .addonsProductSelectionRow {
@@ -2324,37 +2316,6 @@
   color: #6d7175;
   font-size: 12px;
   line-height: 1.35;
-}
-
-.addonsTierRuleButton,
-.addonsTierButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  border: 1px solid #d3d6da;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #202223;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.addonsTierRuleButton {
-  width: 100%;
-  margin-top: 12px;
-}
-
-.addonsTierRuleButton::before {
-  margin-right: 4px;
-  content: "+";
-}
-
-.addonsTierButton {
-  width: 100%;
 }
 
 .addonSelectedProductList {
