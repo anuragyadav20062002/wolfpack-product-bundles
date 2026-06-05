@@ -26,6 +26,10 @@ describe("Full Page Add-ons Admin layout", () => {
       "addonsTierRules",
       "addonsTierButton",
       "addonsFooterCard",
+      "addonsTierHeader",
+      "addonsTierHeaderActive",
+      "addonsTierTitle",
+      "addonsTierDeleteButton",
     ].forEach((marker) => {
       expect(routeSource).toContain(`fullPageBundleStyles.${marker}`);
       expect(cssSource).toContain(`.${marker}`);
@@ -85,7 +89,9 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(routeSource).toContain("removeAddonTierCondition");
     expect(routeSource).toContain("updateAddonTierCondition");
     expect(routeSource).toContain("createDefaultAddonTierCondition");
-    expect(routeSource).toContain("value: String(condition?.value ?? \"01\")");
+    expect(routeSource).toContain('condition: "lessThanOrEqualTo"');
+    expect(routeSource).toContain('value: "1"');
+    expect(routeSource).toContain("value: String(condition?.value ?? \"1\")");
     expect(routeSource).toContain("conditions: Array.isArray(tier?.conditions)");
   });
 
@@ -101,5 +107,57 @@ describe("Full Page Add-ons Admin layout", () => {
 
     expect(footerSource.slice(messageNotMetStart, messageNotMetStart + 260)).toContain("markAsDirty();");
     expect(footerSource.slice(successMessageStart, successMessageStart + 260)).toContain("markAsDirty();");
+  });
+
+  it("wires Add-ons scoped language buttons instead of disabled placeholders", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+
+    expect(section).toContain("openAddonStepMultiLanguageModal");
+    expect(section).toContain("openAddonSectionMultiLanguageModal");
+    expect(section).toContain("openAddonFooterMultiLanguageModal");
+    expect(section).not.toContain('className={fullPageBundleStyles.addonsLanguageButton} disabled');
+    expect(routeSource).toContain('type: "addon-step"');
+    expect(routeSource).toContain('type: "addon-section"');
+    expect(routeSource).toContain('type: "addon-footer"');
+  });
+
+  it("uses Add-ons-specific variables in the footer variables modal", () => {
+    expect(routeSource).toContain("ADDON_TEMPLATE_VARIABLES");
+    expect(routeSource).toContain("{{addonsConditionDiff}}");
+    expect(routeSource).toContain("{{currencyUnit}}");
+    expect(routeSource).toContain("{{addonsDiscountValue}}");
+    expect(routeSource).toContain("{{addonsDiscountValueUnit}}");
+
+    const footerStart = routeSource.indexOf("Footer Messaging");
+    const footerSource = routeSource.slice(footerStart, routeSource.indexOf('activeSection === "discount_pricing"', footerStart));
+    expect(footerSource).toContain("setIsAddonVariablesModalOpen(true)");
+    expect(routeSource).toContain("addonVariablesModalRef");
+    expect(footerSource).not.toContain("templateVariablesModalRef");
+  });
+
+  it("opens a selected Add-ons products modal from the selected count", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+
+    expect(section).toContain("openAddonSelectedProductsModal");
+    expect(routeSource).toContain("addonSelectedProductsModalRef");
+    expect(routeSource).toContain("Selected Products");
+    expect(routeSource).toContain("handleAddonSelectedProductRemove");
+  });
+
+  it("matches the reference tier empty and accordion behavior", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+
+    expect(routeSource).toContain("activeAddonTierIndex");
+    expect(routeSource).toContain("setActiveAddonTierIndex(addonTiers.length)");
+    expect(routeSource).toContain("setActiveAddonTierIndex((currentIndex)");
+    expect(routeSource).toContain("Math.max(0, addonTierCount - 1)");
+    expect(section).not.toContain("No rules defined yet");
+    expect(section).toContain("addonsTierBody");
   });
 });

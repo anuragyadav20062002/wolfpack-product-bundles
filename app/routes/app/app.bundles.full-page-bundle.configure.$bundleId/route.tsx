@@ -263,6 +263,13 @@ const TEMPLATE_VARIABLES: [string, string][] = [
   ["{{discountedItems}}", "The quantity of items that will be discounted or given free as part of the \"Get Y\" offer."],
 ];
 
+const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
+  ["{{addonsConditionDiff}}", "Shows how much more the customer needs to add to qualify"],
+  ["{{currencyUnit}}", "Currency Symbol"],
+  ["{{addonsDiscountValue}}", "Displays the final discount your customer will receive on the add-ons"],
+  ["{{addonsDiscountValueUnit}}", "Discount type (e.g., %)"],
+];
+
 type VisibilityDisplayConfiguration = {
   showOnAllBundleProducts: boolean;
   selectedProducts: unknown[];
@@ -274,7 +281,10 @@ type VisibilityDisplayConfiguration = {
 type StepSetupMultiLanguageTarget =
   | { type: "text-overrides" }
   | { type: "step"; stepId: string }
-  | { type: "step-category"; stepId: string; categoryIndex: number };
+  | { type: "step-category"; stepId: string; categoryIndex: number }
+  | { type: "addon-step" }
+  | { type: "addon-section" }
+  | { type: "addon-footer" };
 
 function asVisibilityArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
@@ -711,8 +721,8 @@ function normalizeAddonTier(tier: any, index: number) {
     conditions: Array.isArray(tier?.conditions)
       ? tier.conditions.map((condition: any) => ({
         type: condition?.type || "quantity",
-        condition: condition?.condition || "greaterThanOrEqualTo",
-        value: String(condition?.value ?? "01"),
+        condition: condition?.condition || "lessThanOrEqualTo",
+        value: String(condition?.value ?? "1"),
       }))
       : [],
   };
@@ -736,8 +746,8 @@ function createDefaultAddonDraftTier(index = 0) {
 function createDefaultAddonTierCondition() {
   return {
     type: "quantity",
-    condition: "greaterThanOrEqualTo",
-    value: "01",
+    condition: "lessThanOrEqualTo",
+    value: "1",
   };
 }
 
@@ -756,8 +766,8 @@ function addonTierToDraft(tier: any, index: number) {
     conditions: Array.isArray(tier?.conditions)
       ? tier.conditions.map((condition: any) => ({
         type: condition?.type || "quantity",
-        condition: condition?.condition || "greaterThanOrEqualTo",
-        value: String(condition?.value ?? "01"),
+        condition: condition?.condition || "lessThanOrEqualTo",
+        value: String(condition?.value ?? "1"),
       }))
       : [],
   };
@@ -777,6 +787,7 @@ function buildAddonDraftFromPersonalizationData(personalizationData: any) {
     addonProductsEnabled: addonProducts?.isEnabled === true,
     addonProductsTitle: addonProducts?.title || "",
     addonTiers: tiers,
+    addonMultiLangData: addonProducts?.multiLangData || {},
   };
 }
 
@@ -801,7 +812,7 @@ function buildPersonalizationDataFromDraft(
       title: addonDraft?.addonProductsTitle || "",
       type: "MULTI_TIER",
       tiers,
-      multiLangData: {},
+      multiLangData: addonDraft?.addonMultiLangData || {},
       addonsMessaging: {
         isEnabled: Boolean(addonMessages?.discountText || addonMessages?.successMessage),
         tier1: {
@@ -920,10 +931,23 @@ export default function ConfigureBundleFlow() {
     buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
   );
   const originalAddonDraftRef = useRef<any>(addonDraft);
+  const [activeAddonTierIndex, setActiveAddonTierIndex] = useState(0);
+  const [addonSelectedProductsTierIndex, setAddonSelectedProductsTierIndex] = useState<number | null>(null);
+  const [isAddonSelectedProductsModalOpen, setIsAddonSelectedProductsModalOpen] = useState(false);
   const updateAddonDraft = useCallback((updates: Record<string, any>) => {
     setAddonDraft((current: any) => ({ ...current, ...updates }));
     markAsDirty();
   }, [markAsDirty]);
+  const addonTierCount = Array.isArray(addonDraft.addonTiers) && addonDraft.addonTiers.length > 0
+    ? addonDraft.addonTiers.length
+    : 1;
+
+  useEffect(() => {
+    setActiveAddonTierIndex((currentIndex) => {
+      if (currentIndex < addonTierCount) return currentIndex;
+      return Math.max(0, addonTierCount - 1);
+    });
+  }, [addonTierCount]);
   const shopDomain = useMemo(
     () => (shop.includes('.myshopify.com') ? shop.replace('.myshopify.com', '') : shop),
     [shop]
@@ -1274,6 +1298,50 @@ export default function ConfigureBundleFlow() {
     setIsMultiLanguageModalOpen(true);
   }, [defaultMultiLanguageLocale, stepsState.steps]);
 
+  const openAddonStepMultiLanguageModal = useCallback(() => {
+    setMultiLanguageTarget({ type: "addon-step" });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields([
+      { key: "personalizeStepText", label: "Step Name", fallback: addonDraft.personalizeStepText || "Add On" },
+      { key: "personalizePageSubtext", label: "Step Title", fallback: addonDraft.personalizePageSubtext || "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [addonDraft.personalizePageSubtext, addonDraft.personalizeStepText, defaultMultiLanguageLocale]);
+
+  const openAddonSectionMultiLanguageModal = useCallback(() => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    setMultiLanguageTarget({ type: "addon-section" });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields([
+      { key: "addonProductsTitle", label: "Add on Section title", fallback: addonDraft.addonProductsTitle || "" },
+      ...addonTiers.map((tier: any, index: number) => ({
+        key: `tier${index + 1}Title`,
+        label: `Tier#${index + 1} Title`,
+        fallback: tier.title || `Tier ${index + 1}`,
+      })),
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [addonDraft.addonProductsTitle, addonDraft.addonTiers, defaultMultiLanguageLocale]);
+
+  const openAddonFooterMultiLanguageModal = useCallback(() => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    const savedAddonMessages = (bundle as any).personalizationData?.addonProducts?.addonsMessaging?.tier1 || {};
+    const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || {
+      discountText: savedAddonMessages.ineligibleState || "",
+      successMessage: savedAddonMessages.eligibleState || "",
+    };
+    setMultiLanguageTarget({ type: "addon-footer" });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageFields(addonTiers.flatMap((_: any, index: number) => [
+      { key: `tier${index + 1}MessageWhenRuleNotMet`, label: "Message when rule not met", fallback: addonMessages.discountText || "" },
+      { key: `tier${index + 1}SuccessMessage`, label: "Success Message", fallback: addonMessages.successMessage || "" },
+    ]));
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [addonDraft.addonTiers, bundle, defaultMultiLanguageLocale, ruleMessages]);
+
   const updateLocalizedTextOverride = useCallback((locale: string, key: string, value: string) => {
     setTextOverridesByLocale((prev) => ({
       ...prev,
@@ -1295,8 +1363,15 @@ export default function ConfigureBundleFlow() {
       const category = ((step?.StepCategory as any[] | undefined) ?? [])[multiLanguageTarget.categoryIndex];
       return (category?.multiLangData ?? {}) as Record<string, Record<string, string>>;
     }
+    if (
+      multiLanguageTarget?.type === "addon-step"
+      || multiLanguageTarget?.type === "addon-section"
+      || multiLanguageTarget?.type === "addon-footer"
+    ) {
+      return (addonDraft.addonMultiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
     return textOverridesByLocale;
-  }, [multiLanguageTarget, stepsState.steps, textOverridesByLocale]);
+  }, [addonDraft.addonMultiLangData, multiLanguageTarget, stepsState.steps, textOverridesByLocale]);
 
   const saveStepSetupMultiLanguageValues = useCallback((nextValues: Record<string, Record<string, string>>) => {
     if (multiLanguageTarget?.type === "step") {
@@ -1324,9 +1399,18 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
+    if (
+      multiLanguageTarget?.type === "addon-step"
+      || multiLanguageTarget?.type === "addon-section"
+      || multiLanguageTarget?.type === "addon-footer"
+    ) {
+      updateAddonDraft({ addonMultiLangData: nextValues });
+      return;
+    }
+
     setTextOverridesByLocale(nextValues);
     markAsDirty();
-  }, [markAsDirty, multiLanguageTarget, stepsState]);
+  }, [markAsDirty, multiLanguageTarget, stepsState, updateAddonDraft]);
 
   useEffect(() => {
     setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
@@ -1338,7 +1422,12 @@ export default function ConfigureBundleFlow() {
   const syncModalRef = useRef<any>(null);
   const templateVariablesModalRef = useRef<any>(null);
   const discountVariablesModalRef = useRef<any>(null);
+  const addonVariablesModalRef = useRef<any>(null);
+  const addonSelectedProductsModalRef = useRef<any>(null);
+  const disableAddonStepModalRef = useRef<any>(null);
   const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
+  const [isAddonVariablesModalOpen, setIsAddonVariablesModalOpen] = useState(false);
+  const [isDisableAddonStepModalOpen, setIsDisableAddonStepModalOpen] = useState(false);
   const [showDiscardModal, setShowDiscardModal] = useState(false);
 
   useEffect(() => {
@@ -1364,6 +1453,18 @@ export default function ConfigureBundleFlow() {
   useEffect(() => {
     isDiscountVariablesModalOpen ? showPolarisModal(discountVariablesModalRef) : hidePolarisModal(discountVariablesModalRef);
   }, [isDiscountVariablesModalOpen]);
+
+  useEffect(() => {
+    isAddonVariablesModalOpen ? showPolarisModal(addonVariablesModalRef) : hidePolarisModal(addonVariablesModalRef);
+  }, [isAddonVariablesModalOpen]);
+
+  useEffect(() => {
+    isAddonSelectedProductsModalOpen ? showPolarisModal(addonSelectedProductsModalRef) : hidePolarisModal(addonSelectedProductsModalRef);
+  }, [isAddonSelectedProductsModalOpen]);
+
+  useEffect(() => {
+    isDisableAddonStepModalOpen ? showPolarisModal(disableAddonStepModalRef) : hidePolarisModal(disableAddonStepModalRef);
+  }, [isDisableAddonStepModalOpen]);
 
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
@@ -2317,6 +2418,55 @@ export default function ConfigureBundleFlow() {
     setCurrentModalStepId('');
   }, []);
 
+  const handleCloseAddonSelectedProductsModal = useCallback(() => {
+    setIsAddonSelectedProductsModalOpen(false);
+    setAddonSelectedProductsTierIndex(null);
+  }, []);
+
+  const openAddonSelectedProductsModal = useCallback((tierIndex: number) => {
+    setAddonSelectedProductsTierIndex(tierIndex);
+    setIsAddonSelectedProductsModalOpen(true);
+  }, []);
+
+  const handleAddonSelectedProductRemove = useCallback((tierIndex: number, productIndex: number) => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    const updated = addonTiers.map((tier: any, index: number) => {
+      if (index !== tierIndex) return tier;
+      const selectedAddonProducts = Array.isArray(tier.selectedAddonProducts) ? tier.selectedAddonProducts : [];
+      return {
+        ...tier,
+        selectedAddonProducts: selectedAddonProducts.filter((_: any, selectedIndex: number) => selectedIndex !== productIndex),
+      };
+    });
+    updateAddonDraft({ addonTiers: updated });
+  }, [addonDraft.addonTiers, updateAddonDraft]);
+
+  const handleAddonSelectedProductAdd = useCallback(async (tierIndex: number) => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    const currentProducts = Array.isArray(addonTiers[tierIndex]?.selectedAddonProducts) ? addonTiers[tierIndex].selectedAddonProducts : [];
+    const picked = await (shopify as any).resourcePicker({
+      type: "product",
+      multiple: true,
+      selectionIds: currentProducts.map((product: any) => ({ id: product.graphqlId || product.id })),
+    });
+    const selection = Array.isArray(picked) ? picked : picked?.selection;
+    if (!selection) return;
+    const updated = addonTiers.map((tier: any, index: number) => (
+      index === tierIndex
+        ? {
+            ...tier,
+            selectedAddonProducts: selection.map(normalizeAddonPickerProduct),
+          }
+        : tier
+    ));
+    updateAddonDraft({ addonTiers: updated });
+  }, [addonDraft.addonTiers, shopify, updateAddonDraft]);
+
+  const handleDisableAddonStepConfirm = useCallback(() => {
+    setIsDisableAddonStepModalOpen(false);
+    updateAddonDraft({ isPersonalizationEnabled: false });
+  }, [updateAddonDraft]);
+
   const handlePageSelectionBackdropClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
     if (event.currentTarget === event.target) {
       closePageSelectionModal();
@@ -2329,6 +2479,9 @@ export default function ConfigureBundleFlow() {
   useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
   useModalHideListener(bundleQuantityMultiLangModalRef, () => setIsBundleQuantityMultiLangModalOpen(false));
   useModalHideListener(discountVariablesModalRef, () => setIsDiscountVariablesModalOpen(false));
+  useModalHideListener(addonVariablesModalRef, () => setIsAddonVariablesModalOpen(false));
+  useModalHideListener(addonSelectedProductsModalRef, handleCloseAddonSelectedProductsModal);
+  useModalHideListener(disableAddonStepModalRef, () => setIsDisableAddonStepModalOpen(false));
 
   // Add a new step and animate forward to it
   const handleAddNewStep = useCallback(() => {
@@ -3598,12 +3751,20 @@ export default function ConfigureBundleFlow() {
                               checked={addonDraft.isPersonalizationEnabled === true}
                               onChange={(e) => {
                                 const checked = (e.target as HTMLInputElement).checked;
-                                updateAddonDraft({ isPersonalizationEnabled: checked });
+                                if (checked) {
+                                  updateAddonDraft({ isPersonalizationEnabled: true });
+                                } else {
+                                  setIsDisableAddonStepModalOpen(true);
+                                }
                               }}
                             />
                             <span />
                           </label>
-                          <button type="button" className={fullPageBundleStyles.addonsLanguageButton} disabled>
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.addonsLanguageButton}
+                            onClick={openAddonStepMultiLanguageModal}
+                          >
                             Multi Language
                           </button>
                         </div>
@@ -3683,7 +3844,11 @@ export default function ConfigureBundleFlow() {
                           </button>
                         </div>
                         <div className={fullPageBundleStyles.addonsHeaderActions}>
-                          <button type="button" className={fullPageBundleStyles.addonsLanguageButton} disabled>
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.addonsLanguageButton}
+                            onClick={openAddonSectionMultiLanguageModal}
+                          >
                             Multi Language
                           </button>
                         </div>
@@ -3749,187 +3914,208 @@ export default function ConfigureBundleFlow() {
                             updateAddonTiers(updated);
                           };
 
-                          return (
-                            <>
-                              {addonTiers.map((tier, idx) => (
-                                <div key={idx} className={fullPageBundleStyles.addonsTierCard}>
-                                  <div className={fullPageBundleStyles.ruleHeader}>
-                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier {idx + 1}</h4>
-                                    <s-button
-                                      variant="tertiary"
-                                      disabled={addonTiers.length <= 1 || undefined}
-                                      onClick={() => {
-                                        if (addonTiers.length > 1) {
-                                          updateAddonTiers(addonTiers.filter((_, i) => i !== idx));
-                                        }
-                                      }}
-                                    >
-                                      Delete
-                                    </s-button>
-                                  </div>
-                                  <s-stack direction="block" gap="small">
-                                    <s-text-field
-                                      label="Tier title"
-                                      value={tier.title ?? `Tier ${idx + 1}`}
-                                      onInput={(e) => {
-                                        const updated = addonTiers.map((t, i) =>
-                                          i === idx ? { ...t, title: (e.target as HTMLInputElement).value } : t
-                                        );
-                                        updateAddonTiers(updated);
-                                      }}
-                          autocomplete="off"
-                                    />
-                                    <div className={fullPageBundleStyles.addonsProductSelectionRow}>
-                                      <s-button
-                                        variant="primary"
-                                        onClick={async () => {
-                                          const currentProducts = Array.isArray(tier.selectedAddonProducts) ? tier.selectedAddonProducts : [];
-                                          const picked = await (shopify as any).resourcePicker({
-                                            type: "product",
-                                            multiple: true,
-                                            selectionIds: currentProducts.map((p: any) => ({ id: p.graphqlId || p.id })),
-                                          });
-                                          const selection = Array.isArray(picked) ? picked : picked?.selection;
-                                          if (!selection) return;
-                                          const updated = addonTiers.map((t, i) =>
-                                            i === idx ? {
-                                              ...t,
-                                              selectedAddonProducts: selection.map(normalizeAddonPickerProduct),
-                                            } : t
-                                          );
-                                          updateAddonTiers(updated);
-                                        }}
+                              return (
+                                <>
+                                  {addonTiers.map((tier, idx) => {
+                                    const isActiveTier = activeAddonTierIndex === idx;
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`${fullPageBundleStyles.addonsTierCard} ${isActiveTier ? fullPageBundleStyles.addonsTierCardActive : ""}`}
                                       >
-                                        Add Products
-                                      </s-button>
-                                      {Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0 && (
-                                        <button type="button" className={`${fullPageBundleStyles.addonsSelectedCount} ${fullPageBundleStyles.addonsSelectedButton}`}>
-                                          {tier.selectedAddonProducts.length} Selected
-                                        </button>
-                                      )}
-                                    </div>
-                                    <s-checkbox
-                                      label="Display Variants as Individual Products"
-                                      checked={tier.displayVariantsAsIndividualProducts_addons === true || undefined}
-                                      onChange={(e) => {
-                                        const updated = addonTiers.map((t, i) =>
-                                          i === idx ? { ...t, displayVariantsAsIndividualProducts_addons: (e.target as HTMLInputElement).checked } : t
-                                        );
-                                        updateAddonTiers(updated);
-                                      }}
-                                    />
-                                    <div className={fullPageBundleStyles.addonsDiscountGrid}>
-                                      <s-select
-                                        label="Discount Based on"
-                                        value={tier.eligibilityType || tier.eligibilityCondition?.type || "QUANTITY"}
-                                        onChange={(e) => {
-                                          const updated = addonTiers.map((t, i) =>
-                                            i === idx ? { ...t, eligibilityType: (e.target as HTMLSelectElement).value } : t
-                                          );
-                                          updateAddonTiers(updated);
-                                        }}
-                                      >
-                                        <s-option value="QUANTITY">Bundle Product Quantity</s-option>
-                                        <s-option value="AMOUNT">Bundle Value</s-option>
-                                      </s-select>
-                                      <s-number-field
-                                        label={(tier.eligibilityType || tier.eligibilityCondition?.type) === "AMOUNT" ? "Value" : "Qty"}
-                                        value={String(tier.eligibilityValue ?? tier.eligibilityCondition?.value ?? 1)}
-                                        onInput={(e) => {
-                                          const updated = addonTiers.map((t, i) =>
-                                            i === idx ? { ...t, eligibilityValue: Number((e.target as HTMLInputElement).value) || 0 } : t
-                                          );
-                                          updateAddonTiers(updated);
-                                        }}
-                                        min={0}
-                                      />
-                                      <s-number-field
-                                        label="Discount on Add-ons"
-                                        value={String(tier.discountValue ?? tier.discount?.value ?? 0)}
-                                        onInput={(e) => {
-                                          const updated = addonTiers.map((t, i) =>
-                                            i === idx ? { ...t, discountType: "PERCENTAGE", discountValue: Number((e.target as HTMLInputElement).value) || 0 } : t
-                                          );
-                                          updateAddonTiers(updated);
-                                        }}
-                                        min={0}
-                                        max={100}
-                                        suffix="%"
-                                      />
-                                    </div>
-                                    <div className={fullPageBundleStyles.addonsTierRules}>
-                                      <h5>Tier Rules</h5>
-                                      <p>Create Rules based on quantity of products added on this tier.</p>
-                                      <p>Note: Rules are only valid on this tier.</p>
-                                      {(getAddonConditions(tier).length === 0) ? (
-                                        <div className={fullPageBundleStyles.emptyState}>No rules defined yet</div>
-                                      ) : (
-                                        <div className={fullPageBundleStyles.rulesList}>
-                                          {getAddonConditions(tier).map((rule: any, ruleIndex: number) => (
-                                            <div key={rule.id || ruleIndex} className={fullPageBundleStyles.ruleCard}>
-                                              <div className={fullPageBundleStyles.ruleHeader}>
-                                                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
-                                                <s-button
-                                                  variant="tertiary"
-                                                  tone="critical"
-                                                  onClick={() => removeAddonTierCondition(idx, String(rule.id ?? ruleIndex))}
+                                        <div
+                                          className={`${fullPageBundleStyles.addonsTierHeader} ${isActiveTier ? fullPageBundleStyles.addonsTierHeaderActive : ""}`}
+                                          role="button"
+                                          tabIndex={0}
+                                          aria-expanded={isActiveTier}
+                                          onClick={() => setActiveAddonTierIndex(idx)}
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter" || event.key === " ") {
+                                              event.preventDefault();
+                                              setActiveAddonTierIndex(idx);
+                                            }
+                                          }}
+                                        >
+                                          <h4 className={fullPageBundleStyles.addonsTierTitle}>Tier {idx + 1}</h4>
+                                          <span className={fullPageBundleStyles.addonsTierHeaderActions}>
+                                            <span className={fullPageBundleStyles.addonsTierDeleteButton} title={`Delete Tier ${idx + 1}`}>
+                                              <s-button
+                                                variant="tertiary"
+                                                icon="delete"
+                                                tone="critical"
+                                                accessibilityLabel={`Delete Tier ${idx + 1}`}
+                                                disabled={addonTiers.length <= 1 || undefined}
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  if (addonTiers.length > 1) {
+                                                    const updated = addonTiers.filter((_, i) => i !== idx);
+                                                    updateAddonTiers(updated);
+                                                    setActiveAddonTierIndex(Math.max(0, Math.min(activeAddonTierIndex, updated.length - 1)));
+                                                  }
+                                                }}
+                                              />
+                                            </span>
+                                            <span className={fullPageBundleStyles.addonsTierChevron} aria-hidden="true" />
+                                          </span>
+                                        </div>
+                                        {isActiveTier && (
+                                        <div className={fullPageBundleStyles.addonsTierBody}>
+                                          <s-stack direction="block" gap="small">
+                                            <s-text-field
+                                              label="Tier title"
+                                              value={tier.title ?? `Tier ${idx + 1}`}
+                                              onInput={(e) => {
+                                                const updated = addonTiers.map((t, i) =>
+                                                  i === idx ? { ...t, title: (e.target as HTMLInputElement).value } : t
+                                                );
+                                                updateAddonTiers(updated);
+                                              }}
+                                            autocomplete="off"
+                                            />
+                                            <div className={fullPageBundleStyles.addonsProductSelectionRow}>
+                                              <s-button
+                                                variant="primary"
+                                                onClick={() => handleAddonSelectedProductAdd(idx)}
+                                              >
+                                                Add Products
+                                              </s-button>
+                                              {Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0 && (
+                                                <button
+                                                  type="button"
+                                                  className={`${fullPageBundleStyles.addonsSelectedCount} ${fullPageBundleStyles.addonsSelectedButton}`}
+                                                  onClick={() => openAddonSelectedProductsModal(idx)}
                                                 >
-                                                  Remove
-                                                </s-button>
-                                              </div>
-                                              <div className={fullPageBundleStyles.ruleFields}>
-                                                <s-select
-                                                  label="Type"
-                                                  value={rule.type || "quantity"}
-                                                  onChange={(e) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "type", (e.target as HTMLSelectElement).value)}
-                                                >
-                                                  <s-option value="quantity">Quantity</s-option>
-                                                  <s-option value="amount">Amount</s-option>
-                                                </s-select>
-                                                <s-select
-                                                  label="Condition"
-                                                  value={rule.condition || "greaterThanOrEqualTo"}
-                                                  onChange={(e) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "condition", (e.target as HTMLSelectElement).value)}
-                                                >
-                                                  {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
-                                                    <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
-                                                  ))}
-                                                </s-select>
-                                                <s-number-field
-                                                  label="Value"
-                                                  value={rule.value ?? ""}
-                                                  onInput={(e) => {
-                                                    updateAddonTierCondition(
-                                                      idx,
-                                                      String(rule.id ?? ruleIndex),
-                                                      "value",
-                                                      (e.target as HTMLInputElement).value
-                                                    );
-                                                  }}
-                          autocomplete="off"
-                                                />
-                                              </div>
+                                                  {tier.selectedAddonProducts.length} Selected
+                                                </button>
+                                              )}
                                             </div>
-                                          ))}
+                                            <s-checkbox
+                                              label="Display Variants as Individual Products"
+                                              checked={tier.displayVariantsAsIndividualProducts_addons === true || undefined}
+                                              onChange={(e) => {
+                                                const updated = addonTiers.map((t, i) =>
+                                                  i === idx ? { ...t, displayVariantsAsIndividualProducts_addons: (e.target as HTMLInputElement).checked } : t
+                                                );
+                                                updateAddonTiers(updated);
+                                              }}
+                                            />
+                                            <div className={fullPageBundleStyles.addonsDiscountGrid}>
+                                              <s-select
+                                                label="Discount Based on"
+                                                value={tier.eligibilityType || tier.eligibilityCondition?.type || "QUANTITY"}
+                                                onChange={(e) => {
+                                                  const updated = addonTiers.map((t, i) =>
+                                                    i === idx ? { ...t, eligibilityType: (e.target as HTMLSelectElement).value } : t
+                                                  );
+                                                  updateAddonTiers(updated);
+                                                }}
+                                              >
+                                                <s-option value="QUANTITY">Bundle Product Quantity</s-option>
+                                                <s-option value="AMOUNT">Bundle Value</s-option>
+                                              </s-select>
+                                              <s-number-field
+                                                label={(tier.eligibilityType || tier.eligibilityCondition?.type) === "AMOUNT" ? "Value" : "Qty"}
+                                                value={String(tier.eligibilityValue ?? tier.eligibilityCondition?.value ?? 1)}
+                                                onInput={(e) => {
+                                                  const updated = addonTiers.map((t, i) =>
+                                                    i === idx ? { ...t, eligibilityValue: Number((e.target as HTMLInputElement).value) || 0 } : t
+                                                  );
+                                                  updateAddonTiers(updated);
+                                                }}
+                                                min={0}
+                                              />
+                                              <s-number-field
+                                                label="Discount on Add-ons"
+                                                value={String(tier.discountValue ?? tier.discount?.value ?? 0)}
+                                                onInput={(e) => {
+                                                  const updated = addonTiers.map((t, i) =>
+                                                    i === idx ? { ...t, discountType: "PERCENTAGE", discountValue: Number((e.target as HTMLInputElement).value) || 0 } : t
+                                                  );
+                                                  updateAddonTiers(updated);
+                                                }}
+                                                min={0}
+                                                max={100}
+                                                suffix="%"
+                                              />
+                                            </div>
+                                            <div className={fullPageBundleStyles.addonsTierRules}>
+                                              <h5>Tier Rules</h5>
+                                              <p>Create Rules based on quantity of products added on this tier.</p>
+                                              <p>Note: Rules are only valid on this tier.</p>
+                                              {getAddonConditions(tier).length > 0 && (
+                                                <div className={fullPageBundleStyles.rulesList}>
+                                                  {getAddonConditions(tier).map((rule: any, ruleIndex: number) => (
+                                                    <div key={rule.id || ruleIndex} className={fullPageBundleStyles.ruleCard}>
+                                                      <div className={fullPageBundleStyles.ruleHeader}>
+                                                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                        <s-button
+                                                          variant="tertiary"
+                                                          tone="critical"
+                                                          onClick={() => removeAddonTierCondition(idx, String(rule.id ?? ruleIndex))}
+                                                        >
+                                                          Remove
+                                                        </s-button>
+                                                      </div>
+                                                      <div className={fullPageBundleStyles.ruleFields}>
+                                                        <s-select
+                                                          label="Type"
+                                                          value={rule.type || "quantity"}
+                                                          onChange={(e) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "type", (e.target as HTMLSelectElement).value)}
+                                                        >
+                                                          <s-option value="quantity">Quantity</s-option>
+                                                          <s-option value="amount">Amount</s-option>
+                                                        </s-select>
+                                                        <s-select
+                                                          label="Condition"
+                                                          value={rule.condition || "lessThanOrEqualTo"}
+                                                          onChange={(e) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "condition", (e.target as HTMLSelectElement).value)}
+                                                        >
+                                                          {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                            <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                          ))}
+                                                        </s-select>
+                                                        <s-number-field
+                                                          label="Value"
+                                                          value={rule.value ?? ""}
+                                                          onInput={(e) => {
+                                                            updateAddonTierCondition(
+                                                              idx,
+                                                              String(rule.id ?? ruleIndex),
+                                                              "value",
+                                                              (e.target as HTMLInputElement).value
+                                                            );
+                                                          }}
+                                                          autocomplete="off"
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                              <button
+                                                type="button"
+                                                className={fullPageBundleStyles.addonsTierRuleButton}
+                                                onClick={() => addAddonTierCondition(idx)}
+                                              >
+                                                Add Tier Rule
+                                              </button>
+                                            </div>
+                                          </s-stack>
                                         </div>
                                       )}
-                                      <button
-                                        type="button"
-                                        className={fullPageBundleStyles.addonsTierRuleButton}
-                                        onClick={() => addAddonTierCondition(idx)}
-                                      >
-                                        Add Tier Rule
-                                      </button>
-                                    </div>
-                                  </s-stack>
-                                </div>
-                              ))}
+                                      </div>
+                                    );
+                                  })}
                               <button
                                 type="button"
                                 className={fullPageBundleStyles.addonsTierButton}
-                                onClick={() => updateAddonTiers([...addonTiers, {
-                                  ...createDefaultAddonDraftTier(addonTiers.length),
-                                }])}
+                                onClick={() => {
+                                  updateAddonTiers([...addonTiers, {
+                                    ...createDefaultAddonDraftTier(addonTiers.length),
+                                  }]);
+                                  setActiveAddonTierIndex(addonTiers.length);
+                                }}
                               >
                                 Add Add Ons Tier
                               </button>
@@ -3943,10 +4129,10 @@ export default function ConfigureBundleFlow() {
                       <div className={fullPageBundleStyles.panelHeader}>
                         <h3 className={fullPageBundleStyles.panelTitle}>Footer Messaging</h3>
                         <s-stack direction="inline" gap="small-100">
-                          <s-button variant="tertiary" onClick={() => showPolarisModal(templateVariablesModalRef)}>
+                          <s-button variant="tertiary" onClick={() => setIsAddonVariablesModalOpen(true)}>
                             Show Variables
                           </s-button>
-                          <s-button variant="secondary" icon="globe" disabled>
+                          <s-button variant="secondary" icon="globe" onClick={openAddonFooterMultiLanguageModal}>
                             Multi Language
                           </s-button>
                         </s-stack>
@@ -5547,6 +5733,54 @@ export default function ConfigureBundleFlow() {
         <s-button slot="primary-action" onClick={handleCloseProductsModal}>Close</s-button>
       </s-modal>
 
+      <s-modal ref={addonSelectedProductsModalRef} heading="Selected Products">
+        {(() => {
+          const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+          const tierIndex = addonSelectedProductsTierIndex ?? 0;
+          const tier = addonTiers[tierIndex] ?? addonTiers[0];
+          const selectedAddonProducts = Array.isArray(tier?.selectedAddonProducts) ? tier.selectedAddonProducts : [];
+
+          return selectedAddonProducts.length > 0 ? (
+            <s-stack direction="block" gap="small">
+              <ul className={fullPageBundleStyles.addonSelectedProductList}>
+                {selectedAddonProducts.map((product: any, index: number) => (
+                  <li key={product.graphqlId || product.id || index} className={fullPageBundleStyles.addonSelectedProductRow}>
+                    <button
+                      type="button"
+                      className={fullPageBundleStyles.addonSelectedProductDrag}
+                      aria-label={`Reorder ${product.title || "selected product"}`}
+                    >
+                      ::
+                    </button>
+                    <span className={fullPageBundleStyles.addonSelectedProductName}>
+                      {product.title || product.name || "Unnamed Product"}
+                    </span>
+                    <button
+                      type="button"
+                      className={fullPageBundleStyles.addonSelectedProductRemove}
+                      aria-label={`Remove ${product.title || "selected product"}`}
+                      onClick={() => handleAddonSelectedProductRemove(tierIndex, index)}
+                    >
+                      x
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </s-stack>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No products selected for this tier yet.</p>
+          );
+        })()}
+        <s-button slot="secondary-actions" onClick={handleCloseAddonSelectedProductsModal}>Close</s-button>
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          onClick={() => handleAddonSelectedProductAdd(addonSelectedProductsTierIndex ?? 0)}
+        >
+          Add Products
+        </s-button>
+      </s-modal>
+
       {/* Selected Collections Modal */}
       <s-modal ref={collectionsModalRef} heading="Selected collections">
         {(() => {
@@ -5613,6 +5847,32 @@ export default function ConfigureBundleFlow() {
             </div>
           ))}
         </div>
+      </s-modal>
+
+      <s-modal id="addon-variables-modal" ref={addonVariablesModalRef} heading="Variables" size="base">
+        <div>
+          {ADDON_TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={fullPageBundleStyles.discountVariableRow}>
+                <s-text color="subdued">{description}</s-text>
+                <span className={fullPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </s-modal>
+
+      <s-modal id="disable-addon-step-modal" ref={disableAddonStepModalRef} heading="Disable Personalization Step" size="small">
+        <p style={{ margin: 0, fontSize: 14 }}>
+          This will disable the add-ons step. Are you sure you want to disable?
+        </p>
+        <s-button slot="secondary-actions" onClick={() => setIsDisableAddonStepModalOpen(false)}>
+          Cancel
+        </s-button>
+        <s-button slot="primary-action" variant="primary" onClick={handleDisableAddonStepConfirm}>
+          Yes
+        </s-button>
       </s-modal>
 
       <BundleReadinessOverlay
