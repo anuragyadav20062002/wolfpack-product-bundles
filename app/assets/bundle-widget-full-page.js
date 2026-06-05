@@ -98,6 +98,9 @@ class BundleWidgetFullPage {
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
+    this.compactMobileSummaryTrayExpanded = false;
+    this.standardTimelineWindowStart = 0;
+    this.standardTimelineLastActiveEntryIndex = 0;
 
     // Search state for filtering products within steps
     this.searchQuery = '';
@@ -1232,6 +1235,8 @@ class BundleWidgetFullPage {
   _renderMobileBottomBar({ preserveOpen = false } = {}) {
     const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
     const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+    const wasCompactSummaryExpanded = preserveOpen
+      && previousSheet?.classList.contains('fpb-mobile-summary-tray-expanded');
 
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
@@ -1259,6 +1264,10 @@ class BundleWidgetFullPage {
     const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
     if (usesCompactMobileSummaryTray) {
       sheet.classList.add('fpb-mobile-summary-tray');
+      if (this.getFullPageDesignPreset() === 'CLASSIC') {
+        sheet.classList.add('fpb-mobile-classic-footer');
+      }
+      this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
       this._populateCompactMobileSummaryTray(sheet);
       sheet.classList.add('is-open');
       document.body.classList.add('fpb-compact-mobile-summary-active');
@@ -1366,8 +1375,23 @@ class BundleWidgetFullPage {
 
     const countBadge = document.createElement('div');
     countBadge.className = 'fpb-mobile-summary-count-badge';
+    countBadge.setAttribute('role', 'button');
+    countBadge.setAttribute('tabindex', '0');
+    countBadge.setAttribute('aria-label', 'Review your bundle');
+    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
     countBadge.textContent = String(selectedFooterQuantity);
+    countBadge.addEventListener('click', () => {
+      this._toggleCompactMobileSummaryTray(sheet);
+    });
+    countBadge.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this._toggleCompactMobileSummaryTray(sheet);
+      }
+    });
     sheet.appendChild(countBadge);
+
+    sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
 
     if (this.selectedBundle?.pricing?.enabled) {
       const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
@@ -1429,7 +1453,136 @@ class BundleWidgetFullPage {
       isComplete: this.areBundleConditionsMet()
     });
     navSection.appendChild(actionButton);
-    sheet.appendChild(navSection);
+    if (this.compactMobileSummaryTrayExpanded) {
+      const productsSection = document.createElement('div');
+      productsSection.className = 'fpb-mobile-summary-products-section';
+      productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
+      productsSection.appendChild(navSection);
+      sheet.appendChild(productsSection);
+    } else {
+      sheet.appendChild(navSection);
+    }
+  }
+
+  _toggleCompactMobileSummaryTray(sheet) {
+    const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
+    if (!hasSelectedSummaryProducts) {
+      this.compactMobileSummaryTrayExpanded = false;
+      this._populateCompactMobileSummaryTray(sheet);
+      return;
+    }
+    this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
+    this._populateCompactMobileSummaryTray(sheet);
+  }
+
+  _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
+    const allSelectedProducts = this.getAllSelectedProductsData();
+    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+    const summaryText = this.getBundleSummaryText();
+
+    const bundleItems = document.createElement('div');
+    bundleItems.className = 'fpb-mobile-summary-bundle-items';
+
+    const header = document.createElement('div');
+    header.className = 'fpb-mobile-summary-bundle-header';
+
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'fpb-mobile-summary-bundle-copy';
+    const title = document.createElement('div');
+    title.className = 'fpb-mobile-summary-bundle-title';
+    title.textContent = summaryText.title;
+    const subtitle = document.createElement('div');
+    subtitle.className = 'fpb-mobile-summary-bundle-subtitle';
+    subtitle.textContent = summaryText.subTitle;
+    headerCopy.append(title, subtitle);
+    header.appendChild(headerCopy);
+
+    if (allSelectedProducts.length > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'fpb-mobile-summary-clear-btn';
+      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Clear</span>`;
+      clearBtn.addEventListener('click', () => {
+        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        this.compactMobileSummaryTrayExpanded = false;
+        this.reRenderFullPage();
+      });
+      header.appendChild(clearBtn);
+    }
+    bundleItems.appendChild(header);
+
+    const productsList = document.createElement('div');
+    productsList.className = 'fpb-mobile-summary-products-list';
+
+    allSelectedProducts.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'fpb-mobile-summary-product-row';
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
+      const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+      const priceText = CurrencyManager.convertAndFormat(
+        isFreeGiftItem ? 0 : item.price * item.quantity,
+        currencyInfo
+      );
+
+      row.innerHTML = `
+        <div class="fpb-mobile-summary-product-image-wrap">
+          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
+        </div>
+        <div class="fpb-mobile-summary-product-info">
+          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(item.title)}</span>
+          ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+          <span class="fpb-mobile-summary-product-price">${priceText}</span>
+        </div>
+        <div class="fpb-mobile-summary-product-action">
+          <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+        </div>
+      `;
+
+      if (!item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'fpb-mobile-summary-product-remove';
+        removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+        removeBtn.addEventListener('click', () => {
+          const stepIndex = item.stepIndex;
+          const productId = item.variantId || item.productId || item.id;
+          const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+          this.updateProductSelection(stepIndex, productId, 0);
+          const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+          ToastManager.showWithUndo(
+            `Removed "${truncated}"`,
+            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+            5000
+          );
+        });
+        row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
+      }
+
+      productsList.appendChild(row);
+    });
+
+    const requiredSlots = Math.max(
+      allSelectedProducts.length + 1,
+      activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+      2
+    );
+    const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
+    for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+      const emptyCard = document.createElement('div');
+      emptyCard.className = 'fpb-mobile-summary-empty-product-card';
+      emptyCard.innerHTML = `
+        <div class="fpb-mobile-summary-empty-product-image"></div>
+        <div class="fpb-mobile-summary-empty-product-info">
+          <span class="fpb-mobile-summary-empty-product-title"></span>
+          <span class="fpb-mobile-summary-empty-product-variant"></span>
+          <span class="fpb-mobile-summary-empty-product-price"></span>
+        </div>
+        <span class="fpb-mobile-summary-empty-product-action"></span>
+      `;
+      productsList.appendChild(emptyCard);
+    }
+
+    bundleItems.appendChild(productsList);
+    return bundleItems;
   }
 
   _createMobileSummaryActionButton({
@@ -1538,8 +1691,9 @@ class BundleWidgetFullPage {
   }
 
   _isStandardDesktopSidebar(panel) {
+    const preset = this.getFullPageDesignPreset();
     return this.resolveFullPageLayout() === 'footer_side'
-      && this.getFullPageDesignPreset() === 'DEFAULT'
+      && (preset === 'DEFAULT' || preset === 'CLASSIC')
       && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
   }
 
@@ -1635,6 +1789,7 @@ class BundleWidgetFullPage {
         );
       }
       if (discountMessage) {
+        discountMessage = this._formatSidebarDiscountMessage(discountMessage);
         const msgEl = document.createElement('div');
         msgEl.className = 'side-panel-discount-message';
         msgEl.innerHTML = discountMessage;
@@ -1682,7 +1837,7 @@ class BundleWidgetFullPage {
           row.classList.add('side-panel-product-slot');
         }
 
-        const imgSrc = item.image || item.imageUrl || '';
+        const imgSrc = this._getSelectedProductImageSrc(item);
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
@@ -1691,17 +1846,32 @@ class BundleWidgetFullPage {
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
-        row.innerHTML = `
-          <div class="side-panel-product-img-wrap">
-            ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-            ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-          </div>
-          <div class="side-panel-product-info">
-            <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
-            ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-          </div>
-          ${priceHtml}
-        `;
+        if (isStandardDesktopSidebar) {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+              ${priceHtml}
+            </div>
+            <div class="side-panel-product-action"></div>
+          `;
+        } else {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+            </div>
+            ${priceHtml}
+          `;
+        }
 
         // Remove button — hidden for default (mandatory) products
         if (!item.isDefault) {
@@ -1720,7 +1890,11 @@ class BundleWidgetFullPage {
               5000
             );
           });
-          row.appendChild(removeBtn);
+          if (isStandardDesktopSidebar) {
+            row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
+          } else {
+            row.appendChild(removeBtn);
+          }
         }
 
         productsContainer.appendChild(row);
@@ -1792,7 +1966,7 @@ class BundleWidgetFullPage {
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT'
+    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
       ? this._resolveText('nextButton', 'Next')
       : 'Next Step';
     nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : nextStepLabel;
@@ -1999,6 +2173,37 @@ class BundleWidgetFullPage {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  _getSelectedProductImageSrc(item = {}) {
+    const getImageSrc = (image) => {
+      if (!image) return '';
+      if (typeof image === 'string') return image;
+      return image.src
+        || image.url
+        || image.originalSrc
+        || image.transformedSrc
+        || '';
+    };
+
+    return getImageSrc(item.variantImage)
+      || getImageSrc(item.variantImage?.src)
+      || getImageSrc(item.variant?.image)
+      || (typeof item.image === 'string' ? item.image : '')
+      || item.image?.src
+      || item.image?.url
+      || item.image?.originalSrc
+      || getImageSrc(item.imageUrl)
+      || item.featuredImage?.url
+      || item.featuredImage?.src
+      || getImageSrc(item.featuredImage)
+      || getImageSrc(item.images?.[0])
+      || getImageSrc(item.productImageUrl);
+  }
+
+  _formatSidebarDiscountMessage(discountMessage) {
+    const message = typeof discountMessage === 'string' ? discountMessage.trim() : '';
+    return message.replace(/!+\s*$/, '');
+  }
+
   // Returns default SVG icon markup for a step based on its type
   _getDefaultTimelineIcon(step) {
     if (step.isDefault) {
@@ -2118,6 +2323,59 @@ class BundleWidgetFullPage {
     return entries;
   }
 
+  getStandardTimelinePageSize() {
+    return window.innerWidth < 768 ? 4 : 5;
+  }
+
+  getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex) {
+    const entries = Array.isArray(timelineEntries) ? timelineEntries : [];
+    const timelinePageSize = this.getStandardTimelinePageSize();
+
+    if (entries.length <= timelinePageSize) {
+      this.standardTimelineWindowStart = 0;
+      this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+      return {
+        visibleEntries: entries,
+        windowStart: 0,
+        pageSize: timelinePageSize,
+        isPaged: false,
+      };
+    }
+
+    const activeChanged = this.standardTimelineLastActiveEntryIndex !== activeEntryIndex;
+    let windowStart = Number.isFinite(this.standardTimelineWindowStart)
+      ? this.standardTimelineWindowStart
+      : 0;
+
+    if (activeChanged && (activeEntryIndex < windowStart || activeEntryIndex >= windowStart + timelinePageSize)) {
+      windowStart = activeEntryIndex;
+    }
+
+    if (windowStart + timelinePageSize > entries.length) {
+      windowStart = entries.length - timelinePageSize;
+    }
+
+    windowStart = Math.max(0, windowStart);
+    this.standardTimelineWindowStart = windowStart;
+    this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+
+    return {
+      visibleEntries: entries.slice(windowStart, windowStart + timelinePageSize),
+      windowStart,
+      pageSize: timelinePageSize,
+      isPaged: true,
+    };
+  }
+
+  ensureTimelinePagingStyles() {
+    if (document.getElementById('wpb-fpb-timeline-paging-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-timeline-paging-styles';
+    style.textContent = '.step-timeline--paged{position:relative;flex-wrap:nowrap;justify-content:center;padding:0 24px}.timeline-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}.timeline-navigation-arrow--prev{left:4px}.timeline-navigation-arrow--next{right:4px}@media(max-width:767px){.step-timeline.step-timeline--paged{flex-wrap:nowrap}.step-timeline--paged .timeline-step{width:65px;max-width:65px}.step-timeline--paged .timeline-connector{flex:0 0 20px;min-width:20px}.step-timeline--paged .timeline-step-name{white-space:normal;line-height:14px}}';
+    document.head.appendChild(style);
+  }
+
   shouldRenderMultipleCategoryTimelineEntry(step) {
     if (!step || step.isFreeGift === true) return false;
     return this.getStepCategoryTabEntries(step).length > 1;
@@ -2137,8 +2395,54 @@ class BundleWidgetFullPage {
     }
 
     const timelineEntries = this.buildStepTimelineEntries();
+    const totalEntryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const {
+      visibleEntries,
+      windowStart,
+      pageSize,
+      isPaged,
+    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+    const visibleEntryCount = Math.max(visibleEntries.length, 1);
 
-    timelineEntries.forEach((entry, displayIndex) => {
+    if (isPaged) {
+      this.ensureTimelinePagingStyles();
+    }
+    timeline.classList.toggle('step-timeline--paged', isPaged);
+    timeline.dataset.windowStart = String(windowStart);
+    timeline.dataset.pageSize = String(pageSize);
+    timeline.dataset.totalEntries = String(totalEntryCount);
+
+    const createTimelineArrow = (direction) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = direction === 'prev'
+        ? 'timeline-navigation-arrow timeline-navigation-arrow--prev'
+        : 'timeline-navigation-arrow timeline-navigation-arrow--next';
+      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+      button.textContent = direction === 'prev' ? '‹' : '›';
+      button.addEventListener('click', () => {
+        if (direction === 'prev') {
+          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+        } else {
+          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+        }
+        this.reRenderFullPage();
+      });
+      return button;
+    };
+
+    if (isPaged && windowStart > 0) {
+      timeline.appendChild(createTimelineArrow('prev'));
+    }
+
+    if (isPaged && windowStart + visibleEntryCount < totalEntryCount) {
+      timeline.appendChild(createTimelineArrow('next'));
+    }
+
+    visibleEntries.forEach((entry, displayIndex) => {
       const step = entry.step;
       const index = entry.stepIndex;
       const stepEl = document.createElement('div');
@@ -2204,7 +2508,7 @@ class BundleWidgetFullPage {
       timeline.appendChild(stepEl);
 
       // Connector — sibling between steps (not child), so flex layout drives width
-      if (displayIndex < timelineEntries.length - 1) {
+      if (displayIndex < visibleEntries.length - 1) {
         const connectorEl = document.createElement('div');
         connectorEl.className = 'timeline-connector';
         const connectorFill = document.createElement('div');
@@ -2228,27 +2532,71 @@ class BundleWidgetFullPage {
     }
 
     const timelineEntries = this.buildStepTimelineEntries();
-    const entryCount = Math.max(timelineEntries.length, 1);
+    const totalEntryCount = Math.max(timelineEntries.length, 1);
     const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
       entry.type === 'step' && entry.stepIndex === this.currentStepIndex
     )));
+    const {
+      visibleEntries,
+      windowStart,
+      pageSize,
+      isPaged,
+    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+    const entryCount = Math.max(visibleEntries.length, 1);
+    const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
     const progressFill = entryCount > 1
-      ? Math.max(0, Math.min(100, (activeEntryIndex / (entryCount - 1)) * 100))
+      ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
       : 0;
     const progressLeft = 100 / (entryCount * 2);
     const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
     const timelineWidth = Math.min(100, entryCount * 30);
 
     timeline.style.setProperty('--standard-timeline-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-total-count', String(totalEntryCount));
     timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
     timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
     timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
     timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
+    timeline.classList.toggle('standard-timeline--paged', isPaged);
 
     const itemsContainer = document.createElement('div');
     itemsContainer.className = 'standard-navigation-items-container';
+    itemsContainer.classList.toggle('standard-navigation-items-container--paged', isPaged);
+    itemsContainer.dataset.windowStart = String(windowStart);
+    itemsContainer.dataset.pageSize = String(pageSize);
+    itemsContainer.dataset.totalEntries = String(totalEntryCount);
 
-    timelineEntries.forEach((entry) => {
+    const createTimelineArrow = (direction) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = direction === 'prev'
+        ? 'standard-navigation-arrow standard-navigation-arrow--prev'
+        : 'standard-navigation-arrow standard-navigation-arrow--next';
+      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+      button.textContent = direction === 'prev' ? '‹' : '›';
+      button.addEventListener('click', () => {
+        if (direction === 'prev') {
+          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+        } else {
+          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+        }
+        this.reRenderFullPage();
+      });
+      return button;
+    };
+
+    if (isPaged && windowStart > 0) {
+      itemsContainer.appendChild(createTimelineArrow('prev'));
+    }
+
+    if (isPaged && windowStart + entryCount < totalEntryCount) {
+      itemsContainer.appendChild(createTimelineArrow('next'));
+    }
+
+    visibleEntries.forEach((entry) => {
       const step = entry.step;
       const index = entry.stepIndex;
       const itemEl = document.createElement('div');
@@ -3532,7 +3880,7 @@ class BundleWidgetFullPage {
       const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
 
       li.innerHTML = `
-        <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
+        <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
              alt="${ComponentGenerator.escapeHtml(item.title)}"
              class="footer-panel-thumb">
         <div class="footer-panel-info">
@@ -3581,7 +3929,7 @@ class BundleWidgetFullPage {
     const maxThumbs = 3;
     allSelectedProducts.slice(0, maxThumbs).forEach(item => {
       const img = document.createElement('img');
-      img.src = item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.src = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       img.alt = item.title || '';
       img.className = 'footer-thumbstrip-img';
       thumbStrip.appendChild(img);
