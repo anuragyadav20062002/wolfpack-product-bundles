@@ -14,11 +14,14 @@ export interface MultiLanguageField {
   label: string;
   fallback: string;
   multiline?: boolean;
+  headingBefore?: string;
 }
 
 interface MultiLanguageTextModalProps {
   open: boolean;
   title: string;
+  layout?: "rich" | "compact";
+  saveLabel?: string;
   locales: ShopLocale[];
   activeLocale: string;
   fields: MultiLanguageField[];
@@ -73,6 +76,8 @@ const DEFAULT_LOCALES: ShopLocale[] = [
 export function MultiLanguageTextModal({
   open,
   title: _title,
+  layout = "rich",
+  saveLabel,
   locales,
   activeLocale,
   fields,
@@ -131,61 +136,104 @@ export function MultiLanguageTextModal({
     onClose();
   };
 
+  const renderFields = () => {
+    let lastHeading = "";
+
+    return fields.map((field) => {
+      const fieldInput = field.multiline ? (
+        <s-text-area
+          key={`${field.key}-input`}
+          label={field.label}
+          value={localeValues[field.key] ?? field.fallback}
+          onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLTextAreaElement).value)}
+        />
+      ) : (
+        <s-text-field
+          key={`${field.key}-input`}
+          label={field.label}
+          value={localeValues[field.key] ?? field.fallback}
+          autocomplete="off"
+          onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLInputElement).value)}
+        />
+      );
+
+      if (!field.headingBefore || field.headingBefore === lastHeading) {
+        return fieldInput;
+      }
+
+      lastHeading = field.headingBefore;
+
+      return (
+        <s-stack key={field.key} direction="block" gap="small-100">
+          <s-text type="strong">{field.headingBefore}</s-text>
+          {fieldInput}
+        </s-stack>
+      );
+    });
+  };
+
+  const compactBody = (
+    <s-stack direction="block" gap="base">
+      <s-select
+        label="Select Language"
+        value={selectedLocale}
+        onChange={(event: Event) => onActiveLocaleChange((event.target as HTMLSelectElement).value)}
+      >
+        {visibleLocales.map((locale) => (
+          <s-option key={locale.locale} value={locale.locale}>
+            {locale.name || locale.locale}
+          </s-option>
+        ))}
+      </s-select>
+
+      <s-stack direction="block" gap="base">
+        {renderFields()}
+      </s-stack>
+    </s-stack>
+  );
+
+  const richBody = (
+    <s-stack direction="block" gap="base">
+      <s-stack direction="block" gap="small-100">
+        <s-heading>{t("common.multiLanguage.translations")}</s-heading>
+        <s-text color="subdued">{t("common.multiLanguage.helper")}</s-text>
+      </s-stack>
+      <s-heading>{t("common.multiLanguage.chooseLanguage")}</s-heading>
+      <s-select
+        label={t("common.multiLanguage.chooseLanguage")}
+        value={selectedLocale}
+        onChange={(event: Event) => onActiveLocaleChange((event.target as HTMLSelectElement).value)}
+      >
+        {visibleLocales.map((locale) => (
+          <s-option key={locale.locale} value={locale.locale}>
+            {locale.name || locale.locale}
+          </s-option>
+        ))}
+      </s-select>
+
+      <s-stack direction="block" gap="small-100">
+        <s-heading>{t("common.multiLanguage.customText")}</s-heading>
+        <s-text color="subdued">{t("common.multiLanguage.inputHelper")}</s-text>
+      </s-stack>
+      <s-heading>{t("common.multiLanguage.textSettings")}</s-heading>
+
+      <s-stack direction="block" gap="base">
+        {renderFields()}
+      </s-stack>
+    </s-stack>
+  );
+
   return (
     <LocalAppModal
       title={t("common.multiLanguage.title")}
       onClose={onClose}
       primaryAction={(
         <s-button variant="primary" onClick={saveAndClose}>
-          {t("common.multiLanguage.saveAndClose")}
+          {saveLabel ?? t("common.multiLanguage.saveAndClose")}
         </s-button>
       )}
     >
-      <s-stack direction="block" gap="base">
-        <s-stack direction="block" gap="small-100">
-          <s-heading>{t("common.multiLanguage.translations")}</s-heading>
-          <s-text color="subdued">{t("common.multiLanguage.helper")}</s-text>
-        </s-stack>
-        <s-heading>{t("common.multiLanguage.chooseLanguage")}</s-heading>
-        <s-select
-          label={t("common.multiLanguage.chooseLanguage")}
-          value={selectedLocale}
-          onChange={(event: Event) => onActiveLocaleChange((event.target as HTMLSelectElement).value)}
-        >
-          {visibleLocales.map((locale) => (
-            <s-option key={locale.locale} value={locale.locale}>
-              {locale.name || locale.locale}
-            </s-option>
-          ))}
-        </s-select>
-
-        <s-stack direction="block" gap="small-100">
-          <s-heading>{t("common.multiLanguage.customText")}</s-heading>
-          <s-text color="subdued">{t("common.multiLanguage.inputHelper")}</s-text>
-        </s-stack>
-        <s-heading>{t("common.multiLanguage.textSettings")}</s-heading>
-
-        <s-stack direction="block" gap="base">
-          {fields.map((field) => (
-            field.multiline ? (
-              <s-text-area
-                key={field.key}
-                label={field.label}
-                value={localeValues[field.key] ?? field.fallback}
-                onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLTextAreaElement).value)}
-              />
-            ) : (
-              <s-text-field
-                key={field.key}
-                label={field.label}
-                value={localeValues[field.key] ?? field.fallback}
-                autocomplete="off"
-                onInput={(event: Event) => updateDraft(field.key, (event.target as HTMLInputElement).value)}
-              />
-            )
-          ))}
-        </s-stack>
-      </s-stack>
+      {layout === "compact" ? compactBody : richBody}
     </LocalAppModal>
   );
 }

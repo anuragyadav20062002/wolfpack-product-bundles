@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 2.9.75
+ * Version : 3.0.0
  * Built   : 2026-06-04
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '2.9.75';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.0';
 (function() {
   'use strict';
 
@@ -3028,7 +3028,6 @@ class BundleWidgetFullPage {
     this.selectedProducts = [];
     this.stepProductData = [];
     this.stepCollectionProductIds = {};
-    this.giftMessageState = { message: '', from: '', to: '', error: false };
     this.selectedBoxSelectionRuleId = null;
     this.currentStepIndex = 0;
     this.isInitialized = false;
@@ -3934,7 +3933,6 @@ class BundleWidgetFullPage {
     contentSection.appendChild(productGridContainer);
     const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
     if (categoryRows) contentSection.appendChild(categoryRows);
-    this.renderGiftMessageSection(contentSection);
 
     this.elements.stepsContainer.appendChild(contentSection);
 
@@ -4027,7 +4025,6 @@ class BundleWidgetFullPage {
     contentSection.appendChild(productGridContainer);
     const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
     if (categoryRows) contentSection.appendChild(categoryRows);
-    this.renderGiftMessageSection(contentSection);
 
     twoColWrapper.appendChild(contentSection);
 
@@ -6732,128 +6729,6 @@ class BundleWidgetFullPage {
     return titleEl;
   }
 
-  getGiftMessageConfig() {
-    const giftMessage = this.selectedBundle?.personalizationData?.giftMessage;
-    if (!giftMessage) return null;
-    if (giftMessage.isGiftMessageEnabled === true) return giftMessage;
-    return null;
-  }
-
-  getGiftMessageProductVariantId(giftMessage) {
-    const product = giftMessage?.messageProduct?.product;
-    const variant = Array.isArray(product?.variants) ? product.variants[0] : null;
-    return variant?.id || variant?.admin_graphql_api_id || variant?.variantGraphqlId || variant?.variantId || null;
-  }
-
-  renderGiftMessageSection(container) {
-    const giftMessage = this.getGiftMessageConfig();
-    if (!giftMessage || !container) return;
-
-    const existing = container.querySelector('.fpb-gift-message-section');
-    if (existing) existing.remove();
-
-    const product = giftMessage.messageProduct?.product || {};
-    const section = document.createElement('div');
-    section.className = 'fpb-gift-message-section';
-
-    const heading = document.createElement('h3');
-    heading.className = 'fpb-gift-message-heading';
-    heading.textContent = product.title || 'Message';
-    section.appendChild(heading);
-
-    if (giftMessage.isSenderAndRecipientNameEnabled === true) {
-      const row = document.createElement('div');
-      row.className = 'fpb-gift-message-name-row';
-
-      const fromInput = document.createElement('input');
-      fromInput.type = 'text';
-      fromInput.className = 'gbbGiftMessageV2FromField fpb-gift-message-input';
-      fromInput.placeholder = 'From';
-      fromInput.value = this.giftMessageState.from;
-      fromInput.addEventListener('input', () => {
-        this.giftMessageState.from = fromInput.value;
-      });
-
-      const toInput = document.createElement('input');
-      toInput.type = 'text';
-      toInput.className = 'gbbGiftMessageV2ToField fpb-gift-message-input';
-      toInput.placeholder = 'To';
-      toInput.value = this.giftMessageState.to;
-      toInput.addEventListener('input', () => {
-        this.giftMessageState.to = toInput.value;
-      });
-
-      row.appendChild(fromInput);
-      row.appendChild(toInput);
-      section.appendChild(row);
-    }
-
-    const textarea = document.createElement('textarea');
-    textarea.className = 'gbbGiftMessageV2InputField fpb-gift-message-textarea';
-    textarea.placeholder = 'Enter a message here...';
-    textarea.value = this.giftMessageState.message;
-    if (giftMessage.giftMessageCharacterLimit) {
-      textarea.maxLength = Number(giftMessage.giftMessageCharacterLimit);
-    }
-    textarea.addEventListener('input', () => {
-      this.giftMessageState.message = textarea.value;
-      if (textarea.value.trim()) this.setGiftMessageValidationError(false);
-    });
-    section.appendChild(textarea);
-
-    const error = document.createElement('p');
-    error.className = 'fpb-gift-message-error';
-    error.textContent = 'Please enter a message';
-    error.style.display = this.giftMessageState.error ? 'block' : 'none';
-    section.appendChild(error);
-
-    container.appendChild(section);
-  }
-
-  setGiftMessageValidationError(hasError) {
-    this.giftMessageState.error = hasError;
-    const errorEl = this.container.querySelector('.fpb-gift-message-error');
-    if (errorEl) {
-      errorEl.style.display = hasError ? 'block' : 'none';
-    }
-  }
-
-  validateGiftMessageBeforeCart() {
-    const giftMessage = this.getGiftMessageConfig();
-    if (!giftMessage?.isGiftMessageMandatory) return true;
-    if (this.giftMessageState.message.trim()) return true;
-
-    this.setGiftMessageValidationError(true);
-    return false;
-  }
-
-  buildGiftMessageCartItem(bundleInstanceId, bundleName) {
-    const giftMessage = this.getGiftMessageConfig();
-    const message = this.giftMessageState.message.trim();
-    if (!giftMessage || !message) return null;
-
-    const variantId = this.getGiftMessageProductVariantId(giftMessage);
-    const numericVariantId = this.extractId(variantId) || variantId;
-    if (!numericVariantId) return null;
-
-    const properties = {
-      '_bundle_name': bundleName,
-      '_bundle_step_type': 'gift_message',
-      '_gift_message': message
-    };
-
-    if (giftMessage.isSenderAndRecipientNameEnabled === true) {
-      if (this.giftMessageState.from.trim()) properties['_gift_from'] = this.giftMessageState.from.trim();
-      if (this.giftMessageState.to.trim()) properties['_gift_to'] = this.giftMessageState.to.trim();
-    }
-
-    return {
-      id: numericVariantId,
-      quantity: 1,
-      properties
-    };
-  }
-
   _initDefaultProducts() {
     const steps = this.selectedBundle?.steps || [];
     steps.forEach((step, stepIndex) => {
@@ -7006,13 +6881,9 @@ class BundleWidgetFullPage {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
       }
-      if (!this.validateGiftMessageBeforeCart()) {
-        return;
-      }
 
       const items = [];
 
-      const bundleInstanceId = crypto.randomUUID();
       const bundleName = this.selectedBundle.name || 'Bundle';
       const sessionKey = this.generateBundleSessionKey();
       const offerId = this.resolveFullPageOfferId();
@@ -7072,10 +6943,6 @@ class BundleWidgetFullPage {
       items.forEach(item => {
         Object.assign(item.properties, sourceProperties);
       });
-      const giftMessageItem = this.buildGiftMessageCartItem(bundleInstanceId, bundleName);
-      if (giftMessageItem) {
-        items.push(giftMessageItem);
-      }
 
       const nextBtn = this.container.querySelector('.footer-btn-next');
       if (nextBtn) nextBtn.disabled = true;

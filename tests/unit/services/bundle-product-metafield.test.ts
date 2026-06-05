@@ -568,49 +568,6 @@ describe("updateBundleProductMetafields", () => {
     );
   });
 
-  it("emits direct full-page message personalization contract into bundle_ui_config", async () => {
-    const admin = makeAdmin();
-    const personalizationData = {
-      isPersonalizationEnabled: true,
-      giftMessage: {
-        isGiftMessageEnabled: true,
-        isSenderAndRecipientNameEnabled: true,
-        giftMessageCharacterLimit: "120",
-        isGiftMessageMandatory: true,
-        isVideoMessageEnabled: false,
-        isEmailEnabled: false,
-        messageProduct: {
-          isMessageProductEnabled: true,
-          status: "unlisted",
-          product: {
-            id: "gid://shopify/Product/8600867012804",
-            title: "Message",
-            variants: [
-              {
-                id: "gid://shopify/ProductVariant/46177973534916",
-                title: "Message",
-                price: "0.00",
-                taxable: false,
-                inventory_policy: "continue",
-              },
-            ],
-          },
-        },
-      },
-    };
-
-    await updateBundleProductMetafields(
-      admin,
-      "gid://shopify/Product/999",
-      makeBundleConfig(BundleType.FULL_PAGE, { personalizationData }),
-    );
-
-    const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
-    const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
-
-    expect(parsed.personalizationData).toEqual(personalizationData);
-  });
-
   it("stores Buy X get Y price adjustment with buy/get metadata and total threshold", async () => {
     const admin = makeAdmin();
     const config = makeBundleConfig(BundleType.PRODUCT_PAGE, {

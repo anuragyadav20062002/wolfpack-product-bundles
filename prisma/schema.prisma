@@ -114,15 +114,6 @@ model Bundle {
   // Per-bundle text overrides
   textOverrides                        Json? // { addToCartButton, nextButton, doneButton, freeBadge, includedBadge, yourBundle, addingToCart, completeSteps }
   textOverridesByLocale                Json? // { "fr": { addToCartButton: "Ajouter au panier", ... }, ... }
-  // Gift Messages (FR-02)
-  giftMessagesEnabled                  Boolean             @default(false)
-  giftMessageProductId                 String?
-  giftMessageProductTitle              String?
-  giftMessageEnableSenderRecipient     Boolean             @default(false)
-  giftMessageMandatory                 Boolean             @default(false)
-  giftMessageEnableLimit               Boolean             @default(false)
-  giftMessageCharLimit                 Int?
-  giftMessageSendEmail                 Boolean             @default(false)
   // Bundle Visibility — Bundle Widget (FR-04)
   upsellWidgetEnabled                  Boolean             @default(false)
   upsellWidgetDisplayMode              String?

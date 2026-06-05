@@ -58,20 +58,6 @@ export function parseBundleDesignTemplate(formData: FormData) {
   };
 }
 
-export function parsePPBGiftMessages(formData: FormData) {
-  const enableLimit = bool(formData, "giftMessageEnableLimit", false);
-  return {
-    giftMessagesEnabled:              bool(formData, "giftMessagesEnabled", false),
-    giftMessageProductId:             str(formData, "giftMessageProductId"),
-    giftMessageProductTitle:          str(formData, "giftMessageProductTitle"),
-    giftMessageEnableSenderRecipient: bool(formData, "giftMessageEnableSenderRecipient", false),
-    giftMessageMandatory:             bool(formData, "giftMessageMandatory", false),
-    giftMessageEnableLimit:           enableLimit,
-    giftMessageCharLimit:             enableLimit ? int(formData, "giftMessageCharLimit") : null,
-    giftMessageSendEmail:             bool(formData, "giftMessageSendEmail", false),
-  };
-}
-
 export function parsePPBBundleVisibility(formData: FormData) {
   return {
     upsellWidgetEnabled:         bool(formData, "upsellWidgetEnabled", false),

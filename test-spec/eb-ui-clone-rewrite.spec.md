@@ -116,17 +116,6 @@ Define the TDD surface for evidence-backed Admin, persistence, storefront, and c
 |---|---|---|---|---|
 | 1 | Configure shell title strip | Full Page configure route | route omits Shopify breadcrumb `ui-title-bar`, does not render a duplicate local app title strip, and keeps the Configure Bundle Flow header with readiness and preview actions | Chrome proof shows Shopify supplies the app-name title row after `ui-title-bar` is removed. |
 
-### FPB Messages Contracts
-
-| # | Scenario | Input | Expected Output | Notes |
-|---|---|---|---|---|
-| 1 | Messages Admin save | Messages enabled, sender/recipient enabled, mandatory, character limit, selected message product | save form appends direct `personalizationData.giftMessage` with the captured booleans, string limit, and message product object | Email/customize-email behavior stays excluded. |
-| 2 | Messages DB/metafield | direct gift-message JSON in save request | bundle update persists `personalizationData.giftMessage` and bundle metafield sync receives the same direct contract | Do not store the contract under generic `textOverrides`. |
-| 3 | Messages runtime formatter | DB row has direct gift-message JSON | public FPB app-proxy config includes `personalizationData.giftMessage` unchanged | Runtime proof reads top-level `personalizationData`. |
-| 4 | Messages storefront fields | runtime `giftMessage.isGiftMessageEnabled=true` | Full Page widget renders Message heading, From, To, textarea placeholder, and max length from the direct contract | Email recipient and Customize Emails remain out of scope. |
-| 5 | Mandatory message validation | required message is empty and Add to Cart is attempted | visible validation text `Please enter a message` appears and cart add is blocked | Captured desktop/mobile validation text. |
-| 6 | Message cart line | message product variant exists and message is entered | cart payload includes a message-product line with `_gift_message`, optional `_gift_from`, and optional `_gift_to` properties | Cart proof remains required before green. |
-
 ### FPB Discount Contracts
 
 | # | Scenario | Input | Expected Output | Notes |

@@ -777,16 +777,6 @@ export default function ConfigureBundleFlow() {
   const originalBundleEmbedDisplayOnRef = useRef<string>((bundle as any).textOverrides?.embedDisplayOn ?? getVisibilityDisplayTarget(savedEmbedDisplayConfiguration, "all_products"));
   const originalBundleEmbedAddBrowsedProductRef = useRef<boolean>(savedUpsellConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).textOverrides?.embedAddBrowsedProduct === "true");
 
-  // FR-02: Gift Messages state
-  const [giftMessagesEnabled, setGiftMessagesEnabled] = useState<boolean>((bundle as any).giftMessagesEnabled ?? false);
-  const [giftMessageProductId, setGiftMessageProductId] = useState<string | null>((bundle as any).giftMessageProductId ?? null);
-  const [giftMessageProductTitle, setGiftMessageProductTitle] = useState<string | null>((bundle as any).giftMessageProductTitle ?? null);
-  const [giftMessageEnableSenderRecipient, setGiftMessageEnableSenderRecipient] = useState<boolean>((bundle as any).giftMessageEnableSenderRecipient ?? false);
-  const [giftMessageMandatory, setGiftMessageMandatory] = useState<boolean>((bundle as any).giftMessageMandatory ?? false);
-  const [giftMessageEnableLimit, setGiftMessageEnableLimit] = useState<boolean>((bundle as any).giftMessageEnableLimit ?? false);
-  const [giftMessageCharLimit, setGiftMessageCharLimit] = useState<string>((bundle as any).giftMessageCharLimit?.toString() ?? "");
-  const [giftMessageSendEmail, setGiftMessageSendEmail] = useState<boolean>((bundle as any).giftMessageSendEmail ?? false);
-
   // FR-03: Display options state (Quantity Options + Progress Bar)
   const _savedDisplayOpts = (bundle as any).pricing?.displayOptions ?? {};
   const savedQuantityOptionsByRuleId = (_savedDisplayOpts?.bundleQuantityOptions?.optionsByRuleId ?? {}) as Record<string, { label?: string; subtext?: string }>;
@@ -1198,15 +1188,6 @@ export default function ConfigureBundleFlow() {
       formData.append("upsellWidgetDisplayMode", upsellWidgetDisplayMode);
       formData.append("upsellWidgetDisplayOn", upsellWidgetDisplayOn);
       formData.append("autoSelectBrowsedProduct", String(autoSelectBrowsedProduct));
-      // FR-02: Gift Messages
-      formData.append("giftMessagesEnabled", String(giftMessagesEnabled));
-      formData.append("giftMessageProductId", giftMessageProductId ?? "");
-      formData.append("giftMessageProductTitle", giftMessageProductTitle ?? "");
-      formData.append("giftMessageEnableSenderRecipient", String(giftMessageEnableSenderRecipient));
-      formData.append("giftMessageMandatory", String(giftMessageMandatory));
-      formData.append("giftMessageEnableLimit", String(giftMessageEnableLimit));
-      formData.append("giftMessageCharLimit", giftMessageCharLimit);
-      formData.append("giftMessageSendEmail", String(giftMessageSendEmail));
       // FR-05: Bundle Settings
       formData.append("preSelectedProductVariantId", preSelectedProductVariantId);
       formData.append("maxQtyPerProduct", maxQtyPerProduct);
@@ -5072,84 +5053,6 @@ export default function ConfigureBundleFlow() {
               );
             })()}
 
-            {activeSection === "messages" && (() => {
-              return (
-                <s-stack direction="block" gap="base">
-                  <div className={productPageBundleStyles.card}>
-                    <div className={productPageBundleStyles.panelHeader}>
-                      <div>
-                        <h3 className={productPageBundleStyles.panelTitle}>Enable Messages</h3>
-                        <p className={productPageBundleStyles.panelDescription}>
-                          Message will show up as a product at checkout
-                        </p>
-                      </div>
-                      <s-checkbox
-                        accessibilityLabel="Enable messages"
-                        checked={giftMessagesEnabled || undefined}
-                        onChange={(e) => { setGiftMessagesEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      />
-                    </div>
-
-                    <div className={productPageBundleStyles.messagePreview}>
-                      <div className={productPageBundleStyles.messagePreviewIcon} aria-hidden="true">
-                        <s-icon type="note" />
-                      </div>
-                      <div>
-                        <p className={productPageBundleStyles.messagePreviewTitle}>
-                          {giftMessageProductTitle || "Message"}
-                        </p>
-                        <p className={productPageBundleStyles.messageNote}>
-                          Add a message product so shoppers can include a note with the bundle.
-                        </p>
-                      </div>
-                      <s-button
-                        variant="secondary"
-                        onClick={async () => {
-                          try {
-                            const picked = await (window as any).shopify?.resourcePicker({ type: "product", multiple: false });
-                            if (picked && picked.length > 0) {
-                              const product = picked[0] as any;
-                              setGiftMessageProductId(product.id ?? "");
-                              setGiftMessageProductTitle(product.title ?? "");
-                              markAsDirty();
-                            }
-                          } catch (_) {
-                            // user cancelled picker — no-op
-                          }
-                        }}
-                      >
-                        Edit
-                      </s-button>
-                    </div>
-
-                    <s-stack direction="block" gap="small">
-                      <s-checkbox
-                        label="Enable Sender and Recipient Fields"
-                        checked={giftMessageEnableSenderRecipient || undefined}
-                        onChange={(e) => { setGiftMessageEnableSenderRecipient((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      />
-                      <s-checkbox
-                        label="Make Gift Message mandatory"
-                        checked={giftMessageMandatory || undefined}
-                        onChange={(e) => { setGiftMessageMandatory((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      />
-                      <s-checkbox
-                        label="Enable Message Limit (Characters)"
-                        checked={giftMessageEnableLimit || undefined}
-                        onChange={(e) => { setGiftMessageEnableLimit((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                      />
-                      <s-number-field
-                        label="Enter Message Limit"
-                        value={giftMessageCharLimit}
-                        disabled={!giftMessageEnableLimit}
-                        min={0}
-                        onInput={(e) => { setGiftMessageCharLimit((e.target as HTMLInputElement).value); markAsDirty(); }}
-                      />
-                    </s-stack>
-                  </div>
-                </s-stack>
-              );
-            })()}
           </div>
         </div>
 

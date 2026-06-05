@@ -1725,6 +1725,38 @@
   composes: iconPlaceholder from "./bundle-configure-shared.module.css";
 }
 
+.addonsIconColumn {
+  composes: iconColumn from "./bundle-configure-shared.module.css";
+  --addons-icon-control-width: 96px;
+  align-items: stretch;
+  width: var(--addons-icon-control-width);
+}
+
+.addonsIconBox {
+  composes: iconBox from "./bundle-configure-shared.module.css";
+  width: var(--addons-icon-control-width);
+}
+
+.addonsGiftBoxDefault {
+  display: block;
+  width: 40px;
+  height: 40px;
+  color: #8c9196;
+}
+
+.addonsReplaceButton {
+  display: block;
+  width: var(--addons-icon-control-width);
+}
+
+.addonsMediaFieldGrid {
+  grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
+}
+
+.addonsFieldsColumn {
+  min-width: 0;
+}
+
 .iconRemoveButton {
   composes: iconRemoveButton from "./bundle-configure-shared.module.css";
 }
@@ -2038,8 +2070,11 @@
   composes: panelDescription from "./bundle-configure-shared.module.css";
 }
 
-.addonsCard {
-  padding: 16px 16px 18px;
+.addonsCard,
+.addonsReferenceStepCard,
+.addonsFooterCard {
+  --addons-card-padding: 14px;
+  padding: var(--addons-card-padding);
   border-color: #dedede;
   border-radius: 8px;
 }
@@ -2117,6 +2152,10 @@
   outline-offset: 2px;
 }
 
+.addonsReferenceSwitch {
+  flex: 0 0 auto;
+}
+
 .addonsHelpButton {
   min-height: 20px;
   padding: 0;
@@ -2136,39 +2175,86 @@
   text-decoration: underline;
 }
 
-.addonsLanguageButton {
-  min-height: 28px;
-  padding: 4px 10px;
-  border: 1px solid #c9cccf;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #202223;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.2;
-}
-
-.addonsLanguageButton:disabled {
-  opacity: 1;
-  cursor: default;
-}
-
 .addonsFormStack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 14px;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .addonsTierCard {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px;
-  border: 1px solid #dfe3e8;
+  overflow: hidden;
+  border: 1px solid #e1e3e5;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.addonsTierCardActive {
+  border-color: #d3d6da;
+}
+
+.addonsTierHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 14px 0 16px;
+  border: 0;
+  background: #f6f6f7;
+  cursor: pointer;
+}
+
+.addonsTierHeader:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: -2px;
+}
+
+.addonsTierHeaderActive {
+  border-bottom: 1px solid #ebebeb;
+}
+
+.addonsTierTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.addonsTierHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.addonsTierDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.addonsTierChevron {
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid #6d7175;
+  border-bottom: 1.5px solid #6d7175;
+  transform: rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.addonsTierHeaderActive .addonsTierChevron {
+  transform: rotate(225deg);
+}
+
+.addonsTierBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
 }
 
 .addonsProductSelectionRow {
@@ -2183,6 +2269,22 @@
   font-size: 12px;
   font-weight: 650;
   line-height: 1.2;
+}
+
+.addonsSelectedButton {
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #2c6ecb;
+  font: inherit;
+  cursor: pointer;
+}
+
+.addonsSelectedButton:hover,
+.addonsSelectedButton:focus-visible {
+  text-decoration: underline;
 }
 
 .addonsDiscountGrid {
@@ -2216,55 +2318,61 @@
   line-height: 1.35;
 }
 
-.addonsTierRuleButton,
-.addonsTierButton {
-  display: inline-flex;
+.addonSelectedProductList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.addonSelectedProductRow {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 28px;
+  gap: 10px;
   align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  border: 1px solid #d3d6da;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #202223;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.addonSelectedProductDrag,
+.addonSelectedProductRemove {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6d7175;
   font: inherit;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.2;
+  font-size: 13px;
+  line-height: 28px;
+  text-align: center;
   cursor: pointer;
 }
 
-.addonsTierRuleButton {
-  width: 100%;
-  margin-top: 12px;
+.addonSelectedProductDrag:hover,
+.addonSelectedProductDrag:focus-visible,
+.addonSelectedProductRemove:hover,
+.addonSelectedProductRemove:focus-visible {
+  background: #f1f2f3;
+  color: #202223;
 }
 
-.addonsTierRuleButton::before {
-  margin-right: 4px;
-  content: "+";
-}
-
-.addonsTierButton {
-  width: 100%;
+.addonSelectedProductName {
+  overflow: hidden;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mediaFieldGrid {
   composes: mediaFieldGrid from "./bundle-configure-shared.module.css";
-}
-
-.messagePreview {
-  composes: messagePreview from "./bundle-configure-shared.module.css";
-}
-
-.messagePreviewIcon {
-  composes: messagePreviewIcon from "./bundle-configure-shared.module.css";
-}
-
-.messagePreviewTitle {
-  composes: messagePreviewTitle from "./bundle-configure-shared.module.css";
-}
-
-.messageNote {
-  composes: messageNote from "./bundle-configure-shared.module.css";
 }
 
 /* ── Empty State ──────────────────────────────────────────────── */

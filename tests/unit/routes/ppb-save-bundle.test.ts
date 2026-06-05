@@ -322,27 +322,6 @@ describe("PPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     );
   });
 
-  it("passes gift message fields to DB update when giftMessagesEnabled is true", async () => {
-    const fd = makeFormData({
-      giftMessagesEnabled: "true",
-      giftMessageProductId: "gid://shopify/Product/999",
-      giftMessageProductTitle: "Gift Card",
-      giftMessageEnableSenderRecipient: "true",
-      giftMessageMandatory: "false",
-      giftMessageEnableLimit: "false",
-      giftMessageSendEmail: "false",
-    });
-    await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
-    expect(getDb().bundle.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          giftMessagesEnabled: true,
-          giftMessageProductId: "gid://shopify/Product/999",
-        }),
-      })
-    );
-  });
-
   it("passes variantSelectorEnabled=false to DB when form has false", async () => {
     const fd = makeFormData({ variantSelectorEnabled: "false" });
     await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
