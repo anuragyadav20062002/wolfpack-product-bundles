@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.0
- * Built   : 2026-06-04
+ * Version : 3.0.7
+ * Built   : 2026-06-05
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.0';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.7';
 (function() {
   'use strict';
 
@@ -2913,7 +2913,11 @@ function installStandardTemplate(BundleWidgetFullPage) {
 
     const style = document.createElement('style');
     style.id = 'wpb-fpb-standard-runtime-styles';
-    style.textContent = '[data-bundle-type=full_page][data-fpb-design-preset=DEFAULT]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=DEFAULT]{--standard-card-height:352px;--ih:240px;--mw:177.5px;--mh:245px;--cg:15px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.6897fr 0.3103fr;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--cg,15px);margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:var(--standard-card-height,352px);min-height:var(--standard-card-height,352px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:240px 40px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:712px;margin-top:0;padding:20px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:var(--ih,240px);min-height:var(--ih,240px);aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cg,15px)}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{min-height:var(--mh,245px);height:var(--mh,245px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:150px 23px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:150px;min-height:150px}}';
+    const baseStyles = '[data-bundle-type=full_page][data-fpb-design-preset=DEFAULT]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=DEFAULT]{--standard-card-height:352px;--ih:240px;--mw:177.5px;--mh:264px;--mih:150px;--cg:15px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.6897fr 0.3103fr;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--cg,15px);margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:var(--standard-card-height,352px);min-height:var(--standard-card-height,352px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:240px 40px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:738px;margin-top:0;padding:20px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:var(--ih,240px);min-height:var(--ih,240px);aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:40px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:40px;height:40px;font-size:16px!important;line-height:22px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:16px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:14px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .product-add-btn::before{content:"+";font-size:16px;font-weight:700;line-height:1}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .product-add-btn.added::before{content:"✓"}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] > :is(.bundle-banners,.category-tabs,.sidebar-layout-wrapper){width:100%;margin-left:0;margin-right:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper .sidebar-content{padding:0 0 120px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cg,15px);justify-content:stretch;margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{min-height:var(--mh,264px);height:var(--mh,264px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:var(--mih,150px) 42px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:var(--mih,150px);min-height:var(--mih,150px);width:100%;min-width:0;aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:42px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:42px;height:42px;font-size:14px!important;line-height:18px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:14px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:12px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}}';
+    const timelineStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT] .step-timeline--standard{width:100%;margin:0 0 24px;padding:0;display:block}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-items-container{width:var(--standard-timeline-width,60%);height:76.8px;margin:24px auto 0;display:grid;grid-template-columns:repeat(var(--standard-timeline-count,2),minmax(0,1fr));grid-template-rows:76.8px;place-items:normal center;justify-content:center;position:relative;isolation:isolate}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-item{width:max-content;max-width:100%;height:76.8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:40px 36.8px;place-items:start center;justify-items:center;align-items:start;position:relative;z-index:2}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-step-img-container{width:40px;height:40px;box-sizing:border-box;display:grid;place-items:center;border-radius:50%;background:#fff;padding:4px;border:2px solid #d4d5d6;position:relative;z-index:2;filter:none!important;opacity:1!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .timeline-step--active .standard-navigation-step-img-container{border:4px solid #000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-image{display:block;width:100%;height:100%;object-fit:contain;opacity:1!important;filter:none!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title-container{display:grid;place-items:center normal;padding:4px 2px;min-width:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title{margin:0;color:#000;font-size:16px;font-weight:700;line-height:28.8px;text-align:center;white-space:normal}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar-container{position:absolute;top:17px;left:var(--standard-timeline-progress-left,25%);width:var(--standard-timeline-progress-width,50%);height:6px;border-radius:20px;overflow:hidden;z-index:0;pointer-events:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar{width:100%;height:6px;background:#ccc}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar-filled{width:var(--standard-timeline-progress-fill,0%);height:6px;background:#1e1e1e}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .step-timeline--standard{margin:0 0 14px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-items-container{width:calc(100% - 15px);height:61.6px;margin:7.5px auto 0;grid-template-rows:61.6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-item{height:61.6px;grid-template-rows:40px 21.6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title-container{padding:0 2px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title{font-size:12px;line-height:21.6px}}';
+    const remainingParityStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:50.8px;display:grid;grid-auto-flow:column;grid-auto-columns:max-content;justify-content:flex-start;gap:20px;margin:0 0 20px;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:50.8px;display:grid;grid-template-columns:max-content;grid-template-rows:30px;align-items:center;padding:10px;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab::after{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-rows{display:grid;gap:0;margin:0;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{width:100%;height:68.8px;display:grid;grid-template-columns:minmax(0,max-content) 20px;align-items:start;justify-content:space-between;padding:14px 0;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row::after{content:"";width:20px;height:20px;display:block;background:currentColor;clip-path:polygon(25% 35%,50% 60%,75% 35%,80% 42%,50% 72%,20% 42%)}.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:0;border-radius:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-title{font-size:25px;line-height:30px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-subtitle{font-size:15px;line-height:27px;margin:0 0 12px;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-template-columns:minmax(0,1fr) 157px;gap:5px;margin-top:14px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157px;min-width:157px;height:41px;border-radius:5px;padding:8px;font-size:16px;line-height:22px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-card--expanded-variant .product-title{display:grid!important;grid-template-rows:21px 14px;gap:5px;line-height:normal!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-title-main,.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-title-variant{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:49px;gap:20px;margin:0 0 16px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:49px;font-size:15px;line-height:27px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:18px;line-height:32.4px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{height:72.4px;padding:14px 0;font-size:18px;line-height:32.4px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-card--expanded-variant .product-title{font-size:12px!important;grid-template-rows:24px 15px;gap:5px;line-height:normal!important}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray{display:grid;grid-template-columns:360px;grid-template-rows:126px 58px;bottom:0;left:10px;width:370px;height:196px;padding:5px;border-radius:0;box-shadow:none;background:#fff}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-btn-next{width:360px;height:38px;border-radius:5px;padding:8px;font-size:14px;line-height:22px;font-weight:700}}';
+    const sidebarStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel,.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:1px solid #e3e3e3;border-radius:10px;grid-template-rows:55px 158.969px 298.797px 70px;min-height:639.766px;height:639.766px;max-height:none;top:80px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header{display:grid;grid-template-columns:minmax(0,1fr) 82.9375px;grid-template-rows:55px;gap:8px;margin:0;grid-row:1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header-copy{display:grid;grid-template-rows:30px 20px;gap:5px;min-width:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-subtitle{font-size:14px;line-height:20px;margin:0;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-clear-btn{display:grid;grid-template-columns:22px 32.9375px;grid-template-rows:25.1875px;gap:0;width:82.9375px;height:35.1875px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-discount-message{grid-row:2;margin:0;padding:5px 0 0;font-size:16px;font-weight:700;line-height:28.8px;text-align:left;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-discount-progress.fpb-dp-sidebar{grid-row:2;align-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-item-count{grid-row:3;align-self:start;font-size:16px;font-weight:400;line-height:28.8px;color:#000;margin:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-products{grid-row:3;align-self:start;display:grid;grid-template-columns:314.266px;grid-template-rows:75px 170px;gap:15px;width:324.266px;height:260px;min-height:260px;max-height:260px;padding:0 10px 0 0;margin:38.797px 0 0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-row{display:grid;grid-template-columns:75px 158.328px 62.9375px;grid-template-rows:75px;gap:9px;padding:0;border:0;background:transparent}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-img-wrap{width:75px;height:75px;border-radius:5px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-img{width:75px;height:75px;border-radius:5px;object-fit:cover}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot{display:grid;grid-template-columns:75px 168.656px 50.6094px;grid-template-rows:75px;gap:10px;height:75px;animation:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot:nth-child(2){height:170px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-thumb{width:75px;height:75px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-lines{height:48px;gap:5px;align-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-line{background:#e1e1e1;border-radius:10px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-name{width:134.922px;height:14px;padding:7px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-variant{width:101.188px;height:12px;padding:6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-price{width:42.1562px;height:12px;padding:6px;flex:initial}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-remove{width:50.6094px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;align-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-row:4;grid-template-columns:162.125px 162.141px;grid-template-rows:44px;gap:0;margin:10px 0 0;padding:15px 0 0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total{display:grid;grid-template-columns:162.125px;grid-template-rows:18px 18px;gap:8px;align-items:center;justify-content:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total-label{font-size:14px;font-weight:700;line-height:normal;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total-final{font-size:16px;font-weight:700;line-height:18px;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-nav{display:grid;grid-template-columns:0 157.141px;grid-template-rows:44px;gap:5px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157.141px;min-width:157.141px;height:41px;padding:8px;border:0;border-radius:5px;background:#000;color:#fff;font-size:16px;font-weight:700;line-height:25px;opacity:1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next:disabled{opacity:1;cursor:pointer}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-sidebar-tier-cta,.layout-sidebar[data-fpb-design-preset=DEFAULT] .box-selection-container,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-free-gift,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-addon-message{display:none!important}';
+    style.textContent = baseStyles + timelineStyles + remainingParityStyles + sidebarStyles;
     document.head.appendChild(style);
   };
 }
@@ -4356,6 +4360,12 @@ class BundleWidgetFullPage {
     return this.resolveFullPageCardCtaMode() === 'icon';
   }
 
+  _isStandardDesktopSidebar(panel) {
+    return this.resolveFullPageLayout() === 'footer_side'
+      && this.getFullPageDesignPreset() === 'DEFAULT'
+      && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
+  }
+
   renderSidePanel(panel) {
     if (!panel) return;
     panel.innerHTML = '';
@@ -4378,17 +4388,25 @@ class BundleWidgetFullPage {
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
     const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+    const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
     const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
     const summaryText = this.getBundleSummaryText();
 
     const header = document.createElement('div');
     header.className = 'side-panel-header';
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'side-panel-header-copy';
     const headerTitle = document.createElement('span');
     headerTitle.className = 'side-panel-title';
     headerTitle.textContent = summaryText.title;
-    header.appendChild(headerTitle);
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(headerTitle);
+      header.appendChild(headerCopy);
+    } else {
+      header.appendChild(headerTitle);
+    }
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar || allSelectedProducts.length > 0) {
       const clearBtn = document.createElement('button');
       clearBtn.className = 'side-panel-clear-btn';
       clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
@@ -4403,15 +4421,19 @@ class BundleWidgetFullPage {
     const subtitle = document.createElement('p');
     subtitle.className = 'side-panel-subtitle';
     subtitle.textContent = summaryText.subTitle;
-    panel.appendChild(subtitle);
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(subtitle);
+    } else {
+      panel.appendChild(subtitle);
+    }
 
     const tierCta = this.createSidebarTierCta(nextRule);
-    if (tierCta) {
+    if (!isStandardDesktopSidebar && tierCta) {
       panel.appendChild(tierCta);
     }
 
     const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
-    if (boxSelection) {
+    if (!isStandardDesktopSidebar && boxSelection) {
       panel.appendChild(boxSelection);
     }
 
@@ -4455,11 +4477,16 @@ class BundleWidgetFullPage {
 
     const countLabel = document.createElement('div');
     countLabel.className = 'side-panel-item-count';
-    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    countLabel.textContent = isStandardDesktopSidebar
+      ? `${allSelectedProducts.length} item(s)`
+      : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
     panel.appendChild(countLabel);
 
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
+    if (isStandardDesktopSidebar) {
+      productsContainer.classList.add('side-panel-products--standard');
+    }
     if (isHorizontalPreset) {
       productsContainer.classList.add('side-panel-products--slots');
     }
@@ -4514,6 +4541,8 @@ class BundleWidgetFullPage {
 
         productsContainer.appendChild(row);
       });
+    } else if (isStandardDesktopSidebar) {
+      this._renderStandardSidebarEmptySlots(productsContainer);
     }
     if (isHorizontalPreset) {
       const requiredSlots = Math.max(
@@ -4531,14 +4560,14 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    if (!isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
+    if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
       this._renderSidebarProductSkeletons(skeletonContainer);
       panel.appendChild(skeletonContainer);
     }
 
-    this._renderFreeGiftSection(panel);
+    if (!isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
 
     const totalSection = document.createElement('div');
     totalSection.className = 'side-panel-total';
@@ -4576,7 +4605,10 @@ class BundleWidgetFullPage {
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT'
+      ? this._resolveText('nextButton', 'Next')
+      : 'Next Step';
+    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : nextStepLabel;
     if (sidebarTierCtaContent) {
       const labelHtml = sidebarTierCtaContent.label
         ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
@@ -4586,7 +4618,7 @@ class BundleWidgetFullPage {
         : '';
       nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
     }
-    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
+    if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
       nextBtn.disabled = true;
     }
     nextBtn.addEventListener('click', () => {
@@ -4860,6 +4892,17 @@ class BundleWidgetFullPage {
     return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
   }
 
+  _getDefaultTimelineIconDataUri(step) {
+    const svg = this._getDefaultTimelineIcon(step)
+      .replace('class="timeline-step-icon--svg"', 'xmlns="http://www.w3.org/2000/svg"')
+      .replace(' xmlns="http://www.w3.org/2000/svg"', '');
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  _isStandardSideFooterTimeline() {
+    return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+  }
+
   buildStepTimelineEntries() {
     const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
     const entries = [];
@@ -4892,6 +4935,10 @@ class BundleWidgetFullPage {
   }
 
   createStepTimeline() {
+    if (this._isStandardSideFooterTimeline()) {
+      return this.createStandardStepTimeline();
+    }
+
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
 
@@ -4974,6 +5021,103 @@ class BundleWidgetFullPage {
       }
     });
 
+    return timeline;
+  }
+
+  createStandardStepTimeline() {
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline step-timeline--standard';
+
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      return timeline;
+    }
+
+    const timelineEntries = this.buildStepTimelineEntries();
+    const entryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const progressFill = entryCount > 1
+      ? Math.max(0, Math.min(100, (activeEntryIndex / (entryCount - 1)) * 100))
+      : 0;
+    const progressLeft = 100 / (entryCount * 2);
+    const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
+    const timelineWidth = Math.min(100, entryCount * 30);
+
+    timeline.style.setProperty('--standard-timeline-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'standard-navigation-items-container';
+
+    timelineEntries.forEach((entry) => {
+      const step = entry.step;
+      const index = entry.stepIndex;
+      const itemEl = document.createElement('div');
+      itemEl.className = 'standard-navigation-item timeline-step';
+      itemEl.dataset.stepIndex = index;
+      itemEl.dataset.timelineType = entry.type;
+
+      const isDefaultStep = step.isDefault === true;
+      const isCurrent = entry.type === 'step' && index === this.currentStepIndex;
+      const isCompleted = entry.type === 'step' && !isCurrent && this.isStepCompleted(index);
+      const isAccessible = this.isStepAccessible(index);
+
+      if (isDefaultStep) itemEl.classList.add('timeline-step--included');
+      if (isCurrent) itemEl.classList.add('timeline-step--active');
+      if (isCompleted) itemEl.classList.add('timeline-step--completed');
+      if (!isCurrent && !isCompleted) itemEl.classList.add('timeline-step--inactive');
+      if (!isAccessible) itemEl.classList.add('timeline-step--locked');
+
+      const escapedName = this._escapeHTML(entry.label) || `Step ${index + 1}`;
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+      const iconUrl = uploadedIconUrl || this._getDefaultTimelineIconDataUri(step);
+
+      itemEl.innerHTML = `
+        <div class="standard-navigation-step-img-container timeline-icon-wrapper">
+          <img class="standard-navigation-image timeline-step-icon" src="${this._escapeHTML(iconUrl)}" alt="${escapedName}">
+        </div>
+        <div class="standard-navigation-title-container">
+          <p class="standard-navigation-title timeline-step-name">${escapedName}</p>
+        </div>
+      `;
+
+      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
+        itemEl.style.cursor = 'pointer';
+        itemEl.addEventListener('click', () => {
+          if (!this.isStepAccessible(index)) {
+            ToastManager.show('Please complete the previous steps first.');
+            return;
+          }
+          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+            ToastManager.show('Please meet the step conditions before proceeding.');
+            return;
+          }
+          this.currentStepIndex = index;
+          this.searchQuery = '';
+          this.activeCollectionId = null;
+          this.reRenderFullPage();
+        });
+      }
+
+      itemsContainer.appendChild(itemEl);
+    });
+
+    if (entryCount > 1) {
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'standard-steps-progress-bar-container';
+      progressContainer.innerHTML = `
+        <div class="standard-steps-progress-bar">
+          <div class="standard-steps-progress-bar-filled"></div>
+        </div>
+      `;
+      itemsContainer.appendChild(progressContainer);
+    }
+
+    timeline.appendChild(itemsContainer);
     return timeline;
   }
 
@@ -5833,6 +5977,8 @@ class BundleWidgetFullPage {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);
     }
 
+    this.applyStandardExpandedVariantTitle(cardElement, product);
+
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
     if (currentStepData?.isDefault) {
       cardElement.classList.add('fpb-card--default-included');
@@ -5894,6 +6040,28 @@ class BundleWidgetFullPage {
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
     return cardElement;
+  }
+
+  applyStandardExpandedVariantTitle(cardElement, product) {
+    if (this.getFullPageDesignPreset() !== 'DEFAULT') return;
+    if (!cardElement || !product?.parentProductId || !product?.variantTitle || product.variantTitle === 'Default Title') return;
+
+    const titleEl = cardElement.querySelector('.product-title');
+    if (!titleEl) return;
+
+    const parentTitle = product.parentTitle || product.title || '';
+    cardElement.classList.add('product-card--expanded-variant');
+    titleEl.innerHTML = '';
+
+    const mainTitle = document.createElement('span');
+    mainTitle.className = 'product-title-main';
+    mainTitle.textContent = parentTitle;
+
+    const variantTitle = document.createElement('span');
+    variantTitle.className = 'product-title-variant';
+    variantTitle.textContent = product.variantTitle;
+
+    titleEl.append(mainTitle, variantTitle);
   }
 
   applySelectedQuantityBadge(cardElement, currentQuantity) {
@@ -6800,6 +6968,25 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
+  _renderStandardSidebarEmptySlots(container) {
+    for (let i = 0; i < 2; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
+      slot.innerHTML = `
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+        </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+          <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        </div>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
+      `;
+      container.appendChild(slot);
+    }
+  }
+
   _renderSidebarProductSkeletons(container) {
     for (let i = 0; i < 5; i++) {
       const slot = document.createElement('div');
@@ -7286,7 +7473,9 @@ class BundleWidgetFullPage {
     const isReached = discountInfo.hasDiscount;
     const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
 
-    if ((this.config.discountProgressBarType || 'step_based') === 'step_based') {
+    const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
+
+    if (progressBarType === 'step_based') {
       const milestones = this.getDiscountProgressMilestones(totalPrice, totalQuantity);
       if (milestones.length > 0) {
         return this.renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement);
@@ -7309,7 +7498,9 @@ class BundleWidgetFullPage {
     }
 
     const bar = document.createElement('div');
-    bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
+    bar.className = progressBarType === 'simple'
+      ? 'fpb-discount-progress fpb-dp-simple' + (isReached ? ' reached' : '')
+      : 'fpb-discount-progress fpb-dp-step_based' + (isReached ? ' reached' : '');
     bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const row = document.createElement('div');
@@ -8794,6 +8985,7 @@ class BundleWidgetFullPage {
 
     const preset = rawPresetId.trim().toUpperCase();
     if (preset === 'STANDARD') return 'DEFAULT';
+    if (preset === 'DEFAULT_FBP') return 'DEFAULT';
     return preset || 'DEFAULT';
   }
 

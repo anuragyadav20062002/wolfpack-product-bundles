@@ -146,6 +146,7 @@ describe("Full Page widget template layout contract", () => {
 
     expect(source).toContain("return 'DEFAULT';");
     expect(source).toContain("if (preset === 'STANDARD') return 'DEFAULT';");
+    expect(source).toContain("if (preset === 'DEFAULT_FBP') return 'DEFAULT';");
     expect(source).not.toContain("pricingMethod === 'fixed_amount_off'");
     expect(source).not.toContain("cardElement.querySelector('.product-price-row')?.remove();");
 
@@ -158,15 +159,138 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain('--mh:264px');
     expect(storefrontStyles).toContain('--mih:150px');
     expect(storefrontStyles).toContain('grid-template-columns:0.6897fr 0.3103fr');
+    expect(storefrontStyles).toContain('gap:15px;max-width:1455px');
     expect(storefrontStyles).toContain('container-type:inline-size');
     expect(storefrontStyles).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
+    expect(storefrontStyles).toContain('gap:var(--cg,15px);margin:0 0 20px;padding:0');
     expect(storefrontStyles).toContain('height:var(--standard-card-height,352px)');
+    expect(storefrontStyles).toContain('grid-template-rows:240px 40px 40px');
+    expect(storefrontStyles).toContain('@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] > :is(.bundle-banners,.category-tabs,.sidebar-layout-wrapper){width:100%;margin-left:0;margin-right:0}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper .sidebar-content{padding:0 0 120px!important}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cg,15px);justify-content:stretch;margin:0 0 20px;padding:0}');
+    expect(storefrontStyles).toContain('grid-template-rows:var(--mih,150px) 42px 40px');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:40px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:40px;height:40px;font-size:16px!important;line-height:22px!important;font-weight:700!important;text-align:left');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none');
     expect(storefrontStyles).toContain('min-height:738px');
     expect(storefrontStyles).not.toContain('grid-template-columns:minmax(0,993px) 447px');
     expect(storefrontStyles).not.toContain('grid-template-columns:repeat(3,var(--cw,321px))');
     expect(storefrontStyles).toContain('width:35px');
     expect(storefrontStyles).toContain('height:35px');
     expect(storefrontStyles).toContain('border-radius:5px');
+    expect(storefrontStyles).toContain('[data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0');
+    expect(storefrontStyles).toContain('[data-fpb-card-cta-mode=icon] .product-add-btn::before{content:"+"');
+    expect(storefrontStyles).toContain('[data-fpb-card-cta-mode=icon] .product-add-btn.added::before{content:"✓"');
+    expect(storefrontStyles).not.toContain('grid-template-rows:var(--mih,150px) 23px 40px');
+
+    expect(source).toContain("applyStandardExpandedVariantTitle(cardElement, product)");
+    expect(source).toContain("product-card--expanded-variant");
+    expect(source).toContain("product-title-main");
+    expect(source).toContain("product-title-variant");
+    expect(source).toContain("this._resolveText('nextButton', 'Next')");
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:50.8px;display:grid;grid-auto-flow:column;grid-auto-columns:max-content;justify-content:flex-start;gap:20px;margin:0 0 20px;padding:0;overflow:visible}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:50.8px;display:grid;grid-template-columns:max-content;grid-template-rows:30px;align-items:center;padding:10px;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{width:100%;height:68.8px;display:grid;grid-template-columns:minmax(0,max-content) 20px;align-items:start;justify-content:space-between;padding:14px 0;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row::after{content:"";width:20px;height:20px;display:block;background:currentColor;clip-path:polygon(25% 35%,50% 60%,75% 35%,80% 42%,50% 72%,20% 42%)}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:0;border-radius:0}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-title{font-size:25px;line-height:30px;font-weight:700}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-template-columns:minmax(0,1fr) 157px;gap:5px;margin-top:14px}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157px;min-width:157px;height:41px;border-radius:5px;padding:8px;font-size:16px;line-height:22px;font-weight:700}');
+    expect(storefrontStyles).toContain('.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray{display:grid;grid-template-columns:360px;grid-template-rows:126px 58px;bottom:0;left:10px;width:370px;height:196px;padding:5px;border-radius:0;box-shadow:none;background:#fff}');
+    expect(storefrontStyles).toContain('.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-btn-next{width:360px;height:38px;border-radius:5px;padding:8px;font-size:14px;line-height:22px;font-weight:700}');
+    expect(storefrontStyles).toContain('@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:49px;gap:20px;margin:0 0 16px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:49px;font-size:15px;line-height:27px}');
+    expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{height:72.4px;padding:14px 0;font-size:18px;line-height:32.4px}');
+  });
+
+  it("matches Standard Design step timeline contract", () => {
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
+    const storefrontStyles = `${source}\n${css}`;
+
+    expect(source).toContain("createStandardStepTimeline(");
+    expect(source).toContain("standard-navigation-items-container");
+    expect(source).toContain("standard-navigation-step-img-container");
+    expect(source).toContain("standard-steps-progress-bar-container");
+    expect(source).toContain("--standard-timeline-count");
+    expect(source).toContain("--standard-timeline-width");
+    expect(source).toContain("--standard-timeline-progress-left");
+    expect(source).toContain("--standard-timeline-progress-width");
+    expect(source).toContain("--standard-timeline-progress-fill");
+
+    expect(storefrontStyles).toContain(".step-timeline--standard");
+    expect(storefrontStyles).toContain("grid-template-columns:repeat(var(--standard-timeline-count,2),minmax(0,1fr))");
+    expect(storefrontStyles).toContain("grid-template-rows:40px 36.8px");
+    expect(storefrontStyles).toContain("width:var(--standard-timeline-width,60%)");
+    expect(storefrontStyles).toContain("height:76.8px");
+    expect(storefrontStyles).toContain("top:17px");
+    expect(storefrontStyles).toContain("height:6px");
+    expect(storefrontStyles).toContain("background:#ccc");
+    expect(storefrontStyles).toContain("background:#1e1e1e");
+    expect(storefrontStyles).toContain("border:4px solid #000");
+    expect(storefrontStyles).toContain("border:2px solid #d4d5d6");
+    expect(storefrontStyles).toContain("isolation:isolate");
+    expect(storefrontStyles).toContain("z-index:2");
+    expect(storefrontStyles).toContain("filter:none!important;opacity:1!important");
+    expect(storefrontStyles).toContain("background:#fff");
+    expect(storefrontStyles).toContain("pointer-events:none");
+    expect(storefrontStyles).toContain("font-size:16px");
+    expect(storefrontStyles).toContain("line-height:28.8px");
+    expect(storefrontStyles).toContain("font-size:12px");
+    expect(storefrontStyles).toContain("line-height:21.6px");
+  });
+
+  it("matches Standard Design discount progress modes", () => {
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
+    const storefrontStyles = `${source}\n${css}`;
+
+    expect(source).toContain("fpb-dp-simple");
+    expect(source).toContain("fpb-dp-step_based");
+    expect(source).toContain("renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement)");
+
+    expect(storefrontStyles).toContain("--fpb-discount-track-empty:#C1E7C5");
+    expect(storefrontStyles).toContain("--fpb-discount-track-filled:#15A524");
+    expect(storefrontStyles).toContain(".fpb-dp-simple .fpb-dp-track");
+    expect(storefrontStyles).toContain(".fpb-dp-step_based .fpb-dp-track");
+    expect(storefrontStyles).toContain("height:6px");
+    expect(storefrontStyles).toContain("background:var(--fpb-discount-track-empty,#C1E7C5)");
+    expect(storefrontStyles).toContain("background:var(--fpb-discount-track-filled,#15A524)");
+    expect(storefrontStyles).toContain("min-width:0");
+    expect(storefrontStyles).not.toContain(".fpb-dp-sidebar .fpb-dp-fill {\n  background:#B7E5BD");
+  });
+
+  it("matches Standard Design empty sidebar and timeline interaction contract", () => {
+    const source = readFullPageWidgetSources();
+    const css = readFullPageStyles();
+    const storefrontStyles = `${source}\n${css}`;
+
+    expect(source).toContain("const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);");
+    expect(source).toContain("if (isStandardDesktopSidebar || allSelectedProducts.length > 0)");
+    expect(source).toContain("this._renderStandardSidebarEmptySlots(productsContainer)");
+    expect(source).toContain("? `${allSelectedProducts.length} item(s)`");
+    expect(source).toContain("if (!isStandardDesktopSidebar && tierCta)");
+    expect(source).toContain("if (!isStandardDesktopSidebar && boxSelection)");
+    expect(source).toContain("if (!isStandardDesktopSidebar) this._renderFreeGiftSection(panel);");
+    expect(source).toContain("if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)))");
+    expect(source).toContain("ToastManager.show('Please meet the quantity conditions for the current step before proceeding.')");
+
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel,.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:1px solid #e3e3e3;border-radius:10px;grid-template-rows:55px 158.969px 298.797px 70px;min-height:639.766px;height:639.766px;max-height:none;top:80px}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header{display:grid;grid-template-columns:minmax(0,1fr) 82.9375px;grid-template-rows:55px;gap:8px;margin:0;grid-row:1}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-clear-btn{display:grid;grid-template-columns:22px 32.9375px;grid-template-rows:25.1875px;gap:0;width:82.9375px;height:35.1875px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-discount-progress.fpb-dp-sidebar{grid-row:2;align-self:end}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-item-count{grid-row:3;align-self:start;font-size:16px;font-weight:400;line-height:28.8px;color:#000;margin:0}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-products{grid-row:3;align-self:start;display:grid;grid-template-columns:314.266px;grid-template-rows:75px 170px;gap:15px;width:324.266px;height:260px;min-height:260px;max-height:260px;padding:0 10px 0 0;margin:38.797px 0 0;overflow:hidden}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-row{display:grid;grid-template-columns:75px 158.328px 62.9375px;grid-template-rows:75px;gap:9px;padding:0;border:0;background:transparent}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot{display:grid;grid-template-columns:75px 168.656px 50.6094px;grid-template-rows:75px;gap:10px;height:75px;animation:none}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot:nth-child(2){height:170px}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-thumb{width:75px;height:75px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-row:4;grid-template-columns:162.125px 162.141px;grid-template-rows:44px;gap:0;margin:10px 0 0;padding:15px 0 0;align-items:start}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next:disabled{opacity:1;cursor:pointer}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-sidebar-tier-cta,.layout-sidebar[data-fpb-design-preset=DEFAULT] .box-selection-container,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-free-gift,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-addon-message{display:none!important}");
   });
 
   it("matches Classic Design CLASSIC side-footer storefront contract", () => {

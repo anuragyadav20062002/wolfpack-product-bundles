@@ -1531,6 +1531,12 @@ class BundleWidgetFullPage {
     return this.resolveFullPageCardCtaMode() === 'icon';
   }
 
+  _isStandardDesktopSidebar(panel) {
+    return this.resolveFullPageLayout() === 'footer_side'
+      && this.getFullPageDesignPreset() === 'DEFAULT'
+      && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
+  }
+
   // Render the sidebar panel content (used by footer_side layout)
   renderSidePanel(panel) {
     if (!panel) return;
@@ -1554,18 +1560,26 @@ class BundleWidgetFullPage {
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
     const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+    const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
     const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
     const summaryText = this.getBundleSummaryText();
 
     // Header: "Your Bundle" + Clear
     const header = document.createElement('div');
     header.className = 'side-panel-header';
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'side-panel-header-copy';
     const headerTitle = document.createElement('span');
     headerTitle.className = 'side-panel-title';
     headerTitle.textContent = summaryText.title;
-    header.appendChild(headerTitle);
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(headerTitle);
+      header.appendChild(headerCopy);
+    } else {
+      header.appendChild(headerTitle);
+    }
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar || allSelectedProducts.length > 0) {
       const clearBtn = document.createElement('button');
       clearBtn.className = 'side-panel-clear-btn';
       clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
@@ -1581,15 +1595,19 @@ class BundleWidgetFullPage {
     const subtitle = document.createElement('p');
     subtitle.className = 'side-panel-subtitle';
     subtitle.textContent = summaryText.subTitle;
-    panel.appendChild(subtitle);
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(subtitle);
+    } else {
+      panel.appendChild(subtitle);
+    }
 
     const tierCta = this.createSidebarTierCta(nextRule);
-    if (tierCta) {
+    if (!isStandardDesktopSidebar && tierCta) {
       panel.appendChild(tierCta);
     }
 
     const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
-    if (boxSelection) {
+    if (!isStandardDesktopSidebar && boxSelection) {
       panel.appendChild(boxSelection);
     }
 
@@ -1635,12 +1653,17 @@ class BundleWidgetFullPage {
     // Item count label
     const countLabel = document.createElement('div');
     countLabel.className = 'side-panel-item-count';
-    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    countLabel.textContent = isStandardDesktopSidebar
+      ? `${allSelectedProducts.length} item(s)`
+      : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
     panel.appendChild(countLabel);
 
     // Selected products list
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
+    if (isStandardDesktopSidebar) {
+      productsContainer.classList.add('side-panel-products--standard');
+    }
     if (isHorizontalPreset) {
       productsContainer.classList.add('side-panel-products--slots');
     }
@@ -1696,6 +1719,8 @@ class BundleWidgetFullPage {
 
         productsContainer.appendChild(row);
       });
+    } else if (isStandardDesktopSidebar) {
+      this._renderStandardSidebarEmptySlots(productsContainer);
     }
     if (isHorizontalPreset) {
       const requiredSlots = Math.max(
@@ -1713,7 +1738,7 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    if (!isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
+    if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
       this._renderSidebarProductSkeletons(skeletonContainer);
@@ -1721,7 +1746,7 @@ class BundleWidgetFullPage {
     }
 
     // Free gift section (locked or unlocked)
-    this._renderFreeGiftSection(panel);
+    if (!isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
 
     // Total
     const totalSection = document.createElement('div');
@@ -1761,7 +1786,10 @@ class BundleWidgetFullPage {
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT'
+      ? this._resolveText('nextButton', 'Next')
+      : 'Next Step';
+    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : nextStepLabel;
     if (sidebarTierCtaContent) {
       const labelHtml = sidebarTierCtaContent.label
         ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
@@ -1771,7 +1799,7 @@ class BundleWidgetFullPage {
         : '';
       nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
     }
-    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
+    if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
       nextBtn.disabled = true;
     }
     nextBtn.addEventListener('click', () => {
@@ -2047,6 +2075,17 @@ class BundleWidgetFullPage {
     return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
   }
 
+  _getDefaultTimelineIconDataUri(step) {
+    const svg = this._getDefaultTimelineIcon(step)
+      .replace('class="timeline-step-icon--svg"', 'xmlns="http://www.w3.org/2000/svg"')
+      .replace(' xmlns="http://www.w3.org/2000/svg"', '');
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  _isStandardSideFooterTimeline() {
+    return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+  }
+
   buildStepTimelineEntries() {
     const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
     const entries = [];
@@ -2080,6 +2119,10 @@ class BundleWidgetFullPage {
 
   // Create circular icon-based step timeline with connecting lines and three icon states
   createStepTimeline() {
+    if (this._isStandardSideFooterTimeline()) {
+      return this.createStandardStepTimeline();
+    }
+
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
 
@@ -2167,6 +2210,103 @@ class BundleWidgetFullPage {
       }
     });
 
+    return timeline;
+  }
+
+  createStandardStepTimeline() {
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline step-timeline--standard';
+
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      return timeline;
+    }
+
+    const timelineEntries = this.buildStepTimelineEntries();
+    const entryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const progressFill = entryCount > 1
+      ? Math.max(0, Math.min(100, (activeEntryIndex / (entryCount - 1)) * 100))
+      : 0;
+    const progressLeft = 100 / (entryCount * 2);
+    const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
+    const timelineWidth = Math.min(100, entryCount * 30);
+
+    timeline.style.setProperty('--standard-timeline-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'standard-navigation-items-container';
+
+    timelineEntries.forEach((entry) => {
+      const step = entry.step;
+      const index = entry.stepIndex;
+      const itemEl = document.createElement('div');
+      itemEl.className = 'standard-navigation-item timeline-step';
+      itemEl.dataset.stepIndex = index;
+      itemEl.dataset.timelineType = entry.type;
+
+      const isDefaultStep = step.isDefault === true;
+      const isCurrent = entry.type === 'step' && index === this.currentStepIndex;
+      const isCompleted = entry.type === 'step' && !isCurrent && this.isStepCompleted(index);
+      const isAccessible = this.isStepAccessible(index);
+
+      if (isDefaultStep) itemEl.classList.add('timeline-step--included');
+      if (isCurrent) itemEl.classList.add('timeline-step--active');
+      if (isCompleted) itemEl.classList.add('timeline-step--completed');
+      if (!isCurrent && !isCompleted) itemEl.classList.add('timeline-step--inactive');
+      if (!isAccessible) itemEl.classList.add('timeline-step--locked');
+
+      const escapedName = this._escapeHTML(entry.label) || `Step ${index + 1}`;
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+      const iconUrl = uploadedIconUrl || this._getDefaultTimelineIconDataUri(step);
+
+      itemEl.innerHTML = `
+        <div class="standard-navigation-step-img-container timeline-icon-wrapper">
+          <img class="standard-navigation-image timeline-step-icon" src="${this._escapeHTML(iconUrl)}" alt="${escapedName}">
+        </div>
+        <div class="standard-navigation-title-container">
+          <p class="standard-navigation-title timeline-step-name">${escapedName}</p>
+        </div>
+      `;
+
+      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
+        itemEl.style.cursor = 'pointer';
+        itemEl.addEventListener('click', () => {
+          if (!this.isStepAccessible(index)) {
+            ToastManager.show('Please complete the previous steps first.');
+            return;
+          }
+          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+            ToastManager.show('Please meet the step conditions before proceeding.');
+            return;
+          }
+          this.currentStepIndex = index;
+          this.searchQuery = '';
+          this.activeCollectionId = null;
+          this.reRenderFullPage();
+        });
+      }
+
+      itemsContainer.appendChild(itemEl);
+    });
+
+    if (entryCount > 1) {
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'standard-steps-progress-bar-container';
+      progressContainer.innerHTML = `
+        <div class="standard-steps-progress-bar">
+          <div class="standard-steps-progress-bar-filled"></div>
+        </div>
+      `;
+      itemsContainer.appendChild(progressContainer);
+    }
+
+    timeline.appendChild(itemsContainer);
     return timeline;
   }
 
@@ -3080,6 +3220,8 @@ class BundleWidgetFullPage {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);
     }
 
+    this.applyStandardExpandedVariantTitle(cardElement, product);
+
     // Default (included) step: add "Included" badge and disable interaction controls
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
     if (currentStepData?.isDefault) {
@@ -3144,6 +3286,28 @@ class BundleWidgetFullPage {
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
     return cardElement;
+  }
+
+  applyStandardExpandedVariantTitle(cardElement, product) {
+    if (this.getFullPageDesignPreset() !== 'DEFAULT') return;
+    if (!cardElement || !product?.parentProductId || !product?.variantTitle || product.variantTitle === 'Default Title') return;
+
+    const titleEl = cardElement.querySelector('.product-title');
+    if (!titleEl) return;
+
+    const parentTitle = product.parentTitle || product.title || '';
+    cardElement.classList.add('product-card--expanded-variant');
+    titleEl.innerHTML = '';
+
+    const mainTitle = document.createElement('span');
+    mainTitle.className = 'product-title-main';
+    mainTitle.textContent = parentTitle;
+
+    const variantTitle = document.createElement('span');
+    variantTitle.className = 'product-title-variant';
+    variantTitle.textContent = product.variantTitle;
+
+    titleEl.append(mainTitle, variantTitle);
   }
 
   applySelectedQuantityBadge(cardElement, currentQuantity) {
@@ -4108,6 +4272,25 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
+  _renderStandardSidebarEmptySlots(container) {
+    for (let i = 0; i < 2; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
+      slot.innerHTML = `
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+        </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+          <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        </div>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
+      `;
+      container.appendChild(slot);
+    }
+  }
+
   // Render empty-summary skeleton rows that match selected product rows.
   _renderSidebarProductSkeletons(container) {
     for (let i = 0; i < 5; i++) {
@@ -4617,7 +4800,9 @@ class BundleWidgetFullPage {
     const isReached = discountInfo.hasDiscount;
     const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
 
-    if ((this.config.discountProgressBarType || 'step_based') === 'step_based') {
+    const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
+
+    if (progressBarType === 'step_based') {
       const milestones = this.getDiscountProgressMilestones(totalPrice, totalQuantity);
       if (milestones.length > 0) {
         return this.renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement);
@@ -4640,7 +4825,9 @@ class BundleWidgetFullPage {
     }
 
     const bar = document.createElement('div');
-    bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
+    bar.className = progressBarType === 'simple'
+      ? 'fpb-discount-progress fpb-dp-simple' + (isReached ? ' reached' : '')
+      : 'fpb-discount-progress fpb-dp-step_based' + (isReached ? ' reached' : '');
     bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const row = document.createElement('div');
@@ -6280,6 +6467,7 @@ class BundleWidgetFullPage {
 
     const preset = rawPresetId.trim().toUpperCase();
     if (preset === 'STANDARD') return 'DEFAULT';
+    if (preset === 'DEFAULT_FBP') return 'DEFAULT';
     return preset || 'DEFAULT';
   }
 
