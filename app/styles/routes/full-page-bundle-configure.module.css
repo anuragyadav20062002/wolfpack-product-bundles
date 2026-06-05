@@ -2153,6 +2153,10 @@
 }
 
 .addonsLanguageButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: center;
   min-height: 28px;
   padding: 4px 10px;
   border: 1px solid #c9cccf;
@@ -2163,6 +2167,15 @@
   font-size: 12px;
   font-weight: 650;
   line-height: 1.2;
+}
+
+.addonsLanguageButtonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: #6d7175;
 }
 
 .addonsLanguageButton:disabled {

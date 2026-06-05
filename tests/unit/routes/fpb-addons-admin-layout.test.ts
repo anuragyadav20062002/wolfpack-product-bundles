@@ -30,6 +30,7 @@ describe("Full Page Add-ons Admin layout", () => {
       "addonsTierHeaderActive",
       "addonsTierTitle",
       "addonsTierDeleteButton",
+      "addonsLanguageButtonIcon",
     ].forEach((marker) => {
       expect(routeSource).toContain(`fullPageBundleStyles.${marker}`);
       expect(cssSource).toContain(`.${marker}`);
@@ -121,6 +122,25 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(routeSource).toContain('type: "addon-step"');
     expect(routeSource).toContain('type: "addon-section"');
     expect(routeSource).toContain('type: "addon-footer"');
+  });
+
+  it("keeps visible globe icons on Add-ons Multi Language buttons", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+    const topButtonStart = section.indexOf("openAddonStepMultiLanguageModal");
+    const sectionButtonStart = section.indexOf("openAddonSectionMultiLanguageModal");
+    const footerButtonStart = section.indexOf("openAddonFooterMultiLanguageModal");
+
+    expect(topButtonStart).toBeGreaterThan(-1);
+    expect(sectionButtonStart).toBeGreaterThan(-1);
+    expect(footerButtonStart).toBeGreaterThan(-1);
+    expect(section.slice(topButtonStart, topButtonStart + 420)).toContain('type="globe"');
+    expect(section.slice(topButtonStart, topButtonStart + 420)).toContain("Multi Language");
+    expect(section.slice(sectionButtonStart, sectionButtonStart + 420)).toContain('type="globe"');
+    expect(section.slice(sectionButtonStart, sectionButtonStart + 420)).toContain("Multi Language");
+    expect(section.slice(footerButtonStart - 120, footerButtonStart + 160)).toContain('icon="globe"');
+    expect(section.slice(footerButtonStart - 120, footerButtonStart + 160)).toContain("Multi Language");
   });
 
   it("uses Add-ons-specific variables in the footer variables modal", () => {

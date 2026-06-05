@@ -3765,6 +3765,9 @@ export default function ConfigureBundleFlow() {
                             className={fullPageBundleStyles.addonsLanguageButton}
                             onClick={openAddonStepMultiLanguageModal}
                           >
+                            <span className={fullPageBundleStyles.addonsLanguageButtonIcon} aria-hidden="true">
+                              <s-icon type="globe" />
+                            </span>
                             Multi Language
                           </button>
                         </div>
@@ -3849,6 +3852,9 @@ export default function ConfigureBundleFlow() {
                             className={fullPageBundleStyles.addonsLanguageButton}
                             onClick={openAddonSectionMultiLanguageModal}
                           >
+                            <span className={fullPageBundleStyles.addonsLanguageButtonIcon} aria-hidden="true">
+                              <s-icon type="globe" />
+                            </span>
                             Multi Language
                           </button>
                         </div>
