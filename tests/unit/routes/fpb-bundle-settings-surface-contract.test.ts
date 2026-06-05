@@ -21,6 +21,9 @@ describe("Full Page Bundle Settings surface contract", () => {
     expect(settingsSection).toContain("Slot Icon");
     expect(settingsSection).toContain("Variant Selector");
     expect(settingsSection).toContain("Show Text on + Button");
+    expect(settingsSection).toContain("INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE");
+    expect(settingsSection).toContain("Pre-order &amp; Subscription Integration");
+    expect(settingsSection).toContain("accessibilityLabel=\"Enable pre-order and subscription integration\"");
     expect(settingsSection).toContain("Bundle Cart Title");
     expect(settingsSection).toContain("Bundle Cart Subtitle");
     expect(settingsSection).toContain("Cart line item discount display");
@@ -43,5 +46,7 @@ describe("Full Page Bundle Settings surface contract", () => {
     expect(settingsSection).not.toContain("Show product prices");
     expect(settingsSection).not.toContain("Show compare-at prices");
     expect(settingsSection).not.toContain("Allow quantity changes");
+    expect(settingsSection).not.toContain("Redirect to checkout after adding to cart");
+    expect(settingsSection).not.toContain("Bundles with 3+ products see 24% higher conversion rates");
   });
 });

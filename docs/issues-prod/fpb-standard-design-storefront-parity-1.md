@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-04
-**Last Updated:** 2026-06-05 16:37
+**Last Updated:** 2026-06-05 17:23
 
 ## Overview
 Match the FPB Standard Design storefront template UI to the live EB reference. Current live EB Standard Design maps to `bundleDesignTemplate: "FBP_SIDE_FOOTER"` and storefront runtime `bundleDesignPresetId: "DEFAULT_FBP"`.
@@ -193,6 +193,44 @@ Match the FPB Standard Design storefront template UI to the live EB reference. C
 ### 2026-06-05 16:37 - Commit prep
 - Preparing a scoped commit for the Standard storefront parity slice, full-page widget deploy assets, cache-bypass instruction update, test spec, and graphify rebuild.
 - Unrelated dirty files from other workstreams remain unstaged and out of scope for this commit.
+
+### 2026-06-05 16:47 - Desktop layout track parity re-audit started
+- User requested another FPB Standard Design parity slice focused on identifying and fixing current gaps.
+- Hard reloaded WPB desktop/mobile and EB desktop/mobile after clearing Cache Storage. WPB live storefront serves `window.__BUNDLE_WIDGET_VERSION__ = "3.0.7"` and Standard preset `DEFAULT`; EB remains `FBP_SIDE_FOOTER` + `DEFAULT_FBP`.
+- Desktop gap found: EB outer body grid is `813.938px 366.266px`, while WPB computes `332.938px 697.266px` even though the intended `0.6897fr 0.3103fr` selector matches. Root cause is Standard WPB sidebar min-content width: its internal panel grid computes two columns (`326px 324.266px`), forcing the outer sidebar track to ~697px.
+- Mobile recheck shows WPB product grid/tray are close to EB: `370px` content width, `177.5px` card columns, `264px` cards, and `370px` summary tray. This slice will stay focused on the desktop track-width blocker.
+- Next: add source-contract coverage for Standard one-column sidebar content grid, patch the Standard runtime template, bump the widget version, rebuild/minify full-page assets, and verify.
+
+### 2026-06-05 17:02 - Product title overflow parity slice started
+- User reported Standard product-card names are overflowing and getting cut.
+- Hard reloaded WPB and EB storefront pages after clearing Cache Storage. WPB live `3.0.8` shows a regular product title with `scrollHeight: 44px`, `clientHeight: 40px`, and `overflow: hidden`; EB keeps the same `40px` title row and `22px` line-height but uses visible overflow, letting the second line render without clipping.
+- Scope: update the Standard product-title contract so regular product names can visibly occupy the EB two-line title area without changing card height, grid rows, CTA size, or variant-card isolation.
+
+### 2026-06-05 17:02 - Product title overflow parity completed
+- Added failing Standard storefront contract coverage for EB-style visible product-title overflow on desktop and mobile, then patched `app/assets/widgets/full-page/templates/standard-template.js`.
+- Bumped `WIDGET_VERSION` to `3.0.9` and rebuilt `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js`.
+- Verification passed: focused Standard DEFAULT test failed before implementation and passed after, Standard contract suite passed, raw Standard template syntax check passed, generated full-page bundle syntax check passed, modified-file ESLint had 0 errors, and graphify rebuild completed.
+- Chrome verification after Cache Storage clear and `ignoreCache` hard reload: live WPB serves `window.__BUNDLE_WIDGET_VERSION__ = "3.0.9"`; desktop title `The Compare at Price Snowboard` keeps `height: 40px`, `scrollHeight: 44px`, `lineHeight: 22px`, and `overflowY: visible`; mobile keeps `177.5px x 264px` card geometry with `overflowY: visible`.
+
+### 2026-06-05 17:12 - Mobile product-card overflow parity started
+- User requested another FPB Standard Design parity slice only for mobile view.
+- Hard reloaded WPB and EB mobile storefronts after clearing Cache Storage. WPB live `3.0.9` product cards keep the EB `177.5px x 264px` geometry, but Standard mobile `.product-card` still computes `overflow: hidden`; EB mobile `.gbbProductItem` computes `overflow: visible`.
+- Gap: variant-as-individual mobile titles can still render `scrollHeight: 44px` in a `42px` title row while the parent card clips overflow, unlike EB's visible card overflow.
+- Scope: patch only Standard mobile product-card overflow so card geometry, image clipping, title rows, price row, and CTA size remain unchanged.
+
+### 2026-06-05 17:12 - Mobile footer parity scope added
+- User clarified the mobile footer is the most critical mobile component.
+- EB mobile footer evidence: outer `.gbbAddProductsPageFooterHTML` is `position: sticky`, `370px x 195.5625px`, `bottom: 0`, `z-index: 9999`, with a `360px` inner footer, `126.5625px` discount area using hidden overflow, `58px` action area, and a `360px x 38px` black `Next • Total` button.
+- WPB mobile footer evidence: `.fpb-mobile-summary-tray` matches the broad size and button geometry but is `position: fixed`, uses `196px` height and `126px` discount row, and keeps the discount area overflow visible.
+- Scope extended: keep the product-card overflow fix, and patch Standard mobile footer positioning/height/discount overflow to EB while preserving the current button width, typography, and action row geometry.
+
+### 2026-06-05 17:23 - Mobile product-card and footer parity completed
+- Patched Standard mobile product cards to keep EB `177.5px x 264px` geometry while allowing visible card overflow; product images still keep their own rounded clipping.
+- Patched Standard mobile footer to EB sticky tray behavior: `370px x 195.5625px`, `bottom: 0`, `z-index: 9999`, `126.5625px` hidden-overflow discount area, `58px` action area, and `360px x 38px` black CTA.
+- Bumped `WIDGET_VERSION` to `3.0.10`, rebuilt the full-page widget bundle, and restored unrelated product-page/SDK generated drift out of scope.
+- Verification passed: focused Standard DEFAULT Jest contract, broader Standard Jest contract suite, raw Standard template syntax check, generated full-page bundle syntax check, modified-file ESLint with 0 errors, graphify rebuild, and `git diff --check`.
+- Chrome verification after Cache Storage clear and `ignoreCache` hard reload: live WPB serves `window.__BUNDLE_WIDGET_VERSION__ = "3.0.10"` and Standard preset `DEFAULT`; mobile tray computes `position: sticky`, `370px x 195.5625px`, `bottom: 0`, `z-index: 9999`; discount area computes `360px x 126.5625px` with `overflow: hidden`; CTA computes `360px x 38px`; product card computes `177.5px x 264px` with `overflow: visible`; image remains `161.5px x 150px` with `overflow: hidden`.
+- Fresh EB mobile hard-reload comparison remains aligned: EB tray `370px x 195.5781px`, discount `360px x 126.5781px`, CTA `360px x 38px`, product card `177.5px x 264px`, and card overflow `visible`.
 
 ## Related Documentation
 - `internal docs/EB Implementation Reference.md`

@@ -543,12 +543,12 @@ Reference URLs:
 
 | Display Name | `bundleDesignTemplate` | `bundleDesignPresetId` | Body CSS class added |
 |---|---|---|---|
-| Standard Design | `FBP_SIDE_FOOTER` | `DEFAULT` | `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2` |
+| Standard Design | `FBP_SIDE_FOOTER` | `DEFAULT_FBP` | `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2` |
 | Classic Design | `FBP_SIDE_FOOTER` | `CLASSIC` | `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2` |
 | Compact Design | `FBP_SIDE_FOOTER` | `COMPACT` | `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2` |
 | Horizontal Design | `FBP_SIDE_FOOTER` | `HORIZONTAL` | `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2` |
 
-Rendering logic applies `DEFAULT`/`CLASSIC`/`COMPACT`/`HORIZONTAL` via the body attribute `gbb-bundle-design-preset-id="{presetId}"` — CSS scopes design differences under that selector.
+Rendering logic applies `DEFAULT_FBP`/`CLASSIC`/`COMPACT`/`HORIZONTAL` via the body attribute `gbb-bundle-design-preset-id="{presetId}"` — CSS scopes design differences under that selector. Older captured notes used `DEFAULT` for Standard Design, but a 2026-06-05 live reset of `WPB Research Landing Bundle 2026-05-22` confirmed EB storefront runtime now exposes Standard Design as `stepsConfigurationData.bundleDesignPresetId: "DEFAULT_FBP"` and body attribute `gbb-bundle-design-preset-id="DEFAULT_FBP"`.
 
 ### PPB Templates (Two-Field System)
 
@@ -588,7 +588,7 @@ Rendering logic applies `DEFAULT`/`CLASSIC`/`COMPACT`/`HORIZONTAL` via the body 
      data-is-last-page="true | false">
 ```
 
-Body attribute: `gbb-bundle-design-preset-id="{CLASSIC | STANDARD | COMPACT | HORIZONTAL}"`
+Body attribute: `gbb-bundle-design-preset-id="{DEFAULT_FBP | CLASSIC | COMPACT | HORIZONTAL}"`
 
 Per-product attributes: `productid="{numericId}"` `firstvariantid="{numericVariantId}"`
 

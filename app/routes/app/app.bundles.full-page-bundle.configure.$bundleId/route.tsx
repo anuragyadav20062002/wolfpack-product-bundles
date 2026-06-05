@@ -78,6 +78,7 @@ import {
 } from "../_shared/bundle-configure/modal-utils";
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
+import { INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE } from "../../../lib/bundle-config/product-page-admin-sections";
 
 // Types - extracted to separate module for better organization
 import type { LoaderData } from "./types";
@@ -88,6 +89,8 @@ const fullPageTemplateOptions = [
   { presetId: "COMPACT",    label: "Compact Design",    image: "/FPB-Compact..png"    },
   { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/FPB-Horizontal.png"   },
 ] as const;
+
+type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
 
 const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
@@ -926,6 +929,32 @@ export default function ConfigureBundleFlow() {
   } = configState;
   const suppressTopAppEmbedBannerForVisibility = activeSection === "bundle_visibility" || activeSection === "bundle_widget";
   const parentProductStatusUi = getParentProductStatusUi(productStatus || bundleProduct?.status || loadedBundleProduct?.status);
+  const refreshParentProductStatusFromShopify = useCallback(() => {
+    const revalidateNow = () => {
+      revalidator.revalidate();
+    };
+    let cleanup = () => {};
+    const revalidateOnReturn = () => {
+      revalidateNow();
+      cleanup();
+    };
+    const revalidateOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        revalidateOnReturn();
+      }
+    };
+    cleanup = () => {
+      window.removeEventListener("focus", revalidateOnReturn);
+      document.removeEventListener("visibilitychange", revalidateOnVisible);
+    };
+
+    [1000, 3000, 6000].forEach((delay) => {
+      window.setTimeout(revalidateNow, delay);
+    });
+    window.addEventListener("focus", revalidateOnReturn, { once: true });
+    document.addEventListener("visibilitychange", revalidateOnVisible);
+    window.setTimeout(cleanup, 30000);
+  }, [revalidator]);
 
   const [addonDraft, setAddonDraft] = useState(() =>
     buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
@@ -1027,6 +1056,14 @@ export default function ConfigureBundleFlow() {
   const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
   const [showTextOnPlusEnabled, setShowTextOnPlusEnabled] = useState<boolean>(
     !!((bundle as any).textOverrides?.addToCartButton)
+  );
+  const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
+    ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
+  );
+  const [individualSellingPlanShowFor, setIndividualSellingPlanShowFor] = useState<IndividualSellingPlanShowFor>(
+    ((bundle as any).individualSellingPlanSelection as { showFor?: unknown } | null)?.showFor === "OOS_PRODUCTS"
+      ? "OOS_PRODUCTS"
+      : "ALL_PRODUCTS"
   );
   const originalShowProductPricesRef = useRef<boolean>((bundle as any).showProductPrices ?? true);
   const originalShowCompareAtPricesRef = useRef<boolean>((bundle as any).showCompareAtPrices ?? false);
@@ -1871,6 +1908,10 @@ export default function ConfigureBundleFlow() {
         isEnabled: quantityValidationEnabled,
         allowedQuantity: Number.parseInt(maxQtyPerProduct || "1", 10) || 1,
       }));
+      formData.append("individualSellingPlanSelection", JSON.stringify({
+        isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
+        showFor: individualSellingPlanShowFor,
+      }));
 
       // Submit to server action using fetcher
 
@@ -1945,6 +1986,8 @@ export default function ConfigureBundleFlow() {
     quantityValidationEnabled,
     maxQtyPerProduct,
     productSlotIconUrl,
+    individualSellingPlanEnabled,
+    individualSellingPlanShowFor,
     shopify
   ]);
 
@@ -2345,6 +2388,7 @@ export default function ConfigureBundleFlow() {
         AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
         window.open(adminProductUrl, "_blank");
       }
+      refreshParentProductStatusFromShopify();
     };
     const intentsApi = (shopify as any).intents;
     if (typeof intentsApi?.invoke === "function") {
@@ -2353,6 +2397,7 @@ export default function ConfigureBundleFlow() {
           type: "shopify/Product",
           value: productGid,
         });
+        refreshParentProductStatusFromShopify();
         if (typeof intentResult?.catch === "function") {
           void intentResult.catch((error: unknown) => {
             AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
@@ -2365,7 +2410,7 @@ export default function ConfigureBundleFlow() {
       }
     }
     openFallback();
-  }, [shop, shopify]);
+  }, [shop, shopify, refreshParentProductStatusFromShopify]);
 
   const handleReadinessItemClick = useCallback((key: string) => {
     setReadinessOpen(false);
@@ -2427,6 +2472,7 @@ export default function ConfigureBundleFlow() {
   const handleCloseAddonSelectedProductsModal = useCallback(() => {
     setIsAddonSelectedProductsModalOpen(false);
     setAddonSelectedProductsTierIndex(null);
+    hidePolarisModal(addonSelectedProductsModalRef);
   }, []);
 
   const openAddonSelectedProductsModal = useCallback((tierIndex: number) => {
@@ -2447,25 +2493,42 @@ export default function ConfigureBundleFlow() {
     updateAddonDraft({ addonTiers: updated });
   }, [addonDraft.addonTiers, updateAddonDraft]);
 
-  const handleAddonSelectedProductAdd = useCallback(async (tierIndex: number) => {
+  const handleAddonSelectedProductAdd = useCallback(async (
+    tierIndex: number,
+    options?: { reopenSelectedProductsModal?: boolean },
+  ) => {
+    if (options?.reopenSelectedProductsModal) {
+      setAddonSelectedProductsTierIndex(tierIndex);
+      setIsAddonSelectedProductsModalOpen(false);
+      hidePolarisModal(addonSelectedProductsModalRef);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+    }
+
     const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
     const currentProducts = Array.isArray(addonTiers[tierIndex]?.selectedAddonProducts) ? addonTiers[tierIndex].selectedAddonProducts : [];
-    const picked = await (shopify as any).resourcePicker({
-      type: "product",
-      multiple: true,
-      selectionIds: currentProducts.map((product: any) => ({ id: product.graphqlId || product.id })),
-    });
-    const selection = Array.isArray(picked) ? picked : picked?.selection;
-    if (!selection) return;
-    const updated = addonTiers.map((tier: any, index: number) => (
-      index === tierIndex
-        ? {
-            ...tier,
-            selectedAddonProducts: selection.map(normalizeAddonPickerProduct),
-          }
-        : tier
-    ));
-    updateAddonDraft({ addonTiers: updated });
+    try {
+      const picked = await (shopify as any).resourcePicker({
+        type: "product",
+        multiple: true,
+        selectionIds: currentProducts.map((product: any) => ({ id: product.graphqlId || product.id })),
+      });
+      const selection = Array.isArray(picked) ? picked : picked?.selection;
+      if (!selection) return;
+      const updated = addonTiers.map((tier: any, index: number) => (
+        index === tierIndex
+          ? {
+              ...tier,
+              selectedAddonProducts: selection.map(normalizeAddonPickerProduct),
+            }
+          : tier
+      ));
+      updateAddonDraft({ addonTiers: updated });
+    } finally {
+      if (options?.reopenSelectedProductsModal) {
+        setAddonSelectedProductsTierIndex(tierIndex);
+        setIsAddonSelectedProductsModalOpen(true);
+      }
+    }
   }, [addonDraft.addonTiers, shopify, updateAddonDraft]);
 
   const handleDisableAddonStepConfirm = useCallback(() => {
@@ -3745,7 +3808,7 @@ export default function ConfigureBundleFlow() {
 
               return (
                 <div data-tour-target="fpb-free-gift-addons">
-                  <s-stack direction="block" gap="base">
+                  <s-stack direction="block" gap="small-100">
                     <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsReferenceStepCard}`}>
                       <div className={fullPageBundleStyles.panelHeader}>
                         <div className={fullPageBundleStyles.addonsTitleCluster}>
@@ -3774,71 +3837,61 @@ export default function ConfigureBundleFlow() {
                         </div>
                       </div>
                       <div className={`${fullPageBundleStyles.mediaFieldGrid} ${fullPageBundleStyles.addonsMediaFieldGrid}`}>
-                        <div className={fullPageBundleStyles.addonsIconColumn}>
-                          <div className={fullPageBundleStyles.addonsIconBox}>
-                            {addonDraft.stepImage ? (
-                              <img src={addonDraft.stepImage} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
-                            ) : (
-                              <svg
-                                className={fullPageBundleStyles.addonsGiftBoxDefault}
-                                viewBox="0 0 48 48"
-                                aria-hidden="true"
-                              >
-                                <path
-                                  d="M10 20H38V40C38 42.2 36.2 44 34 44H14C11.8 44 10 42.2 10 40V20Z"
-                                  fill="#F6F6F7"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M7 15H41V22H7V15Z"
-                                  fill="#FFFFFF"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinejoin="round"
-                                />
-                                <path d="M24 15V44" stroke="currentColor" strokeWidth="2" />
-                                <path d="M7 22H41" stroke="currentColor" strokeWidth="2" />
-                                <path
-                                  d="M24 15C20.7 10.2 17.7 8 15.5 8C13.3 8 11.5 9.8 11.5 12C11.5 14.2 13.3 15 16 15H24Z"
-                                  fill="#FFFFFF"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M24 15C27.3 10.2 30.3 8 32.5 8C34.7 8 36.5 9.8 36.5 12C36.5 14.2 34.7 15 32 15H24Z"
-                                  fill="#FFFFFF"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            )}
+                        <div className={fullPageBundleStyles.addonsIconReplaceGroup}>
+                          <div className={fullPageBundleStyles.addonsIconColumn}>
+                            <div className={fullPageBundleStyles.addonsIconBox}>
+                              {addonDraft.stepImage ? (
+                                <img src={addonDraft.stepImage} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
+                              ) : (
+                                <svg
+                                  className={fullPageBundleStyles.addonsGiftBoxDefault}
+                                  viewBox="0 0 48 48"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    d="M10 20H38V40C38 42.2 36.2 44 34 44H14C11.8 44 10 42.2 10 40V20Z"
+                                    fill="#F6F6F7"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M7 15H41V22H7V15Z"
+                                    fill="#FFFFFF"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path d="M24 15V44" stroke="currentColor" strokeWidth="2" />
+                                  <path d="M7 22H41" stroke="currentColor" strokeWidth="2" />
+                                  <path
+                                    d="M24 15C20.7 10.2 17.7 8 15.5 8C13.3 8 11.5 9.8 11.5 12C11.5 14.2 13.3 15 16 15H24Z"
+                                    fill="#FFFFFF"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M24 15C27.3 10.2 30.3 8 32.5 8C34.7 8 36.5 9.8 36.5 12C36.5 14.2 34.7 15 32 15H24Z"
+                                    fill="#FFFFFF"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                            </div>
                           </div>
-                          {showIconPickerForStep === "addon-direct" && (
-                            <FilePicker
-                              value={addonDraft.stepImage ?? null}
-                              onChange={(url: string | null) => {
-                                updateAddonDraft({ stepImage: url });
-                                setShowIconPickerForStep(null);
-                              }}
-                              label=""
-                              hideCropEditor
-                            />
-                          )}
-                          <s-button
+                          <button
+                            type="button"
                             className={fullPageBundleStyles.addonsReplaceButton}
-                            variant="secondary"
-                            icon="upload"
                             onClick={() => setShowIconPickerForStep(prev => prev === "addon-direct" ? null : "addon-direct")}
                           >
                             {showIconPickerForStep === "addon-direct" ? "Close picker" : "Replace"}
-                          </s-button>
+                          </button>
                         </div>
-                        <div className={fullPageBundleStyles.addonsFieldsColumn}>
-                          <s-stack direction="block" gap="small">
+                        <div className={fullPageBundleStyles.addonsStepTextGroup}>
+                          <div className={fullPageBundleStyles.addonsStepNameGroup}>
                             <s-text-field
                               label="Step Name"
                               value={addonDraft.personalizeStepText ?? ""}
@@ -3849,6 +3902,8 @@ export default function ConfigureBundleFlow() {
                               }}
                               autocomplete="off"
                             />
+                          </div>
+                          <div className={fullPageBundleStyles.addonsStepTitleGroup}>
                             <s-text-field
                               label="Step Title"
                               value={addonDraft.personalizePageSubtext ?? ""}
@@ -3857,9 +3912,22 @@ export default function ConfigureBundleFlow() {
                               }}
                               autocomplete="off"
                             />
-                          </s-stack>
+                          </div>
                         </div>
                       </div>
+                      {showIconPickerForStep === "addon-direct" && (
+                        <div className={fullPageBundleStyles.addonsIconPickerRow}>
+                          <FilePicker
+                            value={addonDraft.stepImage ?? null}
+                            onChange={(url: string | null) => {
+                              updateAddonDraft({ stepImage: url });
+                              setShowIconPickerForStep(null);
+                            }}
+                            label=""
+                            hideCropEditor
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsCard}`}>
@@ -4131,12 +4199,15 @@ export default function ConfigureBundleFlow() {
                                                   ))}
                                                 </div>
                                               )}
-                                              <s-button
-                                                variant="secondary"
-                                                onClick={() => addAddonTierCondition(idx)}
-                                              >
-                                                Add Tier Rule
-                                              </s-button>
+                                              <div className={fullPageBundleStyles.addonsTierRuleAction}>
+                                                <button
+                                                  type="button"
+                                                  className={fullPageBundleStyles.addonsTierFullWidthButton}
+                                                  onClick={() => addAddonTierCondition(idx)}
+                                                >
+                                                  Add Tier Rule
+                                                </button>
+                                              </div>
                                             </div>
                                           </s-stack>
                                         </div>
@@ -4144,17 +4215,20 @@ export default function ConfigureBundleFlow() {
                                       </div>
                                     );
                                   })}
-                              <s-button
-                                variant="secondary"
-                                onClick={() => {
-                                  updateAddonTiers([...addonTiers, {
-                                    ...createDefaultAddonDraftTier(addonTiers.length),
-                                  }]);
-                                  setActiveAddonTierIndex(addonTiers.length);
-                                }}
-                              >
-                                Add Add Ons Tier
-                              </s-button>
+                              <div className={fullPageBundleStyles.addonsTierAddAction}>
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.addonsTierFullWidthButton}
+                                  onClick={() => {
+                                    updateAddonTiers([...addonTiers, {
+                                      ...createDefaultAddonDraftTier(addonTiers.length),
+                                    }]);
+                                    setActiveAddonTierIndex(addonTiers.length);
+                                  }}
+                                >
+                                  Add Add Ons Tier
+                                </button>
+                              </div>
                             </>
                           );
                         })()}
@@ -5115,6 +5189,7 @@ export default function ConfigureBundleFlow() {
 
             {activeSection === "bundle_settings" && (() => {
               const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
+              const individualSellingPlanBlocked = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
 
               return (
                 <div data-tour-target="fpb-bundle-settings">
@@ -5170,9 +5245,6 @@ export default function ConfigureBundleFlow() {
                           onInput={(e) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
                           autocomplete="off"
                         />
-                        <s-banner tone="info">
-                          Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.
-                        </s-banner>
                         {/* Product Slots sub-section */}
                         {settingsStep && (
                           <s-stack direction="block" gap="small-400">
@@ -5289,6 +5361,38 @@ export default function ConfigureBundleFlow() {
                             </s-button>
                           </s-stack>
                         )}
+                        {individualSellingPlanBlocked && (
+                          <s-banner tone="warning">
+                            {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}
+                          </s-banner>
+                        )}
+                        <SettingsRow
+                          title="Pre-order &amp; Subscription Integration"
+                          description="Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle."
+                        >
+                          <s-switch
+                            accessibilityLabel="Enable pre-order and subscription integration"
+                            checked={!individualSellingPlanBlocked && individualSellingPlanEnabled || undefined}
+                            disabled={individualSellingPlanBlocked || undefined}
+                            onChange={(e) => {
+                              setIndividualSellingPlanEnabled((e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
+                          />
+                        </SettingsRow>
+                        {!individualSellingPlanBlocked && individualSellingPlanEnabled && (
+                          <s-select
+                            label="Apply to products"
+                            value={individualSellingPlanShowFor}
+                            onChange={(e) => {
+                              setIndividualSellingPlanShowFor((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor);
+                              markAsDirty();
+                            }}
+                          >
+                            <s-option value="ALL_PRODUCTS">All products</s-option>
+                            <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
+                          </s-select>
+                        )}
                       </s-stack>
                     </s-section>
 
@@ -5362,22 +5466,6 @@ export default function ConfigureBundleFlow() {
                             </span>
                           </label>
                         ))}
-                      </s-stack>
-                    </s-section>
-
-                    {/* Redirect to checkout — WPB-specific */}
-                    <s-section>
-                      <s-stack direction="block" gap="small">
-                        <SettingsRow
-                          title="Redirect to checkout after adding to cart"
-                          description="Skip the cart drawer/page after the bundle is added."
-                        >
-                          <s-switch
-                            accessibilityLabel="Redirect to checkout after adding to cart"
-                            checked={cartRedirectToCheckout || undefined}
-                            onChange={(e) => { setCartRedirectToCheckout((e.target as HTMLInputElement).checked); markAsDirty(); }}
-                          />
-                        </SettingsRow>
                       </s-stack>
                     </s-section>
 
@@ -5769,7 +5857,7 @@ export default function ConfigureBundleFlow() {
         <s-button slot="primary-action" onClick={handleCloseProductsModal}>Close</s-button>
       </s-modal>
 
-      <s-modal ref={addonSelectedProductsModalRef} heading="Selected Products">
+      <s-modal id="addon-selected-products-modal" ref={addonSelectedProductsModalRef} heading="Selected Products">
         {(() => {
           const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
           const tierIndex = addonSelectedProductsTierIndex ?? 0;
@@ -5807,11 +5895,19 @@ export default function ConfigureBundleFlow() {
             <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No products selected for this tier yet.</p>
           );
         })()}
-        <s-button slot="secondary-actions" onClick={handleCloseAddonSelectedProductsModal}>Close</s-button>
+        <s-button
+          slot="secondary-actions"
+          variant="secondary"
+          commandFor="addon-selected-products-modal"
+          command="--hide"
+          onClick={handleCloseAddonSelectedProductsModal}
+        >
+          Close
+        </s-button>
         <s-button
           slot="primary-action"
           variant="primary"
-          onClick={() => handleAddonSelectedProductAdd(addonSelectedProductsTierIndex ?? 0)}
+          onClick={() => handleAddonSelectedProductAdd(addonSelectedProductsTierIndex ?? 0, { reopenSelectedProductsModal: true })}
         >
           Add Products
         </s-button>

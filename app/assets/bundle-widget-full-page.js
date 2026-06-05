@@ -1364,14 +1364,15 @@ class BundleWidgetFullPage {
       0
     );
 
-    if (selectedFooterQuantity > 0) {
-      const countBadge = document.createElement('div');
-      countBadge.className = 'fpb-mobile-summary-count-badge';
-      countBadge.textContent = String(selectedFooterQuantity);
-      sheet.appendChild(countBadge);
-    }
+    const countBadge = document.createElement('div');
+    countBadge.className = 'fpb-mobile-summary-count-badge';
+    countBadge.textContent = String(selectedFooterQuantity);
+    sheet.appendChild(countBadge);
 
     if (this.selectedBundle?.pricing?.enabled) {
+      const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
+      const discountBlock = document.createElement('div');
+      discountBlock.className = 'side-panel-discount-message';
       const variables = TemplateManager.createDiscountVariables(
         this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
@@ -1389,12 +1390,13 @@ class BundleWidgetFullPage {
       }
       if (discountMessage) {
         const msgEl = document.createElement('div');
-        msgEl.className = 'side-panel-discount-message';
+        msgEl.className = 'fpb-mobile-summary-discount-text';
         msgEl.innerHTML = discountMessage;
-        sheet.appendChild(msgEl);
+        discountBlock.appendChild(msgEl);
       }
 
-      if (this.config.showDiscountProgressBar) {
+      const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
+      if (shouldShowProgressBar) {
         const progressBar = this._renderDiscountProgress({
           placement: "sidebar",
           combinedDiscountInfo,
@@ -1404,8 +1406,12 @@ class BundleWidgetFullPage {
         });
         if (progressBar) {
           progressBar.classList.add('fpb-dp-sidebar');
-          sheet.appendChild(progressBar);
+          discountBlock.appendChild(progressBar);
         }
+      }
+
+      if (discountBlock.childElementCount > 0) {
+        sheet.appendChild(discountBlock);
       }
     }
 
@@ -6922,3 +6928,6 @@ function initializeFullPageWidget() {
     }
   });
 }
+
+window.WolfpackFullPageBundle = window.WolfpackFullPageBundle || {};
+window.WolfpackFullPageBundle.init = initializeFullPageWidget;

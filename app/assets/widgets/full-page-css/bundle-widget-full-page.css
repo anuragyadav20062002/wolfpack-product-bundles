@@ -4786,10 +4786,10 @@ env(safe-area-inset-bottom));
 .fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message {
   margin:0;
   padding:5px 0 0;
-  font-size:15px;
-  font-weight:400;
-  line-height:27px;
-  text-align:left}
+  font-size:14px;
+  font-weight:700;
+  line-height:25.2px;
+  text-align:center}
 
 .fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar {
   width:310px;

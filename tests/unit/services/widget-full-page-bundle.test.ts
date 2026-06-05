@@ -150,7 +150,6 @@ describe('createFullPageBundle', () => {
   });
 
   it('creates the Shopify page with a theme-block marker instead of app-proxy assets', async () => {
-  it('creates the Shopify page with a theme-block marker instead of app-proxy assets', async () => {
     mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit', adjusted: false });
     const admin = makeAdmin({ createPageHandle: 'my-kit' });
 

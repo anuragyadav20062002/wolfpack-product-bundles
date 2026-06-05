@@ -1727,7 +1727,7 @@
 
 .addonsIconColumn {
   composes: iconColumn from "./bundle-configure-shared.module.css";
-  --addons-icon-control-width: 96px;
+  --addons-icon-control-width: 98px;
   align-items: stretch;
   width: var(--addons-icon-control-width);
 }
@@ -1735,6 +1735,7 @@
 .addonsIconBox {
   composes: iconBox from "./bundle-configure-shared.module.css";
   width: var(--addons-icon-control-width);
+  height: 88px;
 }
 
 .addonsGiftBoxDefault {
@@ -1745,16 +1746,60 @@
 }
 
 .addonsReplaceButton {
-  display: block;
   width: var(--addons-icon-control-width);
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border: 1px solid #c9cccf;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.addonsReplaceButton:hover {
+  background: #f6f6f7;
+}
+
+.addonsReplaceButton:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
 }
 
 .addonsMediaFieldGrid {
+  --addons-icon-control-width: 98px;
   grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
+  align-items: start;
 }
 
-.addonsFieldsColumn {
+.addonsIconReplaceGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: var(--addons-icon-control-width);
+}
+
+.addonsStepTextGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
+}
+
+.addonsStepNameGroup,
+.addonsStepTitleGroup {
+  min-width: 0;
+}
+
+.addonsIconPickerRow {
+  margin-top: 10px;
 }
 
 .iconRemoveButton {
@@ -2318,6 +2363,43 @@
   line-height: 1.35;
 }
 
+.addonsTierRuleAction {
+  width: 100%;
+  padding-top: 12px;
+}
+
+.addonsTierAddAction {
+  width: 100%;
+}
+
+.addonsTierFullWidthButton {
+  width: 100%;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid #8a8a8a;
+  border-radius: 6px;
+  background: #fff;
+  color: #202223;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+
+.addonsTierFullWidthButton:hover {
+  background: #f7f7f7;
+}
+
+.addonsTierFullWidthButton:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
 .addonSelectedProductList {
   display: flex;
   flex-direction: column;
@@ -2373,6 +2455,12 @@
 
 .mediaFieldGrid {
   composes: mediaFieldGrid from "./bundle-configure-shared.module.css";
+}
+
+.addonsReferenceStepCard .addonsMediaFieldGrid {
+  grid-template-columns: var(--addons-icon-control-width) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
 }
 
 /* ── Empty State ──────────────────────────────────────────────── */
@@ -2531,6 +2619,10 @@
   .richHelp:hover .richHelpCard,
   .richHelp:focus-within .richHelpCard { transform: translate(0, 0); }
   .richHelpCard::before { left: auto; right: 18px; transform: rotate(45deg); }
+}
+
+@media (max-width: 480px) {
+  .addonsReferenceStepCard .addonsMediaFieldGrid { grid-template-columns: 1fr; }
 }
 
 /* ── Take your bundle live card ── */

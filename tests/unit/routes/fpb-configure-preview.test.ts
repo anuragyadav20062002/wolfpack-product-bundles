@@ -141,6 +141,18 @@ describe('handleCreatePreviewPage', () => {
         }),
       })
     );
+    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(
+      mockAdmin,
+      previewPageId,
+      bundleId,
+      mockSession.shop,
+      expect.objectContaining({ id: bundleId })
+    );
+    expect(mockWriteBundleConfigPageMetafield).toHaveBeenCalledWith(
+      mockAdmin,
+      previewPageId,
+      expect.objectContaining({ id: bundleId })
+    );
     expect(body.success).toBe(true);
     expect(body.shareablePreviewUrl).toBe(PREVIEW_URL);
   });
@@ -155,7 +167,13 @@ describe('handleCreatePreviewPage', () => {
     const body: any = await response.json();
 
     expect(mockGetPreviewPageUrl).toHaveBeenCalledWith(mockAdmin, previewPageId, mockSession.shop, bundleId);
-    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
+    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(
+      mockAdmin,
+      previewPageId,
+      bundleId,
+      mockSession.shop,
+      expect.objectContaining({ id: bundleId })
+    );
     expect(mockWriteBundleConfigPageMetafield).toHaveBeenCalledWith(mockAdmin, previewPageId, expect.objectContaining({ id: bundleId }));
     expect(mockCreateFullPageBundle).not.toHaveBeenCalled();
     expect(getDb().bundle.update).not.toHaveBeenCalled();
@@ -218,7 +236,7 @@ describe('handleValidateWidgetPlacement — draft promotion', () => {
     const body: any = await response.json();
 
     expect(mockPublishPreviewPage).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
-    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop);
+    expect(mockRefreshFullPageBundlePageBody).toHaveBeenCalledWith(mockAdmin, previewPageId, bundleId, mockSession.shop, expect.objectContaining({ id: bundleId }));
     expect(mockCreateFullPageBundle).not.toHaveBeenCalled();
     expect(getDb().bundle.update).toHaveBeenCalledWith(
       expect.objectContaining({
