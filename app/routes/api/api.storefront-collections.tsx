@@ -1,8 +1,10 @@
 import { json } from "@remix-run/node";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import db from "../../db.server";
+import prisma from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { SHOPIFY_REST_API_VERSION } from "../../constants/api";
+import { getOfflineSessionForShop } from "../../services/offline-token.server";
+import { sessionStorage } from "../../shopify.server";
 
 // auth: public — fetched directly by the storefront widget (browser request, no Shopify session available)
 
@@ -74,10 +76,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     `;
 
     // Get storefront access token from database
-    const session = await db.session.findFirst({
-      where: { shop },
-      select: { storefrontAccessToken: true }
-    });
+    const session = await getOfflineSessionForShop(prisma, shop, sessionStorage);
 
     if (!session?.storefrontAccessToken) {
       AppLogger.warn("[STOREFRONT_COLLECTIONS] No storefront token found for shop", { component: "api.storefront-collections", shop });

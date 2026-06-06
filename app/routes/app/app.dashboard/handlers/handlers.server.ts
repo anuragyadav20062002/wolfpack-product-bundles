@@ -15,6 +15,7 @@ import { WidgetInstallationService } from "../../../../services/widget-installat
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
 import { calculateBundlePrice } from "../../../../services/bundles/pricing-calculation.server";
+import { getBundleEditPath } from "../../../../lib/bundle-navigation";
 
 // GraphQL Mutations
 const CREATE_BUNDLE_PRODUCT = `
@@ -405,18 +406,18 @@ export async function handleCreateBundle(
   }
 
   const bundleName = formData.get("bundleName");
-  const description = formData.get("description");
-  const bundleType = (formData.get("bundleType") as string) || BundleType.PRODUCT_PAGE;
-  const fullPageLayout = (formData.get("fullPageLayout") as string) || null;
+  const bundleType = formData.get("bundleType");
 
   if (typeof bundleName !== 'string' || bundleName.length === 0) {
     return json({ error: 'Bundle name is required' }, { status: 400 });
+  }
+  if (bundleType !== BundleType.PRODUCT_PAGE && bundleType !== BundleType.FULL_PAGE) {
+    return json({ error: 'Bundle type is required' }, { status: 400 });
   }
 
   try {
     const productInput: any = {
       title: bundleName,
-      descriptionHtml: description || `<h2>${bundleName}</h2><p>${description || 'Complete bundle package with curated products.'}</p><p>Build your perfect bundle by selecting from our hand-picked collection of products.</p>`,
       productType: "Bundle",
       vendor: "Wolfpack: Product Bundles",
       status: "DRAFT",
@@ -459,6 +460,12 @@ export async function handleCreateBundle(
     // Publish to all available sales channels
     await publishToSalesChannels(admin, shopifyProductId, 'create-bundle');
 
+    const shopRecord = await db.shop.findUnique({
+      where: { shopDomain: session.shop },
+      select: { firstCreateTourEligible: true },
+    });
+    const showFirstLoadTour = shopRecord?.firstCreateTourEligible === true;
+
     // Check if this is the first bundle (for auto-placement)
     const existingBundleCount = await db.bundle.count({
       where: {
@@ -474,15 +481,21 @@ export async function handleCreateBundle(
     const newBundle = await db.bundle.create({
       data: {
         name: bundleName,
-        description: typeof description === 'string' ? description : `${bundleName} - Bundle Product`,
         shopId: session.shop,
         bundleType: bundleType as any,
-        fullPageLayout: bundleType === BundleType.FULL_PAGE ? (fullPageLayout as any || FullPageLayout.FOOTER_BOTTOM) : null,
+        fullPageLayout: bundleType === BundleType.FULL_PAGE ? FullPageLayout.FOOTER_BOTTOM : null,
         status: BundleStatus.DRAFT,
         shopifyProductId: shopifyProductId,
         shopifyProductHandle: shopifyProductHandle || null,
       },
     });
+
+    if (showFirstLoadTour) {
+      await db.shop.update({
+        where: { shopDomain: session.shop },
+        data: { firstCreateTourEligible: false },
+      });
+    }
 
     // Check widget installation status for product bundles (production mode)
     let widgetCheckResult = null;
@@ -511,15 +524,14 @@ export async function handleCreateBundle(
       });
     }
 
-    // Build redirect URL based on bundle type
-    const routeBase = bundleType === BundleType.FULL_PAGE ? 'full-page-bundle' : 'product-page-bundle';
-    const redirectUrl = `/app/bundles/${routeBase}/configure/${newBundle.id}`;
+    const redirectUrl = `${getBundleEditPath(newBundle.id, bundleType)}?mode=create`;
 
     return json({
       success: true,
       bundleId: newBundle.id,
       bundleProductId: shopifyProductId,
       redirectTo: redirectUrl,
+      showFirstLoadTour,
       widgetStatus: widgetCheckResult ? {
         checked: true,
         widgetInstalled: widgetCheckResult.widgetInstalled,

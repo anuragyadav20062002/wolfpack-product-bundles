@@ -301,12 +301,12 @@ export async function calculateBundlePrice(admin: ShopifyAdmin, bundle: any): Pr
       component: "pricing-calculation",
     }, { totalPrice, stepCount });
 
-    // Apply discount if configured (NEW nested structure)
+    // Apply discount if configured (flat rule shape)
     if (bundle.pricing && bundle.pricing.enabled && bundle.pricing.rules) {
       const rules = Array.isArray(bundle.pricing.rules) ? bundle.pricing.rules : [];
       if (rules.length > 0) {
         const method = bundle.pricing.method;
-        const discountValue = parseFloat(rules[0].discount?.value) || 0;
+        const discountValue = parseFloat(rules[0].discountValue ?? rules[0].discount?.value ?? 0) || 0;
 
         if (method === 'percentage_off') {
           const discountAmount = totalPrice * (discountValue / 100);

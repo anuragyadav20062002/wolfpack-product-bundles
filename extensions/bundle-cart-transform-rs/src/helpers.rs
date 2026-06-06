@@ -37,6 +37,24 @@ pub fn is_free_gift_line(step_type_value: Option<&str>) -> bool {
     step_type_value == Some("free_gift")
 }
 
+/// Returns true when the cart line's `_bundle_step_type` attribute is `addon`.
+pub fn is_addon_line(step_type_value: Option<&str>) -> bool {
+    step_type_value
+        .map(|value| value == "addon" || value.starts_with("addon:"))
+        .unwrap_or(false)
+}
+
+pub fn parse_addon_discount(step_type_value: Option<&str>) -> Option<(String, String)> {
+    let value = step_type_value?;
+    let mut parts = value.split(':');
+    match (parts.next(), parts.next(), parts.next(), parts.next()) {
+        (Some("addon"), Some(discount_type), Some(discount_value), None) => {
+            Some((discount_type.to_string(), discount_value.to_string()))
+        }
+        _ => None,
+    }
+}
+
 /// Truncate a string to at most `max_chars` characters (UTF-8-safe).
 pub fn truncate(s: &str, max_chars: usize) -> &str {
     if s.len() <= max_chars {
@@ -85,6 +103,23 @@ mod tests {
     fn is_free_gift_false() { assert!(!is_free_gift_line(Some("default"))); }
     #[test]
     fn is_free_gift_none()  { assert!(!is_free_gift_line(None)); }
+    #[test]
+    fn is_addon_true()      { assert!(is_addon_line(Some("addon"))); }
+    #[test]
+    fn is_addon_with_discount_true() { assert!(is_addon_line(Some("addon:PERCENTAGE:10"))); }
+    #[test]
+    fn is_addon_false()     { assert!(!is_addon_line(Some("free_gift"))); }
+    #[test]
+    fn parses_addon_discount() {
+        assert_eq!(
+            parse_addon_discount(Some("addon:PERCENTAGE:10")),
+            Some(("PERCENTAGE".to_string(), "10".to_string()))
+        );
+    }
+    #[test]
+    fn ignores_invalid_addon_discount() {
+        assert_eq!(parse_addon_discount(Some("addon:PERCENTAGE")), None);
+    }
 
     #[test]
     fn truncate_short_unchanged() { assert_eq!(truncate("hello", 10), "hello"); }

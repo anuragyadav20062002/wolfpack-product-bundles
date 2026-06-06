@@ -21,3 +21,16 @@ liquid_path = "blocks/bundle-product-page.liquid"
 target = "section"
 liquid_path = "blocks/bundle-full-page.liquid"
 
+# Product page upsell placement blocks
+[[extensions.blocks]]
+target = "all"
+liquid_path = "blocks/bundle-upsell-block.liquid"
+
+[[extensions.blocks]]
+target = "all"
+liquid_path = "blocks/bundle-upsell-button.liquid"
+
+# Single App Embed — activated once per store in Theme Settings > App Embeds
+[[extensions.blocks]]
+target = "body"
+liquid_path = "blocks/bundle-app-embed.liquid"

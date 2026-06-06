@@ -47,7 +47,10 @@ const CSS_FILES = [
     source: join(ROOT_DIR, 'app/assets/widgets/full-page-css/bundle-widget-full-page.css'),
     target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page.css'),
   },
-  join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
+  {
+    source: join(ROOT_DIR, 'app/assets/widgets/product-page-css/bundle-widget.css'),
+    target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
+  },
   join(ROOT_DIR, 'extensions/bundle-builder/assets/modal-discount-bar.css'),
 ];
 
@@ -104,6 +107,18 @@ function minifyCSS(css) {
   // 5. Strip trailing semicolons immediately before }
   css = css.replace(/;}/g, '}');
 
+  // 5b. Shorten six-digit repeat hex colors (#ffffff -> #fff).
+  css = css.replace(/#([0-9a-fA-F])\1([0-9a-fA-F])\2([0-9a-fA-F])\3\b/g, '#$1$2$3');
+
+  // 5c. CSS zero values don't need units. This keeps Shopify app-block CSS under
+  // the 100 KB limit without changing computed styles.
+  css = css.replace(
+    /(^|[\s:,(])0(?:px|rem|em|%)(?=\b|[;},)\s])/g,
+    (_match, prefix) => `${prefix}0`,
+  );
+  css = css.replace(/(^|[\s:(,])0\.(\d+)/g, (_match, prefix, fraction) => `${prefix}.${fraction}`);
+  css = css.replace(/\btransparent\b/g, '#0000');
+
   // 6. Remove empty rules (selector followed by empty braces, including @-rules)
   //    Repeat until no more empty rules remain (handles nested empties).
   let prev;
@@ -114,6 +129,31 @@ function minifyCSS(css) {
 
   // 7. Trim
   return css.trim();
+}
+
+function resolveCssImports(sourcePath, css, seen = new Set()) {
+  const sourceDir = dirname(sourcePath);
+
+  return css.replace(
+    /@import\s+(?:url\()?['"]([^'")]+)['"]\)?\s*;/g,
+    (statement, importPath) => {
+      if (/^(?:https?:)?\/\//.test(importPath) || importPath.startsWith('/')) {
+        return statement;
+      }
+
+      const resolvedPath = join(sourceDir, importPath);
+      if (seen.has(resolvedPath)) {
+        return '';
+      }
+      if (!existsSync(resolvedPath)) {
+        throw new Error(`Missing CSS import ${importPath} from ${sourcePath}`);
+      }
+
+      seen.add(resolvedPath);
+      const importedCss = readFileSync(resolvedPath, 'utf-8');
+      return resolveCssImports(resolvedPath, importedCss, seen);
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +387,7 @@ function processFile(fileEntry, type) {
 
   let minified;
   if (type === 'css') {
-    minified = minifyCSS(original);
+    minified = minifyCSS(resolveCssImports(sourcePath, original));
   } else {
     minified = minifyJS(original);
   }

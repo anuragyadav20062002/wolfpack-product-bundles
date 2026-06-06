@@ -4,22 +4,20 @@
  * Tests: happy path, userErrors warning (non-fatal), null pageId skip
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
-
 // Mock logger
-vi.mock("../../../app/lib/logger", () => ({
+jest.mock("../../../app/lib/logger", () => ({
   AppLogger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-    startTimer: vi.fn(() => vi.fn()),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    startTimer: jest.fn(() => jest.fn()),
   },
 }));
 
 // Mock formatBundleForWidget to return a predictable shape
-vi.mock("../../../app/lib/bundle-formatter.server", () => ({
-  formatBundleForWidget: vi.fn((bundle: any) => ({
+jest.mock("../../../app/lib/bundle-formatter.server", () => ({
+  formatBundleForWidget: jest.fn((bundle: any) => ({
     id: bundle.id,
     name: bundle.name,
     steps: [],
@@ -45,7 +43,7 @@ function makeAdmin(opts: {
   userErrors?: { field: string; message: string }[];
   throws?: boolean;
 } = {}) {
-  const graphql = vi.fn();
+  const graphql = jest.fn();
 
   if (opts.throws) {
     graphql.mockRejectedValue(new Error("GraphQL network failure"));
@@ -68,7 +66,7 @@ function makeAdmin(opts: {
 
 describe("writeBundleConfigPageMetafield", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   it("returns early without calling graphql when pageId is null", async () => {
@@ -90,7 +88,7 @@ describe("writeBundleConfigPageMetafield", () => {
 
     await writeBundleConfigPageMetafield(admin, pageId, bundle);
 
-    expect(admin.graphql).toHaveBeenCalledOnce();
+    expect(admin.graphql).toHaveBeenCalledTimes(1);
     const call = admin.graphql.mock.calls[0];
     const variables = call[1].variables;
     expect(variables.metafields[0].ownerId).toBe(pageId);
@@ -137,3 +135,5 @@ describe("writeBundleConfigPageMetafield", () => {
     );
   });
 });
+
+export {};

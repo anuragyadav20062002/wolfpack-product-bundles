@@ -7,7 +7,7 @@
 
 import type { CSSDesignSettings, CSSGenerationContext } from "./types";
 import type { ThemeColors } from "../../services/theme-colors.server";
-import { generateCSSVariables, generateFullPageVariables } from "./css-variables-generator";
+import { generateCSSVariables, generateEBDcpBridgeCSS, generateFullPageVariables } from "./css-variables-generator";
 import { generateProductCardCSS } from "./product-card-generator";
 import { generateButtonCSS } from "./button-generator";
 import { generateFooterCSS } from "./footer-generator";
@@ -19,7 +19,7 @@ export type { CSSDesignSettings, CSSGenerationContext } from "./types";
 export type { ThemeColors } from "../../services/theme-colors.server";
 
 // Re-export individual generators for testing/direct access
-export { generateCSSVariables, generateFullPageVariables } from "./css-variables-generator";
+export { generateCSSVariables, generateEBDcpBridgeCSS, generateFullPageVariables } from "./css-variables-generator";
 export { generateProductCardCSS } from "./product-card-generator";
 export { generateButtonCSS } from "./button-generator";
 export { generateFooterCSS } from "./footer-generator";
@@ -40,7 +40,7 @@ export function generateCSSFromSettings(
   customCss: string = "",
   themeColors?: ThemeColors | null
 ): string {
-  // Resolve global color anchors: DCP custom value → theme color → hardcoded default
+  // Resolve global color anchors: Settings design value → theme color → hardcoded default
   const globalPrimaryButton = settings.globalPrimaryButtonColor || themeColors?.globalPrimaryButton || '#000000';
   const globalButtonText = settings.globalButtonTextColor || themeColors?.globalButtonText || '#FFFFFF';
   const globalPrimaryText = settings.globalPrimaryTextColor || themeColors?.globalPrimaryText || '#000000';
@@ -69,13 +69,14 @@ export function generateCSSFromSettings(
   const footerCSS = generateFooterCSS();
   const modalCSS = generateModalCSS();
   const responsiveCSS = generateResponsiveCSS();
+  const ebDcpBridgeCSS = generateEBDcpBridgeCSS(ctx);
 
   // Compose final CSS
   return `
 /*
  * Wolfpack Bundle Widget - Design Settings
  * Bundle Type: ${bundleType}
- * Auto-generated from Design Control Panel
+ * Auto-generated from Settings -> Design
  *
  * Global Colors System:
  * - Global colors automatically cascade to all relevant components
@@ -92,6 +93,7 @@ ${buttonCSS}
 ${footerCSS}
 ${modalCSS}
 ${responsiveCSS}
+${ebDcpBridgeCSS}
 
 /* ============================================
    MERCHANT CUSTOM CSS

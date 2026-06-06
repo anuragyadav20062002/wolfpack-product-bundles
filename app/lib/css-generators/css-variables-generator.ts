@@ -19,6 +19,178 @@ function buildBadgePositionVars(name: string, position: string): string {
   --bundle-${name}-badge-right: ${isLeft ? 'auto' : '6px'};`;
 }
 
+function readPath(source: unknown, path: string): unknown {
+  if (!source || typeof source !== 'object') return undefined;
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (!current || typeof current !== 'object') return undefined;
+    return (current as Record<string, unknown>)[key];
+  }, source);
+}
+
+function cssValue(value: unknown, fallback: string): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  return String(value);
+}
+
+function cssPx(value: unknown, fallback: string): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'number') return `${value}px`;
+  const raw = String(value).trim();
+  if (!raw) return fallback;
+  if (raw.toLowerCase().endsWith('px') || raw.startsWith('calc(')) return raw;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? `${parsed}px` : fallback;
+}
+
+function cssWeight(value: unknown, fallback: string): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  const raw = String(value).trim().toLowerCase();
+  if (raw === 'bold') return '700';
+  if (raw === 'regular') return '400';
+  return String(value);
+}
+
+function designPath(settings: Record<string, unknown>, path: string, fallback: string): string {
+  return cssValue(readPath(settings.pageCustomization, path), fallback);
+}
+
+function designPx(settings: Record<string, unknown>, path: string, fallback: string): string {
+  return cssPx(readPath(settings.pageCustomization, path), fallback);
+}
+
+function designWeight(settings: Record<string, unknown>, path: string, fallback: string): string {
+  return cssWeight(readPath(settings.pageCustomization, path), fallback);
+}
+
+function generateEBDcpRootAliases(ctx: CSSGenerationContext): string {
+  const s = ctx.settings as Record<string, unknown>;
+  const productCardBg = designPath(s, 'mixAndMatchConfig.productCard.productCardBgColor', cssValue(s.productCardBgColor, '#FFFFFF'));
+  const cardRadius = designPx(s, 'mixAndMatchConfig.productCard.productCardBorderRadius', cssPx(s.productCardBorderRadius, '10px'));
+  const imageRadius = designPx(s, 'mixAndMatchConfig.productCard.productCardImageBorderRadius', cssPx(s.productImageBorderRadius, '8px'));
+  const imageFit = designPath(s, 'mixAndMatchConfig.productCard.productCardImageFit', cssValue(s.productCardImageFit, 'cover'));
+  const titleColor = designPath(s, 'mixAndMatchConfig.productCard.productCardTitleColor', cssValue(s.productCardFontColor, ctx.globalPrimaryText));
+  const titleFont = designPx(s, 'mixAndMatchConfig.productCard.productCardTitleFont', cssPx(s.productCardFontSize, '16px'));
+  const titleWeight = designWeight(s, 'mixAndMatchConfig.productCard.productCardTitleWeight', cssWeight(s.productCardFontWeight, '700'));
+  const priceColor = designPath(s, 'mixAndMatchConfig.productCard.productCardPriceColor', cssValue(s.productFinalPriceColor, ctx.globalPrimaryText));
+  const priceFont = designPx(s, 'mixAndMatchConfig.productCard.productCardPriceFont', cssPx(s.productFinalPriceFontSize, '16px'));
+  const priceWeight = designWeight(s, 'mixAndMatchConfig.productCard.productCardPriceWeight', cssWeight(s.productFinalPriceFontWeight, '700'));
+  const comparedAtPriceColor = designPath(s, 'mixAndMatchConfig.productCard.productCardComparedAtPriceColor', cssValue(s.productStrikePriceColor, ctx.globalPrimaryText));
+  const comparedAtPriceFont = designPx(s, 'mixAndMatchConfig.productCard.productCardComparedAtPriceFont', cssPx(s.productStrikeFontSize, '14px'));
+  const comparedAtPriceWeight = designWeight(s, 'mixAndMatchConfig.productCard.productCardComparedAtPriceWeight', cssWeight(s.productStrikeFontWeight, '400'));
+  const buttonBg = designPath(s, 'mixAndMatchConfig.productCard.productCardButtonBgColor', cssValue(s.buttonBgColor, ctx.globalPrimaryButton));
+  const buttonText = designPath(s, 'mixAndMatchConfig.productCard.productCardButtonTextColor', cssValue(s.buttonTextColor, ctx.globalButtonText));
+  const buttonRadius = designPx(s, 'mixAndMatchConfig.productCard.productCardButtonBorderRadius', cssPx(s.buttonBorderRadius, '5px'));
+  const variantText = designPath(s, 'mixAndMatchConfig.productCard.productCardVariantSelectorTextColor', cssValue(s.variantSelectorTextColor, ctx.globalPrimaryText));
+  const variantFontSize = designPx(s, 'mixAndMatchConfig.productCard.productCardVariantSelectorFontSize', '14px');
+  const variantFontWeight = designWeight(s, 'mixAndMatchConfig.productCard.productCardVariantSelectorFontWeight', '400');
+  const tabsActiveBg = designPath(s, 'mixAndMatchConfig.tabs.tabsActiveBgColor', cssValue(s.tabsActiveBgColor, ctx.globalPrimaryButton));
+  const tabsActiveText = designPath(s, 'mixAndMatchConfig.tabs.tabsActiveTextColor', cssValue(s.tabsActiveTextColor, ctx.globalButtonText));
+  const tabsInactiveBg = designPath(s, 'mixAndMatchConfig.tabs.tabsInactiveBgColor', cssValue(s.tabsInactiveBgColor, '#F4F9F9'));
+  const tabsInactiveText = designPath(s, 'mixAndMatchConfig.tabs.tabsInactiveTextColor', cssValue(s.tabsInactiveTextColor, ctx.globalPrimaryText));
+  const tabsRadius = designPx(s, 'mixAndMatchConfig.tabs.tabsBorderRadius', cssPx(s.tabsBorderRadius, buttonRadius));
+  const footerBg = designPath(s, 'mixAndMatchConfig.footer.footerBgColor', cssValue(s.footerBgColor, ctx.globalFooterBg));
+  const footerText = designPath(s, 'mixAndMatchConfig.footer.footerTextColor', cssValue(s.footerTextColor, ctx.globalFooterText));
+  const footerNextBg = designPath(s, 'mixAndMatchConfig.footer.footerNextBtnBgColor', cssValue(s.footerNextButtonBgColor, ctx.globalPrimaryButton));
+  const footerNextText = designPath(s, 'mixAndMatchConfig.footer.footerNextBtnTextColor', cssValue(s.footerNextButtonTextColor, ctx.globalButtonText));
+  const footerBackBg = designPath(s, 'cartFooter.cartFooterBackButtonColor', cssValue(s.footerBackButtonBgColor, '#6d7175'));
+  const footerBackText = designPath(s, 'mixAndMatchConfig.footer.footerBackBtnTextColor', cssValue(s.footerBackButtonTextColor, ctx.globalFooterText));
+  const footerFinalPrice = designPath(s, 'mixAndMatchConfig.footer.footerFinalPriceColor', cssValue(s.footerFinalPriceColor, ctx.globalPrimaryText));
+  const footerRadius = designPx(s, 'mixAndMatchConfig.footer.footerBorderRadius', cssPx(s.footerBorderRadius, cardRadius));
+  const footerButtonRadius = designPx(s, 'mixAndMatchConfig.footer.footerButtonsBorderRadius', cssPx(s.footerNextButtonBorderRadius, buttonRadius));
+  const emptyBg = designPath(s, 'mixAndMatchConfig.emptyStateCard.emptyStateCardBgColor', cssValue(s.emptyStateCardBgColor, productCardBg));
+  const emptyBorder = designPath(s, 'mixAndMatchConfig.emptyStateCard.emptyStateCardBorderColor', cssValue(s.emptyStateCardBorderColor, buttonBg));
+  const emptyText = designPath(s, 'mixAndMatchConfig.emptyStateCard.emptyStateCardTextColor', cssValue(s.emptyStateTextColor, buttonBg));
+  const headerConditionFont = designPx(s, 'mixAndMatchConfig.bundleHeader.headerConditionTextFont', titleFont);
+  const headerDiscountFont = designPx(s, 'mixAndMatchConfig.bundleHeader.headerDiscountTextFont', comparedAtPriceFont);
+  const headerDiscountText = designPath(s, 'mixAndMatchConfig.bundleHeader.headerDiscountTextColor', comparedAtPriceColor);
+  const progressEmpty = designPath(s, 'mixAndMatchConfig.footer.footerDiscountProgressBarEmptyColor', '#C1E7C5');
+  const progressFilled = designPath(s, 'mixAndMatchConfig.footer.footerDiscountProgressBarFilledColor', buttonBg);
+
+  return `
+  /* EB SETTINGS DESIGN ALIASES */
+  --product-card-bg-color: ${productCardBg};
+  --product-card-border-radius: ${cardRadius};
+  --product-card-image-border-radius: ${imageRadius};
+  --product-card-image-fit: ${imageFit};
+  --product-card-title-color: ${titleColor};
+  --product-card-title-font: ${titleFont};
+  --product-card-title-weight: ${titleWeight};
+  --product-card-price-color: ${priceColor};
+  --product-card-price-font: ${priceFont};
+  --product-card-price-weight: ${priceWeight};
+  --product-card-compared-at-price-color: ${comparedAtPriceColor};
+  --product-card-compared-at-price-font: ${comparedAtPriceFont};
+  --product-card-compared-at-price-weight: ${comparedAtPriceWeight};
+  --product-card-button-bg-color: ${buttonBg};
+  --product-card-button-text-color: ${buttonText};
+  --product-card-button-border-radius: ${buttonRadius};
+  --product-card-variant-selector-text-color: ${variantText};
+  --product-card-variant-selector-font-size: ${variantFontSize};
+  --product-card-variant-selector-font-weight: ${variantFontWeight};
+  --tabs-active-bg-color: ${tabsActiveBg};
+  --tabs-active-text-color: ${tabsActiveText};
+  --tabs-inactive-bg-color: ${tabsInactiveBg};
+  --tabs-inactive-text-color: ${tabsInactiveText};
+  --tabs-border-radius: ${tabsRadius};
+  --footer-bg-color: ${footerBg};
+  --footer-text-color: ${footerText};
+  --footer-next-btn-bg-color: ${footerNextBg};
+  --footer-next-btn-text-color: ${footerNextText};
+  --footer-back-btn-bg-color: ${footerBackBg};
+  --footer-back-btn-text-color: ${footerBackText};
+  --footer-final-price-color: ${footerFinalPrice};
+  --footer-border-radius: ${footerRadius};
+  --footer-buttons-border-radius: ${footerButtonRadius};
+  --empty-state-card-bg-color: ${emptyBg};
+  --empty-state-card-border-color: ${emptyBorder};
+  --empty-state-card-text-color: ${emptyText};
+  --header-condition-text-font: ${headerConditionFont};
+  --header-discount-text-font: ${headerDiscountFont};
+  --header-discount-text-color: ${headerDiscountText};
+  --footer-discount-progress-bar-empty-color: ${progressEmpty};
+  --footer-discount-progress-bar-filled-color: ${progressFilled};`;
+}
+
+export function generateEBDcpBridgeCSS(ctx: CSSGenerationContext): string {
+  const s = ctx.settings as Record<string, unknown>;
+  const primaryColor = designPath(s, 'mixAndMatchConfig.productCard.productCardButtonBgColor', cssValue(s.buttonBgColor, ctx.globalPrimaryButton));
+  const buttonText = designPath(s, 'mixAndMatchConfig.productCard.productCardButtonTextColor', cssValue(s.buttonTextColor, ctx.globalButtonText));
+  const primaryText = designPath(s, 'mixAndMatchConfig.productCard.productCardTitleColor', cssValue(s.productCardFontColor, ctx.globalPrimaryText));
+  const secondaryColor = designPath(s, 'mixAndMatchConfig.tabs.tabsInactiveBgColor', cssValue(s.tabsInactiveBgColor, '#F4F9F9'));
+  const cartBg = designPath(s, 'mixAndMatchConfig.footer.footerBgColor', cssValue(s.footerBgColor, ctx.globalFooterBg));
+  const cartText = designPath(s, 'mixAndMatchConfig.footer.footerTextColor', cssValue(s.footerTextColor, ctx.globalFooterText));
+  const buttonRadius = designPx(s, 'mixAndMatchConfig.productCard.productCardButtonBorderRadius', cssPx(s.buttonBorderRadius, '5px'));
+  const cardRadius = designPx(s, 'mixAndMatchConfig.productCard.productCardBorderRadius', cssPx(s.productCardBorderRadius, '10px'));
+  const primaryFont = designPx(s, 'mixAndMatchConfig.productCard.productCardTitleFont', cssPx(s.productCardFontSize, '16px'));
+  const primaryWeight = designWeight(s, 'mixAndMatchConfig.productCard.productCardTitleWeight', cssWeight(s.productCardFontWeight, '700'));
+  const secondaryFont = designPx(s, 'mixAndMatchConfig.bundleHeader.headerDiscountTextFont', cssPx(s.productStrikeFontSize, '14px'));
+  const bodyFont = designPx(s, 'mixAndMatchConfig.productCard.productCardVariantSelectorFontSize', '14px');
+  const imageFit = designPath(s, 'mixAndMatchConfig.productCard.productCardImageFit', cssValue(s.productCardImageFit, 'cover'));
+
+  return `
+body[gbb-mix-consolidated-design="true"] {
+  --gbbMix-primary-color: var(--product-card-button-bg-color, ${primaryColor});
+  --gbbMix-primary-button-text-color: var(--product-card-button-text-color, ${buttonText});
+  --gbbMix-primary-text-color: var(--product-card-title-color, ${primaryText});
+  --gbbMix-secondary-color: var(--tabs-inactive-bg-color, ${secondaryColor});
+  --gbbMix-cart-bg-color: var(--footer-bg-color, ${cartBg});
+  --gbbMix-cart-text-color: var(--footer-text-color, ${cartText});
+  --gbbMix-button-border-radius: var(--product-card-button-border-radius, ${buttonRadius});
+  --gbbMix-card-border-radius: var(--product-card-border-radius, ${cardRadius});
+  --gbbMix-primary-font-size: var(--product-card-title-font, ${primaryFont});
+  --gbbMix-primary-font-weight: var(--product-card-title-weight, ${primaryWeight});
+  --gbbMix-secondary-font-size: var(--header-discount-text-font, ${secondaryFont});
+  --gbbMix-body-font-size: var(--product-card-variant-selector-font-size, ${bodyFont});
+  --gbbMix-image-fit: var(--product-card-image-fit, ${imageFit});
+}
+
+body[gbb-mix-consolidated-design="true"][gbbmix-template-type="PDP_INPAGE"] {
+  --gbbMix-primary-font-size: calc(var(--product-card-title-font, 16px) - 2px);
+  --gbbMix-secondary-font-size: calc(var(--header-discount-text-font, 14px) - 2px);
+  --gbbMix-body-font-size: calc(var(--product-card-variant-selector-font-size, 14px) - 2px);
+}`;
+}
+
 /**
  * Generate all CSS custom properties for the :root block
  */
@@ -41,7 +213,6 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-product-card-font-weight: ${s.productCardFontWeight || 600};
   --bundle-product-card-image-fit: ${s.productCardImageFit || 'cover'};
   --bundle-product-cards-per-row: ${s.productCardsPerRow || 4};
-  --bundle-product-price-display: ${s.productPriceVisibility !== false ? 'block' : 'none'};
   --bundle-product-title-display: ${s.productTitleVisibility !== false ? 'block' : 'none'};
   --bundle-product-price-bg-color: ${s.productPriceBgColor || '#F0F8F0'};
   --bundle-product-strike-price-color: ${s.productStrikePriceColor || globalSecondaryText};
@@ -222,10 +393,10 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-conditions-text-font-size: ${s.conditionsTextFontSize || 16}px;
   --bundle-discount-text-color: ${s.discountTextColor || globalPrimaryText};
   --bundle-discount-text-font-size: ${s.discountTextFontSize || 14}px;
-  /* Free Gift Badge — merchant-uploadable badge image + DCP-controlled position */
+  /* Free Gift Badge — merchant-uploadable badge image + Settings-controlled position */
   --bundle-free-gift-badge-url: ${s.freeGiftBadgeUrl ? `url("${s.freeGiftBadgeUrl}")` : 'none'};
   ${buildBadgePositionVars('free-gift', s.freeGiftBadgePosition ?? 'top-left')}
-  /* Included (Default) Badge — merchant-uploadable badge image + DCP-controlled position */
+  /* Included (Default) Badge — merchant-uploadable badge image + Settings-controlled position */
   --bundle-included-badge-url: ${s.includedBadgeUrl ? `url("${s.includedBadgeUrl}")` : 'none'};
   ${buildBadgePositionVars('included', s.includedBadgePosition ?? 'top-left')}
 
@@ -278,7 +449,8 @@ export function generateCSSVariables(ctx: CSSGenerationContext): string {
   --bundle-tier-pill-height: ${s.tierPillHeight ?? 52}px;
   --bundle-tier-pill-font-size: ${s.tierPillFontSize ?? 14}px;
   --bundle-tier-pill-font-weight: ${s.tierPillFontWeight ?? 600};
-  --bundle-tier-pill-gap: ${s.tierPillGap ?? 12}px;`;
+  --bundle-tier-pill-gap: ${s.tierPillGap ?? 12}px;
+${generateEBDcpRootAliases(ctx)}`;
 }
 
 /**

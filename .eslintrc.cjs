@@ -105,6 +105,10 @@ module.exports = {
       rules: {
         "@typescript-eslint/no-floating-promises": "off",
         "unicorn/no-process-exit": "off",
+        // `export {};` is the standard TypeScript pattern to mark a test file as a
+        // module (preventing duplicate-declaration errors across test files). Jest
+        // does not actually import the export — this is a TS-only disambiguation.
+        "jest/no-export": "off",
       },
     },
   ],

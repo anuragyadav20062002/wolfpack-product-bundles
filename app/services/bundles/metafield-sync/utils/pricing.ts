@@ -19,7 +19,7 @@ import { AppLogger } from "../../../../lib/logger";
  * @returns Array of ComponentPricing objects with all values in cents
  */
 export function calculateComponentPricing(
-  components: Array<{ variantId: string; priceCents: number; quantity: number; title?: string }>,
+  components: Array<{ variantId: string; priceCents: number; quantity: number; title?: string; imageUrl?: string }>,
   discountMethod: string,
   discountValue: number
 ): ComponentPricing[] {
@@ -44,6 +44,7 @@ export function calculateComponentPricing(
     return components.map(component => ({
       variantId: component.variantId,
       ...(component.title && { title: component.title }),
+      ...(component.imageUrl && { imageUrl: component.imageUrl }),
       retailPrice: component.priceCents,
       bundlePrice: component.priceCents,
       discountPercent: 0,
@@ -91,6 +92,7 @@ export function calculateComponentPricing(
     const pricing: ComponentPricing = {
       variantId: component.variantId,
       ...(component.title && { title: component.title }),
+      ...(component.imageUrl && { imageUrl: component.imageUrl }),
       retailPrice: retailPriceCents,
       bundlePrice: bundlePriceCents,
       discountPercent: Math.round(componentDiscountPercent * 100) / 100, // Round to 2 decimals

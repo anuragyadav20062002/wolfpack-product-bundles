@@ -1,3 +1,9 @@
+import { updateComponentProductMetafields } from "../../../app/services/bundles/metafield-sync/operations/component-product.server";
+import {
+  getFirstVariantId,
+  batchGetFirstVariants,
+} from "../../../app/utils/variant-lookup.server";
+
 jest.mock("../../../app/lib/logger", () => ({
   AppLogger: {
     info: jest.fn(),
@@ -12,12 +18,6 @@ jest.mock("../../../app/utils/variant-lookup.server", () => ({
   getFirstVariantId: jest.fn(),
   batchGetFirstVariants: jest.fn(),
 }));
-
-import { updateComponentProductMetafields } from "../../../app/services/bundles/metafield-sync/operations/component-product.server";
-import {
-  getFirstVariantId,
-  batchGetFirstVariants,
-} from "../../../app/utils/variant-lookup.server";
 
 const mockGetFirstVariantId = getFirstVariantId as jest.MockedFunction<typeof getFirstVariantId>;
 const mockBatchGetFirstVariants = batchGetFirstVariants as jest.MockedFunction<typeof batchGetFirstVariants>;
@@ -161,6 +161,194 @@ describe("updateComponentProductMetafields", () => {
     const writes = getMetafieldSetCalls(admin);
     expect(writes).toHaveLength(1);
     expect(writes[0].ownerId).toBe("gid://shopify/ProductVariant/F2");
+  });
+
+  it("writes every cached products[] variant without first-variant lookup", async () => {
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          products: [
+            {
+              id: "gid://shopify/Product/456",
+              variants: [
+                { id: "gid://shopify/ProductVariant/F2A" },
+                { id: "gid://shopify/ProductVariant/F2B" },
+              ],
+            },
+          ],
+        },
+      ],
+      pricing: { enabled: false },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    expect(mockBatchGetFirstVariants).not.toHaveBeenCalled();
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes).toHaveLength(2);
+    expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
+      "gid://shopify/ProductVariant/F2A",
+      "gid://shopify/ProductVariant/F2B",
+    ]);
+  });
+
+  it("writes StepCategory product component_parents to every cached variant", async () => {
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [],
+          products: [],
+          StepCategory: [
+            {
+              name: "Category 1",
+              products: [
+                {
+                  id: "gid://shopify/Product/789",
+                  variants: [
+                    { id: "gid://shopify/ProductVariant/V789A" },
+                    { id: "gid://shopify/ProductVariant/V789B" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      pricing: { enabled: false },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    expect(mockBatchGetFirstVariants).not.toHaveBeenCalled();
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes).toHaveLength(2);
+    expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
+      "gid://shopify/ProductVariant/V789A",
+      "gid://shopify/ProductVariant/V789B",
+    ]);
+    const parsed = JSON.parse(writes[0].value);
+    expect(parsed[0].component_reference.value).toEqual([
+      "gid://shopify/ProductVariant/V789A",
+      "gid://shopify/ProductVariant/V789B",
+    ]);
+  });
+
+  it("stores Buy X get Y buy/get metadata and total quantity threshold", async () => {
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [
+            {
+              productId: "gid://shopify/Product/123",
+              variants: [{ id: "gid://shopify/ProductVariant/BXY1" }],
+            },
+          ],
+        },
+      ],
+      pricing: {
+        enabled: true,
+        method: "buy_x_get_y",
+        rules: [
+          {
+            conditionType: "quantity",
+            conditionValue: 2,
+            discountValue: 100,
+            customerBuys: 2,
+            customerGets: 1,
+            discountType: "percentage",
+            applyDiscountTo: "lowest_priced",
+          },
+        ],
+      },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes).toHaveLength(1);
+    const parsed = JSON.parse(writes[0].value);
+    expect(parsed[0].price_adjustment).toEqual({
+      method: "buy_x_get_y",
+      value: 100,
+      customerBuys: 2,
+      customerGets: 1,
+      discountType: "percentage",
+      applyDiscountTo: "lowest_priced",
+      conditions: {
+        type: "quantity",
+        operator: "gte",
+        value: 3,
+      },
+    });
+  });
+
+  it("writes direct Add-ons selected variants as bundle components", async () => {
+    const admin = makeAdmin();
+    const config = {
+      steps: [
+        {
+          minQuantity: 1,
+          StepProduct: [
+            {
+              productId: "gid://shopify/Product/123",
+              variants: [{ id: "gid://shopify/ProductVariant/PAID" }],
+            },
+          ],
+        },
+      ],
+      personalizationData: {
+        isPersonalizationEnabled: true,
+        addonProducts: {
+          isEnabled: true,
+          tiers: [
+            {
+              selectedAddonProducts: [
+                {
+                  graphqlId: "gid://shopify/Product/9999",
+                  title: "Selected Add-on",
+                  variants: [
+                    {
+                      variantGraphqlId: "gid://shopify/ProductVariant/ADDON",
+                      price: "600.00",
+                    },
+                  ],
+                },
+              ],
+              discount: { type: "PERCENTAGE", value: 10 },
+            },
+          ],
+        },
+      },
+      pricing: {
+        enabled: true,
+        method: "fixed_amount_off",
+        rules: [{ conditionType: "quantity", conditionValue: 2, discountValue: 500 }],
+      },
+    };
+
+    await updateComponentProductMetafields(admin as any, "gid://shopify/Product/999", config);
+
+    const writes = getMetafieldSetCalls(admin);
+    expect(writes.map((write: any) => write.ownerId).sort()).toEqual([
+      "gid://shopify/ProductVariant/ADDON",
+      "gid://shopify/ProductVariant/PAID",
+    ]);
+    const parsed = JSON.parse(writes.find((write: any) => write.ownerId.endsWith("/ADDON")).value);
+    expect(parsed[0].component_reference.value).toEqual([
+      "gid://shopify/ProductVariant/PAID",
+      "gid://shopify/ProductVariant/ADDON",
+    ]);
+    expect(parsed[0].price_adjustment).toEqual({
+      method: "fixed_amount_off",
+      value: 500,
+      conditions: { type: "quantity", operator: "gte", value: 2 },
+    });
   });
 
   // ─── New collection-only path (the Pearletti fix) ───────────────────────────

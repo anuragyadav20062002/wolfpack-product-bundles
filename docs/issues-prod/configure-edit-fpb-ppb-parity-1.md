@@ -1,0 +1,197 @@
+# Issue: Configure/Edit FPB and PPB Parity + Wiring
+
+**Issue ID:** configure-edit-fpb-ppb-parity-1
+**Status:** In Progress
+**Priority:** 🔴 High
+**Created:** 2026-05-21
+**Last Updated:** 2026-05-21 22:00
+
+## Overview
+Audit and wire the FPB and PPB configure/edit pages against the EB reference, focusing on multilingual controls, PPB placement/visibility, shared FPB styling, right-panel spacing, theme app extension detection, Bundle Settings parity, control wiring, and first-load guided tour readiness requirements.
+
+## Progress Log
+
+### 2026-05-21 23:36 - Starting discard modal hydration/close fix
+- Investigating PPB/FPB discard modal close behavior and `s-modal` hydration warnings.
+- Focus areas:
+  - Remove SSR-unsafe `onHide`/custom-event JSX props from `s-modal`.
+  - Verify discard confirm/continue handlers close the modal through the imperative Polaris modal helper.
+  - Remove temporary discard modal test controls before validation.
+- Next: patch PPB, FPB, and shared modal code, then rebuild/lint and run browser verification if the embedded Admin page is controllable.
+
+### 2026-05-21 23:58 - Fixed app-owned modal overlay cleanup
+- Root cause:
+  - Passing `onHide` to `s-modal` created a React hydration mismatch because web component custom events are not SSR-safe JSX props.
+  - Removing `showOverlay()` entirely made this Polaris build stop opening app-owned modals.
+  - The actual stuck Shopify chrome issue was that modal close paths could unmount React before `hideOverlay()` ran, leaving Admin chrome dimmed/inert.
+- Changes:
+  - Added a shared `DiscardChangesModal` component for PPB and FPB that mounts only while open, calls the Polaris modal helper on mount, and calls `hidePolarisModal()` before every close/unmount path.
+  - Removed the temporary PPB discard test button.
+  - Removed `discardModalRef` route-level effects/listeners from PPB and FPB.
+  - Removed `onHide` from the Multi Language modal and replaced it with native `dismiss`/`hide` listeners plus explicit `hidePolarisModal()` cleanup on Save and close.
+  - Kept `showOverlay()` in the shared modal helper because this app's Polaris modal implementation requires it to open, but now every app-owned modal cleanup path pairs it with `hideOverlay()`.
+- Verification:
+  - `npx eslint --max-warnings 9999 app/routes/app/_shared/bundle-configure/modal-utils.ts app/components/bundle-configure/DiscardChangesModal.tsx app/components/bundle-configure/MultiLanguageTextModal.tsx` passed with warnings only.
+  - `npm run build` passed.
+  - Graphify code graph rebuilt.
+  - Browser verified PPB Multi Language modal opens and `Save and close` closes it.
+  - Browser verified Shopify top search/nav remains reachable after modal close.
+  - Browser console no longer shows the `Prop onHide did not match` hydration warning; remaining warnings are existing Polaris/accessibility warnings plus the known Cloudflare/App Bridge postMessage warning.
+
+### 2026-05-21 23:58 - Reopened modal overlay visual verification
+- User asked for screenshot verification and correctly pointed out that Shopify chrome still appears dimmed after app-owned modal close.
+- Screenshot confirmed:
+  - App iframe remains visually active.
+  - Shopify nav, breadcrumbs, and top chrome remain dimmed.
+- New direction:
+  - Stop using `s-modal` for app-owned discard and Multi Language dialogs because `showOverlay()` creates a host/Admin overlay that is not reliably cleared in this embedded iframe.
+  - Replace those with iframe-local React dialogs so Shopify chrome is not dimmed by app-owned modals.
+
+### 2026-05-22 00:01 - Replaced affected app-owned modals with iframe-local dialogs
+- Changes:
+  - Added `LocalAppModal`, a React-controlled iframe-local dialog/overlay.
+  - Replaced `s-modal` usage in `MultiLanguageTextModal` with `LocalAppModal`.
+  - Replaced `s-modal` usage in `DiscardChangesModal` with `LocalAppModal`.
+  - The affected modals no longer call `showOverlay()` or create a Shopify Admin host overlay.
+- Verification:
+  - `npx eslint --max-warnings 9999 app/components/bundle-configure/LocalAppModal.tsx app/components/bundle-configure/DiscardChangesModal.tsx app/components/bundle-configure/MultiLanguageTextModal.tsx` passed with warnings only.
+  - `npm run build` passed.
+  - Graphify code graph rebuilt.
+  - Browser screenshot after closing the PPB Multi Language modal confirms Shopify nav, breadcrumbs, and top chrome are no longer dimmed.
+
+### 2026-05-21 18:20 - Started parity and wiring pass
+- Created test bundles through the live embedded Admin create workflow:
+  - FPB: `Codex FPB 2026-05-21` (`cmpfhj2m10000v0t038osl42y`)
+  - PPB: `Codex PPB 2026-05-21` (`cmpfhk3ys0001v0t0w2r3xvls`)
+- Started impact and codebase search across configure routes, shared CSS, widget placement services, internal docs, and prior EB audit notes.
+- Next: inspect live EB/WPB configure pages, document parity gaps, then implement scoped route/style/wiring fixes.
+
+### 2026-05-21 18:29 - Implemented first parity and wiring slice
+- EB comparison:
+  - Rechecked EB configure in Chrome on the current Bundle Settings view.
+  - Used existing EB audit notes for PPB Bundle Visibility, Bundle Widget, Bundle Embed, and Bundle Settings structure.
+- Theme app extension detection:
+  - Updated app embed detection to recognize prod and SIT app handles.
+  - Scoped embed checks by block handle so PPB checks `bundle-product-page-embed` and FPB checks `bundle-full-page-embed`.
+  - Updated theme editor deep links to use the relevant embed block per bundle type.
+- UI parity:
+  - Added App Embed Status cards to PPB and FPB Bundle Visibility sections.
+  - Tightened top/left padding for right-column configure cards.
+  - Copied FPB step-tab styling into PPB Step Flow.
+  - Removed email wording from Bundle Link helper copy.
+- Multi Language:
+  - Added a reusable `MultiLanguageTextModal`.
+  - Wired PPB Bundle Widget, Bundle Embed, and Pre Selected Product text controls to `textOverridesByLocale`.
+  - Wired FPB add button and Bundle Cart text controls to `textOverridesByLocale`.
+  - Left EB-style disabled Multi Language buttons disabled where there is no existing storefront/runtime consumer.
+- Guided tour:
+  - Added `?first_load=true` gating for the create-configure guided tour.
+  - Trimmed tour steps to minimum storefront-readiness path: enable embed, add products, place bundle, set active.
+- Verification:
+  - `npx eslint --max-warnings 9999 ...` passed with warnings only.
+  - `npm run build` passed.
+  - Graphify code graph rebuilt using the project pipx graphify environment.
+
+### 2026-05-21 18:40 - Browser verified PPB/FPB modal and placement wiring
+- PPB embedded Admin verification:
+  - Bundle Visibility shows App Embed Status, publishing cards, bundle link, and Bundle Widget/Bundle Embed follow-on setup cards.
+  - Top app embed banner and visibility card both show Not enabled on the test shop; readiness score stays at 0, so the banner is not falsely removed before enablement.
+  - Place Widget opens the theme-template modal and loads the Product Pages default template choice.
+  - Bundle Widget Multi language opens the translation modal with Language, Widget Title, Widget Description, and Widget Button Text fields.
+- FPB embedded Admin verification:
+  - Bundle Settings renders the expected Pre Selected Product, quantity validation, slot icon, add-button text, Bundle Cart, banner, CSS, price toggles, and Bundle Status controls.
+  - Bundle Cart Multi Language opens the translation modal with Language, Bundle Cart Title, and Bundle Cart Subtitle fields.
+- Follow-up from verification:
+  - PPB Place Widget modal was changed to the same Polaris modal helper/close pattern used by FPB.
+  - Shared Multi Language modal was changed to the imperative Polaris modal API so it opens reliably in embedded Admin.
+- Validation:
+  - `npx eslint --max-warnings 9999 app/components/bundle-configure/MultiLanguageTextModal.tsx 'app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx'` passed with warnings only.
+  - `npm run build` passed.
+  - Graphify rebuild rerun after final modal changes.
+
+### 2026-05-21 19:40 - Reopened for modal and Bundle Settings parity corrections
+- User reported:
+  - Admin modals are not working correctly, including newly added Multi Language modals.
+  - Multi Language modals need to match EB behavior and presentation more closely.
+  - Bundle Settings parity must be re-run for both PPB and FPB.
+  - Category empty state should match the Rules Configuration empty state.
+  - Bundle Product Card ellipsis menu items need Polaris icons.
+- Next:
+  - Reverse engineer EB modal behavior in Chrome.
+  - Replace the fragile modal implementation path with the same reliable interaction model.
+  - Re-run Bundle Settings parity on PPB and FPB before final verification.
+
+### 2026-05-21 20:05 - Implemented EB-style modal and empty-state corrections
+- EB modal reverse engineering:
+  - Inspected EB's Bundle Settings Multi Language modal in the embedded Admin app.
+  - Matched the shared WPB Multi Language modal to EB's title (`Customize Text for Multiple Languages`), `Select Language` label, broad locale list, prefilled field behavior, and `Save and close` action.
+- Modal reliability:
+  - Rewired PPB page-selection, products, collections, discard, and sync modals to the same Polaris modal helper/on-hide lifecycle used elsewhere.
+  - Added the same on-hide lifecycle to FPB steps-tier, page-selection, products, collections, discard, and sync modals.
+- Bundle Settings parity pass:
+  - Rechecked EB FPB/PPB Bundle Settings docs and current EB modal behavior.
+  - Enabled bundle-specific cart line item discount display customization for PPB and FPB instead of leaving the EB-visible option disabled.
+  - Adjusted FPB pre-selected product helper copy to EB wording and removed active-step-only wording from Product Slots.
+- Empty states and icons:
+  - Added `No category defined yet` empty state in FPB and PPB category sections using the shared Rules Configuration empty-state styling.
+  - Added Polaris icons to PPB Bundle Product Card ellipsis actions and the single FPB Sync Product menu item.
+- Verification:
+  - `npm run build` passed.
+  - `npx eslint --max-warnings 9999 app/components/bundle-configure/MultiLanguageTextModal.tsx 'app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx' 'app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx'` passed with warnings only.
+  - Graphify code graph rebuilt using the project pipx graphify environment.
+- Browser verification blocker:
+  - Attempted to reload the embedded WPB Admin configure page for live modal verification after the rebuild.
+  - Chrome produced a `beforeunload` dialog and the DevTools dialog-handling call was rejected by the runtime usage-limit guard, so live post-patch verification could not be completed without risking a bypass.
+
+### 2026-05-21 21:30 - Root-cause modal fix: showPolarisModal + native dismiss wiring
+
+- Root causes identified and fixed (all three together):
+  1. **`showPolarisModal` had conditional guard bug** — `show()` was never called when `showOverlay` existed on `s-modal`, so modals never opened. Fixed to call `show()` unconditionally (same fix applied to `hide()` in ppb-eb-configure-clone-2).
+  2. **`onHide` JSX prop silently dropped by React 18** — React 18 does not wire custom event listeners for web component events when passed as JSX props. All `onHide` props on `s-modal` elements were no-ops, causing SSR hydration mismatch warnings and no-op close handlers.
+  3. **Native dismiss not syncing React state** — When user pressed Escape or backdrop, `s-modal` closed visually but React state stayed `true`, causing `useEffect` to immediately re-open it.
+- Fix implemented:
+  - `app/routes/app/_shared/bundle-configure/modal-utils.ts`: Fixed `showPolarisModal` to call `show()` unconditionally. Added `useModalHideListener(ref, onHide)` hook that attaches `addEventListener("dismiss", ...)` and `addEventListener("hide", ...)` with a stable `handlerRef` to avoid re-attachment on every render.
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`: Added `useModalHideListener` import. Replaced old `discardModal addEventListener` useEffect with 5 `useModalHideListener` calls (sync, pageSelection, products, collections, discard). Removed all 5 `onHide` props from `s-modal` JSX.
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`: Same pattern. 6 `useModalHideListener` calls placed after `handleCloseProductsModal`/`handleCloseCollectionsModal` declarations to avoid temporal dead zone. Removed all 6 `onHide` props from `s-modal` JSX.
+  - `app/routes/app/app.dashboard/route.tsx`: Fixed `showOverlay`/`hideOverlay` calls to also call `show()`/`hide()` unconditionally. Added inline `useEffect` dismiss listener. Removed `onHide` from delete modal JSX.
+  - `app/routes/app/app.bundles.create_.configure.$bundleId/route.tsx`: Added `localeModalRef`, inline `useEffect` dismiss listener. Removed `onHide` from locale modal JSX.
+- Verification:
+  - `npx eslint --max-warnings 9999 ...` passed with 0 errors.
+  - `npm run build` passed with 0 errors.
+
+### 2026-05-21 22:00 - Discard modal proper Polaris slot fix (PPB + FPB)
+
+- User reported discard modal buttons not closing the modal despite discard logic executing behind it.
+- Root causes (two):
+  1. `closeDiscardModal` in both PPB and FPB called `hidePolarisModal` directly in the click handler — the correct pattern (all working modals) is state-only in click handlers, letting the `useEffect` drive the imperative close.
+  2. Modal buttons were wrapped in `<div>` elements in the body slot — Polaris `s-modal` requires `slot="primaryAction"` and `slot="secondaryActions"` directly on `s-button` elements to wire native close behavior.
+- Fix applied to PPB and FPB:
+  - `closeDiscardModal` changed to state-only (`setShowDiscardModal(false)` only, `hidePolarisModal` call removed).
+  - Discard modal JSX updated: `<div>` wrappers removed, `slot="primaryAction"` on Discard Changes button, `slot="secondaryActions"` on Continue Editing button.
+- Files modified:
+  - `app/routes/app/app.bundles.product-page-bundle.configure.$bundleId/route.tsx`
+  - `app/routes/app/app.bundles.full-page-bundle.configure.$bundleId/route.tsx`
+- Verification:
+  - `npx eslint --max-warnings 9999 ...` passed with 0 errors.
+  - `npm run build` passed with 0 errors.
+
+## Related Documentation
+- `docs/ppb-eb-configure-clone/eb-ppb-configure-audit-2026-05-21.md`
+- `docs/eb-fpb-exploration/EB_FPB_CONFIGURE_EXPLORATION.md`
+- `docs/app-nav-map/APP_NAVIGATION_MAP.md`
+
+## Phases Checklist
+- [x] Phase 1: Create FPB and PPB test bundles
+- [x] Phase 2: EB/WPB configure parity audit
+- [x] Phase 3: Multi Language wiring pass
+- [x] Phase 4: PPB FPB-style step tabs and right-panel spacing
+- [x] Phase 5: PPB Place Widget and Bundle Visibility wiring
+- [x] Phase 6: Theme app extension detection/banner wiring
+- [x] Phase 7: Bundle Settings and all-control wiring verification
+- [x] Phase 8: First-load guided tour minimum readiness analysis
+- [x] Phase 9: Lint/build/browser verification
+- [x] Phase 10: EB modal reverse engineering and modal fixes
+- [x] Phase 11: PPB/FPB Bundle Settings parity rerun
+- [x] Phase 12: Category empty state and ellipsis icon parity
+- [x] Phase 13: Root-cause modal fix — showPolarisModal bug + useModalHideListener (all routes)
+- [x] Phase 14: Discard modal proper Polaris slot fix (PPB + FPB)

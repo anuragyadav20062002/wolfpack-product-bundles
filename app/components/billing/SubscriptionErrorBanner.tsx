@@ -1,16 +1,5 @@
-/**
- * Subscription Error Banner Component
- *
- * Displays error messages for subscription issues.
- */
-
-import {
-  Banner,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-} from "@shopify/polaris";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 export interface SubscriptionErrorBannerProps {
   errorCode: string | null;
@@ -18,17 +7,14 @@ export interface SubscriptionErrorBannerProps {
   onDismiss: () => void;
 }
 
-/**
- * Get human-readable error message from error code
- */
-function getErrorMessage(errorCode: string | null): string {
+function getErrorMessage(errorCode: string | null, t: TFunction): string {
   switch (errorCode) {
     case "missing_charge_id":
-      return "Subscription confirmation failed: Missing charge ID.";
+      return t("billing.error.missingChargeId");
     case "confirmation_failed":
-      return "Failed to confirm subscription with Shopify.";
+      return t("billing.error.confirmationFailed");
     default:
-      return "An unexpected error occurred during subscription setup.";
+      return t("billing.error.unexpected");
   }
 }
 
@@ -37,32 +23,37 @@ export function SubscriptionErrorBanner({
   onRetry,
   onDismiss,
 }: SubscriptionErrorBannerProps) {
+  const { t } = useTranslation();
+
   return (
-    <Banner
-      tone="critical"
-      onDismiss={onDismiss}
-      title="Subscription Issue"
-    >
-      <BlockStack gap="200">
-        <Text as="p" variant="bodyMd">
-          {getErrorMessage(errorCode)}
-        </Text>
-        <InlineStack gap="200">
-          <Button onClick={onRetry} variant="plain">
-            Try Again
-          </Button>
-          <Button
+    <s-banner tone="critical" heading={t("billing.error.heading")}>
+      <s-button slot="primary-action" onClick={onRetry}>
+        {t("billing.actions.tryAgain")}
+      </s-button>
+      {getErrorMessage(errorCode, t)}
+      <div style={{ marginTop: 8 }}>
+        <s-stack direction="inline" gap="small">
+          <s-button
+            variant="tertiary"
             onClick={() => {
               if (typeof window !== "undefined" && window.$crisp) {
                 window.$crisp.push(["do", "chat:open"]);
               }
             }}
-            variant="plain"
           >
-            Contact Support
-          </Button>
-        </InlineStack>
-      </BlockStack>
-    </Banner>
+            {t("billing.actions.contactSupport")}
+          </s-button>
+          <s-button variant="tertiary" onClick={onDismiss}>
+            {t("common.actions.dismiss")}
+          </s-button>
+        </s-stack>
+      </div>
+    </s-banner>
   );
+}
+
+declare global {
+  interface Window {
+    $crisp?: any[];
+  }
 }

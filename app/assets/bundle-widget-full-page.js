@@ -76,6 +76,13 @@ import {
   TemplateManager,
   ComponentGenerator
 } from './bundle-widget-components.js';
+import { ConditionValidator } from './widgets/shared/condition-validator.js';
+import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
+import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
+import { installStandardTemplate } from './widgets/full-page/templates/standard-template.js';
+import { installClassicTemplate } from './widgets/full-page/templates/classic-template.js';
+import { installCompactTemplate } from './widgets/full-page/templates/compact-template.js';
+import { installHorizontalTemplate } from './widgets/full-page/templates/horizontal-template.js';
 
 
 class BundleWidgetFullPage {
@@ -86,10 +93,14 @@ class BundleWidgetFullPage {
     this.selectedProducts = [];
     this.stepProductData = [];
     this.stepCollectionProductIds = {}; // { `${stepIndex}:${collectionHandle}`: [productId, ...] }
+    this.selectedBoxSelectionRuleId = null;
     this.currentStepIndex = 0;
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
+    this.compactMobileSummaryTrayExpanded = false;
+    this.standardTimelineWindowStart = 0;
+    this.standardTimelineLastActiveEntryIndex = 0;
 
     // Search state for filtering products within steps
     this.searchQuery = '';
@@ -108,7 +119,7 @@ class BundleWidgetFullPage {
 
     // Call async init but don't block constructor
     this.init().catch(error => {
-      this.showError(error.message);
+      this.showErrorUI(error);
     });
   }
 
@@ -141,6 +152,8 @@ class BundleWidgetFullPage {
 
       // Load design settings CSS (sync — sets up error listener for proxy fallback)
       this.loadDesignSettingsCSS();
+      await this.loadLanguageSettings();
+      await this.loadControlsSettings();
 
       // Storefront self-heal: make sure the shop has an active CartTransform.
       this._scheduleCartTransformSelfHeal();
@@ -157,8 +170,9 @@ class BundleWidgetFullPage {
         return;
       }
 
-      // Merge bundle_settings metafield into selectedBundle (DCP display settings)
+      // Merge bundle_settings metafield into selectedBundle (Settings design display settings)
       this._mergeBundleSettings(this.bundleSettings);
+      this.applyPersonalizationAddonProducts();
 
       // Resolve tier config — prefer admin-saved (API) over legacy Theme Editor (data attribute)
       this.tierConfig = this.resolveTierConfig(
@@ -178,6 +192,10 @@ class BundleWidgetFullPage {
 
       // Setup DOM elements
       this.setupDOMElements();
+
+      // Mark template/preset before first render so full-page selectors can
+      // resolve immediately for both render paths.
+      this.applyFullPageDesignPresetMarker();
 
       // Render initial UI (async for full-page bundles to load products)
       await this.renderUI();
@@ -201,6 +219,11 @@ class BundleWidgetFullPage {
       // Mark as initialized
       this.container.dataset.initialized = 'true';
       this.isInitialized = true;
+
+      // Fire-and-forget: record a view event for analytics (skip in Theme Editor preview)
+      if (!window.Shopify?.designMode) {
+        this._recordView();
+      }
 
     } catch (error) {
       this.hideLoadingOverlay();
@@ -240,8 +263,8 @@ class BundleWidgetFullPage {
   }
 
   /**
-   * Load Design Control Panel CSS settings
-   * Injects custom CSS from Design Control Panel into the page
+   * Load Settings design CSS
+   * Injects custom CSS from Settings -> Design into the page
    */
   loadDesignSettingsCSS() {
     try {
@@ -272,6 +295,75 @@ class BundleWidgetFullPage {
     } catch (_e) {
       // Non-critical — widget works without design settings CSS
     }
+  }
+
+  async loadLanguageSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const locale = window.Shopify?.locale || 'en';
+      const endpoint = `/apps/product-bundles/api/language-settings/${encodeURIComponent(shop)}?bundleType=full_page&locale=${encodeURIComponent(locale)}`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      const languageSettings = await response.json();
+      this.config.languageSettings = languageSettings;
+      this.config.languageData = languageSettings.activeLanguageData || null;
+      this.config.sharedCartLabels = languageSettings.sharedCartLabels || null;
+      this.config.textOverrides = {
+        ...(this.config.textOverrides || {}),
+        ...(languageSettings.textOverrides || {})
+      };
+    } catch (_) {
+      // Non-critical: default and bundle-level text still render.
+    }
+  }
+
+  async loadControlsSettings() {
+    try {
+      const shop = window.Shopify?.shop || this.container.dataset.shop;
+      if (!shop) return;
+
+      const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+      const response = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!response.ok) return;
+
+      this.config.controlsSettings = await response.json();
+    } catch (_) {
+      // Non-critical: the widget keeps its current default behavior.
+    }
+  }
+
+  _getLandingPageControls() {
+    return this.config.controlsSettings?.activeControls
+      || this.config.controlsSettings?.settingsControls?.landingPage
+      || null;
+  }
+
+  _runControlsScript(script) {
+    if (!script || typeof script !== 'string') return;
+    try {
+      new Function(script).call(window);
+    } catch (_) {
+      // Merchant-authored integration script should not block bundle checkout.
+    }
+  }
+
+  _handlePostAddToCartAction(actionConfig) {
+    const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
+    this._runControlsScript(checkout.executeScript);
+
+    if (checkout.action === 'checkout') {
+      setTimeout(() => {
+        window.location.href = '/checkout';
+      }, 1000);
+      return;
+    }
+
+    setTimeout(() => {
+      window.location.href = '/cart';
+    }, 1000);
   }
 
   _scheduleCartTransformSelfHeal() {
@@ -328,16 +420,17 @@ class BundleWidgetFullPage {
       productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
       // Quantity selector visibility settings (default: show on both)
       showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
-      showQuantitySelectorInModal: dataset.showQuantitySelectorInModal !== 'false',
       // Promo banner settings from theme editor
       showPromoBanner: dataset.showPromoBanner !== 'false',
-      promoBannerSubtitle: dataset.promoBannerSubtitle || 'Mix & Match',
-      promoBannerTagline: dataset.promoBannerTagline || 'Create Your Perfect Bundle',
-      promoBannerNote: dataset.promoBannerNote || 'Mix & Match Your Favorites',
       // Messages will be set from bundle.pricing.messages after bundle loads
       discountTextTemplate: 'Add {conditionText} to get {discountText}',
       successMessageTemplate: 'Congratulations! You got {discountText}!',
+      showDiscountProgressBar: false,
+      discountProgressBarType: 'step_based',
+      discountProgressTextTemplate: null,
+      discountProgressSuccessTemplate: null,
       currentProductId: window.currentProductId,
+      currentProductGid: window.currentProductGid,
       currentProductHandle: window.currentProductHandle,
       currentProductCollections: window.currentProductCollections,
       tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
@@ -345,7 +438,7 @@ class BundleWidgetFullPage {
 
     this.tierConfig = this.config.tierConfig;
 
-    // Parse bundle_settings metafield (DCP display settings — promoBanner, badge, etc.)
+    // Parse bundle_settings metafield (Settings design display settings — promoBanner, badge, etc.)
     try {
       this.bundleSettings = JSON.parse(dataset.bundleSettings || 'null') || {};
     } catch {
@@ -386,7 +479,8 @@ class BundleWidgetFullPage {
       if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
         try {
           const parsed = JSON.parse(cachedConfig);
-          if (parsed && typeof parsed === 'object' && parsed.id) {
+          const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
+          if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
             bundleData = { [parsed.id]: parsed };
           }
         } catch (_e) {
@@ -491,6 +585,9 @@ class BundleWidgetFullPage {
 
   selectBundle() {
     this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+    if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      this.selectedBundle = this.bundleData[this.config.bundleId];
+    }
 
     // Update message templates from bundle pricing messages
     this.updateMessagesFromBundle();
@@ -503,6 +600,9 @@ class BundleWidgetFullPage {
     // snake-style keys (progress / qualified). Try both shapes.
     const messaging = this.selectedBundle?.messaging;
     const pricingMessages = this.selectedBundle?.pricing?.messages;
+    const pricingDisplay = this.selectedBundle?.pricing?.display;
+    const displayOptions = messaging?.displayOptions || pricingMessages?.displayOptions || {};
+    const progressBarOptions = displayOptions?.progressBar || {};
 
     if (messaging) {
       if (messaging.progressTemplate) {
@@ -513,10 +613,15 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
+      this.config.showDiscountProgressBar = progressBarOptions.enabled === true || messaging.showDiscountProgressBar === true;
 
     } else if (pricingMessages) {
-      // Full-page bundle API path: templates live in ruleMessages (first rule = global template)
-      const ruleMessages = pricingMessages.ruleMessages;
+      // Full-page bundle API path: templates live in ruleMessages (first rule = global template).
+      // When ruleMessagesByLocale is present, prefer the locale-specific messages.
+      const shopLocale = window.Shopify?.locale;
+      const byLocale = pricingMessages.ruleMessagesByLocale;
+      const localeRuleMessages = shopLocale && byLocale?.[shopLocale];
+      const ruleMessages = localeRuleMessages || pricingMessages.ruleMessages;
       const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
       if (firstRuleMsg?.discountText) {
         this.config.discountTextTemplate = firstRuleMsg.discountText;
@@ -526,10 +631,102 @@ class BundleWidgetFullPage {
       }
 
       this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
+      this.config.showDiscountProgressBar =
+        progressBarOptions.enabled === true ||
+        pricingMessages.showDiscountProgressBar === true ||
+        pricingDisplay?.showDiscountProgressBar === true;
 
     } else {
       this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
+      this.config.showDiscountProgressBar = pricingDisplay?.showDiscountProgressBar === true;
     }
+
+    this.config.discountProgressBarType = progressBarOptions.type === 'simple' ? 'simple' : 'step_based';
+    this.config.discountProgressTextTemplate = progressBarOptions.progressText || this.config.discountTextTemplate;
+    this.config.discountProgressSuccessTemplate = progressBarOptions.successText || this.config.successMessageTemplate;
+  }
+
+  applyPersonalizationAddonProducts() {
+    const addonStep = this.buildAddonStepFromPersonalization();
+    if (!addonStep) return;
+
+    this.selectedBundle.steps = (this.selectedBundle.steps || []).filter(step => !step.isFreeGift);
+    this.selectedBundle.steps = [...(this.selectedBundle.steps || []), addonStep];
+  }
+
+  buildAddonStepFromPersonalization() {
+    const personalizationData = this.selectedBundle?.personalizationData;
+    const addonProducts = personalizationData?.addonProducts;
+    if (personalizationData?.isPersonalizationEnabled !== true || addonProducts?.isEnabled !== true) {
+      return null;
+    }
+
+    const tiers = Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
+    const selectedAddonProducts = tiers.flatMap(tier =>
+      Array.isArray(tier?.selectedAddonProducts)
+        ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
+        : []
+    );
+    if (selectedAddonProducts.length === 0) return null;
+
+    const firstTier = tiers[0] || {};
+
+    return {
+      id: 'personalization-addons',
+      name: personalizationData.personalizeStepText || addonProducts.title || '',
+      position: (this.selectedBundle?.steps?.length || 0) + 1,
+      minQuantity: 0,
+      maxQuantity: selectedAddonProducts.length,
+      enabled: true,
+      isFreeGift: true,
+      addonLabel: personalizationData.personalizeStepText || addonProducts.title || '',
+      freeGiftName: addonProducts.title || personalizationData.personalizeStepText || '',
+      addonTitle: addonProducts.title || personalizationData.personalizePageSubtext || '',
+      addonIconUrl: personalizationData.stepImage || null,
+      addonDisplayFree: Number(firstTier?.discount?.value || 0) >= 100 && firstTier?.discount?.type === 'PERCENTAGE',
+      addonUnlockAfterCompletion: true,
+      addonTiers: tiers,
+      addonEligibilityCondition: firstTier?.eligibilityCondition || null,
+      addonDiscount: firstTier?.discount || null,
+      addonMessaging: addonProducts.addonsMessaging || null,
+      displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
+      StepProduct: selectedAddonProducts,
+      products: selectedAddonProducts,
+      collections: [],
+    };
+  }
+
+  normalizePersonalizationAddonProduct(product) {
+    const productGid = product?.graphqlId || product?.id || (product?.productId ? `gid://shopify/Product/${product.productId}` : '');
+    const imageUrl = product?.images?.[0]?.originalSrc
+      || product?.images?.[0]?.url
+      || product?.image?.src
+      || product?.imageUrl
+      || '';
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+
+    return {
+      productId: productGid,
+      id: productGid,
+      title: product?.title || '',
+      handle: product?.handle || '',
+      imageUrl,
+      price: variants[0]?.price || product?.price || '0',
+      compareAtPrice: variants[0]?.compareAtPrice || null,
+      variants: variants.map(variant => {
+        const variantGid = variant.variantGraphqlId || variant.id || (variant.variantId ? `gid://shopify/ProductVariant/${variant.variantId}` : productGid);
+        return {
+          id: variantGid,
+          title: variant.variantTitle || variant.title || 'Default Title',
+          price: variant.price || '0',
+          compareAtPrice: variant.compareAtPrice || null,
+          available: variant.available !== false,
+          quantityAvailable: typeof variant.inventoryQuantity === 'number' ? variant.inventoryQuantity : null,
+          currentlyNotInStock: false,
+          image: imageUrl ? { src: imageUrl } : null,
+        };
+      }),
+    };
   }
 
   initializeDataStructures() {
@@ -804,8 +1001,12 @@ class BundleWidgetFullPage {
     const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
 
     if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+      // Wire the preset + template data attributes so the preset-scoped CSS
+      // rules in bundle-widget-full-page.css activate.
+      FullPagePreset.markContainer(this.container, this.selectedBundle);
+
       // Full-page bundle: Render with tabs layout (async to load products)
-      const layout = this.selectedBundle.fullPageLayout || 'footer_bottom';
+      const layout = this.resolveFullPageLayout();
       if (layout === 'footer_side') {
         await this.renderFullPageLayoutWithSidebar();
       } else {
@@ -834,12 +1035,21 @@ class BundleWidgetFullPage {
     // Clear existing content
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout');
+    this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
+    this.ensureCompactPresetRuntimeStyles();
+    this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     // Wrap content in full-page-content-section for proper padding
     const contentSection = document.createElement('div');
     contentSection.className = 'full-page-content-section';
 
     // OPTIMISTIC RENDERING: Render non-product UI immediately
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      contentSection.appendChild(bundleBanners);
+    }
+
     // 0. Render promo banner at the very top (before step timeline)
     const promoBanner = this.createPromoBanner();
     if (promoBanner) {
@@ -852,13 +1062,18 @@ class BundleWidgetFullPage {
       contentSection.appendChild(stepTimeline);
     }
 
+    const contentHeader = this.createStepContentHeader(this.currentStepIndex);
+    if (contentHeader) contentSection.appendChild(contentHeader);
+
     // 2. Render per-step banner image (if configured for this step)
     const stepBanner = this.createStepBannerImage(this.currentStepIndex);
     if (stepBanner) contentSection.appendChild(stepBanner);
 
     // 3. Render search input for filtering products
-    const searchInput = this.createSearchInput();
-    contentSection.appendChild(searchInput);
+    if (this.shouldRenderFullPageSearch()) {
+      const searchInput = this.createSearchInput();
+      contentSection.appendChild(searchInput);
+    }
 
     // 4. Render category/collection tabs if step has collections (and enabled in theme settings)
     if (this.config.showCategoryTabs) {
@@ -868,11 +1083,16 @@ class BundleWidgetFullPage {
       }
     }
 
+    const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
+    if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
+
     // 5. Create product grid container with loading state
     const productGridContainer = document.createElement('div');
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
     contentSection.appendChild(productGridContainer);
+    const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
+    if (categoryRows) contentSection.appendChild(categoryRows);
 
     this.elements.stepsContainer.appendChild(contentSection);
 
@@ -912,16 +1132,35 @@ class BundleWidgetFullPage {
 
     this.elements.stepsContainer.innerHTML = '';
     this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
+    this.applyFullPageDesignPresetMarker();
+    this.ensureBundleBannerRuntimeStyles();
+    this.ensureStandardPresetRuntimeStyles();
+    this.ensureClassicPresetRuntimeStyles();
+    this.ensureCompactPresetRuntimeStyles();
+    this.ensureHorizontalSidePanelSlotRuntimeStyles();
 
     // Hide the bottom footer — sidebar replaces it
     if (this.elements.footer) {
       this.elements.footer.style.display = 'none';
     }
 
+    const bundleBanners = this.createBundleBanners();
+    if (bundleBanners) {
+      this.elements.stepsContainer.appendChild(bundleBanners);
+    }
+
     // ABOVE: Step timeline sits above the two-column area (same horizontal position as
     // the floating footer layout) so tabs always appear at the top, not as a left column.
     if (this.config.showStepTimeline) {
       this.elements.stepsContainer.appendChild(this.createStepTimeline());
+    }
+
+    const contentHeader = this.createStepContentHeader(this.currentStepIndex);
+    if (contentHeader) this.elements.stepsContainer.appendChild(contentHeader);
+
+    if (this.config.showCategoryTabs) {
+      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+      if (categoryTabs) this.elements.stepsContainer.appendChild(categoryTabs);
     }
 
     // Two-column wrapper: content (center) | sidebar (right)
@@ -938,19 +1177,19 @@ class BundleWidgetFullPage {
     const stepBanner = this.createStepBannerImage(this.currentStepIndex);
     if (stepBanner) contentSection.appendChild(stepBanner);
 
-    contentSection.appendChild(this.createSearchInput());
-
-    if (this.config.showCategoryTabs) {
-      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-      if (categoryTabs) contentSection.appendChild(categoryTabs);
+    if (this.shouldRenderFullPageSearch()) {
+      contentSection.appendChild(this.createSearchInput());
     }
 
-    // Free gift step custom heading
+    const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
+    if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
+
+    // Add-on step custom heading — only shown when merchant explicitly sets addonTitle
     const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
-    if (currentStep?.isFreeGift) {
+    if (currentStep?.isFreeGift && currentStep?.addonTitle) {
       const freeHeading = document.createElement('div');
       freeHeading.className = 'fpb-step-free-heading';
-      freeHeading.textContent = `Complete the look and get a ${currentStep.freeGiftName || 'gift'} free!`;
+      freeHeading.textContent = currentStep.addonTitle;
       contentSection.appendChild(freeHeading);
     }
 
@@ -958,6 +1197,8 @@ class BundleWidgetFullPage {
     productGridContainer.className = 'full-page-product-grid-container';
     productGridContainer.innerHTML = this.createProductGridLoadingState();
     contentSection.appendChild(productGridContainer);
+    const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
+    if (categoryRows) contentSection.appendChild(categoryRows);
 
     twoColWrapper.appendChild(contentSection);
 
@@ -994,22 +1235,23 @@ class BundleWidgetFullPage {
   _renderMobileBottomBar({ preserveOpen = false } = {}) {
     const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
     const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+    const wasCompactSummaryExpanded = preserveOpen
+      && previousSheet?.classList.contains('fpb-mobile-summary-tray-expanded');
 
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
     document.querySelector('.fpb-mobile-backdrop')?.remove();
+    document.body.classList.remove('fpb-compact-mobile-summary-active');
 
-    const { totalPrice } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
     );
-    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice,
-      Object.values(this.selectedProducts || {}).reduce((sum, s) =>
-        sum + Object.values(s || {}).reduce((n, p) => n + (p.quantity || p || 1), 0), 0)
-    );
+    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
     const selectedCount = this.getAllSelectedProductsData().filter(p => !p.isDefault).length;
     const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
     const isComplete = this.areBundleConditionsMet();
@@ -1019,6 +1261,20 @@ class BundleWidgetFullPage {
 
     const sheet = document.createElement('div');
     sheet.className = 'fpb-mobile-bottom-sheet';
+    const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
+    if (usesCompactMobileSummaryTray) {
+      sheet.classList.add('fpb-mobile-summary-tray');
+      if (this.getFullPageDesignPreset() === 'CLASSIC') {
+        sheet.classList.add('fpb-mobile-classic-footer');
+      }
+      this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
+      this._populateCompactMobileSummaryTray(sheet);
+      sheet.classList.add('is-open');
+      document.body.classList.add('fpb-compact-mobile-summary-active');
+      document.body.appendChild(sheet);
+      return;
+    }
+
     this._populateMobileSheet(sheet);
 
     const bar = document.createElement('div');
@@ -1045,12 +1301,17 @@ class BundleWidgetFullPage {
 
     const conditionlessMobile = this.bundleHasNoConditions();
     const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
     const ctaBtn = document.createElement('button');
     ctaBtn.className = 'fpb-mobile-cta-btn';
-    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? 'Add to Cart' : 'Next';
-    if (conditionlessMobile ? !hasSelectionMobile : (isLastStep && !isComplete)) ctaBtn.disabled = true;
+    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
+    if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
     ctaBtn.addEventListener('click', () => {
       if (conditionlessMobile || (isLastStep && isComplete)) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         this.addBundleToCart();
       } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -1058,7 +1319,7 @@ class BundleWidgetFullPage {
         this.currentStepIndex++;
         this.renderFullPageLayoutWithSidebar();
       } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
-        ToastManager.show(`Complete all steps to unlock the free ${this.freeGiftStep?.freeGiftName || 'gift'}!`);
+        ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
       } else {
         ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
       }
@@ -1084,12 +1345,15 @@ class BundleWidgetFullPage {
     this.renderSidePanel(sheet);
   }
 
-  // Render the sidebar panel content (used by footer_side layout)
-  renderSidePanel(panel) {
-    if (!panel) return;
-    panel.innerHTML = '';
+  usesCompactMobileSummaryTray() {
+    const preset = this.getFullPageDesignPreset();
+    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
+  }
 
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+  _populateCompactMobileSummaryTray(sheet) {
+    sheet.innerHTML = '';
+
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -1097,23 +1361,386 @@ class BundleWidgetFullPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+    const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
+      (sum, item) => sum + (Number(item.quantity) || 1),
+      0
+    );
+
+    const countBadge = document.createElement('div');
+    countBadge.className = 'fpb-mobile-summary-count-badge';
+    countBadge.setAttribute('role', 'button');
+    countBadge.setAttribute('tabindex', '0');
+    countBadge.setAttribute('aria-label', 'Review your bundle');
+    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+    countBadge.textContent = String(selectedFooterQuantity);
+    countBadge.addEventListener('click', () => {
+      this._toggleCompactMobileSummaryTray(sheet);
+    });
+    countBadge.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this._toggleCompactMobileSummaryTray(sheet);
+      }
+    });
+    sheet.appendChild(countBadge);
+
+    sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+
+    if (this.selectedBundle?.pricing?.enabled) {
+      const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
+      const discountBlock = document.createElement('div');
+      discountBlock.className = 'side-panel-discount-message';
+      const variables = TemplateManager.createDiscountVariables(
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+      );
+      let discountMessage = '';
+      if (combinedDiscountInfo.hasDiscount) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+          variables
+        );
+      } else if (nextRule) {
+        discountMessage = TemplateManager.replaceVariables(
+          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+          variables
+        );
+      }
+      if (discountMessage) {
+        const msgEl = document.createElement('div');
+        msgEl.className = 'fpb-mobile-summary-discount-text';
+        msgEl.innerHTML = discountMessage;
+        discountBlock.appendChild(msgEl);
+      }
+
+      const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
+      if (shouldShowProgressBar) {
+        const progressBar = this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
+        if (progressBar) {
+          progressBar.classList.add('fpb-dp-sidebar');
+          discountBlock.appendChild(progressBar);
+        }
+      }
+
+      if (discountBlock.childElementCount > 0) {
+        sheet.appendChild(discountBlock);
+      }
+    }
+
+    const navSection = document.createElement('div');
+    navSection.className = 'side-panel-nav';
+    const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
+    const conditionlessMobile = this.bundleHasNoConditions();
+    const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+    const actionButton = this._createMobileSummaryActionButton({
+      finalPrice,
+      currencyInfo,
+      conditionlessMobile,
+      hasSelectionMobile,
+      isLastStep,
+      isComplete: this.areBundleConditionsMet()
+    });
+    navSection.appendChild(actionButton);
+    if (this.compactMobileSummaryTrayExpanded) {
+      const productsSection = document.createElement('div');
+      productsSection.className = 'fpb-mobile-summary-products-section';
+      productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
+      productsSection.appendChild(navSection);
+      sheet.appendChild(productsSection);
+    } else {
+      sheet.appendChild(navSection);
+    }
+  }
+
+  _toggleCompactMobileSummaryTray(sheet) {
+    const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
+    if (!hasSelectedSummaryProducts) {
+      this.compactMobileSummaryTrayExpanded = false;
+      this._populateCompactMobileSummaryTray(sheet);
+      return;
+    }
+    this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
+    this._populateCompactMobileSummaryTray(sheet);
+  }
+
+  _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
+    const allSelectedProducts = this.getAllSelectedProductsData();
+    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+    const summaryText = this.getBundleSummaryText();
+
+    const bundleItems = document.createElement('div');
+    bundleItems.className = 'fpb-mobile-summary-bundle-items';
+
+    const header = document.createElement('div');
+    header.className = 'fpb-mobile-summary-bundle-header';
+
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'fpb-mobile-summary-bundle-copy';
+    const title = document.createElement('div');
+    title.className = 'fpb-mobile-summary-bundle-title';
+    title.textContent = summaryText.title;
+    const subtitle = document.createElement('div');
+    subtitle.className = 'fpb-mobile-summary-bundle-subtitle';
+    subtitle.textContent = summaryText.subTitle;
+    headerCopy.append(title, subtitle);
+    header.appendChild(headerCopy);
+
+    if (allSelectedProducts.length > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'fpb-mobile-summary-clear-btn';
+      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Clear</span>`;
+      clearBtn.addEventListener('click', () => {
+        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        this.compactMobileSummaryTrayExpanded = false;
+        this.reRenderFullPage();
+      });
+      header.appendChild(clearBtn);
+    }
+    bundleItems.appendChild(header);
+
+    const productsList = document.createElement('div');
+    productsList.className = 'fpb-mobile-summary-products-list';
+
+    allSelectedProducts.forEach(item => {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const variantInfo = this.getSummaryProductVariantDisplay(item);
+      const row = document.createElement('div');
+      row.className = 'fpb-mobile-summary-product-row';
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+      const priceText = CurrencyManager.convertAndFormat(
+        isFreeGiftItem ? 0 : item.price * item.quantity,
+        currencyInfo
+      );
+
+      row.innerHTML = `
+        <div class="fpb-mobile-summary-product-image-wrap">
+          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
+        </div>
+        <div class="fpb-mobile-summary-product-info">
+          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(summaryTitle)}</span>
+          ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+          <span class="fpb-mobile-summary-product-price">${priceText}</span>
+        </div>
+        <div class="fpb-mobile-summary-product-action">
+          <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+        </div>
+      `;
+
+      if (!item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'fpb-mobile-summary-product-remove';
+        removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+        removeBtn.addEventListener('click', () => {
+          const stepIndex = item.stepIndex;
+          const productId = item.variantId || item.productId || item.id;
+          const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+          this.updateProductSelection(stepIndex, productId, 0);
+          const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+          ToastManager.showWithUndo(
+            `Removed "${truncated}"`,
+            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+            5000
+          );
+        });
+        row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
+      }
+
+      productsList.appendChild(row);
+    });
+
+    const requiredSlots = Math.max(
+      allSelectedProducts.length + 1,
+      activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+      2
+    );
+    const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
+    for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+      const emptyCard = document.createElement('div');
+      emptyCard.className = 'fpb-mobile-summary-empty-product-card';
+      emptyCard.innerHTML = `
+        <div class="fpb-mobile-summary-empty-product-image"></div>
+        <div class="fpb-mobile-summary-empty-product-info">
+          <span class="fpb-mobile-summary-empty-product-title"></span>
+          <span class="fpb-mobile-summary-empty-product-variant"></span>
+          <span class="fpb-mobile-summary-empty-product-price"></span>
+        </div>
+        <span class="fpb-mobile-summary-empty-product-action"></span>
+      `;
+      productsList.appendChild(emptyCard);
+    }
+
+    bundleItems.appendChild(productsList);
+    return bundleItems;
+  }
+
+  _createMobileSummaryActionButton({
+    finalPrice,
+    currencyInfo,
+    conditionlessMobile,
+    hasSelectionMobile,
+    isLastStep,
+    isComplete
+  }) {
+    const ctaBtn = document.createElement('button');
+    ctaBtn.className = 'side-panel-btn side-panel-btn-next';
+    const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
+    const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
+    const shouldAddToCart = !shouldAdvance && (conditionlessMobile || (isLastStep && isComplete));
+    const actionText = shouldAddToCart
+      ? this._resolveText('addToCartButton', 'Add to Cart')
+      : this._resolveText('nextButton', 'Next');
+    const priceText = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'fpb-mobile-summary-action-label';
+    labelSpan.textContent = actionText;
+    const separatorSpan = document.createElement('span');
+    separatorSpan.className = 'fpb-mobile-summary-action-separator';
+    separatorSpan.textContent = '•';
+    const priceSpan = document.createElement('span');
+    priceSpan.className = 'fpb-mobile-summary-action-price';
+    priceSpan.textContent = priceText;
+    ctaBtn.append(labelSpan, separatorSpan, priceSpan);
+    if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+    ctaBtn.addEventListener('click', () => {
+      if (shouldAddToCart) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
+        this.addBundleToCart();
+      } else {
+        const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
+        if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
+          this.activeCollectionId = null;
+          this.searchQuery = '';
+          this.currentStepIndex = targetStepIndex;
+          this.renderFullPageLayoutWithSidebar();
+        } else if (!this.canNavigateToStep(targetStepIndex)) {
+          ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
+        } else {
+          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+        }
+      }
+    });
+    return ctaBtn;
+  }
+
+  getBundleSummaryText() {
+    const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+    return {
+      title: typeof summary.title === 'string' && summary.title.trim()
+        ? summary.title
+        : 'Your Bundle',
+      subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
+        ? summary.subTitle
+        : 'Review your bundle'
+    };
+  }
+
+  getBundleContentSummaryText() {
+    const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+    return {
+      title: typeof summary.title === 'string' ? summary.title.trim() : '',
+      subTitle: typeof summary.subTitle === 'string' ? summary.subTitle.trim() : ''
+    };
+  }
+
+  getCurrentStepContentText(stepIndex) {
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    return {
+      subtext: typeof step?.pageTitle === 'string' ? step.pageTitle.trim() : ''
+    };
+  }
+
+  createStepContentHeader(stepIndex) {
+    const contentText = this.getCurrentStepContentText(stepIndex);
+    if (!contentText.subtext) return null;
+
+    const header = document.createElement('div');
+    header.className = 'fpb-full-page-content-header';
+
+    const subtitle = document.createElement('p');
+    subtitle.className = 'fpb-full-page-content-subtitle fpb-step-subtext';
+    subtitle.textContent = contentText.subtext;
+    header.appendChild(subtitle);
+
+    return header;
+  }
+
+  shouldRenderFullPageSearch() {
+    if (this.resolveFullPageLayout() === 'footer_side') {
+      return false;
+    }
+    return this.resolveFullPageCardCtaMode() !== 'icon';
+  }
+
+  usesSelectedQuantityBadge() {
+    return this.resolveFullPageCardCtaMode() === 'icon';
+  }
+
+  _isStandardDesktopSidebar(panel) {
+    const preset = this.getFullPageDesignPreset();
+    return this.resolveFullPageLayout() === 'footer_side'
+      && (preset === 'DEFAULT' || preset === 'CLASSIC')
+      && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
+  }
+
+  // Render the sidebar panel content (used by footer_side layout)
+  renderSidePanel(panel) {
+    if (!panel) return;
+    panel.innerHTML = '';
+
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
     const allSelectedProducts = this.getAllSelectedProductsData();
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
+    const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+    const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
+    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+    const summaryText = this.getBundleSummaryText();
 
     // Header: "Your Bundle" + Clear
     const header = document.createElement('div');
     header.className = 'side-panel-header';
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'side-panel-header-copy';
     const headerTitle = document.createElement('span');
     headerTitle.className = 'side-panel-title';
-    headerTitle.textContent = 'Your Bundle';
-    header.appendChild(headerTitle);
+    headerTitle.textContent = summaryText.title;
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(headerTitle);
+      header.appendChild(headerCopy);
+    } else {
+      header.appendChild(headerTitle);
+    }
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar || allSelectedProducts.length > 0) {
       const clearBtn = document.createElement('button');
       clearBtn.className = 'side-panel-clear-btn';
       clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
@@ -1128,16 +1755,30 @@ class BundleWidgetFullPage {
     // Subtitle — "Review your bundle"
     const subtitle = document.createElement('p');
     subtitle.className = 'side-panel-subtitle';
-    subtitle.textContent = 'Review your bundle';
-    panel.appendChild(subtitle);
+    subtitle.textContent = summaryText.subTitle;
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(subtitle);
+    } else {
+      panel.appendChild(subtitle);
+    }
+
+    const tierCta = this.createSidebarTierCta(nextRule);
+    if (!isStandardDesktopSidebar && tierCta) {
+      panel.appendChild(tierCta);
+    }
+
+    const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
+    if (!isStandardDesktopSidebar && boxSelection) {
+      panel.appendChild(boxSelection);
+    }
 
     // Discount messaging
     if (this.selectedBundle?.pricing?.enabled) {
       const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
       let discountMessage = '';
-      if (discountInfo.hasDiscount) {
+      if (combinedDiscountInfo.hasDiscount) {
         discountMessage = TemplateManager.replaceVariables(
           this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
           variables
@@ -1149,48 +1790,90 @@ class BundleWidgetFullPage {
         );
       }
       if (discountMessage) {
+        discountMessage = this._formatSidebarDiscountMessage(discountMessage);
         const msgEl = document.createElement('div');
         msgEl.className = 'side-panel-discount-message';
         msgEl.innerHTML = discountMessage;
         panel.appendChild(msgEl);
+      }
+
+      if (this.config.showDiscountProgressBar) {
+        const progressBar = this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
+        if (progressBar) {
+          progressBar.classList.add('fpb-dp-sidebar');
+          panel.appendChild(progressBar);
+        }
       }
     }
 
     // Item count label
     const countLabel = document.createElement('div');
     countLabel.className = 'side-panel-item-count';
-    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    countLabel.textContent = isStandardDesktopSidebar
+      ? `${allSelectedProducts.length} item(s)`
+      : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
     panel.appendChild(countLabel);
 
     // Selected products list
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
+    if (isStandardDesktopSidebar) {
+      productsContainer.classList.add('side-panel-products--standard');
+    }
+    if (isHorizontalPreset) {
+      productsContainer.classList.add('side-panel-products--slots');
+    }
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
+        const summaryTitle = this.getSummaryProductDisplayTitle(item);
+        const variantInfo = this.getSummaryProductVariantDisplay(item);
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
+        if (isHorizontalPreset) {
+          row.classList.add('side-panel-product-slot');
+        }
 
-        const imgSrc = item.image || item.imageUrl || '';
-        const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
+        const imgSrc = this._getSelectedProductImageSrc(item);
 
-        const isFreeGiftItem = item.isFreeGift === true;
+        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
-        row.innerHTML = `
-          <div class="side-panel-product-img-wrap">
-            ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-            ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-          </div>
-          <div class="side-panel-product-info">
-            <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
-            ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-          </div>
-          ${priceHtml}
-        `;
+        if (isStandardDesktopSidebar) {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+              ${priceHtml}
+            </div>
+            <div class="side-panel-product-action"></div>
+          `;
+        } else {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+            </div>
+            ${priceHtml}
+          `;
+        }
 
         // Remove button — hidden for default (mandatory) products
         if (!item.isDefault) {
@@ -1202,22 +1885,42 @@ class BundleWidgetFullPage {
             const productId = item.variantId || item.productId || item.id;
             const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
             this.updateProductSelection(stepIndex, productId, 0);
-            const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
             ToastManager.showWithUndo(
               `Removed "${truncated}"`,
               () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
               5000
             );
           });
-          row.appendChild(removeBtn);
+          if (isStandardDesktopSidebar) {
+            row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
+          } else {
+            row.appendChild(removeBtn);
+          }
         }
 
         productsContainer.appendChild(row);
       });
+    } else if (isStandardDesktopSidebar) {
+      this._renderStandardSidebarEmptySlots(productsContainer);
+    }
+    if (isHorizontalPreset) {
+      const requiredSlots = Math.max(
+        totalQuantity + 1,
+        activeStep?.maxQuantity || activeStep?.minQuantity || 2,
+        2
+      );
+      const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
+      for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+        const emptySlot = document.createElement('div');
+        emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
+        emptySlot.textContent = '+';
+        productsContainer.appendChild(emptySlot);
+      }
     }
     panel.appendChild(productsContainer);
 
-    if (!isMobileSheet && allSelectedProducts.length === 0) {
+    if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
       this._renderSidebarProductSkeletons(skeletonContainer);
@@ -1225,7 +1928,7 @@ class BundleWidgetFullPage {
     }
 
     // Free gift section (locked or unlocked)
-    this._renderFreeGiftSection(panel);
+    if (!isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
 
     // Total
     const totalSection = document.createElement('div');
@@ -1233,7 +1936,7 @@ class BundleWidgetFullPage {
     totalSection.innerHTML = `
       <span class="side-panel-total-label">Total</span>
       <div class="side-panel-total-prices">
-        ${discountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+        ${combinedDiscountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
         <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
       </div>
     `;
@@ -1254,19 +1957,39 @@ class BundleWidgetFullPage {
     const canProceed = this.canProceedToNextStep();
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
+    const sidebarTierCtaContent = (conditionless || isLastStep)
+      ? this.getSidebarTierCtaContent(nextRule)
+      : null;
+    if (sidebarTierCtaContent) {
+      actionSection.style.gridTemplateColumns = '1fr';
+      actionSection.style.gap = '8px';
+      totalSection.style.alignItems = 'center';
+    }
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
-    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
+    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
+      ? this._resolveText('nextButton', 'Next')
+      : 'Next Step';
+    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : nextStepLabel;
+    if (sidebarTierCtaContent) {
+      const labelHtml = sidebarTierCtaContent.label
+        ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
+        : '';
+      const subtextHtml = sidebarTierCtaContent.subtext
+        ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
+        : '';
+      nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+    }
+    if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
       nextBtn.disabled = true;
     }
     nextBtn.addEventListener('click', () => {
       if (conditionless || isLastStep) {
         this.addBundleToCart();
       } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
-        const giftName = this.freeGiftStep?.freeGiftName || 'gift';
-        ToastManager.show(`Complete all steps to unlock the free ${giftName}!`);
+        const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
+        ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
         this.searchQuery = '';
@@ -1282,10 +2005,205 @@ class BundleWidgetFullPage {
     panel.appendChild(actionSection);
   }
 
+  createSidebarTierCta(nextRule) {
+    const content = this.getSidebarTierCtaContent(nextRule);
+    if (!content) return null;
+
+    const { label, subtext } = content;
+
+    const cta = document.createElement('div');
+    cta.className = 'fpb-sidebar-tier-cta';
+
+    if (label) {
+      const title = document.createElement('div');
+      title.className = 'fpb-sidebar-tier-cta-title';
+      title.textContent = label;
+      cta.appendChild(title);
+    }
+
+    if (subtext) {
+      const detail = document.createElement('div');
+      detail.className = 'fpb-sidebar-tier-cta-subtext';
+      detail.textContent = subtext;
+      cta.appendChild(detail);
+    }
+
+    return cta;
+  }
+
+  getSidebarTierCtaContent(nextRule) {
+    const pricing = this.selectedBundle?.pricing;
+    if (!pricing?.enabled) return null;
+
+    const displayOptions = pricing.messages?.displayOptions || {};
+    const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
+    const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+    const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+    const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
+    const label = typeof option?.label === 'string' && option.label.trim()
+      ? option.label.trim()
+      : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
+    const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+      ? option.subtext.trim()
+      : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+
+    if (!label && !subtext) return null;
+    return { label, subtext };
+  }
+
+  getBoxSelectionRules() {
+    const boxSelection = this.selectedBundle?.boxSelection;
+    if (!boxSelection || boxSelection.isEnabled !== true || !Array.isArray(boxSelection.rules)) {
+      return [];
+    }
+
+    return boxSelection.rules
+      .map(rule => ({
+        ruleId: String(rule.ruleId || ''),
+        boxQuantity: Number(rule.boxQuantity || 0),
+        boxLabel: String(rule.boxLabel || ''),
+        boxSubtext: String(rule.boxSubtext || ''),
+        isDefaultSelected: rule.isDefaultSelected === true,
+      }))
+      .filter(rule => rule.ruleId && rule.boxQuantity > 0)
+      .sort((a, b) => a.boxQuantity - b.boxQuantity);
+  }
+
+  getActiveBoxSelectionRule(rules, totalQuantity) {
+    if (!Array.isArray(rules) || rules.length === 0) return null;
+
+    const selected = this.selectedBoxSelectionRuleId
+      ? rules.find(rule => rule.ruleId === this.selectedBoxSelectionRuleId)
+      : null;
+    if (selected) return selected;
+
+    const reachedRule = rules
+      .filter(rule => Number(totalQuantity || 0) >= rule.boxQuantity)
+      .sort((a, b) => b.boxQuantity - a.boxQuantity)[0];
+    if (reachedRule) return reachedRule;
+
+    return rules.find(rule => rule.isDefaultSelected) || rules[0];
+  }
+
+  getSelectedBoxSelectionQuantity() {
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      if (item.isDefault === true || item.isFreeGift === true) return total;
+      return total + (Number(item.quantity || 0) || 0);
+    }, 0);
+  }
+
+  getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
+    const boxSelection = this.selectedBundle?.boxSelection;
+    const rules = this.getBoxSelectionRules();
+    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+    const isEnabled = boxSelection?.isEnabled === true
+      && boxSelection?.validateBoxSelectionQuantity === true
+      && !!activeRule;
+
+    if (!isEnabled) {
+      return {
+        isEnabled: false,
+        isValid: true,
+        activeRule,
+        totalQuantity: Number(totalQuantity || 0),
+      };
+    }
+
+    return {
+      isEnabled: true,
+      isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
+      activeRule,
+      totalQuantity: Number(totalQuantity || 0),
+    };
+  }
+
+  canCheckoutWithBoxSelection() {
+    return this.getBoxSelectionValidationState().isValid;
+  }
+
+  showBoxSelectionValidationMessage() {
+    const state = this.getBoxSelectionValidationState();
+    if (!state.isEnabled || state.isValid) return;
+
+    ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+  }
+
+  renderBoxSelectionOptions(totalQuantity = 0) {
+    const rules = this.getBoxSelectionRules();
+    if (rules.length === 0) return null;
+
+    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'fpb-box-selection-wrapper';
+
+    rules.forEach(rule => {
+      const option = document.createElement('button');
+      const isActive = activeRule?.ruleId === rule.ruleId;
+      option.type = 'button';
+      option.className = 'fpb-box-selection-option' + (isActive ? ' fpb-box-selection-option-active' : '');
+      option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      option.dataset.ruleId = rule.ruleId;
+
+      const title = document.createElement('span');
+      title.className = 'fpb-box-selection-title';
+      title.textContent = rule.boxLabel;
+      option.appendChild(title);
+
+      if (rule.boxSubtext) {
+        const subtext = document.createElement('span');
+        subtext.className = 'fpb-box-selection-subtext';
+        subtext.textContent = rule.boxSubtext;
+        option.appendChild(subtext);
+      }
+
+      option.addEventListener('click', () => {
+        this.selectedBoxSelectionRuleId = rule.ruleId;
+        this.reRenderFullPage();
+      });
+
+      wrapper.appendChild(option);
+    });
+
+    return wrapper;
+  }
+
   // Escape HTML special characters to prevent innerHTML injection
   _escapeHTML(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  _getSelectedProductImageSrc(item = {}) {
+    const getImageSrc = (image) => {
+      if (!image) return '';
+      if (typeof image === 'string') return image;
+      return image.src
+        || image.url
+        || image.originalSrc
+        || image.transformedSrc
+        || '';
+    };
+
+    return getImageSrc(item.variantImage)
+      || getImageSrc(item.variantImage?.src)
+      || getImageSrc(item.variant?.image)
+      || (typeof item.image === 'string' ? item.image : '')
+      || item.image?.src
+      || item.image?.url
+      || item.image?.originalSrc
+      || getImageSrc(item.imageUrl)
+      || item.featuredImage?.url
+      || item.featuredImage?.src
+      || getImageSrc(item.featuredImage)
+      || getImageSrc(item.images?.[0])
+      || getImageSrc(item.productImageUrl);
+  }
+
+  _formatSidebarDiscountMessage(discountMessage) {
+    const message = typeof discountMessage === 'string' ? discountMessage.trim() : '';
+    return message.replace(/!+\s*$/, '');
   }
 
   // Returns default SVG icon markup for a step based on its type
@@ -1370,8 +2288,107 @@ class BundleWidgetFullPage {
     return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
   }
 
+  _getDefaultTimelineIconDataUri(step) {
+    const svg = this._getDefaultTimelineIcon(step)
+      .replace('class="timeline-step-icon--svg"', 'xmlns="http://www.w3.org/2000/svg"')
+      .replace(' xmlns="http://www.w3.org/2000/svg"', '');
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  _isStandardSideFooterTimeline() {
+    return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+  }
+
+  buildStepTimelineEntries() {
+    const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+    const entries = [];
+
+    steps.forEach((step, index) => {
+      const stepLabel = (step.isFreeGift && step.addonLabel) ? step.addonLabel : step.name;
+      entries.push({
+        type: 'step',
+        step,
+        stepIndex: index,
+        label: stepLabel,
+      });
+
+      if (this.shouldRenderMultipleCategoryTimelineEntry(step)) {
+        entries.push({
+          type: 'multiple_categories',
+          step,
+          stepIndex: index,
+          label: 'Multiple Categories',
+        });
+      }
+    });
+
+    return entries;
+  }
+
+  getStandardTimelinePageSize() {
+    return window.innerWidth < 768 ? 4 : 5;
+  }
+
+  getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex) {
+    const entries = Array.isArray(timelineEntries) ? timelineEntries : [];
+    const timelinePageSize = this.getStandardTimelinePageSize();
+
+    if (entries.length <= timelinePageSize) {
+      this.standardTimelineWindowStart = 0;
+      this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+      return {
+        visibleEntries: entries,
+        windowStart: 0,
+        pageSize: timelinePageSize,
+        isPaged: false,
+      };
+    }
+
+    const activeChanged = this.standardTimelineLastActiveEntryIndex !== activeEntryIndex;
+    let windowStart = Number.isFinite(this.standardTimelineWindowStart)
+      ? this.standardTimelineWindowStart
+      : 0;
+
+    if (activeChanged && (activeEntryIndex < windowStart || activeEntryIndex >= windowStart + timelinePageSize)) {
+      windowStart = activeEntryIndex;
+    }
+
+    if (windowStart + timelinePageSize > entries.length) {
+      windowStart = entries.length - timelinePageSize;
+    }
+
+    windowStart = Math.max(0, windowStart);
+    this.standardTimelineWindowStart = windowStart;
+    this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+
+    return {
+      visibleEntries: entries.slice(windowStart, windowStart + timelinePageSize),
+      windowStart,
+      pageSize: timelinePageSize,
+      isPaged: true,
+    };
+  }
+
+  ensureTimelinePagingStyles() {
+    if (document.getElementById('wpb-fpb-timeline-paging-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-timeline-paging-styles';
+    style.textContent = '.step-timeline--paged{position:relative;flex-wrap:nowrap;justify-content:center;padding:0 24px}.timeline-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}.timeline-navigation-arrow--prev{left:4px}.timeline-navigation-arrow--next{right:4px}@media(max-width:767px){.step-timeline.step-timeline--paged{flex-wrap:nowrap}.step-timeline--paged .timeline-step{width:65px;max-width:65px}.step-timeline--paged .timeline-connector{flex:0 0 20px;min-width:20px}.step-timeline--paged .timeline-step-name{white-space:normal;line-height:14px}}';
+    document.head.appendChild(style);
+  }
+
+  shouldRenderMultipleCategoryTimelineEntry(step) {
+    if (!step || step.isFreeGift === true) return false;
+    return this.getStepCategoryTabEntries(step).length > 1;
+  }
+
   // Create circular icon-based step timeline with connecting lines and three icon states
   createStepTimeline() {
+    if (this._isStandardSideFooterTimeline()) {
+      return this.createStandardStepTimeline();
+    }
+
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
 
@@ -1379,17 +2396,68 @@ class BundleWidgetFullPage {
       return timeline;
     }
 
-    const steps = this.selectedBundle.steps;
+    const timelineEntries = this.buildStepTimelineEntries();
+    const totalEntryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const {
+      visibleEntries,
+      windowStart,
+      pageSize,
+      isPaged,
+    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+    const visibleEntryCount = Math.max(visibleEntries.length, 1);
 
-    steps.forEach((step, index) => {
+    if (isPaged) {
+      this.ensureTimelinePagingStyles();
+    }
+    timeline.classList.toggle('step-timeline--paged', isPaged);
+    timeline.dataset.windowStart = String(windowStart);
+    timeline.dataset.pageSize = String(pageSize);
+    timeline.dataset.totalEntries = String(totalEntryCount);
+
+    const createTimelineArrow = (direction) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = direction === 'prev'
+        ? 'timeline-navigation-arrow timeline-navigation-arrow--prev'
+        : 'timeline-navigation-arrow timeline-navigation-arrow--next';
+      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+      button.textContent = direction === 'prev' ? '‹' : '›';
+      button.addEventListener('click', () => {
+        if (direction === 'prev') {
+          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+        } else {
+          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+        }
+        this.reRenderFullPage();
+      });
+      return button;
+    };
+
+    if (isPaged && windowStart > 0) {
+      timeline.appendChild(createTimelineArrow('prev'));
+    }
+
+    if (isPaged && windowStart + visibleEntryCount < totalEntryCount) {
+      timeline.appendChild(createTimelineArrow('next'));
+    }
+
+    visibleEntries.forEach((entry, displayIndex) => {
+      const step = entry.step;
+      const index = entry.stepIndex;
       const stepEl = document.createElement('div');
       stepEl.className = 'timeline-step';
       stepEl.dataset.stepIndex = index;
+      stepEl.dataset.timelineType = entry.type;
 
       // Determine step state
       const isDefaultStep = step.isDefault === true;
-      const isCompleted = this.isStepCompleted(index);
-      const isCurrent = index === this.currentStepIndex;
+      const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
+      const isCategoryEntry = entry.type === 'multiple_categories';
+      const isCompleted = isCategoryEntry ? this.isStepCompleted(index) : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex);
+      const isCurrent = index === this.currentStepIndex && (!hasMultipleCategoryEntry || isCategoryEntry);
       const isAccessible = this.isStepAccessible(index);
 
       if (isDefaultStep) stepEl.classList.add('timeline-step--included');
@@ -1398,11 +2466,13 @@ class BundleWidgetFullPage {
       if (!isCurrent && !isCompleted) stepEl.classList.add('timeline-step--inactive');
       if (!isAccessible) stepEl.classList.add('timeline-step--locked');
 
-      const escapedName = this._escapeHTML(step.name) || `Step ${index + 1}`;
+      const tabLabel = entry.label;
+      const escapedName = this._escapeHTML(tabLabel) || `Step ${index + 1}`;
 
-      // Icon: user-uploaded → img element, else default SVG by step type
-      const iconContent = step.timelineIconUrl
-        ? `<img class="timeline-step-icon" src="${step.timelineIconUrl}" alt="${escapedName}">`
+      // Icon: addon-uploaded, then Step Config image, else default SVG.
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+      const iconContent = uploadedIconUrl
+        ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
         : this._getDefaultTimelineIcon(step);
 
       // Checkmark badge — always rendered, shown via CSS only when completed
@@ -1419,7 +2489,7 @@ class BundleWidgetFullPage {
       `;
 
       // Click handler — accessible steps only
-      if (isAccessible && !isDefaultStep) {
+      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
         stepEl.style.cursor = 'pointer';
         stepEl.addEventListener('click', () => {
           if (!this.isStepAccessible(index)) {
@@ -1440,7 +2510,7 @@ class BundleWidgetFullPage {
       timeline.appendChild(stepEl);
 
       // Connector — sibling between steps (not child), so flex layout drives width
-      if (index < steps.length - 1) {
+      if (displayIndex < visibleEntries.length - 1) {
         const connectorEl = document.createElement('div');
         connectorEl.className = 'timeline-connector';
         const connectorFill = document.createElement('div');
@@ -1452,6 +2522,147 @@ class BundleWidgetFullPage {
       }
     });
 
+    return timeline;
+  }
+
+  createStandardStepTimeline() {
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline step-timeline--standard';
+
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      return timeline;
+    }
+
+    const timelineEntries = this.buildStepTimelineEntries();
+    const totalEntryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const {
+      visibleEntries,
+      windowStart,
+      pageSize,
+      isPaged,
+    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+    const entryCount = Math.max(visibleEntries.length, 1);
+    const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const progressFill = entryCount > 1
+      ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
+      : 0;
+    const progressLeft = 100 / (entryCount * 2);
+    const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
+    const timelineWidth = Math.min(100, entryCount * 30);
+
+    timeline.style.setProperty('--standard-timeline-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-total-count', String(totalEntryCount));
+    timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
+    timeline.classList.toggle('standard-timeline--paged', isPaged);
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'standard-navigation-items-container';
+    itemsContainer.classList.toggle('standard-navigation-items-container--paged', isPaged);
+    itemsContainer.dataset.windowStart = String(windowStart);
+    itemsContainer.dataset.pageSize = String(pageSize);
+    itemsContainer.dataset.totalEntries = String(totalEntryCount);
+
+    const createTimelineArrow = (direction) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = direction === 'prev'
+        ? 'standard-navigation-arrow standard-navigation-arrow--prev'
+        : 'standard-navigation-arrow standard-navigation-arrow--next';
+      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+      button.textContent = direction === 'prev' ? '‹' : '›';
+      button.addEventListener('click', () => {
+        if (direction === 'prev') {
+          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+        } else {
+          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+        }
+        this.reRenderFullPage();
+      });
+      return button;
+    };
+
+    if (isPaged && windowStart > 0) {
+      itemsContainer.appendChild(createTimelineArrow('prev'));
+    }
+
+    if (isPaged && windowStart + entryCount < totalEntryCount) {
+      itemsContainer.appendChild(createTimelineArrow('next'));
+    }
+
+    visibleEntries.forEach((entry) => {
+      const step = entry.step;
+      const index = entry.stepIndex;
+      const itemEl = document.createElement('div');
+      itemEl.className = 'standard-navigation-item timeline-step';
+      itemEl.dataset.stepIndex = index;
+      itemEl.dataset.timelineType = entry.type;
+
+      const isDefaultStep = step.isDefault === true;
+      const isCurrent = entry.type === 'step' && index === this.currentStepIndex;
+      const isCompleted = entry.type === 'step' && !isCurrent && this.isStepCompleted(index);
+      const isAccessible = this.isStepAccessible(index);
+
+      if (isDefaultStep) itemEl.classList.add('timeline-step--included');
+      if (isCurrent) itemEl.classList.add('timeline-step--active');
+      if (isCompleted) itemEl.classList.add('timeline-step--completed');
+      if (!isCurrent && !isCompleted) itemEl.classList.add('timeline-step--inactive');
+      if (!isAccessible) itemEl.classList.add('timeline-step--locked');
+
+      const escapedName = this._escapeHTML(entry.label) || `Step ${index + 1}`;
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+      const iconUrl = uploadedIconUrl || this._getDefaultTimelineIconDataUri(step);
+
+      itemEl.innerHTML = `
+        <div class="standard-navigation-step-img-container timeline-icon-wrapper">
+          <img class="standard-navigation-image timeline-step-icon" src="${this._escapeHTML(iconUrl)}" alt="${escapedName}">
+        </div>
+        <div class="standard-navigation-title-container">
+          <p class="standard-navigation-title timeline-step-name">${escapedName}</p>
+        </div>
+      `;
+
+      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
+        itemEl.style.cursor = 'pointer';
+        itemEl.addEventListener('click', () => {
+          if (!this.isStepAccessible(index)) {
+            ToastManager.show('Please complete the previous steps first.');
+            return;
+          }
+          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+            ToastManager.show('Please meet the step conditions before proceeding.');
+            return;
+          }
+          this.currentStepIndex = index;
+          this.searchQuery = '';
+          this.activeCollectionId = null;
+          this.reRenderFullPage();
+        });
+      }
+
+      itemsContainer.appendChild(itemEl);
+    });
+
+    if (entryCount > 1) {
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'standard-steps-progress-bar-container';
+      progressContainer.innerHTML = `
+        <div class="standard-steps-progress-bar">
+          <div class="standard-steps-progress-bar-filled"></div>
+        </div>
+      `;
+      itemsContainer.appendChild(progressContainer);
+    }
+
+    timeline.appendChild(itemsContainer);
     return timeline;
   }
 
@@ -1467,6 +2678,41 @@ class BundleWidgetFullPage {
     img.alt = this._escapeHTML(step.name || '');
     wrapper.appendChild(img);
     return wrapper;
+  }
+
+  createBundleBanners() {
+    const desktopBannerUrl = this.selectedBundle?.bundleBannerDesktopUrl;
+    const mobileBannerUrl = this.selectedBundle?.bundleBannerMobileUrl;
+    if (!desktopBannerUrl && !mobileBannerUrl) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bundle-banners';
+    if (desktopBannerUrl) wrapper.classList.add('bundle-banners--has-desktop');
+    if (mobileBannerUrl) wrapper.classList.add('bundle-banners--has-mobile');
+
+    const appendBannerImage = (url, className) => {
+      if (!url) return;
+      const img = document.createElement('img');
+      img.className = className;
+      img.src = url;
+      img.alt = '';
+      img.loading = 'lazy';
+      wrapper.appendChild(img);
+    };
+
+    appendBannerImage(desktopBannerUrl, 'bundle-banner-image bundle-banner-image--desktop');
+    appendBannerImage(mobileBannerUrl, 'bundle-banner-image bundle-banner-image--mobile');
+
+    return wrapper;
+  }
+
+  ensureBundleBannerRuntimeStyles() {
+    if (document.getElementById('wpb-fpb-bundle-banner-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-bundle-banner-runtime-styles';
+    style.textContent = `.bundle-banners{width:100%;margin:0 auto 20px;overflow:hidden;display:block}.bundle-banner-image{width:100%;height:auto;display:block;object-fit:cover}.bundle-banner-image--mobile{display:none}.bundle-banners:not(.bundle-banners--has-desktop) .bundle-banner-image--mobile{display:block}@media (max-width: 639px){.bundle-banners{margin-bottom:16px}.bundle-banners--has-mobile .bundle-banner-image--desktop{display:none}.bundle-banners--has-mobile .bundle-banner-image--mobile{display:block}}`;
+    document.head.appendChild(style);
   }
 
   // Get a compact quantity hint string for a step tab (e.g. "Pick 2" or "Pick 2–5")
@@ -1608,6 +2854,18 @@ class BundleWidgetFullPage {
   // Hide the page title element from the theme template
   // This prevents showing the page name (e.g., "StrangeObjectsinmirror") above the bundle
   hidePageTitle() {
+    const configName = (() => {
+      if (this.selectedBundle?.name) return this.selectedBundle.name;
+      try {
+        const rawConfig = this.container?.dataset?.bundleConfig;
+        if (!rawConfig) return '';
+        return JSON.parse(rawConfig)?.name || '';
+      } catch (e) {
+        return '';
+      }
+    })();
+    const normalizedConfigName = String(configName || '').trim().toLowerCase();
+
     // Try multiple selectors to find the page title element
     const selectors = [
       '.main-page-title',
@@ -1625,8 +2883,8 @@ class BundleWidgetFullPage {
           // Check if this is a page title element (not our promo banner)
           if (el.closest('.promo-banner')) return;
 
-          // Hide the element
-          el.style.display = 'none';
+          // Remove the element entirely so the host page title is not left in the DOM.
+          el.remove();
         });
       } catch (e) {
         // Selector might be invalid, continue to next
@@ -1641,20 +2899,41 @@ class BundleWidgetFullPage {
       const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
 
       if (hasPageTitle && !hasOtherContent) {
-        container.style.display = 'none';
+        container.remove();
+      }
+    });
+
+    if (!normalizedConfigName) return;
+
+    document.querySelectorAll('h1').forEach(el => {
+      if (el.closest('.bundle-widget-container, .promo-banner')) return;
+      const normalizedTitle = String(el.textContent || '').trim().toLowerCase();
+      if (normalizedTitle !== normalizedConfigName) return;
+
+      const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
+      if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
+        titleSection.remove();
+        return;
+      }
+
+      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
+        titleBlock.remove();
+      } else {
+        el.remove();
       }
     });
   }
 
   // Create promotional banner (Competitor-Inspired with gradient hero style)
-  // Shows bundle title with optional discount info from DCP
+  // Shows bundle title with optional discount info from Settings -> Design
   createPromoBanner() {
     // Check if promo banner is disabled via theme editor settings
     if (this.config.showPromoBanner === false) {
       return null;
     }
 
-    // Check if promo banner is enabled via DCP CSS variable
+    // Check if promo banner is enabled via Settings design CSS variable
     const promoBannerEnabled = getComputedStyle(document.documentElement)
       .getPropertyValue('--bundle-promo-banner-enabled')
       .trim();
@@ -1675,24 +2954,21 @@ class BundleWidgetFullPage {
     let promoNote = '';
     let discountMessage = '';
 
-    // Check for discount rules and build discount message
     if (pricing?.enabled && rules.length > 0) {
-      // Find the best discount to highlight (use nested structure)
+      const pricingMethod = pricing.method || 'percentage_off';
       const bestRule = rules.reduce((best, rule) => {
-        const discountValue = rule.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
-          ? rule.discount?.value || 0
-          : ((rule.discount?.value || 0) / 100);
-        const bestValue = best.discount?.method === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF
-          ? best.discount?.value || 0
-          : ((best.discount?.value || 0) / 100);
+        const dv = rule.discountValue ?? 0;
+        const bestDv = best.discountValue ?? 0;
+        const isPercent = pricingMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+        const discountValue = isPercent ? dv : dv / 100;
+        const bestValue = isPercent ? bestDv : bestDv / 100;
         return discountValue > bestValue ? rule : best;
       }, rules[0]);
 
-      // Build discount message based on best rule (using nested structure)
-      const targetQty = bestRule.condition?.value || 0;
-      const conditionOperator = bestRule.condition?.operator;
-      const discountMethod = bestRule.discount?.method;
-      const discountValue = bestRule.discount?.value || 0;
+      const targetQty = bestRule.conditionValue ?? 0;
+      const conditionOperator = bestRule.conditionOperator;
+      const discountMethod = pricingMethod;
+      const discountValue = bestRule.discountValue ?? 0;
 
       // Build operator-aware quantity text
       const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
@@ -1714,17 +2990,11 @@ class BundleWidgetFullPage {
     }
 
     // Determine layout based on whether we have a discount
-    // Use theme editor settings for customizable text
     if (discountMessage) {
-      // With discount: Use subtitle from theme settings, discount as note
-      promoSubtitle = this.config.promoBannerSubtitle || 'Mix & Match';
       promoNote = discountMessage;
-    } else {
-      // No discount: Use tagline and note from theme settings
-      promoSubtitle = this.config.promoBannerTagline || 'Create Your Perfect Bundle';
-      promoNote = this.config.promoBannerNote || 'Mix & Match Your Favorites';
     }
 
+    const tierBadges = this.createPromoDiscountTierBadges(pricing, currencyInfo);
     const banner = document.createElement('div');
     banner.className = 'promo-banner';
     banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
@@ -1732,16 +3002,14 @@ class BundleWidgetFullPage {
       ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
       <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
       ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
+      ${tierBadges}
     `;
 
-    // Apply per-bundle promo banner background image directly as inline style.
-    // Using banner.style.backgroundImage (not a CSS custom property) so the inline style
-    // always wins regardless of theme stylesheet specificity.
     const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
     if (bgImageUrl) {
-      banner.style.backgroundImage = `url('${bgImageUrl}')`;
-      banner.style.backgroundSize = 'cover';
-      banner.style.backgroundPosition = 'center';
+      banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
+      banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
+      banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
 
       // Apply crop offsets when crop data is present (overrides cover/center defaults above)
       const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
@@ -1755,8 +3023,8 @@ class BundleWidgetFullPage {
           const bgSize = `${(1 / cw) * 100}%`;
           const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
           const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-          banner.style.backgroundSize = bgSize;
-          banner.style.backgroundPosition = `${posX}% ${posY}%`;
+          banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
+          banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
         } catch (_e) {
           // Invalid crop JSON — fall back to default cover/center set above
         }
@@ -1766,44 +3034,257 @@ class BundleWidgetFullPage {
     return banner;
   }
 
-  // Create category/collection tabs (Pill Button Style)
+  createPromoDiscountTierBadges(pricing, currencyInfo) {
+    const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
+    if (!pricing?.enabled || rules.length === 0) return '';
+
+    const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
+    const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
+    const badges = rules
+      .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
+      .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+      .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
+      .filter(Boolean)
+      .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
+
+    if (badges.length === 0) return '';
+    return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
+  }
+
+  formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {
+    const ruleId = String(rule?.id || '');
+    const tierText = pricing?.messages?.tierTextByRuleId?.[ruleId];
+    if (tierText?.tierText && tierText?.tierSubtext) {
+      return `${tierText.tierText} / ${tierText.tierSubtext}`;
+    }
+    if (tierText?.tierText) return tierText.tierText;
+    if (tierText?.tierSubtext) return tierText.tierSubtext;
+
+    const threshold = Number(rule?.conditionValue || 0) || 0;
+    const discountValue = Number(rule?.discountValue || 0) || 0;
+    if (!threshold || !discountValue) return '';
+
+    const thresholdText = rule.conditionType === 'amount'
+      ? CurrencyManager.convertAndFormat(threshold, currencyInfo)
+      : String(threshold);
+    let discountText = '';
+    const discountMethod = pricing?.method || 'percentage_off';
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+      discountText = `${discountValue}%`;
+    } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF || discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
+      discountText = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
+    }
+
+    return discountText ? `${thresholdText} / ${discountText}` : thresholdText;
+  }
+
+  collectStepProductIds(step) {
+    const productIds = [];
+    const addProductId = (product) => {
+      const id = product?.id || product?.graphqlId || product?.productId;
+      if (id && !productIds.includes(id)) productIds.push(id);
+    };
+
+    (step.products || []).forEach(addProductId);
+    (step.categories || []).forEach(category => {
+      (category.products || []).forEach(addProductId);
+      (category.selectedProducts || []).forEach(addProductId);
+    });
+
+    return productIds;
+  }
+
+  collectStepCollectionHandles(step) {
+    const handles = [];
+    const addCollectionHandle = (collection) => {
+      const handle = collection?.handle;
+      if (handle && !handles.includes(handle)) handles.push(handle);
+    };
+
+    (step.collections || []).forEach(addCollectionHandle);
+    (step.categories || []).forEach(category => {
+      (category.collections || []).forEach(addCollectionHandle);
+      (category.collectionsData || []).forEach(addCollectionHandle);
+      (category.collectionsSelectedData || []).forEach(addCollectionHandle);
+    });
+
+    return handles;
+  }
+
+  getStepCategoryTabEntries(step) {
+    if (!Array.isArray(step.categories)) return [];
+
+    return step.categories
+      .map((category, index) => {
+        const id = category.categoryId || category.id || `category-${index}`;
+        const title = category.title || category.name;
+        if (!id || !title) return null;
+
+        const handles = [];
+        const productIds = [];
+        const addHandle = (collection) => {
+          const handle = collection?.handle;
+          if (handle && !handles.includes(handle)) handles.push(handle);
+        };
+        const addProductId = (product) => {
+          const productId = product?.id || product?.graphqlId || product?.productId;
+          if (productId && !productIds.includes(productId)) productIds.push(productId);
+        };
+
+        (category.collections || []).forEach(addHandle);
+        (category.collectionsData || []).forEach(addHandle);
+        (category.collectionsSelectedData || []).forEach(addHandle);
+        (category.products || []).forEach(addProductId);
+        (category.selectedProducts || []).forEach(addProductId);
+
+        return {
+          id,
+          title,
+          handles,
+          productIds,
+          displayVariantsAsIndividualProducts: category.displayVariantsAsIndividualProducts === true,
+          displayVariantsAsSwatches: category.displayVariantsAsSwatches === true,
+        };
+      })
+      .filter(entry => entry && (entry.handles.length > 0 || entry.productIds.length > 0));
+  }
+
+  getActiveStepCategoryId(step) {
+    const categoryEntries = this.getStepCategoryTabEntries(step);
+    if (categoryEntries.length === 0) return this.activeCollectionId;
+    if (this.activeCollectionId && categoryEntries.some(entry => entry.id === this.activeCollectionId)) {
+      return this.activeCollectionId;
+    }
+    return categoryEntries[0].id;
+  }
+
+  getActiveStepCategoryEntry(step) {
+    const categoryEntries = this.getStepCategoryTabEntries(step);
+    const activeCategoryId = this.getActiveStepCategoryId(step);
+    return categoryEntries.find(entry => entry.id === activeCategoryId) || null;
+  }
+
+  shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
+    if (activeCategory) {
+      return activeCategory.displayVariantsAsIndividualProducts === true;
+    }
+
+    const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
+    if (hasCategoryEntries) {
+      return false;
+    }
+
+    return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  }
+
+  createActiveCategoryTitle(stepIndex) {
+    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+      return null;
+    }
+
+    const activeCategory = this.getActiveStepCategoryEntry(this.selectedBundle.steps[stepIndex]);
+    if (!activeCategory?.title) return null;
+
+    const title = document.createElement('div');
+    title.className = 'fpb-step-category-title';
+    title.textContent = activeCategory.title;
+    return title;
+  }
+
+  createCategorySectionRows(stepIndex) {
+    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+      return null;
+    }
+
+    const step = this.selectedBundle.steps[stepIndex];
+    const categoryEntries = this.getStepCategoryTabEntries(step);
+    if (categoryEntries.length <= 1) return null;
+
+    const activeCategoryId = this.getActiveStepCategoryId(step);
+    const inactiveCategoryEntries = categoryEntries.filter(entry => entry.id !== activeCategoryId);
+    if (inactiveCategoryEntries.length === 0) return null;
+
+    const categoryRowsContainer = document.createElement('div');
+    categoryRowsContainer.className = 'fpb-category-section-rows';
+
+    inactiveCategoryEntries.forEach(entry => {
+      const categoryRow = document.createElement('button');
+      categoryRow.type = 'button';
+      categoryRow.className = 'fpb-category-section-row fpb-category-section-row--collapsed';
+      categoryRow.textContent = entry.title;
+      categoryRow.addEventListener('click', () => {
+        this.activeCollectionId = entry.id;
+        this.reRenderFullPage();
+      });
+      categoryRowsContainer.appendChild(categoryRow);
+    });
+
+    return categoryRowsContainer;
+  }
+
   createCategoryTabs(stepIndex) {
     if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
       return null;
     }
 
     const step = this.selectedBundle.steps[stepIndex];
+    const categoryEntries = this.getStepCategoryTabEntries(step);
+    const hasCategoryEntries = categoryEntries.length > 0;
 
-    if (!step.collections || step.collections.length === 0) {
+    if (categoryEntries.length === 0 && (!step.collections || step.collections.length === 0)) {
+      return null;
+    }
+
+    const customFilters = Array.isArray(step.filters) && step.filters.length > 0
+      ? step.filters
+      : null;
+
+    let tabEntries;
+    if (hasCategoryEntries) {
+      tabEntries = categoryEntries;
+    } else if (customFilters) {
+      tabEntries = customFilters
+        .map(f => {
+          const col = step.collections.find(c => (c.handle || c.id) === f.collectionHandle);
+          return col ? { id: col.id, title: f.label } : null;
+        })
+        .filter(Boolean);
+    } else {
+      tabEntries = step.collections.map(c => ({ id: c.id, title: c.title }));
+    }
+
+    if (tabEntries.length === 0) {
       return null;
     }
 
     const tabsContainer = document.createElement('div');
     tabsContainer.className = 'category-tabs';
 
-    // Add "All" tab - Pill button style
-    const allTab = document.createElement('button');
-    allTab.className = 'category-tab';
-    if (!this.activeCollectionId) {
-      allTab.classList.add('active');
-    }
-    allTab.innerHTML = `<span class="tab-label">All</span>`;
-    allTab.addEventListener('click', () => {
-      this.activeCollectionId = null;
-      this.reRenderFullPage();
-    });
-    tabsContainer.appendChild(allTab);
+    const activeCategoryId = hasCategoryEntries ? this.getActiveStepCategoryId(step) : this.activeCollectionId;
 
-    // Add collection tabs - Pill button style
-    step.collections.forEach(collection => {
+    if (!hasCategoryEntries) {
+      const allTab = document.createElement('button');
+      allTab.className = 'category-tab';
+      if (!this.activeCollectionId) {
+        allTab.classList.add('active');
+      }
+      allTab.innerHTML = `<span class="tab-label">All</span>`;
+      allTab.addEventListener('click', () => {
+        this.activeCollectionId = null;
+        this.reRenderFullPage();
+      });
+      tabsContainer.appendChild(allTab);
+    }
+
+    tabEntries.forEach(entry => {
       const tab = document.createElement('button');
       tab.className = 'category-tab';
-      if (this.activeCollectionId === collection.id) {
+      if (activeCategoryId === entry.id) {
         tab.classList.add('active');
       }
-      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(collection.title)}</span>`;
+      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
       tab.addEventListener('click', () => {
-        this.activeCollectionId = collection.id;
+        this.activeCollectionId = entry.id;
         this.reRenderFullPage();
       });
       tabsContainer.appendChild(tab);
@@ -1826,9 +3307,31 @@ class BundleWidgetFullPage {
     let products = this.stepProductData[stepIndex] || [];
 
 
-    // Filter by active collection if selected
-    if (this.activeCollectionId && step.collections) {
-      const activeCollection = step.collections.find(c => c.id === this.activeCollectionId);
+    const activeCategory = this.getActiveStepCategoryEntry(step);
+    const activeCollectionId = activeCategory ? activeCategory.id : this.activeCollectionId;
+
+    // Filter by active category/collection if selected
+    if (activeCollectionId) {
+      if (activeCategory) {
+        const allowedProductIds = new Set();
+        activeCategory.productIds.forEach(productId => {
+          allowedProductIds.add(this.extractId(productId) || productId);
+        });
+        activeCategory.handles.forEach(handle => {
+          const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
+          collectionProductIds.forEach(productId => {
+            allowedProductIds.add(this.extractId(productId) || productId);
+          });
+        });
+
+        if (allowedProductIds.size > 0) {
+          products = products.filter(p => {
+            const numericPid = p.parentProductId || p.id || '';
+            return allowedProductIds.has(numericPid);
+          });
+        }
+      } else if (step.collections) {
+        const activeCollection = step.collections.find(c => c.id === activeCollectionId);
       if (activeCollection && activeCollection.handle) {
         const membershipKey = `${stepIndex}:${activeCollection.handle}`;
         const collectionProductIds = this.stepCollectionProductIds[membershipKey];
@@ -1844,10 +3347,11 @@ class BundleWidgetFullPage {
           });
         }
       }
+      }
     }
 
-    // Expand products with variants into separate cards (one card per variant)
-    let expandedProducts = this.expandProductsByVariant(products);
+    const shouldDisplayVariantsAsIndividual = this.shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory);
+    let expandedProducts = this.expandProductsByVariant(products, shouldDisplayVariantsAsIndividual);
 
     // Filter by search query if active
     if (this.searchQuery && this.searchQuery.trim()) {
@@ -1893,7 +3397,11 @@ class BundleWidgetFullPage {
 
   // Expand products with multiple variants into separate product entries
   // Each variant becomes its own card showing "Product Title - Variant Name"
-  expandProductsByVariant(products) {
+  expandProductsByVariant(products, shouldExpand = true) {
+    if (!shouldExpand) {
+      return products;
+    }
+
     return products.flatMap(product => {
       // If product already has a variantId and parentProductId, it was already expanded
       if (product.parentProductId && product.variantId) {
@@ -1906,12 +3414,21 @@ class BundleWidgetFullPage {
           .filter(variant => variant.available !== false) // Only show available variants
           .map(variant => {
             // Use variant image if available, fallback to product image
-            const imageUrl = variant.image?.src || variant.image || product.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+            const imageUrl = variant.image?.src
+              || variant.image?.url
+              || (typeof variant.image === 'string' ? variant.image : null)
+              || variant.imageUrl
+              || product.imageUrl
+              || product.featuredImage?.url
+              || product.images?.[0]?.url
+              || product.images?.[0]?.src
+              || product.images?.[0]?.originalSrc
+              || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
 
             return {
               ...product,
               id: variant.id,
-              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              title: product.title,
               variantTitle: variant.title === 'Default Title' ? '' : variant.title,
               imageUrl,
               price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
@@ -2019,6 +3536,7 @@ class BundleWidgetFullPage {
   createProductCard(product, stepIndex) {
     const productId = product.variantId || product.id;
     const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
 
 
     // Ensure product has an image URL (use multiple fallbacks)
@@ -2042,13 +3560,23 @@ class BundleWidgetFullPage {
       product,
       currentQuantity,
       currencyInfo,
-      { variantSelectorHtml, actionMode: 'expandingQuantity' }
+      {
+        variantSelectorHtml,
+        actionMode: 'expandingQuantity',
+        addButtonText: this.getProductAddButtonText(),
+      }
     );
 
     // Convert HTML string to DOM element
     const wrapper = document.createElement('div');
     wrapper.innerHTML = htmlString.trim();
     const cardElement = wrapper.firstChild;
+
+    if (renderSelectedQuantityBadge) {
+      this.applySelectedQuantityBadge(cardElement, currentQuantity);
+    }
+
+    this.applyStandardExpandedVariantTitle(cardElement, product);
 
     // Default (included) step: add "Included" badge and disable interaction controls
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
@@ -2072,14 +3600,14 @@ class BundleWidgetFullPage {
           img.className = 'fpb-included-badge-img';
           badge.appendChild(img);
         } else {
-          badge.textContent = 'Included';
+          badge.textContent = this._resolveText('includedBadge', 'Included');
         }
         imgEl.parentElement.appendChild(badge);
       }
     }
 
     // Free gift step: add "Free" badge and override price display to $0.00
-    if (currentStepData?.isFreeGift) {
+    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
       const imgEl = cardElement.querySelector('.product-image, .product-img, img');
       if (imgEl && imgEl.parentElement) {
         imgEl.parentElement.classList.add('fpb-card-image-wrapper');
@@ -2098,7 +3626,7 @@ class BundleWidgetFullPage {
           img.className = 'fpb-free-badge-img';
           badge.appendChild(img);
         } else {
-          badge.textContent = 'Free';
+          badge.textContent = this._resolveText('freeBadge', 'Free');
         }
         imgEl.parentElement.appendChild(badge);
       }
@@ -2114,6 +3642,107 @@ class BundleWidgetFullPage {
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
     return cardElement;
+  }
+
+  applyStandardExpandedVariantTitle(cardElement, product) {
+    const preset = this.getFullPageDesignPreset();
+    if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+    if (!cardElement) return;
+
+    const variantTitle = this.getSummaryProductVariantDisplay(product);
+    if (!product?.parentProductId || !variantTitle) return;
+
+    const titleEl = cardElement.querySelector('.product-title');
+    if (!titleEl) return;
+
+    const parentTitle = this.getSummaryProductDisplayTitle({
+      ...product,
+      variantTitle: product.variantTitle || 'Default Title',
+      title: product.title || '',
+      parentTitle: product.parentTitle || ''
+    });
+    if (!parentTitle) return;
+
+    cardElement.classList.add('product-card--expanded-variant');
+    titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+  }
+
+  getSummaryProductDisplayTitle(item) {
+    if (!item) return '';
+    const hasVariantLabel = item.variantTitle && item.variantTitle !== 'Default Title';
+    const hasUsableParentTitle = typeof item.parentTitle === 'string' && item.parentTitle.trim().length > 0;
+    if (hasVariantLabel && hasUsableParentTitle) return item.parentTitle;
+
+    const inferredParentTitle = this.getParentTitleFromDisplayTitle(item.title);
+    if (inferredParentTitle && hasVariantLabel) return inferredParentTitle;
+
+    if (hasUsableParentTitle) {
+      return item.parentTitle;
+    }
+
+    return inferredParentTitle || item.title || '';
+  }
+
+  getSummaryProductVariantDisplay(item) {
+    if (!item) return '';
+
+    const explicitVariantTitle = typeof item.variantTitle === 'string' ? item.variantTitle : '';
+    if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+      return explicitVariantTitle;
+    }
+
+    const parentTitle = typeof item.parentTitle === 'string' ? item.parentTitle : '';
+    const normalizedTitle = typeof item.title === 'string' ? item.title : '';
+    if (!normalizedTitle) return '';
+
+    if (parentTitle) {
+      const withParentPrefix = `${parentTitle} - `;
+      if (normalizedTitle.startsWith(withParentPrefix)) {
+        const inferredVariant = normalizedTitle.slice(withParentPrefix.length).trim();
+        return inferredVariant || '';
+      }
+    }
+
+    return this.getSummaryVariantFromDisplayTitle(normalizedTitle);
+  }
+
+  getParentTitleFromDisplayTitle(displayTitle) {
+    if (typeof displayTitle !== 'string') return '';
+    const separatorIndex = displayTitle.indexOf(' - ');
+    if (separatorIndex <= 0) return '';
+    const parentCandidate = displayTitle.slice(0, separatorIndex).trim();
+    return parentCandidate || '';
+  }
+
+  getSummaryVariantFromDisplayTitle(displayTitle) {
+    if (typeof displayTitle !== 'string') return '';
+    const separatorIndex = displayTitle.indexOf(' - ');
+    if (separatorIndex <= 0) return '';
+    const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
+    return variantCandidate || '';
+  }
+
+  applySelectedQuantityBadge(cardElement, currentQuantity) {
+    if (!cardElement) return;
+    cardElement.querySelector('.selected-overlay')?.remove();
+    const actionWrapper = cardElement.querySelector('.product-card-action');
+    if (!actionWrapper) return;
+
+    const priceRow = cardElement.querySelector('.product-price-row');
+    const actionRow = document.createElement('div');
+    actionRow.className = 'product-selected-action-row';
+    if (priceRow) {
+      actionRow.appendChild(priceRow);
+    }
+
+    const quantityBadge = document.createElement('span');
+    quantityBadge.className = 'inline-quantity-display-only';
+    quantityBadge.textContent = String(currentQuantity);
+    actionRow.appendChild(quantityBadge);
+
+    actionWrapper.classList.remove('is-expanded');
+    actionWrapper.classList.add('has-selected-quantity-badge');
+    actionWrapper.replaceChildren(actionRow);
   }
 
   // Attach event listeners to product card
@@ -2215,7 +3844,7 @@ class BundleWidgetFullPage {
     }
 
     // Safety guard: sidebar layout uses the side panel, not the bottom footer
-    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    const layout = this.resolveFullPageLayout();
     if (layout === 'footer_side') {
       this.elements.footer.style.display = 'none';
       return;
@@ -2232,7 +3861,7 @@ class BundleWidgetFullPage {
     this.elements.footer.style.display = 'block';
 
     // Pricing data
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -2240,10 +3869,12 @@ class BundleWidgetFullPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = discountInfo.hasDiscount ? discountInfo.finalPrice : totalPrice;
+    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
 
 
 
@@ -2255,9 +3886,16 @@ class BundleWidgetFullPage {
 
     const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
 
-    // Discount progress banner — full-width slim stripe at very top of card (outside padding)
-    const discountBanner = this._renderDiscountProgressBanner();
-    if (discountBanner) this.elements.footer.appendChild(discountBanner);
+    // Discount progress bar — visual fill bar at top of card, shown only when toggle is on
+    if (this.config.showDiscountProgressBar) {
+      const progressBar = this._renderDiscountProgress({
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
+      if (progressBar) this.elements.footer.appendChild(progressBar);
+    }
 
     // Inner wrapper carries the padding so the banner above sits edge-to-edge
     const inner = document.createElement('div');
@@ -2273,7 +3911,7 @@ class BundleWidgetFullPage {
     });
     const bar = this._createFooterBar(
       allSelectedProducts, totalQuantity, totalRequired,
-      totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep
+      totalPrice, finalPrice, combinedDiscountInfo, currencyInfo, isLastStep
     );
 
     // Stack inside inner: panel → backdrop → bar
@@ -2297,18 +3935,20 @@ class BundleWidgetFullPage {
       li.className = 'footer-panel-item';
 
       const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
-      const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const truncatedTitle = this.truncateTitle(summaryTitle, 35);
+      const ariaLabelTitle = ComponentGenerator.escapeHtml(summaryTitle);
 
       li.innerHTML = `
-        <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
-             alt="${ComponentGenerator.escapeHtml(item.title)}"
+        <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
+             alt="${ariaLabelTitle}"
              class="footer-panel-thumb">
         <div class="footer-panel-info">
           <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
           <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
         </div>
         ${!item.isDefault ? `
-        <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
+        <button class="footer-panel-remove" type="button" aria-label="Remove ${ariaLabelTitle}">
           <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
             <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
           </svg>
@@ -2322,7 +3962,7 @@ class BundleWidgetFullPage {
           e.stopPropagation();
           const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
           this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+          const truncated = summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : summaryTitle;
           ToastManager.showWithUndo(
             `Removed "${truncated}"`,
             () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
@@ -2349,7 +3989,7 @@ class BundleWidgetFullPage {
     const maxThumbs = 3;
     allSelectedProducts.slice(0, maxThumbs).forEach(item => {
       const img = document.createElement('img');
-      img.src = item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.src = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       img.alt = item.title || '';
       img.className = 'footer-thumbstrip-img';
       thumbStrip.appendChild(img);
@@ -2413,12 +4053,16 @@ class BundleWidgetFullPage {
     ctaBtn.setAttribute('type', 'button');
     const conditionless = this.bundleHasNoConditions();
     const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-    ctaBtn.textContent = (conditionless || isLastStep) ? (this.config.addToCartText || 'Add to Cart') : 'Next';
-    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !this.canProceedToNextStep())) {
+    ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
+    if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
       ctaBtn.disabled = true;
     }
     ctaBtn.addEventListener('click', () => {
       if (conditionless || isLastStep) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         this.addBundleToCart();
       } else if (this.canProceedToNextStep()) {
         this.activeCollectionId = null;
@@ -2511,6 +4155,7 @@ class BundleWidgetFullPage {
               price: price,
               isDefault: step.isDefault ?? false,
               isFreeGift: step.isFreeGift ?? false,
+              addonDisplayFree: step.addonDisplayFree === true,
             });
           } else {
           }
@@ -2655,7 +4300,7 @@ class BundleWidgetFullPage {
   // Helper: Check if can proceed to next step
   // Layout-aware re-render dispatch for full-page bundles
   reRenderFullPage() {
-    const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+    const layout = this.resolveFullPageLayout();
     if (layout === 'footer_side') {
       this.renderFullPageLayoutWithSidebar();
     } else {
@@ -2679,7 +4324,14 @@ class BundleWidgetFullPage {
 
     // 2. Rebuild search input for the new step (search query was cleared by the caller)
     const existingSearch = contentSection.querySelector('.step-search-container');
-    if (existingSearch) existingSearch.replaceWith(this.createSearchInput());
+    if (existingSearch && this.shouldRenderFullPageSearch()) {
+      existingSearch.replaceWith(this.createSearchInput());
+    } else if (existingSearch) {
+      existingSearch.remove();
+    } else if (this.shouldRenderFullPageSearch()) {
+      const firstAnchor = contentSection.querySelector('.category-tabs, .fpb-step-category-title, .full-page-product-grid-container');
+      if (firstAnchor) contentSection.insertBefore(this.createSearchInput(), firstAnchor);
+    }
 
     // 3. Rebuild category tabs for the new step
     const existingTabs = contentSection.querySelector('.category-tabs');
@@ -2695,6 +4347,28 @@ class BundleWidgetFullPage {
       }
     } else if (existingTabs) {
       existingTabs.remove();
+    }
+
+    const existingCategoryTitle = contentSection.querySelector('.fpb-step-category-title');
+    const newCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
+    if (existingCategoryTitle && newCategoryTitle) {
+      existingCategoryTitle.replaceWith(newCategoryTitle);
+    } else if (existingCategoryTitle && !newCategoryTitle) {
+      existingCategoryTitle.remove();
+    } else if (!existingCategoryTitle && newCategoryTitle) {
+      const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+      if (gridContainer) contentSection.insertBefore(newCategoryTitle, gridContainer);
+    }
+
+    const existingCategoryRows = contentSection.querySelector('.fpb-category-section-rows');
+    const newCategoryRows = this.createCategorySectionRows(this.currentStepIndex);
+    if (existingCategoryRows && newCategoryRows) {
+      existingCategoryRows.replaceWith(newCategoryRows);
+    } else if (existingCategoryRows && !newCategoryRows) {
+      existingCategoryRows.remove();
+    } else if (!existingCategoryRows && newCategoryRows) {
+      const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+      if (gridContainer) gridContainer.insertAdjacentElement('afterend', newCategoryRows);
     }
 
     // 4. Show loading skeleton in product grid
@@ -2766,6 +4440,9 @@ class BundleWidgetFullPage {
 
   get isFreeGiftUnlocked() {
     if (!this.freeGiftStep) return false;
+    if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
+      return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
+    }
     const steps = this.selectedBundle?.steps || [];
     return this.paidSteps.every(paidStep => {
       const globalIndex = steps.indexOf(paidStep);
@@ -2780,6 +4457,9 @@ class BundleWidgetFullPage {
   }
 
   _getFreeGiftRemainingCount() {
+    if (this.freeGiftStep?.addonEligibilityCondition || Array.isArray(this.freeGiftStep?.addonTiers)) {
+      return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
+    }
     const steps = this.selectedBundle?.steps || [];
     const total = this.paidSteps.reduce((sum, s) =>
       sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
@@ -2789,6 +4469,147 @@ class BundleWidgetFullPage {
       return sum + Object.values(stepSel).reduce((s, p) => s + (typeof p === 'number' ? p : (p.quantity || 1)), 0);
     }, 0);
     return Math.max(0, total - selected);
+  }
+
+  getAddonEligibilityState(step) {
+    const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+    const condition = step?.addonEligibilityCondition || tier?.eligibilityCondition || {};
+    const discount = step?.addonDiscount || tier?.discount || {};
+    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+    const conditionValue = Number(condition.value || 0);
+    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const thresholdCents = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+    const remainingRaw = Math.max(0, thresholdCents - currentValue);
+    const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
+    const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
+    const discountValue = Number(discount.value || 0);
+    const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
+
+    return {
+      isEligible: remainingRaw <= 0,
+      conditionType,
+      remainingQuantity,
+      remainingAmount,
+      variables: {
+        addonsConditionDiff: conditionType === 'AMOUNT'
+          ? String(Math.ceil(remainingAmount / 100))
+          : String(remainingQuantity),
+        currencyUnit: currencyInfo.display.symbol,
+        addonsDiscountValue: String(discountValue),
+        addonsDiscountValueUnit: discountUnit,
+      },
+    };
+  }
+
+  getAddonLineDiscount(step) {
+    const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+    const discount = step?.addonDiscount || tier?.discount || {};
+    const type = String(discount.type || '').toUpperCase();
+    const value = Number(discount.value || 0);
+    if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
+    return { type, value: Math.min(100, value) };
+  }
+
+  getAddonProductSelectionKeys(step) {
+    const keys = new Set();
+    const addKey = (value) => {
+      if (value === null || value === undefined || value === '') return;
+      const normalized = this.extractId(value) || value;
+      keys.add(String(normalized));
+    };
+    const products = [
+      ...(Array.isArray(step?.StepProduct) ? step.StepProduct : []),
+      ...(Array.isArray(step?.products) ? step.products : []),
+    ];
+
+    products.forEach(product => {
+      addKey(product.id);
+      addKey(product.productId);
+      addKey(product.graphqlId);
+      addKey(product.variantId);
+      addKey(product.variantGraphqlId);
+      addKey(product.title);
+      (Array.isArray(product.variants) ? product.variants : []).forEach(variant => {
+        addKey(variant.id);
+        addKey(variant.variantId);
+        addKey(variant.variantGraphqlId);
+        addKey(variant.admin_graphql_api_id);
+        addKey(variant.title);
+      });
+    });
+
+    return keys;
+  }
+
+  calculateSelectedAddonDiscountAmount() {
+    const steps = this.selectedBundle?.steps || [];
+    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
+    const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
+    const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
+    return this.getAllSelectedProductsData().reduce((total, item) => {
+      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
+      const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
+        || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
+        || chargeableAddonProductKeys.has(String(item.title || ''))
+        || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
+      if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
+      const step = steps[item.stepIndex];
+      const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
+      if (!addonDiscount) return total;
+
+      const selectedQuantity = Number(item.quantity || 0);
+      const price = Number(item.price || 0);
+      if (!selectedQuantity || selectedQuantity <= 0 || !Number.isFinite(price) || price <= 0) return total;
+      return total + (price * selectedQuantity * addonDiscount.value / 100);
+    }, 0);
+  }
+
+  getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
+    const baseDiscountAmount = Math.max(0, Number(discountInfo?.discountAmount || 0));
+    const addonDiscountAmount = this.calculateSelectedAddonDiscountAmount();
+    const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);
+    const finalPrice = Math.max(0, totalPrice - combinedDiscountAmount);
+
+    return {
+      ...discountInfo,
+      hasDiscount: combinedDiscountAmount > 0,
+      qualifiesForDiscount: combinedDiscountAmount > 0,
+      discountAmount: combinedDiscountAmount,
+      addonDiscountAmount,
+      finalPrice,
+      discountPercentage: totalPrice > 0 ? (combinedDiscountAmount / totalPrice) * 100 : 0,
+    };
+  }
+
+  renderAddonEligibilityMessage(step, eligibilityState) {
+    const messages = step?.addonMessaging || {};
+    const tierMessages = messages.tier1 || {};
+    const template = eligibilityState.isEligible
+      ? tierMessages.eligibleState
+      : tierMessages.ineligibleState;
+    if (!template) return '';
+
+    return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
+      return message
+        .replaceAll(`##${key}##`, value)
+        .replaceAll(`{{${key}}}`, value);
+    }, template);
+  }
+
+  renderAddonSectionTitle(step) {
+    const title = step?.freeGiftName || step?.addonTitle || step?.addonLabel;
+    if (typeof title !== 'string' || !title.trim()) return null;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'side-panel-item-count side-panel-addon-title';
+    titleEl.textContent = title.trim();
+    return titleEl;
   }
 
   _initDefaultProducts() {
@@ -2827,6 +4648,26 @@ class BundleWidgetFullPage {
 
     const section = document.createElement('div');
     const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+    const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
+
+    if (hasDirectAddonTiers) {
+      const eligibilityState = this.getAddonEligibilityState(step);
+      const message = this.renderAddonEligibilityMessage(step, eligibilityState);
+      if (!message) return;
+
+      const title = this.renderAddonSectionTitle(step);
+      if (title) container.appendChild(title);
+
+      section.className = eligibilityState.isEligible
+        ? 'side-panel-addon-message side-panel-free-gift unlocked'
+        : 'side-panel-addon-message side-panel-free-gift';
+      section.innerHTML = `
+        <span class="side-panel-free-gift-icon">${eligibilityState.isEligible ? '✓' : '!'}</span>
+        <span class="side-panel-free-gift-text">${this._escapeHTML(message)}</span>
+      `;
+      container.appendChild(section);
+      return;
+    }
 
     if (this.isFreeGiftUnlocked) {
       section.className = 'side-panel-free-gift unlocked';
@@ -2843,6 +4684,25 @@ class BundleWidgetFullPage {
       `;
     }
     container.appendChild(section);
+  }
+
+  _renderStandardSidebarEmptySlots(container) {
+    for (let i = 0; i < 2; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
+      slot.innerHTML = `
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+        </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+          <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        </div>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
+      `;
+      container.appendChild(slot);
+    }
   }
 
   // Render empty-summary skeleton rows that match selected product rows.
@@ -2865,6 +4725,60 @@ class BundleWidgetFullPage {
     }
   }
 
+  buildCartLineSourceProperties(selectedLines) {
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+      this.selectedProducts,
+      this.stepProductData,
+      this.selectedBundle?.steps
+    );
+    const discountInfo = PricingCalculator.calculateDiscount(
+      this.selectedBundle,
+      totalPrice,
+      totalQuantity,
+      unitPrices
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+
+    const displayProperties = {
+      box: '1',
+      items: selectedLines
+        .map(({ product, quantity }) => `${quantity} x ${product.title || product.id}`)
+        .join(', '),
+      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo)
+    };
+
+    if (discountAmount > 0) {
+      const amount = CurrencyManager.convertAndFormat(discountAmount, currencyInfo);
+      const percentage = `${Math.round(discountPercentage)}%`;
+      displayProperties.youSave = {
+        amount,
+        percentage,
+        amountPercentage: `${amount} (${percentage})`
+      };
+    }
+
+    return this.buildCartLineDisplayProperties(displayProperties);
+  }
+
+  buildCartLineDisplayProperties(displayProperties) {
+    const cartLineLabels = this.getCartLineLabels();
+    const properties = {
+      Box: displayProperties.box || '1',
+      [cartLineLabels.items]: displayProperties.items,
+      [cartLineLabels.retailPrice]: displayProperties.retailPrice,
+      '_bundle_display_properties': JSON.stringify(displayProperties)
+    };
+
+    if (displayProperties.youSave?.amountPercentage) {
+      properties[cartLineLabels.youSave] = displayProperties.youSave.amountPercentage;
+    }
+
+    return properties;
+  }
+
   // Add bundle to cart
   async addBundleToCart() {
     try {
@@ -2876,41 +4790,61 @@ class BundleWidgetFullPage {
         ToastManager.show('Please complete all bundle steps before adding to cart.');
         return;
       }
-
       // Build cart items from selected products
       const items = [];
 
       // Generate unique bundle instance ID for this add-to-cart action
       // This allows cart transform to group components and prevents Shopify from
       // consolidating separate bundle instances added at different times
-      const bundleInstanceId = crypto.randomUUID();
       const bundleName = this.selectedBundle.name || 'Bundle';
+      const sessionKey = this.generateBundleSessionKey();
+      const offerId = this.resolveFullPageOfferId();
+      const selectedLines = [];
+      let itemNumber = 0;
 
 
       this.selectedBundle.steps.forEach((step, stepIndex) => {
         const stepSelections = this.selectedProducts[stepIndex] || {};
+        const productsInStep = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
 
 
         Object.entries(stepSelections).forEach(([variantId, quantity]) => {
           if (quantity > 0) {
             // Ensure we're using a numeric variant ID (extract from GID if needed)
             const numericVariantId = this.extractId(variantId) || variantId;
+            const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
+              || { id: variantId, title: variantId };
 
 
+            itemNumber += 1;
             const properties = {
-              '_bundle_id': bundleInstanceId,
-              '_bundle_name': bundleName,
-              '_step_index': String(stepIndex),
-              '_step_name': step.name
+              Box: String(itemNumber),
+              '_bundleName': bundleName,
+              '_easyBundle:prodQty': String(quantity),
+              '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
             };
-            if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';
+            const addonDiscount = this.getAddonLineDiscount(step);
+            if (addonDiscount && step?.addonDisplayFree !== true) {
+              properties['_bundle_step_type'] = addonDiscount
+                ? `addon:${addonDiscount.type}:${addonDiscount.value}`
+                : 'addon';
+            } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
+              properties['_bundle_step_type'] = 'free_gift';
+            }
             if (step?.isDefault) properties['_bundle_step_type'] = 'default';
 
-            items.push({
+            const cartItem = {
               id: numericVariantId,
               quantity: quantity,
               properties
-            });
+            };
+            const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
+            if (sellingPlanAllocationId) {
+              cartItem.selling_plan = parseInt(sellingPlanAllocationId);
+            }
+
+            items.push(cartItem);
+            selectedLines.push({ product, quantity });
           }
         });
       });
@@ -2920,6 +4854,10 @@ class BundleWidgetFullPage {
         return;
       }
 
+      const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
+      items.forEach(item => {
+        Object.assign(item.properties, sourceProperties);
+      });
       // Disable the Add to Cart button and show loading overlay
       const nextBtn = this.container.querySelector('.footer-btn-next');
       if (nextBtn) nextBtn.disabled = true;
@@ -2941,13 +4879,11 @@ class BundleWidgetFullPage {
 
         const result = await response.json();
 
+        await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
+
         // Show success message
         ToastManager.show('Bundle added to cart successfully!');
-
-        // Redirect to cart page after short delay
-        setTimeout(() => {
-          window.location.href = '/cart';
-        }, 1000);
+        this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
       } catch (fetchError) {
         ToastManager.show('Failed to add bundle to cart. Please try again.');
@@ -3089,7 +5025,7 @@ class BundleWidgetFullPage {
 
     // Full-page bundles: sidebar layout handles its own panel, skip bottom footer entirely
     if (bundleType === 'full_page') {
-      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      const layout = this.resolveFullPageLayout();
       if (layout === 'footer_side') {
         // Sidebar layout — footer is hidden; side panel handles navigation
         if (this.elements.footer) {
@@ -3118,7 +5054,7 @@ class BundleWidgetFullPage {
       return;
     }
 
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -3127,21 +5063,23 @@ class BundleWidgetFullPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
       totalQuantity,
-      discountInfo,
+      combinedDiscountInfo,
       currencyInfo
     );
 
     const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
 
-    if (discountInfo.qualifiesForDiscount) {
+    if (combinedDiscountInfo.qualifiesForDiscount) {
       // Success message
       const successMessage = TemplateManager.replaceVariables(
         this.config.successMessageTemplate,
@@ -3162,18 +5100,187 @@ class BundleWidgetFullPage {
     this._updateDiscountProgressBanner();
   }
 
+  getDiscountProgressMilestones(totalPrice = 0, totalQuantity = 0) {
+    const pricing = this.selectedBundle?.pricing;
+    const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
+    const tierTextByRuleId = pricing?.messages?.tierTextByRuleId || {};
+    const boxRules = this.getBoxSelectionRules();
+
+    return rules
+      .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
+      .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+      .map(rule => {
+        const ruleId = String(rule.id || '');
+        const threshold = Number(rule.conditionValue || 0) || 0;
+        const tierText = tierTextByRuleId?.[ruleId] || {};
+        const boxRule = boxRules.find(box => box.ruleId === ruleId);
+        const isReached = rule.conditionType === 'amount'
+          ? Number(totalPrice || 0) >= threshold
+          : Number(totalQuantity || 0) >= threshold;
+
+        return {
+          ruleId,
+          title: tierText.tierText || boxRule?.boxLabel || String(threshold),
+          subTitle: tierText.tierSubtext || boxRule?.boxSubtext || '',
+          isReached,
+        };
+      })
+      .filter(milestone => milestone.ruleId && milestone.title);
+  }
+
+  renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement = "default") {
+    const bar = document.createElement('div');
+    bar.className = `fpb-discount-progress fpb-dp-step_based` + (isReached ? ' reached' : '');
+    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
+
+    const stepList = document.createElement('div');
+    stepList.className = 'fpb-discount-step-list';
+    milestones.forEach(milestone => {
+      const step = document.createElement('div');
+      step.className = 'fpb-discount-step' + (milestone.isReached ? ' fpb-discount-step-reached' : '');
+
+      const title = document.createElement('span');
+      title.className = 'fpb-discount-step-title';
+      title.textContent = milestone.title;
+      step.appendChild(title);
+
+      if (placement !== "sidebar" && milestone.subTitle) {
+        const subTitle = document.createElement('span');
+        subTitle.className = 'fpb-discount-step-subtitle';
+        subTitle.textContent = milestone.subTitle;
+        step.appendChild(subTitle);
+      }
+
+      stepList.appendChild(step);
+    });
+
+    const track = document.createElement('div');
+    track.className = 'fpb-dp-track';
+    const fill = document.createElement('div');
+    fill.className = 'fpb-dp-fill';
+    track.appendChild(fill);
+
+    bar.appendChild(stepList);
+    bar.appendChild(track);
+
+    if (placement === "sidebar" && milestones.some(milestone => milestone.subTitle)) {
+      const subTitleList = document.createElement('div');
+      subTitleList.className = 'fpb-discount-step-subtitle-list';
+      milestones.forEach(milestone => {
+        const subTitle = document.createElement('span');
+        subTitle.className = 'fpb-discount-step-subtitle' + (milestone.isReached ? ' fpb-discount-step-reached' : '');
+        subTitle.textContent = milestone.subTitle || '';
+        subTitleList.appendChild(subTitle);
+      });
+      bar.appendChild(subTitleList);
+    }
+
+    return bar;
+  }
+
+  // Returns a .fpb-discount-progress fill-bar element, or null when pricing is disabled.
+  // Used by the FPB floating footer and the sidebar panel (gated by showDiscountProgressBar).
+  _renderDiscountProgress(options = {}) {
+    const placement = options.placement || "default";
+    const providedCombinedDiscountInfo = options.combinedDiscountInfo;
+    const providedTotalPrice = options.totalPrice;
+    const providedTotalQuantity = options.totalQuantity;
+    const providedUnitPrices = options.unitPrices;
+
+    if (!this.selectedBundle?.pricing?.enabled) return null;
+
+    const { totalPrice, totalQuantity, unitPrices } = typeof providedTotalPrice === 'number' && typeof providedTotalQuantity === 'number'
+      ? {
+          totalPrice: providedTotalPrice,
+          totalQuantity: providedTotalQuantity,
+          unitPrices: providedUnitPrices || []
+        }
+      : PricingCalculator.calculateBundleTotal(
+          this.selectedProducts,
+          this.stepProductData,
+          this.selectedBundle?.steps
+        );
+    const discountInfo = providedCombinedDiscountInfo ?? this.getDiscountInfoWithSelectedAddonDiscount(
+      PricingCalculator.calculateDiscount(
+        this.selectedBundle, totalPrice, totalQuantity, unitPrices
+      ),
+      totalPrice
+    );
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+    );
+
+    const isReached = discountInfo.hasDiscount;
+    const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
+
+    const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
+
+    if (progressBarType === 'step_based') {
+      const milestones = this.getDiscountProgressMilestones(totalPrice, totalQuantity);
+      if (milestones.length > 0) {
+        return this.renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement);
+      }
+    }
+
+    let message = '';
+    if (isReached) {
+      message = TemplateManager.replaceVariables(
+        this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+        variables
+      );
+    } else {
+      const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
+      if (!nextRule) return null;
+      message = TemplateManager.replaceVariables(
+        this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+        variables
+      );
+    }
+
+    const bar = document.createElement('div');
+    bar.className = progressBarType === 'simple'
+      ? 'fpb-discount-progress fpb-dp-simple' + (isReached ? ' reached' : '')
+      : 'fpb-discount-progress fpb-dp-step_based' + (isReached ? ' reached' : '');
+    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
+
+    const row = document.createElement('div');
+    row.className = 'fpb-dp-row';
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'fpb-dp-message';
+    msgSpan.innerHTML = message;
+    const pctSpan = document.createElement('span');
+    pctSpan.className = 'fpb-dp-pct';
+    pctSpan.textContent = progressPct + '%';
+    row.appendChild(msgSpan);
+    row.appendChild(pctSpan);
+
+    const track = document.createElement('div');
+    track.className = 'fpb-dp-track';
+    const fill = document.createElement('div');
+    fill.className = 'fpb-dp-fill';
+    track.appendChild(fill);
+
+    bar.appendChild(row);
+    bar.appendChild(track);
+    return bar;
+  }
+
   // Returns a new .discount-progress-banner DOM element, or null when no discount is configured.
   // Used by both the footer and the sidebar panel.
   _renderDiscountProgressBanner() {
     if (!this.selectedBundle?.pricing?.enabled) return null;
 
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
     );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle, totalPrice, totalQuantity
+    const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(
+      PricingCalculator.calculateDiscount(
+        this.selectedBundle, totalPrice, totalQuantity, unitPrices
+      ),
+      totalPrice
     );
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
@@ -3233,7 +5340,7 @@ class BundleWidgetFullPage {
       return this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
     }
 
-    const { totalQuantity, totalPrice } = PricingCalculator.calculateBundleTotal(
+    const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -3241,14 +5348,16 @@ class BundleWidgetFullPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
     const currencyInfo = CurrencyManager.getCurrencyInfo();
     const variables = TemplateManager.createDiscountVariables(
       this.selectedBundle,
       totalPrice,
       totalQuantity,
-      discountInfo,
+      combinedDiscountInfo,
       currencyInfo
     );
 
@@ -3293,6 +5402,32 @@ class BundleWidgetFullPage {
     this.updateFooterMessaging();
   }
 
+  resolveStorefrontApiBase() {
+    const appProxyPrefix = '/apps/product-bundles';
+    if (window.location?.pathname?.startsWith(`${appProxyPrefix}/`)) {
+      return appProxyPrefix;
+    }
+
+    const configuredAppUrl = window.__BUNDLE_APP_URL__ || '';
+    const currentHost = window.location.host;
+    const shopDomain = window.Shopify?.shop || this.container?.dataset.shop || '';
+
+    let configuredAppHost = '';
+    if (configuredAppUrl) {
+      try {
+        configuredAppHost = new URL(configuredAppUrl).host;
+      } catch (_error) {
+        configuredAppHost = '';
+      }
+    }
+
+    if (shopDomain && configuredAppHost !== currentHost) {
+      return appProxyPrefix;
+    }
+
+    return configuredAppUrl || window.location.origin;
+  }
+
   async loadStepProducts(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
 
@@ -3330,35 +5465,58 @@ class BundleWidgetFullPage {
         }))
       }));
       allProducts = allProducts.concat(normalizedProducts);
-    } else if (!hasEnrichedStepProducts && step.products && Array.isArray(step.products) && step.products.length > 0) {
-      const productIds = step.products.map(p => p.id); // Keep full GID format
-      const shop = window.Shopify?.shop || window.location.host;
+    } else {
+      const productIds = this.collectStepProductIds(step);
+      if (!hasEnrichedStepProducts && productIds.length > 0) {
+        const shop = window.Shopify?.shop || window.location.host;
 
-      // Get app URL from widget data attribute or window global
-      const appUrl = window.__BUNDLE_APP_URL__ || '';
-      const apiBaseUrl = appUrl || window.location.origin;
+        // Get app URL from widget data attribute or window global
+        const apiBaseUrl = this.resolveStorefrontApiBase();
 
-      // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
-      const country = window.Shopify?.country
-        || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
-        || null;
+        // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
+        const country = window.Shopify?.country
+          || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+          || null;
 
-      try {
-        const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
-        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+        try {
+          const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          return;
+          if (!response.ok) {
+            await response.text();
+          } else {
+            const data = await response.json();
+
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+            }
+          }
+        } catch (error) {
         }
-
-        const data = await response.json();
-
-        if (data.products && data.products.length > 0) {
-          allProducts = allProducts.concat(data.products);
-        }
-      } catch (error) {
       }
+    }
+
+    if (allProducts.length === 0 && Array.isArray(step.categories)) {
+      const hasRenderableCachedProductData = (product) => Boolean(
+        product
+        && typeof product === 'object'
+        && (
+          (Array.isArray(product.variants) && product.variants.length > 0)
+          || (Array.isArray(product.images) && product.images.length > 0)
+          || product.imageUrl
+          || product.featuredImage
+          || product.price
+        )
+      );
+
+      step.categories.forEach(category => {
+        (category.products || []).forEach(product => {
+          if (hasRenderableCachedProductData(product)) allProducts.push(product);
+        });
+        (category.selectedProducts || []).forEach(product => {
+          if (hasRenderableCachedProductData(product)) allProducts.push(product);
+        });
+      });
     }
 
     if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
@@ -3394,8 +5552,7 @@ class BundleWidgetFullPage {
 
         if (productGids.length > 0) {
 
-          const appUrl = window.__BUNDLE_APP_URL__ || '';
-          const apiBaseUrl = appUrl || window.location.origin;
+          const apiBaseUrl = this.resolveStorefrontApiBase();
 
           // Derive customer's country for @inContext pricing (market-correct prices via Shopify Markets)
           const country = window.Shopify?.country
@@ -3419,38 +5576,31 @@ class BundleWidgetFullPage {
       }
     }
 
-    // Process collection products using Storefront API (not legacy REST endpoint)
-    if (step.collections && Array.isArray(step.collections) && step.collections.length > 0) {
-      const collectionHandles = step.collections
-        .map(c => c.handle)
-        .filter(Boolean);
-
-      if (collectionHandles.length > 0) {
-        const shop = window.Shopify?.shop || window.location.host;
-        const appUrl = window.__BUNDLE_APP_URL__ || '';
-        const apiBaseUrl = appUrl || window.location.origin;
+    const collectionHandles = this.collectStepCollectionHandles(step);
+    if (collectionHandles.length > 0) {
+      const shop = window.Shopify?.shop || window.location.host;
+      const apiBaseUrl = this.resolveStorefrontApiBase();
 
 
-        try {
-          const response = await fetch(
-            `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
-          );
+      try {
+        const response = await fetch(
+          `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+        );
 
-          if (response.ok) {
-            const data = await response.json();
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-            }
-            // Store per-collection product ID membership for tab filtering
-            if (data.byCollection) {
-              for (const [handle, productIds] of Object.entries(data.byCollection)) {
-                this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
-              }
-            }
-          } else {
+        if (response.ok) {
+          const data = await response.json();
+          if (data.products && data.products.length > 0) {
+            allProducts = allProducts.concat(data.products);
           }
-        } catch (error) {
+          // Store per-collection product ID membership for tab filtering
+          if (data.byCollection) {
+            for (const [handle, productIds] of Object.entries(data.byCollection)) {
+              this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
+            }
+          }
+        } else {
         }
+      } catch (error) {
       }
     }
 
@@ -3472,6 +5622,31 @@ class BundleWidgetFullPage {
 
   }
 
+  shouldExpandStepProductsDuringLoad(step) {
+    const hasCategoryProducts = Array.isArray(step?.categories) && step.categories.some(category =>
+      (Array.isArray(category.products) && category.products.length > 0)
+      || (Array.isArray(category.selectedProducts) && category.selectedProducts.length > 0)
+      || (Array.isArray(category.collections) && category.collections.length > 0)
+      || (Array.isArray(category.collectionsData) && category.collectionsData.length > 0)
+      || (Array.isArray(category.collectionsSelectedData) && category.collectionsSelectedData.length > 0)
+    );
+
+    if (hasCategoryProducts) {
+      return false;
+    }
+
+    return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+  }
+
+  getFirstAvailableVariant(product) {
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+    if (variants.length === 0) {
+      return null;
+    }
+
+    return variants.find(variant => variant.available === true) || null;
+  }
+
   processProductsForStep(products, step) {
     // Normalize per-variant inventory fields from the Storefront API proxy response.
     // quantityAvailable is number | null (null when the inventory scope isn't granted
@@ -3482,6 +5657,9 @@ class BundleWidgetFullPage {
       title: v.title,
       price: parseFloat(v.price || '0') * 100,
       compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+        ? v.sellingPlanAllocations
+        : [],
       available: v.available === true,
       quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
       currentlyNotInStock: v.currentlyNotInStock === true,
@@ -3492,7 +5670,7 @@ class BundleWidgetFullPage {
     });
 
     return products.flatMap(product => {
-      if (step.displayVariantsAsIndividual && product.variants && product.variants.length > 0) {
+      if (this.shouldExpandStepProductsDuringLoad(step) && product.variants && product.variants.length > 0) {
         // Display each variant as separate product - filter out unavailable variants
         // Preserve parent product reference for variant selection in modal
         const processedVariants = (product.variants || []).map(normalizeVariant);
@@ -3507,7 +5685,16 @@ class BundleWidgetFullPage {
           .map(variant => {
             // Storefront API: prioritize variant image, fallback to product featured image.
             // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
-            const imageUrl = variant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
+            const imageUrl = variant?.image?.src
+              || variant?.image?.url
+              || (typeof variant?.image === 'string' ? variant.image : null)
+              || variant?.imageUrl
+              || product.imageUrl
+              || product.featuredImage?.url
+              || product.images?.[0]?.url
+              || product.images?.[0]?.src
+              || product.images?.[0]?.originalSrc
+              || 'https://via.placeholder.com/150';
 
             return {
               id: this.extractId(variant.id),
@@ -3519,6 +5706,7 @@ class BundleWidgetFullPage {
               available: variant.available === true,
               quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
               currentlyNotInStock: variant.currentlyNotInStock === true,
+              sellingPlanAllocations: variant.sellingPlanAllocations || [],
               // Preserve parent product data for variant selection in modal
               parentProductId: this.extractId(product.id),
               parentTitle: product.title,
@@ -3530,16 +5718,24 @@ class BundleWidgetFullPage {
           });
       } else {
         // Display product with default variant - check availability
-        const defaultVariant = product.variants?.[0];
+        const defaultVariant = this.getFirstAvailableVariant(product);
 
-        // Skip product if default variant is not available
-        if (defaultVariant && defaultVariant.available !== true) {
+        if (product.variants?.length > 0 && !defaultVariant) {
           return [];
         }
 
         // Storefront API: prioritize variant image, fallback to product featured image.
         // product.imageUrl — set by API path; product.featuredImage/images — metafield cache format.
-        const imageUrl = defaultVariant?.image?.src || product.imageUrl || product.featuredImage?.url || product.images?.[0]?.url || 'https://via.placeholder.com/150';
+        const imageUrl = defaultVariant?.image?.src
+          || defaultVariant?.image?.url
+          || (typeof defaultVariant?.image === 'string' ? defaultVariant.image : null)
+          || defaultVariant?.imageUrl
+          || product.imageUrl
+          || product.featuredImage?.url
+          || product.images?.[0]?.url
+          || product.images?.[0]?.src
+          || product.images?.[0]?.originalSrc
+          || 'https://via.placeholder.com/150';
 
         // Process variants array for variant selection in modal
         const processedVariants = (product.variants || []).map(normalizeVariant);
@@ -3557,6 +5753,7 @@ class BundleWidgetFullPage {
           price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
           compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
           variantId: this.extractId(defaultVariant?.id || product.id),
+          sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
           available: defaultVariant?.available === true,
           quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
           currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
@@ -3574,12 +5771,20 @@ class BundleWidgetFullPage {
   /**
    * Look up real stock for a variant in a step's product data.
    * Returns:
-   *   - available: numeric remaining stock, or null (untracked/unlimited)
-   *   - outOfStock: true when the variant is known to be out of stock and does
-   *     not accept backorders (available === 0 and currentlyNotInStock is false)
-   *   - acceptsBackorder: true when out of stock but backorders are allowed
-   *     — in that case the UI should not clamp to zero.
+   *   - available: positive numeric remaining stock, or null when uncapped
+   *   - outOfStock: true only when Shopify marks the variant unavailable
+   *   - acceptsBackorder: true when Shopify marks the variant as backorderable
    */
+  isVariantOutOfStock(product) {
+    if (!product) {
+      return false;
+    }
+    if (product.available === false) {
+      return true;
+    }
+    return false;
+  }
+
   getVariantAvailable(stepIndex, variantId) {
     const products = this.stepProductData[stepIndex] || [];
     const product = products.find(p => (p.variantId || p.id) === variantId);
@@ -3587,14 +5792,13 @@ class BundleWidgetFullPage {
       return { available: null, outOfStock: false, acceptsBackorder: false };
     }
 
-    const qty = typeof product.quantityAvailable === 'number' ? product.quantityAvailable : null;
+    const qty = typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
+      ? product.quantityAvailable
+      : null;
     const backorder = product.currentlyNotInStock === true;
+    const outOfStock = this.isVariantOutOfStock(product);
 
-    // quantityAvailable === 0 AND not backorder-accepting → hard out of stock
-    if (qty === 0 && !backorder) {
-      return { available: 0, outOfStock: true, acceptsBackorder: false };
-    }
-    return { available: qty, outOfStock: false, acceptsBackorder: backorder };
+    return { available: qty, outOfStock, acceptsBackorder: backorder };
   }
 
   extractId(idString) {
@@ -3608,6 +5812,56 @@ class BundleWidgetFullPage {
 
     // Handle numeric string
     return idString.toString().split('/').pop();
+  }
+
+  shouldApplyIndividualSellingPlanSelection() {
+    return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
+  }
+
+  shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelection()) {
+      return false;
+    }
+
+    const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
+    if (showFor !== "OOS_PRODUCTS") {
+      return true;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const target = variant ?? product;
+    if (!target) {
+      return false;
+    }
+
+    return target.available === false;
+  }
+
+  getSelectedSellingPlanAllocationId(product, variantId) {
+    if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
+      return null;
+    }
+
+    const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
+    const variant = Array.isArray(product?.variants)
+      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+      : null;
+
+    const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
+    const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
+      ? normalizedProduct.sellingPlanAllocations
+      : [];
+
+    if (allocations.length === 0) {
+      return null;
+    }
+
+    const firstAllocationId = this.extractId(allocations[0]?.id);
+    return firstAllocationId || null;
   }
 
   renderModalTabs() {
@@ -3662,19 +5916,33 @@ class BundleWidgetFullPage {
     const products = productsToRender || this.stepProductData[stepIndex];
     const selectedProducts = this.selectedProducts[stepIndex];
     const productGrid = this.elements.modal.querySelector('.product-grid');
+    const step = this.selectedBundle?.steps?.[stepIndex] || {};
 
     if (products.length === 0) {
-      // Show empty state cards like in DCP preview
+      if (!this._shouldRenderProductSlots()) {
+        productGrid.innerHTML = `
+          <div class="empty-products-message">
+            <p>No products available for this step.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Show empty state cards like in Settings design preview
       const currentStep = this.selectedBundle.steps[stepIndex];
       const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
       const labelText = `Select ${stepName}`;
+      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+      const emptyStateIcon = emptyStateIconUrl
+        ? `<img class="empty-state-card-icon" src="${emptyStateIconUrl}" alt="" width="69" height="69">`
+        : `<svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          </svg>`;
 
       const emptyStateCards = Array(3).fill(0).map((_, index) => `
         <div class="empty-state-card">
-          <svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>
+          ${emptyStateIcon}
           <p class="empty-state-card-text">${labelText}</p>
         </div>
       `).join('');
@@ -3686,11 +5954,18 @@ class BundleWidgetFullPage {
     productGrid.innerHTML = products.map(product => {
       const selectionKey = product.variantId || product.id;
       const currentQuantity = selectedProducts[selectionKey] || 0;
+      const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
       const currencyInfo = CurrencyManager.getCurrencyInfo();
+      const priceMarkup = product.price ? `
+              <div class="product-price-row">
+                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+              </div>
+            ` : '';
 
       // Per-variant stock state derived from Storefront API quantityAvailable
       const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
-      const atMaxStock = available !== null && currentQuantity >= available;
+      const atMaxStock = available !== null && available > 0 && currentQuantity >= available;
       const lowStock = available !== null && available > 0 && available <= 3;
       const increaseDisabled = outOfStock || atMaxStock;
       const addDisabled = outOfStock;
@@ -3704,7 +5979,7 @@ class BundleWidgetFullPage {
 
       return `
         <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-          ${currentQuantity > 0 ? `
+          ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
             <div class="selected-overlay">✓</div>
           ` : ''}
 
@@ -3716,32 +5991,34 @@ class BundleWidgetFullPage {
           <div class="product-content-wrapper">
             <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
 
-            ${product.price ? `
-              <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-              </div>
-            ` : ''}
+            ${renderSelectedQuantityBadge ? '' : priceMarkup}
 
             <div class="product-spacer"></div>
 
             ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
 
-            <div class="product-quantity-wrapper">
-              <div class="product-quantity-selector">
-                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                <span class="qty-display">${currentQuantity}</span>
-                <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+            ${renderSelectedQuantityBadge ? `
+              <div class="product-selected-action-row">
+                ${priceMarkup}
+                <span class="inline-quantity-display-only" data-product-id="${selectionKey}">${currentQuantity}</span>
               </div>
-            </div>
+            ` : `
+              <div class="product-quantity-wrapper">
+                <div class="product-quantity-selector">
+                  <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                  <span class="qty-display">${currentQuantity}</span>
+                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+                </div>
+              </div>
 
-            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
-                    data-product-id="${selectionKey}"
-                    data-product-handle="${product.handle || ''}"
-                    data-step-id="${step.id}"
-                    ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : 'Choose Options')}
-            </button>
+              <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
+                      data-product-id="${selectionKey}"
+                      data-product-handle="${product.handle || ''}"
+                      data-step-id="${step.id}"
+                      ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+                ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
+              </button>
+            `}
           </div>
         </div>
       `;
@@ -3841,6 +6118,7 @@ class BundleWidgetFullPage {
               ? variantData.quantityAvailable
               : null;
             product.currentlyNotInStock = variantData.currentlyNotInStock === true;
+            product.available = variantData.available === true;
 
             // Move quantity from old variant to new variant, re-clamping against
             // the new variant's quantityAvailable. If the new variant can't hold
@@ -3850,12 +6128,12 @@ class BundleWidgetFullPage {
               delete this.selectedProducts[stepIndex][product.variantId];
 
               const newQtyAvail = product.quantityAvailable;
-              const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+              const newOOS = this.isVariantOutOfStock(product);
               let migratedQty = oldQuantity;
               if (newOOS) {
                 ToastManager.show('Selected variant is out of stock — selection cleared.');
                 migratedQty = 0;
-              } else if (newQtyAvail !== null && oldQuantity > newQtyAvail) {
+              } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
                 migratedQty = newQtyAvail;
                 ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
               }
@@ -3893,7 +6171,7 @@ class BundleWidgetFullPage {
         ToastManager.show('This item is out of stock.');
         return;
       }
-      if (available !== null && quantity > available) {
+      if (available !== null && available > 0 && quantity > available) {
         quantity = available;
         ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
       }
@@ -3901,6 +6179,17 @@ class BundleWidgetFullPage {
 
     // Validate step conditions
     if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+      return;
+    }
+
+    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+    const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
+      this.selectedBundle?.validateQuantityPerProduct,
+      currentQuantity,
+      quantity,
+    );
+    if (!productQuantityCheck.allowed) {
+      ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
       return;
     }
 
@@ -3923,7 +6212,7 @@ class BundleWidgetFullPage {
     // For full-page bundles, re-render the footer/sidebar to show selected products
     const bundleType = this.container.dataset.bundleType;
     if (bundleType === 'full_page') {
-      const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      const layout = this.resolveFullPageLayout();
       if (layout === 'footer_side') {
         const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
         this.renderSidePanel(sidePanel);
@@ -3960,7 +6249,7 @@ class BundleWidgetFullPage {
               this.activeCollectionId = null;
               this.searchQuery = '';
               this.currentStepIndex++;
-              const layout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+              const layout = this.resolveFullPageLayout();
               if (layout === 'footer_side') {
                 this._sidebarAdvanceToNextStep();
               } else {
@@ -3975,7 +6264,20 @@ class BundleWidgetFullPage {
     }
   }
 
+  _shouldRenderProductSlots() {
+    return this.selectedBundle?.productSlotsEnabled === true;
+  }
+
   updateProductQuantityDisplay(stepIndex, productId, quantity) {
+    if (this.usesSelectedQuantityBadge()) {
+      this.refreshCurrentProductGrid(stepIndex);
+      if (this.elements?.modal?.querySelector('.product-grid')) {
+        this.renderModalProducts(stepIndex);
+      }
+      this._refreshSiblingDimState(stepIndex);
+      return;
+    }
+
     // Update quantity display without full re-render
     const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
     if (!productCard) return;
@@ -4066,7 +6368,7 @@ class BundleWidgetFullPage {
         const addButton = document.createElement('button');
         addButton.className = 'product-add-btn';
         addButton.dataset.productId = productId;
-        addButton.textContent = '+';
+        addButton.textContent = this.getProductAddButtonText();
         actionContainer.appendChild(addButton);
 
         // Attach event listener to the new button
@@ -4085,6 +6387,18 @@ class BundleWidgetFullPage {
 
     // Refresh dimmed state on all sibling cards now that the selection has changed
     this._refreshSiblingDimState(stepIndex);
+  }
+
+  refreshCurrentProductGrid(stepIndex) {
+    if (this.container.dataset.bundleType !== 'full_page') return false;
+    if (stepIndex !== this.currentStepIndex) return false;
+
+    const currentGrid = this.container.querySelector('.full-page-product-grid');
+    if (!currentGrid) return false;
+
+    const replacementGrid = this.createFullPageProductGrid(stepIndex);
+    currentGrid.replaceWith(replacementGrid);
+    return true;
   }
 
   // Refresh the .dimmed class on every card in the current step's product grid.
@@ -4147,14 +6461,34 @@ class BundleWidgetFullPage {
   validateStep(stepIndex) {
     const step = this.selectedBundle.steps[stepIndex];
     const currentSelections = this.selectedProducts[stepIndex] || {};
+
+    // In category-rule mode, selection keys are numeric variant IDs but
+    // category product IDs are numeric product IDs (GID-stripped). Translate
+    // each variant-ID key → its parent product ID before the validator runs.
+    if (ConditionValidator.isCategoryRuleMode(step)) {
+      const products = this.stepProductData[stepIndex] || [];
+      const translated = {};
+      for (const [selKey, qty] of Object.entries(currentSelections)) {
+        const product = products.find(p => (p.variantId || p.id) === selKey);
+        const productId = String((product && (product.parentProductId || product.id)) || selKey);
+        translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+      }
+      return ConditionValidator.isStepConditionSatisfied(step, translated);
+    }
+
     return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
   }
 
   isStepAccessible(stepIndex) {
     // Default steps are always accessible (read-only, pre-selected)
     if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
-    // Free gift step is only accessible when all paid steps are complete
-    if (!this.canNavigateToStep(stepIndex)) return false;
+    // Add-on step: lock until prior steps complete only when addonUnlockAfterCompletion is true (default)
+    const addonStep = this.selectedBundle?.steps[stepIndex];
+    if (addonStep?.isFreeGift && addonStep?.addonUnlockAfterCompletion === false) {
+      // unlock flag disabled — treat as regular step (fall through to standard check)
+    } else if (!this.canNavigateToStep(stepIndex)) {
+      return false;
+    }
     // Check if all previous steps are completed
     for (let i = 0; i < stepIndex; i++) {
       const step = this.selectedBundle?.steps[i];
@@ -4176,10 +6510,10 @@ class BundleWidgetFullPage {
     const isCurrentStepValid = this.validateStep(this.currentStepIndex);
 
     if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
-      nextButton.textContent = 'Done';
+      nextButton.textContent = this._resolveText('doneButton', 'Done');
       nextButton.disabled = !isCurrentStepValid;
     } else {
-      nextButton.textContent = 'Next';
+      nextButton.textContent = this._resolveText('nextButton', 'Next');
       nextButton.disabled = !isCurrentStepValid;
     }
   }
@@ -4188,7 +6522,7 @@ class BundleWidgetFullPage {
     // Skip if modal is not active (full-page mode uses inline footer instead)
     if (!this.elements.modal || this.elements.modal.style.display === 'none') return;
 
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
       this.selectedProducts,
       this.stepProductData,
       this.selectedBundle?.steps
@@ -4197,13 +6531,15 @@ class BundleWidgetFullPage {
     const discountInfo = PricingCalculator.calculateDiscount(
       this.selectedBundle,
       totalPrice,
-      totalQuantity
+      totalQuantity,
+      unitPrices
     );
+    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
 
     const currencyInfo = CurrencyManager.getCurrencyInfo();
 
     // Update modal header text dynamically
-    this.updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
 
     // Update cart badge with total item count
     const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
@@ -4212,10 +6548,10 @@ class BundleWidgetFullPage {
     }
 
     // Update total prices in the footer pill
-    this.updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo);
+    this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
 
     // Update discount messaging and progress bar
-    this.updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo);
+    this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
   }
 
   updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -4330,14 +6666,12 @@ class BundleWidgetFullPage {
     }
 
     this.container.appendChild(overlay);
-    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+    requestAnimationFrame(() => markLoadingOverlayVisible(overlay));
   }
 
   hideLoadingOverlay() {
     const overlay = this.container?.querySelector('.bundle-loading-overlay');
-    if (!overlay) return;
-    overlay.classList.remove('is-visible');
-    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    hideLoadingOverlayElement(overlay);
   }
 
   // ========================================================================
@@ -4363,6 +6697,97 @@ class BundleWidgetFullPage {
     const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
 
     return bundleInstanceId;
+  }
+
+  resolveFullPageOfferId() {
+    const rawOfferId = this.selectedBundle?.offerId
+      || this.selectedBundle?.bundleOfferId
+      || this.selectedBundle?.id
+      || 'UNKNOWN';
+    const offerId = String(rawOfferId);
+    return offerId.startsWith('FBP-') ? offerId : `FBP-${offerId}`;
+  }
+
+  async syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
+    try {
+      const displayProperties = this.buildBundleDetailsDisplayProperties(sourceProperties);
+      if (!bundleDetailsKey || Object.keys(displayProperties).length === 0) return;
+
+      const cartToken = await this.getBundleDetailsCartToken();
+      if (!cartToken) return;
+
+      const response = await fetch('/apps/product-bundles/api/cart-bundle-details', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cartToken,
+          bundleDetailsKey,
+          displayProperties
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`bundle_details sync failed (${response.status})`);
+      }
+
+      const data = await response.json().catch(() => null);
+      if (data?.ok !== true) {
+        throw new Error(data?.error || 'bundle_details sync failed');
+      }
+    } catch (error) {
+      console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
+    }
+  }
+
+  buildBundleDetailsDisplayProperties(sourceProperties) {
+    const displayProperties = {};
+    const raw = sourceProperties?._bundle_display_properties;
+    const cartLineLabels = this.getCartLineLabels();
+
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed?.box) displayProperties.Box = String(parsed.box);
+        if (parsed?.items) displayProperties[cartLineLabels.items] = String(parsed.items);
+        if (parsed?.retailPrice) displayProperties[cartLineLabels.retailPrice] = String(parsed.retailPrice);
+        if (parsed?.youSave?.amountPercentage) displayProperties[cartLineLabels.youSave] = String(parsed.youSave.amountPercentage);
+      } catch {
+        // Ignore malformed display metadata; cart add must remain non-blocking.
+      }
+    }
+
+    ['Box', cartLineLabels.items, cartLineLabels.retailPrice, cartLineLabels.youSave, 'Items', 'Retail Price', 'You Save'].forEach((key) => {
+      if (sourceProperties?.[key] && !displayProperties[key]) {
+        displayProperties[key] = String(sourceProperties[key]);
+      }
+    });
+
+    return displayProperties;
+  }
+
+  getCartLineLabels() {
+    const labels = this.config?.sharedCartLabels || {};
+    return {
+      items: labels.bundleContainsLabel || 'Items',
+      retailPrice: labels.bundleOriginalPriceLabel || 'Retail Price',
+      youSave: labels.bundleDiscountDisplayLabel || 'You Save',
+    };
+  }
+
+  async getBundleDetailsCartToken() {
+    const response = await fetch('/cart.js?app=wolfpackProductBundles', {
+      credentials: 'same-origin'
+    });
+    if (!response.ok) return null;
+    const cart = await response.json();
+    return cart?.token || null;
+  }
+
+  generateBundleSessionKey() {
+    return Math.random().toString(36).slice(2, 5).toUpperCase();
   }
   // ========================================================================
   // EVENT HANDLERS
@@ -4432,6 +6857,77 @@ class BundleWidgetFullPage {
   resolveShowStepTimeline(apiValue, dataAttrValue) {
     if (apiValue !== null && apiValue !== undefined) return apiValue;
     return dataAttrValue;
+  }
+
+  resolveFullPageLayout(bundle = this.selectedBundle) {
+    if (bundle?.bundleDesignTemplate === 'FBP_SIDE_FOOTER') {
+      return 'footer_side';
+    }
+
+    return bundle?.fullPageLayout || 'footer_bottom';
+  }
+
+  getFullPageTemplate(bundle = this.selectedBundle) {
+    return bundle?.bundleDesignTemplate || 'FBP_SIDE_FOOTER';
+  }
+
+  getFullPageDesignPreset(bundle = this.selectedBundle) {
+    const rawPresetId =
+      bundle?.bundleDesignPresetId
+      || bundle?.bundleDesignPreset
+      || bundle?.templateId
+      || 'DEFAULT';
+    if (typeof rawPresetId !== 'string') return 'DEFAULT';
+
+    const preset = rawPresetId.trim().toUpperCase();
+    if (preset === 'STANDARD') return 'DEFAULT';
+    if (preset === 'DEFAULT_FBP') return 'DEFAULT';
+    return preset || 'DEFAULT';
+  }
+
+  resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
+    const boxSelection = bundle?.boxSelection;
+    const boxSelectionEnabled = boxSelection?.isEnabled === true && Array.isArray(boxSelection.rules) && boxSelection.rules.length > 0;
+    if (
+      this.resolveFullPageLayout(bundle) === 'footer_side' &&
+      (this.getFullPageDesignPreset(bundle) === 'DEFAULT' || this.getFullPageDesignPreset(bundle) === 'CLASSIC' || this.getFullPageDesignPreset(bundle) === 'COMPACT') &&
+      !boxSelectionEnabled
+    ) {
+      return 'icon';
+    }
+    return 'text';
+  }
+
+  getProductAddButtonText() {
+    return this._resolveText('productAddButton', 'Add To Box');
+  }
+
+  applyFullPageDesignPresetMarker() {
+    if (!this.container || !this.elements?.stepsContainer) return;
+
+    const fullPageTemplate = this.getFullPageTemplate();
+    const fullPageDesignPreset = this.getFullPageDesignPreset();
+    const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
+    const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
+
+    this.container.dataset.fpbTemplateType = fullPageTemplate;
+    this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
+
+    this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
+    this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
+    this.container.dataset.fpbTabStyle = fullPageTabStyle;
+    this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
+    const cardCtaMode = this.resolveFullPageCardCtaMode();
+    this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
+    this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+    this.container.classList.add(presetClass);
+    this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
+    this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+    this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+    this.elements.stepsContainer.classList.add(presetClass);
+    this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
+    this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+    this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
   }
 
   /** Returns true if the given tier index is the currently active one. */
@@ -4507,6 +7003,7 @@ class BundleWidgetFullPage {
       if (!this.selectedBundle) {
         throw new Error('Bundle not found for this tier.');
       }
+      this.applyPersonalizationAddonProducts();
 
       // Re-resolve showStepTimeline from the newly loaded tier bundle's API value
       this.config.showStepTimeline = this.resolveShowStepTimeline(
@@ -4539,7 +7036,8 @@ class BundleWidgetFullPage {
   _mergeBundleSettings(settings) {
     if (!settings || !this.selectedBundle) return;
     const keys = [
-      'promoBannerBgImage', 'promoBannerBgImageCrop', 'loadingGif',
+      'promoBannerBgImage', 'promoBannerBgImageCrop',
+      'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
       'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
     ];
     for (const key of keys) {
@@ -4739,13 +7237,23 @@ class BundleWidgetFullPage {
       const data = await response.json();
       if (!data?.bundle) return;
 
-      const freshLayout = data.bundle.fullPageLayout || 'footer_bottom';
-      const currentLayout = this.selectedBundle?.fullPageLayout || 'footer_bottom';
+      const freshLayout = this.resolveFullPageLayout(data.bundle);
+      const currentLayout = this.resolveFullPageLayout();
+      const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
+      const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
+      const freshPreset = data.bundle.bundleDesignPresetId ?? null;
+      const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
 
-      if (freshLayout !== currentLayout && this.selectedBundle) {
-        this.selectedBundle.fullPageLayout = freshLayout;
+      if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
+        this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
+        this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
+        this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
+        this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
         if (this.bundleData?.[bundleId]) {
-          this.bundleData[bundleId].fullPageLayout = freshLayout;
+          this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
+          this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
+          this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
+          this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
         }
         await this.renderSteps();
       }
@@ -4774,7 +7282,39 @@ class BundleWidgetFullPage {
       // Never throw from error reporting
     }
   }
+
+  _resolveText(key, fallback) {
+    const locale = window.Shopify?.locale;
+    if (locale && this.config?.textOverridesByLocale?.[locale]?.[key]) {
+      return this.config.textOverridesByLocale[locale][key];
+    }
+    if (this.config?.textOverrides?.[key]) {
+      return this.config.textOverrides[key];
+    }
+    return fallback;
+  }
+
+  _recordView() {
+    try {
+      const bundleId = this.config?.bundleId ?? this.container?.dataset?.bundleId;
+      const shop = window.Shopify?.shop;
+      if (!bundleId || !shop) return;
+      fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shop }),
+        keepalive: true,
+      }).catch(() => { /* best-effort */ });
+    } catch (_) {
+      // Never throw from analytics
+    }
+  }
 }
+
+installStandardTemplate(BundleWidgetFullPage);
+installClassicTemplate(BundleWidgetFullPage);
+installCompactTemplate(BundleWidgetFullPage);
+installHorizontalTemplate(BundleWidgetFullPage);
 
 // ============================================================================
 // INITIALIZATION
@@ -4796,3 +7336,6 @@ function initializeFullPageWidget() {
     }
   });
 }
+
+window.WolfpackFullPageBundle = window.WolfpackFullPageBundle || {};
+window.WolfpackFullPageBundle.init = initializeFullPageWidget;

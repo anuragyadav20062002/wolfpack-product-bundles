@@ -130,8 +130,8 @@ export async function batchGetFirstVariants(
 export async function batchGetFirstVariantsWithPrices(
   admin: any,
   productIds: string[]
-): Promise<Map<string, { success: boolean; variantId?: string; priceCents?: number; title?: string; error?: string }>> {
-  const results = new Map<string, { success: boolean; variantId?: string; priceCents?: number; title?: string; error?: string }>();
+): Promise<Map<string, { success: boolean; variantId?: string; priceCents?: number; title?: string; imageUrl?: string; error?: string }>> {
+  const results = new Map<string, { success: boolean; variantId?: string; priceCents?: number; title?: string; imageUrl?: string; error?: string }>();
 
   if (productIds.length === 0) {
     return results;
@@ -163,6 +163,9 @@ export async function batchGetFirstVariantsWithPrices(
           ... on Product {
             id
             title
+            featuredImage {
+              url
+            }
             variants(first: 1) {
               edges {
                 node {
@@ -208,12 +211,14 @@ export async function batchGetFirstVariantsWithPrices(
           // Convert price string (e.g., "98.00") to cents (9800)
           const priceCents = priceString ? Math.round(parseFloat(priceString) * 100) : 0;
           const title = product.title || undefined;
+          const imageUrl = product.featuredImage?.url || undefined;
 
           results.set(productId, {
             success: true,
             variantId,
             priceCents,
-            title
+            title,
+            imageUrl,
           });
           console.log(`[BATCH_VARIANT_LOOKUP_PRICES] Product ${productId}: variant=${variantId}, price=${priceString} → ${priceCents} cents`);
         } else {

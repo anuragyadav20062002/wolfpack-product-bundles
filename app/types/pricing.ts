@@ -9,7 +9,7 @@
  *
  * Design Principles:
  * - ONE structure everywhere (no transformations)
- * - Clear nested structure (condition vs discount)
+ * - Flat rule shape (no nested condition/discount objects)
  * - Type-safe with validation
  * - Always use smallest units (cents for money, count for items)
  */
@@ -20,7 +20,8 @@
 export enum DiscountMethod {
   PERCENTAGE_OFF = 'percentage_off',        // e.g., 20% off
   FIXED_AMOUNT_OFF = 'fixed_amount_off',    // e.g., ₹100 off
-  FIXED_BUNDLE_PRICE = 'fixed_bundle_price' // e.g., Bundle for ₹500
+  FIXED_BUNDLE_PRICE = 'fixed_bundle_price', // e.g., Bundle for ₹500
+  BUY_X_GET_Y = 'buy_x_get_y'             // e.g., Buy 2 get 1 free
 }
 
 /**
@@ -32,7 +33,8 @@ export enum ConditionType {
 }
 
 /**
- * Condition operators - how to compare current value vs threshold
+ * Condition operators — used for step setup UI only (not pricing rules).
+ * Pricing rules always use implicit ≥ (greater than or equal).
  */
 export enum ConditionOperator {
   GTE = 'gte',  // Greater than or equal (≥)
@@ -43,46 +45,21 @@ export enum ConditionOperator {
 }
 
 /**
- * Condition configuration for a pricing rule
- * Defines WHEN a discount should be applied
- */
-export interface PricingRuleCondition {
-  type: ConditionType;          // 'quantity' or 'amount'
-  operator: ConditionOperator;  // 'gte', 'gt', 'lte', 'lt', 'eq'
-  value: number;                // Threshold value
-                                // - For quantity: item count (integer)
-                                // - For amount: price in CENTS (to avoid decimals)
-}
-
-/**
- * Discount configuration for a pricing rule
- * Defines WHAT discount to apply
- */
-export interface PricingRuleDiscount {
-  method: DiscountMethod;       // Must match parent pricing.method
-  value: number;                // Discount value
-                                // - For percentage_off: 0-100 (e.g., 20 = 20%)
-                                // - For fixed_amount_off: amount in CENTS
-                                // - For fixed_bundle_price: price in CENTS
-}
-
-/**
- * Optional display customization for a rule
- */
-export interface PricingRuleDisplay {
-  label?: string;               // Custom label for admin UI
-  color?: string;               // Badge color (hex or CSS color name)
-}
-
-/**
- * Complete pricing rule
- * Combines condition (when) + discount (what)
+ * Flat pricing rule — condition and discount fields are top-level.
+ * discountMethod lives on PricingConfiguration and applies to all rules.
  */
 export interface PricingRule {
-  id: string;                   // Unique rule identifier
-  condition: PricingRuleCondition;
-  discount: PricingRuleDiscount;
-  display?: PricingRuleDisplay; // Optional UI customization
+  id: string;
+  // Condition (flat)
+  conditionType: 'quantity' | 'amount';  // Trigger type
+  conditionValue: number;                  // Threshold: qty count or amount in CENTS
+  // Discount (flat)
+  discountValue: number;                   // % (0-100), cents for fixed, cents for bundle price
+  // BXY-specific (only present when PricingConfiguration.method === BUY_X_GET_Y)
+  customerBuys?: number;                   // Minimum cart qty to trigger offer
+  customerGets?: number;                   // Qty of items receiving the discount
+  bxyDiscountType?: 'percentage' | 'fixed_amount';  // % off or ₹ off
+  bxyApplyMode?: 'lowest_priced' | 'latest_added';  // Which items get the discount
 }
 
 /**
@@ -90,26 +67,63 @@ export interface PricingRule {
  */
 export interface PricingDisplay {
   showFooter: boolean;          // Show discount footer messaging in widget
+  showDiscountProgressBar: boolean; // Show visual fill-bar progress toward next discount tier
+}
+
+export type PricingProgressBarType = 'simple' | 'step_based';
+
+export interface BundleQuantityOptionDisplay {
+  label: string;
+  subtext: string;
+}
+
+export interface BundleQuantityOptionsDisplay {
+  enabled: boolean;
+  defaultRuleId: string | null;
+  optionsByRuleId: Record<string, BundleQuantityOptionDisplay>;
+  optionsByLocaleByRuleId: Record<string, Record<string, BundleQuantityOptionDisplay>>;
+}
+
+export interface PricingProgressBarDisplayOptions {
+  enabled: boolean;
+  type: PricingProgressBarType;
+  progressText: string;
+  successText: string;
+}
+
+export interface PricingDisplayOptions {
+  bundleQuantityOptions: BundleQuantityOptionsDisplay;
+  progressBar: PricingProgressBarDisplayOptions;
+}
+
+/**
+ * Per-rule tier text for Progress Bar Step-Based display.
+ */
+export interface PricingRuleTierText {
+  tierText: string;     // e.g. "Add 3"
+  tierSubtext: string;  // e.g. "1 Product(s) @ 100% off"
 }
 
 /**
  * Message templates with variable substitution
  *
  * Available variables:
- * - {conditionText}: "2 items" or "₹50"
- * - {discountText}: "20% off" or "₹10 off" or "bundle for ₹100"
- * - {amountNeeded}: "50.00"
- * - {itemsNeeded}: "2"
- * - {currentQuantity}, {targetQuantity}
- * - {currentAmount}, {targetAmount}
- * - {progressPercentage}: "60"
- * - {originalPrice}, {finalPrice}, {savingsAmount}, {savingsPercentage}
- * - {bundleName}, {currencySymbol}, {currencyCode}
+ * - {{conditionText}}: "2 items" or "₹50"
+ * - {{discountText}}: "20% off" or "₹10 off" or "bundle for ₹100"
+ * - {{discountConditionDiff}}: remaining qty/amount to unlock discount
+ * - {{discountValue}}: numerical discount reward value
+ * - {{discountValueUnit}}: symbol for discount reward (% or currency)
+ * - {{discountUnit}}: currency symbol for amount-based rules
+ * - {{discountedItems}}: qty of items discounted/free in BXY
  */
 export interface PricingMessages {
-  progress: string;             // Template when NOT qualified (e.g., "Add {conditionText} to get {discountText}")
-  qualified: string;            // Template when qualified (e.g., "Congratulations! You got {discountText}")
-  showInCart: boolean;          // Show discount messages in cart
+  progress: string;              // Template when NOT qualified
+  qualified: string;             // Template when qualified
+  showInCart: boolean;           // Show discount messages in cart
+  // Progress Bar Step-Based: per-rule tier labels (merchant-editable)
+  tierTextByRuleId?: Record<string, PricingRuleTierText>;
+  // Progress Bar Multi Language: per-locale per-rule tier labels
+  tierTextByLocaleByRuleId?: Record<string, Record<string, PricingRuleTierText>>;
 }
 
 /**
@@ -124,50 +138,28 @@ export interface PricingConfiguration {
 }
 
 /**
- * Validation: Check if a rule is valid
+ * Validation: Check if a rule is valid (flat shape)
  */
 export function validatePricingRule(rule: any): rule is PricingRule {
   if (!rule || typeof rule !== 'object') {
     return false;
   }
 
-  // Check required fields
   if (typeof rule.id !== 'string') {
     return false;
   }
 
-  // Validate condition
-  if (!rule.condition || typeof rule.condition !== 'object') {
+  if (rule.conditionType !== 'quantity' && rule.conditionType !== 'amount') {
     return false;
   }
 
-  if (!Object.values(ConditionType).includes(rule.condition.type)) {
+  const condVal = Number(rule.conditionValue);
+  if (!isFinite(condVal) || condVal < 0) {
     return false;
   }
 
-  if (!Object.values(ConditionOperator).includes(rule.condition.operator)) {
-    return false;
-  }
-
-  if (typeof rule.condition.value !== 'number' || rule.condition.value < 0) {
-    return false;
-  }
-
-  // Validate discount
-  if (!rule.discount || typeof rule.discount !== 'object') {
-    return false;
-  }
-
-  if (!Object.values(DiscountMethod).includes(rule.discount.method)) {
-    return false;
-  }
-
-  if (typeof rule.discount.value !== 'number' || rule.discount.value < 0) {
-    return false;
-  }
-
-  // Percentage should be 0-100
-  if (rule.discount.method === DiscountMethod.PERCENTAGE_OFF && rule.discount.value > 100) {
+  const discVal = Number(rule.discountValue);
+  if (!isFinite(discVal) || discVal < 0) {
     return false;
   }
 
@@ -210,6 +202,10 @@ export function validatePricingConfiguration(config: any): config is PricingConf
     return false;
   }
 
+  if (typeof config.display.showDiscountProgressBar !== 'boolean') {
+    return false;
+  }
+
   // Check messages
   if (!config.messages || typeof config.messages !== 'object') {
     return false;
@@ -234,6 +230,7 @@ export function createEmptyPricingConfig(): PricingConfiguration {
     rules: [],
     display: {
       showFooter: true,
+      showDiscountProgressBar: false,
     },
     messages: {
       progress: "Add {conditionText} to get {discountText}",
@@ -244,21 +241,26 @@ export function createEmptyPricingConfig(): PricingConfiguration {
 }
 
 /**
- * Helper: Create new pricing rule with defaults
+ * Helper: Create new pricing rule with defaults (flat shape)
  */
 export function createNewPricingRule(method: DiscountMethod): PricingRule {
-  return {
+  const base: PricingRule = {
     id: `rule-${Date.now()}`,
-    condition: {
-      type: ConditionType.QUANTITY,
-      operator: ConditionOperator.GTE,
-      value: 0
-    },
-    discount: {
-      method,
-      value: 0
-    }
+    conditionType: 'quantity',
+    conditionValue: 2,
+    discountValue: method === DiscountMethod.PERCENTAGE_OFF ? 5 : 500,
   };
+  if (method === DiscountMethod.BUY_X_GET_Y) {
+    return {
+      ...base,
+      discountValue: 100,
+      customerBuys: 2,
+      customerGets: 1,
+      bxyDiscountType: 'percentage',
+      bxyApplyMode: 'lowest_priced',
+    };
+  }
+  return base;
 }
 
 /**
@@ -283,38 +285,37 @@ export function getDiscountMethodText(method: DiscountMethod): string {
   const methodMap: Record<DiscountMethod, string> = {
     [DiscountMethod.PERCENTAGE_OFF]: 'Percentage Off',
     [DiscountMethod.FIXED_AMOUNT_OFF]: 'Fixed Amount Off',
-    [DiscountMethod.FIXED_BUNDLE_PRICE]: 'Fixed Bundle Price'
+    [DiscountMethod.FIXED_BUNDLE_PRICE]: 'Fixed Bundle Price',
+    [DiscountMethod.BUY_X_GET_Y]: 'Buy X, Get Y'
   };
 
   return methodMap[method] || method;
 }
 
 /**
- * Helper: Generate human-readable preview of a pricing rule
- * Example: "When customer has at least 3 items, apply 20% off"
+ * Helper: Generate human-readable preview of a pricing rule (flat shape)
  */
 export function generateRulePreview(
   rule: PricingRule,
+  method: DiscountMethod,
   currencySymbol: string = '₹'
 ): string {
-  // Condition text
-  const conditionValue = rule.condition.type === ConditionType.QUANTITY
-    ? `${rule.condition.value} items`
-    : `${currencySymbol}${(rule.condition.value / 100).toFixed(2)}`;
+  const conditionText = rule.conditionType === 'quantity'
+    ? `${rule.conditionValue} items`
+    : `${currencySymbol}${(rule.conditionValue / 100).toFixed(2)}`;
 
-  const operatorText = getOperatorText(rule.condition.operator);
-
-  // Discount text
   let discountText: string;
-  if (rule.discount.method === DiscountMethod.PERCENTAGE_OFF) {
-    discountText = `${rule.discount.value}% off`;
-  } else if (rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF) {
-    discountText = `${currencySymbol}${(rule.discount.value / 100).toFixed(2)} off`;
+  if (method === DiscountMethod.PERCENTAGE_OFF) {
+    discountText = `${rule.discountValue}% off`;
+  } else if (method === DiscountMethod.FIXED_AMOUNT_OFF) {
+    discountText = `${currencySymbol}${(rule.discountValue / 100).toFixed(2)} off`;
+  } else if (method === DiscountMethod.BUY_X_GET_Y) {
+    discountText = `buy ${rule.customerBuys ?? rule.conditionValue} get ${rule.customerGets ?? 1} free`;
   } else {
-    discountText = `bundle for ${currencySymbol}${(rule.discount.value / 100).toFixed(2)}`;
+    discountText = `bundle for ${currencySymbol}${(rule.discountValue / 100).toFixed(2)}`;
   }
 
-  return `When customer has ${operatorText} ${conditionValue}, apply ${discountText}`;
+  return `When customer has at least ${conditionText}, apply ${discountText}`;
 }
 
 /**

@@ -1,0 +1,60 @@
+{% assign bundle_id = block.settings.bundle_id %}
+{% assign target_url = block.settings.target_url %}
+
+{% if target_url == blank and bundle_id != blank %}
+  {% assign target_url = '/apps/product-bundles/wpb/' | append: bundle_id %}
+{% endif %}
+
+{% if target_url != blank or request.design_mode %}
+  <div {{ block.shopify_attributes }} class="wolfpack-bundle-upsell wolfpack-bundle-upsell--block">
+    {% if block.settings.title != blank %}
+      <h3 class="wolfpack-bundle-upsell__title">{{ block.settings.title }}</h3>
+    {% endif %}
+    {% if block.settings.description != blank %}
+      <p class="wolfpack-bundle-upsell__description">{{ block.settings.description }}</p>
+    {% endif %}
+    {% if target_url != blank %}
+      <a class="wolfpack-bundle-upsell__button" href="{{ target_url }}">{{ block.settings.button_label }}</a>
+    {% endif %}
+  </div>
+{% endif %}
+
+<style>
+  .wolfpack-bundle-upsell {
+    border: 1px solid var(--bundle-upsell-border, rgba(0, 0, 0, 0.12));
+    border-radius: var(--bundle-upsell-radius, 8px);
+    padding: var(--bundle-upsell-padding, 16px);
+    background: var(--bundle-upsell-bg, #fff);
+    color: var(--bundle-upsell-text, inherit);
+  }
+  .wolfpack-bundle-upsell__title { margin: 0 0 8px; font-size: 18px; }
+  .wolfpack-bundle-upsell__description { margin: 0 0 12px; }
+  .wolfpack-bundle-upsell__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: var(--bundle-upsell-button-radius, 6px);
+    background: var(--bundle-upsell-button-bg, #111);
+    color: var(--bundle-upsell-button-text, #fff);
+    text-decoration: none;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Bundle Upsell Block",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    { "type": "text", "id": "bundle_id", "label": "Full-page bundle ID" },
+    { "type": "url", "id": "target_url", "label": "Custom target URL" },
+    { "type": "text", "id": "title", "label": "Title" },
+    { "type": "textarea", "id": "description", "label": "Description" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "View Bundle" }
+  ]
+}
+{% endschema %}

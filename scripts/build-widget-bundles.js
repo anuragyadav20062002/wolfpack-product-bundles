@@ -36,7 +36,7 @@ const ROOT_DIR = join(__dirname, '..');
 // Verify live version in browser DevTools on the storefront:
 //   console.log(window.__BUNDLE_WIDGET_VERSION__)
 // ---------------------------------------------------------------------------
-const WIDGET_VERSION = '2.6.1';
+const WIDGET_VERSION = '3.0.21';
 
 // Shared component modules (in dependency order)
 const SHARED_MODULES = [
@@ -49,7 +49,9 @@ const SHARED_MODULES = [
   join(ROOT_DIR, 'app/assets/widgets/shared/template-manager.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/component-generator.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/default-loading-animation.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/loading-overlay.js'),
   join(ROOT_DIR, 'app/assets/widgets/shared/variant-selector.js'),
+  join(ROOT_DIR, 'app/assets/widgets/shared/full-page-preset.js'),
 ];
 
 // Source files
@@ -57,12 +59,38 @@ const SOURCES = {
   modal: join(ROOT_DIR, 'app/assets/bundle-modal-component.js'),
   fullPage: join(ROOT_DIR, 'app/assets/bundle-widget-full-page.js'),
   productPage: join(ROOT_DIR, 'app/assets/bundle-widget-product-page.js'),
+  sdk: join(ROOT_DIR, 'app/assets/sdk/wolfpack-bundles.js'),
 };
+
+// SDK module files (inlined into the SDK bundle, in dependency order)
+const SDK_MODULES = [
+  join(ROOT_DIR, 'app/assets/sdk/state.js'),
+  join(ROOT_DIR, 'app/assets/sdk/config-loader.js'),
+  join(ROOT_DIR, 'app/assets/sdk/events.js'),
+  join(ROOT_DIR, 'app/assets/sdk/cart.js'),
+  join(ROOT_DIR, 'app/assets/sdk/validate-bundle.js'),
+  join(ROOT_DIR, 'app/assets/sdk/get-display-price.js'),
+  join(ROOT_DIR, 'app/assets/sdk/debug.js'),
+];
+
+const PRODUCT_PAGE_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cascade-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/product-page/templates/cognive-template.js'),
+];
+
+const FULL_PAGE_MODULES = [
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/standard-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/classic-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/compact-template.js'),
+  join(ROOT_DIR, 'app/assets/widgets/full-page/templates/horizontal-template.js'),
+];
 
 // Output files
 const OUTPUTS = {
   fullPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js'),
   productPage: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js'),
+  sdk: join(ROOT_DIR, 'extensions/bundle-builder/assets/wolfpack-bundles-sdk.js'),
 };
 
 /**
@@ -123,6 +151,46 @@ function removeUseStrict(code) {
 }
 
 /**
+ * Remove CommonJS module.exports guards from SDK modules before concatenating
+ * them inside the browser IIFE.
+ */
+function removeCommonJsExports(code) {
+  const marker = 'if (typeof module';
+  let result = code;
+  let markerIndex = result.indexOf(marker);
+
+  while (markerIndex !== -1) {
+    const blockStart = result.indexOf('{', markerIndex);
+    if (blockStart === -1) break;
+
+    let depth = 0;
+    let blockEnd = -1;
+    for (let index = blockStart; index < result.length; index += 1) {
+      const char = result[index];
+      if (char === '{') depth += 1;
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          blockEnd = index + 1;
+          break;
+        }
+      }
+    }
+
+    if (blockEnd === -1) break;
+
+    while (blockEnd < result.length && /\s/.test(result[blockEnd])) {
+      blockEnd += 1;
+    }
+
+    result = `${result.slice(0, markerIndex)}${result.slice(blockEnd)}`;
+    markerIndex = result.indexOf(marker);
+  }
+
+  return result;
+}
+
+/**
  * Read and process all shared component modules
  */
 function readSharedComponents() {
@@ -143,6 +211,107 @@ function readSharedComponents() {
 }
 
 /**
+ * Read and inline all SDK-specific modules (state, cart, validate, etc.)
+ */
+function readSdkModules() {
+  const moduleCodes = [];
+  for (const modulePath of SDK_MODULES) {
+    if (!existsSync(modulePath)) {
+      console.error(`Missing SDK module: ${modulePath}`);
+      process.exit(1);
+    }
+    const code = readFile(modulePath);
+    // Strip CJS module.exports guard — not needed inside the IIFE
+    const processed = removeCommonJsExports(removeUseStrict(code));
+    moduleCodes.push(processed);
+  }
+  return moduleCodes.join('\n\n');
+}
+
+function readProductPageModules() {
+  const moduleCodes = [];
+  for (const modulePath of PRODUCT_PAGE_MODULES) {
+    if (!existsSync(modulePath)) {
+      console.error(`Missing product-page module: ${modulePath}`);
+      process.exit(1);
+    }
+
+    const code = readFile(modulePath);
+    const processed = removeUseStrict(removeModuleStatements(code));
+    moduleCodes.push(processed);
+  }
+  return moduleCodes.join('\n\n');
+}
+
+function readFullPageModules() {
+  const moduleCodes = [];
+  for (const modulePath of FULL_PAGE_MODULES) {
+    if (!existsSync(modulePath)) {
+      console.error(`Missing full-page module: ${modulePath}`);
+      process.exit(1);
+    }
+
+    const code = readFile(modulePath);
+    const processed = removeUseStrict(removeModuleStatements(code));
+    moduleCodes.push(processed);
+  }
+  return moduleCodes.join('\n\n');
+}
+
+/**
+ * Build the Wolfpack Bundles SDK bundle
+ */
+function buildSdkBundle() {
+  console.log('Building Wolfpack Bundles SDK...');
+
+  const sharedCode = readSharedComponents();
+  const sdkModulesCode = readSdkModules();
+  // Entry point: strip the outer IIFE wrapper — we'll re-wrap everything below
+  const entryCode = removeUseStrict(removeModuleStatements(readFile(SOURCES.sdk)))
+    .replace(/^\s*\(function\s*\(window\)\s*\{/, '')
+    .replace(/\}\)\(window\);\s*$/, '');
+
+  const buildDate = new Date().toISOString().split('T')[0];
+  const banner = `/*!
+ * Wolfpack Bundles SDK
+ * Version : ${WIDGET_VERSION}
+ * Built   : ${buildDate}
+ *
+ * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
+ */
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '${WIDGET_VERSION}';`;
+
+  const bundledCode = `${banner}
+(function (window) {
+  'use strict';
+
+  // ============================================================================
+  // SHARED MODULES (ConditionValidator, PricingCalculator, CurrencyManager, etc.)
+  // ============================================================================
+
+${sharedCode}
+
+  // ============================================================================
+  // SDK MODULES (state, config-loader, events, cart, validate-bundle, get-display-price, debug)
+  // ============================================================================
+
+${sdkModulesCode}
+
+  // ============================================================================
+  // SDK ENTRY POINT
+  // ============================================================================
+
+${entryCode}
+
+})(window);
+`;
+
+  writeFileSync(OUTPUTS.sdk, bundledCode);
+  console.log(`  -> ${OUTPUTS.sdk}`);
+  console.log(`  -> ${(bundledCode.length / 1024).toFixed(1)} KB`);
+}
+
+/**
  * Build the full-page widget bundle
  */
 function buildFullPageBundle() {
@@ -151,6 +320,7 @@ function buildFullPageBundle() {
   // Read source files
   const componentsCode = readSharedComponents();
   const modalCode = readFile(SOURCES.modal);
+  const fullPageModulesCode = readFullPageModules();
   const widgetCode = readFile(SOURCES.fullPage);
 
   // Process the code
@@ -181,6 +351,8 @@ ${processedModal}
   // BUNDLE WIDGET FULL PAGE
   // ============================================================================
 
+${fullPageModulesCode}
+
 ${processedWidget}
 
 })();
@@ -200,6 +372,7 @@ function buildProductPageBundle() {
 
   // Read source files
   const componentsCode = readSharedComponents();
+  const productPageModulesCode = readProductPageModules();
   const widgetCode = readFile(SOURCES.productPage);
 
   // Process the code
@@ -219,6 +392,8 @@ ${componentsCode}
   // ============================================================================
   // BUNDLE WIDGET PRODUCT PAGE
   // ============================================================================
+
+${productPageModulesCode}
 
 ${processedWidget}
 
@@ -253,14 +428,19 @@ function main() {
     case 'product-page':
       buildProductPageBundle();
       break;
+    case 'sdk':
+      buildSdkBundle();
+      break;
     case 'all':
       buildFullPageBundle();
       console.log('');
       buildProductPageBundle();
+      console.log('');
+      buildSdkBundle();
       break;
     default:
       console.error(`Unknown target: ${target}`);
-      console.error('Usage: node scripts/build-widget-bundles.js [full-page|product-page|all]');
+      console.error('Usage: node scripts/build-widget-bundles.js [full-page|product-page|sdk|all]');
       process.exit(1);
   }
 

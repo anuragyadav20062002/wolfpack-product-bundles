@@ -1,21 +1,5 @@
-/**
- * Grow Plan Card Component
- *
- * Displays the Grow plan details with "Most Popular" badge.
- */
-
-import {
-  Card,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-  Badge,
-  Divider,
-  Icon,
-} from "@shopify/polaris";
-import { CheckIcon } from "@shopify/polaris-icons";
 import { PLANS } from "../../constants/plans";
+import { useTranslation } from "react-i18next";
 
 export interface GrowPlanCardProps {
   isCurrentPlan: boolean;
@@ -28,102 +12,97 @@ export function GrowPlanCard({
   isUpgrading,
   onSelectPlan,
 }: GrowPlanCardProps) {
+  const { t } = useTranslation();
+
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Most Popular Badge */}
-      <div style={{
-        position: 'absolute',
-        top: '-12px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 10,
-        backgroundColor: '#ffc96b',
-        color: '#3d3d3d',
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: 600,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '4px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      }}>
-        <span style={{ fontSize: '14px' }}>⭐</span>
-        <span>Most Popular</span>
+    <div style={{ position: "relative" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: "-12px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 10,
+          backgroundColor: "#ffc96b",
+          color: "#3d3d3d",
+          padding: "4px 12px",
+          borderRadius: "12px",
+          fontSize: "12px",
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        }}
+      >
+        <span style={{ fontSize: "14px" }}>⭐</span>
+        <span>{t("billing.cards.mostPopular")}</span>
       </div>
 
-      <Card>
-        <div style={{
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          border: isCurrentPlan ? 'none' : '2px solid #005bd3',
-          borderRadius: '12px',
-          margin: '-16px',
-          padding: '16px',
-        }}>
-          <BlockStack gap="500">
-            <BlockStack gap="200">
-              <InlineStack align="space-between" blockAlign="center">
-                <Text as="h3" variant="headingLg">
-                  {PLANS.grow.name}
-                </Text>
-                {isCurrentPlan && <Badge tone="success">Current Plan</Badge>}
-              </InlineStack>
-              <InlineStack gap="100" blockAlign="baseline">
-                <Text as="p" variant="heading2xl" fontWeight="bold">
-                  ${PLANS.grow.price}
-                </Text>
-                <Text as="span" variant="bodyLg" tone="subdued">
-                  / month
-                </Text>
-              </InlineStack>
-              <Text as="p" variant="bodyMd" tone="subdued">
-                For growing businesses ready to scale
-              </Text>
-            </BlockStack>
+      <s-section>
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            border: isCurrentPlan ? "none" : "2px solid #005bd3",
+            borderRadius: "12px",
+            margin: "-16px",
+            padding: "16px",
+          }}
+        >
+          <s-stack direction="block" gap="large">
+            <s-stack direction="block" gap="small-100">
+              <s-stack direction="inline" justifyContent="space-between" alignItems="center">
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{PLANS.grow.name}</h3>
+                {isCurrentPlan && <s-badge tone="success">{t("billing.cards.currentPlan")}</s-badge>}
+              </s-stack>
+              <s-stack direction="inline" alignItems="baseline" gap="small-400">
+                <span style={{ fontSize: 28, fontWeight: 700 }}>${PLANS.grow.price}</span>
+                <span style={{ fontSize: 16, color: "#6d7175" }}>{t("billing.cards.perMonth")}</span>
+              </s-stack>
+              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                {t("billing.cards.growDescription")}
+              </p>
+            </s-stack>
 
-            <Divider />
+            <s-divider />
 
-            <BlockStack gap="300">
-              <Text as="p" variant="bodyMd" fontWeight="semibold">
-                Everything in Free, plus:
-              </Text>
-              <BlockStack gap="200">
+            <s-stack direction="block" gap="small">
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("billing.cards.growIncludes")}</p>
+              <s-stack direction="block" gap="small-100">
                 {PLANS.grow.features.map((feature, index) => (
-                  <InlineStack key={index} gap="200" blockAlign="center">
-                    <div style={{ color: '#008060' }}>
-                      <Icon source={CheckIcon} tone="success" />
+                  <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
+                    <div style={{ color: "#008060" }}>
+                      <s-icon type="check" />
                     </div>
-                    <Text as="span" variant="bodyMd" fontWeight={index < 4 ? "semibold" : "regular"}>
+                    <span style={{ fontSize: 14, fontWeight: index < 4 ? 600 : 400 }}>
                       {feature}
-                    </Text>
-                  </InlineStack>
+                    </span>
+                  </s-stack>
                 ))}
-              </BlockStack>
-            </BlockStack>
-          </BlockStack>
+              </s-stack>
+            </s-stack>
+          </s-stack>
 
-          <div style={{ marginTop: 'auto', paddingTop: '1.5rem' }}>
-            <Button
-              fullWidth
+          <div style={{ marginTop: "auto", paddingTop: "1.5rem" }}>
+            <s-button
               variant="primary"
-              disabled={isCurrentPlan}
-              loading={isUpgrading}
+              disabled={isCurrentPlan || undefined}
+              loading={isUpgrading || undefined}
               onClick={onSelectPlan}
+              inlineSize="fill"
             >
-              {isCurrentPlan ? "Current Plan" : "Upgrade to Grow"}
-            </Button>
+              {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.upgradeToGrow")}
+            </s-button>
             {!isCurrentPlan && (
-              <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                <Text as="p" variant="bodySm" tone="subdued">
-                  Cancel anytime. Billed through Shopify.
-                </Text>
-              </div>
+              <p style={{ textAlign: "center", marginTop: "0.5rem", fontSize: 12, color: "#6d7175" }}>
+                {t("billing.cards.cancelAnytimeBilled")}
+              </p>
             )}
           </div>
         </div>
-      </Card>
+      </s-section>
     </div>
   );
 }

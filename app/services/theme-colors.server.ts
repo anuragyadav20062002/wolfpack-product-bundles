@@ -5,7 +5,7 @@
  * and caches the 6 global color anchors in DesignSettings.themeColors.
  *
  * These cached colors are used by the CSS endpoint as fallback values
- * when no explicit DCP customization has been saved, ensuring Free plan
+ * when no explicit Settings -> Design customization has been saved, ensuring Free plan
  * bundle widgets inherit the store's brand colors automatically.
  */
 

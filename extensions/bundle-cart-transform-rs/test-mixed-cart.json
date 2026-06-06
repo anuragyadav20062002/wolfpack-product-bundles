@@ -4,11 +4,11 @@
   "cart": {
     "lines": [
       {
-        "_comment": "Standalone product — no _bundle_id, should be ignored",
+        "_comment": "Standalone product — no _easyBundle:OfferId, should be ignored",
         "id": "standalone-1",
         "quantity": 2,
-        "bundleId": null,
-        "bundleName": null,
+        "easyBundleOfferId": null,
+        "easyBundleName": null,
         "stepType": null,
         "merchandise": {
           "__typename": "ProductVariant",
@@ -29,8 +29,8 @@
         "_comment": "MERGE component 1 — has component_parents pointing to parent variant",
         "id": "merge-line-1",
         "quantity": 1,
-        "bundleId": { "value": "bundle-merge-001" },
-        "bundleName": { "value": "Classic Bundle" },
+        "easyBundleOfferId": { "value": "bundle-merge-001" },
+        "easyBundleName": { "value": "Classic Bundle" },
         "stepType": null,
         "merchandise": {
           "__typename": "ProductVariant",
@@ -50,11 +50,11 @@
         }
       },
       {
-        "_comment": "MERGE component 2 — same bundle-merge-001",
+        "_comment": "MERGE component 2 — same FBP-merge_001",
         "id": "merge-line-2",
         "quantity": 1,
-        "bundleId": { "value": "bundle-merge-001" },
-        "bundleName": { "value": "Classic Bundle" },
+        "easyBundleOfferId": { "value": "bundle-merge-001" },
+        "easyBundleName": { "value": "Classic Bundle" },
         "stepType": null,
         "merchandise": {
           "__typename": "ProductVariant",
@@ -75,8 +75,8 @@
         "_comment": "EXPAND flex bundle — has component_reference + component_quantities on the variant",
         "id": "flex-line-1",
         "quantity": 1,
-        "bundleId": null,
-        "bundleName": { "value": "Starter Kit" },
+        "easyBundleOfferId": null,
+        "easyBundleName": { "value": "Starter Kit" },
         "stepType": null,
         "merchandise": {
           "__typename": "ProductVariant",
