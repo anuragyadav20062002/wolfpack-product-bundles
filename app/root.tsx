@@ -6,8 +6,10 @@ import {
   ScrollRestoration,
   useRouteError,
 } from "@remix-run/react";
+import { useEffect } from "react";
 import CrispChat from "./components/CrispChat";
 import { ErrorPage } from "./components/ErrorPage";
+import { reportWebVitals } from "./lib/web-vitals.client";
 
 export function ErrorBoundary() {
   const error = useRouteError();
@@ -32,6 +34,13 @@ export function ErrorBoundary() {
 }
 
 export default function App() {
+  // Wire Core Web Vitals reporting (LCP, INP, CLS, TTFB, FCP) once on first
+  // mount. Posts to /api/web-vitals — see app/lib/web-vitals.client.ts.
+  // Idempotent: subsequent calls are no-ops, safe under React StrictMode.
+  useEffect(() => {
+    reportWebVitals();
+  }, []);
+
   return (
     <html>
       <head>

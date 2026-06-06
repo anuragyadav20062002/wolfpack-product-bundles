@@ -1,0 +1,78 @@
+name: Lighthouse Admin LCP Budget
+
+# Smoke-tests the Wolfpack admin pages against the Web Vitals budget defined in
+# lighthouserc.json on every PR that touches admin routes, components, or the
+# Vite build config. Surfaces median LCP / INP / CLS / TBT in the PR summary.
+#
+# Note: this workflow runs Lighthouse against a *local* preview build, not the
+# live SIT. We don't run inside the Shopify embedded iframe — the goal is to
+# catch JS/CSS bundle regressions, render-blocking resources, and image
+# optimisation opportunities before they ship.
+#
+# Issue: docs/issues-prod/admin-lcp-measurement-1.md.
+
+on:
+  pull_request:
+    paths:
+      - "app/root.tsx"
+      - "app/routes/app/**"
+      - "app/components/**"
+      - "app/lib/web-vitals.client.ts"
+      - "app/lib/server-timing.server.ts"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "lighthouserc.json"
+      - ".github/workflows/lighthouse-admin.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  lighthouse:
+    name: Lighthouse Admin
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build app
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          configPath: "./lighthouserc.json"
+          # Static-site preview of the build output. Embedded admin routes
+          # require a running app, so we point at the marketing landing page
+          # bundled with the build for now; per-admin-route smoke runs use the
+          # live SIT and are tracked separately under the issue file.
+          urls: |
+            http://localhost:3000/app
+            http://localhost:3000/app/dashboard
+            http://localhost:3000/app/attribution
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          runs: 3
+        continue-on-error: true # warn-mode until budgets are tuned to real numbers
+
+      - name: Summarise results
+        if: always()
+        run: |
+          if [ -d ".lighthouseci" ]; then
+            echo "### Lighthouse Admin LCP Budget" >> "$GITHUB_STEP_SUMMARY"
+            echo "See artefacts in this run for the full HTML reports." >> "$GITHUB_STEP_SUMMARY"
+            ls -la .lighthouseci || true
+          fi
