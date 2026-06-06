@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.20
+ * Version : 3.0.21
  * Built   : 2026-06-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.20';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.21';
 (function() {
   'use strict';
 
@@ -2959,7 +2959,15 @@ function installHorizontalTemplate(BundleWidgetFullPage) {
   const prototype = BundleWidgetFullPage.prototype;
 
   prototype.ensureHorizontalSidePanelSlotRuntimeStyles = function() {
-    return;
+    if (this.getFullPageDesignPreset() !== 'HORIZONTAL') return;
+    if (document.getElementById('wpb-fpb-horizontal-runtime-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-horizontal-runtime-styles';
+    const desktopSummaryStyles = `.fpb-h .product-title{display:-webkit-box;display:-webkit-flexbox;display:flex;white-space:normal;word-break:break-word;overflow:hidden;text-overflow:ellipsis;-webkit-box-orient:vertical;line-clamp:2;-webkit-line-clamp:2}.fpb-h .product-card--expanded-variant .product-title{display:block;line-height:normal}.fpb-h .product-card--expanded-variant .product-variant-badge{display:none}`;
+    const summaryMobileStyles = `.fpb-mobile-summary-count-badge{cursor:pointer}.fpb-mobile-summary-count-badge::before{content:"";width:8px;height:8px;border-left:2px solid #fff;border-top:2px solid #fff;transform:rotate(45deg);margin:4px 7px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 270px;height:407.5625px}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded .fpb-mobile-summary-count-badge::before{transform:rotate(225deg);margin:-3px 7px 0 0}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}.fpb-mobile-summary-discount-text{display:flex;align-items:center;justify-content:center;width:360px;min-height:25.2px;margin:0;padding:0;color:#000;font-size:14px;font-weight:700;line-height:25.2px;text-align:center}.fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar{width:310px;height:96px;margin:0;overflow:visible}.fpb-mobile-summary-tray .fpb-dp-sidebar.fpb-dp-step_based{display:grid;grid-template-columns:310px;grid-template-rows:33.1953px 12px 51.1875px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-list{height:33.1953px;margin:0;padding:0 0 8px;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track{align-self:center;height:6px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle-list{height:51.1875px;margin:0;padding:8px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title{color:#333;font-size:14px;font-weight:500;line-height:25.2px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle{color:#888;font-size:12px;font-weight:400;line-height:21.6px}.fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:204px 38px;width:360px;height:270px;padding:10px 0;background:#fff;box-sizing:border-box}.fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 140px;width:360px;height:204px}.fpb-mobile-summary-bundle-header{display:grid;grid-template-columns:273.344px 78.6562px;grid-template-rows:43px;width:360px;height:54px;padding:0 0 10px;box-sizing:border-box}.fpb-mobile-summary-bundle-copy{display:grid;grid-template-columns:273.344px;grid-template-rows:18px 20px;gap:5px;min-width:0}.fpb-mobile-summary-bundle-title{font-size:20px;line-height:18px;font-weight:700;color:#000}.fpb-mobile-summary-bundle-subtitle{font-size:12px;line-height:20px;font-weight:400;color:#000}.fpb-mobile-summary-clear-btn{display:grid;grid-template-columns:22px 28.6562px;grid-template-rows:22px;align-items:center;width:78.6562px;height:32px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54;font-size:12px;line-height:21.6px;font-weight:400}.fpb-mobile-summary-clear-btn svg{width:22px;height:22px}.fpb-mobile-summary-products-list{display:grid;grid-template-columns:360px;grid-template-rows:60px 65px;gap:10px;width:360px;height:140px;padding:5px 0 0;overflow:auto;box-sizing:border-box}.fpb-mobile-summary-product-row{display:grid;grid-template-columns:65px 213px 64px;grid-template-rows:60px;gap:9px;width:360px;height:60px}.fpb-mobile-summary-product-image-wrap{width:65px;height:60px;border:1px solid #cfc9c9;border-radius:8px;overflow:hidden}.fpb-mobile-summary-product-image{display:block;width:63px;height:63px;object-fit:cover}.fpb-mobile-summary-product-image-placeholder{width:63px;height:63px;background:#e1e1e1}.fpb-mobile-summary-product-info{display:block;width:213px;height:60px;min-width:0;overflow:hidden}.fpb-mobile-summary-product-title{display:block;width:213px;height:25.2px;color:#000;font-size:14px;line-height:25.2px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fpb-mobile-summary-product-variant{display:none}.fpb-mobile-summary-product-price{display:block;color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-action{display:grid;grid-template-columns:max-content 40px;grid-template-rows:40px;align-items:center;justify-content:center;width:64px;height:60px}.fpb-mobile-summary-product-qty{color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-remove{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:9999px;background:transparent;color:#000}.fpb-mobile-summary-product-remove svg{width:22px;height:22px}.fpb-mobile-summary-empty-product-card{display:grid;grid-template-columns:65px 212px 63px;grid-template-rows:65px;gap:10px;width:360px;height:65px}.fpb-mobile-summary-empty-product-image{width:65px;height:65px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-info{display:flex;flex-direction:column;gap:5px;align-self:center;width:212px;height:48px}.fpb-mobile-summary-empty-product-title{width:169px;height:14px;padding:7px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-variant{width:127px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-price{width:53px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-action{align-self:center;width:63px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}`;
+    style.textContent = desktopSummaryStyles + summaryMobileStyles;
+    document.head.appendChild(style);
   };
 }
 
@@ -4348,10 +4356,11 @@ class BundleWidgetFullPage {
     productsList.className = 'fpb-mobile-summary-products-list';
 
     allSelectedProducts.forEach(item => {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const variantInfo = this.getSummaryProductVariantDisplay(item);
       const row = document.createElement('div');
       row.className = 'fpb-mobile-summary-product-row';
       const imgSrc = this._getSelectedProductImageSrc(item);
-      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
       const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
       const priceText = CurrencyManager.convertAndFormat(
         isFreeGiftItem ? 0 : item.price * item.quantity,
@@ -4360,10 +4369,10 @@ class BundleWidgetFullPage {
 
       row.innerHTML = `
         <div class="fpb-mobile-summary-product-image-wrap">
-          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
+          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
         </div>
         <div class="fpb-mobile-summary-product-info">
-          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(item.title)}</span>
+          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(summaryTitle)}</span>
           ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
           <span class="fpb-mobile-summary-product-price">${priceText}</span>
         </div>
@@ -4659,6 +4668,8 @@ class BundleWidgetFullPage {
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
+        const summaryTitle = this.getSummaryProductDisplayTitle(item);
+        const variantInfo = this.getSummaryProductVariantDisplay(item);
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
         if (isHorizontalPreset) {
@@ -4666,7 +4677,6 @@ class BundleWidgetFullPage {
         }
 
         const imgSrc = this._getSelectedProductImageSrc(item);
-        const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
@@ -4677,11 +4687,11 @@ class BundleWidgetFullPage {
         if (isStandardDesktopSidebar) {
           row.innerHTML = `
             <div class="side-panel-product-img-wrap">
-              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
               ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
             </div>
             <div class="side-panel-product-info">
-              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
               ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
               ${priceHtml}
             </div>
@@ -4690,11 +4700,11 @@ class BundleWidgetFullPage {
         } else {
           row.innerHTML = `
             <div class="side-panel-product-img-wrap">
-              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
               ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
             </div>
             <div class="side-panel-product-info">
-              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
               ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
             </div>
             ${priceHtml}
@@ -4710,7 +4720,7 @@ class BundleWidgetFullPage {
             const productId = item.variantId || item.productId || item.id;
             const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
             this.updateProductSelection(stepIndex, productId, 0);
-            const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
             ToastManager.showWithUndo(
               `Removed "${truncated}"`,
               () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
@@ -6204,7 +6214,7 @@ class BundleWidgetFullPage {
             return {
               ...product,
               id: variant.id,
-              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              title: product.title,
               variantTitle: variant.title === 'Default Title' ? '' : variant.title,
               imageUrl,
               price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
@@ -6402,25 +6412,81 @@ class BundleWidgetFullPage {
   }
 
   applyStandardExpandedVariantTitle(cardElement, product) {
-    if (this.getFullPageDesignPreset() !== 'DEFAULT') return;
-    if (!cardElement || !product?.parentProductId || !product?.variantTitle || product.variantTitle === 'Default Title') return;
+    const preset = this.getFullPageDesignPreset();
+    if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+    if (!cardElement) return;
+
+    const variantTitle = this.getSummaryProductVariantDisplay(product);
+    if (!product?.parentProductId || !variantTitle) return;
 
     const titleEl = cardElement.querySelector('.product-title');
     if (!titleEl) return;
 
-    const parentTitle = product.parentTitle || product.title || '';
+    const parentTitle = this.getSummaryProductDisplayTitle({
+      ...product,
+      variantTitle: product.variantTitle || 'Default Title',
+      title: product.title || '',
+      parentTitle: product.parentTitle || ''
+    });
+    if (!parentTitle) return;
+
     cardElement.classList.add('product-card--expanded-variant');
-    titleEl.innerHTML = '';
+    titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+  }
 
-    const mainTitle = document.createElement('span');
-    mainTitle.className = 'product-title-main';
-    mainTitle.textContent = parentTitle;
+  getSummaryProductDisplayTitle(item) {
+    if (!item) return '';
+    const hasVariantLabel = item.variantTitle && item.variantTitle !== 'Default Title';
+    const hasUsableParentTitle = typeof item.parentTitle === 'string' && item.parentTitle.trim().length > 0;
+    if (hasVariantLabel && hasUsableParentTitle) return item.parentTitle;
 
-    const variantTitle = document.createElement('span');
-    variantTitle.className = 'product-title-variant';
-    variantTitle.textContent = product.variantTitle;
+    const inferredParentTitle = this.getParentTitleFromDisplayTitle(item.title);
+    if (inferredParentTitle && hasVariantLabel) return inferredParentTitle;
 
-    titleEl.append(mainTitle, variantTitle);
+    if (hasUsableParentTitle) {
+      return item.parentTitle;
+    }
+
+    return inferredParentTitle || item.title || '';
+  }
+
+  getSummaryProductVariantDisplay(item) {
+    if (!item) return '';
+
+    const explicitVariantTitle = typeof item.variantTitle === 'string' ? item.variantTitle : '';
+    if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+      return explicitVariantTitle;
+    }
+
+    const parentTitle = typeof item.parentTitle === 'string' ? item.parentTitle : '';
+    const normalizedTitle = typeof item.title === 'string' ? item.title : '';
+    if (!normalizedTitle) return '';
+
+    if (parentTitle) {
+      const withParentPrefix = `${parentTitle} - `;
+      if (normalizedTitle.startsWith(withParentPrefix)) {
+        const inferredVariant = normalizedTitle.slice(withParentPrefix.length).trim();
+        return inferredVariant || '';
+      }
+    }
+
+    return this.getSummaryVariantFromDisplayTitle(normalizedTitle);
+  }
+
+  getParentTitleFromDisplayTitle(displayTitle) {
+    if (typeof displayTitle !== 'string') return '';
+    const separatorIndex = displayTitle.indexOf(' - ');
+    if (separatorIndex <= 0) return '';
+    const parentCandidate = displayTitle.slice(0, separatorIndex).trim();
+    return parentCandidate || '';
+  }
+
+  getSummaryVariantFromDisplayTitle(displayTitle) {
+    if (typeof displayTitle !== 'string') return '';
+    const separatorIndex = displayTitle.indexOf(' - ');
+    if (separatorIndex <= 0) return '';
+    const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
+    return variantCandidate || '';
   }
 
   applySelectedQuantityBadge(cardElement, currentQuantity) {
@@ -6615,18 +6681,20 @@ class BundleWidgetFullPage {
       li.className = 'footer-panel-item';
 
       const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
-      const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const truncatedTitle = this.truncateTitle(summaryTitle, 35);
+      const ariaLabelTitle = ComponentGenerator.escapeHtml(summaryTitle);
 
       li.innerHTML = `
         <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
-             alt="${ComponentGenerator.escapeHtml(item.title)}"
+             alt="${ariaLabelTitle}"
              class="footer-panel-thumb">
         <div class="footer-panel-info">
           <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
           <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
         </div>
         ${!item.isDefault ? `
-        <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
+        <button class="footer-panel-remove" type="button" aria-label="Remove ${ariaLabelTitle}">
           <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
             <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
           </svg>
@@ -6640,7 +6708,7 @@ class BundleWidgetFullPage {
           e.stopPropagation();
           const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
           this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+          const truncated = summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : summaryTitle;
           ToastManager.showWithUndo(
             `Removed "${truncated}"`,
             () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
