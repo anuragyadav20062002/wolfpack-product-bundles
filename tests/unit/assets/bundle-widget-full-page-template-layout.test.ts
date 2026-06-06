@@ -86,11 +86,12 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain("grid-template-columns:repeat(2,\nminmax(0,\n1fr))");
     expect(storefrontStyles).toContain(".fpb-h .product-card");
     expect(storefrontStyles).toContain("height:156px");
-    expect(storefrontStyles).toContain("grid-template-columns:106px minmax(0,1fr)");
+    expect(storefrontStyles).toContain("grid-template-columns:120px minmax(0,1fr)");
     expect(storefrontStyles).toContain("grid-template-rows:62px 0 62px");
     expect(storefrontStyles).toContain(".fpb-h .product-image");
     expect(storefrontStyles).toContain("height:140px");
-    expect(storefrontStyles).toContain(".fpb-h .product-image img {\n  object-fit:cover}");
+    expect(storefrontStyles).toContain(".fpb-h .product-image img");
+    expect(storefrontStyles).toContain("object-fit:cover");
     expect(horizontalStaticCss).toContain("object-fit:cover");
     expect(horizontalStaticCss).not.toContain("object-fit:contain");
     expect(storefrontStyles).toContain(".fpb-h .product-add-btn");
@@ -108,7 +109,7 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain("width:103.8px");
     expect(storefrontStyles).toContain("height:120px");
     expect(storefrontStyles).toContain(".fpb-h .side-panel-product-slot");
-    expect(storefrontStyles).toContain("flex:0 0 70px");
+    expect(storefrontStyles).toContain("grid-template-columns:75px minmax(0,1fr) auto");
   });
 
   it("renders FPB product-card add buttons with the evidenced text label", () => {
@@ -234,14 +235,32 @@ describe("Full Page widget template layout contract", () => {
     expect(source).toContain("standard-navigation-items-container");
     expect(source).toContain("standard-navigation-step-img-container");
     expect(source).toContain("standard-steps-progress-bar-container");
+    expect(source).toContain("getStandardTimelinePageSize()");
+    expect(source).toContain("return window.innerWidth < 768 ? 4 : 5;");
+    expect(source).toContain("getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex)");
+    expect(source).toContain("const timelinePageSize = this.getStandardTimelinePageSize();");
+    expect(source).toContain("standard-navigation-arrow standard-navigation-arrow--prev");
+    expect(source).toContain("standard-navigation-arrow standard-navigation-arrow--next");
+    expect(source).toContain("standard-navigation-items-container--paged");
+    expect(source).toContain("timeline.classList.toggle('step-timeline--paged', isPaged);");
+    expect(source).toContain("timeline-navigation-arrow timeline-navigation-arrow--prev");
+    expect(source).toContain("timeline-navigation-arrow timeline-navigation-arrow--next");
     expect(source).toContain("--standard-timeline-count");
+    expect(source).toContain("--standard-timeline-visible-count");
     expect(source).toContain("--standard-timeline-width");
     expect(source).toContain("--standard-timeline-progress-left");
     expect(source).toContain("--standard-timeline-progress-width");
     expect(source).toContain("--standard-timeline-progress-fill");
 
     expect(storefrontStyles).toContain(".step-timeline--standard");
+    expect(storefrontStyles).toContain(".step-timeline--paged");
+    expect(storefrontStyles).toContain(".timeline-navigation-arrow");
+    expect(storefrontStyles).toContain(".timeline-navigation-arrow--prev");
+    expect(storefrontStyles).toContain(".timeline-navigation-arrow--next");
     expect(storefrontStyles).toContain("grid-template-columns:repeat(var(--standard-timeline-count,2),minmax(0,1fr))");
+    expect(storefrontStyles).toContain(".standard-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}");
+    expect(storefrontStyles).toContain(".standard-navigation-arrow--prev{left:-12px}");
+    expect(storefrontStyles).toContain(".standard-navigation-arrow--next{right:-12px}");
     expect(storefrontStyles).toContain("grid-template-rows:40px 36.8px");
     expect(storefrontStyles).toContain("width:var(--standard-timeline-width,60%)");
     expect(storefrontStyles).toContain("height:76.8px");
@@ -321,6 +340,9 @@ describe("Full Page widget template layout contract", () => {
     expect(source).toContain("ensureClassicPresetRuntimeStyles()");
     expect(source).toContain("wpb-fpb-classic-runtime-styles");
     expect(source).toContain("this.getFullPageDesignPreset(bundle) === 'CLASSIC'");
+    expect(source).toContain("preset === 'DEFAULT' || preset === 'CLASSIC'");
+    expect(source).toContain("this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'");
+    expect(source).toContain("sheet.classList.add('fpb-mobile-classic-footer');");
     expect(source).not.toContain("pricingMethod === 'fixed_amount_off'");
 
     expect(storefrontStyles).toContain("[data-fpb-design-preset=CLASSIC]");
@@ -331,8 +353,25 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain("--classic-card-height-extra:104px");
     expect(storefrontStyles).toContain("--classic-image-height-extra:12px");
     expect(storefrontStyles).toContain("height:calc((100cqw - 45px)/4 + var(--classic-card-height-extra,104px))");
-    expect(storefrontStyles).toContain("grid-template-columns:repeat(2,minmax(0,177.5px))");
-    expect(storefrontStyles).toContain("height:263px");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:49px 35px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .product-add-btn::before{content:\"+\";font-size:16px;font-weight:700;line-height:1}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC] .category-tabs{display:flex;justify-content:center;gap:8px;height:40.8px;margin:0 0 20px;padding:0;overflow:visible}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-products{grid-row:3;grid-column:1;align-self:start;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:75px 170px;gap:15px;width:100%;height:260px;min-height:260px;max-height:260px;padding:0 10px 0 0;margin:38.797px 0 0;overflow:hidden}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-info{display:grid;grid-template-rows:20px 28.8px;gap:0;align-self:start;min-width:0;height:75px;overflow:hidden}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-action{display:grid;place-items:center;width:62.9375px;height:75px}");
+    expect(storefrontStyles).toContain("@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=CLASSIC] > :is(.bundle-banners,.category-tabs,.sidebar-layout-wrapper){width:100%;margin-left:0;margin-right:0}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC] .sidebar-layout-wrapper .sidebar-content{padding:0 0 120px!important}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,177.5px));gap:15px;justify-content:center;margin:0 0 20px;padding:0;overflow:visible}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:177.5px;min-width:0;max-width:177.5px;height:263px;min-height:263px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:150px 41px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff;overflow:visible}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:41px 35px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:41px;height:41px;font-size:12px!important;line-height:normal!important;font-weight:400!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:visible}");
+    expect(storefrontStyles).toContain(".layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;position:static;right:auto;bottom:auto;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}");
+    expect(storefrontStyles).toContain(".fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 234.906px;height:361.46875px}");
+    expect(storefrontStyles).toContain(".fpb-mobile-classic-footer .fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:168.906px 38px;width:360px;height:234.906px;padding:10px 0;gap:8px;background:#fff;box-sizing:border-box}");
+    expect(storefrontStyles).toContain(".fpb-mobile-classic-footer .fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 104.906px;width:360px;height:168.906px}");
     expect(storefrontStyles).toContain("border-radius:99px");
   });
 

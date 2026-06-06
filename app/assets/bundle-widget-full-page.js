@@ -1347,7 +1347,7 @@ class BundleWidgetFullPage {
 
   usesCompactMobileSummaryTray() {
     const preset = this.getFullPageDesignPreset();
-    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT');
+    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
   }
 
   _populateCompactMobileSummaryTray(sheet) {

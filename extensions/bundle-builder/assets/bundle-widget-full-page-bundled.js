@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.18
- * Built   : 2026-06-05
+ * Version : 3.0.20
+ * Built   : 2026-06-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.18';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.20';
 (function() {
   'use strict';
 
@@ -4181,7 +4181,7 @@ class BundleWidgetFullPage {
 
   usesCompactMobileSummaryTray() {
     const preset = this.getFullPageDesignPreset();
-    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT');
+    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
   }
 
   _populateCompactMobileSummaryTray(sheet) {

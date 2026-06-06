@@ -3,7 +3,7 @@
 **Status:** In Progress
 **Priority:** 🔴 High
 **Created:** 2026-06-05
-**Last Updated:** 2026-06-05 18:10
+**Last Updated:** 2026-06-06 06:29
 
 ## Overview
 The Standard Design FPB mobile footer is not matching Easy Bundles closely enough. This slice focuses only on the mobile footer, starting with a live audit to determine whether the mobile footer is the desktop summary sidebar converted responsively or a separate mobile component.
@@ -43,6 +43,54 @@ The Standard Design FPB mobile footer is not matching Easy Bundles closely enoug
   - `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/widgets/full-page/templates/standard-template.js tests/unit/assets/bundle-widget-full-page-discount-display.test.ts scripts/build-widget-bundles.js`
   - `git diff --check`
 
+### 2026-06-05 20:24 - Started expandable-state footer parity slice
+- Scope is the FPB Standard Design mobile footer as a whole, with specific focus on the expandable state and state transitions.
+- Audit plan: hard-reload EB and WPB storefronts in Chrome mobile viewport, capture collapsed/expanded/selected states, measure footer DOM geometry and interaction details, then patch only the footer DOM/CSS/behavior gaps.
+- Next steps: add focused regression coverage for the expanded footer contract, rebuild widget assets, and recheck the mobile storefront after cache-busted reload.
+
+### 2026-06-05 20:32 - Expandable footer state patched
+- Chrome audit evidence captured after ignored-cache reload:
+  - EB collapsed: `/private/tmp/eb-fpb-standard-mobile-footer-collapsed-2026-06-05.json`, `/private/tmp/eb-fpb-standard-mobile-footer-collapsed-2026-06-05.png`
+  - EB expanded: `/private/tmp/eb-fpb-standard-mobile-footer-after-badge-click-2026-06-05.json`, `/private/tmp/eb-fpb-standard-mobile-footer-expanded-2026-06-05.png`
+  - WPB collapsed/current gap: `/private/tmp/wpb-fpb-standard-mobile-footer-collapsed-2026-06-05.json`, `/private/tmp/wpb-fpb-standard-mobile-footer-collapsed-2026-06-05.png`
+- Confirmed EB expanded state is the same sticky footer growing from `370x195.5625` to `370x407.5625`; the discount/progress block stays on top, a `270px` products/footer block appears below it, and the centered badge arrow flips.
+- Patched the compact WPB Standard mobile tray to toggle `fpb-mobile-summary-tray-expanded`, render a selected-products section with header, Clear action, selected row, empty slot skeleton, and keep the CTA in the bottom row.
+- Bumped `WIDGET_VERSION` to `3.0.13` and rebuilt widget assets.
+- Verification:
+  - `npx jest tests/unit/assets/bundle-widget-full-page-discount-display.test.ts --runInBand --testNamePattern="Standard mobile side-footer summary"`
+  - `npx jest tests/unit/assets/bundle-widget-full-page-discount-display.test.ts tests/unit/assets/bundle-widget-full-page-template-layout.test.ts --runInBand`
+  - `node --check app/assets/bundle-widget-full-page.js`
+  - `node --check app/assets/widgets/full-page/templates/standard-template.js`
+  - `npm run build:widgets`
+  - `npm run minify:assets css`
+  - `npx eslint --max-warnings 9999 app/assets/bundle-widget-full-page.js app/assets/widgets/full-page/templates/standard-template.js tests/unit/assets/bundle-widget-full-page-discount-display.test.ts scripts/build-widget-bundles.js`
+  - `git diff --check`
+- Live storefront cannot show `3.0.13` until manual Shopify deploy/CDN propagation; follow-up Chrome hard reload is still required after deploy.
+
+### 2026-06-05 21:25 - Additional footer-only parity slice started
+- Scope remains limited to FPB Standard Design mobile footer.
+- User clarified the footer internally uses summary-sidebar components but can collapse and expand.
+- Audit target: live EB collapsed/expanded footer behavior and current WPB Standard footer after cache-busted Chrome reload, with attention to component ownership, collapsed badge, expanded product list, CTA row, and state transitions.
+- Next steps: capture fresh EB/WPB mobile evidence, add focused regression coverage for the confirmed gap, patch only footer DOM/CSS/behavior, rebuild assets, and verify.
+
+### 2026-06-05 21:25 - Additional footer-only parity slice patched
+- Fresh EB mobile evidence captured after ignored-cache reload:
+  - Collapsed footer screenshot: `/private/tmp/eb-standard-footer-additional-collapsed-2026-06-05.png`
+  - Zero-item badge-click screenshot: `/private/tmp/eb-standard-footer-additional-empty-badge-click-2026-06-05.png`
+  - Selected expanded footer screenshot: `/private/tmp/eb-standard-footer-additional-expanded-selected-2026-06-05.png`
+- EB collapsed footer remains `370px x 195.5625px`, uses `.gbbProductsFooterHTMLForMobile`, and keeps `.gbbFooterBundleItemsContainer` in the DOM with `display: none` / `0px` geometry.
+- EB zero-item badge click does not open the full selected-products state; it only grows to roughly `370px x 203.5625px` with bundle-items clipped to `0px`.
+- EB selected-product badge click expands to `370px x 407.5625px`, with `126.5625px` discount region and `270px` products/action footer region.
+- Patched WPB `_toggleCompactMobileSummaryTray()` so empty Standard mobile footers stay collapsed and only selected-product states can render the expanded product-list section.
+- Added regression coverage in `tests/unit/assets/bundle-widget-full-page-discount-display.test.ts` and updated `test-spec/fpb-standard-mobile-footer-parity.spec.md`.
+- Bumped `WIDGET_VERSION` to `3.0.17`, rebuilt widget assets, minified CSS, and rebuilt graphify output.
+- Live WPB Chrome check could not use the open pages for Standard verification: `wpb-fresh-fpb-template-parity-2026-06-04` is currently `CLASSIC`, and `preview-testing` is not `FBP_SIDE_FOOTER` / `DEFAULT`.
+
+### 2026-06-06 06:29 - Batch Commit Prep
+- Preparing the storefront parity batch that includes the Standard mobile footer expandable-state source/test/spec changes and rebuilt widget assets.
+- Confirmed image artifacts are excluded from staging.
+- Next: run focused widget contract tests, syntax checks, lint, and staged diff checks before committing.
+
 ## Related Documentation
 - `internal docs/EB Implementation Reference.md`
 - `internal docs/EB Settings Design Reference.md`
@@ -54,4 +102,7 @@ The Standard Design FPB mobile footer is not matching Easy Bundles closely enoug
 - [x] Phase 3: Confirm footer/sidebar implementation relationship
 - [x] Phase 4: Add focused footer parity tests
 - [x] Phase 5: Patch mobile footer DOM/CSS behavior
-- [ ] Phase 6: Build, minify, and verify in Chrome after hard reload
+- [x] Phase 6: Capture expandable-state EB/WPB evidence
+- [x] Phase 7: Patch expandable-state footer parity
+- [ ] Phase 8: Verify live `3.0.13` in Chrome after manual deploy and hard reload
+- [x] Phase 9: Additional footer-only collapsed/expanded parity slice

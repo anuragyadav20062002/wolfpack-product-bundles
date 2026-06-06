@@ -1,10 +1,12 @@
 # Issue: FPB Classic Design — 100% Storefront Parity with EasyBundles
+(Horizontal Design follow-up captured 2026-06-06: EB Horizontal evidence + Wolfpack source/build audit at `docs/competitor-analysis/eb-fpb-horizontal-capture/`.)
+
 
 **Issue ID:** fpb-classic-design-parity-1
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-05
-**Last Updated:** 2026-06-05 (All phases complete; deployed to SIT as 3.0.12)
+**Last Updated:** 2026-06-06 06:29
 
 ## Overview
 
@@ -68,3 +70,8 @@ Wolfpack's FPB widget already has the Classic Design preset wired into its dispa
     - `extensions/bundle-builder/assets/bundle-widget-full-page.css` — exactly 2 CLASSIC-scoped rules (tab padding + skeleton-thumb), both authored by this issue. Zero cross-preset selectors.
     - `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` — 13 CLASSIC references, all inside the `classic-template.js` runtime literal or preset-gating conditionals. Zero cross-preset selectors.
   - Evidence: `regression-standard-desktop.png`, `regression-standard-probe.json`, `regression-compact-desktop.png`, `regression-horizontal-desktop.png` under `docs/competitor-analysis/eb-fpb-classic-capture/baseline/`.
+
+### 2026-06-06 06:29 - Batch Commit Prep
+- Preparing storefront parity batch covering Classic, Standard mobile footer, and Horizontal storefront summary/grid refinements.
+- Horizontal follow-up now includes source/runtime updates: expanded compact mobile summary eligibility to include `HORIZONTAL`, adjusted Horizontal product card media/content geometry, and converted Horizontal summary slots from tile-only styling to EB-style row slots with image, title, price, remove action, and dashed empty row.
+- Screenshots were removed from the worktree before staging; only source, tests/specs, issue logs, and generated widget assets should be included.

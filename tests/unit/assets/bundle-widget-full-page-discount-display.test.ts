@@ -120,6 +120,15 @@ describe("Full Page widget discount display contract", () => {
     expect(source).toContain("sheet.classList.add('is-open');");
     expect(source).toContain("this._createMobileSummaryActionButton(");
     expect(source).toContain("hasUpcomingAddonStep");
+    expect(source).toContain("this._toggleCompactMobileSummaryTray(sheet);");
+    expect(source).toContain("const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;");
+    expect(source).toContain("if (!hasSelectedSummaryProducts) {");
+    expect(source).toContain("this.compactMobileSummaryTrayExpanded = false;");
+    expect(source).toContain("_renderCompactMobileSummaryBundleItems(");
+    expect(source).toContain("fpb-mobile-summary-products-section");
+    expect(source).toContain("fpb-mobile-summary-bundle-items");
+    expect(source).toContain("fpb-mobile-summary-empty-product-card");
+    expect(source).toContain("fpb-mobile-summary-tray-expanded");
     expect(css).toContain(".fpb-mobile-summary-tray");
     expect(css).toMatch(
       /\.fpb-mobile-summary-tray \{[^}]*display:grid;[^}]*grid-template-columns:360px;[^}]*bottom:0;[^}]*left:10px;[^}]*width:370px;[^}]*height:196px;/,
@@ -131,8 +140,15 @@ describe("Full Page widget discount display contract", () => {
       /\.fpb-mobile-summary-count-badge \{[^}]*position:absolute;[^}]*top:-12px;[^}]*left:50%;[^}]*height:25px;[^}]*border-radius:10px;[^}]*background:#000000;/,
     );
     expect(standardSource).toContain(".fpb-mobile-summary-count-badge::before");
+    expect(standardSource).toContain(".fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 270px;height:407.5625px}");
+    expect(standardSource).toContain(".fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded .fpb-mobile-summary-count-badge::before");
     expect(standardSource).toContain(".fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}");
     expect(standardSource).toContain(".fpb-mobile-summary-discount-text{display:flex;align-items:center;justify-content:center;width:360px;min-height:25.2px;margin:0;padding:0;color:#000;font-size:14px;font-weight:700;line-height:25.2px;text-align:center}");
+    expect(standardSource).toContain(".fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:204px 38px;width:360px;height:270px;padding:10px 0;background:#fff;box-sizing:border-box}");
+    expect(standardSource).toContain(".fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 140px;width:360px;height:204px}");
+    expect(standardSource).toContain(".fpb-mobile-summary-products-list{display:grid;grid-template-columns:360px;grid-template-rows:60px 65px;gap:10px;width:360px;height:140px;padding:5px 0 0;overflow:auto;box-sizing:border-box}");
+    expect(standardSource).toContain(".fpb-mobile-summary-product-row{display:grid;grid-template-columns:65px 213px 64px;grid-template-rows:60px;gap:9px;width:360px;height:60px}");
+    expect(standardSource).toContain(".fpb-mobile-summary-empty-product-card{display:grid;grid-template-columns:65px 212px 63px;grid-template-rows:65px;gap:10px;width:360px;height:65px}");
     expect(css).toMatch(
       /\.fpb-mobile-summary-tray \.fpb-discount-progress\.fpb-dp-sidebar \{[^}]*width:310px;[^}]*height:96px;[^}]*margin:0;/,
     );
