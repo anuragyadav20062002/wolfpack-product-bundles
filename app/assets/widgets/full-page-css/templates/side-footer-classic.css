@@ -1,4 +1,40 @@
-.layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab,
-.layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab.active {
-  border-radius:999px;
-  padding:6px 14px}
+/*
+ * FPB Classic Design — Wolfpack translation of EB's CLASSIC preset overrides.
+ * Source of truth: docs/competitor-analysis/eb-fpb-classic-capture/bootstrap/eb-classic-overrides.css
+ * Captured 2026-06-05 from EB FPB CSS bundle (CloudFront staging/active).
+ *
+ * EB architecture: Standard is the unscoped base; CLASSIC is a small set of overrides
+ * scoped under body[gbb-bundle-design-preset-id="CLASSIC"] .gbbMinimilisticLayout {}.
+ *
+ * Wolfpack equivalent: rules below are scoped under
+ *   .layout-sidebar[data-fpb-design-preset="CLASSIC"]
+ * Many EB Classic rules already match Wolfpack base styles (pill tabs in bundle-widget-full-page.css,
+ * centered product title/price-row, 8px tab gap, centered tabs container). What remains here is the
+ * subset that diverges from Wolfpack base.
+ *
+ * Companion: app/assets/widgets/full-page/templates/classic-template.js owns the 4-column
+ * desktop / 2-column mobile product grid + card geometry (EB equivalent:
+ * .gbbProductsItemsContainer { grid-template-columns: repeat(4,1fr) } at min-width 769px).
+ */
+
+/* Tab pill — desktop horizontal padding override.
+ * EB: padding 4px 22px at min-width 769px (mobile is 4px 14px).
+ * Wolfpack base .category-tab uses 4px 14px on all viewports — bump on desktop only.
+ * Mobile (≤767px) keeps the 4px 14px base, which already matches EB's @max-width:768px rule. */
+@media (min-width: 1024px) {
+  .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab,
+  .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab.active {
+    padding: 4px 22px;
+  }
+}
+
+/* Empty side-panel skeleton slot — Classic uses a dashed-outline ghost.
+ * EB rule: .gbbSlotFooterProductContainerEmpty { background:transparent; border-radius:0;
+ *          color: var(--gbb-cart-footer-next-button-color); border: 2px dashed; }
+ * Wolfpack equivalent target: .side-panel-skeleton-thumb (rendered while slot is empty). */
+.layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-thumb {
+  background: transparent;
+  border: 2px dashed currentColor;
+  border-radius: 0;
+  color: var(--bundle-side-panel-next-button-color, #000);
+}

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.0
- * Built   : 2026-06-04
+ * Version : 3.0.20
+ * Built   : 2026-06-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.0';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.20';
 (function() {
   'use strict';
 
@@ -2913,7 +2913,12 @@ function installStandardTemplate(BundleWidgetFullPage) {
 
     const style = document.createElement('style');
     style.id = 'wpb-fpb-standard-runtime-styles';
-    style.textContent = '[data-bundle-type=full_page][data-fpb-design-preset=DEFAULT]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=DEFAULT]{--standard-card-height:352px;--ih:240px;--mw:177.5px;--mh:245px;--cg:15px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.6897fr 0.3103fr;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--cg,15px);margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:var(--standard-card-height,352px);min-height:var(--standard-card-height,352px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:240px 40px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:712px;margin-top:0;padding:20px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:var(--ih,240px);min-height:var(--ih,240px);aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cg,15px)}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{min-height:var(--mh,245px);height:var(--mh,245px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:150px 23px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:150px;min-height:150px}}';
+    const baseStyles = '[data-bundle-type=full_page][data-fpb-design-preset=DEFAULT]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=DEFAULT]{--standard-card-height:352px;--ih:240px;--mw:177.5px;--mh:264px;--mih:150px;--cg:15px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper{display:grid;grid-template-columns:minmax(0,calc(100% - 381.266px)) 366.266px;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--cg,15px);margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:var(--standard-card-height,352px);min-height:var(--standard-card-height,352px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:240px 40px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:738px;margin-top:0;padding:20px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:var(--ih,240px);min-height:var(--ih,240px);aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:40px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:40px;height:40px;font-size:16px!important;line-height:22px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:16px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:14px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .product-add-btn::before{content:"+";font-size:16px;font-weight:700;line-height:1}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .product-add-btn.added::before{content:"✓"}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] > :is(.bundle-banners,.category-tabs,.sidebar-layout-wrapper){width:100%;margin-left:0;margin-right:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper .sidebar-content{padding:0 0 120px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cg,15px);justify-content:stretch;margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{min-height:var(--mh,264px);height:var(--mh,264px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:var(--mih,150px) 42px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:var(--mih,150px);min-height:var(--mih,150px);width:100%;min-width:0;aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:42px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:42px;height:42px;font-size:14px!important;line-height:18px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:14px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:12px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}}';
+    const timelineStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT] .step-timeline--standard{width:100%;margin:0 0 24px;padding:0;display:block}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-items-container{width:var(--standard-timeline-width,60%);height:76.8px;margin:24px auto 0;display:grid;grid-template-columns:repeat(var(--standard-timeline-count,2),minmax(0,1fr));grid-template-rows:76.8px;place-items:normal center;justify-content:center;position:relative;isolation:isolate}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-item{width:max-content;max-width:100%;height:76.8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:40px 36.8px;place-items:start center;justify-items:center;align-items:start;position:relative;z-index:2}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-step-img-container{width:40px;height:40px;box-sizing:border-box;display:grid;place-items:center;border-radius:50%;background:#fff;padding:4px;border:2px solid #d4d5d6;position:relative;z-index:2;filter:none!important;opacity:1!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .timeline-step--active .standard-navigation-step-img-container{border:4px solid #000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-image{display:block;width:100%;height:100%;object-fit:contain;opacity:1!important;filter:none!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title-container{display:grid;place-items:center normal;padding:4px 2px;min-width:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title{margin:0;color:#000;font-size:16px;font-weight:700;line-height:28.8px;text-align:center;white-space:normal}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar-container{position:absolute;top:17px;left:var(--standard-timeline-progress-left,25%);width:var(--standard-timeline-progress-width,50%);height:6px;border-radius:20px;overflow:hidden;z-index:0;pointer-events:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar{width:100%;height:6px;background:#ccc}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar-filled{width:var(--standard-timeline-progress-fill,0%);height:6px;background:#1e1e1e}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-arrow--prev{left:-12px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-arrow--next{right:-12px}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .step-timeline--standard{margin:0 0 14px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-items-container{width:calc(100% - 15px);height:61.6px;margin:7.5px auto 0;grid-template-rows:61.6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-item{height:61.6px;grid-template-rows:40px 21.6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title-container{padding:0 2px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title{font-size:12px;line-height:21.6px}}';
+    const remainingParityStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:50.8px;display:grid;grid-auto-flow:column;grid-auto-columns:max-content;justify-content:flex-start;gap:20px;margin:0 0 20px;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:50.8px;display:grid;grid-template-columns:max-content;grid-template-rows:30px;align-items:center;padding:10px;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab::after{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-rows{display:grid;gap:0;margin:0;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{width:100%;height:68.8px;display:grid;grid-template-columns:minmax(0,max-content) 20px;align-items:start;justify-content:space-between;padding:14px 0;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row::after{content:"";width:20px;height:20px;display:block;background:currentColor;clip-path:polygon(25% 35%,50% 60%,75% 35%,80% 42%,50% 72%,20% 42%)}.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:0;border-radius:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-title{font-size:25px;line-height:30px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-subtitle{font-size:15px;line-height:27px;margin:0 0 12px;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-template-columns:minmax(0,1fr) 157px;gap:5px;margin-top:14px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157px;min-width:157px;height:41px;border-radius:5px;padding:8px;font-size:16px;line-height:22px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-card--expanded-variant .product-title{display:grid!important;grid-template-rows:21px 14px;gap:5px;line-height:normal!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-title-main,.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-title-variant{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:49px;gap:20px;margin:0 0 16px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:49px;font-size:15px;line-height:27px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:18px;line-height:32.4px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{height:72.4px;padding:14px 0;font-size:18px;line-height:32.4px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-card--expanded-variant .product-title{font-size:12px!important;grid-template-rows:24px 15px;gap:5px;line-height:normal!important}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray{display:grid;position:sticky;grid-template-columns:360px;grid-template-rows:126.5625px 58px;bottom:0;left:10px;width:370px;height:195.5625px;padding:5px;border-radius:0;box-shadow:none;background:#fff;z-index:9999}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-btn-next{width:360px;height:38px;border-radius:5px;padding:8px;font-size:14px;line-height:22px;font-weight:700}}';
+    const sidebarStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel,.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:1px solid #e3e3e3;border-radius:10px;grid-template-columns:324.266px;grid-template-rows:55px 158.969px 298.797px 70px;min-height:639.766px;height:639.766px;max-height:none;top:80px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header{display:grid;grid-template-columns:minmax(0,1fr) 82.9375px;grid-template-rows:55px;gap:8px;margin:0;grid-row:1;grid-column:1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header-copy{display:grid;grid-template-rows:30px 20px;gap:5px;min-width:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-subtitle{font-size:14px;line-height:20px;margin:0;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-clear-btn{display:grid;grid-template-columns:22px 32.9375px;grid-template-rows:25.1875px;gap:0;width:82.9375px;height:35.1875px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-discount-message{grid-row:2;grid-column:1;margin:0;padding:5px 0 0;font-size:16px;font-weight:700;line-height:28.8px;text-align:left;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-discount-progress.fpb-dp-sidebar{grid-row:2;grid-column:1;align-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-item-count{grid-row:3;grid-column:1;align-self:start;font-size:16px;font-weight:400;line-height:28.8px;color:#000;margin:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-products{grid-row:3;grid-column:1;align-self:start;display:grid;grid-template-columns:314.266px;grid-template-rows:75px 170px;gap:15px;width:324.266px;height:260px;min-height:260px;max-height:260px;padding:0 10px 0 0;margin:38.797px 0 0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-row{display:grid;grid-template-columns:75px 158.328px 62.9375px;grid-template-rows:75px;gap:9px;padding:0;border:0;background:transparent}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-img-wrap{width:75px;height:75px;border-radius:5px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-img{width:75px;height:75px;border-radius:5px;object-fit:cover}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot{display:grid;grid-template-columns:75px 168.656px 50.6094px;grid-template-rows:75px;gap:10px;height:75px;animation:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot:nth-child(2){height:170px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-thumb{width:75px;height:75px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-lines{height:48px;gap:5px;align-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-line{background:#e1e1e1;border-radius:10px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-name{width:134.922px;height:14px;padding:7px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-variant{width:101.188px;height:12px;padding:6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-price{width:42.1562px;height:12px;padding:6px;flex:initial}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-remove{width:50.6094px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;align-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-row:4;grid-column:1;grid-template-columns:162.125px 162.141px;grid-template-rows:44px;gap:0;margin:10px 0 0;padding:15px 0 0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total{display:grid;grid-template-columns:162.125px;grid-template-rows:18px 18px;gap:8px;align-items:center;justify-content:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total-label{font-size:14px;font-weight:700;line-height:normal;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total-final{font-size:16px;font-weight:700;line-height:18px;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-nav{display:grid;grid-template-columns:0 157.141px;grid-template-rows:44px;gap:5px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157.141px;min-width:157.141px;height:41px;padding:8px;border:0;border-radius:5px;background:#000;color:#fff;font-size:16px;font-weight:700;line-height:25px;opacity:1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next:disabled{opacity:1;cursor:pointer}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-sidebar-tier-cta,.layout-sidebar[data-fpb-design-preset=DEFAULT] .box-selection-container,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-free-gift,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-addon-message{display:none!important}';
+    const mobileFooterStyles = '@media(max-width:767px){.fpb-mobile-summary-count-badge{cursor:pointer}.fpb-mobile-summary-count-badge::before{content:"";width:8px;height:8px;border-left:2px solid #fff;border-top:2px solid #fff;transform:rotate(45deg);margin:4px 7px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 270px;height:407.5625px}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded .fpb-mobile-summary-count-badge::before{transform:rotate(225deg);margin:-3px 7px 0 0}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}.fpb-mobile-summary-discount-text{display:flex;align-items:center;justify-content:center;width:360px;min-height:25.2px;margin:0;padding:0;color:#000;font-size:14px;font-weight:700;line-height:25.2px;text-align:center}.fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar{width:310px;height:96px;margin:0;overflow:visible}.fpb-mobile-summary-tray .fpb-dp-sidebar.fpb-dp-step_based{display:grid;grid-template-columns:310px;grid-template-rows:33.1953px 12px 51.1875px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-list{height:33.1953px;margin:0;padding:0 0 8px;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track{align-self:center;height:6px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle-list{height:51.1875px;margin:0;padding:8px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title{color:#333;font-size:14px;font-weight:500;line-height:25.2px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle{color:#888;font-size:12px;font-weight:400;line-height:21.6px}.fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:204px 38px;width:360px;height:270px;padding:10px 0;background:#fff;box-sizing:border-box}.fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 140px;width:360px;height:204px}.fpb-mobile-summary-bundle-header{display:grid;grid-template-columns:273.344px 78.6562px;grid-template-rows:43px;width:360px;height:54px;padding:0 0 10px;box-sizing:border-box}.fpb-mobile-summary-bundle-copy{display:grid;grid-template-columns:273.344px;grid-template-rows:18px 20px;gap:5px;min-width:0}.fpb-mobile-summary-bundle-title{font-size:20px;line-height:18px;font-weight:700;color:#000}.fpb-mobile-summary-bundle-subtitle{font-size:12px;line-height:20px;font-weight:400;color:#000}.fpb-mobile-summary-clear-btn{display:grid;grid-template-columns:22px 28.6562px;grid-template-rows:22px;align-items:center;width:78.6562px;height:32px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54;font-size:12px;line-height:21.6px;font-weight:400}.fpb-mobile-summary-clear-btn svg{width:22px;height:22px}.fpb-mobile-summary-products-list{display:grid;grid-template-columns:360px;grid-template-rows:60px 65px;gap:10px;width:360px;height:140px;padding:5px 0 0;overflow:auto;box-sizing:border-box}.fpb-mobile-summary-product-row{display:grid;grid-template-columns:65px 213px 64px;grid-template-rows:60px;gap:9px;width:360px;height:60px}.fpb-mobile-summary-product-image-wrap{width:65px;height:60px;border:1px solid #cfc9c9;border-radius:8px;overflow:hidden}.fpb-mobile-summary-product-image{display:block;width:63px;height:63px;object-fit:cover}.fpb-mobile-summary-product-image-placeholder{width:63px;height:63px;background:#e1e1e1}.fpb-mobile-summary-product-info{display:block;width:213px;height:60px;min-width:0;overflow:hidden}.fpb-mobile-summary-product-title{display:block;width:213px;height:25.2px;color:#000;font-size:14px;line-height:25.2px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fpb-mobile-summary-product-variant{display:none}.fpb-mobile-summary-product-price{display:block;color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-action{display:grid;grid-template-columns:max-content 40px;grid-template-rows:40px;align-items:center;justify-content:center;width:64px;height:60px}.fpb-mobile-summary-product-qty{color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-remove{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:9999px;background:transparent;color:#000}.fpb-mobile-summary-product-remove svg{width:22px;height:22px}.fpb-mobile-summary-empty-product-card{display:grid;grid-template-columns:65px 212px 63px;grid-template-rows:65px;gap:10px;width:360px;height:65px}.fpb-mobile-summary-empty-product-image{width:65px;height:65px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-info{display:flex;flex-direction:column;gap:5px;align-self:center;width:212px;height:48px}.fpb-mobile-summary-empty-product-title{width:169px;height:14px;padding:7px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-variant{width:127px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-price{width:53px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-action{align-self:center;width:63px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}}';
+    style.textContent = baseStyles + timelineStyles + remainingParityStyles + sidebarStyles + mobileFooterStyles;
     document.head.appendChild(style);
   };
 }
@@ -2927,7 +2932,11 @@ function installClassicTemplate(BundleWidgetFullPage) {
 
     const style = document.createElement('style');
     style.id = 'wpb-fpb-classic-runtime-styles';
-    style.textContent = '[data-bundle-type=full_page][data-fpb-design-preset=CLASSIC]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=CLASSIC]{--classic-card-height-extra:104px;--classic-image-height-extra:12px;--classic-mobile-card-height:245px;--classic-mobile-image-height:150px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=CLASSIC] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.6897fr 0.3103fr;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=CLASSIC] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:95%;max-width:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:calc((100cqw - 45px)/4 + var(--classic-card-height-extra,104px));min-height:calc((100cqw - 45px)/4 + var(--classic-card-height-extra,104px));display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:calc((100cqw - 45px)/4 - var(--classic-image-height-extra,12px)) 49px 35px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:calc((100cqw - 45px)/4 - var(--classic-image-height-extra,12px));min-height:calc((100cqw - 45px)/4 - var(--classic-image-height-extra,12px));border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:710px;margin-top:0;padding:20px}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{height:245px;min-height:var(--classic-mobile-card-height,245px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:150px 23px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:var(--classic-mobile-image-height,150px);min-height:var(--classic-mobile-image-height,150px)}}';
+    const baseStyles = '[data-bundle-type=full_page][data-fpb-design-preset=CLASSIC]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=CLASSIC]{--classic-card-height-extra:104px;--classic-image-height-extra:12px;--classic-mobile-card-height:263px;--classic-mobile-image-height:150px}';
+    const desktopStyles = '@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=CLASSIC] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.6897fr 0.3103fr;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=CLASSIC] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .category-tabs{display:flex;justify-content:center;gap:8px;height:40.8px;margin:0 0 20px;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=CLASSIC] .category-tab{height:40.8px;display:grid;align-items:center;padding:4px 22px;border-radius:99px;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=CLASSIC] .category-tab::after{display:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:95%;max-width:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:calc((100cqw - 45px)/4 + var(--classic-card-height-extra,104px));min-height:calc((100cqw - 45px)/4 + var(--classic-card-height-extra,104px));display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:calc((100cqw - 45px)/4 - var(--classic-image-height-extra,12px)) 49px 35px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:calc((100cqw - 45px)/4 - var(--classic-image-height-extra,12px));min-height:calc((100cqw - 45px)/4 - var(--classic-image-height-extra,12px));aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:49px 35px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:49px;height:49px;font-size:16px!important;line-height:22px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:16px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:14px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .product-add-btn::before{content:"+";font-size:16px;font-weight:700;line-height:1}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .product-add-btn.added::before{content:"✓"}}';
+    const sidebarStyles = '@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .full-page-side-panel,.layout-sidebar[data-fpb-design-preset=CLASSIC] .full-page-side-panel{width:100%;flex:initial;min-height:609px;height:609px;max-height:none;margin-top:0;padding:20px;border:0;border-radius:10px;grid-template-columns:minmax(0,1fr);grid-template-rows:55px 130.172px 298.797px 70px;top:80px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-header{display:grid;grid-template-columns:minmax(0,1fr) 82.9375px;grid-template-rows:55px;gap:8px;margin:0;grid-row:1;grid-column:1}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-header-copy{display:grid;grid-template-rows:30px 20px;gap:5px;min-width:0}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-title{font-size:20px;line-height:30px;font-weight:700;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-subtitle{font-size:14px;line-height:20px;margin:0;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-clear-btn{display:grid;grid-template-columns:22px 32.9375px;grid-template-rows:25.1875px;gap:0;width:82.9375px;height:35.1875px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-discount-message{grid-row:2;grid-column:1;margin:0;padding:5px 0 0;font-size:16px;font-weight:700;line-height:28.8px;text-align:left;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .fpb-discount-progress.fpb-dp-sidebar{grid-row:2;grid-column:1;align-self:end}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-item-count{grid-row:3;grid-column:1;align-self:start;font-size:16px;font-weight:400;line-height:28.8px;color:#000;margin:0}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-products{grid-row:3;grid-column:1;align-self:start;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:75px 170px;gap:15px;width:100%;height:260px;min-height:260px;max-height:260px;padding:0 10px 0 0;margin:38.797px 0 0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-row{display:grid;grid-template-columns:75px minmax(0,1fr) 62.9375px;grid-template-rows:75px;gap:9px;padding:0;border:0;background:transparent}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-img-wrap{width:75px;height:75px;border-radius:5px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-img{width:75px;height:75px;border-radius:5px;object-fit:cover}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-info{display:grid;grid-template-rows:20px 28.8px;gap:0;align-self:start;min-width:0;height:75px;overflow:hidden}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-title{display:block;width:100%;height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#000;font-size:14px;font-weight:400;line-height:20px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-price{display:block;color:#000;font-size:16px;font-weight:700;line-height:28.8px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-action{display:grid;place-items:center;width:62.9375px;height:75px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-product-remove{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;background:transparent;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-slot{display:grid;grid-template-columns:75px minmax(0,1fr) 50.6094px;grid-template-rows:75px;gap:10px;height:75px;animation:none}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-slot:nth-child(2){height:170px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-thumb{width:75px;height:75px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-lines{height:48px;gap:5px;align-self:center}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-line{background:#e1e1e1;border-radius:10px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-slot .line-name{width:134.922px;height:14px;padding:7px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-slot .line-variant{width:101.188px;height:12px;padding:6px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-slot .line-price{width:42.1562px;height:12px;padding:6px;flex:initial}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-skeleton-remove{width:50.6094px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;align-self:center}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-action-container{grid-row:4;grid-column:1;grid-template-columns:1fr 181.969px;grid-template-rows:44px;gap:0;margin:10px 0 0;padding:15px 0 0;align-items:start}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-total{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:18px 18px;gap:8px;align-items:center;justify-content:start}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-total-label{font-size:14px;font-weight:700;line-height:normal;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-total-final{font-size:16px;font-weight:700;line-height:18px;color:#000}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-nav{display:grid;grid-template-columns:0 181.969px;grid-template-rows:44px;gap:5px}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-btn-next{width:181.969px;min-width:181.969px;height:41px;padding:8px;border:0;border-radius:5px;background:#000;color:#fff;font-size:16px;font-weight:700;line-height:25px;opacity:1}.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-btn-next:disabled{opacity:1;cursor:pointer}.layout-sidebar[data-fpb-design-preset=CLASSIC] .fpb-sidebar-tier-cta,.layout-sidebar[data-fpb-design-preset=CLASSIC] .box-selection-container,.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-free-gift,.layout-sidebar[data-fpb-design-preset=CLASSIC] .side-panel-addon-message{display:none!important}}';
+    const mobileStyles = '@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=CLASSIC] > :is(.bundle-banners,.category-tabs,.sidebar-layout-wrapper){width:100%;margin-left:0;margin-right:0}.layout-sidebar[data-fpb-design-preset=CLASSIC] .sidebar-layout-wrapper .sidebar-content{padding:0 0 120px!important}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,177.5px));gap:15px;justify-content:center;margin:0 0 20px;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:177.5px;min-width:0;max-width:177.5px;height:263px;min-height:263px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:150px 41px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff;overflow:visible}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:var(--classic-mobile-image-height,150px);min-height:var(--classic-mobile-image-height,150px);aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:41px 35px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:41px;height:41px;font-size:12px!important;line-height:normal!important;font-weight:400!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:14px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:12px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;position:static;right:auto;bottom:auto;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .product-add-btn::before{content:"+";font-size:16px;font-weight:700;line-height:1}.layout-sidebar[data-fpb-design-preset=CLASSIC][data-fpb-card-cta-mode=icon] .product-add-btn.added::before{content:"✓"}.fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 234.906px;height:361.46875px}.fpb-mobile-classic-footer .fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:168.906px 38px;width:360px;height:234.906px;padding:10px 0;gap:8px;background:#fff;box-sizing:border-box}.fpb-mobile-classic-footer .fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 104.906px;width:360px;height:168.906px}.fpb-mobile-classic-footer .fpb-mobile-summary-products-list{display:grid;grid-template-columns:360px;grid-template-rows:65px 65px;gap:10px;width:360px;height:104.906px;padding:5px 0 0;overflow:auto;box-sizing:border-box}.fpb-mobile-classic-footer .fpb-mobile-summary-empty-product-card{display:grid;grid-template-columns:65px 211.531px 63.4688px;grid-template-rows:65px;gap:10px;width:360px;height:65px}}';
+    style.textContent = baseStyles + desktopStyles + sidebarStyles + mobileStyles;
     document.head.appendChild(style);
   };
 }
@@ -3033,6 +3042,9 @@ class BundleWidgetFullPage {
     this.isInitialized = false;
     this.config = {};
     this.elements = {};
+    this.compactMobileSummaryTrayExpanded = false;
+    this.standardTimelineWindowStart = 0;
+    this.standardTimelineLastActiveEntryIndex = 0;
 
     this.searchQuery = '';
     this.searchDebounceTimer = null;
@@ -4057,6 +4069,8 @@ class BundleWidgetFullPage {
   _renderMobileBottomBar({ preserveOpen = false } = {}) {
     const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
     const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+    const wasCompactSummaryExpanded = preserveOpen
+      && previousSheet?.classList.contains('fpb-mobile-summary-tray-expanded');
 
     document.querySelector('.fpb-mobile-bottom-bar')?.remove();
     document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
@@ -4084,6 +4098,10 @@ class BundleWidgetFullPage {
     const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
     if (usesCompactMobileSummaryTray) {
       sheet.classList.add('fpb-mobile-summary-tray');
+      if (this.getFullPageDesignPreset() === 'CLASSIC') {
+        sheet.classList.add('fpb-mobile-classic-footer');
+      }
+      this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
       this._populateCompactMobileSummaryTray(sheet);
       sheet.classList.add('is-open');
       document.body.classList.add('fpb-compact-mobile-summary-active');
@@ -4163,7 +4181,7 @@ class BundleWidgetFullPage {
 
   usesCompactMobileSummaryTray() {
     const preset = this.getFullPageDesignPreset();
-    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT');
+    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
   }
 
   _populateCompactMobileSummaryTray(sheet) {
@@ -4189,14 +4207,30 @@ class BundleWidgetFullPage {
       0
     );
 
-    if (selectedFooterQuantity > 0) {
-      const countBadge = document.createElement('div');
-      countBadge.className = 'fpb-mobile-summary-count-badge';
-      countBadge.textContent = String(selectedFooterQuantity);
-      sheet.appendChild(countBadge);
-    }
+    const countBadge = document.createElement('div');
+    countBadge.className = 'fpb-mobile-summary-count-badge';
+    countBadge.setAttribute('role', 'button');
+    countBadge.setAttribute('tabindex', '0');
+    countBadge.setAttribute('aria-label', 'Review your bundle');
+    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+    countBadge.textContent = String(selectedFooterQuantity);
+    countBadge.addEventListener('click', () => {
+      this._toggleCompactMobileSummaryTray(sheet);
+    });
+    countBadge.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this._toggleCompactMobileSummaryTray(sheet);
+      }
+    });
+    sheet.appendChild(countBadge);
+
+    sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
 
     if (this.selectedBundle?.pricing?.enabled) {
+      const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
+      const discountBlock = document.createElement('div');
+      discountBlock.className = 'side-panel-discount-message';
       const variables = TemplateManager.createDiscountVariables(
         this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
       );
@@ -4214,12 +4248,13 @@ class BundleWidgetFullPage {
       }
       if (discountMessage) {
         const msgEl = document.createElement('div');
-        msgEl.className = 'side-panel-discount-message';
+        msgEl.className = 'fpb-mobile-summary-discount-text';
         msgEl.innerHTML = discountMessage;
-        sheet.appendChild(msgEl);
+        discountBlock.appendChild(msgEl);
       }
 
-      if (this.config.showDiscountProgressBar) {
+      const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
+      if (shouldShowProgressBar) {
         const progressBar = this._renderDiscountProgress({
           placement: "sidebar",
           combinedDiscountInfo,
@@ -4229,8 +4264,12 @@ class BundleWidgetFullPage {
         });
         if (progressBar) {
           progressBar.classList.add('fpb-dp-sidebar');
-          sheet.appendChild(progressBar);
+          discountBlock.appendChild(progressBar);
         }
+      }
+
+      if (discountBlock.childElementCount > 0) {
+        sheet.appendChild(discountBlock);
       }
     }
 
@@ -4248,7 +4287,136 @@ class BundleWidgetFullPage {
       isComplete: this.areBundleConditionsMet()
     });
     navSection.appendChild(actionButton);
-    sheet.appendChild(navSection);
+    if (this.compactMobileSummaryTrayExpanded) {
+      const productsSection = document.createElement('div');
+      productsSection.className = 'fpb-mobile-summary-products-section';
+      productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
+      productsSection.appendChild(navSection);
+      sheet.appendChild(productsSection);
+    } else {
+      sheet.appendChild(navSection);
+    }
+  }
+
+  _toggleCompactMobileSummaryTray(sheet) {
+    const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
+    if (!hasSelectedSummaryProducts) {
+      this.compactMobileSummaryTrayExpanded = false;
+      this._populateCompactMobileSummaryTray(sheet);
+      return;
+    }
+    this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
+    this._populateCompactMobileSummaryTray(sheet);
+  }
+
+  _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
+    const allSelectedProducts = this.getAllSelectedProductsData();
+    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+    const summaryText = this.getBundleSummaryText();
+
+    const bundleItems = document.createElement('div');
+    bundleItems.className = 'fpb-mobile-summary-bundle-items';
+
+    const header = document.createElement('div');
+    header.className = 'fpb-mobile-summary-bundle-header';
+
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'fpb-mobile-summary-bundle-copy';
+    const title = document.createElement('div');
+    title.className = 'fpb-mobile-summary-bundle-title';
+    title.textContent = summaryText.title;
+    const subtitle = document.createElement('div');
+    subtitle.className = 'fpb-mobile-summary-bundle-subtitle';
+    subtitle.textContent = summaryText.subTitle;
+    headerCopy.append(title, subtitle);
+    header.appendChild(headerCopy);
+
+    if (allSelectedProducts.length > 0) {
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'fpb-mobile-summary-clear-btn';
+      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Clear</span>`;
+      clearBtn.addEventListener('click', () => {
+        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        this.compactMobileSummaryTrayExpanded = false;
+        this.reRenderFullPage();
+      });
+      header.appendChild(clearBtn);
+    }
+    bundleItems.appendChild(header);
+
+    const productsList = document.createElement('div');
+    productsList.className = 'fpb-mobile-summary-products-list';
+
+    allSelectedProducts.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'fpb-mobile-summary-product-row';
+      const imgSrc = this._getSelectedProductImageSrc(item);
+      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
+      const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+      const priceText = CurrencyManager.convertAndFormat(
+        isFreeGiftItem ? 0 : item.price * item.quantity,
+        currencyInfo
+      );
+
+      row.innerHTML = `
+        <div class="fpb-mobile-summary-product-image-wrap">
+          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
+        </div>
+        <div class="fpb-mobile-summary-product-info">
+          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(item.title)}</span>
+          ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+          <span class="fpb-mobile-summary-product-price">${priceText}</span>
+        </div>
+        <div class="fpb-mobile-summary-product-action">
+          <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+        </div>
+      `;
+
+      if (!item.isDefault) {
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'fpb-mobile-summary-product-remove';
+        removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+        removeBtn.addEventListener('click', () => {
+          const stepIndex = item.stepIndex;
+          const productId = item.variantId || item.productId || item.id;
+          const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+          this.updateProductSelection(stepIndex, productId, 0);
+          const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+          ToastManager.showWithUndo(
+            `Removed "${truncated}"`,
+            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+            5000
+          );
+        });
+        row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
+      }
+
+      productsList.appendChild(row);
+    });
+
+    const requiredSlots = Math.max(
+      allSelectedProducts.length + 1,
+      activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+      2
+    );
+    const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
+    for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+      const emptyCard = document.createElement('div');
+      emptyCard.className = 'fpb-mobile-summary-empty-product-card';
+      emptyCard.innerHTML = `
+        <div class="fpb-mobile-summary-empty-product-image"></div>
+        <div class="fpb-mobile-summary-empty-product-info">
+          <span class="fpb-mobile-summary-empty-product-title"></span>
+          <span class="fpb-mobile-summary-empty-product-variant"></span>
+          <span class="fpb-mobile-summary-empty-product-price"></span>
+        </div>
+        <span class="fpb-mobile-summary-empty-product-action"></span>
+      `;
+      productsList.appendChild(emptyCard);
+    }
+
+    bundleItems.appendChild(productsList);
+    return bundleItems;
   }
 
   _createMobileSummaryActionButton({
@@ -4356,6 +4524,13 @@ class BundleWidgetFullPage {
     return this.resolveFullPageCardCtaMode() === 'icon';
   }
 
+  _isStandardDesktopSidebar(panel) {
+    const preset = this.getFullPageDesignPreset();
+    return this.resolveFullPageLayout() === 'footer_side'
+      && (preset === 'DEFAULT' || preset === 'CLASSIC')
+      && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
+  }
+
   renderSidePanel(panel) {
     if (!panel) return;
     panel.innerHTML = '';
@@ -4378,17 +4553,25 @@ class BundleWidgetFullPage {
     const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
     const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
     const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+    const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
     const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
     const summaryText = this.getBundleSummaryText();
 
     const header = document.createElement('div');
     header.className = 'side-panel-header';
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'side-panel-header-copy';
     const headerTitle = document.createElement('span');
     headerTitle.className = 'side-panel-title';
     headerTitle.textContent = summaryText.title;
-    header.appendChild(headerTitle);
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(headerTitle);
+      header.appendChild(headerCopy);
+    } else {
+      header.appendChild(headerTitle);
+    }
 
-    if (allSelectedProducts.length > 0) {
+    if (isStandardDesktopSidebar || allSelectedProducts.length > 0) {
       const clearBtn = document.createElement('button');
       clearBtn.className = 'side-panel-clear-btn';
       clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
@@ -4403,15 +4586,19 @@ class BundleWidgetFullPage {
     const subtitle = document.createElement('p');
     subtitle.className = 'side-panel-subtitle';
     subtitle.textContent = summaryText.subTitle;
-    panel.appendChild(subtitle);
+    if (isStandardDesktopSidebar) {
+      headerCopy.appendChild(subtitle);
+    } else {
+      panel.appendChild(subtitle);
+    }
 
     const tierCta = this.createSidebarTierCta(nextRule);
-    if (tierCta) {
+    if (!isStandardDesktopSidebar && tierCta) {
       panel.appendChild(tierCta);
     }
 
     const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
-    if (boxSelection) {
+    if (!isStandardDesktopSidebar && boxSelection) {
       panel.appendChild(boxSelection);
     }
 
@@ -4432,6 +4619,7 @@ class BundleWidgetFullPage {
         );
       }
       if (discountMessage) {
+        discountMessage = this._formatSidebarDiscountMessage(discountMessage);
         const msgEl = document.createElement('div');
         msgEl.className = 'side-panel-discount-message';
         msgEl.innerHTML = discountMessage;
@@ -4455,11 +4643,16 @@ class BundleWidgetFullPage {
 
     const countLabel = document.createElement('div');
     countLabel.className = 'side-panel-item-count';
-    countLabel.textContent = `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    countLabel.textContent = isStandardDesktopSidebar
+      ? `${allSelectedProducts.length} item(s)`
+      : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
     panel.appendChild(countLabel);
 
     const productsContainer = document.createElement('div');
     productsContainer.className = 'side-panel-products';
+    if (isStandardDesktopSidebar) {
+      productsContainer.classList.add('side-panel-products--standard');
+    }
     if (isHorizontalPreset) {
       productsContainer.classList.add('side-panel-products--slots');
     }
@@ -4472,7 +4665,7 @@ class BundleWidgetFullPage {
           row.classList.add('side-panel-product-slot');
         }
 
-        const imgSrc = item.image || item.imageUrl || '';
+        const imgSrc = this._getSelectedProductImageSrc(item);
         const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
@@ -4481,17 +4674,32 @@ class BundleWidgetFullPage {
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
 
-        row.innerHTML = `
-          <div class="side-panel-product-img-wrap">
-            ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-            ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-          </div>
-          <div class="side-panel-product-info">
-            <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
-            ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-          </div>
-          ${priceHtml}
-        `;
+        if (isStandardDesktopSidebar) {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+              ${priceHtml}
+            </div>
+            <div class="side-panel-product-action"></div>
+          `;
+        } else {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+            </div>
+            ${priceHtml}
+          `;
+        }
 
         if (!item.isDefault) {
           const removeBtn = document.createElement('button');
@@ -4509,11 +4717,17 @@ class BundleWidgetFullPage {
               5000
             );
           });
-          row.appendChild(removeBtn);
+          if (isStandardDesktopSidebar) {
+            row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
+          } else {
+            row.appendChild(removeBtn);
+          }
         }
 
         productsContainer.appendChild(row);
       });
+    } else if (isStandardDesktopSidebar) {
+      this._renderStandardSidebarEmptySlots(productsContainer);
     }
     if (isHorizontalPreset) {
       const requiredSlots = Math.max(
@@ -4531,14 +4745,14 @@ class BundleWidgetFullPage {
     }
     panel.appendChild(productsContainer);
 
-    if (!isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
+    if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
       this._renderSidebarProductSkeletons(skeletonContainer);
       panel.appendChild(skeletonContainer);
     }
 
-    this._renderFreeGiftSection(panel);
+    if (!isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
 
     const totalSection = document.createElement('div');
     totalSection.className = 'side-panel-total';
@@ -4576,7 +4790,10 @@ class BundleWidgetFullPage {
 
     const nextBtn = document.createElement('button');
     nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : 'Next Step';
+    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
+      ? this._resolveText('nextButton', 'Next')
+      : 'Next Step';
+    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : nextStepLabel;
     if (sidebarTierCtaContent) {
       const labelHtml = sidebarTierCtaContent.label
         ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
@@ -4586,7 +4803,7 @@ class BundleWidgetFullPage {
         : '';
       nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
     }
-    if (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed)) {
+    if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
       nextBtn.disabled = true;
     }
     nextBtn.addEventListener('click', () => {
@@ -4779,6 +4996,37 @@ class BundleWidgetFullPage {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  _getSelectedProductImageSrc(item = {}) {
+    const getImageSrc = (image) => {
+      if (!image) return '';
+      if (typeof image === 'string') return image;
+      return image.src
+        || image.url
+        || image.originalSrc
+        || image.transformedSrc
+        || '';
+    };
+
+    return getImageSrc(item.variantImage)
+      || getImageSrc(item.variantImage?.src)
+      || getImageSrc(item.variant?.image)
+      || (typeof item.image === 'string' ? item.image : '')
+      || item.image?.src
+      || item.image?.url
+      || item.image?.originalSrc
+      || getImageSrc(item.imageUrl)
+      || item.featuredImage?.url
+      || item.featuredImage?.src
+      || getImageSrc(item.featuredImage)
+      || getImageSrc(item.images?.[0])
+      || getImageSrc(item.productImageUrl);
+  }
+
+  _formatSidebarDiscountMessage(discountMessage) {
+    const message = typeof discountMessage === 'string' ? discountMessage.trim() : '';
+    return message.replace(/!+\s*$/, '');
+  }
+
   _getDefaultTimelineIcon(step) {
     if (step.isDefault) {
 
@@ -4860,6 +5108,17 @@ class BundleWidgetFullPage {
     return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
   }
 
+  _getDefaultTimelineIconDataUri(step) {
+    const svg = this._getDefaultTimelineIcon(step)
+      .replace('class="timeline-step-icon--svg"', 'xmlns="http://www.w3.org/2000/svg"')
+      .replace(' xmlns="http://www.w3.org/2000/svg"', '');
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  _isStandardSideFooterTimeline() {
+    return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+  }
+
   buildStepTimelineEntries() {
     const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
     const entries = [];
@@ -4886,12 +5145,69 @@ class BundleWidgetFullPage {
     return entries;
   }
 
+  getStandardTimelinePageSize() {
+    return window.innerWidth < 768 ? 4 : 5;
+  }
+
+  getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex) {
+    const entries = Array.isArray(timelineEntries) ? timelineEntries : [];
+    const timelinePageSize = this.getStandardTimelinePageSize();
+
+    if (entries.length <= timelinePageSize) {
+      this.standardTimelineWindowStart = 0;
+      this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+      return {
+        visibleEntries: entries,
+        windowStart: 0,
+        pageSize: timelinePageSize,
+        isPaged: false,
+      };
+    }
+
+    const activeChanged = this.standardTimelineLastActiveEntryIndex !== activeEntryIndex;
+    let windowStart = Number.isFinite(this.standardTimelineWindowStart)
+      ? this.standardTimelineWindowStart
+      : 0;
+
+    if (activeChanged && (activeEntryIndex < windowStart || activeEntryIndex >= windowStart + timelinePageSize)) {
+      windowStart = activeEntryIndex;
+    }
+
+    if (windowStart + timelinePageSize > entries.length) {
+      windowStart = entries.length - timelinePageSize;
+    }
+
+    windowStart = Math.max(0, windowStart);
+    this.standardTimelineWindowStart = windowStart;
+    this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+
+    return {
+      visibleEntries: entries.slice(windowStart, windowStart + timelinePageSize),
+      windowStart,
+      pageSize: timelinePageSize,
+      isPaged: true,
+    };
+  }
+
+  ensureTimelinePagingStyles() {
+    if (document.getElementById('wpb-fpb-timeline-paging-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'wpb-fpb-timeline-paging-styles';
+    style.textContent = '.step-timeline--paged{position:relative;flex-wrap:nowrap;justify-content:center;padding:0 24px}.timeline-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}.timeline-navigation-arrow--prev{left:4px}.timeline-navigation-arrow--next{right:4px}@media(max-width:767px){.step-timeline.step-timeline--paged{flex-wrap:nowrap}.step-timeline--paged .timeline-step{width:65px;max-width:65px}.step-timeline--paged .timeline-connector{flex:0 0 20px;min-width:20px}.step-timeline--paged .timeline-step-name{white-space:normal;line-height:14px}}';
+    document.head.appendChild(style);
+  }
+
   shouldRenderMultipleCategoryTimelineEntry(step) {
     if (!step || step.isFreeGift === true) return false;
     return this.getStepCategoryTabEntries(step).length > 1;
   }
 
   createStepTimeline() {
+    if (this._isStandardSideFooterTimeline()) {
+      return this.createStandardStepTimeline();
+    }
+
     const timeline = document.createElement('div');
     timeline.className = 'step-timeline';
 
@@ -4900,8 +5216,54 @@ class BundleWidgetFullPage {
     }
 
     const timelineEntries = this.buildStepTimelineEntries();
+    const totalEntryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const {
+      visibleEntries,
+      windowStart,
+      pageSize,
+      isPaged,
+    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+    const visibleEntryCount = Math.max(visibleEntries.length, 1);
 
-    timelineEntries.forEach((entry, displayIndex) => {
+    if (isPaged) {
+      this.ensureTimelinePagingStyles();
+    }
+    timeline.classList.toggle('step-timeline--paged', isPaged);
+    timeline.dataset.windowStart = String(windowStart);
+    timeline.dataset.pageSize = String(pageSize);
+    timeline.dataset.totalEntries = String(totalEntryCount);
+
+    const createTimelineArrow = (direction) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = direction === 'prev'
+        ? 'timeline-navigation-arrow timeline-navigation-arrow--prev'
+        : 'timeline-navigation-arrow timeline-navigation-arrow--next';
+      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+      button.textContent = direction === 'prev' ? '‹' : '›';
+      button.addEventListener('click', () => {
+        if (direction === 'prev') {
+          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+        } else {
+          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+        }
+        this.reRenderFullPage();
+      });
+      return button;
+    };
+
+    if (isPaged && windowStart > 0) {
+      timeline.appendChild(createTimelineArrow('prev'));
+    }
+
+    if (isPaged && windowStart + visibleEntryCount < totalEntryCount) {
+      timeline.appendChild(createTimelineArrow('next'));
+    }
+
+    visibleEntries.forEach((entry, displayIndex) => {
       const step = entry.step;
       const index = entry.stepIndex;
       const stepEl = document.createElement('div');
@@ -4962,7 +5324,7 @@ class BundleWidgetFullPage {
 
       timeline.appendChild(stepEl);
 
-      if (displayIndex < timelineEntries.length - 1) {
+      if (displayIndex < visibleEntries.length - 1) {
         const connectorEl = document.createElement('div');
         connectorEl.className = 'timeline-connector';
         const connectorFill = document.createElement('div');
@@ -4974,6 +5336,147 @@ class BundleWidgetFullPage {
       }
     });
 
+    return timeline;
+  }
+
+  createStandardStepTimeline() {
+    const timeline = document.createElement('div');
+    timeline.className = 'step-timeline step-timeline--standard';
+
+    if (!this.selectedBundle || !this.selectedBundle.steps) {
+      return timeline;
+    }
+
+    const timelineEntries = this.buildStepTimelineEntries();
+    const totalEntryCount = Math.max(timelineEntries.length, 1);
+    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const {
+      visibleEntries,
+      windowStart,
+      pageSize,
+      isPaged,
+    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+    const entryCount = Math.max(visibleEntries.length, 1);
+    const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
+      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+    )));
+    const progressFill = entryCount > 1
+      ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
+      : 0;
+    const progressLeft = 100 / (entryCount * 2);
+    const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
+    const timelineWidth = Math.min(100, entryCount * 30);
+
+    timeline.style.setProperty('--standard-timeline-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
+    timeline.style.setProperty('--standard-timeline-total-count', String(totalEntryCount));
+    timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
+    timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
+    timeline.classList.toggle('standard-timeline--paged', isPaged);
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'standard-navigation-items-container';
+    itemsContainer.classList.toggle('standard-navigation-items-container--paged', isPaged);
+    itemsContainer.dataset.windowStart = String(windowStart);
+    itemsContainer.dataset.pageSize = String(pageSize);
+    itemsContainer.dataset.totalEntries = String(totalEntryCount);
+
+    const createTimelineArrow = (direction) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = direction === 'prev'
+        ? 'standard-navigation-arrow standard-navigation-arrow--prev'
+        : 'standard-navigation-arrow standard-navigation-arrow--next';
+      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+      button.textContent = direction === 'prev' ? '‹' : '›';
+      button.addEventListener('click', () => {
+        if (direction === 'prev') {
+          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+        } else {
+          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+        }
+        this.reRenderFullPage();
+      });
+      return button;
+    };
+
+    if (isPaged && windowStart > 0) {
+      itemsContainer.appendChild(createTimelineArrow('prev'));
+    }
+
+    if (isPaged && windowStart + entryCount < totalEntryCount) {
+      itemsContainer.appendChild(createTimelineArrow('next'));
+    }
+
+    visibleEntries.forEach((entry) => {
+      const step = entry.step;
+      const index = entry.stepIndex;
+      const itemEl = document.createElement('div');
+      itemEl.className = 'standard-navigation-item timeline-step';
+      itemEl.dataset.stepIndex = index;
+      itemEl.dataset.timelineType = entry.type;
+
+      const isDefaultStep = step.isDefault === true;
+      const isCurrent = entry.type === 'step' && index === this.currentStepIndex;
+      const isCompleted = entry.type === 'step' && !isCurrent && this.isStepCompleted(index);
+      const isAccessible = this.isStepAccessible(index);
+
+      if (isDefaultStep) itemEl.classList.add('timeline-step--included');
+      if (isCurrent) itemEl.classList.add('timeline-step--active');
+      if (isCompleted) itemEl.classList.add('timeline-step--completed');
+      if (!isCurrent && !isCompleted) itemEl.classList.add('timeline-step--inactive');
+      if (!isAccessible) itemEl.classList.add('timeline-step--locked');
+
+      const escapedName = this._escapeHTML(entry.label) || `Step ${index + 1}`;
+      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+      const iconUrl = uploadedIconUrl || this._getDefaultTimelineIconDataUri(step);
+
+      itemEl.innerHTML = `
+        <div class="standard-navigation-step-img-container timeline-icon-wrapper">
+          <img class="standard-navigation-image timeline-step-icon" src="${this._escapeHTML(iconUrl)}" alt="${escapedName}">
+        </div>
+        <div class="standard-navigation-title-container">
+          <p class="standard-navigation-title timeline-step-name">${escapedName}</p>
+        </div>
+      `;
+
+      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
+        itemEl.style.cursor = 'pointer';
+        itemEl.addEventListener('click', () => {
+          if (!this.isStepAccessible(index)) {
+            ToastManager.show('Please complete the previous steps first.');
+            return;
+          }
+          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+            ToastManager.show('Please meet the step conditions before proceeding.');
+            return;
+          }
+          this.currentStepIndex = index;
+          this.searchQuery = '';
+          this.activeCollectionId = null;
+          this.reRenderFullPage();
+        });
+      }
+
+      itemsContainer.appendChild(itemEl);
+    });
+
+    if (entryCount > 1) {
+      const progressContainer = document.createElement('div');
+      progressContainer.className = 'standard-steps-progress-bar-container';
+      progressContainer.innerHTML = `
+        <div class="standard-steps-progress-bar">
+          <div class="standard-steps-progress-bar-filled"></div>
+        </div>
+      `;
+      itemsContainer.appendChild(progressContainer);
+    }
+
+    timeline.appendChild(itemsContainer);
     return timeline;
   }
 
@@ -5833,6 +6336,8 @@ class BundleWidgetFullPage {
       this.applySelectedQuantityBadge(cardElement, currentQuantity);
     }
 
+    this.applyStandardExpandedVariantTitle(cardElement, product);
+
     const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
     if (currentStepData?.isDefault) {
       cardElement.classList.add('fpb-card--default-included');
@@ -5894,6 +6399,28 @@ class BundleWidgetFullPage {
     this.attachProductCardListeners(cardElement, product, stepIndex);
 
     return cardElement;
+  }
+
+  applyStandardExpandedVariantTitle(cardElement, product) {
+    if (this.getFullPageDesignPreset() !== 'DEFAULT') return;
+    if (!cardElement || !product?.parentProductId || !product?.variantTitle || product.variantTitle === 'Default Title') return;
+
+    const titleEl = cardElement.querySelector('.product-title');
+    if (!titleEl) return;
+
+    const parentTitle = product.parentTitle || product.title || '';
+    cardElement.classList.add('product-card--expanded-variant');
+    titleEl.innerHTML = '';
+
+    const mainTitle = document.createElement('span');
+    mainTitle.className = 'product-title-main';
+    mainTitle.textContent = parentTitle;
+
+    const variantTitle = document.createElement('span');
+    variantTitle.className = 'product-title-variant';
+    variantTitle.textContent = product.variantTitle;
+
+    titleEl.append(mainTitle, variantTitle);
   }
 
   applySelectedQuantityBadge(cardElement, currentQuantity) {
@@ -6091,7 +6618,7 @@ class BundleWidgetFullPage {
       const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
 
       li.innerHTML = `
-        <img src="${item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
+        <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
              alt="${ComponentGenerator.escapeHtml(item.title)}"
              class="footer-panel-thumb">
         <div class="footer-panel-info">
@@ -6138,7 +6665,7 @@ class BundleWidgetFullPage {
     const maxThumbs = 3;
     allSelectedProducts.slice(0, maxThumbs).forEach(item => {
       const img = document.createElement('img');
-      img.src = item.imageUrl || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+      img.src = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
       img.alt = item.title || '';
       img.className = 'footer-thumbstrip-img';
       thumbStrip.appendChild(img);
@@ -6800,6 +7327,25 @@ class BundleWidgetFullPage {
     container.appendChild(section);
   }
 
+  _renderStandardSidebarEmptySlots(container) {
+    for (let i = 0; i < 2; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
+      slot.innerHTML = `
+        <div class="side-panel-product-img-wrap">
+          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+        </div>
+        <div class="side-panel-product-info side-panel-skeleton-lines">
+          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+          <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+        </div>
+        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
+      `;
+      container.appendChild(slot);
+    }
+  }
+
   _renderSidebarProductSkeletons(container) {
     for (let i = 0; i < 5; i++) {
       const slot = document.createElement('div');
@@ -7286,7 +7832,9 @@ class BundleWidgetFullPage {
     const isReached = discountInfo.hasDiscount;
     const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
 
-    if ((this.config.discountProgressBarType || 'step_based') === 'step_based') {
+    const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
+
+    if (progressBarType === 'step_based') {
       const milestones = this.getDiscountProgressMilestones(totalPrice, totalQuantity);
       if (milestones.length > 0) {
         return this.renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement);
@@ -7309,7 +7857,9 @@ class BundleWidgetFullPage {
     }
 
     const bar = document.createElement('div');
-    bar.className = `fpb-discount-progress fpb-dp-${this.config.discountProgressBarType || 'step_based'}` + (isReached ? ' reached' : '');
+    bar.className = progressBarType === 'simple'
+      ? 'fpb-discount-progress fpb-dp-simple' + (isReached ? ' reached' : '')
+      : 'fpb-discount-progress fpb-dp-step_based' + (isReached ? ' reached' : '');
     bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
 
     const row = document.createElement('div');
@@ -8794,6 +9344,7 @@ class BundleWidgetFullPage {
 
     const preset = rawPresetId.trim().toUpperCase();
     if (preset === 'STANDARD') return 'DEFAULT';
+    if (preset === 'DEFAULT_FBP') return 'DEFAULT';
     return preset || 'DEFAULT';
   }
 
@@ -9202,5 +9753,8 @@ function initializeFullPageWidget() {
     }
   });
 }
+
+window.WolfpackFullPageBundle = window.WolfpackFullPageBundle || {};
+window.WolfpackFullPageBundle.init = initializeFullPageWidget;
 
 })();

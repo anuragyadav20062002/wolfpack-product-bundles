@@ -1139,10 +1139,15 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       isEnabled: true,
       allowedQuantity: 2,
     };
+    const individualSellingPlanSelection = {
+      isEnabled: true,
+      showFor: "OOS_PRODUCTS",
+    };
     getDb().bundle.update.mockResolvedValue(
       makeUpdatedBundle({
         shopifyProductId: PRODUCT_ID,
         productSlotsEnabled: true,
+        individualSellingPlanSelection,
         validateQuantityPerProduct,
         steps: [
           {
@@ -1166,6 +1171,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       bundleProduct: JSON.stringify({ id: PRODUCT_ID }),
       productSlotsEnabled: "true",
       validateQuantityPerProduct: JSON.stringify(validateQuantityPerProduct),
+      individualSellingPlanSelection: JSON.stringify(individualSellingPlanSelection),
     });
     const res = await handleSaveBundle(MOCK_ADMIN, MOCK_SESSION, "bundle-1", fd);
     const body = await res.json();
@@ -1175,6 +1181,7 @@ describe("FPB handleSaveBundle — with shopifyProductId (triggers metafields)",
       MOCK_ADMIN,
       PRODUCT_ID,
       expect.objectContaining({
+        individualSellingPlanSelection,
         productSlotsEnabled: true,
         validateQuantityPerProduct,
       }),

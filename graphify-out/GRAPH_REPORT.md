@@ -1,11 +1,11 @@
-# Graph Report - .  (2026-06-05)
+# Graph Report - .  (2026-06-06)
 
 ## Corpus Check
-- 498 files · ~4,379,894 words
+- 500 files · ~3,409,629 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4023 nodes · 5954 edges · 601 communities detected
+- 4062 nodes · 6054 edges · 602 communities detected
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.79)
 - Token cost: 0 input · 0 output
 
@@ -611,10 +611,11 @@
 - [[_COMMUNITY_Community 598|Community 598]]
 - [[_COMMUNITY_Community 599|Community 599]]
 - [[_COMMUNITY_Community 600|Community 600]]
+- [[_COMMUNITY_Community 601|Community 601]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `BundleWidgetFullPage` - 199 edges
-2. `BundleWidgetFullPage` - 199 edges
+1. `BundleWidgetFullPage` - 212 edges
+2. `BundleWidgetFullPage` - 212 edges
 3. `BundleWidgetProductPage` - 141 edges
 4. `BundleWidgetProductPage` - 141 edges
 5. `bundle-widget-full-page.js Widget Source` - 82 edges
@@ -660,14 +661,14 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (288): Add-to-Bundle Button Selected-State Colour DCP Control, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget, API Route: api.bundle.$bundleId.json.tsx, api.design-settings.$shopDomain.tsx Route, Preview API Route (app/routes/api/api.preview.$type.tsx), api.preview.$type.tsx (DCP Storefront Preview Route), app.billing.tsx Route, Source: app/constants/api.ts (new) (+280 more)
+Nodes (305): Add-to-Bundle Button Selected-State Colour DCP Control, Issue: Admin UI Tier Configuration for Full-Page Bundle Widget, Admin Tier Config Architecture Decision Record, Admin Tier Config BR, Admin Tier Config PO Requirements, PricingTiersSection UI Component, Admin Tier Config SDE Implementation Plan, validateTierConfig Server Function (+297 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.02
 Nodes (11): BundleWidgetFullPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, hideLoadingOverlayElement(), installClassicTemplate(), installCompactTemplate(), installStandardTemplate() (+3 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.03
+Cohesion: 0.02
 Nodes (1): BundleWidgetFullPage
 
 ### Community 3 - "Community 3"
@@ -675,48 +676,48 @@ Cohesion: 0.03
 Nodes (16): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ComponentGenerator, createDefaultLoadingAnimation(), CurrencyManager, hideLoadingOverlayElement() (+8 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.01
-Nodes (197): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Shopify afterAuth Hook (shopify.server.ts), $app Namespace Reserved Prefix, app.state.service.ts — Singleton State Service (+189 more)
-
-### Community 5 - "Community 5"
-Cohesion: 0.02
-Nodes (151): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundles Architecture Decision Record, Ad-Ready Bundles PO Requirements, Ad-Ready Bundles SDE Implementation Plan, Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected (+143 more)
-
-### Community 6 - "Community 6"
 Cohesion: 0.03
 Nodes (5): bsFindNextIncompleteStep(), bsGetDiscountBadgeLabel(), bsIsDefaultStep(), BundleWidgetProductPage, ppbExpandSingleStepCategoriesAsSteps()
 
+### Community 5 - "Community 5"
+Cohesion: 0.02
+Nodes (140): Add-to-Bundle Button Selected Color Architecture, CSS Variable --bundle-button-added-bg, CSS Variable --bundle-button-added-text, buttonAddedBgColor / buttonAddedTextColor Prisma Fields, Add-to-Bundle Button Selected Color SDE Plan, Shopify afterAuth Hook (shopify.server.ts), app.state.service.ts — Singleton State Service, Bottom-Sheet CSS Variable Output Fix in CSS Generator (+132 more)
+
+### Community 6 - "Community 6"
+Cohesion: 0.02
+Nodes (135): Rationale: Option C (tierConfig on Bundle DB + existing API) Selected, Bundle.tierConfig JSON Field, Analytics Pixel Toggle Architecture, deactivateUtmPixel Service Function, getPixelStatus Service Function, Remove Pixel Auto-Activation from afterAuth, AppLogger (Structured Logger Utility), App Proxy 504 / Render Cold-Start Issue (+127 more)
+
 ### Community 7 - "Community 7"
 Cohesion: 0.03
-Nodes (103): Ad-Ready Bundles Business Requirement (BR), OAuth Scope Changes Requiring Re-Authentication, API Endpoints Reference, Application Architecture Document, Architecture Overview, Route: auth.login/route.tsx, Beco BYOB Bundle Page Design Analysis, Beco Layout Transformation Plan (+95 more)
+Nodes (108): Ad-Ready Bundles Business Requirement (BR), API Endpoints Reference, Application Architecture Document, Architecture Overview, DCP Component: BadgePreviewCard.tsx, Beco BYOB Bundle Page Design Analysis, Beco Layout Transformation Plan, Cart Transform: cart_transform_run.ts (+100 more)
 
 ### Community 8 - "Community 8"
+Cohesion: 0.02
+Nodes (103): Bundle Variant Price Fix ($0 to Calculated), Ad-Ready Bundles Architecture Decision Record, Ad-Ready Bundles PO Requirements, Ad-Ready Bundles SDE Implementation Plan, Ad-Ready Bundle Infrastructure Feature Specification, Campaign Bundles (UNLISTED Status), OrderAttribution Prisma Model, Rationale: Option A (Direct GraphQL via unauthenticated.admin) Selected (+95 more)
+
+### Community 9 - "Community 9"
 Cohesion: 0.06
 Nodes (34): addBundleToCart(), addItem(), _bootstrap(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), _buildNoOp(), buildProductPageCartFormData() (+26 more)
 
-### Community 9 - "Community 9"
+### Community 10 - "Community 10"
 Cohesion: 0.05
 Nodes (4): AppStateService, getDesignSettings(), isModalOpen(), showToast()
 
-### Community 10 - "Community 10"
+### Community 11 - "Community 11"
 Cohesion: 0.06
 Nodes (37): action(), addAddonTierCondition(), addonTierToDraft(), asVisibilityArray(), async(), buildAddonDraftFromPersonalizationData(), buildBundleUpsellConfig(), buildPersonalizationDataFromDraft() (+29 more)
 
-### Community 11 - "Community 11"
-Cohesion: 0.04
-Nodes (60): Storefront Collections API Route (api.storefront-collections.tsx), Dashboard Route (app.dashboard.tsx), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Issue: Beco BYOB Expandable Floating Footer, Bottom-Sheet Panel DCP CSS Targeting Fix, Component: CartPropertyFixCard.tsx, Issue: Cart Property Visibility Fix (+52 more)
-
 ### Community 12 - "Community 12"
-Cohesion: 0.04
-Nodes (55): api.storefront-products Route, _bundle_components Cart Line Attribute, Fix _bundle_components JSON Exceeding Shopify Attribute Limit, bundle-product-page.liquid Block, calculateDiscountPercentage (Cart Transform Pricing), EXPAND Path calculateDiscountPercentage Arg Mismatch Bug, cart-transform-input.graphql (Function Input Query), Cart Transform InstructionCountLimitExceededError (+47 more)
+Cohesion: 0.05
+Nodes (51): Storefront Collections API Route (api.storefront-collections.tsx), File: bundle-full-page-embed.liquid (App Embed Block, target: body), File: bundle-product-page-embed.liquid (App Embed Block, target: body), Issue: Beco BYOB Expandable Floating Footer, Bottom-Sheet Panel DCP CSS Targeting Fix, Issue: Fix Collections End-to-End (Metafield, Widget, Inventory), component-product.server.ts — component_parents Writer, _createBecoBar() — Compact Sticky Bar (+43 more)
 
 ### Community 13 - "Community 13"
-Cohesion: 0.1
-Nodes (35): activateFpbBundleProductWithParentSequence(), addBundleProductPlaceholderMedia(), buildBundleBaseConfig(), buildFpbBaseConfig(), buildFullPageBundleMetafieldConfig(), buildFullPageBundleMetafieldSteps(), buildFullPageBundlePricing(), buildSyncBundleConfiguration() (+27 more)
+Cohesion: 0.05
+Nodes (49): api.design-settings.$shopDomain.tsx Route, api.install-pdp-widget Route, scripts/build-widget-bundles.js, BundleProductModal — Variant Selection UI Component, bundle-widget-full-page-bundled.js, bundle-widget-product-page-bundled.js, Claude Code Development Guidelines, Bundle Config Metafield Cache (data-bundle-config) (+41 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.06
-Nodes (39): api.install-pdp-widget Route, scripts/build-widget-bundles.js, BundleProductModal — Variant Selection UI Component, bundle-widget-full-page-bundled.js, bundle-widget-product-page-bundled.js, Claude Code Development Guidelines, ESLint Lint-Before-Commit Rule, Feature Pipeline (BR→PO→Architect→SDE) (+31 more)
+Cohesion: 0.09
+Nodes (36): activateFpbBundleProductWithParentSequence(), addBundleProductPlaceholderMedia(), buildBundleBaseConfig(), buildFpbBaseConfig(), buildFullPageBundleMetafieldConfig(), buildFullPageBundleMetafieldSteps(), buildFullPageBundlePricing(), buildSyncBundleConfiguration() (+28 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.06
@@ -736,75 +737,75 @@ Nodes (1): BundleProductModal
 
 ### Community 19 - "Community 19"
 Cohesion: 0.09
-Nodes (27): Admin Form Discount Implementation, Cart Bundle ID Property Fix (_wolfpack_bundle_id → _bundle_id), Bundle Widget Fixes Summary, Cart Transform Primary vs Fallback Fields (percentageOff vs discountValue), Cart Transform Field Requirements Reference, Cart Transform Function ID (527a500e...), Cart Transform Activation & Setup Guide, Clean Discount Fix (discountOn → conditionType mapping) (+19 more)
+Nodes (25): Admin Form Discount Implementation, Cart Bundle ID Property Fix (_wolfpack_bundle_id → _bundle_id), Bundle Widget Fixes Summary, Cart Transform Primary vs Fallback Fields (percentageOff vs discountValue), Cart Transform Field Requirements Reference, Cart Transform Function ID (527a500e...), Cart Transform Activation & Setup Guide, Clean Discount Fix (discountOn → conditionType mapping) (+17 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.1
-Nodes (0): 
+Cohesion: 0.12
+Nodes (25): api.bundle-product-manager.test.ts, $app Namespace Reserved Prefix, BundleIsolationService (bundle-isolation.server.ts), bundle-product-manager.test.ts, bundle-widget.test.ts, bundle-workflow.test.ts (Integration), cart-transform-bundle-utils.test.ts, Cart Transform Test Environment Variables (+17 more)
 
 ### Community 21 - "Community 21"
+Cohesion: 0.1
+Nodes (23): Preview API Route (app/routes/api/api.preview.$type.tsx), Bundle Modal Component (bundle-modal-component.js), Bundle Modal Variant Selector + Image Carousel, DCP Storefront Iframe Preview — PDP Preview URL, DCP Modular Component Extraction (Settings, Preview, Common, Config), DCP Preview — Inject Storefront Theme Fonts, Design Control Panel Route (app/routes/app/app.design-control-panel/route.tsx), Design Control Panel Refactoring (3,908 → 765 lines) (+15 more)
+
+### Community 22 - "Community 22"
+Cohesion: 0.1
+Nodes (0):
+
+### Community 23 - "Community 23"
 Cohesion: 0.21
 Nodes (20): adj(), adj_with_condition(), buy_x_get_y_condition_not_met_returns_zero(), buy_x_get_y_discounted_quantity(), calculate_buy_x_get_y_discount_percentage(), calculate_discount_percentage(), calculate_selected_addon_discount_amount(), condition_is_met() (+12 more)
 
-### Community 22 - "Community 22"
+### Community 24 - "Community 24"
+Cohesion: 0.22
+Nodes (18): asArray(), buildProductSourceMap(), compactCollectionReferences(), compactImageReference(), compactImages(), compactOptions(), compactProductReference(), compactProductReferences() (+10 more)
+
+### Community 25 - "Community 25"
 Cohesion: 0.15
 Nodes (1): BundleDataManager
 
-### Community 23 - "Community 23"
+### Community 26 - "Community 26"
 Cohesion: 0.13
 Nodes (13): CartLineDiscountDisplaySettings, CartLineDisplayProperties, CartLineDisplaySavings, CartLineMessagingSettings, ComponentParent, ComponentPricingItem, Condition, ConditionType (+5 more)
 
-### Community 24 - "Community 24"
+### Community 27 - "Community 27"
 Cohesion: 0.18
 Nodes (10): useAppStateStandalone(), useDesignSetting(), useDesignSettingsState(), useLoadingState(), useModal(), useNavigationState(), useSelectorStandalone(), useStateInitialized() (+2 more)
 
-### Community 25 - "Community 25"
-Cohesion: 0.12
-Nodes (0): 
-
-### Community 26 - "Community 26"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
-
-### Community 27 - "Community 27"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
-
 ### Community 28 - "Community 28"
-Cohesion: 0.17
-Nodes (1): BundleDataManager
+Cohesion: 0.12
+Nodes (0):
 
 ### Community 29 - "Community 29"
 Cohesion: 0.17
-Nodes (16): Cart Transform Input 10KB Limit, Architecture #3: Hybrid Per-Product + Shop Index, Rationale: Use 'custom' namespace for Liquid-accessible metafields, Metafield Namespace Fix ($app → custom), Metafield Namespace Mismatch Bug (write $app vs read custom), Architecture #2: Optimized Shop Metafield, Architecture #1: Per-Product Metafields (Recommended), Scalable Metafield Architecture Proposal (+8 more)
+Nodes (1): BundleDataManager
 
 ### Community 30 - "Community 30"
+Cohesion: 0.17
+Nodes (1): BundleDataManager
+
+### Community 31 - "Community 31"
+Cohesion: 0.17
+Nodes (1): BundleDataManager
+
+### Community 32 - "Community 32"
 Cohesion: 0.16
 Nodes (16): Attribution API Route (api.attribution.tsx), Pixel Auto-Activate Logic (afterAuth + dashboard loader), Customer Events API (Shopify Web Pixel), OrderAttribution Records, Pixel On By Default, Last-Touch, Track All Bundle Revenue, pixelEnabled DB Flag (Shop/AppSettings model), UTM Pixel Fetch URL + CORS Headers Fix, UTM Last-Touch Attribution with localStorage (+8 more)
 
-### Community 31 - "Community 31"
+### Community 33 - "Community 33"
 Cohesion: 0.18
 Nodes (2): CachedSessionStorage, sleep()
 
-### Community 32 - "Community 32"
+### Community 34 - "Community 34"
 Cohesion: 0.18
 Nodes (8): getCompatibility(), getDefaultDiscountRuleSuccessMessage(), getDisplayOptions(), getStepQuantityCapacity(), normalizePricingDisplayOptions(), normalizePricingRuleMessages(), normalizeProgressType(), normalizeTemplate()
 
-### Community 33 - "Community 33"
-Cohesion: 0.28
-Nodes (13): asArray(), buildProductSourceMap(), compactCollectionReferences(), compactProductReference(), compactProductReferences(), formatStepCategoriesForRuntime(), formatStepCategoryForRuntime(), normalizeReferenceKey() (+5 more)
-
-### Community 34 - "Community 34"
+### Community 35 - "Community 35"
 Cohesion: 0.25
 Nodes (1): VariantSelectorComponent
 
-### Community 35 - "Community 35"
-Cohesion: 0.19
-Nodes (6): merge_attributes(), messaging_merge_input(), test_merge_applies_selected_addon_discount_attributes(), test_merge_buy_x_get_y_component_parent(), test_merge_emits_public_cart_line_messaging_by_default(), test_merge_uses_cart_line_messaging_settings_from_function_owner()
-
 ### Community 36 - "Community 36"
 Cohesion: 0.19
-Nodes (15): api.bundle-product-manager.test.ts, bundle-product-manager.test.ts, bundle-widget.test.ts, bundle-workflow.test.ts (Integration), cart-transform-bundle-utils.test.ts, Cart Transform Test Environment Variables, cart-transform-run.test.ts, cart-transform-service.test.ts (+7 more)
+Nodes (6): merge_attributes(), messaging_merge_input(), test_merge_applies_selected_addon_discount_attributes(), test_merge_buy_x_get_y_component_parent(), test_merge_emits_public_cart_line_messaging_by_default(), test_merge_uses_cart_line_messaging_settings_from_function_owner()
 
 ### Community 37 - "Community 37"
 Cohesion: 0.26
@@ -843,124 +844,124 @@ Cohesion: 0.32
 Nodes (1): CartTransformService
 
 ### Community 46 - "Community 46"
-Cohesion: 0.18
-Nodes (13): Analytics Custom Date Range Architecture, buildBundleTrendSeries Function (until param), DateRangeSelector Polaris Component, analytics-helpers.ts, Analytics Page Redesign — Bundle Revenue Section, Analytics Page Redesign Architecture, BundleKpiRow Component, BundleLeaderboardCard Component (+5 more)
-
-### Community 47 - "Community 47"
 Cohesion: 0.22
 Nodes (13): Discount Messaging Data Flow (form → handler → metafield → widget), ensureBundleMetafieldDefinitions() Dead Wrapper, getStepSelectionText() Dead Method (PDP Widget), ADR: Legacy Code Removal Architecture, BR: Legacy Code Removal, PO Requirements: Legacy Code Removal, Metafield Sync Index (metafield-sync/index.ts), Issue: PDP Step Limit Enforcement & Discount Messaging Fix (+5 more)
 
-### Community 48 - "Community 48"
+### Community 47 - "Community 47"
 Cohesion: 0.29
 Nodes (9): useAppState(), useBundleConfiguration(), useDesignSettings(), useModals(), usePreferences(), useSelector(), useSubscription(), useToasts() (+1 more)
 
-### Community 49 - "Community 49"
+### Community 48 - "Community 48"
 Cohesion: 0.32
 Nodes (11): addBundleToCart(), buildBundleDetailsDisplayProperties(), buildCartItems(), _buildCartLineSourceProperties(), buildProductPageCartFormData(), _formatCartAmount(), _generateBundleInstanceId(), _generateBundleSessionKey() (+3 more)
 
-### Community 50 - "Community 50"
+### Community 49 - "Community 49"
 Cohesion: 0.29
 Nodes (1): TemplateManager
 
-### Community 51 - "Community 51"
+### Community 50 - "Community 50"
 Cohesion: 0.17
-Nodes (0): 
+Nodes (0):
 
-### Community 52 - "Community 52"
+### Community 51 - "Community 51"
 Cohesion: 0.24
 Nodes (1): BillingService
 
-### Community 53 - "Community 53"
+### Community 52 - "Community 52"
 Cohesion: 0.3
 Nodes (1): TestRunner
 
-### Community 54 - "Community 54"
+### Community 53 - "Community 53"
 Cohesion: 0.33
 Nodes (1): AppLogger
 
-### Community 55 - "Community 55"
+### Community 54 - "Community 54"
 Cohesion: 0.33
 Nodes (10): addUnique(), asArray(), buildProductPageThemeEditorDeepLink(), deriveCommonSellingPlanGroups(), extractSellingPlanValidationSources(), normalizeCollectionId(), normalizeProductId(), resolveProductPageTemplateSuffix() (+2 more)
 
-### Community 56 - "Community 56"
+### Community 55 - "Community 55"
 Cohesion: 0.2
 Nodes (2): chartXFormatter(), formatDateKey()
 
-### Community 57 - "Community 57"
+### Community 56 - "Community 56"
 Cohesion: 0.38
 Nodes (9): buildBundleSettings(), buildFullPageBundleBodyHtml(), createFullPageBundle(), escapeHtmlAttribute(), getPreviewPageUrl(), publishPreviewPage(), refreshFullPageBundlePageBody(), updateFullPageBundlePageBody() (+1 more)
 
-### Community 58 - "Community 58"
+### Community 57 - "Community 57"
 Cohesion: 0.25
 Nodes (5): canNavigateToStep(), getFreeGiftRemainingCount(), getFreeGiftStep(), getPaidSteps(), isFreeGiftUnlocked()
 
-### Community 59 - "Community 59"
+### Community 58 - "Community 58"
 Cohesion: 0.18
 Nodes (1): FakeElement
 
-### Community 60 - "Community 60"
+### Community 59 - "Community 59"
 Cohesion: 0.36
 Nodes (10): fmtBytes(), main(), minifyCSS(), minifyJS(), printSummary(), processFile(), removeJSBlockComments(), removeJSSingleLineComments() (+2 more)
 
-### Community 61 - "Community 61"
+### Community 60 - "Community 60"
 Cohesion: 0.18
 Nodes (11): Analytics Route /app/attribution, App API Routes Reference, Create Bundle Modal, Dashboard Route /app/dashboard, Design Control Panel Route /app/design-control-panel, FPB Bundle Configure Route, FPB DCP Customization Modal (3-column max overlay), App Navigation Map (+3 more)
 
-### Community 62 - "Community 62"
+### Community 61 - "Community 61"
 Cohesion: 0.2
-Nodes (0): 
+Nodes (0):
 
-### Community 63 - "Community 63"
+### Community 62 - "Community 62"
 Cohesion: 0.42
 Nodes (9): bool(), int(), jsonObject(), normalizeIndividualSellingPlanSelection(), normalizeSellingPlanSelectionShowFor(), parseBundleDesignTemplate(), parsePPBBundleSettings(), parsePPBBundleVisibility() (+1 more)
 
-### Community 64 - "Community 64"
+### Community 63 - "Community 63"
 Cohesion: 0.31
 Nodes (1): MetafieldCleanupService
 
-### Community 65 - "Community 65"
+### Community 64 - "Community 64"
 Cohesion: 0.38
 Nodes (7): calculateBundlePrice(), calculateBundleTotalPrice(), cleanExpiredCache(), getCachedPrice(), getPriceCacheStats(), getProductPrice(), setCachedPrice()
 
-### Community 66 - "Community 66"
+### Community 65 - "Community 65"
 Cohesion: 0.22
 Nodes (2): getShopifyStatusFromBundleStatus(), handleUpdateBundleStatus()
 
-### Community 67 - "Community 67"
+### Community 66 - "Community 66"
 Cohesion: 0.2
 Nodes (10): Compact Sticky Footer Bar (72px height, fixed to bottom of viewport), CSS is-open Class Toggle for Footer Expand/Collapse (no inline style manipulation), DCP CSS Variables Mapping for New Beco Footer Elements, Deal-Unlock Callout Banner (green, appears when bundle goal met), Expandable Product List Panel (upward-expanding, max-height 60vh), Beco BYOB Expandable Floating Footer — Architecture Decision Record, Beco BYOB Expandable Floating Footer — Business Requirement, Beco BYOB Expandable Floating Footer — PO Requirements (+2 more)
 
-### Community 68 - "Community 68"
+### Community 67 - "Community 67"
 Cohesion: 0.53
 Nodes (8): buildSettingsControlsResponse(), buildSettingsControlsRuntime(), checked(), getDiscountFormat(), getLandingCheckoutAction(), getProductPageRedirectAction(), joinCss(), value()
 
-### Community 69 - "Community 69"
+### Community 68 - "Community 68"
 Cohesion: 0.28
 Nodes (1): ComponentGenerator
 
-### Community 70 - "Community 70"
+### Community 69 - "Community 69"
 Cohesion: 0.39
 Nodes (1): CurrencyManager
 
-### Community 71 - "Community 71"
+### Community 70 - "Community 70"
 Cohesion: 0.33
 Nodes (7): collectCachedStepVariants(), collectStepProductReferences(), ensureBundleParentVariantRequiresComponents(), getCachedVariantId(), getProductReferenceId(), normalizeShopifyGid(), updateBundleProductMetafields()
 
-### Community 72 - "Community 72"
+### Community 71 - "Community 71"
 Cohesion: 0.31
 Nodes (4): makeDiscountData(), makeFormData(), makeStepsData(), makeStepWithProduct()
 
-### Community 73 - "Community 73"
+### Community 72 - "Community 72"
 Cohesion: 0.25
 Nodes (9): buildSettingsData() — DCP Settings Handler, DCP Config-Driven Section Filtering (app/lib/dcp-config/), DCP NavigationSidebar Component, Issue: DCP Settings Silently Not Saved to DB, Issue: DCP UI Fixes (5 targeted improvements), Issue: Free Gift Badge — DCP Asset Picker, Issue: UX Gap Fixes — Batch 2, PreviewScope Component — DCP CSS Injection (+1 more)
 
-### Community 74 - "Community 74"
+### Community 73 - "Community 73"
 Cohesion: 0.25
-Nodes (0): 
+Nodes (0):
 
-### Community 75 - "Community 75"
+### Community 74 - "Community 74"
 Cohesion: 0.29
 Nodes (2): FeatureGate(), formatFeatureName()
+
+### Community 75 - "Community 75"
+Cohesion: 0.32
+Nodes (3): formatBundleForWidget(), resolveBundleDesignPresetId(), resolveBundleDesignTemplate()
 
 ### Community 76 - "Community 76"
 Cohesion: 0.43
@@ -1004,7 +1005,7 @@ Nodes (1): SubscriptionGuard
 
 ### Community 86 - "Community 86"
 Cohesion: 0.29
-Nodes (0): 
+Nodes (0):
 
 ### Community 87 - "Community 87"
 Cohesion: 0.29
@@ -1016,231 +1017,231 @@ Nodes (7): Module: auth-guards.server.ts (requireAdminSession, requireAppProxy, 
 
 ### Community 89 - "Community 89"
 Cohesion: 0.33
-Nodes (0): 
+Nodes (0):
 
 ### Community 90 - "Community 90"
 Cohesion: 0.33
-Nodes (0): 
+Nodes (0):
 
 ### Community 91 - "Community 91"
-Cohesion: 0.33
-Nodes (0): 
-
-### Community 92 - "Community 92"
 Cohesion: 0.6
 Nodes (4): buildDefaultProductEntryFromPicker(), extractShopifyNumericId(), firstImageUrl(), normalizeVariant()
 
-### Community 93 - "Community 93"
+### Community 92 - "Community 92"
 Cohesion: 0.6
 Nodes (5): asObjectArray(), buildStepCategoryCreateInput(), numberValue(), objectRecord(), stringValue()
 
-### Community 94 - "Community 94"
+### Community 93 - "Community 93"
 Cohesion: 0.53
 Nodes (4): addItem(), clearStep(), _findStep(), removeItem()
 
-### Community 95 - "Community 95"
+### Community 94 - "Community 94"
 Cohesion: 0.6
 Nodes (1): ToastManager
 
-### Community 96 - "Community 96"
+### Community 95 - "Community 95"
 Cohesion: 0.53
 Nodes (4): discoverSalesChannels(), handleCloneBundle(), handleCreateBundle(), publishToSalesChannels()
 
-### Community 97 - "Community 97"
+### Community 96 - "Community 96"
 Cohesion: 0.4
 Nodes (1): MetafieldValidationService
 
-### Community 98 - "Community 98"
+### Community 97 - "Community 97"
 Cohesion: 0.4
 Nodes (2): handleSubscriptionUpdate(), mapSubscriptionStatus()
 
-### Community 99 - "Community 99"
+### Community 98 - "Community 98"
 Cohesion: 0.67
 Nodes (5): addonProductId(), addonVariantId(), collectAddonComponentVariants(), normalizeGid(), parsePriceCents()
 
-### Community 100 - "Community 100"
+### Community 99 - "Community 99"
 Cohesion: 0.4
 Nodes (2): bsFindNextIncompleteStep(), validateFn()
 
-### Community 101 - "Community 101"
+### Community 100 - "Community 100"
 Cohesion: 0.33
-Nodes (0): 
+Nodes (0):
 
-### Community 102 - "Community 102"
+### Community 101 - "Community 101"
 Cohesion: 0.4
 Nodes (2): getDb(), mockFindFirst()
 
+### Community 102 - "Community 102"
+Cohesion: 0.33
+Nodes (0):
+
 ### Community 103 - "Community 103"
 Cohesion: 0.33
-Nodes (0): 
+Nodes (0):
 
 ### Community 104 - "Community 104"
 Cohesion: 0.33
-Nodes (0): 
+Nodes (6): Bundle Widget Installation Guide for Merchants, Place Widget Modal Fix - Show Shopify Pages for Full-Page Bundles, Theme Editor URL Format: page.{handle} vs {handle}, Problem: addAppBlockId Creates Duplicate Blocks Per Bundle, Onboarding Route: app.onboarding.widget.tsx, Widget Installation Refactor - One-Time Setup Flow
 
 ### Community 105 - "Community 105"
 Cohesion: 0.33
-Nodes (6): Bundle Widget Installation Guide for Merchants, Place Widget Modal Fix - Show Shopify Pages for Full-Page Bundles, Theme Editor URL Format: page.{handle} vs {handle}, Problem: addAppBlockId Creates Duplicate Blocks Per Bundle, Onboarding Route: app.onboarding.widget.tsx, Widget Installation Refactor - One-Time Setup Flow
+Nodes (6): CartPropertyFixCard Component (Polaris Card on Dashboard), Liquid Snippet for Hiding _-Prefixed Cart Properties, Rationale: Rejected App Embed JS Block for Cart Property Hiding (fragile DOM selectors, AJAX cart issues), Cart Property Visibility Fix — Architecture Decision Record, Cart Property Visibility Fix — Business Requirement, Cart Property Visibility Fix — PO Requirements
 
 ### Community 106 - "Community 106"
 Cohesion: 0.33
-Nodes (6): CartPropertyFixCard Component (Polaris Card on Dashboard), Liquid Snippet for Hiding _-Prefixed Cart Properties, Rationale: Rejected App Embed JS Block for Cart Property Hiding (fragile DOM selectors, AJAX cart issues), Cart Property Visibility Fix — Architecture Decision Record, Cart Property Visibility Fix — Business Requirement, Cart Property Visibility Fix — PO Requirements
-
-### Community 107 - "Community 107"
-Cohesion: 0.33
 Nodes (6): app._index.tsx Welcome Landing Screen, FPB Widget Bundle API 404 on Storefront Issue, verifyAppProxyRequest() — HMAC App Proxy Verification, Restore Landing Screen + Update Onboarding Page Issue, Login Screen Fix 2 — Token Exchange Auth Flow Issue, unstable_newEmbeddedAuthStrategy Token-Based Auth Pattern
 
-### Community 108 - "Community 108"
+### Community 107 - "Community 107"
 Cohesion: 0.4
-Nodes (0): 
+Nodes (0):
 
-### Community 109 - "Community 109"
+### Community 108 - "Community 108"
 Cohesion: 0.5
 Nodes (2): addTier(), doAddTier()
 
+### Community 109 - "Community 109"
+Cohesion: 0.4
+Nodes (0):
+
 ### Community 110 - "Community 110"
 Cohesion: 0.4
-Nodes (0): 
+Nodes (0):
 
 ### Community 111 - "Community 111"
-Cohesion: 0.4
-Nodes (0): 
-
-### Community 112 - "Community 112"
 Cohesion: 0.6
 Nodes (4): migrateNestedRule(), parseMessages(), parsePricingConfiguration(), parsePricingRule()
 
-### Community 113 - "Community 113"
+### Community 112 - "Community 112"
 Cohesion: 0.7
 Nodes (4): buildBundleProductDescriptionHtml(), escapeHtml(), getBundleProductTroubleshootingCategory(), hasBundleProductSoftError()
 
-### Community 114 - "Community 114"
+### Community 113 - "Community 113"
 Cohesion: 0.5
 Nodes (2): buildThemeEditorUrl(), fetchEmbedData()
 
-### Community 115 - "Community 115"
+### Community 114 - "Community 114"
 Cohesion: 0.7
 Nodes (4): _bootstrap(), _buildNoOp(), _buildSdk(), _findContainer()
 
-### Community 116 - "Community 116"
+### Community 115 - "Community 115"
 Cohesion: 0.4
-Nodes (0): 
+Nodes (0):
 
-### Community 117 - "Community 117"
+### Community 116 - "Community 116"
 Cohesion: 0.6
 Nodes (4): action(), errorResponse(), filenameFromUrl(), loader()
 
-### Community 118 - "Community 118"
+### Community 117 - "Community 117"
 Cohesion: 0.6
 Nodes (3): filterFields(), loader(), parseFieldsParam()
 
-### Community 119 - "Community 119"
+### Community 118 - "Community 118"
 Cohesion: 0.4
-Nodes (0): 
+Nodes (0):
 
-### Community 120 - "Community 120"
+### Community 119 - "Community 119"
 Cohesion: 0.4
 Nodes (1): ThemeTemplateService
 
-### Community 121 - "Community 121"
+### Community 120 - "Community 120"
 Cohesion: 0.7
 Nodes (4): calculateBundleInventory(), calculateMinInventory(), setInventoryLevel(), syncBundleInventory()
 
+### Community 121 - "Community 121"
+Cohesion: 0.4
+Nodes (0):
+
 ### Community 122 - "Community 122"
 Cohesion: 0.4
-Nodes (0): 
+Nodes (0):
 
 ### Community 123 - "Community 123"
-Cohesion: 0.4
-Nodes (0): 
-
-### Community 124 - "Community 124"
 Cohesion: 0.5
 Nodes (5): Attribution Route (app.attribution.tsx), Billing Route (app.billing.tsx), App Index Route (app._index.tsx), Issue: Landing Page Flash + navigate(-1) Login Screen Bug, Shopify Embedded Iframe Navigation Constraint
 
-### Community 125 - "Community 125"
+### Community 124 - "Community 124"
 Cohesion: 0.5
 Nodes (5): conditionOperator2 DB Column (Step model), conditionValue2 DB Column (Step model), Multi-Condition Step Support Feature, Prisma Step Model, Test-Driven Development (TDD) Approach
 
+### Community 125 - "Community 125"
+Cohesion: 0.5
+Nodes (0):
+
 ### Community 126 - "Community 126"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 127 - "Community 127"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 128 - "Community 128"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 129 - "Community 129"
 Cohesion: 0.83
 Nodes (3): processCss(), sanitizeCss(), validateCssSyntax()
 
-### Community 130 - "Community 130"
+### Community 129 - "Community 129"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
-### Community 131 - "Community 131"
+### Community 130 - "Community 130"
 Cohesion: 0.83
 Nodes (3): _stepIsCategoryRuleMode(), validateBundle(), validateStep()
 
-### Community 132 - "Community 132"
+### Community 131 - "Community 131"
 Cohesion: 0.67
 Nodes (2): initDebugMode(), isDebugMode()
 
+### Community 132 - "Community 132"
+Cohesion: 0.5
+Nodes (0):
+
 ### Community 133 - "Community 133"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 134 - "Community 134"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 135 - "Community 135"
 Cohesion: 0.67
 Nodes (2): getHealCache(), loader()
 
-### Community 136 - "Community 136"
+### Community 135 - "Community 135"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
-### Community 137 - "Community 137"
+### Community 136 - "Community 136"
 Cohesion: 0.67
 Nodes (1): WebhookProcessor
 
+### Community 137 - "Community 137"
+Cohesion: 0.5
+Nodes (0):
+
 ### Community 138 - "Community 138"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 139 - "Community 139"
-Cohesion: 0.5
-Nodes (0): 
-
-### Community 140 - "Community 140"
 Cohesion: 0.83
 Nodes (3): buildPriceAdjustmentConfig(), toNumber(), toPositiveNumber()
 
+### Community 140 - "Community 140"
+Cohesion: 0.5
+Nodes (0):
+
 ### Community 141 - "Community 141"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 142 - "Community 142"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 143 - "Community 143"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 144 - "Community 144"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 145 - "Community 145"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 146 - "Community 146"
 Cohesion: 0.67
@@ -1248,11 +1249,11 @@ Nodes (2): buildFreeBadge(), createFakeElement()
 
 ### Community 147 - "Community 147"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 148 - "Community 148"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 149 - "Community 149"
 Cohesion: 0.67
@@ -1260,23 +1261,23 @@ Nodes (2): getDb(), mockFindMany()
 
 ### Community 150 - "Community 150"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 151 - "Community 151"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 152 - "Community 152"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 153 - "Community 153"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 154 - "Community 154"
 Cohesion: 0.5
-Nodes (0): 
+Nodes (0):
 
 ### Community 155 - "Community 155"
 Cohesion: 0.67
@@ -1328,11 +1329,11 @@ Nodes (4): Fix: Rename 'Images & GIFs' Tab to 'Bundle Assets' (GAP-11), Fix: Ren
 
 ### Community 167 - "Community 167"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 168 - "Community 168"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 169 - "Community 169"
 Cohesion: 1.0
@@ -1340,7 +1341,7 @@ Nodes (2): getBundleProductImageUrl(), useBundleConfigurationState()
 
 ### Community 170 - "Community 170"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 171 - "Community 171"
 Cohesion: 1.0
@@ -1348,7 +1349,7 @@ Nodes (2): buildWizardPreviewUrl(), normalizeShop()
 
 ### Community 172 - "Community 172"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 173 - "Community 173"
 Cohesion: 1.0
@@ -1356,7 +1357,7 @@ Nodes (2): decideDashboardPreviewAction(), normalizeShop()
 
 ### Community 174 - "Community 174"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 175 - "Community 175"
 Cohesion: 1.0
@@ -1372,31 +1373,31 @@ Nodes (2): isSupportedLocale(), normalizeAdminLocale()
 
 ### Community 178 - "Community 178"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 179 - "Community 179"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 180 - "Community 180"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 181 - "Community 181"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 182 - "Community 182"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 183 - "Community 183"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 184 - "Community 184"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 185 - "Community 185"
 Cohesion: 1.0
@@ -1404,15 +1405,15 @@ Nodes (2): loader(), sanitizeBundleType()
 
 ### Community 186 - "Community 186"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 187 - "Community 187"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 188 - "Community 188"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 189 - "Community 189"
 Cohesion: 1.0
@@ -1420,15 +1421,15 @@ Nodes (2): loader(), sanitizeBundleType()
 
 ### Community 190 - "Community 190"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 191 - "Community 191"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 192 - "Community 192"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 193 - "Community 193"
 Cohesion: 1.0
@@ -1436,31 +1437,31 @@ Nodes (2): loader(), sanitizeBundleType()
 
 ### Community 194 - "Community 194"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 195 - "Community 195"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 196 - "Community 196"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 197 - "Community 197"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 198 - "Community 198"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 199 - "Community 199"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 200 - "Community 200"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 201 - "Community 201"
 Cohesion: 1.0
@@ -1472,127 +1473,127 @@ Nodes (2): discoverSalesChannels(), publishProductToSalesChannels()
 
 ### Community 203 - "Community 203"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 204 - "Community 204"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 205 - "Community 205"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 206 - "Community 206"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 207 - "Community 207"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 208 - "Community 208"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 209 - "Community 209"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 210 - "Community 210"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 211 - "Community 211"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 212 - "Community 212"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 213 - "Community 213"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 214 - "Community 214"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 215 - "Community 215"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 216 - "Community 216"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 217 - "Community 217"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 218 - "Community 218"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 219 - "Community 219"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 220 - "Community 220"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 221 - "Community 221"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 222 - "Community 222"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 223 - "Community 223"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 224 - "Community 224"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 225 - "Community 225"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 226 - "Community 226"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 227 - "Community 227"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 228 - "Community 228"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 229 - "Community 229"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 230 - "Community 230"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 231 - "Community 231"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 232 - "Community 232"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 233 - "Community 233"
 Cohesion: 0.67
-Nodes (0): 
+Nodes (0):
 
 ### Community 234 - "Community 234"
 Cohesion: 1.0
@@ -1664,283 +1665,283 @@ Nodes (3): Script: scripts/bulk-sync-bundles.ts (Backfill component_parents Meta
 
 ### Community 251 - "Community 251"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 252 - "Community 252"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 253 - "Community 253"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 254 - "Community 254"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 255 - "Community 255"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 256 - "Community 256"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 257 - "Community 257"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 258 - "Community 258"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 259 - "Community 259"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 260 - "Community 260"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 261 - "Community 261"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 262 - "Community 262"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 263 - "Community 263"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 264 - "Community 264"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 265 - "Community 265"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 266 - "Community 266"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 267 - "Community 267"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 268 - "Community 268"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 269 - "Community 269"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 270 - "Community 270"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 271 - "Community 271"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 272 - "Community 272"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 273 - "Community 273"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 274 - "Community 274"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 275 - "Community 275"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 276 - "Community 276"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 277 - "Community 277"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 278 - "Community 278"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 279 - "Community 279"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 280 - "Community 280"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 281 - "Community 281"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 282 - "Community 282"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 283 - "Community 283"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 284 - "Community 284"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 285 - "Community 285"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 286 - "Community 286"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 287 - "Community 287"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 288 - "Community 288"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 289 - "Community 289"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 290 - "Community 290"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 291 - "Community 291"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 292 - "Community 292"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 293 - "Community 293"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 294 - "Community 294"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 295 - "Community 295"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 296 - "Community 296"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 297 - "Community 297"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 298 - "Community 298"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 299 - "Community 299"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 300 - "Community 300"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 301 - "Community 301"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 302 - "Community 302"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 303 - "Community 303"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 304 - "Community 304"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 305 - "Community 305"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 306 - "Community 306"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 307 - "Community 307"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 308 - "Community 308"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 309 - "Community 309"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 310 - "Community 310"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 311 - "Community 311"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 312 - "Community 312"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 313 - "Community 313"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 314 - "Community 314"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 315 - "Community 315"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 316 - "Community 316"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 317 - "Community 317"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 318 - "Community 318"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 319 - "Community 319"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 320 - "Community 320"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 321 - "Community 321"
 Cohesion: 1.0
@@ -1948,167 +1949,167 @@ Nodes (1): WidgetInstallationService
 
 ### Community 322 - "Community 322"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 323 - "Community 323"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 324 - "Community 324"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 325 - "Community 325"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 326 - "Community 326"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 327 - "Community 327"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 328 - "Community 328"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 329 - "Community 329"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 330 - "Community 330"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 331 - "Community 331"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 332 - "Community 332"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 333 - "Community 333"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 334 - "Community 334"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 335 - "Community 335"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 336 - "Community 336"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 337 - "Community 337"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 338 - "Community 338"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 339 - "Community 339"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 340 - "Community 340"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 341 - "Community 341"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 342 - "Community 342"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 343 - "Community 343"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 344 - "Community 344"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 345 - "Community 345"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 346 - "Community 346"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 347 - "Community 347"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 348 - "Community 348"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 349 - "Community 349"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 350 - "Community 350"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 351 - "Community 351"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 352 - "Community 352"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 353 - "Community 353"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 354 - "Community 354"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 355 - "Community 355"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 356 - "Community 356"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 357 - "Community 357"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 358 - "Community 358"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 359 - "Community 359"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 360 - "Community 360"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 361 - "Community 361"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 362 - "Community 362"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 363 - "Community 363"
 Cohesion: 1.0
@@ -2180,885 +2181,889 @@ Nodes (2): BundleStatus.UNLISTED, Unlisted Bundle API Fix
 
 ### Community 380 - "Community 380"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 381 - "Community 381"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 382 - "Community 382"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 383 - "Community 383"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 384 - "Community 384"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 385 - "Community 385"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 386 - "Community 386"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 387 - "Community 387"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 388 - "Community 388"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 389 - "Community 389"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 390 - "Community 390"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 391 - "Community 391"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 392 - "Community 392"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 393 - "Community 393"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 394 - "Community 394"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 395 - "Community 395"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 396 - "Community 396"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 397 - "Community 397"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 398 - "Community 398"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 399 - "Community 399"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 400 - "Community 400"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 401 - "Community 401"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 402 - "Community 402"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 403 - "Community 403"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 404 - "Community 404"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 405 - "Community 405"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 406 - "Community 406"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 407 - "Community 407"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 408 - "Community 408"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 409 - "Community 409"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 410 - "Community 410"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 411 - "Community 411"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 412 - "Community 412"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 413 - "Community 413"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 414 - "Community 414"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 415 - "Community 415"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 416 - "Community 416"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 417 - "Community 417"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 418 - "Community 418"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 419 - "Community 419"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 420 - "Community 420"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 421 - "Community 421"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 422 - "Community 422"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 423 - "Community 423"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 424 - "Community 424"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 425 - "Community 425"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 426 - "Community 426"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 427 - "Community 427"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 428 - "Community 428"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 429 - "Community 429"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 430 - "Community 430"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 431 - "Community 431"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 432 - "Community 432"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 433 - "Community 433"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 434 - "Community 434"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 435 - "Community 435"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 436 - "Community 436"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 437 - "Community 437"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 438 - "Community 438"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 439 - "Community 439"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 440 - "Community 440"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 441 - "Community 441"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 442 - "Community 442"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 443 - "Community 443"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 444 - "Community 444"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 445 - "Community 445"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 446 - "Community 446"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 447 - "Community 447"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 448 - "Community 448"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 449 - "Community 449"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 450 - "Community 450"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 451 - "Community 451"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 452 - "Community 452"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 453 - "Community 453"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 454 - "Community 454"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 455 - "Community 455"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 456 - "Community 456"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 457 - "Community 457"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 458 - "Community 458"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 459 - "Community 459"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 460 - "Community 460"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 461 - "Community 461"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 462 - "Community 462"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 463 - "Community 463"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 464 - "Community 464"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 465 - "Community 465"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 466 - "Community 466"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 467 - "Community 467"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 468 - "Community 468"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 469 - "Community 469"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 470 - "Community 470"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 471 - "Community 471"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 472 - "Community 472"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 473 - "Community 473"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 474 - "Community 474"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 475 - "Community 475"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 476 - "Community 476"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 477 - "Community 477"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 478 - "Community 478"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 479 - "Community 479"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 480 - "Community 480"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 481 - "Community 481"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 482 - "Community 482"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 483 - "Community 483"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 484 - "Community 484"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 485 - "Community 485"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 486 - "Community 486"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 487 - "Community 487"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 488 - "Community 488"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 489 - "Community 489"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 490 - "Community 490"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 491 - "Community 491"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 492 - "Community 492"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 493 - "Community 493"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 494 - "Community 494"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 495 - "Community 495"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 496 - "Community 496"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 497 - "Community 497"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 498 - "Community 498"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 499 - "Community 499"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 500 - "Community 500"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 501 - "Community 501"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 502 - "Community 502"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 503 - "Community 503"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 504 - "Community 504"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 505 - "Community 505"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 506 - "Community 506"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 507 - "Community 507"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 508 - "Community 508"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 509 - "Community 509"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 510 - "Community 510"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 511 - "Community 511"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 512 - "Community 512"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 513 - "Community 513"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 514 - "Community 514"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 515 - "Community 515"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 516 - "Community 516"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 517 - "Community 517"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 518 - "Community 518"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 519 - "Community 519"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 520 - "Community 520"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 521 - "Community 521"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 522 - "Community 522"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 523 - "Community 523"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 524 - "Community 524"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 525 - "Community 525"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 526 - "Community 526"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 527 - "Community 527"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 528 - "Community 528"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 529 - "Community 529"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 530 - "Community 530"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 531 - "Community 531"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 532 - "Community 532"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 533 - "Community 533"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 534 - "Community 534"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 535 - "Community 535"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 536 - "Community 536"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 537 - "Community 537"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 538 - "Community 538"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 539 - "Community 539"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 540 - "Community 540"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 541 - "Community 541"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 542 - "Community 542"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 543 - "Community 543"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 544 - "Community 544"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 545 - "Community 545"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 546 - "Community 546"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 547 - "Community 547"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 548 - "Community 548"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 549 - "Community 549"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 550 - "Community 550"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 551 - "Community 551"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 552 - "Community 552"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 553 - "Community 553"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 554 - "Community 554"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 555 - "Community 555"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 556 - "Community 556"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 557 - "Community 557"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 558 - "Community 558"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 559 - "Community 559"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 560 - "Community 560"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (0):
 
 ### Community 561 - "Community 561"
 Cohesion: 1.0
-Nodes (1): Ad-Ready Bundles Breaking Changes
+Nodes (0):
 
 ### Community 562 - "Community 562"
 Cohesion: 1.0
-Nodes (1): Bundle Inventory Sync Engine
+Nodes (1): Ad-Ready Bundles Breaking Changes
 
 ### Community 563 - "Community 563"
 Cohesion: 1.0
-Nodes (1): Inventory Levels Update Webhook Handler
+Nodes (1): Bundle Inventory Sync Engine
 
 ### Community 564 - "Community 564"
 Cohesion: 1.0
-Nodes (1): Inventory Management SHOPIFY Migration
+Nodes (1): Inventory Levels Update Webhook Handler
 
 ### Community 565 - "Community 565"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range BR
+Nodes (1): Inventory Management SHOPIFY Migration
 
 ### Community 566 - "Community 566"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range PO Requirements
+Nodes (1): Analytics Custom Date Range BR
 
 ### Community 567 - "Community 567"
 Cohesion: 1.0
-Nodes (1): Analytics Custom Date Range SDE Plan
+Nodes (1): Analytics Custom Date Range PO Requirements
 
 ### Community 568 - "Community 568"
 Cohesion: 1.0
-Nodes (1): Analytics Pixel Toggle BR
+Nodes (1): Analytics Custom Date Range SDE Plan
 
 ### Community 569 - "Community 569"
 Cohesion: 1.0
-Nodes (1): Analytics Pixel Toggle SDE Plan
+Nodes (1): Analytics Pixel Toggle BR
 
 ### Community 570 - "Community 570"
 Cohesion: 1.0
-Nodes (1): Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
+Nodes (1): Analytics Pixel Toggle SDE Plan
 
 ### Community 571 - "Community 571"
 Cohesion: 1.0
-Nodes (1): Analytics Page Redesign BR
+Nodes (1): Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle
 
 ### Community 572 - "Community 572"
 Cohesion: 1.0
-Nodes (1): Analytics Page Redesign SDE Plan
+Nodes (1): Analytics Page Redesign BR
 
 ### Community 573 - "Community 573"
 Cohesion: 1.0
-Nodes (1): Pricing Route /app/pricing
+Nodes (1): Analytics Page Redesign SDE Plan
 
 ### Community 574 - "Community 574"
 Cohesion: 1.0
-Nodes (1): Updates & FAQs Route /app/events
+Nodes (1): Pricing Route /app/pricing
 
 ### Community 575 - "Community 575"
 Cohesion: 1.0
-Nodes (1): PDP Bundle Configure Route
+Nodes (1): Updates & FAQs Route /app/events
 
 ### Community 576 - "Community 576"
 Cohesion: 1.0
-Nodes (1): Billing Route /app/billing
+Nodes (1): PDP Bundle Configure Route
 
 ### Community 577 - "Community 577"
 Cohesion: 1.0
-Nodes (1): Deployment Guide
+Nodes (1): Billing Route /app/billing
 
 ### Community 578 - "Community 578"
 Cohesion: 1.0
-Nodes (1): Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)
+Nodes (1): Deployment Guide
 
 ### Community 579 - "Community 579"
 Cohesion: 1.0
-Nodes (1): Bundle Widget Complete Analysis
+Nodes (1): Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)
 
 ### Community 580 - "Community 580"
 Cohesion: 1.0
-Nodes (1): Prompt Engineering Guide (App Recreation)
+Nodes (1): Bundle Widget Complete Analysis
 
 ### Community 581 - "Community 581"
 Cohesion: 1.0
-Nodes (1): Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature
+Nodes (1): Prompt Engineering Guide (App Recreation)
 
 ### Community 582 - "Community 582"
 Cohesion: 1.0
-Nodes (1): FilePicker Component for Shopify Files Browse & Upload
+Nodes (1): Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature
 
 ### Community 583 - "Community 583"
 Cohesion: 1.0
-Nodes (1): Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)
+Nodes (1): FilePicker Component for Shopify Files Browse & Upload
 
 ### Community 584 - "Community 584"
 Cohesion: 1.0
-Nodes (1): Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)
+Nodes (1): Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)
 
 ### Community 585 - "Community 585"
 Cohesion: 1.0
-Nodes (1): INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)
+Nodes (1): Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)
 
 ### Community 586 - "Community 586"
 Cohesion: 1.0
-Nodes (1): Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)
+Nodes (1): INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)
 
 ### Community 587 - "Community 587"
 Cohesion: 1.0
-Nodes (1): Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)
+Nodes (1): Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)
 
 ### Community 588 - "Community 588"
 Cohesion: 1.0
-Nodes (1): Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)
+Nodes (1): Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)
 
 ### Community 589 - "Community 589"
 Cohesion: 1.0
-Nodes (1): Service: app.state.service.ts
+Nodes (1): Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)
 
 ### Community 590 - "Community 590"
 Cohesion: 1.0
-Nodes (1): Concept: Widget Build Pipeline (npm run build:widgets)
+Nodes (1): Service: app.state.service.ts
 
 ### Community 591 - "Community 591"
 Cohesion: 1.0
-Nodes (1): DCP Audit Low Priority Fixes
+Nodes (1): Concept: Widget Build Pipeline (npm run build:widgets)
 
 ### Community 592 - "Community 592"
 Cohesion: 1.0
-Nodes (1): Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)
+Nodes (1): DCP Audit Low Priority Fixes
 
 ### Community 593 - "Community 593"
 Cohesion: 1.0
-Nodes (1): Compact Array Component Format
+Nodes (1): Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)
 
 ### Community 594 - "Community 594"
 Cohesion: 1.0
-Nodes (1): Legacy Object Component Format
+Nodes (1): Compact Array Component Format
 
 ### Community 595 - "Community 595"
 Cohesion: 1.0
-Nodes (1): pricing.messages Legacy Fallback Path
+Nodes (1): Legacy Object Component Format
 
 ### Community 596 - "Community 596"
 Cohesion: 1.0
-Nodes (1): messaging Top-Level Metafield Key
+Nodes (1): pricing.messages Legacy Fallback Path
 
 ### Community 597 - "Community 597"
 Cohesion: 1.0
-Nodes (1): Loading GIF Overlay - Business Requirement
+Nodes (1): messaging Top-Level Metafield Key
 
 ### Community 598 - "Community 598"
 Cohesion: 1.0
-Nodes (1): Shopify Admin files() GraphQL Query
+Nodes (1): Loading GIF Overlay - Business Requirement
 
 ### Community 599 - "Community 599"
 Cohesion: 1.0
-Nodes (1): Add Bundle to Cart Button
+Nodes (1): Shopify Admin files() GraphQL Query
 
 ### Community 600 - "Community 600"
+Cohesion: 1.0
+Nodes (1): Add Bundle to Cart Button
+
+### Community 601 - "Community 601"
 Cohesion: 1.0
 Nodes (1): Step Transition Loading State
 
@@ -3275,11 +3280,11 @@ Nodes (1): Step Transition Loading State
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 355`** (2 nodes): `categoryBodySource()`, `eb-category-accordion-parity-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 356`** (2 nodes): `makeForm()`, `select-template.test.ts`
+- **Thin community `Community 356`** (2 nodes): `getOpenProductInAdminSource()`, `parent-product-status-ui.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 357`** (2 nodes): `makeResponse()`, `shopify-publications.test.ts`
+- **Thin community `Community 357`** (2 nodes): `makeForm()`, `select-template.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 358`** (2 nodes): `widget-full-page-bundle-preview.test.ts`, `makeAdminForDraft()`
+- **Thin community `Community 358`** (2 nodes): `makeResponse()`, `shopify-publications.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 359`** (2 nodes): `createMockAdmin()`, `sales-channels.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -3529,252 +3534,254 @@ Nodes (1): Step Transition Loading State
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 482`** (1 nodes): `create-bundle-wizard-i18n.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 483`** (1 nodes): `bundle-widget-product-page-single-step-categories.test.ts`
+- **Thin community `Community 483`** (1 nodes): `bundle-widget-full-page-summary-images.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 484`** (1 nodes): `bundle-widget-product-page-slot-icon.test.ts`
+- **Thin community `Community 484`** (1 nodes): `bundle-widget-product-page-single-step-categories.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 485`** (1 nodes): `bundle-widget-product-page-addons.test.ts`
+- **Thin community `Community 485`** (1 nodes): `bundle-widget-product-page-slot-icon.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 486`** (1 nodes): `bundle-widget-full-page-category-hydration.test.ts`
+- **Thin community `Community 486`** (1 nodes): `bundle-widget-product-page-addons.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 487`** (1 nodes): `bundle-widget-full-page-cart-properties.test.ts`
+- **Thin community `Community 487`** (1 nodes): `bundle-widget-full-page-category-hydration.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 488`** (1 nodes): `bundle-widget-full-page-box-selection-validation.test.ts`
+- **Thin community `Community 488`** (1 nodes): `bundle-widget-full-page-cart-properties.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 489`** (1 nodes): `template-manager.test.ts`
+- **Thin community `Community 489`** (1 nodes): `bundle-widget-full-page-box-selection-validation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 490`** (1 nodes): `bundle-widget-full-page-addons.test.ts`
+- **Thin community `Community 490`** (1 nodes): `template-manager.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 491`** (1 nodes): `fpb-runtime-config-surface.test.ts`
+- **Thin community `Community 491`** (1 nodes): `bundle-widget-full-page-addons.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 492`** (1 nodes): `bundle-widget-product-page-compare-at-price.test.ts`
+- **Thin community `Community 492`** (1 nodes): `fpb-runtime-config-surface.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 493`** (1 nodes): `bundle-widget-full-page-selection-fallback.test.ts`
+- **Thin community `Community 493`** (1 nodes): `bundle-widget-product-page-compare-at-price.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 494`** (1 nodes): `storefront-template-modularization.test.ts`
+- **Thin community `Community 494`** (1 nodes): `bundle-widget-full-page-selection-fallback.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 495`** (1 nodes): `bundle-widget-full-page-step-config-image.test.ts`
+- **Thin community `Community 495`** (1 nodes): `storefront-template-modularization.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 496`** (1 nodes): `widget-build-shared-modules.test.ts`
+- **Thin community `Community 496`** (1 nodes): `bundle-widget-full-page-step-config-image.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 497`** (1 nodes): `bundle-widget-full-page-bundle-text.test.ts`
+- **Thin community `Community 497`** (1 nodes): `widget-build-shared-modules.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 498`** (1 nodes): `bundle-widget-product-slots-enabled.test.ts`
+- **Thin community `Community 498`** (1 nodes): `bundle-widget-full-page-bundle-text.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 499`** (1 nodes): `bundle-widget-full-page-slot-icon.test.ts`
+- **Thin community `Community 499`** (1 nodes): `bundle-widget-product-slots-enabled.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 500`** (1 nodes): `bundle-data-manager.test.ts`
+- **Thin community `Community 500`** (1 nodes): `bundle-widget-full-page-slot-icon.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 501`** (1 nodes): `fpb-bundle-widget-multilanguage-gate.test.ts`
+- **Thin community `Community 501`** (1 nodes): `bundle-data-manager.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 502`** (1 nodes): `settings-controls-contract-source.test.ts`
+- **Thin community `Community 502`** (1 nodes): `fpb-bundle-widget-multilanguage-gate.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 503`** (1 nodes): `bundle-status-section.test.ts`
+- **Thin community `Community 503`** (1 nodes): `settings-controls-contract-source.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 504`** (1 nodes): `fpb-bundle-visibility-overview-copy.test.ts`
+- **Thin community `Community 504`** (1 nodes): `bundle-status-section.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 505`** (1 nodes): `discount-pricing-parity.test.ts`
+- **Thin community `Community 505`** (1 nodes): `fpb-bundle-visibility-overview-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 506`** (1 nodes): `settings-landing-card-only.test.ts`
+- **Thin community `Community 506`** (1 nodes): `discount-pricing-parity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 507`** (1 nodes): `fpb-admin-shell-layout.test.ts`
+- **Thin community `Community 507`** (1 nodes): `settings-landing-card-only.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 508`** (1 nodes): `ppb-place-widget-copy.test.ts`
+- **Thin community `Community 508`** (1 nodes): `fpb-admin-shell-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 509`** (1 nodes): `fpb-addons-step-language-modal-parity.test.ts`
+- **Thin community `Community 509`** (1 nodes): `ppb-place-widget-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 510`** (1 nodes): `ppb-template-modal-close-contract.test.ts`
+- **Thin community `Community 510`** (1 nodes): `fpb-addons-step-language-modal-parity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 511`** (1 nodes): `fpb-bundle-widget-button-text-default.test.ts`
+- **Thin community `Community 511`** (1 nodes): `ppb-template-modal-close-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 512`** (1 nodes): `parent-product-default-draft.test.ts`
+- **Thin community `Community 512`** (1 nodes): `fpb-bundle-widget-button-text-default.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 513`** (1 nodes): `bundle-visibility-quick-guide-contract.test.ts`
+- **Thin community `Community 513`** (1 nodes): `parent-product-default-draft.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 514`** (1 nodes): `create-bundle-wizard-preview-ui-contract.test.ts`
+- **Thin community `Community 514`** (1 nodes): `bundle-visibility-quick-guide-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 515`** (1 nodes): `integrations-no-kicker.test.ts`
+- **Thin community `Community 515`** (1 nodes): `create-bundle-wizard-preview-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 516`** (1 nodes): `bundle-edit-visibility-modal-and-tour-contract.test.ts`
+- **Thin community `Community 516`** (1 nodes): `integrations-no-kicker.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 517`** (1 nodes): `settings-language-configure-flow.test.ts`
+- **Thin community `Community 517`** (1 nodes): `bundle-edit-visibility-modal-and-tour-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 518`** (1 nodes): `fpb-page-selection-modal-close-contract.test.ts`
+- **Thin community `Community 518`** (1 nodes): `settings-language-configure-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 519`** (1 nodes): `settings-design-configure-flow.test.ts`
+- **Thin community `Community 519`** (1 nodes): `fpb-page-selection-modal-close-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 520`** (1 nodes): `ppb-setup-rail-contract.test.ts`
+- **Thin community `Community 520`** (1 nodes): `settings-design-configure-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 521`** (1 nodes): `settings-controls-runtime-route-contract.test.ts`
+- **Thin community `Community 521`** (1 nodes): `ppb-setup-rail-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 522`** (1 nodes): `fpb-slot-icon-change-icon-contract.test.ts`
+- **Thin community `Community 522`** (1 nodes): `settings-controls-runtime-route-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 523`** (1 nodes): `fpb-place-widget-theme-block-contract.test.ts`
+- **Thin community `Community 523`** (1 nodes): `fpb-slot-icon-change-icon-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 524`** (1 nodes): `ppb-bundle-widget-default-mode.test.ts`
+- **Thin community `Community 524`** (1 nodes): `fpb-place-widget-theme-block-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 525`** (1 nodes): `discount-pricing-ui-contract.test.ts`
+- **Thin community `Community 525`** (1 nodes): `ppb-bundle-widget-default-mode.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 526`** (1 nodes): `ppb-select-template-order.test.ts`
+- **Thin community `Community 526`** (1 nodes): `discount-pricing-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 527`** (1 nodes): `settings-subpage-parity-contract.test.ts`
+- **Thin community `Community 527`** (1 nodes): `ppb-select-template-order.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 528`** (1 nodes): `integrations-contract-shape.test.ts`
+- **Thin community `Community 528`** (1 nodes): `settings-subpage-parity-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 529`** (1 nodes): `ppb-bundle-settings-surface-contract.test.ts`
+- **Thin community `Community 529`** (1 nodes): `integrations-contract-shape.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 530`** (1 nodes): `ppb-bundle-embed-copy.test.ts`
+- **Thin community `Community 530`** (1 nodes): `ppb-bundle-settings-surface-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 531`** (1 nodes): `addons-free-display-contract.test.ts`
+- **Thin community `Community 531`** (1 nodes): `ppb-bundle-embed-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 532`** (1 nodes): `modal-utils-close-contract.test.ts`
+- **Thin community `Community 532`** (1 nodes): `addons-free-display-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 533`** (1 nodes): `fpb-addons-admin-layout.test.ts`
+- **Thin community `Community 533`** (1 nodes): `modal-utils-close-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 534`** (1 nodes): `integrations-landing-copy.test.ts`
+- **Thin community `Community 534`** (1 nodes): `fpb-addons-admin-layout.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 535`** (1 nodes): `step-setup-category-variant-ui-contract.test.ts`
+- **Thin community `Community 535`** (1 nodes): `integrations-landing-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 536`** (1 nodes): `integrations-request-integration-flow.test.ts`
+- **Thin community `Community 536`** (1 nodes): `step-setup-category-variant-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 537`** (1 nodes): `fpb-addons-language-modal-parity.test.ts`
+- **Thin community `Community 537`** (1 nodes): `integrations-request-integration-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 538`** (1 nodes): `select-template-modal-contract.test.ts`
+- **Thin community `Community 538`** (1 nodes): `fpb-addons-language-modal-parity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 539`** (1 nodes): `settings-language-section-copy.test.ts`
+- **Thin community `Community 539`** (1 nodes): `select-template-modal-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 540`** (1 nodes): `ppb-place-widget-product-context.test.ts`
+- **Thin community `Community 540`** (1 nodes): `settings-language-section-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 541`** (1 nodes): `ppb-bundle-visibility-ui-contract.test.ts`
+- **Thin community `Community 541`** (1 nodes): `ppb-place-widget-product-context.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 542`** (1 nodes): `fpb-bundle-settings-surface-contract.test.ts`
+- **Thin community `Community 542`** (1 nodes): `ppb-bundle-visibility-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 543`** (1 nodes): `fpb-bundle-visibility-ui-contract.test.ts`
+- **Thin community `Community 543`** (1 nodes): `fpb-bundle-settings-surface-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 544`** (1 nodes): `fpb-bundle-settings-direct-contract.test.ts`
+- **Thin community `Community 544`** (1 nodes): `fpb-bundle-visibility-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 545`** (1 nodes): `create-wizard-contextual-savebar.test.ts`
+- **Thin community `Community 545`** (1 nodes): `fpb-bundle-settings-direct-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 546`** (1 nodes): `fpb-addons-step-config-controls-parity.test.ts`
+- **Thin community `Community 546`** (1 nodes): `create-wizard-contextual-savebar.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 547`** (1 nodes): `create-edit-guided-tour-contract.test.ts`
+- **Thin community `Community 547`** (1 nodes): `fpb-addons-step-config-controls-parity.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 548`** (1 nodes): `parent-product-status-ui.test.ts`
+- **Thin community `Community 548`** (1 nodes): `fpb-addons-selected-products-modal.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 549`** (1 nodes): `ppb-subscriptions-setup-guide.test.ts`
+- **Thin community `Community 549`** (1 nodes): `create-edit-guided-tour-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 550`** (1 nodes): `step-setup-rule-mode-ui-contract.test.ts`
+- **Thin community `Community 550`** (1 nodes): `ppb-subscriptions-setup-guide.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 551`** (1 nodes): `ppb-bundle-visibility-overview-copy.test.ts`
+- **Thin community `Community 551`** (1 nodes): `step-setup-rule-mode-ui-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 552`** (1 nodes): `settings-controls-configure-flow.test.ts`
+- **Thin community `Community 552`** (1 nodes): `ppb-bundle-visibility-overview-copy.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 553`** (1 nodes): `inventory-webhook.test.ts`
+- **Thin community `Community 553`** (1 nodes): `settings-controls-configure-flow.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 554`** (1 nodes): `theme-template.test.ts`
+- **Thin community `Community 554`** (1 nodes): `inventory-webhook.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 555`** (1 nodes): `order-attribution.test.ts`
+- **Thin community `Community 555`** (1 nodes): `theme-template.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 556`** (1 nodes): `admin-locale.server.test.ts`
+- **Thin community `Community 556`** (1 nodes): `order-attribution.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 557`** (1 nodes): `inventory-sync.test.ts`
+- **Thin community `Community 557`** (1 nodes): `admin-locale.server.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 558`** (1 nodes): `metafield-validation.test.ts`
+- **Thin community `Community 558`** (1 nodes): `inventory-sync.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 559`** (1 nodes): `shopify.d.ts`
+- **Thin community `Community 559`** (1 nodes): `metafield-validation.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 560`** (1 nodes): `webhook-worker.ts`
+- **Thin community `Community 560`** (1 nodes): `shopify.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 561`** (1 nodes): `Ad-Ready Bundles Breaking Changes`
+- **Thin community `Community 561`** (1 nodes): `webhook-worker.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 562`** (1 nodes): `Bundle Inventory Sync Engine`
+- **Thin community `Community 562`** (1 nodes): `Ad-Ready Bundles Breaking Changes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 563`** (1 nodes): `Inventory Levels Update Webhook Handler`
+- **Thin community `Community 563`** (1 nodes): `Bundle Inventory Sync Engine`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 564`** (1 nodes): `Inventory Management SHOPIFY Migration`
+- **Thin community `Community 564`** (1 nodes): `Inventory Levels Update Webhook Handler`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 565`** (1 nodes): `Analytics Custom Date Range BR`
+- **Thin community `Community 565`** (1 nodes): `Inventory Management SHOPIFY Migration`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 566`** (1 nodes): `Analytics Custom Date Range PO Requirements`
+- **Thin community `Community 566`** (1 nodes): `Analytics Custom Date Range BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 567`** (1 nodes): `Analytics Custom Date Range SDE Plan`
+- **Thin community `Community 567`** (1 nodes): `Analytics Custom Date Range PO Requirements`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 568`** (1 nodes): `Analytics Pixel Toggle BR`
+- **Thin community `Community 568`** (1 nodes): `Analytics Custom Date Range SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 569`** (1 nodes): `Analytics Pixel Toggle SDE Plan`
+- **Thin community `Community 569`** (1 nodes): `Analytics Pixel Toggle BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 570`** (1 nodes): `Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle`
+- **Thin community `Community 570`** (1 nodes): `Analytics Pixel Toggle SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 571`** (1 nodes): `Analytics Page Redesign BR`
+- **Thin community `Community 571`** (1 nodes): `Rationale: Option B (Action on Attribution Route) Selected for Pixel Toggle`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 572`** (1 nodes): `Analytics Page Redesign SDE Plan`
+- **Thin community `Community 572`** (1 nodes): `Analytics Page Redesign BR`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 573`** (1 nodes): `Pricing Route /app/pricing`
+- **Thin community `Community 573`** (1 nodes): `Analytics Page Redesign SDE Plan`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 574`** (1 nodes): `Updates & FAQs Route /app/events`
+- **Thin community `Community 574`** (1 nodes): `Pricing Route /app/pricing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 575`** (1 nodes): `PDP Bundle Configure Route`
+- **Thin community `Community 575`** (1 nodes): `Updates & FAQs Route /app/events`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 576`** (1 nodes): `Billing Route /app/billing`
+- **Thin community `Community 576`** (1 nodes): `PDP Bundle Configure Route`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 577`** (1 nodes): `Deployment Guide`
+- **Thin community `Community 577`** (1 nodes): `Billing Route /app/billing`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 578`** (1 nodes): `Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)`
+- **Thin community `Community 578`** (1 nodes): `Deployment Guide`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 579`** (1 nodes): `Bundle Widget Complete Analysis`
+- **Thin community `Community 579`** (1 nodes): `Step Card UI Redesign (Solid Borders, Gradient BG, Hover States)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 580`** (1 nodes): `Prompt Engineering Guide (App Recreation)`
+- **Thin community `Community 580`** (1 nodes): `Bundle Widget Complete Analysis`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 581`** (1 nodes): `Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature`
+- **Thin community `Community 581`** (1 nodes): `Prompt Engineering Guide (App Recreation)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 582`** (1 nodes): `FilePicker Component for Shopify Files Browse & Upload`
+- **Thin community `Community 582`** (1 nodes): `Widget Version Bump 1.6.0 → 1.7.0 for Beco Footer Feature`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 583`** (1 nodes): `Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)`
+- **Thin community `Community 583`** (1 nodes): `FilePicker Component for Shopify Files Browse & Upload`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 584`** (1 nodes): `Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)`
+- **Thin community `Community 584`** (1 nodes): `Rationale: Rejected Single Remix Layout Route for /api/* (heterogeneous auth tiers)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 585`** (1 nodes): `INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)`
+- **Thin community `Community 585`** (1 nodes): `Rationale: Rejected Sub-namespace Layout Routes (URL path changes break external callers)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 586`** (1 nodes): `Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)`
+- **Thin community `Community 586`** (1 nodes): `INTERNAL_WEBHOOK_SECRET Environment Variable (used for webhook auth)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 587`** (1 nodes): `Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)`
+- **Thin community `Community 587`** (1 nodes): `Rationale: Reuse shopifyPageHandle Column (no new DB column, zero migration)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 588`** (1 nodes): `Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)`
+- **Thin community `Community 588`** (1 nodes): `Slug Collision Auto-Suffix (appends -2, -3 etc. when handle taken)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 589`** (1 nodes): `Service: app.state.service.ts`
+- **Thin community `Community 589`** (1 nodes): `Bundle ID Resolution via custom.bundle_id Metafield (primary, unaffected by slug changes)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 590`** (1 nodes): `Concept: Widget Build Pipeline (npm run build:widgets)`
+- **Thin community `Community 590`** (1 nodes): `Service: app.state.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 591`** (1 nodes): `DCP Audit Low Priority Fixes`
+- **Thin community `Community 591`** (1 nodes): `Concept: Widget Build Pipeline (npm run build:widgets)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 592`** (1 nodes): `Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)`
+- **Thin community `Community 592`** (1 nodes): `DCP Audit Low Priority Fixes`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 593`** (1 nodes): `Compact Array Component Format`
+- **Thin community `Community 593`** (1 nodes): `Issue: Remove Display Variants Checkbox (remove-display-variants-checkbox-1)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 594`** (1 nodes): `Legacy Object Component Format`
+- **Thin community `Community 594`** (1 nodes): `Compact Array Component Format`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 595`** (1 nodes): `pricing.messages Legacy Fallback Path`
+- **Thin community `Community 595`** (1 nodes): `Legacy Object Component Format`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 596`** (1 nodes): `messaging Top-Level Metafield Key`
+- **Thin community `Community 596`** (1 nodes): `pricing.messages Legacy Fallback Path`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 597`** (1 nodes): `Loading GIF Overlay - Business Requirement`
+- **Thin community `Community 597`** (1 nodes): `messaging Top-Level Metafield Key`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 598`** (1 nodes): `Shopify Admin files() GraphQL Query`
+- **Thin community `Community 598`** (1 nodes): `Loading GIF Overlay - Business Requirement`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 599`** (1 nodes): `Add Bundle to Cart Button`
+- **Thin community `Community 599`** (1 nodes): `Shopify Admin files() GraphQL Query`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 600`** (1 nodes): `Step Transition Loading State`
+- **Thin community `Community 600`** (1 nodes): `Add Bundle to Cart Button`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 601`** (1 nodes): `Step Transition Loading State`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 0` to `Community 4`, `Community 5`, `Community 73`, `Community 11`, `Community 12`, `Community 14`, `Community 16`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `Prisma Schema (prisma/schema.prisma)` connect `Community 5` to `Community 0`, `Community 4`?**
+- **Why does `bundle-widget-full-page.js Widget Source` connect `Community 0` to `Community 6`, `Community 7`, `Community 72`, `Community 12`, `Community 13`, `Community 16`, `Community 21`?**
+  _High betweenness centrality (0.028) - this node is a cross-community bridge._
+- **Why does `Prisma Schema (prisma/schema.prisma)` connect `Community 6` to `Community 8`, `Community 0`, `Community 5`, `Community 7`?**
   _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `Ad-Ready Bundles Architecture Decision Record` connect `Community 5` to `Community 12`, `Community 7`?**
-  _High betweenness centrality (0.010) - this node is a cross-community bridge._
+- **Why does `Ad-Ready Bundles Architecture Decision Record` connect `Community 8` to `Community 6`?**
+  _High betweenness centrality (0.009) - this node is a cross-community bridge._
 - **What connects `Source: app/constants/errors.ts (new)`, `Source: app/constants/api.ts (new)`, `Source: app/constants/bundle.ts` to the rest of the system?**
   _529 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
@@ -3782,4 +3789,4 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.02 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.02 - nodes in this community are weakly interconnected._

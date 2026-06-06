@@ -691,6 +691,32 @@ export default function ConfigureBundleFlow() {
   } = configState;
 
   const parentProductStatusUi = getParentProductStatusUi(productStatus || bundleProduct?.status || loadedBundleProduct?.status);
+  const refreshParentProductStatusFromShopify = useCallback(() => {
+    const revalidateNow = () => {
+      revalidator.revalidate();
+    };
+    let cleanup = () => {};
+    const revalidateOnReturn = () => {
+      revalidateNow();
+      cleanup();
+    };
+    const revalidateOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        revalidateOnReturn();
+      }
+    };
+    cleanup = () => {
+      window.removeEventListener("focus", revalidateOnReturn);
+      document.removeEventListener("visibilitychange", revalidateOnVisible);
+    };
+
+    [1000, 3000, 6000].forEach((delay) => {
+      window.setTimeout(revalidateNow, delay);
+    });
+    window.addEventListener("focus", revalidateOnReturn, { once: true });
+    document.addEventListener("visibilitychange", revalidateOnVisible);
+    window.setTimeout(cleanup, 30000);
+  }, [revalidator]);
 
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
@@ -1659,6 +1685,7 @@ export default function ConfigureBundleFlow() {
         AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
         window.open(adminProductUrl, "_blank");
       }
+      refreshParentProductStatusFromShopify();
     };
     const intentsApi = (shopify as any).intents;
     if (typeof intentsApi?.invoke === "function") {
@@ -1667,6 +1694,7 @@ export default function ConfigureBundleFlow() {
           type: "shopify/Product",
           value: productGid,
         });
+        refreshParentProductStatusFromShopify();
         if (typeof intentResult?.catch === "function") {
           void intentResult.catch((error: unknown) => {
             AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
@@ -1679,7 +1707,7 @@ export default function ConfigureBundleFlow() {
       }
     }
     openFallback();
-  }, [shop, shopify]);
+  }, [shop, shopify, refreshParentProductStatusFromShopify]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {

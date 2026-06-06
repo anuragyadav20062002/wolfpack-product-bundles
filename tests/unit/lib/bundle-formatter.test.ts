@@ -69,6 +69,17 @@ describe("formatBundleForWidget", () => {
     expect(result.fullPageLayout).toBeNull();
   });
 
+  it("defaults full-page bundles to Standard Design when template fields are absent", () => {
+    const result = formatBundleForWidget(makeBundle({
+      bundleDesignTemplate: null,
+      bundleDesignPresetId: null,
+    }) as any);
+
+    expect(result.bundleDesignTemplate).toBe("FBP_SIDE_FOOTER");
+    expect(result.bundleDesignPresetId).toBe("DEFAULT");
+    expect(result.bundleDesignTemplateData).toBeNull();
+  });
+
   it("emits the saved product slot icon URL for storefront empty slots", () => {
     const result = formatBundleForWidget(makeBundle({
       productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
@@ -231,6 +242,12 @@ describe("formatBundleForWidget", () => {
           {
             id: "gid://shopify/Product/9427287703811",
             title: "123Luxury Armor Matte Case",
+            variants: [
+              {
+                id: "gid://shopify/ProductVariant/48191691456771",
+                price: "123.00",
+              },
+            ],
           },
         ],
         selectedProducts: [],

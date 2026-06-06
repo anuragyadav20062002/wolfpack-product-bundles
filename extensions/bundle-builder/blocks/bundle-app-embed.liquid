@@ -24,12 +24,26 @@
       document.head.appendChild(link);
     }
 
+    function initializeHydratedFullPageBundle() {
+      if (
+        window.WolfpackFullPageBundle &&
+        typeof window.WolfpackFullPageBundle.init === 'function'
+      ) {
+        window.WolfpackFullPageBundle.init();
+      }
+    }
+
     function ensureScript(src) {
-      if (!src || document.querySelector('script[src="' + src + '"]')) return;
+      if (!src) return;
+      if (document.querySelector('script[src="' + src + '"]')) {
+        initializeHydratedFullPageBundle();
+        return;
+      }
 
       var script = document.createElement('script');
       script.src = src;
       script.defer = true;
+      script.addEventListener('load', initializeHydratedFullPageBundle, { once: true });
       document.body.appendChild(script);
     }
 
@@ -56,6 +70,7 @@
 
       ensureStylesheet(fullPageStyleUrl);
       ensureScript(fullPageScriptUrl);
+      initializeHydratedFullPageBundle();
     }
 
     if (document.readyState === 'loading') {

@@ -263,8 +263,6 @@ describe("buildBundleTrendSeries", () => {
     expect(week2Key).toBeDefined();
     expect(week1Key).not.toBe(week2Key);
   });
-});
-
   it("explicit until: daily buckets stop at until date", () => {
     const since = new Date("2026-03-01T00:00:00Z");
     const until = new Date("2026-03-03T23:59:59Z"); // 3-day range

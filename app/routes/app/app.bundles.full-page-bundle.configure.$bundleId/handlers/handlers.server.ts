@@ -64,6 +64,19 @@ export {
 const DEFAULT_PROGRESS_MESSAGE = "Add {conditionText} to get {discountText}";
 const DEFAULT_SUCCESS_MESSAGE = "Congratulations! You got {discountText}";
 
+function parseIndividualSellingPlanSelection(formData: FormData) {
+  const raw = safeJsonParse(formData.get("individualSellingPlanSelection") as string | null, {
+    isEnabled: false,
+    showFor: "ALL_PRODUCTS",
+  }) as { isEnabled?: unknown; showFor?: unknown };
+  const showFor = raw.showFor === "OOS_PRODUCTS" ? "OOS_PRODUCTS" : "ALL_PRODUCTS";
+
+  return {
+    isEnabled: raw.isEnabled === true,
+    showFor,
+  };
+}
+
 // FPB products do not need a theme template — the URL redirect (/products/{handle} →
 // /pages/{pageHandle}) handles routing before the template is ever rendered.
 // We only update the Shopify product status so it stays in sync with the bundle status.
@@ -421,7 +434,7 @@ function buildFullPageBundleMetafieldConfig(bundle: any, overrides: Record<strin
 
 /** Build the base bundle configuration object passed to metafield update functions. */
 function buildFpbBaseConfig(
-  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null; personalizationData?: unknown; boxSelection?: unknown; bundleUpsellConfig?: unknown },
+  updatedBundle: { id: string; name: string; description: string | null; status: string; bundleType: string; fullPageLayout: string | null; templateName: string | null; shopifyProductId: string | null; shopifyPageHandle: string | null; personalizationData?: unknown; boxSelection?: unknown; bundleUpsellConfig?: unknown; individualSellingPlanSelection?: unknown },
   stepsData: any[],
   stepConditionsData: Record<string, any[]>,
   discountData: any,
@@ -514,6 +527,10 @@ function buildFpbBaseConfig(
       isEnabled: false,
       allowedQuantity: 1,
     },
+    individualSellingPlanSelection: (updatedBundle as any).individualSellingPlanSelection ?? {
+      isEnabled: false,
+      showFor: "ALL_PRODUCTS",
+    },
     personalizationData: (updatedBundle as any).personalizationData ?? null,
     shopifyProductId: updatedBundle.shopifyProductId,
     shopifyPageHandle: updatedBundle.shopifyPageHandle || null,
@@ -594,6 +611,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
     const validateQuantityPerProduct = validateQuantityPerProductRaw
       ? JSON.parse(validateQuantityPerProductRaw)
       : { isEnabled: false, allowedQuantity: 1 };
+    const individualSellingPlanSelection = parseIndividualSellingPlanSelection(formData);
     const quantityValidationEnabled = validateQuantityPerProduct?.isEnabled === true;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
@@ -759,6 +777,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         maxQtyPerProduct,
         productSlotIconUrl,
         validateQuantityPerProduct,
+        individualSellingPlanSelection,
         // Update steps if provided
         ...(stepsData && {
           steps: {
@@ -1853,7 +1872,10 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
       const urlResult = await getPreviewPageUrl(admin, bundle.shopifyPreviewPageId, session.shop, bundleId);
 
       if (urlResult.success) {
-        await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop);
+        const bodyRefresh = await refreshFullPageBundlePageBody(admin, bundle.shopifyPreviewPageId, bundle.id, session.shop, bundle);
+        if (!bodyRefresh.success) {
+          return json({ success: false, error: bodyRefresh.error || "Failed to refresh preview page body" }, { status: 400 });
+        }
         await writeBundleConfigPageMetafield(admin, bundle.shopifyPreviewPageId, bundle);
 
         AppLogger.info("[PREVIEW_PAGE] Returning existing preview URL", {
@@ -1889,6 +1911,13 @@ export async function handleCreatePreviewPage(admin: ShopifyAdmin, session: Sess
     if (!result.success) {
       AppLogger.error("[PREVIEW_PAGE] Draft page creation failed", { bundleId, error: result.error });
       return json({ success: false, error: result.error }, { status: 400 });
+    }
+
+    if (result.pageId) {
+      const bodyRefresh = await refreshFullPageBundlePageBody(admin, result.pageId, bundle.id, session.shop, bundle);
+      if (!bodyRefresh.success) {
+        return json({ success: false, error: bodyRefresh.error || "Failed to refresh preview page body" }, { status: 400 });
+      }
     }
 
     // Cache bundle config on draft page (non-fatal — preview still works via proxy fallback)

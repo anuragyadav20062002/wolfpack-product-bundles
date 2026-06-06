@@ -162,25 +162,51 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(bundlesToggleStart).toBeLessThan(secondActionsStart);
   });
 
-  it("keeps Add-ons tier action buttons on the Polaris secondary style", () => {
+  it("uses scoped full-width fallback buttons for Add-ons tier actions", () => {
     const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
     const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
     const section = routeSource.slice(sectionStart, sectionEnd);
     const tierRuleStart = section.indexOf("Add Tier Rule");
     const tierStart = section.indexOf("Add Add Ons Tier");
-    const tierRuleButtonStart = section.lastIndexOf("<s-button", tierRuleStart);
-    const tierButtonStart = section.lastIndexOf("<s-button", tierStart);
+    const tierRuleButtonStart = section.lastIndexOf("<button", tierRuleStart);
+    const tierButtonStart = section.lastIndexOf("<button", tierStart);
 
     expect(tierRuleStart).toBeGreaterThan(-1);
     expect(tierStart).toBeGreaterThan(-1);
     expect(tierRuleButtonStart).toBeGreaterThan(-1);
     expect(tierButtonStart).toBeGreaterThan(-1);
-    expect(section.slice(tierRuleButtonStart, tierRuleStart + 80)).toContain('variant="secondary"');
-    expect(section.slice(tierButtonStart, tierStart + 80)).toContain('variant="secondary"');
+    expect(section.slice(tierRuleButtonStart, tierRuleStart + 80)).toContain('type="button"');
+    expect(section.slice(tierRuleButtonStart, tierRuleStart + 120)).toContain("addonsTierFullWidthButton");
+    expect(section.slice(tierButtonStart, tierStart + 80)).toContain('type="button"');
+    expect(section.slice(tierButtonStart, tierStart + 120)).toContain("addonsTierFullWidthButton");
+    expect(section.slice(tierRuleButtonStart, tierRuleStart + 160)).toContain("addAddonTierCondition(idx)");
+    expect(section.slice(tierButtonStart, tierStart + 320)).toContain("setActiveAddonTierIndex(addonTiers.length)");
     expect(section).not.toContain("addonsTierRuleButton");
     expect(section).not.toContain("addonsTierButton");
     expect(cssSource).not.toContain(".addonsTierRuleButton");
     expect(cssSource).not.toContain(".addonsTierButton");
+  });
+
+  it("makes Add-ons tier action buttons full width with top spacing on Add Tier Rule", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+    const tierRuleStart = section.indexOf("Add Tier Rule");
+    const tierStart = section.indexOf("Add Add Ons Tier");
+    const tierRuleWrapperStart = section.lastIndexOf("addonsTierRuleAction", tierRuleStart);
+    const tierAddWrapperStart = section.lastIndexOf("addonsTierAddAction", tierStart);
+
+    expect(tierRuleStart).toBeGreaterThan(-1);
+    expect(tierStart).toBeGreaterThan(-1);
+    expect(tierRuleWrapperStart).toBeGreaterThan(-1);
+    expect(tierAddWrapperStart).toBeGreaterThan(-1);
+    expect(tierRuleWrapperStart).toBeLessThan(tierRuleStart);
+    expect(tierAddWrapperStart).toBeLessThan(tierStart);
+    expect(cssSource).toContain(".addonsTierRuleAction");
+    expect(cssSource).toContain("padding-top: 12px");
+    expect(cssSource).toContain(".addonsTierAddAction");
+    expect(cssSource).toContain(".addonsTierFullWidthButton");
+    expect(cssSource).toContain("width: 100%");
   });
 
   it("keeps Add-ons cards on the compact reference padding contract", () => {
@@ -191,6 +217,23 @@ describe("Full Page Add-ons Admin layout", () => {
     expect(cssSource).toContain("padding: var(--addons-card-padding)");
     expect(cssSource).toContain(".addonsTierBody");
     expect(cssSource).toContain("padding: 14px");
+  });
+
+  it("reduces the vertical gap between the three Add-ons cards", () => {
+    const sectionStart = routeSource.indexOf('{activeSection === "free_gift_addons" && (() => {');
+    const sectionEnd = routeSource.indexOf('activeSection === "discount_pricing"', sectionStart);
+    const section = routeSource.slice(sectionStart, sectionEnd);
+    const stackStart = section.indexOf('<s-stack direction="block"');
+    const stepCardStart = section.indexOf("addonsReferenceStepCard");
+    const addonsCardStart = section.indexOf("addonsCard");
+    const footerCardStart = section.indexOf("addonsFooterCard");
+
+    expect(stackStart).toBeGreaterThan(-1);
+    expect(stepCardStart).toBeGreaterThan(stackStart);
+    expect(addonsCardStart).toBeGreaterThan(stepCardStart);
+    expect(footerCardStart).toBeGreaterThan(addonsCardStart);
+    expect(section.slice(stackStart, stackStart + 80)).toContain('gap="small-100"');
+    expect(section.slice(stackStart, footerCardStart)).not.toContain('gap="base"');
   });
 
   it("uses Add-ons-specific variables in the footer variables modal", () => {

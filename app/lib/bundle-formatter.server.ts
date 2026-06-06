@@ -116,6 +116,16 @@ function getProductId(product: any): string {
   return product.productId ?? product.id ?? product.graphqlId ?? "";
 }
 
+function resolveBundleDesignTemplate(bundle: any): string | null {
+  if (bundle.bundleDesignTemplate) return bundle.bundleDesignTemplate;
+  return bundle.bundleType === "full_page" ? "FBP_SIDE_FOOTER" : null;
+}
+
+function resolveBundleDesignPresetId(bundle: any): string | null {
+  if (bundle.bundleDesignPresetId) return bundle.bundleDesignPresetId;
+  return bundle.bundleType === "full_page" ? "DEFAULT" : null;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getImageUrl(image: any): string | null {
   if (!image) return null;
@@ -191,8 +201,10 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     };
   });
 
-  const bundleDesignTemplateData = bundle.bundleType === "product_page" && bundle.bundleDesignPresetId
-    ? { templateId: bundle.bundleDesignPresetId }
+  const bundleDesignTemplate = resolveBundleDesignTemplate(bundle);
+  const bundleDesignPresetId = resolveBundleDesignPresetId(bundle);
+  const bundleDesignTemplateData = bundle.bundleType === "product_page" && bundleDesignPresetId
+    ? { templateId: bundleDesignPresetId }
     : null;
 
   return {
@@ -202,8 +214,8 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     status: bundle.status,
     bundleType: bundle.bundleType,
     fullPageLayout: bundle.fullPageLayout ?? null,
-    bundleDesignTemplate: bundle.bundleDesignTemplate ?? null,
-    bundleDesignPresetId: bundle.bundleDesignPresetId ?? null,
+    bundleDesignTemplate,
+    bundleDesignPresetId,
     bundleDesignTemplateData,
     defaultProductsData: (bundle.defaultProductsData as Record<string, unknown> | null) ?? {},
     boxSelection: (bundle.boxSelection as Record<string, unknown> | null) ?? null,

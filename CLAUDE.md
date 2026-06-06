@@ -474,6 +474,8 @@ When auditing storefront UI, test **both viewports**:
 2. Mobile screenshot (emulate iPhone 14, 390×844)
 3. Report findings for both
 
+Before every storefront UI review after source, build, or deploy changes, empty/bypass browser cache and hard reload the storefront in Chrome (Chrome DevTools MCP: `navigate_page` reload with `ignoreCache: true`; also clear Cache Storage via `caches.keys()` when available). Do not trust a normal refresh for storefront parity checks.
+
 Required for: "audit the storefront", "check the UI", post-deploy verification, appearance bug reports.
 
 ---
