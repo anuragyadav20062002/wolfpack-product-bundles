@@ -17,6 +17,11 @@ const ppbRouteSource = fs.readFileSync(
   "utf8",
 );
 
+const bundleConfigurationStateSource = fs.readFileSync(
+  path.join(process.cwd(), "app/hooks/useBundleConfigurationState.ts"),
+  "utf8",
+);
+
 describe("parent product status configure UI", () => {
   function getOpenProductInAdminSource(source: string): string {
     const start = source.indexOf("const openProductInAdmin = useCallback");
@@ -54,5 +59,13 @@ describe("parent product status configure UI", () => {
     const ppbHelperSource = getOpenProductInAdminSource(ppbRouteSource);
     expect(fpbHelperSource).toContain("refreshParentProductStatusFromShopify()");
     expect(ppbHelperSource).toContain("refreshParentProductStatusFromShopify()");
+  });
+
+  it("syncs local parent product state when Shopify-backed loader data changes", () => {
+    expect(bundleConfigurationStateSource).toContain("syncLoadedBundleProductStatus");
+    expect(bundleConfigurationStateSource).toContain("setBundleProductRaw(loadedBundleProduct || null)");
+    expect(bundleConfigurationStateSource).toContain("setProductStatusRaw(loadedBundleProduct?.status || \"ACTIVE\")");
+    expect(bundleConfigurationStateSource).toContain("originalValuesRef.current = {");
+    expect(bundleConfigurationStateSource).toContain("productStatus: loadedBundleProduct?.status || \"ACTIVE\"");
   });
 });

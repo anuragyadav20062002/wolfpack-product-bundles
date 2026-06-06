@@ -301,6 +301,22 @@ export function useBundleConfigurationState({
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
 
+  const syncLoadedBundleProductStatus = useCallback(() => {
+    setBundleProductRaw(loadedBundleProduct || null);
+    setProductStatusRaw(loadedBundleProduct?.status || "ACTIVE");
+    setProductTitle(loadedBundleProduct?.title || "");
+    setProductImageUrl(getBundleProductImageUrl(loadedBundleProduct));
+    originalValuesRef.current = {
+      ...originalValuesRef.current,
+      bundleProduct: loadedBundleProduct || null,
+      productStatus: loadedBundleProduct?.status || "ACTIVE",
+    };
+  }, [loadedBundleProduct]);
+
+  useEffect(() => {
+    syncLoadedBundleProductStatus();
+  }, [syncLoadedBundleProductStatus]);
+
   // ===== DISCARD HANDLER =====
   const handleDiscard = useCallback(() => {
     try {
