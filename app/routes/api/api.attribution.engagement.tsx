@@ -17,31 +17,86 @@
 
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import db from "../../db.server";
+import { verifyAppProxyRequest } from "../../lib/app-proxy.server";
 import { AppLogger } from "../../lib/logger";
 
-// CORS headers required for cross-origin fetch() calls from the storefront.
-// The beacon may be called from the bundle page hosted under the shop's domain,
-// while this endpoint lives on the app server. Keep parity with api.attribution.tsx.
+type EngagementPayload = {
+  shopId?: unknown;
+  bundleId?: unknown;
+  sessionId?: unknown;
+  presetId?: unknown;
+  bundleType?: unknown;
+  eventName?: unknown;
+  landingPage?: unknown;
+  userAgent?: unknown;
+};
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
+  Vary: "Origin",
+  "Access-Control-Max-Age": "86400",
 };
+
+function buildCorsHeaders(request: Request) {
+  const origin = request.headers.get("origin");
+
+  return {
+    ...CORS_HEADERS,
+    "Access-Control-Allow-Origin": origin ?? "*",
+  };
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function sanitizeOptionalString(value: unknown) {
+  return isNonEmptyString(value) ? value.trim() : null;
+}
+
+function sanitizeEventName(value: unknown): string | null {
+  if (!isNonEmptyString(value)) return null;
+  const trimmed = value.trim();
+  if (!/^wpb:[a-zA-Z0-9._-]+$/.test(trimmed)) return null;
+  return trimmed;
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (request.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers: buildCorsHeaders(request) });
   }
   return new Response(null, { status: 405 });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (request.method !== "POST") {
-    return json({ error: "Method not allowed" }, { status: 405, headers: CORS_HEADERS });
+    return json({ error: "Method not allowed" }, { status: 405, headers: buildCorsHeaders(request) });
+  }
+
+  const url = new URL(request.url);
+  const proxyShop = verifyAppProxyRequest(url);
+
+  if (!proxyShop) {
+    AppLogger.warn("Bundle engagement rejected unsigned storefront request", {
+      component: "api.attribution.engagement",
+      operation: "action",
+      method: request.method,
+    });
+    return json(
+      { error: "Invalid storefront request" },
+      { status: 400, headers: buildCorsHeaders(request) }
+    );
   }
 
   try {
-    const payload = await request.json() as Record<string, any>;
+    const payload = (await request.json()) as EngagementPayload | null;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return json(
+        { error: "Invalid payload" },
+        { status: 400, headers: buildCorsHeaders(request) }
+      );
+    }
 
     const {
       shopId,
@@ -54,10 +109,37 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       userAgent,
     } = payload;
 
-    if (!shopId || !bundleId || !sessionId || !eventName) {
+    const normalizedShopId = sanitizeOptionalString(shopId);
+    const normalizedBundleId = sanitizeOptionalString(bundleId);
+    const normalizedSessionId = sanitizeOptionalString(sessionId);
+    const normalizedPresetId = sanitizeOptionalString(presetId);
+    const normalizedBundleType = sanitizeOptionalString(bundleType);
+    const normalizedLandingPage = sanitizeOptionalString(landingPage);
+    const normalizedUserAgent = sanitizeOptionalString(userAgent);
+    const normalizedEventName = sanitizeEventName(eventName);
+
+    if (
+      !normalizedShopId ||
+      !normalizedBundleId ||
+      !normalizedSessionId ||
+      !normalizedEventName
+    ) {
       return json(
-        { error: "Missing required field(s): shopId, bundleId, sessionId, eventName" },
-        { status: 400, headers: CORS_HEADERS },
+        { error: "Missing or invalid required field(s): shopId, bundleId, sessionId, eventName" },
+        { status: 400, headers: buildCorsHeaders(request) },
+      );
+    }
+
+    if (normalizedShopId !== proxyShop) {
+      AppLogger.warn("Bundle engagement rejected cross-shop payload", {
+        component: "api.attribution.engagement",
+        operation: "action",
+        proxyShop,
+        payloadShopId: normalizedShopId,
+      });
+      return json(
+        { error: "Shop mismatch" },
+        { status: 403, headers: buildCorsHeaders(request) },
       );
     }
 
@@ -67,14 +149,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await db.bundleEngagement.createMany({
       data: [
         {
-          shopId: String(shopId),
-          bundleId: String(bundleId),
-          sessionId: String(sessionId),
-          presetId: presetId ? String(presetId) : null,
-          bundleType: bundleType ? String(bundleType) : null,
-          eventName: String(eventName),
-          landingPage: landingPage ? String(landingPage) : null,
-          userAgent: userAgent ? String(userAgent) : null,
+          shopId: normalizedShopId,
+          bundleId: normalizedBundleId,
+          sessionId: normalizedSessionId,
+          presetId: normalizedPresetId,
+          bundleType: normalizedBundleType,
+          eventName: normalizedEventName,
+          landingPage: normalizedLandingPage,
+          userAgent: normalizedUserAgent,
         },
       ],
       skipDuplicates: true,
@@ -82,18 +164,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     AppLogger.info("[ENGAGEMENT] Bundle engagement recorded", {
       component: "api.attribution.engagement",
-      shopId,
-      bundleId,
-      sessionId,
-      presetId,
-      eventName,
+      shopId: normalizedShopId,
+      bundleId: normalizedBundleId,
+      sessionId: normalizedSessionId,
+      presetId: normalizedPresetId,
+      eventName: normalizedEventName,
     });
 
-    return json({ ok: true }, { headers: CORS_HEADERS });
+    return json({ ok: true }, { headers: buildCorsHeaders(request) });
   } catch (error) {
     AppLogger.error("[ENGAGEMENT] Failed to record bundle engagement", {
       component: "api.attribution.engagement",
     }, error);
-    return json({ error: "Failed to record engagement" }, { status: 500, headers: CORS_HEADERS });
+    return json(
+      { error: "Failed to record engagement" },
+      { status: 500, headers: buildCorsHeaders(request) }
+    );
   }
 };
