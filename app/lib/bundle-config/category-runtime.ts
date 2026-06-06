@@ -22,6 +22,89 @@ function objectOrEmpty(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function compactImageReference(value: unknown): Record<string, unknown> | null {
+  if (typeof value === "string" && value.trim()) return { src: value };
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const image = value as Record<string, unknown>;
+  for (const key of ["src", "url", "originalSrc"]) {
+    const fieldValue = image[key];
+    if (typeof fieldValue === "string" && fieldValue.trim()) {
+      return key === "originalSrc" ? { originalSrc: fieldValue } : { [key]: fieldValue };
+    }
+  }
+
+  return null;
+}
+
+function compactVariantImageReference(value: unknown): Record<string, unknown> | null {
+  const image = compactImageReference(value);
+  if (!image) return null;
+  const src = image.src ?? image.url ?? image.originalSrc;
+  return typeof src === "string" && src.trim() ? { src } : null;
+}
+
+function compactImages(value: unknown): Record<string, unknown>[] {
+  return asArray(value)
+    .map(compactImageReference)
+    .filter((image): image is Record<string, unknown> => image !== null)
+    .slice(0, 1);
+}
+
+function compactOptions(value: unknown): Array<string | Record<string, unknown>> {
+  return asArray(value)
+    .map((option) => {
+      if (typeof option === "string" && option.trim()) return option;
+      if (!option || typeof option !== "object" || Array.isArray(option)) return null;
+
+      const optionRecord = option as Record<string, unknown>;
+      const compact: Record<string, unknown> = {};
+      if (typeof optionRecord.name === "string" && optionRecord.name.trim()) compact.name = optionRecord.name;
+      if (Array.isArray(optionRecord.values)) compact.values = optionRecord.values.filter((value) =>
+        typeof value === "string" || typeof value === "number"
+      );
+      return Object.keys(compact).length > 0 ? compact : null;
+    })
+    .filter((option): option is string | Record<string, unknown> => option !== null);
+}
+
+function compactVariants(value: unknown): Record<string, unknown>[] {
+  return asArray(value)
+    .map((variant) => {
+      if (!variant || typeof variant !== "object" || Array.isArray(variant)) return null;
+
+      const source = variant as Record<string, unknown>;
+      const compact: Record<string, unknown> = {};
+      for (const key of ["id", "variantId", "variantGraphqlId", "graphqlId", "title", "price", "compareAtPrice"]) {
+        const fieldValue = source[key];
+        if (typeof fieldValue === "string" && fieldValue.trim()) compact[key] = fieldValue;
+        if (typeof fieldValue === "number" && Number.isFinite(fieldValue)) compact[key] = fieldValue;
+      }
+
+      if (source.available === true || source.availableForSale === true) compact.available = true;
+      if (source.available === false || source.availableForSale === false) compact.available = false;
+      if (typeof source.quantityAvailable === "number" && Number.isFinite(source.quantityAvailable)) {
+        compact.quantityAvailable = source.quantityAvailable;
+      }
+      if (source.currentlyNotInStock === true) compact.currentlyNotInStock = true;
+
+      for (const key of ["option1", "option2", "option3"]) {
+        const fieldValue = source[key];
+        if (typeof fieldValue === "string" && fieldValue.trim()) compact[key] = fieldValue;
+      }
+
+      const image = compactVariantImageReference(source.image) ?? compactVariantImageReference(source.imageUrl);
+      if (image) compact.image = image;
+
+      if (Array.isArray(source.sellingPlanAllocations) && source.sellingPlanAllocations.length > 0) {
+        compact.sellingPlanAllocations = source.sellingPlanAllocations;
+      }
+
+      return Object.keys(compact).length > 0 ? compact : null;
+    })
+    .filter((variant): variant is Record<string, unknown> => variant !== null);
+}
+
 function productReferenceKey(value: unknown): string | null {
   if (typeof value === "string") return value.trim() || null;
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -76,17 +159,19 @@ function compactProductReference(
     }
   }
 
-  for (const key of ["images", "variants", "options"]) {
-    const fieldValue = mergedProduct[key];
-    if (Array.isArray(fieldValue) && fieldValue.length > 0) {
-      reference[key] = fieldValue;
-    }
-  }
+  const images = compactImages(mergedProduct.images);
+  if (images.length > 0) reference.images = images;
+
+  const variants = compactVariants(mergedProduct.variants);
+  if (variants.length > 0) reference.variants = variants;
+
+  const options = compactOptions(mergedProduct.options);
+  if (options.length > 0) reference.options = options;
 
   for (const key of ["featuredImage", "image"]) {
-    const fieldValue = mergedProduct[key];
-    if (fieldValue && typeof fieldValue === "object" && !Array.isArray(fieldValue)) {
-      reference[key] = fieldValue;
+    const image = compactImageReference(mergedProduct[key]);
+    if (image) {
+      reference[key] = image;
     }
   }
 

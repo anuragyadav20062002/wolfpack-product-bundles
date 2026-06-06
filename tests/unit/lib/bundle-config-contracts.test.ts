@@ -279,15 +279,37 @@ describe("formatStepCategoryForRuntime", () => {
       title: "Rings",
       imageUrl: "https://cdn.example/ring-card.jpg",
       price: "10.00",
-      images: [{ originalSrc: "https://cdn.example/ring.jpg" }],
-      variants: [
-        {
-          id: "gid://shopify/ProductVariant/222",
-          price: "10.00",
-          image: { originalSrc: "https://cdn.example/variant.jpg" },
-          selectedOptions: [{ name: "Size", value: "6" }],
-        },
+      vendor: "Admin-only vendor",
+      createdAt: "2026-06-05T00:00:00Z",
+      images: [
+        { originalSrc: "https://cdn.example/ring.jpg", altText: "Ring" },
+        { originalSrc: "https://cdn.example/ring-extra.jpg" },
       ],
+      options: [
+        { name: "Size", values: ["6", "7"], adminOnly: "strip me" },
+      ],
+      variants: Array.from({ length: 12 }, (_, index) => ({
+        id: `gid://shopify/ProductVariant/${222 + index}`,
+        title: `Size ${index + 6}`,
+        price: "10.00",
+        compareAtPrice: "12.00",
+        availableForSale: true,
+        quantityAvailable: 5,
+        option1: String(index + 6),
+        image: {
+          originalSrc: `https://cdn.example/variant-${index}.jpg`,
+          altText: "Variant image",
+          width: 1200,
+          height: 1200,
+        },
+        selectedOptions: [{ name: "Size", value: String(index + 6) }],
+        inventoryPolicy: "DENY",
+        sku: `SKU-${index}`,
+        metafields: Array.from({ length: 5 }, (_, metaIndex) => ({
+          key: `meta-${metaIndex}`,
+          value: "x".repeat(250),
+        })),
+      })),
     };
 
     const runtime = formatStepCategoryForRuntime({
@@ -307,16 +329,26 @@ describe("formatStepCategoryForRuntime", () => {
         imageUrl: "https://cdn.example/ring-card.jpg",
         price: "10.00",
         images: [{ originalSrc: "https://cdn.example/ring.jpg" }],
-        variants: [
+        options: [{ name: "Size", values: ["6", "7"] }],
+        variants: expect.arrayContaining([
           {
             id: "gid://shopify/ProductVariant/222",
+            title: "Size 6",
             price: "10.00",
-            image: { originalSrc: "https://cdn.example/variant.jpg" },
-            selectedOptions: [{ name: "Size", value: "6" }],
+            compareAtPrice: "12.00",
+            available: true,
+            quantityAvailable: 5,
+            option1: "6",
+            image: { src: "https://cdn.example/variant-0.jpg" },
           },
-        ],
+        ]),
       },
     ]);
+    expect(runtime.products[0].variants).toHaveLength(12);
+    expect(JSON.stringify(runtime.products[0])).not.toContain("selectedOptions");
+    expect(JSON.stringify(runtime.products[0])).not.toContain("metafields");
+    expect(JSON.stringify(runtime.products[0])).not.toContain("inventoryPolicy");
+    expect(Buffer.byteLength(JSON.stringify(runtime.products[0]), "utf8")).toBeLessThan(6500);
     expect(runtime.selectedProducts).toEqual(runtime.products);
   });
 
