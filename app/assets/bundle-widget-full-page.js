@@ -1514,10 +1514,11 @@ class BundleWidgetFullPage {
     productsList.className = 'fpb-mobile-summary-products-list';
 
     allSelectedProducts.forEach(item => {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const variantInfo = this.getSummaryProductVariantDisplay(item);
       const row = document.createElement('div');
       row.className = 'fpb-mobile-summary-product-row';
       const imgSrc = this._getSelectedProductImageSrc(item);
-      const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
       const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
       const priceText = CurrencyManager.convertAndFormat(
         isFreeGiftItem ? 0 : item.price * item.quantity,
@@ -1526,10 +1527,10 @@ class BundleWidgetFullPage {
 
       row.innerHTML = `
         <div class="fpb-mobile-summary-product-image-wrap">
-          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
+          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
         </div>
         <div class="fpb-mobile-summary-product-info">
-          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(item.title)}</span>
+          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(summaryTitle)}</span>
           ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
           <span class="fpb-mobile-summary-product-price">${priceText}</span>
         </div>
@@ -1831,6 +1832,8 @@ class BundleWidgetFullPage {
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
+        const summaryTitle = this.getSummaryProductDisplayTitle(item);
+        const variantInfo = this.getSummaryProductVariantDisplay(item);
         const row = document.createElement('div');
         row.className = 'side-panel-product-row';
         if (isHorizontalPreset) {
@@ -1838,7 +1841,6 @@ class BundleWidgetFullPage {
         }
 
         const imgSrc = this._getSelectedProductImageSrc(item);
-        const variantInfo = item.variantTitle && item.variantTitle !== 'Default Title' ? item.variantTitle : '';
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
         const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
@@ -1849,11 +1851,11 @@ class BundleWidgetFullPage {
         if (isStandardDesktopSidebar) {
           row.innerHTML = `
             <div class="side-panel-product-img-wrap">
-              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
               ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
             </div>
             <div class="side-panel-product-info">
-              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
               ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
               ${priceHtml}
             </div>
@@ -1862,11 +1864,11 @@ class BundleWidgetFullPage {
         } else {
           row.innerHTML = `
             <div class="side-panel-product-img-wrap">
-              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(item.title)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
               ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
             </div>
             <div class="side-panel-product-info">
-              <span class="side-panel-product-title">${this._escapeHTML(item.title)}</span>
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
               ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
             </div>
             ${priceHtml}
@@ -1883,7 +1885,7 @@ class BundleWidgetFullPage {
             const productId = item.variantId || item.productId || item.id;
             const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
             this.updateProductSelection(stepIndex, productId, 0);
-            const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
             ToastManager.showWithUndo(
               `Removed "${truncated}"`,
               () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
@@ -3426,7 +3428,7 @@ class BundleWidgetFullPage {
             return {
               ...product,
               id: variant.id,
-              title: variant.title === 'Default Title' ? product.title : `${product.title} - ${variant.title}`,
+              title: product.title,
               variantTitle: variant.title === 'Default Title' ? '' : variant.title,
               imageUrl,
               price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
@@ -3643,25 +3645,81 @@ class BundleWidgetFullPage {
   }
 
   applyStandardExpandedVariantTitle(cardElement, product) {
-    if (this.getFullPageDesignPreset() !== 'DEFAULT') return;
-    if (!cardElement || !product?.parentProductId || !product?.variantTitle || product.variantTitle === 'Default Title') return;
+    const preset = this.getFullPageDesignPreset();
+    if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+    if (!cardElement) return;
+
+    const variantTitle = this.getSummaryProductVariantDisplay(product);
+    if (!product?.parentProductId || !variantTitle) return;
 
     const titleEl = cardElement.querySelector('.product-title');
     if (!titleEl) return;
 
-    const parentTitle = product.parentTitle || product.title || '';
+    const parentTitle = this.getSummaryProductDisplayTitle({
+      ...product,
+      variantTitle: product.variantTitle || 'Default Title',
+      title: product.title || '',
+      parentTitle: product.parentTitle || ''
+    });
+    if (!parentTitle) return;
+
     cardElement.classList.add('product-card--expanded-variant');
-    titleEl.innerHTML = '';
+    titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+  }
 
-    const mainTitle = document.createElement('span');
-    mainTitle.className = 'product-title-main';
-    mainTitle.textContent = parentTitle;
+  getSummaryProductDisplayTitle(item) {
+    if (!item) return '';
+    const hasVariantLabel = item.variantTitle && item.variantTitle !== 'Default Title';
+    const hasUsableParentTitle = typeof item.parentTitle === 'string' && item.parentTitle.trim().length > 0;
+    if (hasVariantLabel && hasUsableParentTitle) return item.parentTitle;
 
-    const variantTitle = document.createElement('span');
-    variantTitle.className = 'product-title-variant';
-    variantTitle.textContent = product.variantTitle;
+    const inferredParentTitle = this.getParentTitleFromDisplayTitle(item.title);
+    if (inferredParentTitle && hasVariantLabel) return inferredParentTitle;
 
-    titleEl.append(mainTitle, variantTitle);
+    if (hasUsableParentTitle) {
+      return item.parentTitle;
+    }
+
+    return inferredParentTitle || item.title || '';
+  }
+
+  getSummaryProductVariantDisplay(item) {
+    if (!item) return '';
+
+    const explicitVariantTitle = typeof item.variantTitle === 'string' ? item.variantTitle : '';
+    if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+      return explicitVariantTitle;
+    }
+
+    const parentTitle = typeof item.parentTitle === 'string' ? item.parentTitle : '';
+    const normalizedTitle = typeof item.title === 'string' ? item.title : '';
+    if (!normalizedTitle) return '';
+
+    if (parentTitle) {
+      const withParentPrefix = `${parentTitle} - `;
+      if (normalizedTitle.startsWith(withParentPrefix)) {
+        const inferredVariant = normalizedTitle.slice(withParentPrefix.length).trim();
+        return inferredVariant || '';
+      }
+    }
+
+    return this.getSummaryVariantFromDisplayTitle(normalizedTitle);
+  }
+
+  getParentTitleFromDisplayTitle(displayTitle) {
+    if (typeof displayTitle !== 'string') return '';
+    const separatorIndex = displayTitle.indexOf(' - ');
+    if (separatorIndex <= 0) return '';
+    const parentCandidate = displayTitle.slice(0, separatorIndex).trim();
+    return parentCandidate || '';
+  }
+
+  getSummaryVariantFromDisplayTitle(displayTitle) {
+    if (typeof displayTitle !== 'string') return '';
+    const separatorIndex = displayTitle.indexOf(' - ');
+    if (separatorIndex <= 0) return '';
+    const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
+    return variantCandidate || '';
   }
 
   applySelectedQuantityBadge(cardElement, currentQuantity) {
@@ -3877,18 +3935,20 @@ class BundleWidgetFullPage {
       li.className = 'footer-panel-item';
 
       const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
-      const truncatedTitle = this.truncateTitle(item.parentTitle || item.title, 35);
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const truncatedTitle = this.truncateTitle(summaryTitle, 35);
+      const ariaLabelTitle = ComponentGenerator.escapeHtml(summaryTitle);
 
       li.innerHTML = `
         <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
-             alt="${ComponentGenerator.escapeHtml(item.title)}"
+             alt="${ariaLabelTitle}"
              class="footer-panel-thumb">
         <div class="footer-panel-info">
           <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
           <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
         </div>
         ${!item.isDefault ? `
-        <button class="footer-panel-remove" type="button" aria-label="Remove ${ComponentGenerator.escapeHtml(item.title)}">
+        <button class="footer-panel-remove" type="button" aria-label="Remove ${ariaLabelTitle}">
           <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
             <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
           </svg>
@@ -3902,7 +3962,7 @@ class BundleWidgetFullPage {
           e.stopPropagation();
           const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
           this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          const truncated = removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : removedItem.title;
+          const truncated = summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : summaryTitle;
           ToastManager.showWithUndo(
             `Removed "${truncated}"`,
             () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },

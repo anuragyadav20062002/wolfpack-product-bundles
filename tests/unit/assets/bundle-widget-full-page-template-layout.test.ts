@@ -75,7 +75,10 @@ describe("Full Page widget template layout contract", () => {
 
     expect(source).toContain("ensureHorizontalSidePanelSlotRuntimeStyles()");
     expect(source).toContain("prototype.ensureHorizontalSidePanelSlotRuntimeStyles = function()");
-    expect(source).toContain("return;");
+    expect(source).toContain("wpb-fpb-horizontal-runtime-styles");
+    expect(source).toContain("if (this.getFullPageDesignPreset() !== 'HORIZONTAL') return;");
+    expect(source).toContain("this.getFullPageDesignPreset() !== 'HORIZONTAL'");
+    expect(source).toContain(".fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded");
 
     expect(storefrontStyles).toContain("[data-bundle-type=full_page].fpb-h");
     expect(storefrontStyles).toContain("width:min(100vw,1536px)");
@@ -93,14 +96,25 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain(".fpb-h .product-image img");
     expect(storefrontStyles).toContain("object-fit:cover");
     expect(horizontalStaticCss).toContain("object-fit:cover");
+    expect(source).toContain(".fpb-h .product-title{");
+    expect(source).toContain(".fpb-h .product-title{display:-webkit-box");
+    expect(source).toContain(".fpb-h .product-card--expanded-variant .product-title");
+    expect(source).toContain(".fpb-h .product-card--expanded-variant .product-variant-badge");
+    expect(source).toContain("getSummaryProductVariantDisplay(item)");
+    expect(source).toContain("getParentTitleFromDisplayTitle(item.title)");
+    expect(source).toContain("getSummaryVariantFromDisplayTitle(normalizedTitle)");
     expect(horizontalStaticCss).not.toContain("object-fit:contain");
     expect(storefrontStyles).toContain(".fpb-h .product-add-btn");
     expect(storefrontStyles).toContain("width:35px");
     expect(storefrontStyles).toContain("min-width:35px");
     expect(storefrontStyles).toContain("height:35px");
     expect(storefrontStyles).toContain("border-radius:5px");
+    expect(storefrontStyles).toMatch(/\.fpb-h \.product-add-btn\s*\{\s*font-size:0/);
+    expect(storefrontStyles).toMatch(/\.fpb-h \.product-add-btn::before\s*\{\s*content:"\+"/);
     expect(storefrontStyles).toContain(".fpb-h .full-page-side-panel");
     expect(storefrontStyles).toContain("min-height:714px");
+    expect(storefrontStyles).toContain("border:0");
+    expect(storefrontStyles).toContain("background:transparent");
     expect(storefrontStyles).toContain("@media (max-width:768px)");
     expect(storefrontStyles).toContain(".fpb-h .sidebar-layout-wrapper {\n  display:block");
     expect(storefrontStyles).toContain(".fpb-h .full-page-product-grid {\n  grid-template-columns:1fr");
@@ -110,6 +124,13 @@ describe("Full Page widget template layout contract", () => {
     expect(storefrontStyles).toContain("height:120px");
     expect(storefrontStyles).toContain(".fpb-h .side-panel-product-slot");
     expect(storefrontStyles).toContain("grid-template-columns:75px minmax(0,1fr) auto");
+    expect(storefrontStyles).toContain("height:96px");
+    expect(storefrontStyles).toContain("border:0");
+    expect(storefrontStyles).toContain(".fpb-h .side-panel-item-count");
+    expect(storefrontStyles).toContain("-webkit-line-clamp:2");
+    expect(source).toContain("titleEl.textContent = `${parentTitle}\\n${variantTitle}`;");
+    expect(source).toContain("this.getSummaryProductDisplayTitle");
+    expect(source).toContain("displayTitle.indexOf(' - ')");
   });
 
   it("renders FPB product-card add buttons with the evidenced text label", () => {
@@ -208,8 +229,7 @@ describe("Full Page widget template layout contract", () => {
 
     expect(source).toContain("applyStandardExpandedVariantTitle(cardElement, product)");
     expect(source).toContain("product-card--expanded-variant");
-    expect(source).toContain("product-title-main");
-    expect(source).toContain("product-title-variant");
+    expect(source).toContain("titleEl.textContent = `${parentTitle}\\n${variantTitle}`;");
     expect(source).toContain("this._resolveText('nextButton', 'Next')");
     expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:50.8px;display:grid;grid-auto-flow:column;grid-auto-columns:max-content;justify-content:flex-start;gap:20px;margin:0 0 20px;padding:0;overflow:visible}');
     expect(storefrontStyles).toContain('.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:50.8px;display:grid;grid-template-columns:max-content;grid-template-rows:30px;align-items:center;padding:10px;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}');
