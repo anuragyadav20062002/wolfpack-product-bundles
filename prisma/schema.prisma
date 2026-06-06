@@ -634,3 +634,28 @@ model OrderAttribution {
   @@index([shopId, createdAt])
   @@index([bundleId, createdAt])
 }
+
+/// Records the first interaction (engagement) a shopper has with a bundle in a
+/// browser session. Written once per (shopId, bundleId, sessionId) — guarded by
+/// a unique constraint so retries from the storefront beacon are idempotent.
+///
+/// Powers funnel metrics (impressions vs engagement vs ATC) decoupled from the
+/// existing OrderAttribution table which only captures completed checkouts.
+model BundleEngagement {
+  id            String   @id @default(uuid())
+  shopId        String
+  bundleId      String
+  sessionId     String // client-generated UUID, stable for the browser session
+  presetId      String? // DEFAULT | CLASSIC | COMPACT | HORIZONTAL
+  bundleType    String? // full_page | product_page
+  eventName     String // wpb:session-engaged | future engagement event names
+  landingPage   String? // pathname + search at the time of engagement
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@unique([shopId, bundleId, sessionId])
+  @@index([shopId])
+  @@index([bundleId])
+  @@index([shopId, createdAt])
+  @@index([bundleId, createdAt])
+}
