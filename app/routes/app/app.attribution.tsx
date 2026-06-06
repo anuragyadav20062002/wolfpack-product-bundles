@@ -15,12 +15,24 @@ import {
   buildBundleLeaderboard,
   buildBundleTrendSeries,
   formatDelta,
+  computeBundleFunnel,
+  buildEngagementTrendSeries,
+  buildBundlePerformanceMatrix,
   type OrderAttributionRow,
   type BundleRevenueSummary,
   type TrendPoint,
   type LeaderboardRow,
 } from "../../lib/analytics";
 import db from "../../db.server";
+import "../../components/analytics/shared/tokens.css";
+import {
+  FunnelHero,
+  EngagementPulse,
+  RevenueAttribution,
+  BundlePerformanceMatrix,
+  LiveActivityFeed,
+  TopCampaigns,
+} from "../../components/analytics";
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   AreaChart,
@@ -240,7 +252,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const pixelStatus = await getPixelStatus(admin);
 
-  const [currentAttributions, previousAttributions, viewEvents, prevViewEvents] = await Promise.all([
+  const [currentAttributions, previousAttributions, viewEvents, prevViewEvents, engagementRows, prevEngagementRows, recentActivity] = await Promise.all([
     db.orderAttribution.findMany({
       where: { shopId, createdAt: { gte: since, lte: until } },
       orderBy: { createdAt: "asc" },
@@ -255,6 +267,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     db.bundleAnalytics.findMany({
       where: { shopId, event: "view", createdAt: { gte: prevSince, lt: since } },
       select: { bundleId: true },
+    }),
+    db.bundleEngagement.findMany({
+      where: { shopId, createdAt: { gte: since, lte: until } },
+      select: { bundleId: true, sessionId: true, presetId: true, createdAt: true },
+    }),
+    db.bundleEngagement.findMany({
+      where: { shopId, createdAt: { gte: prevSince, lt: since } },
+      select: { sessionId: true },
+    }),
+    db.bundleEngagement.findMany({
+      where: { shopId },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      select: { id: true, bundleId: true, sessionId: true, presetId: true, createdAt: true },
     }),
   ]);
 
@@ -407,6 +433,73 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     .sort((a, b) => b.views - a.views)
     .slice(0, 10);
 
+  // ── Engagement-funnel data plumbing (wpb-analytics-revamp-1) ──
+  const engagementRowsTyped = engagementRows.map(r => ({
+    bundleId: r.bundleId,
+    sessionId: r.sessionId,
+    presetId: r.presetId ?? null,
+    createdAt: r.createdAt,
+  }));
+  const funnelSnapshot = computeBundleFunnel(
+    engagementRowsTyped,
+    currentAttributions.map(a => ({ bundleId: a.bundleId, revenue: a.revenue, createdAt: a.createdAt })),
+  );
+  const engagementTrend = buildEngagementTrendSeries(engagementRowsTyped, since, until);
+  const prevEngagedUnique = new Set(prevEngagementRows.map(r => r.sessionId)).size;
+
+  // Collect any extra bundle ids we need for the matrix that weren't already loaded.
+  const matrixBundleIds = [...new Set([
+    ...bundleIds,
+    ...engagementRows.map(r => r.bundleId),
+    ...recentActivity.map(r => r.bundleId),
+  ])];
+  const extraBundleIds = matrixBundleIds.filter(id => !bundleNameMap[id]);
+  const extraBundles = extraBundleIds.length > 0
+    ? await db.bundle.findMany({
+        where: { id: { in: extraBundleIds } },
+        select: { id: true, name: true, status: true },
+      })
+    : [];
+  const fullBundleMap: Record<string, { name: string; status: string }> = {};
+  for (const b of bundles) fullBundleMap[b.id] = { name: b.name, status: b.status };
+  for (const b of extraBundles) fullBundleMap[b.id] = { name: b.name, status: b.status };
+
+  const matrixBundles = matrixBundleIds.map(id => {
+    const meta = fullBundleMap[id];
+    const presetSample = engagementRows.find(r => r.bundleId === id)?.presetId ?? null;
+    return {
+      id,
+      name: meta?.name ?? "Unknown Bundle",
+      status: meta?.status ?? "active",
+      presetId: presetSample,
+    };
+  });
+  const bundleMatrix = buildBundlePerformanceMatrix(
+    matrixBundles,
+    engagementRowsTyped,
+    currentAttributions.map(a => ({ bundleId: a.bundleId, revenue: a.revenue, createdAt: a.createdAt })),
+  );
+
+  // Top campaigns — derived from existing byCampaign array.
+  const topCampaignsRows = byCampaign
+    .filter(c => c.campaign !== "(no campaign)")
+    .slice(0, 5)
+    .map(c => ({ utmCampaign: c.campaign, revenueCents: c.revenue, orders: c.orders }));
+
+  // Live activity feed — newest first.
+  const activityFeed = recentActivity.map(r => ({
+    id: r.id,
+    bundleName: fullBundleMap[r.bundleId]?.name ?? "Unknown Bundle",
+    presetId: r.presetId ?? null,
+    sessionId: r.sessionId,
+    createdAt: r.createdAt.toISOString(),
+  }));
+
+  // Engagement → checkout rate (cross-bundle).
+  const engagementToOrderPct = funnelSnapshot.engaged > 0
+    ? Math.round((funnelSnapshot.checkedOut / funnelSnapshot.engaged) * 100)
+    : null;
+
   return json({
     days,
     from: fromStr,
@@ -428,6 +521,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     bundleLeaderboard,
     bundleRevenueTrend,
     views: { totalViews, prevTotalViews, viewsByBundle },
+    // wpb-analytics-revamp-1 additions
+    funnelSnapshot,
+    engagementTrend,
+    engagedSessions: funnelSnapshot.engaged,
+    prevEngagedSessions: prevEngagedUnique,
+    engagementToOrderPct,
+    bundleMatrix,
+    topCampaignsRows,
+    activityFeed,
   });
 };
 
@@ -952,6 +1054,8 @@ export default function AttributionDashboard() {
     pixelActive,
     bundleRevenueSummary, bundleLeaderboard, bundleRevenueTrend,
     views,
+    funnelSnapshot, engagementTrend, engagedSessions, prevEngagedSessions,
+    engagementToOrderPct, bundleMatrix, topCampaignsRows, activityFeed,
   } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [isClient, setIsClient] = useState(false);
@@ -1064,359 +1168,51 @@ export default function AttributionDashboard() {
             </s-stack>
           </div>
 
-          {/* Bundle Views Section */}
-          <div className={styles.bundleSection}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Views</h2>
+          {/* ────────── Revamped analytics sections (wpb-analytics-revamp-1) ─────── */}
+
+          <FunnelHero
+            snapshot={funnelSnapshot}
+            windowLabel={from && to ? `${from} → ${to}` : `Last ${days} days`}
+            formatRevenue={formatRevenue}
+            formatCount={(n) => n.toLocaleString()}
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 16,
+            }}
+          >
+            <EngagementPulse
+              engagedSessions={engagedSessions}
+              prevEngagedSessions={prevEngagedSessions}
+              engagementToOrderPct={engagementToOrderPct}
+              trend={engagementTrend}
+            />
+            <RevenueAttribution
+              summary={bundleRevenueSummary}
+              trend={bundleRevenueTrend}
+              formatRevenue={formatRevenue}
+            />
           </div>
 
-          <div className={styles.statsGrid}>
-            <div className={`${styles.statCard} ${styles.accent1}`}>
-              <span className={styles.statLabel}>Total Views</span>
-              <span className={styles.statValue}>{views.totalViews.toLocaleString()}</span>
-              {compare && views.prevTotalViews > 0 && (
-                <span className={
-                  views.totalViews >= views.prevTotalViews ? styles.growthPos : styles.growthNeg
-                }>
-                  {formatGrowth(views.totalViews, views.prevTotalViews)} vs prev period
-                </span>
-              )}
-              <span className={styles.statSub}>widget renders in selected period</span>
-            </div>
+          <BundlePerformanceMatrix
+            rows={bundleMatrix}
+            formatRevenue={formatRevenue}
+            onRowClick={(bundleId) => navigate(`/app/bundles/full-page-bundle/configure/${bundleId}`)}
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)",
+              gap: 16,
+            }}
+          >
+            <LiveActivityFeed initialEvents={activityFeed} />
+            <TopCampaigns rows={topCampaignsRows} formatRevenue={formatRevenue} />
           </div>
-
-          {views.viewsByBundle.length > 0 && (
-            <div style={{ background: "#fff", border: "1px solid #e3e3e3", borderRadius: 8, padding: "16px 20px" }}>
-              <s-stack direction="block" gap="small">
-                <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Views by Bundle</h3>
-                <div>
-                  {views.viewsByBundle.map((row, i) => {
-                    const maxViews = views.viewsByBundle[0]?.views || 1;
-                    const pct = Math.round((row.views / maxViews) * 100);
-                    return (
-                      <div key={row.bundleId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                        <div style={{ width: 20, color: "#6d7175", fontSize: 12, flexShrink: 0 }}>{i + 1}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                            <span style={{ fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
-                            <span style={{ fontSize: 13, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}>{row.views.toLocaleString()}</span>
-                          </div>
-                          <div style={{ height: 6, background: "#e3e3e3", borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct}%`, background: "#005bd3", borderRadius: 3, transition: "width 0.4s ease" }} />
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </s-stack>
-            </div>
-          )}
-
-          {/* Bundle Revenue Section */}
-          <div className={styles.bundleSection}>
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Revenue</h2>
-          </div>
-
-          <BundleKpiRow summary={bundleRevenueSummary} compare={compare} />
-
-          <div className={styles.bundleSplitRow}>
-            <BundleTrendChart trend={bundleRevenueTrend} days={days} isClient={isClient} />
-            <BundleLeaderboardCard leaderboard={bundleLeaderboard} />
-          </div>
-
-          {/* Section divider: UTM Attribution */}
-          <div className={styles.sectionDivider}>
-            <span className={styles.sectionDividerLabel}>UTM Attribution</span>
-          </div>
-
-          {/* Metric cards */}
-          <div className={styles.statsGrid}>
-            <div className={`${styles.statCard} ${styles.accent1}`}>
-              <span className={styles.statLabel}>Total Ad Revenue</span>
-              <span className={styles.statValue}>{formatRevenue(summary.totalRevenue)}</span>
-              {compare && revenueGrowth && (
-                <span className={
-                  isPositiveGrowth(summary.totalRevenue, summary.prevTotalRevenue)
-                    ? styles.growthPos : styles.growthNeg
-                }>
-                  {revenueGrowth} vs prev period
-                </span>
-              )}
-              <span className={styles.statSub}>
-                {summary.totalRevenue > 0 ? "from attributed orders" : "no attributed orders yet"}
-              </span>
-            </div>
-
-            <div className={`${styles.statCard} ${styles.accent2}`}>
-              <span className={styles.statLabel}>Attributed Orders</span>
-              <span className={styles.statValue}>{summary.totalOrders}</span>
-              {compare && ordersGrowth && (
-                <span className={
-                  isPositiveGrowth(summary.totalOrders, summary.prevTotalOrders)
-                    ? styles.growthPos : styles.growthNeg
-                }>
-                  {ordersGrowth} vs prev period
-                </span>
-              )}
-              <span className={styles.statSub}>
-                {summary.totalOrders > 0 ? "orders with UTM data" : "no UTM-tagged orders yet"}
-              </span>
-            </div>
-
-            <div className={`${styles.statCard} ${styles.accent3}`}>
-              <span className={styles.statLabel}>Avg. Order Value</span>
-              <span className={styles.statValue}>{formatRevenue(summary.aov)}</span>
-              {compare && aovGrowth && (
-                <span className={
-                  isPositiveGrowth(summary.aov, summary.prevAov)
-                    ? styles.growthPos : styles.growthNeg
-                }>
-                  {aovGrowth} vs prev period
-                </span>
-              )}
-              <span className={styles.statSub}>
-                {summary.totalOrders > 0
-                  ? `${Math.round((summary.bundleOrders / summary.totalOrders) * 100)}% bundle orders`
-                  : "—"}
-              </span>
-            </div>
-          </div>
-
-          {/* Revenue Trend — area chart (client-only) */}
-          {isClient && timeSeries.length > 1 && (
-            <div className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Revenue Trend</span>
-                <span className={styles.sectionCount}>daily</span>
-              </div>
-              <div style={{ padding: "20px 16px 16px" }}>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart
-                    data={timeSeries}
-                    margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#5c6ac4" stopOpacity={0.18} />
-                        <stop offset="95%" stopColor="#5c6ac4" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f2f3" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={chartXFormatter}
-                      tick={{ fontSize: 11, fill: "#8c9196" }}
-                      axisLine={false}
-                      tickLine={false}
-                      interval={xAxisInterval}
-                    />
-                    <YAxis
-                      tickFormatter={formatRevenueShort}
-                      tick={{ fontSize: 11, fill: "#8c9196" }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={56}
-                    />
-                    <RechartsTooltip
-                      formatter={chartTooltipFormatter}
-                      contentStyle={{
-                        border: "1px solid #e1e3e5",
-                        borderRadius: 8,
-                        fontSize: 13,
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                      }}
-                      labelFormatter={(label) => formatDateKey(label as string)}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="#5c6ac4"
-                      strokeWidth={2}
-                      fill="url(#revGrad)"
-                      dot={false}
-                      activeDot={{ r: 4, fill: "#5c6ac4" }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-          {/* Revenue by Platform */}
-          <div className={styles.sectionCard}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Revenue by Platform</span>
-              <span className={styles.sectionCount}>
-                {byPlatform.length} source{byPlatform.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <div className={styles.platformTable}>
-              <div className={`${styles.platformRow} ${styles.tableHead}`}>
-                <span className={styles.colLabel}>Platform</span>
-                <span className={styles.colLabel}>Orders</span>
-                <span className={styles.colLabel} style={{ minWidth: 100 }}>Revenue</span>
-                <span className={styles.colLabel} style={{ minWidth: 120 }}>&nbsp;</span>
-              </div>
-              {byPlatform.length === 0 && (
-                <div style={{ padding: "24px", textAlign: "center", color: "#8c9196", fontSize: 13 }}>
-                  No platform data yet — will appear once attributed orders come in.
-                </div>
-              )}
-              {byPlatform.map((p, i) => (
-                <div key={p.source} className={styles.platformRow}>
-                  <div className={styles.platformName}>
-                    <span className={`${styles.platformDot} ${platformDotClass(i)}`} />
-                    <span className={styles.platformLabel}>{p.source}</span>
-                  </div>
-                  <span className={styles.colLabel}>{p.orders}</span>
-                  <span className={styles.colLabel} style={{ fontWeight: 600, color: "#202223" }}>
-                    {formatRevenue(p.revenue)}
-                  </span>
-                  <div className={styles.revenueBar}>
-                    <div className={styles.barTrack}>
-                      <div
-                        className={styles.barFill}
-                        style={{
-                          width: `${Math.round((p.revenue / maxPlatformRevenue) * 100)}%`,
-                          background: i === 0
-                            ? "linear-gradient(90deg,#5c6ac4,#9c6ade)"
-                            : i === 1
-                              ? "linear-gradient(90deg,#00848e,#00a0ac)"
-                              : i === 2
-                                ? "linear-gradient(90deg,#f49342,#f26419)"
-                                : "#c4cdd0",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Revenue by Channel (UTM medium) */}
-          {byMedium.length > 0 && (
-            <div className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Revenue by Channel</span>
-                <span className={styles.sectionCount}>
-                  {byMedium.length} channel{byMedium.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className={styles.dataTable}>
-                <div className={`${styles.dataRow} ${styles.mediumRow} ${styles.headRow}`}>
-                  <span className={styles.dataCell}>Medium</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>AOV</span>
-                </div>
-                {byMedium.map((m) => (
-                  <div key={m.medium} className={`${styles.dataRow} ${styles.mediumRow}`}>
-                    <span className={`${styles.dataCell} ${styles.primary}`}>
-                      <span className={styles.mediumTag}>{m.medium}</span>
-                    </span>
-                    <span className={`${styles.dataCell} ${styles.right}`}>{m.orders}</span>
-                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                      {formatRevenue(m.revenue)}
-                    </span>
-                    <span className={`${styles.dataCell} ${styles.right}`} style={{ color: "#6d7175" }}>
-                      {m.orders > 0 ? formatRevenue(Math.round(m.revenue / m.orders)) : "—"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Revenue by Campaign */}
-          {byCampaign.length > 0 && (
-            <div className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Revenue by Campaign</span>
-                <span className={styles.sectionCount}>
-                  {byCampaign.length} campaign{byCampaign.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className={styles.dataTable}>
-                <div className={`${styles.dataRow} ${styles.campaignRow} ${styles.headRow}`}>
-                  <span className={styles.dataCell}>Campaign</span>
-                  <span className={styles.dataCell}>Source</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-                </div>
-                {byCampaign.map((c) => (
-                  <div key={c.campaign} className={`${styles.dataRow} ${styles.campaignRow}`}>
-                    <span className={`${styles.dataCell} ${styles.primary}`}>{c.campaign}</span>
-                    <span className={styles.dataCell}>
-                      <span className={styles.sourceTag}>{c.source}</span>
-                    </span>
-                    <span className={`${styles.dataCell} ${styles.right}`}>{c.orders}</span>
-                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                      {formatRevenue(c.revenue)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Top Bundles by Ad Revenue */}
-          {byBundle.length > 0 && (
-            <div className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Top Bundles by Ad Revenue</span>
-                <span className={styles.sectionCount}>
-                  {byBundle.length} bundle{byBundle.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className={styles.dataTable}>
-                <div className={`${styles.dataRow} ${styles.bundleRow} ${styles.headRow}`}>
-                  <span className={styles.dataCell}>Bundle</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-                </div>
-                {byBundle.map((b) => (
-                  <div key={b.name} className={`${styles.dataRow} ${styles.bundleRow}`}>
-                    <span className={`${styles.dataCell} ${styles.primary}`}>{b.name}</span>
-                    <span className={`${styles.dataCell} ${styles.right}`}>{b.orders}</span>
-                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                      {formatRevenue(b.revenue)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Top Landing Pages */}
-          {byLandingPage.length > 0 && (
-            <div className={styles.sectionCard}>
-              <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Top Landing Pages</span>
-                <span className={styles.sectionCount}>
-                  {byLandingPage.length} page{byLandingPage.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className={styles.dataTable}>
-                <div className={`${styles.dataRow} ${styles.landingRow} ${styles.headRow}`}>
-                  <span className={styles.dataCell}>Page</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Orders</span>
-                  <span className={`${styles.dataCell} ${styles.right}`}>Revenue</span>
-                </div>
-                {byLandingPage.map((lp) => (
-                  <div key={lp.page} className={`${styles.dataRow} ${styles.landingRow}`}>
-                    <span className={`${styles.dataCell} ${styles.primary} ${styles.pageUrl}`}>
-                      {lp.page}
-                    </span>
-                    <span className={`${styles.dataCell} ${styles.right}`}>{lp.orders}</span>
-                    <span className={`${styles.dataCell} ${styles.right}`} style={{ fontWeight: 600 }}>
-                      {formatRevenue(lp.revenue)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
         </div>
       </div>

@@ -1,0 +1,112 @@
+/*
+ * Wolfpack Analytics — Design Tokens
+ *
+ * Single source of truth for the revamped analytics page. Every component
+ * under app/components/analytics/ consumes these vars; no ad-hoc hex codes.
+ *
+ * Issue: docs/issues-prod/wpb-analytics-revamp-1.md
+ */
+
+:root {
+  /* ── Surface / Ink ─────────────────────────────────────────────── */
+  --wpb-ink-100: #ffffff;
+  --wpb-ink-200: #faf8f4;
+  --wpb-ink-300: #f5f2ee;
+  --wpb-ink-500: #918c80;
+  --wpb-ink-700: #2a2823;
+  --wpb-ink-900: #15140f;
+
+  /* ── Accents ───────────────────────────────────────────────────── */
+  --wpb-accent-engagement: #0e7c7b;
+  --wpb-accent-engagement-soft: #cce5e3;
+  --wpb-accent-revenue: #b08800;
+  --wpb-accent-revenue-soft: #f3e9c8;
+  --wpb-accent-warning: #d4493e;
+  --wpb-accent-warning-soft: #fad7d2;
+  --wpb-accent-success: #2f8a52;
+
+  /* ── Lines / shadows ───────────────────────────────────────────── */
+  --wpb-line: rgba(21, 20, 15, 0.08);
+  --wpb-line-strong: rgba(21, 20, 15, 0.18);
+  --wpb-shadow-card: 0 1px 0 rgba(21, 20, 15, 0.04), 0 4px 16px rgba(21, 20, 15, 0.06);
+
+  /* ── Type scale ────────────────────────────────────────────────── */
+  --wpb-font-stack: ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --wpb-display: 700 44px/48px var(--wpb-font-stack);
+  --wpb-numeric: 600 28px/32px var(--wpb-font-stack);
+  --wpb-numeric-sm: 600 20px/24px var(--wpb-font-stack);
+  --wpb-heading: 600 18px/24px var(--wpb-font-stack);
+  --wpb-body: 400 14px/22px var(--wpb-font-stack);
+  --wpb-micro: 500 12px/16px var(--wpb-font-stack);
+  --wpb-label-size: 11px;
+  --wpb-label-spacing: 1px;
+
+  /* ── Surface metrics ───────────────────────────────────────────── */
+  --wpb-radius: 12px;
+  --wpb-radius-sm: 6px;
+  --wpb-pad: 24px;
+  --wpb-pad-sm: 16px;
+  --wpb-gap: 16px;
+  --wpb-gap-sm: 8px;
+}
+
+/* ── Shared atoms (used by multiple components) ─────────────────── */
+
+.wpb-card {
+  background: var(--wpb-ink-100);
+  border: 1px solid var(--wpb-line);
+  border-radius: var(--wpb-radius);
+  box-shadow: var(--wpb-shadow-card);
+  padding: var(--wpb-pad);
+}
+
+.wpb-label {
+  font: var(--wpb-micro);
+  font-size: var(--wpb-label-size);
+  font-weight: 600;
+  letter-spacing: var(--wpb-label-spacing);
+  text-transform: uppercase;
+  color: var(--wpb-ink-500);
+  margin: 0;
+}
+
+.wpb-display-num {
+  font: var(--wpb-display);
+  color: var(--wpb-ink-900);
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.wpb-numeric {
+  font: var(--wpb-numeric);
+  color: var(--wpb-ink-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.wpb-delta {
+  font: var(--wpb-micro);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.wpb-delta--pos { color: var(--wpb-accent-success); }
+.wpb-delta--neg { color: var(--wpb-accent-warning); }
+.wpb-delta--neutral { color: var(--wpb-ink-500); }
+
+.wpb-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 var(--wpb-gap);
+}
+.wpb-section-title {
+  font: var(--wpb-heading);
+  color: var(--wpb-ink-900);
+  margin: 0;
+}
+.wpb-section-hint {
+  font: var(--wpb-body);
+  color: var(--wpb-ink-500);
+  margin: 0;
+}
