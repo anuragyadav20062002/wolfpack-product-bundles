@@ -2279,87 +2279,93 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    enablePreviewGate.requestPreview(() => {
-    // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
-    if (bundle.bundleType === 'full_page') {
-      if (!bundle.shopifyPageHandle) {
-        // No published page yet — trigger draft preview page creation
-        const formData = new FormData();
-        formData.append("intent", "createPreviewPage");
-        fetcher.submit(formData, { method: "post" });
+    const executePreviewBundle = () => {
+      // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
+      if (bundle.bundleType === 'full_page') {
+        if (!bundle.shopifyPageHandle) {
+          // No published page yet — trigger draft preview page creation
+          const formData = new FormData();
+          formData.append("intent", "createPreviewPage");
+          fetcher.submit(formData, { method: "post" });
+          return;
+        }
+
+        const shopDomain = shop.includes('.myshopify.com')
+          ? shop.replace('.myshopify.com', '')
+          : shop.split('.')[0];
+
+        const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+
+        open(pageUrl, '_blank');
+        shopify.toast.show("Bundle page opened in new tab", { isError: false });
         return;
       }
 
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop.split('.')[0];
+      // FOR PRODUCT-PAGE BUNDLES: Use product URL
+      let productUrl = null;
+      const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
 
-      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+      if (bundleProduct) {
 
+        // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
+        if (bundleProduct.onlineStorePreviewUrl) {
+          productUrl = bundleProduct.onlineStorePreviewUrl;
+        }
+        // Method 2: Fallback to onlineStoreUrl if preview URL not available
+        else if (bundleProduct.onlineStoreUrl) {
+          productUrl = bundleProduct.onlineStoreUrl;
+        }
+      }
 
-      open(pageUrl, '_blank');
-      shopify.toast.show("Bundle page opened in new tab", { isError: false });
+      // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
+      if (!productUrl && productHandle) {
+        if (shop.includes('shopifypreview.com')) {
+          productUrl = `https://${shop}/products/${productHandle}`;
+        } else {
+          const shopDomain = shop.includes('.myshopify.com')
+            ? shop.replace('.myshopify.com', '')
+            : shop;
+          productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
+        }
+      }
+      // Method 4: Fallback - Extract ID and use admin URL
+      else if (!productUrl && bundleProduct?.id) {
+        const productId = bundleProduct.id.includes('gid://shopify/Product/')
+          ? bundleProduct.id.split('/').pop()
+          : bundleProduct.id;
+
+        const shopDomain = shop.includes('.myshopify.com')
+          ? shop.replace('.myshopify.com', '')
+          : shop.split('.')[0];
+
+        productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
+      }
+
+      if (productUrl) {
+        open(productUrl, '_blank');
+
+        const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
+        const message = isPreviewUrl
+          ? "Bundle product preview opened in new tab"
+          : "Bundle product opened in new tab";
+
+        shopify.toast.show(message, { isError: false });
+      } else {
+        AppLogger.error('Bundle product data:', {}, bundleProduct);
+        shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
+          isError: true,
+          duration: 5000
+        });
+      }
+    };
+
+    if (bundle.bundleType === 'full_page') {
+      executePreviewBundle();
       return;
     }
 
-    // FOR PRODUCT-PAGE BUNDLES: Use product URL
-    let productUrl = null;
-    const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
-
-    if (bundleProduct) {
-
-      // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
-      if (bundleProduct.onlineStorePreviewUrl) {
-        productUrl = bundleProduct.onlineStorePreviewUrl;
-      }
-      // Method 2: Fallback to onlineStoreUrl if preview URL not available
-      else if (bundleProduct.onlineStoreUrl) {
-        productUrl = bundleProduct.onlineStoreUrl;
-      }
-    }
-
-    // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
-    if (!productUrl && productHandle) {
-      if (shop.includes('shopifypreview.com')) {
-        productUrl = `https://${shop}/products/${productHandle}`;
-      } else {
-        const shopDomain = shop.includes('.myshopify.com')
-          ? shop.replace('.myshopify.com', '')
-          : shop;
-        productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
-      }
-    }
-    // Method 4: Fallback - Extract ID and use admin URL
-    else if (!productUrl && bundleProduct?.id) {
-      const productId = bundleProduct.id.includes('gid://shopify/Product/')
-        ? bundleProduct.id.split('/').pop()
-        : bundleProduct.id;
-
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop.split('.')[0];
-
-      productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
-    }
-
-    if (productUrl) {
-      open(productUrl, '_blank');
-
-      const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
-      const message = isPreviewUrl
-        ? "Bundle product preview opened in new tab"
-        : "Bundle product opened in new tab";
-
-      shopify.toast.show(message, { isError: false });
-    } else {
-      AppLogger.error('Bundle product data:', {}, bundleProduct);
-      shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
-        isError: true,
-        duration: 5000
-      });
-    }
-    });
-  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate, appEmbedEnabled]);
+    enablePreviewGate.requestPreview(executePreviewBundle);
+  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate]);
 
   const handleSectionChange = useCallback((section: string) => {
     if (section === activeSection) return;

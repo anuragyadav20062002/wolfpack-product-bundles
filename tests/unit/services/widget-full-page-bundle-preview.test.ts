@@ -360,13 +360,18 @@ describe('refreshFullPageBundlePageBody', () => {
       })
     );
 
-    const result = await refreshFullPageBundlePageBody(admin, pageId, bundleId, mockSession.shop, makeBundle());
+    const result = await refreshFullPageBundlePageBody(admin, pageId, bundleId, mockSession.shop, makeBundle({
+      bundleDesignTemplate: null,
+      bundleDesignPresetId: null,
+    }));
 
     expect(result.success).toBe(true);
     const body = admin.graphql.mock.calls[0]?.[1]?.variables?.page?.body;
     expect((body.match(/data-wpb-full-page-bundle/g) ?? []).length).toBe(1);
     expect(body).toContain(`data-bundle-id="${bundleId}"`);
     expect(body).toContain('data-bundle-config="{&quot;id&quot;:&quot;bundle-abc123&quot;');
+    expect(body).toContain('&quot;bundleDesignTemplate&quot;:&quot;FBP_SIDE_FOOTER&quot;');
+    expect(body).toContain('&quot;bundleDesignPresetId&quot;:&quot;DEFAULT&quot;');
     expect(body).toContain('data-bundle-settings="{');
     expect(body).not.toContain('hidden\n>');
     expect(body).not.toContain('/apps/product-bundles/assets/');

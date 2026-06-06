@@ -347,7 +347,7 @@ export default function Dashboard() {
   });
 
   const handlePreviewBundle = useCallback((bundle: typeof bundles[number]) => {
-    enablePreviewGate.requestPreview(() => {
+    const executePreviewAction = () => {
       const action = decideDashboardPreviewAction({
         bundleType: bundle.bundleType as "full_page" | "product_page",
         bundleId: bundle.id,
@@ -373,7 +373,14 @@ export default function Dashboard() {
       }
 
       window.open(action.url, "_blank", "noopener,noreferrer");
-    });
+    };
+
+    if (bundle.bundleType === "full_page") {
+      executePreviewAction();
+      return;
+    }
+
+    enablePreviewGate.requestPreview(executePreviewAction);
   }, [shop, shopify, fetcher, enablePreviewGate, appEmbedEnabled]);
 
   const getStatusDisplay = (status: string) => {
