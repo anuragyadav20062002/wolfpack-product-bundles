@@ -13,3 +13,17 @@ export {
   buildBundleTrendSeries,
   formatDelta,
 } from "./analytics-helpers";
+
+export type {
+  BundleEngagementRow,
+  FunnelSnapshot,
+  EngagementTrendPoint,
+  BundleMatrixRow,
+  BundleSummaryInput,
+} from "./engagement-helpers";
+
+export {
+  computeBundleFunnel,
+  buildEngagementTrendSeries,
+  buildBundlePerformanceMatrix,
+} from "./engagement-helpers";
