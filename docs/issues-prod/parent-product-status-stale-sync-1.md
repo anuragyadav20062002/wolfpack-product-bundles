@@ -3,7 +3,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-05
-**Last Updated:** 2026-06-06 06:39
+**Last Updated:** 2026-06-06 06:42
 
 ## Overview
 FPB configure can show a stale Parent Product Status badge after the linked Shopify product status changes. Chrome verification showed the `testing` FPB configure tab displaying `Draft` while the exact Shopify product and bundle database row were `Active`; a full route reload corrected the badge to `Active`.
@@ -33,6 +33,11 @@ FPB configure can show a stale Parent Product Status badge after the linked Shop
 - Rechecked the parent status sync diff and kept this batch scoped to `useBundleConfigurationState`, its route contract test, and issue/spec docs.
 - Confirmed no dirty image assets are present before staging.
 - Next: run the focused regression, lint touched files, staged whitespace check, then commit this batch.
+
+### 2026-06-06 06:42 - Graph Refresh Commit Prep
+- Commit hooks rebuilt `graphify-out/GRAPH_REPORT.md` and `graphify-out/graph.json` after the batched code commits.
+- Stripped trailing whitespace from the generated report before staging.
+- Next: stage and commit only the graph outputs plus this issue-log entry.
 
 ## Related Documentation
 - `app/hooks/useBundleConfigurationState.ts`
