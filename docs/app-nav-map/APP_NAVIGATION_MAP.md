@@ -163,21 +163,44 @@ Setup behavior:
 **Screenshot:** `screenshots/03-analytics.png`
 
 ```
-Analytics Page
-├── Header: "Bundle Analytics"
+Analytics Page (revamped — issue wpb-analytics-revamp-1)
+├── Header: "Analytics" (ui-title-bar) + breadcrumb to /app/dashboard
+├── No-data banner (s-banner) — pixel-active vs not-enabled copy
+├── Pixel toggle: Enable/disable UTM tracking pixel
+├── Toolbar: Compare-period chip · [Export CSV] · [Compare] · Date range selector
 │
-├── Date Range Selector
-│   ├── Preset chips: [Last 7 days] [Last 30 days] [Last 90 days]
-│   └── Custom range → Popover with DatePicker (allowRange, multiMonth)
-│       └── [Button] "Apply"
+├── ── Section 1 ── FUNNEL HERO ── (app/components/analytics/FunnelHero.tsx)
+│   └── Engaged → Added-to-Cart → Checked Out → Revenue bars
+│       with drop-off pills between steps (coral)
 │
-├── UTM Attribution section
-│   ├── Metric cards: Total Revenue, AOV, period-over-period comparisons
-│   ├── Area chart: Revenue trend over selected period (Recharts)
-│   └── Table: UTM medium breakdown
+├── ── Section 2 ── 2-up grid ──
+│   ├── Engagement Pulse (EngagementPulse.tsx)
+│   │   ├── KPI: engaged sessions + delta vs prev period
+│   │   ├── KPI: engaged → checkout %
+│   │   └── 30-day area chart (teal)
+│   └── Revenue Attribution (RevenueAttribution.tsx)
+│       ├── KPI: bundle revenue + delta
+│       ├── KPI: bundle AOV
+│       └── 30-day area chart (gold)
 │
-└── Pixel toggle: Enable/disable UTM tracking pixel
+├── ── Section 3 ── Bundle Performance Matrix (BundlePerformanceMatrix.tsx)
+│   └── Sortable table: name | preset chip | engaged | orders | conv. | AOV | revenue
+│       Click row → navigate to /app/bundles/full-page-bundle/configure/$bundleId
+│
+└── ── Section 4 ── 2-up grid ──
+    ├── Live Activity Feed (LiveActivityFeed.tsx)
+    │   └── Stream of last-25 BundleEngagement rows w/ relative-time
+    └── Top Campaigns (TopCampaigns.tsx)
+        └── Top-5 UTM campaigns w/ bar bg + revenue/orders
 ```
+
+**Visual tokens:** `app/components/analytics/shared/tokens.css`
+- engagement teal `#0E7C7B`, revenue gold `#B08800`, drop-off coral `#D4493E`
+- 44 px hero numerics · 11 px uppercase labels · 12 px radius · warm `#F5F2EE` bg
+
+**Server helpers:** `app/lib/analytics/engagement-helpers.ts`
+- `computeBundleFunnel`, `buildEngagementTrendSeries`, `buildBundlePerformanceMatrix`
+- Pure-fn, unit-tested at `tests/unit/lib/engagement-helpers.test.ts`
 
 ---
 
