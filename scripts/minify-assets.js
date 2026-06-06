@@ -110,6 +110,15 @@ function minifyCSS(css) {
   // 5b. Shorten six-digit repeat hex colors (#ffffff -> #fff).
   css = css.replace(/#([0-9a-fA-F])\1([0-9a-fA-F])\2([0-9a-fA-F])\3\b/g, '#$1$2$3');
 
+  // 5c. CSS zero values don't need units. This keeps Shopify app-block CSS under
+  // the 100 KB limit without changing computed styles.
+  css = css.replace(
+    /(^|[\s:,(])0(?:px|rem|em|%)(?=\b|[;},)\s])/g,
+    (_match, prefix) => `${prefix}0`,
+  );
+  css = css.replace(/(^|[\s:(,])0\.(\d+)/g, (_match, prefix, fraction) => `${prefix}.${fraction}`);
+  css = css.replace(/\btransparent\b/g, '#0000');
+
   // 6. Remove empty rules (selector followed by empty braces, including @-rules)
   //    Repeat until no more empty rules remain (handles nested empties).
   let prev;
