@@ -203,6 +203,9 @@ class BundleWidgetFullPage {
       // Hide overlay now that UI is fully rendered
       this.hideLoadingOverlay();
 
+      // Storefront analytics: signal that the bundle has rendered and is interactive.
+      this._emitStorefrontEvent('bundle-ready', { stepCount: this.selectedBundle?.steps?.length || 0 });
+
       // For full-page bundles using cached config: schedule a background layout
       // refresh so any layout change saved by the merchant since the CDN-cached
       // page HTML was last built is picked up within seconds of page load.
@@ -232,6 +235,79 @@ class BundleWidgetFullPage {
       // Fire-and-forget: send error to server for AppLogger tracking
       this._reportError(error);
       this.showErrorUI(error);
+    }
+  }
+
+  // ========================================================================
+  // STOREFRONT ANALYTICS EVENT TAXONOMY
+  // ========================================================================
+  // wpb:* CustomEvents dispatched on window so themes / GTM / Klaviyo / Meta
+  // Pixel can forward to their analytics back-ends without app-side wiring.
+  // Mirrors EB's gbb-* event surface (see issue wpb-storefront-analytics-events-1).
+  // ========================================================================
+
+  _ensureWpbSessionId() {
+    if (this._wpbSessionId) return this._wpbSessionId;
+    try {
+      const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId || 'unknown';
+      const storageKey = `wpb_session_${bundleId}`;
+      const existing = sessionStorage.getItem(storageKey);
+      if (existing) { this._wpbSessionId = existing; return existing; }
+      const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `wpb-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem(storageKey, id);
+      this._wpbSessionId = id;
+      return id;
+    } catch (_e) {
+      this._wpbSessionId = `wpb-${Date.now()}`;
+      return this._wpbSessionId;
+    }
+  }
+
+  _emitStorefrontEvent(name, detail = {}) {
+    try {
+      const fullDetail = Object.assign({
+        bundleId: this.selectedBundle?.id || null,
+        bundleType: this.container?.dataset?.bundleType || 'full_page',
+        presetId: this.getFullPageDesignPreset?.() || null,
+        sessionId: this._ensureWpbSessionId(),
+        timestamp: new Date().toISOString(),
+      }, detail);
+      window.dispatchEvent(new CustomEvent(`wpb:${name}`, { detail: fullDetail, bubbles: true }));
+    } catch (_e) {
+      // Listener errors must never break the widget.
+    }
+  }
+
+  _sendEngagementBeacon(eventName) {
+    try {
+      const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId;
+      if (!bundleId) return;
+      const guardKey = `wpb_engaged_${bundleId}`;
+      if (sessionStorage.getItem(guardKey) === '1') return;
+      const sessionId = this._ensureWpbSessionId();
+      const shopId = window.Shopify?.shop || this.container?.dataset?.shop || window.location.hostname;
+      const payload = {
+        shopId,
+        bundleId,
+        sessionId,
+        presetId: this.getFullPageDesignPreset?.() || null,
+        bundleType: this.container?.dataset?.bundleType || 'full_page',
+        eventName: `wpb:${eventName}`,
+        landingPage: window.location.pathname + window.location.search,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+      };
+      sessionStorage.setItem(guardKey, '1');
+      fetch('/apps/product-bundles/api/attribution/engagement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => { /* fire-and-forget */ });
+    } catch (_e) {
+      // Beacon failures must never break the widget.
     }
   }
 
@@ -354,15 +430,11 @@ class BundleWidgetFullPage {
     const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
     this._runControlsScript(checkout.executeScript);
 
-    if (checkout.action === 'checkout') {
-      setTimeout(() => {
-        window.location.href = '/checkout';
-      }, 1000);
-      return;
-    }
+    const target = checkout.action === 'checkout' ? '/checkout' : '/cart';
+    this._emitStorefrontEvent('checkout-clicked', { target });
 
     setTimeout(() => {
-      window.location.href = '/cart';
+      window.location.href = target;
     }, 1000);
   }
 
@@ -1624,9 +1696,11 @@ class BundleWidgetFullPage {
       } else {
         const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
         if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
+          const previousStepIndex = this.currentStepIndex;
           this.activeCollectionId = null;
           this.searchQuery = '';
           this.currentStepIndex = targetStepIndex;
+          this._emitStorefrontEvent('step-changed', { previousStepIndex, currentStepIndex: targetStepIndex, direction: 'next' });
           this.renderFullPageLayoutWithSidebar();
         } else if (!this.canNavigateToStep(targetStepIndex)) {
           ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
@@ -4881,11 +4955,15 @@ class BundleWidgetFullPage {
 
         await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
 
+        // Storefront analytics: bundle successfully added to cart.
+        this._emitStorefrontEvent('bundle-add-to-cart-success', { itemCount: items.length, lineCount: selectedLines.length });
+
         // Show success message
         ToastManager.show('Bundle added to cart successfully!');
         this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
 
       } catch (fetchError) {
+        this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'fetch-error', message: String(fetchError && fetchError.message || fetchError) });
         ToastManager.show('Failed to add bundle to cart. Please try again.');
       } finally {
         this.hideLoadingOverlay();
@@ -4893,6 +4971,7 @@ class BundleWidgetFullPage {
       }
 
     } catch (error) {
+      this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'validation-error', message: String(error && error.message || error) });
       ToastManager.show('Failed to add bundle to cart. Please try again.');
     }
   }
@@ -6199,6 +6278,14 @@ class BundleWidgetFullPage {
     } else {
       delete this.selectedProducts[stepIndex][productId];
     }
+
+    // Storefront analytics: emit selection delta + first-interaction beacon.
+    const selectionEventName = (currentQuantity === 0 && quantity > 0) ? 'product-selected'
+      : (currentQuantity > 0 && quantity === 0) ? 'product-deselected'
+      : 'product-quantity-changed';
+    this._emitStorefrontEvent(selectionEventName, { stepIndex, productId, previousQuantity: currentQuantity, quantity });
+    this._emitStorefrontEvent('session-engaged', { trigger: selectionEventName });
+    this._sendEngagementBeacon('session-engaged');
 
     // Re-lock free gift if a paid item was just removed and conditions no longer met
     this._syncFreeGiftLock();
