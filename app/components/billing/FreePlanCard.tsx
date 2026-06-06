@@ -1,79 +1,53 @@
-/**
- * Free Plan Card Component
- *
- * Displays the Free plan details in the pricing comparison.
- */
-
-import {
-  Card,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-  Badge,
-  Divider,
-  Icon,
-} from "@shopify/polaris";
-import { CheckIcon } from "@shopify/polaris-icons";
 import { PLANS } from "../../constants/plans";
+import { useTranslation } from "react-i18next";
 
 export interface FreePlanCardProps {
   isCurrentPlan: boolean;
 }
 
 export function FreePlanCard({ isCurrentPlan }: FreePlanCardProps) {
+  const { t } = useTranslation();
+
   return (
-    <Card>
-      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <BlockStack gap="500">
-          <BlockStack gap="200">
-            <InlineStack align="space-between" blockAlign="center">
-              <Text as="h3" variant="headingLg">
-                {PLANS.free.name}
-              </Text>
-              {isCurrentPlan && <Badge tone="success">Current Plan</Badge>}
-            </InlineStack>
-            <InlineStack gap="100" blockAlign="baseline">
-              <Text as="p" variant="heading2xl" fontWeight="bold">
-                Free
-              </Text>
-            </InlineStack>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              Perfect for getting started with bundles
-            </Text>
-          </BlockStack>
+    <s-section>
+      <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        <s-stack direction="block" gap="large">
+          <s-stack direction="block" gap="small-100">
+            <s-stack direction="inline" justifyContent="space-between" alignItems="center">
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{PLANS.free.name}</h3>
+              {isCurrentPlan && <s-badge tone="success">{t("billing.cards.currentPlan")}</s-badge>}
+            </s-stack>
+            <s-stack direction="inline" alignItems="baseline" gap="small-400">
+              <span style={{ fontSize: 28, fontWeight: 700 }}>{t("billing.cards.freePrice")}</span>
+            </s-stack>
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+              {t("billing.cards.freeDescription")}
+            </p>
+          </s-stack>
 
-          <Divider />
+          <s-divider />
 
-          <BlockStack gap="300">
-            <Text as="p" variant="bodyMd" fontWeight="semibold">
-              Includes:
-            </Text>
-            <BlockStack gap="200">
+          <s-stack direction="block" gap="small">
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("billing.cards.includes")}</p>
+            <s-stack direction="block" gap="small-100">
               {PLANS.free.features.map((feature, index) => (
-                <InlineStack key={index} gap="200" blockAlign="center">
-                  <div style={{ color: '#008060' }}>
-                    <Icon source={CheckIcon} tone="success" />
+                <s-stack key={index} direction="inline" alignItems="center" gap="small-100">
+                  <div style={{ color: "#008060" }}>
+                    <s-icon type="check" />
                   </div>
-                  <Text as="span" variant="bodyMd">
-                    {feature}
-                  </Text>
-                </InlineStack>
+                  <span style={{ fontSize: 14 }}>{feature}</span>
+                </s-stack>
               ))}
-            </BlockStack>
-          </BlockStack>
-        </BlockStack>
+            </s-stack>
+          </s-stack>
+        </s-stack>
 
-        <div style={{ marginTop: 'auto', paddingTop: '1.5rem' }}>
-          <Button
-            fullWidth
-            variant={isCurrentPlan ? "secondary" : "primary"}
-            disabled={true}
-          >
-            {isCurrentPlan ? "Current Plan" : "Free Plan"}
-          </Button>
+        <div style={{ marginTop: "auto", paddingTop: "1.5rem" }}>
+          <s-button variant={isCurrentPlan ? "secondary" : "primary"} disabled inlineSize="fill">
+              {isCurrentPlan ? t("billing.cards.currentPlan") : t("billing.cards.freePlan")}
+          </s-button>
         </div>
       </div>
-    </Card>
+    </s-section>
   );
 }

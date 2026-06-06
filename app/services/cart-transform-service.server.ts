@@ -1,6 +1,8 @@
 // Cart Transform Automatic Activation Service
 import type { authenticate } from "~/shopify.server";
 import { AppLogger } from "../lib/logger";
+import db from "../db.server";
+import { ensureShopHasExpiringOfflineSession } from "./offline-token.server";
 
 type AdminApiContext = Awaited<ReturnType<typeof authenticate.admin>>['admin'];
 
@@ -9,6 +11,12 @@ export interface CartTransformActivationResult {
   cartTransformId?: string;
   error?: string;
   alreadyExists?: boolean;
+}
+
+export interface CartTransformMetafieldSyncResult {
+  success: boolean;
+  cartTransformId?: string;
+  error?: string;
 }
 
 const RUST_FUNCTION_HANDLE = 'bundle-cart-transform-rs';
@@ -129,6 +137,42 @@ export class CartTransformService {
         operation: 'check-existing'
       }, error);
       return { exists: false };
+    }
+  }
+
+  private static async findCartTransformByFunctionId(
+    admin: AdminApiContext,
+    functionId: string
+  ): Promise<{ id?: string; functionId?: string }> {
+    const QUERY = `
+      query FindCartTransformByFunctionId {
+        cartTransforms(first: 10) {
+          edges {
+            node {
+              id
+              functionId
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const response = await admin.graphql(QUERY);
+      const data = await response.json() as any;
+      const match = data.data?.cartTransforms?.edges?.find((edge: any) => {
+        return edge.node?.functionId === functionId;
+      });
+      return {
+        id: match?.node?.id,
+        functionId: match?.node?.functionId,
+      };
+    } catch (error) {
+      AppLogger.warn('Error finding cart transform by function ID', {
+        component: 'cart-transform',
+        operation: 'find-by-function-id'
+      }, error);
+      return {};
     }
   }
 
@@ -279,7 +323,8 @@ export class CartTransformService {
     error?: string;
   }> {
     try {
-      const { unauthenticated } = await import("../shopify.server");
+      const { unauthenticated, sessionStorage } = await import("../shopify.server");
+      await ensureShopHasExpiringOfflineSession(db, shopDomain, sessionStorage);
       const { admin } = await unauthenticated.admin(shopDomain);
 
       const existing = await this.checkExistingCartTransform(admin);
@@ -343,8 +388,6 @@ export class CartTransformService {
       sessionsPurged: number;
     };
   }> {
-    const { default: db } = await import("../db.server");
-
     const sessions = await db.session.findMany({
       where: { isOnline: false },
       select: { shop: true },
@@ -414,5 +457,82 @@ export class CartTransformService {
     }
 
     return result;
+  }
+
+  static async syncCartLineMessagingSettings(
+    admin: AdminApiContext,
+    shopDomain: string,
+    settings: unknown
+  ): Promise<CartTransformMetafieldSyncResult> {
+    try {
+      const rustFunctionId = await this.getRustFunctionId(admin);
+      if (!rustFunctionId) {
+        const errorMsg = `Rust function handle '${RUST_FUNCTION_HANDLE}' not found — has the app been deployed?`;
+        AppLogger.error(errorMsg, {
+          component: 'cart-transform',
+          operation: 'sync-cart-line-messaging'
+        }, { shopDomain });
+        return { success: false, error: errorMsg };
+      }
+
+      let cartTransformId = (await this.findCartTransformByFunctionId(admin, rustFunctionId)).id;
+      if (!cartTransformId) {
+        const activation = await this.activateForNewInstallation(admin, shopDomain);
+        if (!activation.success || !activation.cartTransformId) {
+          return { success: false, error: activation.error ?? 'Cart transform activation failed' };
+        }
+        cartTransformId = activation.cartTransformId;
+      }
+
+      const MUTATION = `
+        mutation SyncCartLineMessagingSettings($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              key
+              namespace
+              value
+            }
+            userErrors {
+              field
+              message
+              code
+            }
+          }
+        }
+      `;
+
+      const response = await admin.graphql(MUTATION, {
+        variables: {
+          metafields: [{
+            ownerId: cartTransformId,
+            namespace: '$app',
+            key: 'bundle_cart_line_messaging',
+            type: 'json',
+            value: JSON.stringify(settings ?? null),
+          }],
+        },
+      });
+      const data = await response.json() as any;
+      const errors = data.data?.metafieldsSet?.userErrors ?? [];
+      if (data.errors || errors.length > 0) {
+        const message = data.errors
+          ? data.errors.map((error: any) => error.message).join(', ')
+          : errors.map((error: any) => error.message).join(', ');
+        AppLogger.error('Failed to sync cart line messaging metafield', {
+          component: 'cart-transform',
+          operation: 'sync-cart-line-messaging'
+        }, { shopDomain, errors: data.errors ?? errors });
+        return { success: false, cartTransformId, error: message };
+      }
+
+      return { success: true, cartTransformId };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown cart transform metafield sync error';
+      AppLogger.error('Error syncing cart line messaging metafield', {
+        component: 'cart-transform',
+        operation: 'sync-cart-line-messaging'
+      }, { shopDomain, error: message });
+      return { success: false, error: message };
+    }
   }
 }

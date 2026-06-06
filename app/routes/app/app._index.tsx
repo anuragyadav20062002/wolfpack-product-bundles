@@ -40,8 +40,8 @@ const FEATURES = [
   {
     icon: "🎨",
     iconClass: styles.iconOrange,
-    title: "Design Control Panel",
-    desc: "Pixel-perfect customization — colors, typography, promo banners, GIF loaders, and custom CSS.",
+    title: "Settings -> Design",
+    desc: "Bundle design customization — colors, typography, promo banners, GIF loaders, and custom CSS.",
   },
   {
     icon: "📊",

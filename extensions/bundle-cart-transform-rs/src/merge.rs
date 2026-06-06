@@ -1,10 +1,27 @@
 use shopify_function::scalars::Decimal;
 use std::collections::HashMap;
 
-use crate::helpers::{decimal_to_f64, is_free_gift_line, parse_json_or_default, truncate};
-use crate::pricing::calculate_discount_percentage;
+use crate::helpers::{
+    decimal_to_f64,
+    is_addon_line,
+    is_free_gift_line,
+    parse_addon_discount,
+    parse_json_or_default,
+    truncate,
+};
+use crate::pricing::{
+    calculate_buy_x_get_y_discount_percentage,
+    calculate_discount_percentage,
+    calculate_selected_addon_discount_amount,
+    rounded_percentage,
+};
 use crate::schema;
-use crate::types::ComponentParent;
+use crate::types::{
+    CartLineDisplayProperties,
+    CartLineMessagingSettings,
+    ComponentParent,
+    PricingMethod,
+};
 
 fn parent_match_count(parent: &ComponentParent, group_variant_ids: &[String]) -> usize {
     let Some(component_reference) = &parent.component_reference else {
@@ -37,9 +54,49 @@ fn select_component_parent<'a>(
         })
 }
 
+fn non_empty(value: &Option<String>) -> Option<String> {
+    value
+        .as_ref()
+        .map(|value| value.trim())
+        .filter(|value| !value.is_empty())
+        .map(|value| value.to_string())
+}
+
+fn display_properties_for_group(
+    lines: &[schema::run::input::cart::Lines],
+    line_indices: &[usize],
+) -> CartLineDisplayProperties {
+    line_indices
+        .iter()
+        .find_map(|&idx| {
+            lines[idx]
+                .bundle_display_properties()
+                .and_then(|attr| attr.value())
+                .and_then(|value| serde_json::from_str::<CartLineDisplayProperties>(value.as_str()).ok())
+        })
+        .unwrap_or_default()
+}
+
 /// Process all MERGE operations for one cart pass.
 ///
-/// Groups cart lines by _bundle_id (O(n) pass), then for each group builds one
+fn easy_bundle_offer_group_id(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let Some((base, item_index)) = trimmed.rsplit_once('_') else {
+        return Some(trimmed.to_string());
+    };
+
+    if base.is_empty() || item_index.is_empty() {
+        return None;
+    }
+
+    Some(base.to_string())
+}
+
+/// Groups cart lines by EB `_easyBundle:OfferId` base (O(n) pass), then for each group builds one
 /// MERGE operation using the component_parents metafield for parent variant ID
 /// and pricing config.
 ///
@@ -50,6 +107,7 @@ pub fn process_merge_operations(
     input: &schema::run::Input,
     presentment_currency_rate: f64,
     processed_line_ids: &mut std::collections::HashSet<String>,
+    cart_line_messaging: &CartLineMessagingSettings,
 ) -> Vec<schema::CartOperation> {
     let mut operations: Vec<schema::CartOperation> = Vec::new();
 
@@ -58,22 +116,27 @@ pub fn process_merge_operations(
     let mut bundle_name_counts: HashMap<String, u32> = HashMap::new();
 
     // -------------------------------------------------------------------------
-    // Step 1: Group cart lines by _bundle_id in a single O(n) pass.
+    // Step 1: Group cart lines by EB `_easyBundle:OfferId` base in a single O(n) pass.
     // Using indices to avoid borrow conflicts with `lines` slice.
     // -------------------------------------------------------------------------
     let lines = input.cart().lines();
     let mut bundle_groups: HashMap<String, Vec<usize>> = HashMap::new();
 
     for (idx, line) in lines.iter().enumerate() {
-        // bundle_id attribute value is nullable (value: String in schema)
-        let bundle_id = match line.bundle_id().and_then(|a| a.value()) {
-            Some(v) => v.as_str().to_string(),
-            None => continue,
-        };
-        if bundle_id.is_empty() {
+        let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
+        if step_type == Some("gift_message") {
             continue;
         }
-        bundle_groups.entry(bundle_id).or_default().push(idx);
+
+        let offer_group_id = match line
+            .easy_bundle_offer_id()
+            .and_then(|a| a.value())
+            .and_then(|value| easy_bundle_offer_group_id(value.as_str()))
+        {
+            Some(v) => v,
+            None => continue,
+        };
+        bundle_groups.entry(offer_group_id).or_default().push(idx);
     }
 
     // -------------------------------------------------------------------------
@@ -122,11 +185,14 @@ pub fn process_merge_operations(
         let mut free_gift_total: f64 = 0.0;
         let mut paid_quantity: i64 = 0;
         let mut total_quantity: i64 = 0;
+        let mut paid_unit_prices: Vec<f64> = Vec::new();
+        let mut selected_addon_discount_amount: f64 = 0.0;
 
         for &idx in line_indices {
             let line = &lines[idx];
             let line_total = decimal_to_f64(line.cost().total_amount().amount());
             let qty = *line.quantity() as i64;
+            let unit_price = decimal_to_f64(line.cost().amount_per_quantity().amount());
             total_quantity += qty;
             let step_type = line.step_type().and_then(|a| a.value()).map(|s| s.as_str());
             if is_free_gift_line(step_type) {
@@ -134,6 +200,21 @@ pub fn process_merge_operations(
             } else {
                 paid_total += line_total;
                 paid_quantity += qty;
+                for _ in 0..qty.max(0) {
+                    paid_unit_prices.push(unit_price);
+                }
+                if is_addon_line(step_type) {
+                    let addon_discount = parse_addon_discount(step_type);
+                    selected_addon_discount_amount += calculate_selected_addon_discount_amount(
+                        line_total,
+                        addon_discount
+                            .as_ref()
+                            .map(|(discount_type, _)| discount_type.as_str()),
+                        addon_discount
+                            .as_ref()
+                            .map(|(_, discount_value)| discount_value.as_str()),
+                    );
+                }
             }
         }
         let original_total = paid_total + free_gift_total;
@@ -141,15 +222,26 @@ pub fn process_merge_operations(
         // -------------------------------------------------------------------------
         // Step 4: Calculate effective discount percentage.
         // -------------------------------------------------------------------------
-        let discount_percentage = if let Some(ref pa) = parent.price_adjustment {
-            calculate_discount_percentage(
-                pa,
-                paid_total,
-                original_total,
-                total_quantity,
-                paid_quantity,
-                presentment_currency_rate,
-            )
+        let base_discount_percentage = if let Some(ref pa) = parent.price_adjustment {
+            if pa.method == PricingMethod::BuyXGetY {
+                calculate_buy_x_get_y_discount_percentage(
+                    pa,
+                    &paid_unit_prices,
+                    paid_total,
+                    original_total,
+                    paid_quantity,
+                    presentment_currency_rate,
+                )
+            } else {
+                calculate_discount_percentage(
+                    pa,
+                    paid_total,
+                    original_total,
+                    total_quantity,
+                    paid_quantity,
+                    presentment_currency_rate,
+                )
+            }
         } else if free_gift_total > 0.0 && original_total > 0.0 {
             let raw = (1.0 - paid_total / original_total) * 100.0;
             if raw.is_finite() {
@@ -160,12 +252,21 @@ pub fn process_merge_operations(
         } else {
             0.0
         };
+        let discount_percentage = if selected_addon_discount_amount > 0.0 && original_total > 0.0 {
+            let base_discount_amount = original_total * base_discount_percentage / 100.0;
+            rounded_percentage(
+                (base_discount_amount + selected_addon_discount_amount).min(original_total),
+                original_total,
+            )
+        } else {
+            base_discount_percentage
+        };
 
         // -------------------------------------------------------------------------
         // Step 5: Build unique bundle title.
         // -------------------------------------------------------------------------
         let base_name = lines[line_indices[0]]
-            .bundle_name()
+            .easy_bundle_name()
             .and_then(|a| a.value())
             .map(|s| s.as_str().to_string())
             .unwrap_or_else(|| "Bundle".to_string());
@@ -218,7 +319,8 @@ pub fn process_merge_operations(
                 retail_cents,
                 bundle_cents,
                 line_pct,
-                retail_cents - bundle_cents
+                retail_cents - bundle_cents,
+                ""
             ]));
         }
 
@@ -238,7 +340,7 @@ pub fn process_merge_operations(
             })
             .collect();
 
-        let attributes = vec![
+        let mut attributes = vec![
             schema::AttributeOutput {
                 key: "_is_bundle_parent".into(),
                 value: "true".into(),
@@ -273,6 +375,58 @@ pub fn process_merge_operations(
             },
         ];
 
+        let source_display_properties = display_properties_for_group(lines, &line_indices);
+
+        attributes.push(schema::AttributeOutput {
+            key: "_Items".into(),
+            value: "".into(),
+        });
+        attributes.push(schema::AttributeOutput {
+            key: "Box".into(),
+            value: non_empty(&source_display_properties.box_label)
+                .unwrap_or_else(|| "1".to_string()),
+        });
+
+        if cart_line_messaging.is_enabled {
+            let source_items = non_empty(&source_display_properties.items);
+            let source_retail_price = non_empty(&source_display_properties.retail_price);
+            let source_you_save = non_empty(&source_display_properties.you_save.amount_percentage);
+            let source_you_save_amount = non_empty(&source_display_properties.you_save.amount);
+            let source_you_save_percentage = non_empty(&source_display_properties.you_save.percentage);
+
+            if cart_line_messaging.show_bundle_contains {
+                if let Some(value) = source_items {
+                    attributes.push(schema::AttributeOutput {
+                        key: "Items".into(),
+                        value,
+                    });
+                }
+            }
+
+            if cart_line_messaging.show_original_price {
+                if let Some(value) = source_retail_price {
+                    attributes.push(schema::AttributeOutput {
+                        key: "Retail Price".into(),
+                        value,
+                    });
+                }
+            }
+
+            if cart_line_messaging.discount_display.is_enabled {
+                if let Some(value) = select_you_save_value(
+                    &cart_line_messaging.discount_display.format,
+                    source_you_save,
+                    source_you_save_amount,
+                    source_you_save_percentage,
+                ) {
+                    attributes.push(schema::AttributeOutput {
+                        key: "You Save".into(),
+                        value,
+                    });
+                }
+            }
+        }
+
         // price is ALWAYS included (even at 0%) so Shopify uses component sum, not parent variant price.
         let price = Some(schema::PriceAdjustment {
             percentage_decrease: Some(schema::PriceAdjustmentValue {
@@ -297,4 +451,22 @@ pub fn process_merge_operations(
     }
 
     operations
+}
+
+fn select_you_save_value(
+    format: &str,
+    combined: Option<String>,
+    amount: Option<String>,
+    percentage: Option<String>,
+) -> Option<String> {
+    match format {
+        "amount" => amount.or(combined),
+        "percentage" => percentage.or(combined),
+        _ => combined.or_else(|| match (amount, percentage) {
+            (Some(amount), Some(percentage)) => Some(format!("{amount} ({percentage})")),
+            (Some(amount), None) => Some(amount),
+            (None, Some(percentage)) => Some(percentage),
+            (None, None) => None,
+        }),
+    }
 }

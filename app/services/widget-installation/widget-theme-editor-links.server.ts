@@ -28,7 +28,8 @@ export function generateThemeEditorDeepLink(
   blockHandle: string = 'bundle',
   bundleId?: string,
   template: string = 'product',
-  target: string = 'newAppsSection'
+  target: string = 'newAppsSection',
+  previewPath?: string
 ): ThemeEditorDeepLink {
   const shopDomain = shop.replace('.myshopify.com', '');
   const appBlockId = `${apiKey}/${blockHandle}`;
@@ -41,6 +42,10 @@ export function generateThemeEditorDeepLink(
 
   if (bundleId) {
     params.append('bundleId', bundleId);
+  }
+
+  if (previewPath) {
+    params.append('previewPath', previewPath);
   }
 
   const url = `https://${shopDomain}.myshopify.com/admin/themes/current/editor?${params.toString()}`;

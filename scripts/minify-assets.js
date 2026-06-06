@@ -3,9 +3,9 @@
 /**
  * Asset minification script for Shopify extension files.
  *
- * Operates in-place: reads each file, minifies it, and writes the result
- * back to the same path. The minified file IS the committed file — there is
- * no separate source directory for CSS.
+ * CSS source files can be separate from their deploy targets. When a CSS entry
+ * has { source, target }, the source remains readable and the minified output
+ * is written to the Shopify extension asset target.
  *
  * CSS minification:
  *   - Remove all block comments (/* ... *\/)
@@ -43,8 +43,14 @@ const ROOT_DIR = join(__dirname, '..');
 // ---------------------------------------------------------------------------
 
 const CSS_FILES = [
-  join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page.css'),
-  join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
+  {
+    source: join(ROOT_DIR, 'app/assets/widgets/full-page-css/bundle-widget-full-page.css'),
+    target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget-full-page.css'),
+  },
+  {
+    source: join(ROOT_DIR, 'app/assets/widgets/product-page-css/bundle-widget.css'),
+    target: join(ROOT_DIR, 'extensions/bundle-builder/assets/bundle-widget.css'),
+  },
   join(ROOT_DIR, 'extensions/bundle-builder/assets/modal-discount-bar.css'),
 ];
 
@@ -101,6 +107,18 @@ function minifyCSS(css) {
   // 5. Strip trailing semicolons immediately before }
   css = css.replace(/;}/g, '}');
 
+  // 5b. Shorten six-digit repeat hex colors (#ffffff -> #fff).
+  css = css.replace(/#([0-9a-fA-F])\1([0-9a-fA-F])\2([0-9a-fA-F])\3\b/g, '#$1$2$3');
+
+  // 5c. CSS zero values don't need units. This keeps Shopify app-block CSS under
+  // the 100 KB limit without changing computed styles.
+  css = css.replace(
+    /(^|[\s:,(])0(?:px|rem|em|%)(?=\b|[;},)\s])/g,
+    (_match, prefix) => `${prefix}0`,
+  );
+  css = css.replace(/(^|[\s:(,])0\.(\d+)/g, (_match, prefix, fraction) => `${prefix}.${fraction}`);
+  css = css.replace(/\btransparent\b/g, '#0000');
+
   // 6. Remove empty rules (selector followed by empty braces, including @-rules)
   //    Repeat until no more empty rules remain (handles nested empties).
   let prev;
@@ -111,6 +129,31 @@ function minifyCSS(css) {
 
   // 7. Trim
   return css.trim();
+}
+
+function resolveCssImports(sourcePath, css, seen = new Set()) {
+  const sourceDir = dirname(sourcePath);
+
+  return css.replace(
+    /@import\s+(?:url\()?['"]([^'")]+)['"]\)?\s*;/g,
+    (statement, importPath) => {
+      if (/^(?:https?:)?\/\//.test(importPath) || importPath.startsWith('/')) {
+        return statement;
+      }
+
+      const resolvedPath = join(sourceDir, importPath);
+      if (seen.has(resolvedPath)) {
+        return '';
+      }
+      if (!existsSync(resolvedPath)) {
+        throw new Error(`Missing CSS import ${importPath} from ${sourcePath}`);
+      }
+
+      seen.add(resolvedPath);
+      const importedCss = readFileSync(resolvedPath, 'utf-8');
+      return resolveCssImports(resolvedPath, importedCss, seen);
+    },
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -324,31 +367,34 @@ function minifyJS(js) {
 /**
  * Process a single file: read → minify → write → return result.
  *
- * @param {string} filePath
+ * @param {string | { source: string, target: string }} fileEntry
  * @param {'css'|'js'} type
  * @returns {FileResult}
  */
-function processFile(filePath, type) {
-  const label = filePath.replace(ROOT_DIR + '/', '');
+function processFile(fileEntry, type) {
+  const sourcePath = typeof fileEntry === 'string' ? fileEntry : fileEntry.source;
+  const targetPath = typeof fileEntry === 'string' ? fileEntry : fileEntry.target;
+  const label = targetPath.replace(ROOT_DIR + '/', '');
+  const sourceLabel = sourcePath.replace(ROOT_DIR + '/', '');
 
-  if (!existsSync(filePath)) {
-    console.warn(`  [SKIP] ${label} — file not found`);
+  if (!existsSync(sourcePath)) {
+    console.warn(`  [SKIP] ${sourceLabel} — file not found`);
     return { file: label, beforeBytes: 0, afterBytes: 0, skipped: true, reason: 'not found' };
   }
 
-  const original = readFileSync(filePath, 'utf-8');
+  const original = readFileSync(sourcePath, 'utf-8');
   const beforeBytes = Buffer.byteLength(original, 'utf-8');
 
   let minified;
   if (type === 'css') {
-    minified = minifyCSS(original);
+    minified = minifyCSS(resolveCssImports(sourcePath, original));
   } else {
     minified = minifyJS(original);
   }
 
   const afterBytes = Buffer.byteLength(minified, 'utf-8');
 
-  writeFileSync(filePath, minified, 'utf-8');
+  writeFileSync(targetPath, minified, 'utf-8');
 
   // Warn if CSS exceeds Shopify's limit
   if (type === 'css' && afterBytes > CSS_SIZE_LIMIT_BYTES) {

@@ -1,0 +1,174 @@
+# Issue: EB Full Data Flow Investigation
+
+**Issue ID:** eb-full-data-flow-investigation-1
+**Status:** Completed
+**Priority:** 🔴 High
+**Created:** 2026-05-22
+**Last Updated:** 2026-05-23 23:55
+
+## Overview
+
+Create fresh EB full-page and product-page test bundles in the authenticated `yash-wolfpack` store, inspect their Admin save payloads and storefront runtime data, and document the implementation-facing data-shape target for Wolfpack without changing app code.
+
+## Progress Log
+
+### 2026-05-23 23:55 - Docs organized; EB Implementation Reference created in internal docs vault
+
+- Created `internal docs/EB Implementation Reference.md` — topic-organized distilled reference (admin endpoints, FPB/PPB data contracts, template ID enums, storefront globals, cart add payloads, box selection, text config, mixAndMatchBundleSettings, Wolfpack DB alignment). Sourced entirely from Phase 1–9 evidence.
+- Updated `internal docs/index.md` with an "EB Implementation Reference" block making it the mandatory first stop for EB porting questions.
+- Added `## 🎯 EB Implementation Reference` section to `CLAUDE.md` with mandatory search order: internal doc first, then full evidence record, then live investigation.
+- Updated `docs/competitor-analysis/00-index.md` to note the internal docs distilled reference alongside the primary evidence record entry.
+- Files changed: `internal docs/EB Implementation Reference.md` (new), `internal docs/index.md`, `CLAUDE.md`, `docs/competitor-analysis/00-index.md`.
+
+### 2026-05-23 23:30 - Phase 9 complete — all 8 gaps fully resolved; investigation complete
+
+- **Gap 2 (Box Selection Enforcement Logic) — RESOLVED:** Captured complete `gbbBoxSelection.state` runtime schema (`isEnabled`, `rules[]`, `activeRule`, `highestQuantityRule`, `blackListedPages`, `autoProceedToNextRule`, `validateBoxSelectionQuantity`, `isAutoDecrementAllowed`). Decompiled and documented `validateBoxSelectionOnCheckout` function source — when `validateBoxSelectionQuantity: false` (default), ATC is never blocked regardless of quantity. ATC button is a `div.gbbFooterNextButton` (not `<button>`); enforcement is CSS-only via `gbbBoxSelectionMaxQtyLimitReached` class on `.gbbPageBody`. Box tier DOM captured: `div.gbbBoxSelectionWrapper[data-total-rules][data-active-rule-id]` > `div.gbbBoxSelectionItem[data-box-quantity][data-rule-id][data-is-active]`. Admin toggle location confirmed: FPB configure → Bundle Settings → "Bundle Quantity Options" checkbox + "Enable Quantity Validation" sub-checkbox.
+- **Gap 6 (`useSingleStepCategoriesAsBundleSteps` admin location + storefront effect) — RESOLVED:** Confirmed this is a store-level global PPB setting in `pageCustomizationData.mixAndMatchData`, processed into `gbbMix.settings.pageCustomizationSettings.mixAndMatchBundleSettings`. Admin location: Settings → Controls → Product Page Layout section. Storefront effect when `true`: each category within a single step renders as a discrete navigable bundle step (Next/Prev), instead of showing all categories simultaneously. Captured full `mixAndMatchBundleSettings` schema: 25+ fields including `hideOutOfStockProducts`, `addBundleToCartOnDone`, `renderSlotsBasedOnCondition`, `renderFilledSlotsAsHorizontalStacked`, `addToBundleOnProductCardClick`, `validateConditionsBeforeAddToCart`, `maxSlotsPerRow`, `displayConditionDescriptions`, `expandProductCardOnHover`, `displayPrices`, `displayCompareAtPrices`, `displayQuantityInput`, `displaySeeMoreLink`, `displaySwatchColours`, `displaySwatchImages`, and `bundleAddingAnimation`.
+- **Gap 8 (`bundleTextConfig` full admin shape) — RESOLVED:** Confirmed `bundleTextConfig` has exactly one sub-key (`bundleSummary`) with exactly two string fields (`title`, `subTitle`). Shape: `{ bundleSummary: { title: "Your Bundle", subTitle: "Review your bundle" } }`. Stored in per-bundle stepsConfiguration (inline `gbb-settings-data` script), NOT global settings. Admin controls: FPB configure → Bundle Settings tab → Bundle Cart section → "Bundle Cart Title" and "Bundle Cart Subtitle" textboxes. Confirmed the FPB "Messages" nav section is for gift messaging (virtual gift product, sender/recipient fields, email templates) — a completely separate feature unrelated to `bundleTextConfig`.
+- Updated all 8 "Confirmed Gaps" table entries to ✅ RESOLVED in `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` (Phase 9 section appended).
+- Investigation is now fully complete. All 8 originally documented gaps are resolved.
+
+### 2026-05-23 22:45 - Phase 8 complete — 5 of 8 gaps resolved; 2 gaps partially resolved
+
+- Restored PPB template to CASCADE via admin overlay (`POST /api/mixAndMatch/update` with `bundleDesignTemplate: "PDP_INPAGE"`, `templateId: "CASCADE"`).
+- **Gap 1 (Multi-step FPB cart add) — RESOLVED:** Captured `POST /cart/add.js` for a 2-step FPB (`WPB Research Landing Bundle`, bundleId=2). Single call with JSON body; step info (`_boxProduct`, `_Category`, `_CategoryName`) is tracked client-side only and NOT sent to cart. Cart properties: `Box` (tier index), `_bundleName`, `_easyBundle:prodQty`, `_easyBundle:OfferId` (`FBP-{id}_{sessionKey}_{count}`). Confirmed `GetCartMetafield` + `cartMetafieldsSet` sequence writes `bundle_details` metafield accumulating across sessions.
+- **Gap 3 (FPB runtime config shape) — RESOLVED:** Config lives at `window.gbb.settings.stepsConfigurationData` (NOT `easybundles_ext_data.bundleLinkData`), embedded inline in proxy HTML. Products are ID-only in admin payload; widget fetches full data on load via `nodes(ids:[...])` Storefront API query with full variant/image/sellingPlan fields. `updateFullPageBundleView` call is analytics-only.
+- **Gap 4 (COGNIVE DOM) — RESOLVED:** COGNIVE is CSS-only variant of CASCADE. Captured admin save payload, storefront DOM diff (vertical steps, 3-col grid, square images, centered text), and full `boxSelection` schema.
+- **Gap 5 (MODAL/SIMPLIFIED DOM) — RESOLVED:** Both use `PDP_MODAL` + `gbbMixProductPageWidgetContainer`. MODAL = 3-column 89px mini-slots; SIMPLIFIED = 1-column 300px full-width slots. Confirmed `renderFilledSlotsAsHorizontalStacked` is a separate global flag (not template-specific). Full `pageCustomizationData.mixAndMatchData` shape captured (23 keys).
+- **Gap 6 (`useSingleStepCategoriesAsBundleSteps`) — PARTIALLY RESOLVED:** Confirmed it's a global setting in `pageCustomizationData.mixAndMatchData`, not per-bundle. Storefront effect when `true` still unknown.
+- **Gap 7 (`productsData2` storefront shape) — RESOLVED:** Present in `window.gbb.settings.stepsConfigurationData.productsData2` with same structure as `productsData1`. Empty steps included. Navigation state transitions (`isCompleted: true`) confirmed on step 1 after clicking Next.
+- **Gap 8 (`bundleTextConfig` shape) — PARTIALLY RESOLVED:** Runtime shape: `{ bundleSummary: { title: "Your Bundle", subTitle: "Review your bundle" } }`. Additional admin sub-keys unknown.
+- Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` with Phase 8 section (7 subsections), updated all 8 Confirmed Gaps entries to reflect resolution status, and updated Gaps And Blockers summary.
+
+### 2026-05-23 21:30 - Phases 6 & 7 complete — full CSS for all FPB and PPB templates captured; 8 gaps documented
+
+- Fetched `easy-bundle-full-page-min.css` (250,382 bytes, CloudFront) and extracted complete CSS for all 4 FPB design presets: STANDARD (base `.gbbMinimilisticLayout`), CLASSIC, COMPACT, HORIZONTAL.
+- Fetched `mixAndMatchBundle.css` (131,220 bytes, CloudFront) — the actual PPB stylesheet (not `easy-bundle-min.css`). CSS for all 4 PPB templates captured: CASCADE (base, no overrides), COGNIVE (`body[gbbmix-template-id="COGNIVE"]`), MODAL (base PDP_MODAL, no overrides), SIMPLIFIED (`body[gbbmix-template-id="SIMPLIFIED"]`).
+- Captured `body[gbb-mix-consolidated-design="true"]` DCP token bridge and `:root` CSS custom properties.
+- Captured HStacked/VStacked base rules and all media query overrides.
+- Added Phase 6 (FPB Template CSS) and Phase 7 (PPB Template CSS) to research doc.
+- Documented 8 confirmed gaps with exact reproduction steps: multi-step FPB cart add, box enforcement logic, FPB storefront config runtime shape, COGNIVE live DOM, MODAL/SIMPLIFIED live DOM, `useSingleStepCategoriesAsBundleSteps: true`, `productsData2` storefront shape, `bundleTextConfig` full shape.
+- Updated Gaps And Blockers section with resolved list and pointer to new "Confirmed Gaps" section.
+
+### 2026-05-23 20:15 - Phase 5 complete — PPB template rendering architecture confirmed via JS static analysis
+
+- Fetched `easy-bundle-product-page-min.js` (518,931 bytes) via curl + Python grep.
+- Confirmed binary template dispatch: `PDP_INPAGE` → `gbbMix.templates.CASCADE.init(t)`, `PDP_MODAL` → `gbbMix.gbbMixAndMatchBundle.initialize(t, e)`.
+- Confirmed `gbbMix.templates` only defines `CASCADE` (full) and `COGNIVE` (lightweight override with `reArrangeBodyWrapperPosition`). No `MODAL` or `SIMPLIFIED` template objects exist.
+- `SIMPLIFIED` has **zero occurrences** in the widget JS — it is an admin-only enum. The actual storefront difference between Horizontal Slots and Vertical Slots is driven by `renderFilledSlotsAsHorizontalStacked` → CSS classes `gbbMixProductPageCategoriesWrapperHStacked` / `gbbMixProductPageCategoriesWrapperVStacked`.
+- Confirmed `easy-bundle-min.css` (7,609 bytes) contains only cart/upsell shared styles — zero template-specific selectors. PPB template differentiation is purely JS-class-based (vs FPB which uses `body[gbb-bundle-design-preset-id]` CSS attribute selectors).
+- Added Phase 5 section to `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`.
+
+### 2026-05-23 19:30 - Phase 16 fully resolved — all FPB preset IDs confirmed via CSS/JS static analysis
+
+- Fetched `easy-bundle-full-page-min.js` via Bash/curl and found the `insertWrapperIntoBody` class-application logic: `[DESIGN_TEMPLATE_CONFIGS[e].value, "gbbProductsCardLayoutV2"].forEach(...)` — for `FBP_SIDE_FOOTER` this adds `gbbMinimilisticLayout` + `gbbProductsCardLayoutV2`.
+- Fetched `easy-bundle-full-page-min.css` and confirmed three preset-scoped CSS rules: `body[gbb-bundle-design-preset-id="CLASSIC"]`, `body[gbb-bundle-design-preset-id="COMPACT"]`, `body[gbb-bundle-design-preset-id="HORIZONTAL"]`, all scoped inside `.gbbMinimilisticLayout`.
+- Since `.gbbMinimilisticLayout` is only applied when `bundleDesignTemplate === "FBP_SIDE_FOOTER"`, all four presets must use `FBP_SIDE_FOOTER`. `STANDARD` is the default style (no CSS overrides). `BUILD_FROM_SCRATCH_NEWPRODUCTCARD` is a legacy key, unused by current presets.
+- Updated research doc with confirmed table and full CSS/JS evidence.
+- Phase 16 is fully resolved. `bundleDesignTemplate` = `FBP_SIDE_FOOTER` for ALL four FPB design presets.
+
+### 2026-05-23 19:00 - Completed Phase 16 — FPB non-classic preset ID investigation (inference)
+
+- Opened the "Select template" overlay on Bundle Box (`bundleId: 1`) in the EB admin.
+- Confirmed overlay shows 4 FPB templates: Standard Design, Classic Design (currently selected), Compact Design, Horizontal Design.
+- Attempted to observe the template save request via CDP network panel using multiple interaction paths: Select → Next, Select → Next → Preview bundle, keyboard navigation. All paths produced only `modifyBundleFields` calls carrying UI counter resets (`previewTemplateSelectionModalCnt`, `previewBundleModalCnt`) — no `bundleDesignPresetId` value in any observed request body.
+- Verified Bundle Box storefront after each attempt: `bundleDesignPresetId` remained `CLASSIC` in `window.gbb.settings.stepsConfigurationData`, confirming no save occurred through the observable path.
+- Checked EB widget JS (`easy-bundle-full-page-min.js`) for preset ID constants — widget does not use `bundleDesignPresetId` at all (admin-only field).
+- Attempted WebFetch of EB admin Next.js chunks — blocked (404 / SPA with dynamic chunk names).
+- **Conclusion:** Preset IDs for non-classic templates inferred from CDN image filename pattern (`landing-page-template-{name}-design.avif` → uppercase `{NAME}`): Standard → `STANDARD`, Compact → `COMPACT`, Horizontal → `HORIZONTAL`. This matches the confirmed `CLASSIC` convention. `bundleDesignTemplate` for non-classic designs remains unknown.
+- Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` Phase 4 FPB template table with inferred values + explanation. Updated Gaps section to reflect investigation outcome.
+- Phase 16 marked complete (inference). Investigation is now fully closed.
+
+### 2026-05-22 17:22 - Started EB data-flow investigation
+- Reviewed repo instructions, existing EB competitor docs, internal widget/database docs, graph report, and prior parity memory.
+- Confirmed Chrome DevTools has authenticated `yash-wolfpack` EB Admin and storefront tabs available.
+- Files expected to change: this issue file and a new competitor research document under `docs/competitor-analysis/`.
+- Next: create two fresh EB test bundles, capture Admin/storefront network and runtime state, then write the DTO/schema/theme-extension plan.
+
+### 2026-05-22 17:31 - Captured EB FPB and PPB data flow
+- Created fresh EB test artifacts:
+  - `WPB Research Landing Bundle 2026-05-22` (`bundleId: 2`)
+  - `WPB Research Product Page Bundle 2026-05-22` (`offerId: MIX-894502`)
+- Captured Admin create/save/update endpoints, storefront globals, DOM attributes, app-proxy/product-page requests, and Storefront API product/collection hydration requests.
+- Added `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` and linked it from `docs/competitor-analysis/00-index.md`.
+- Documented the implementation-facing target DTO: bundle -> steps -> category map -> direct products / selected collections.
+- Blockers: EB Admin iframe interactions prevented complete condition/discount/default-product/template-variant coverage in this run. The core category-first data-flow conclusion is still supported by both saved bundle types.
+
+### 2026-05-22 17:44 - Reopened blockers for keyboard/a11y verification
+- Reopening the EB Admin investigation to retry quantity/amount conditions, discount rules, defaults, and related controls with accessibility-tree targets and keyboard Tab navigation.
+- Files expected to change: this issue file and `docs/competitor-analysis/16-eb-full-data-flow-investigation.md`.
+- Next: use the fresh EB bundles created for this issue, save any newly captured rule/default payloads, verify storefront/runtime impact, and update the research doc.
+
+### 2026-05-22 17:49 - Completed keyboard/a11y blocker follow-up
+- Used Tab/Space navigation in the EB embedded Admin iframe to enable PPB step rules after direct radio clicks failed.
+- Saved quantity and amount step conditions, percentage discount rules, and a preselected product on `WPB Research Product Page Bundle 2026-05-22`.
+- Captured `mixAndMatch/update` payloads showing populated `productsData1.conditions`, `discountConfiguration`, `metafieldData.discount`, and `defaultProductsData`.
+- Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` with the new serialized shapes and removed the stale blocker language for PPB conditions, discounts, and defaults.
+- Remaining limits: did not add a second step, did not complete box/sidebar/footer/cart settings, and did not change PPB variant-display toggle values.
+
+### 2026-05-23 00:45 - Completed Phase 4 — template enumeration and variant display DOM
+
+- Enumerated all 4 PPB templates via `mixAndMatch/update` interception: `PDP_INPAGE`/`CASCADE` (Product List), `PDP_INPAGE`/`COGNIVE` (Product Grid), `PDP_MODAL`/`MODAL` (Horizontal Slots), `PDP_MODAL`/`SIMPLIFIED` (Vertical Slots).
+- Discovered FPB uses a two-field template system: `bundleDesignTemplate` + `bundleDesignPresetId`.
+- Confirmed Classic Design: `bundleDesignTemplate: "FBP_SIDE_FOOTER"`, `bundleDesignPresetId: "CLASSIC"` (confirmed on both bundleId=1 Bundle Box and bundleId=2 WPB Research Landing Bundle via API response + storefront `gbb.settings.stepsConfigurationData`).
+- Extracted `DESIGN_TEMPLATE_CONFIGS` constant from `easy-bundle-full-page-min.js`: `FBP_SIDE_FOOTER → gbbMinimilisticLayout`, `BUILD_FROM_SCRATCH_NEWPRODUCTCARD → gbbProductsCardLayoutV2`.
+- Documented FPB DOM rendering: `body[gbb-bundle-design-preset-id]`, `.gbbPageBody[data-template-id]`, CSS classes.
+- Confirmed FPB template save fires outside CDP observable context (multiple attempts); `modifyBundleFields` only resets UI counter.
+- Captured `displayVariantsAsIndividualProducts: true` DOM: Category 2 of WPB Research PPB has multi-variant products (Yellow Sofa 3 variants, 18k Pedal Ring 6 sizes). Each variant renders as its own `gbbMixCascadeProductWrapper` with `gbbMixCascadeCurrentVariantTitle` subtitle and unique `data-current-selected-variant-id`. Parent product ID repeated across all variant cards.
+- Deleted 3 temp network files. Updated research doc with Phase 4 section.
+- Remaining gap: FPB non-classic preset IDs (STANDARD/COMPACT/HORIZONTAL unconfirmed — no bundle in store uses them).
+
+### 2026-05-22 22:15 - Completed Phase 3 — collection pagination and multi-step navigation
+
+- Confirmed collection pagination architecture: no cursor-based `collection { products(first: N, after: cursor) }` queries. All IDs pre-fetched; products hydrated in batches of 24 via `nodes(ids: [...])`. Client state in `gbbAddProductsPage.state.dataForInfiniteScroll.allProductsData`, `fetchCountPerBatch: 24`, `fetchBatchStartIndex` tracks position.
+- Captured Load More batch evidence: 29-product collection split across 2+9 parallel `nodes()` calls (not cursor-driven).
+- Captured FPB multi-step navigation DOM in full: `gbbNavigationItemsContainer`, `gbbNavigationItem#addProductsPageN`, `gbbNavigationStepImgContainerActive` active indicator, `gbbtickMark` completed-step checkmark, `gbbStepsProgressBarFilled` fill width.
+- Captured JS state transition: `currentPageId` `addProductsPage1` → `addProductsPage2`, `isLastPage` `false` → `true`.
+- Captured footer transition: single "Next" (`gbbFooterNextButton`) on intermediate steps → Back + "Add To Cart" (same `gbbFooterNextButton` class) on last step.
+- URL confirms full page navigation between steps: `?page=addProductsPage1` → `?page=addProductsPage2`.
+- Deleted temp files. Updated research doc with Phase 3 section.
+
+### 2026-05-22 20:30 - Completed Phase 2 storefront investigation
+
+- Captured complete `window.easybundles_ext_data` structure (6 top-level keys: `userData`, `languageData`, `pageCustomizationData`, `bundleLinkData`, `bundleUpsellData`, `mixAndMatchData`).
+- Captured FPB JS runtime state (`window.gbb.state`): offerId format `FBP-{bundleId}`, `isLastPage`, `navigationItems`, `giftBoxCartData` with per-item cart properties schema.
+- Captured FPB `POST /cart/add.js` payload: component items with `_easyBundle:OfferId: "FBP-2_K6C_1"`, followed by `GetCartMetafield` + `cartMetafieldsSet` Storefront API sequence writing `bundle_details` metafield.
+- Captured PPB JS runtime state (`window.gbbMix.gbbMixAndMatchBundle.state`): `initFlow: "SDK"`, `useSingleStepCategoriesAsBundleSteps: false`, `selectedProductsViewState`, pagination limits.
+- Captured PPB `POST /cart/add` payload (multipart/form-data): component items with `_easyBundle:OfferId: "MIX-894502_K1K_1"`. Cart Transform OVERWRITE_LINE_ITEM operation converts component item to parent bundle product in response.
+- Confirmed both FPB and PPB use identical `bundle_details` cart metafield accumulation pattern with key `{offerId}_{sessionKey}`.
+- Updated `docs/competitor-analysis/16-eb-full-data-flow-investigation.md` with Phase 2 Extended Configuration and Phase 2 Extended Storefront Evidence sections.
+- Remaining: multi-step storefront nav DOM, alternative template IDs, collection pagination, `displayVariantsAsIndividualProducts` multi-variant DOM.
+
+## Related Documentation
+
+- `docs/competitor-analysis/00-index.md`
+- `docs/competitor-analysis/15-single-embed-template-architecture.md`
+- `docs/competitor-analysis/eb-sdk-analysis.md`
+- `internal docs/Architecture/Widget Architecture.md`
+- `internal docs/Architecture/Database Schema.md`
+
+## Phases Checklist
+
+- [x] Phase 1: Configure fresh EB FPB and PPB bundles
+- [x] Phase 2: Capture Admin save/update requests
+- [x] Phase 3: Capture storefront globals, DOM attributes, and network requests
+- [x] Phase 4: Write competitor research evidence doc
+- [x] Phase 5: Write implementation-facing data-shape plan
+- [x] Phase 6: Complete PPB iframe blockers through keyboard/a11y paths
+- [x] Phase 7: Capture `window.easybundles_ext_data` full shape
+- [x] Phase 8: Capture FPB JS runtime state and cart add payload
+- [x] Phase 9: Capture PPB JS runtime state and cart add payload
+- [x] Phase 10: Document FPB vs PPB cart add comparison and `bundle_details` metafield pattern
+- [x] Phase 11: Capture collection pagination architecture (no cursor queries — `nodes(ids:[])` batches)
+- [x] Phase 12: Capture multi-step navigation DOM, JS state transitions, and footer changes
+- [x] Phase 13: Enumerate all 4 PPB templates (`bundleDesignTemplate` + `templateId` pairs)
+- [x] Phase 14: Discover and document FPB two-field template system (`bundleDesignTemplate` + `bundleDesignPresetId`)
+- [x] Phase 15: Capture `displayVariantsAsIndividualProducts: true` DOM structure with multi-variant products
+- [x] Phase 16: Confirm FPB non-classic preset IDs — inferred as STANDARD/COMPACT/HORIZONTAL from naming convention; network confirmation blocked by overlay OOPIF architecture
+- [x] Phase 17: Gap 1 (multi-step FPB cart add) — single `POST /cart/add.js`, step info client-only, confirmed `bundle_details` accumulation pattern
+- [x] Phase 18: Gap 3 (FPB runtime config shape) — `window.gbb.settings.stepsConfigurationData`, inline in proxy HTML, products hydrated via `nodes(ids:[...])`
+- [x] Phase 19: Gaps 4 & 5 (PPB COGNIVE + MODAL/SIMPLIFIED DOM) — confirmed via template switch + storefront capture; `boxSelection` schema captured; `renderFilledSlotsAsHorizontalStacked` architecture documented
+- [x] Phase 20: Gap 7 (`productsData2` storefront shape) — present in stepsConfigurationData; empty steps included
+- [x] Phase 21: Gaps 6 & 8 partial — `pageCustomizationData.mixAndMatchData` full shape; `bundleTextConfig` runtime shape
+- [x] Phase 22: Gaps 2, 6, 8 fully resolved — `gbbBoxSelection.state` schema + ATC enforcement decompiled; `mixAndMatchBundleSettings` 25+ field schema + admin location; `bundleTextConfig` confirmed single sub-key; all 8 gaps ✅ RESOLVED
+- [x] Phase 23: Docs organized — `internal docs/EB Implementation Reference.md` created (topic-organized distilled reference); CLAUDE.md updated with mandatory EB porting search order; `00-index.md` updated; `internal docs/index.md` updated

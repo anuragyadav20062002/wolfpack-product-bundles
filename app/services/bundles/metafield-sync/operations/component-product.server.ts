@@ -10,7 +10,9 @@ import { AppLogger } from "../../../../lib/logger";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { checkMetafieldSize } from "../utils/size-check";
 import { METAFIELD_NAMESPACE, METAFIELD_KEYS } from "../../../../constants/metafields";
-import type { PriceAdjustment, ComponentParentsData } from "../types";
+import type { ComponentParentsData } from "../types";
+import { buildPriceAdjustmentConfig } from "../utils/price-adjustment";
+import { collectAddonComponentVariants } from "../utils/addon-components";
 
 /**
  * Updates component product variants with component_parents metafield (Shopify Standard)
@@ -104,11 +106,23 @@ export async function updateComponentProductMetafields(
       // Fallback: Use products array from UI config (only if StepProduct is empty)
       for (const product of step.products) {
         if (product.id && !isUUID(product.id)) {
-          productIdMap.push({
-            productId: product.id,
-            stepMinQuantity: step.minQuantity || 1,
-            source: 'products'
-          });
+          const cachedVariants = Array.isArray(product.variants) ? product.variants : [];
+
+          if (cachedVariants.length > 0) {
+            for (const variant of cachedVariants) {
+              if (variant.id && !isUUID(variant.id)) {
+                componentVariantIds.add(variant.id);
+                componentReferences.push(variant.id);
+                componentQuantities.push(step.minQuantity || 1);
+              }
+            }
+          } else {
+            productIdMap.push({
+              productId: product.id,
+              stepMinQuantity: step.minQuantity || 1,
+              source: 'products'
+            });
+          }
           handledProductIds.add(product.id);
         }
       }
@@ -167,6 +181,83 @@ export async function updateComponentProductMetafields(
         }
       }
     }
+
+    // StepCategory: resolve per-category products (direct GIDs) and collections
+    const stepCats = Array.isArray(step.StepCategory) ? step.StepCategory : [];
+    for (const cat of stepCats) {
+      const catProducts = Array.isArray(cat.products) ? cat.products : [];
+      for (const p of catProducts) {
+        if (p.id && !isUUID(p.id) && !handledProductIds.has(p.id)) {
+          const cachedVariants = Array.isArray(p.variants) ? p.variants : [];
+
+          if (cachedVariants.length > 0) {
+            for (const variant of cachedVariants) {
+              if (variant.id && !isUUID(variant.id)) {
+                componentVariantIds.add(variant.id);
+                componentReferences.push(variant.id);
+                componentQuantities.push(step.minQuantity || 1);
+              }
+            }
+          } else {
+            productIdMap.push({ productId: p.id, stepMinQuantity: step.minQuantity || 1, source: `StepCategory:${cat.name}` });
+          }
+
+          handledProductIds.add(p.id);
+        }
+      }
+
+      const catCollections = Array.isArray(cat.collections) ? cat.collections : [];
+      for (const collection of catCollections) {
+        const handle = collection.handle;
+        if (!handle) continue;
+        try {
+          const collResponse = await admin.graphql(`
+            query getCollectionProductIds($handle: String!) {
+              collection(handle: $handle) {
+                products(first: 250) {
+                  edges { node { id } }
+                }
+              }
+            }
+          `, { variables: { handle } });
+          const collData = await collResponse.json();
+          const edges = collData.data?.collection?.products?.edges || [];
+          for (const edge of edges) {
+            const productId = edge.node?.id;
+            if (productId && !isUUID(productId) && !handledProductIds.has(productId)) {
+              productIdMap.push({ productId, stepMinQuantity: step.minQuantity || 1, source: `StepCategory:${cat.name}:collection:${handle}` });
+              handledProductIds.add(productId);
+            }
+          }
+        } catch {
+          AppLogger.warn("Could not fetch products from StepCategory collection", {
+            component: "component-product.server",
+            handle,
+          });
+        }
+      }
+    }
+  }
+
+  for (const addonVariant of collectAddonComponentVariants(bundleConfig.personalizationData)) {
+    if (addonVariant.variantId) {
+      if (!componentVariantIds.has(addonVariant.variantId)) {
+        componentVariantIds.add(addonVariant.variantId);
+        componentReferences.push(addonVariant.variantId);
+        componentQuantities.push(1);
+      }
+      if (addonVariant.productId) handledProductIds.add(addonVariant.productId);
+      continue;
+    }
+
+    if (addonVariant.productId && !handledProductIds.has(addonVariant.productId)) {
+      productIdMap.push({
+        productId: addonVariant.productId,
+        stepMinQuantity: 1,
+        source: "addonProducts",
+      });
+      handledProductIds.add(addonVariant.productId);
+    }
   }
 
   // Batch fetch first variants only for products where no variant data was cached in the DB
@@ -198,32 +289,7 @@ export async function updateComponentProductMetafields(
     });
   }
 
-  // Build price_adjustment config for MERGE discount calculation
-  // IMPORTANT: Always provide a fallback for method to ensure cart transform works correctly
-  const priceAdjustment: PriceAdjustment = {
-    method: bundleConfig.pricing?.method || 'percentage_off', // Fallback to percentage_off
-    value: 0
-  };
-
-  if (bundleConfig.pricing?.enabled && bundleConfig.pricing?.rules?.length > 0) {
-    const rule = bundleConfig.pricing.rules[0];
-
-    // Extract value from discount structure
-    if (rule.discount && typeof rule.discount.value !== 'undefined') {
-      priceAdjustment.value = parseFloat(rule.discount.value) || 0;
-    } else if (typeof rule.discountValue !== 'undefined') {
-      priceAdjustment.value = parseFloat(rule.discountValue) || 0;
-    }
-
-    // Add conditions if present
-    if (rule.condition) {
-      priceAdjustment.conditions = {
-        type: rule.condition.type || 'quantity',
-        operator: rule.condition.operator || 'gte',
-        value: parseFloat(rule.condition.value) || 0
-      };
-    }
-  }
+  const priceAdjustment = buildPriceAdjustmentConfig(bundleConfig.pricing);
 
   // Create component_parents data in Shopify standard format with pricing info
   const componentParentsData: ComponentParentsData[] = [{

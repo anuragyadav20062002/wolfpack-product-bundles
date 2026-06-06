@@ -1,0 +1,207 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "designControlPanel": "Panneau de contrôle du design",
+    "settings": "Paramètres",
+    "integrations": "Intégrations",
+    "analytics": "Analyses",
+    "pricing": "Tarification",
+    "events": "Mises à jour et FAQ"
+  },
+  "dashboard": {
+    "title": "Tableau de bord : Wolfpack Bundle Builder",
+    "subtitle": "Accédez à vos bundles, au support client et bien plus.",
+    "header": {
+      "syncCollections": "Synchroniser les collections",
+      "createBundle": "Créer un bundle",
+      "changelog": "Journal des modifications"
+    },
+    "support": {
+      "heroTitle": "Libérez tout le potentiel de votre boutique.",
+      "heroDesc": "Nos experts vous aideront à créer des bundles performants lors d'une session stratégique individuelle gratuite.",
+      "heading": "Besoin d'aide ? Parlez à Parth, le fondateur !",
+      "body": "Obtenez de l'aide pour la configuration, le style personnalisé et les problèmes techniques.",
+      "onlineNow": "EN LIGNE",
+      "availability": "Lun-Ven • Réponse dans l'heure",
+      "cta": "Discuter avec Parth",
+      "imageAlt": "Parth, fondateur",
+      "imageLoading": "Chargement de la photo de Parth"
+    },
+    "appEmbeds": {
+      "headingMain": "Intégrations d'app",
+      "headingHint": "(Activez-les pour rendre le bundle visible dans la boutique)",
+      "instruction": "Cliquez sur Boutique en ligne → Modifier le thème → Activez le bouton et enregistrez"
+    },
+    "filters": {
+      "status": "Statut",
+      "bundleType": "Type de bundle",
+      "byStatus": "Filtrer par statut",
+      "byType": "Filtrer par type",
+      "all": "Tout"
+    },
+    "status": {
+      "active": "Actif",
+      "draft": "Brouillon",
+      "unlisted": "Non répertorié"
+    },
+    "bundleType": {
+      "product_page": "Page produit",
+      "full_page": "Page complète"
+    },
+    "search": {
+      "label": "Rechercher des bundles",
+      "placeholder": "Rechercher...."
+    },
+    "table": {
+      "bundleName": "Nom du bundle",
+      "status": "Statut",
+      "type": "Type",
+      "actions": "Actions"
+    },
+    "emptyState": {
+      "title": "Aucun bundle pour l'instant",
+      "body": "Vous n'avez pas encore créé de bundles. Commencez maintenant et boostez vos ventes en regroupant vos meilleurs produits."
+    },
+    "noResults": "Aucun bundle ne correspond aux filtres actuels",
+    "pagination": {
+      "page": "Page {{current}} sur {{total}}",
+      "perPageLabel": "Bundles par page",
+      "per10": "10 par page",
+      "per20": "20 par page",
+      "per50": "50 par page",
+      "prev": "Page précédente",
+      "next": "Page suivante"
+    },
+    "actions": {
+      "moreActions": "Plus d'actions",
+      "editBundle": "Modifier le bundle",
+      "previewBundle": "Aperçu dans la boutique",
+      "previewUnavailable": "Enregistrez le bundle pour l'aperçu",
+      "cloneBundle": "Dupliquer le bundle",
+      "deleteBundle": "Supprimer le bundle",
+      "confirmClone": "Êtes-vous sûr de vouloir dupliquer ce bundle ?",
+      "cloneSuccess": "Bundle dupliqué avec succès",
+      "deleteSuccess": "Bundle supprimé",
+      "themeEditorUnavailable": "Le lien de l'éditeur de thème est indisponible."
+    },
+    "deleteModal": {
+      "heading": "Supprimer le bundle ?",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "body": "Cette action est irréversible. Toute la configuration, les étapes et les règles de remise seront définitivement supprimées."
+    },
+    "resources": {
+      "bundleInspiration": "Inspiration de bundle",
+      "support": "Support",
+      "exploreUpdate": "Explorer les mises à jour",
+      "sdkDocumentation": "Documentation SDK",
+      "bundleGallery": "Galerie de bundles"
+    },
+    "language": {
+      "label": "Langue",
+      "en": "English",
+      "fr": "Français",
+      "de": "Deutsch",
+      "es": "Español",
+      "ja": "日本語",
+      "pt-BR": "Português (BR)",
+      "save": "Enregistrer",
+      "saveSuccess": "Langue d'administration enregistrée",
+      "saveError": "Impossible d'enregistrer la langue d'administration"
+    }
+  },
+  "tooltips": {
+    "stepFlow": {
+      "title": "Step Flow",
+      "description": "Steps will render as navigation items on top of the bundle builder"
+    },
+    "category": {
+      "title": "Category",
+      "description": "Categories will appear as tabs inside each step"
+    },
+    "rulesConfiguration": {
+      "title": "Rules guide shopper selections",
+      "description": "Use step rules for one selection limit, or category rules when each category needs its own rule."
+    },
+    "bundleQuantityOptions": {
+      "title": "Bundle Quantity Options",
+      "description": "Show quantity-based discount rules as selectable bundle boxes. Each box can have its own label, subtext, and default rule."
+    },
+    "discountProgressBar": {
+      "title": "Progress Bar",
+      "description": "Show shoppers how close they are to the next discount. Simple uses one bar, while Step Based shows discount milestones."
+    },
+    "discountMessaging": {
+      "title": "Discount Messaging",
+      "description": "Customize the messages shown before a discount unlocks and after shoppers qualify."
+    },
+    "loadingAnimation": {
+      "title": "Storefront Loading Animation",
+      "description": "Shown while Wolfpack Bundles loads bundle content on the storefront."
+    },
+    "bundleVisibilityPending": {
+      "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
+    }
+  },
+  "common": {
+    "actions": {
+      "close": "Fermer", "dismiss": "Ignorer", "manage": "Gérer", "enableHere": "Activer ici",
+      "maybeLater": "Peut-être plus tard", "setUpVisibility": "Configurer la visibilité", "reinstallApp": "Réinstaller l'application",
+      "upgradeNow": "Mettre à niveau", "viewPlans": "Voir les forfaits", "discardChanges": "Ignorer les modifications",
+      "continueEditing": "Continuer la modification"
+    },
+    "appEmbed": { "body": "Activez l'extension d'application de thème Wolfpack Bundles pour placer et prévisualiser le lot." },
+    "previewGate": {
+      "title": "La visibilité de votre lot n'est pas encore configurée",
+      "body": "Votre lot est actif, mais les clients ne peuvent pas le trouver. Configurez sa visibilité pour y remédier."
+    },
+    "unlistedBundle": {
+      "title": "Votre lot n'est pas répertorié",
+      "body": "Le lot est masqué des résultats de recherche et des pages de collections de votre boutique. Pour le rendre visible, définissez le statut du produit du lot sur Actif dans Shopify Produits."
+    },
+    "proxyHealth": { "title": "Proxy d'application non connecté", "body": "Les widgets de lots en pleine page ne se chargeront pas dans votre boutique. Réinstallez l'application pour résoudre ce problème." },
+    "upgradePrompt": {
+      "limitReachedTitle": "Limite de lots atteinte", "limitReachedBody": "Vous avez utilisé les {{limit}} lots du forfait Gratuit. Passez à Grow pour obtenir jusqu'à 20 lots.",
+      "approachingTitle": "Limite de lots bientôt atteinte", "approachingBody": "Vous utilisez {{current}} lots sur {{limit}}. Passez à Grow pour obtenir jusqu'à 20 lots.",
+      "usageBody": "Vous utilisez {{current}} lots sur {{limit}} avec le forfait Gratuit. Besoin de plus ? Passez à Grow pour obtenir 20 lots."
+    },
+    "discardChanges": { "title": "Ignorer toutes les modifications non enregistrées", "body": "Si vous ignorez les modifications, vous supprimerez toutes les éditions effectuées depuis le dernier enregistrement." },
+    "multiLanguage": {
+      "title": "Personnaliser le texte pour plusieurs langues", "saveAndClose": "Enregistrer et fermer", "translations": "Traductions",
+      "helper": "Utilisez la liste déroulante de cette section pour choisir la langue à modifier", "chooseLanguage": "Choisir la langue à modifier",
+      "customText": "Texte personnalisé", "inputHelper": "Saisissez le texte pour la langue sélectionnée", "textSettings": "Paramètres du texte"
+    },
+    "readiness": {
+      "itemAccessibility": "Élément de préparation {{label}}", "points": "+{{points}} points", "ready": "Votre lot est prêt à être vendu !",
+      "notReady": "Votre lot n'est pas encore prêt à être vendu.", "toggleAccessibility": "Afficher ou masquer le score de préparation",
+      "title": "Score de préparation", "helper": "Effectuez toutes les étapes pour maximiser la réussite de votre lot."
+    },
+    "bundleStatus": { "title": "Statut du lot", "options": { "active": "Actif", "draft": "Brouillon", "archived": "Archivé", "unlisted": "Non répertorié (campagnes publicitaires)" } }
+  },
+  "createBundle": {
+    "title": "Créer un lot", "dashboard": "Tableau de bord", "heading": "Sélectionner le type de créateur de lots", "help": "Comment fonctionnent les types de créateurs de lots ?",
+    "steps": { "details": "Nom du lot\net description", "configuration": "Configuration", "pricing": "Tarification", "assets": "Ressources" },
+    "validation": { "required": "Le nom du lot est requis", "minLength": "Le nom du lot doit comporter au moins 3 caractères" },
+    "fields": { "name": "Nom du lot", "namePlaceholder": "Ex. : lot de t-shirts", "description": "Description", "descriptionPlaceholder": "Ex. : ceci est un lot de t-shirts" },
+    "bundleType": {
+      "heading": "Type de lot",
+      "productPage": { "title": "Créateur de lots sur page produit", "description": "Afficher le créateur de lots sur les pages produit existantes (recommandé pour la plupart des boutiques)", "alt": "Lot sur page produit" },
+      "fullPage": { "title": "Créateur de lots en pleine page", "description": "Créer une page de destination dédiée à votre lot avec des onglets et une personnalisation complète", "alt": "Lot en pleine page" }
+    },
+    "actions": { "selected": "Sélectionné", "select": "Sélectionner", "next": "Suivant" }
+  },
+  "billing": {
+    "pricePerMonth": "{{price}} $/mois",
+    "actions": { "tryAgain": "Réessayer", "contactSupport": "Contacter l'assistance", "cancel": "Annuler" },
+    "error": { "heading": "Problème d'abonnement", "missingChargeId": "Échec de la confirmation de l'abonnement : identifiant de paiement manquant.", "confirmationFailed": "Impossible de confirmer l'abonnement auprès de Shopify.", "unexpected": "Une erreur inattendue s'est produite lors de la configuration de l'abonnement." },
+    "upgradeModal": {
+      "heading": "Passer au forfait Grow", "confirm": "Confirmer la mise à niveau - {{price}} $/mois", "redirect": "Vous serez redirigé vers Shopify pour finaliser votre abonnement.",
+      "benefitsHeading": "Ce que vous obtenez avec Grow :", "bundleLimit": "Jusqu'à 20 lots (actuellement {{current}}/{{limit}})", "billedMonthly": "Facturé mensuellement via Shopify",
+      "benefits": { "noRevenueCap": "Aucun plafond de revenus pour les lots - le forfait gratuit est limité à 500 $/mois", "advancedDiscounts": "Règles de réduction avancées", "prioritySupport": "Assistance prioritaire" }
+    },
+    "success": { "heading": "Bienvenue dans le forfait Grow !", "body": "Votre abonnement a été activé. Vous avez maintenant accès à toutes les fonctionnalités premium.", "bundleLimit": "Limite de lots", "bundleLimitValue": "20 lots", "designControl": "Contrôle du design", "fullAccess": "Accès complet", "support": "Assistance", "priority": "Prioritaire" },
+    "cards": { "currentPlan": "Forfait actuel", "freePrice": "Gratuit", "freeDescription": "Pour les ventes de lots jusqu'à 500 $/mois - gratuit jusqu'à votre croissance", "includes": "Comprend :", "freePlan": "Forfait gratuit", "mostPopular": "Le plus populaire", "perMonth": "/ mois", "growDescription": "Pour les ventes de lots supérieures à 500 $/mois - aucun plafond de revenus", "growIncludes": "Tout ce qui est inclus dans Gratuit, plus :", "upgradeToGrow": "Passer à Grow", "cancelAnytimeBilled": "Annulez à tout moment. Facturé via Shopify." },
+    "cta": { "heading": "Prêt à développer votre activité de lots ?", "body": "Passez au forfait Grow pour doubler le nombre de lots, personnaliser entièrement le design et bénéficier d'une assistance prioritaire.", "highlights": { "bundles": "20 lots", "design": "Panneau de contrôle du design", "support": "Assistance prioritaire" }, "upgrade": "Passer à Grow - {{price}} $/mois", "cancelAnytime": "Annulez à tout moment" },
+    "route": { "title": "Abonnement et facturation", "dashboard": "Tableau de bord", "currentPlan": "Forfait actuel", "active": "Actif", "inactive": "Inactif", "bundleUsage": "Utilisation des lots", "bundleCount": "{{current}} / {{limit}} lots", "limitReached": "Vous avez atteint votre limite de lots.", "limitUpgrade": "Passez à Grow pour obtenir plus de lots.", "overview": "Aperçu des lots", "activeBundles": "Lots actifs", "totalSteps": "Total des étapes", "productPage": "Page produit", "fullPage": "Pleine page", "cancelSubscription": "Annuler l'abonnement", "cancelHeading": "Annuler l'abonnement ?", "downgradeBody": "Vous passerez au forfait Gratuit avec une limite de {{limit}} lots.", "archiveWarning": "Attention : vous avez {{current}} lots. Les {{excess}} lots excédentaires seront archivés (pas supprimés).", "confirmCancellation": "Confirmer l'annulation", "keepSubscription": "Conserver l'abonnement", "features": "Fonctionnalités de votre forfait", "wantMore": "Vous voulez plus de fonctionnalités ?", "viewPlans": "Voir tous les forfaits", "needHelp": "Besoin d'aide ?", "helpBody": "Vous avez des questions sur la facturation ou besoin d'un forfait personnalisé ? Notre équipe est là pour vous aider." }
+  }
+}

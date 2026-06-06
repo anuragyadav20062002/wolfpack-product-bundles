@@ -1,0 +1,210 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 100px;
+}
+
+/* ── Page Header ─────────────────────────────────────────── */
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.pageHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pageTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+
+/* ── Step Indicator ──────────────────────────────────────── */
+
+.formContent {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.fieldsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modalForm {
+  display: block;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.errorText {
+  margin: -4px 0 0;
+  color: #8e1f0b;
+  font-size: 13px;
+}
+
+/* ── Form Section ────────────────────────────────────────── */
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* ── Bundle Type Cards ───────────────────────────────────── */
+
+.bundleTypeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .bundleTypeGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bundleTypeCard {
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #ffffff;
+}
+
+.bundleTypeCard:hover {
+  border-color: #aeb4b9;
+}
+
+.bundleTypeCardSelected {
+  border: 2px solid #005bd3;
+  background: #f1f7ff;
+}
+
+.bundleThumbnailWrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #f6f6f7;
+  position: relative;
+}
+
+.bundleThumbnailImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.bundleCardBody {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.bundleCardText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bundleCardText strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.bundleCardText p {
+  margin: 0;
+  font-size: 12px;
+  color: #6d7175;
+  line-height: 1.4;
+}
+
+/* ── Layout Cards ────────────────────────────────────────── */
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .layoutGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.layoutCard {
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #ffffff;
+}
+
+.layoutCard:hover {
+  border-color: #aeb4b9;
+}
+
+.layoutCardSelected {
+  border: 2px solid #005bd3;
+  background: #f1f7ff;
+}
+
+.layoutCardBody {
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.layoutCardBody strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+
+/* ── Wizard Footer ───────────────────────────────────────── */
+
+.wizardFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0 0;
+  border-top: 1px solid #e1e3e5;
+  margin-top: 8px;
+}

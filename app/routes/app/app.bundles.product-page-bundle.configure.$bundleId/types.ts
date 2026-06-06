@@ -1,24 +1,23 @@
 /**
- * Type definitions for Product Page Bundle Configuration
+ * Type definitions for Product Page Bundle Configuration.
  *
- * Extracted from the main route file for better organization.
+ * Shared types (StepProduct, BundleStep, ActionResponse, etc.) live in
+ * app/types/bundle-configure.ts and are re-exported here for convenience.
  */
 
 import type { PricingRule } from "../../../types/pricing";
 import type { BundleStatus } from "../../../constants/bundle";
 
-export interface StepProduct {
-  id: string;
-  productId: string;
-  title: string;
-}
-
-export interface BundleStep {
-  id: string;
-  name: string;
-  collections?: any;
-  StepProduct?: StepProduct[];
-}
+export type {
+  StepProduct,
+  BundleStep,
+  BundleStatusSectionProps,
+  ActionResponse,
+  SyncProductResponse,
+  PagesResponse,
+  ThemeTemplatesResponse,
+  WidgetValidationResponse,
+} from "../../../types/bundle-configure";
 
 export interface BundlePricing {
   id: string;
@@ -40,7 +39,7 @@ export interface BundleData {
   status: BundleStatus;
   templateName?: string;
   loadingGif?: string | null;
-  steps: BundleStep[];
+  steps: import("../../../types/bundle-configure").BundleStep[];
   pricing?: BundlePricing;
 }
 
@@ -50,61 +49,19 @@ export interface LoaderData {
   shop: string;
   apiKey: string;
   blockHandle: string;
-}
-
-export interface BundleStatusSectionProps {
-  status: BundleStatus;
-  onChange: (status: BundleStatus) => void;
+  configureMode?: "create" | "edit";
+  showFirstLoadTour?: boolean;
 }
 
 export interface BundleProductCardProps {
   bundleProduct: any;
   productImageUrl: string;
   productTitle: string;
-  shop: string;
+  onOpenProduct?: () => void;
   onSync: () => void;
   onSelect: () => void;
 }
 
-// Action response types
-export interface ActionResponse {
-  success: boolean;
-  error?: string;
-  message?: string;
-  data?: any;
-}
-
-export interface SaveBundleResponse extends ActionResponse {
+export interface SaveBundleResponse extends import("../../../types/bundle-configure").ActionResponse {
   bundle?: BundleData;
-}
-
-export interface SyncProductResponse extends ActionResponse {
-  product?: any;
-  metafieldsUpdated?: boolean;
-}
-
-export interface PagesResponse extends ActionResponse {
-  pages?: Array<{
-    id: string;
-    title: string;
-    handle: string;
-  }>;
-}
-
-export interface ThemeTemplatesResponse extends ActionResponse {
-  templates?: Array<{
-    id: string;
-    name: string;
-    handle: string;
-  }>;
-  currentTheme?: {
-    id: string;
-    name: string;
-  };
-}
-
-export interface WidgetValidationResponse extends ActionResponse {
-  widgetInstalled?: boolean;
-  bundleConfigured?: boolean;
-  recommendedAction?: string;
 }

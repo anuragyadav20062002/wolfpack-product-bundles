@@ -24,7 +24,6 @@ export interface CSSDesignSettings {
   productCardFontWeight?: number;
   productCardImageFit?: string;
   productCardsPerRow?: number;
-  productPriceVisibility?: boolean;
   productPriceBgColor?: string;
   productStrikePriceColor?: string;
   productStrikeFontSize?: number;
@@ -117,6 +116,21 @@ export interface CSSDesignSettings {
   footerNextButtonBorderRadius?: number;
   footerDiscountTextVisibility?: boolean;
   footerScrollBarColor?: string;
+  sidebarCardBgColor?: string;
+  sidebarCardTextColor?: string;
+  sidebarCardBorderColor?: string;
+  sidebarCardBorderWidth?: number;
+  sidebarCardBorderRadius?: number;
+  sidebarCardPadding?: number;
+  sidebarCardWidth?: number;
+  sidebarStickyOffset?: number;
+  sidebarProductListMaxHeight?: number;
+  sidebarSkeletonRowCount?: number;
+  sidebarDiscountBgColor?: string;
+  sidebarDiscountTextColor?: string;
+  sidebarButtonBgColor?: string;
+  sidebarButtonTextColor?: string;
+  sidebarButtonBorderRadius?: number;
 
   // Success Message
   successMessageFontSize?: number;

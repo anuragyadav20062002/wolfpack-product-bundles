@@ -1,70 +1,42 @@
-import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type MouseEvent, type ReactNode } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
 import { AppLogger } from "../../../lib/logger";
+import { slugify, validateSlug } from "../../../lib/slug-utils";
+import {
+  getDefaultDiscountRuleSuccessMessage,
+  getDefaultDiscountRuleText,
+  normalizePricingDisplayOptions,
+  normalizePricingRuleMessages,
+  serializePricingDisplayOptions,
+} from "../../../lib/pricing-display-options";
 
-// Note: Using Polaris Checkbox component for toggle functionality
-// Polaris React v12 doesn't have a dedicated Switch component
 import {
   DiscountMethod,
-  ConditionType,
-  ConditionOperator,
   type PricingRule,
-  generateRulePreview,
   centsToAmount,
   amountToCents,
+  createNewPricingRule,
 } from "../../../types/pricing";
 import {
-  BUNDLE_STATUS_OPTIONS,
   STEP_CONDITION_TYPE_OPTIONS,
   STEP_CONDITION_OPERATOR_OPTIONS,
+  CATEGORY_CONDITION_OPERATOR_OPTIONS,
   DISCOUNT_METHOD_OPTIONS,
-  DISCOUNT_CONDITION_TYPE_OPTIONS,
-  DISCOUNT_OPERATOR_OPTIONS,
 } from "../../../constants/bundle";
+import { useTranslation } from "react-i18next";
+import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
+import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
+import { FilePicker } from "../../../components/shared/FilePicker";
+import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
+import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
+import { FPB_TOUR_STEPS, type TourStep } from "../../../components/bundle-configure/tourSteps";
 import {
-  Page,
-  Layout,
-  Card,
-  Text,
-  Button,
-  BlockStack,
-  InlineStack,
-  Icon,
-  Select,
-  Badge,
-  TextField,
-  Tabs,
-  Collapsible,
-  FormLayout,
-  Checkbox,
-  Modal,
-  Thumbnail,
-  List,
-  Spinner,
-  Divider,
-  Box,
-  Tooltip,
-} from "@shopify/polaris";
-import {
-  ViewIcon,
-  DragHandleIcon,
-  DeleteIcon,
-  PlusIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-  ExternalIcon,
-  ProductIcon,
-  DuplicateIcon,
-  CollectionIcon,
-  ListNumberedIcon,
-  DiscountIcon,
-  RefreshIcon,
-  ImageIcon,
-} from "@shopify/polaris-icons";
-import { FilePicker } from "../../../components/design-control-panel/settings/FilePicker";
-import { PricingTiersSection } from "../../../components/PricingTiersSection";
+  MultiLanguageTextModal,
+  type MultiLanguageField,
+} from "../../../components/bundle-configure/MultiLanguageTextModal";
+import { DiscardChangesModal } from "../../../components/bundle-configure/DiscardChangesModal";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
 import { requireAdminSession } from "../../../lib/auth-guards.server";
@@ -86,19 +58,49 @@ import {
   handleCheckFullPageTemplate,
   handleValidateWidgetPlacement,
   handleCreatePreviewPage,
+  handleRenamePageSlug,
+  handleUpdateBundleDesignTemplate,
 } from "./handlers";
 
+import { AppEmbedBanner } from "../../../components/AppEmbedBanner";
+import { UnlistedBundleBanner } from "../../../components/UnlistedBundleBanner";
+import { EnablePreviewModal } from "../../../components/EnablePreviewModal";
+import { useEnablePreviewGate } from "../../../hooks/useEnablePreviewGate";
+import {
+  fetchBundleProduct,
+  fetchShopLocales,
+  fetchEmbedData,
+} from "../../../lib/bundle-configure-loader.server";
+import {
+  showPolarisModal,
+  hidePolarisModal,
+  useModalHideListener,
+} from "../_shared/bundle-configure/modal-utils";
+import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
+import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
+import { INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE } from "../../../lib/bundle-config/product-page-admin-sections";
+
 // Types - extracted to separate module for better organization
-import type {
-  LoaderData,
-  BundleStatusSectionProps,
-} from "./types";
-import type { BundleStatus } from "../../../constants/bundle";
+import type { LoaderData } from "./types";
+
+const fullPageTemplateOptions = [
+  { presetId: "DEFAULT",    label: "Standard Design",   image: "/FPB-Standard.png"     },
+  { presetId: "CLASSIC",    label: "Classic Design",    image: "/FPB-Classic.png"      },
+  { presetId: "COMPACT",    label: "Compact Design",    image: "/FPB-Compact..png"    },
+  { presetId: "HORIZONTAL", label: "Horizontal Design", image: "/FPB-Horizontal.png"   },
+] as const;
+
+type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
+
+const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
+  const url = new URL(request.url);
+  const configureMode = url.searchParams.get("mode") === "create" ? "create" : "edit";
+  const showFirstLoadTour = configureMode === "create" && url.searchParams.get("first_load") === "true";
 
   if (!bundleId) {
     throw new Response(ERROR_MESSAGES.BUNDLE_ID_REQUIRED, { status: 400 });
@@ -114,7 +116,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     include: {
       steps: {
         include: {
-          StepProduct: true
+          StepProduct: true,
+          StepCategory: { orderBy: { sortOrder: "asc" } }
         }
       },
       pricing: true
@@ -126,65 +129,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   }
 
 
-  // Fetch bundle product data from Shopify if it exists
-  let bundleProduct = null;
-  if (bundle.shopifyProductId) {
-    try {
-      const GET_BUNDLE_PRODUCT = `
-        query GetBundleProduct($id: ID!) {
-          product(id: $id) {
-            id
-            title
-            handle
-            status
-            onlineStoreUrl
-            onlineStorePreviewUrl
-            description
-            productType
-            vendor
-            tags
-            variants(first: 1) {
-              edges {
-                node {
-                  id
-                  title
-                  price
-                }
-              }
-            }
-          }
-        }
-      `;
-
-      const productResponse = await admin.graphql(GET_BUNDLE_PRODUCT, {
-        variables: {
-          id: bundle.shopifyProductId
-        }
-      });
-
-      const productData = await productResponse.json();
-      bundleProduct = productData.data?.product;
-    } catch (error) {
-      AppLogger.warn("Failed to fetch bundle product", {
-        component: 'bundle-config',
-        bundleId: params.bundleId,
-        operation: 'fetch-product'
-      }, error);
-      // Don't fail the entire request if we can't fetch the product
-    }
-  }
-
-  // Fetch all full-page bundles for the shop (used in pricing tiers selector)
-  const availableBundles = await db.bundle.findMany({
-    where: {
-      shopId: session.shop,
-      bundleType: 'full_page',
-      status: { in: ['draft', 'active'] },
-    },
-    select: { id: true, name: true },
-    orderBy: { name: 'asc' },
-  });
-
   // CRITICAL: Use app's API key (client_id from shopify.app.toml), NOT extension UUID
   // Per Shopify docs: addAppBlockId={api_key}/{handle}
   // Reference: https://shopify.dev/docs/apps/build/online-store/theme-app-extensions/configuration
@@ -193,13 +137,35 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // File: extensions/bundle-builder/blocks/bundle-full-page.liquid
   const blockHandle = 'bundle-full-page';
 
+  const [bundleProduct, shopLocales, availableBundles, embedData] = await Promise.all([
+    bundle.shopifyProductId
+      ? fetchBundleProduct(admin, bundle.shopifyProductId, bundleId)
+      : Promise.resolve(null),
+    fetchShopLocales(admin),
+    db.bundle.findMany({
+      where: {
+        shopId: session.shop,
+        bundleType: 'full_page',
+        status: { in: ['draft', 'active'] },
+      },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+    fetchEmbedData(admin, session.shop, apiKey, "bundle-app-embed"),
+  ]);
+
   return json({
     bundle,
     bundleProduct,
     availableBundles,
     shop: session.shop,
+    configureMode,
+    showFirstLoadTour,
     apiKey,
     blockHandle,
+    shopLocales,
+    appEmbedEnabled: embedData.appEmbedEnabled,
+    themeEditorUrl: embedData.themeEditorUrl,
   });
 };
 
@@ -240,11 +206,25 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       case "checkFullPageTemplate":
         return await handleCheckFullPageTemplate(admin, session);
       case "validateWidgetPlacement":
-        return await handleValidateWidgetPlacement(admin, session, bundleId);
+        return await handleValidateWidgetPlacement(
+          admin,
+          session,
+          bundleId,
+          String(formData.get("desiredSlug") || "")
+        );
+      case "renamePageSlug":
+        return await handleRenamePageSlug(
+          admin,
+          session,
+          bundleId,
+          String(formData.get("newSlug") || "")
+        );
       case "createPreviewPage":
         return await handleCreatePreviewPage(admin, session, bundleId);
       case "syncBundle":
         return await handleSyncBundle(admin, session, bundleId);
+      case "updateBundleDesignTemplate":
+        return await handleUpdateBundleDesignTemplate(admin, session, bundleId, formData);
       default:
         return json({ success: false, error: ERROR_MESSAGES.UNKNOWN_ACTION }, { status: 400 });
     }
@@ -260,34 +240,595 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 // Handler functions have been extracted to ./app.bundles.full-page-bundle.configure.$bundleId/handlers/
 // Static navigation items - moved outside component to prevent recreation on every render
 const bundleSetupItems = [
-  { id: "step_setup",       label: "Step Setup",          icon: ListNumberedIcon, fullPageOnly: false },
-  { id: "discount_pricing", label: "Discount & Pricing",  icon: DiscountIcon,     fullPageOnly: false },
-  { id: "images_gifs",      label: "Bundle Assets",       icon: ImageIcon,        fullPageOnly: true  },
-  { id: "pricing_tiers",    label: "Pricing Tiers",       icon: DiscountIcon,     fullPageOnly: true  },
-  // Bundle Upsell and Bundle Settings disabled for later release
-  // { id: "bundle_upsell", label: "Bundle Upsell", icon: SettingsIcon },
-  // { id: "bundle_settings", label: "Bundle Settings", icon: SettingsIcon },
+  { id: "step_setup",        label: "Step Setup",         iconType: "note",   fullPageOnly: false },
+  { id: "discount_pricing",  label: "Discount & Pricing", iconType: "filter", fullPageOnly: false },
+  { id: "bundle_visibility", label: "Bundle Visibility",  iconType: "view",   fullPageOnly: true  },
+  { id: "bundle_settings",   label: "Bundle Settings",    iconType: "edit",   fullPageOnly: false },
+  { id: "select_template",   label: "Select Template",    iconType: "paint-brush-flat", fullPageOnly: false },
 ];
 
-// Static status options - imported from centralized constants
-const statusOptions = [...BUNDLE_STATUS_OPTIONS];
+const stepSetupChildItems = [
+  { id: "free_gift_addons", label: "Free Gift & Add Ons" },
+];
 
-// Memoized BundleStatusSection component (BundleStatusSectionProps imported from types)
-const BundleStatusSection = memo(({ status, onChange }: BundleStatusSectionProps) => (
-  <BlockStack gap="200">
-    <Text variant="headingSm" as="h4">
-      Bundle Status
-    </Text>
-    <Select
-      label="Bundle Status"
-      options={statusOptions}
-      value={status}
-      onChange={(selected: string) => onChange(selected as BundleStatus)}
-      labelHidden
-    />
-  </BlockStack>
-));
-BundleStatusSection.displayName = 'BundleStatusSection';
+const ADDON_MESSAGE_KEY = "addons-direct";
+const ADDONS_HELP_ARTICLE_URL = "https://wolfpackapps.com";
+
+const bundleVisibilityChildItems = [
+  { id: "bundle_widget", label: "Bundle Widget" },
+];
+
+const TEMPLATE_VARIABLES: [string, string][] = [
+  ["{{discountConditionDiff}}", "The remaining quantity or monetary amount a customer needs to add to their cart to unlock the discount."],
+  ["{{discountUnit}}", "The symbol for the discount requirement, such as your store's currency symbol ($) for amount-based rules."],
+  ["{{discountValue}}", "The numerical value of the discount reward itself (e.g., the '10' in a 10% or $10 discount)."],
+  ["{{discountValueUnit}}", "The symbol used for the discount reward, such as the percent sign (%) or the store's currency symbol ($)."],
+  ["{{discountedItems}}", "The quantity of items that will be discounted or given free as part of the \"Get Y\" offer."],
+];
+
+const ADDON_TEMPLATE_VARIABLES: [string, string][] = [
+  ["{{addonsConditionDiff}}", "Shows how much more the customer needs to add to qualify"],
+  ["{{currencyUnit}}", "Currency Symbol"],
+  ["{{addonsDiscountValue}}", "Displays the final discount your customer will receive on the add-ons"],
+  ["{{addonsDiscountValueUnit}}", "Discount type (e.g., %)"],
+];
+
+type VisibilityDisplayConfiguration = {
+  showOnAllBundleProducts: boolean;
+  selectedProducts: unknown[];
+  showOnSpecificProductPages: unknown[];
+  collectionsSelectedData: unknown[];
+  showOnSpecificCollectionPages: unknown[];
+};
+
+type StepSetupMultiLanguageTarget =
+  | { type: "text-overrides" }
+  | { type: "step"; stepId: string }
+  | { type: "step-category"; stepId: string; categoryIndex: number }
+  | { type: "addon-step" }
+  | { type: "addon-section" }
+  | { type: "addon-footer" };
+
+function asVisibilityArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function getVisibilityDisplayTarget(
+  displayConfiguration: Partial<VisibilityDisplayConfiguration> | null | undefined,
+  allValue: string,
+): string {
+  if (!displayConfiguration) return allValue;
+  if (asVisibilityArray(displayConfiguration.collectionsSelectedData).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificCollectionPages).length > 0) {
+    return "specific_collections";
+  }
+  if (asVisibilityArray(displayConfiguration.selectedProducts).length > 0 || asVisibilityArray(displayConfiguration.showOnSpecificProductPages).length > 0) {
+    return "specific_products";
+  }
+  return displayConfiguration.showOnAllBundleProducts === false ? "specific_products" : allValue;
+}
+
+function buildVisibilityDisplayConfiguration(
+  displayOn: string | null | undefined,
+  selectedProducts: unknown[] = [],
+  showOnSpecificProductPages: unknown[] = [],
+  collectionsSelectedData: unknown[] = [],
+  showOnSpecificCollectionPages: unknown[] = [],
+): VisibilityDisplayConfiguration {
+  const showOnAllBundleProducts = displayOn === "all" || displayOn === "all_products";
+  const productPageTargets = showOnSpecificProductPages.length > 0 ? showOnSpecificProductPages : selectedProducts;
+  const collectionPageTargets = showOnSpecificCollectionPages.length > 0 ? showOnSpecificCollectionPages : collectionsSelectedData;
+
+  return {
+    showOnAllBundleProducts,
+    selectedProducts: displayOn === "specific_products" ? selectedProducts.map((product) => compactVisibilityProductReference(product)) : [],
+    showOnSpecificProductPages: displayOn === "specific_products" ? productPageTargets.map((product) => compactVisibilityProductPageReference(product)) : [],
+    collectionsSelectedData: displayOn === "specific_collections" ? collectionsSelectedData.map((collection) => compactVisibilityCollectionReference(collection)) : [],
+    showOnSpecificCollectionPages: displayOn === "specific_collections" ? collectionPageTargets.map((collection) => compactVisibilityCollectionPageReference(collection)) : [],
+  };
+}
+
+function getVisibilityResourceId(resource: any): string | null {
+  return resource?.graphqlId
+    ?? resource?.admin_graphql_api_id
+    ?? resource?.storefrontId
+    ?? resource?.id
+    ?? null;
+}
+
+function getVisibilityResourceNumericId(resource: any): string {
+  const id = String(resource?.productId ?? resource?.collectionId ?? getVisibilityResourceId(resource) ?? "");
+  return id.includes("/") ? id.split("/").pop() ?? id : id;
+}
+
+function getVisibilityImageUrl(resource: any): string | null {
+  return resource?.imageUrl
+    ?? resource?.featuredImage?.url
+    ?? resource?.image?.url
+    ?? resource?.image?.src
+    ?? resource?.images?.[0]?.originalSrc
+    ?? resource?.images?.[0]?.url
+    ?? resource?.images?.[0]?.src
+    ?? null;
+}
+
+function getVisibilityPickerSelection(picked: any): any[] | null {
+  if (Array.isArray(picked)) return picked;
+  if (Array.isArray(picked?.selection)) return picked.selection;
+  return null;
+}
+
+function buildVisibilitySelectionIds(resources: unknown[]) {
+  return resources
+    .map((resource: any) => getVisibilityResourceId(resource))
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+    .map((id) => ({ id }));
+}
+
+function compactVisibilityImages(resource: any) {
+  const imageUrl = getVisibilityImageUrl(resource);
+  return imageUrl ? [{ originalSrc: imageUrl }] : [];
+}
+
+function compactVisibilityProductReference(product: any) {
+  const graphqlId = getVisibilityResourceId(product);
+  const imageUrl = getVisibilityImageUrl(product);
+
+  return {
+    id: graphqlId,
+    productId: getVisibilityResourceNumericId(product),
+    graphqlId,
+    handle: product?.handle ?? "",
+    title: product?.title ?? "Untitled product",
+    images: compactVisibilityImages(product),
+    imageUrl,
+    variants: [],
+  };
+}
+
+function compactVisibilityProductPageReference(product: any) {
+  const normalized = compactVisibilityProductReference(product);
+  return {
+    productId: normalized.productId,
+    graphqlId: normalized.graphqlId,
+    handle: normalized.handle,
+    variants: normalized.variants,
+    images: normalized.images,
+    title: normalized.title,
+  };
+}
+
+function normalizeVisibilityProductForDisplayConfiguration(product: any) {
+  return compactVisibilityProductReference(product);
+}
+
+function normalizeVisibilityProductPageTarget(product: any) {
+  return compactVisibilityProductPageReference(product);
+}
+
+function compactVisibilityCollectionReference(collection: any) {
+  const graphqlId = getVisibilityResourceId(collection);
+  return {
+    id: graphqlId,
+    collectionId: getVisibilityResourceNumericId(collection),
+    graphqlId,
+    handle: collection?.handle ?? "",
+    title: collection?.title ?? "Untitled collection",
+  };
+}
+
+function compactVisibilityCollectionPageReference(collection: any) {
+  const normalized = compactVisibilityCollectionReference(collection);
+  return {
+    collectionId: normalized.collectionId,
+    graphqlId: normalized.graphqlId,
+    handle: normalized.handle,
+    variants: [],
+    images: [],
+    title: normalized.title,
+  };
+}
+
+function normalizeVisibilityCollectionForDisplayConfiguration(collection: any) {
+  return compactVisibilityCollectionReference(collection);
+}
+
+function normalizeVisibilityCollectionPageTarget(collection: any) {
+  return compactVisibilityCollectionPageReference(collection);
+}
+
+// showPolarisModal / hidePolarisModal imported from _shared/bundle-configure/modal-utils
+// BundleStatusSection imported from _shared/bundle-configure/BundleStatusSection
+
+function SettingsRow({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={fullPageBundleStyles.settingsRow}>
+      <div className={fullPageBundleStyles.settingsRowText}>
+        <p className={fullPageBundleStyles.settingsRowTitle}>{title}</p>
+        {description && <p className={fullPageBundleStyles.settingsRowDescription}>{description}</p>}
+      </div>
+      <div className={fullPageBundleStyles.settingsRowControl}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function RichHelpTooltip({
+  label,
+  tooltipKey,
+  accessibilityLabel,
+  icon,
+}: {
+  label?: string;
+  tooltipKey: HelpTooltipKey;
+  accessibilityLabel?: string;
+  icon?: string;
+}) {
+  const { t } = useTranslation();
+  const tooltip = HELP_TOOLTIPS[tooltipKey];
+  const title = t(`tooltips.${tooltipKey}.title`);
+  const description = t(`tooltips.${tooltipKey}.description`);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
+
+  const showTooltip = () => {
+    if (!wrapperRef.current) return;
+    const width = Math.min(320, window.innerWidth - 32);
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, 16), window.innerWidth - width - 16);
+    setTooltipPos({
+      top: rect.bottom + 10,
+      left,
+      arrowLeft: rect.left + rect.width / 2 - left,
+    });
+  };
+  const hideTooltip = () => setTooltipPos(null);
+
+  return (
+    <span
+      ref={wrapperRef}
+      className={fullPageBundleStyles.richHelp}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
+      <span className={fullPageBundleStyles.richHelpTrigger}>
+        <s-button
+          icon={icon as any}
+          variant="tertiary"
+          accessibilityLabel={accessibilityLabel || tooltip.accessibilityLabel || label || title}
+        >
+          {label}
+        </s-button>
+      </span>
+      <span
+        className={`${fullPageBundleStyles.richHelpCard} ${fullPageBundleStyles.richHelpCardFloating}`}
+        role="tooltip"
+        style={tooltipPos ? {
+          position: "fixed",
+          top: tooltipPos.top,
+          left: tooltipPos.left,
+          width: Math.min(320, window.innerWidth - 32),
+          transform: "none",
+          opacity: 1,
+          visibility: "visible",
+          pointerEvents: "auto",
+          "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
+        } as React.CSSProperties : undefined}
+      >
+        {tooltip.visual && <HelpTooltipVisualBlock visual={tooltip.visual} title={title} />}
+        <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>
+        <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
+      </span>
+    </span>
+  );
+}
+
+function QuestionHelpTooltip({
+  tooltipKey,
+}: {
+  tooltipKey: HelpTooltipKey;
+}) {
+  const { t } = useTranslation();
+  const tooltip = HELP_TOOLTIPS[tooltipKey];
+  const title = t(`tooltips.${tooltipKey}.title`, '');
+  const description = t(`tooltips.${tooltipKey}.description`);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
+
+  const showTooltip = () => {
+    if (!wrapperRef.current) return;
+    const width = Math.min(320, window.innerWidth - 32);
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, 16), window.innerWidth - width - 16);
+    setTooltipPos({
+      top: rect.bottom + 10,
+      left,
+      arrowLeft: rect.left + rect.width / 2 - left,
+    });
+  };
+  const hideTooltip = () => setTooltipPos(null);
+
+  return (
+    <span
+      ref={wrapperRef}
+      className={fullPageBundleStyles.richHelp}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
+      <span className={fullPageBundleStyles.richHelpTrigger}>
+        <s-button
+          variant="tertiary"
+          icon="info"
+          accessibilityLabel={title || description}
+        />
+      </span>
+      <span
+        className={`${fullPageBundleStyles.richHelpCard} ${fullPageBundleStyles.richHelpCardFloating}`}
+        role="tooltip"
+        style={tooltipPos ? {
+          position: "fixed",
+          top: tooltipPos.top,
+          left: tooltipPos.left,
+          width: Math.min(320, window.innerWidth - 32),
+          transform: "none",
+          opacity: 1,
+          visibility: "visible",
+          pointerEvents: "auto",
+          "--rich-help-arrow-left": `${tooltipPos.arrowLeft}px`,
+        } as React.CSSProperties : undefined}
+      >
+        {tooltip.visual && <span className={fullPageBundleStyles.richHelpImagePlaceholder} />}
+        {title && <span className={fullPageBundleStyles.richHelpTitle}>{title}</span>}
+        <span className={fullPageBundleStyles.richHelpDescription}>{description}</span>
+      </span>
+    </span>
+  );
+}
+
+function HelpTooltipVisualBlock({
+  title,
+}: {
+  visual: HelpTooltipVisual;
+  title: string;
+}) {
+  return (
+    <span className={fullPageBundleStyles.richHelpImagePlaceholder} role="img" aria-label={title} />
+  );
+}
+
+function VisibilityBadge({ isOptimised }: { isOptimised: boolean }) {
+  const { t } = useTranslation();
+  const description = t(`tooltips.bundleVisibilityPending.description`);
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; right: number } | null>(null);
+
+  const showTooltip = () => {
+    if (wrapperRef.current) {
+      const r = wrapperRef.current.getBoundingClientRect();
+      setTooltipPos({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    }
+  };
+  const hideTooltip = () => setTooltipPos(null);
+
+  return (
+    <span
+      ref={wrapperRef}
+      className={isOptimised ? fullPageBundleStyles.optimisedBadge : fullPageBundleStyles.pendingBadge}
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+      tabIndex={0}
+      aria-label={`${isOptimised ? 'Optimised' : 'Pending'} — ${description}`}
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+    >
+      {isOptimised ? 'Optimised' : 'Pending'}
+      <svg width="11" height="11" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="6.5" cy="6.5" r="5.75" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="6.5" y1="5.75" x2="6.5" y2="9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="6.5" cy="4.25" r="0.75" fill="currentColor" />
+      </svg>
+      {tooltipPos && (
+        <span
+          className={fullPageBundleStyles.pendingTooltipCard}
+          style={{ position: 'fixed', top: tooltipPos.top, right: tooltipPos.right }}
+          role="tooltip"
+        >
+          {description}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function toNumericShopifyId(id: string | undefined | null): string {
+  if (!id) return "";
+  const match = id.match(/\/(\d+)$/);
+  return match ? match[1] : id;
+}
+
+function toProductGid(product: any): string {
+  return product?.graphqlId || product?.id || (product?.productId ? `gid://shopify/Product/${product.productId}` : "");
+}
+
+function toVariantGid(variant: any): string {
+  return variant?.variantGraphqlId || variant?.id || (variant?.variantId ? `gid://shopify/ProductVariant/${variant.variantId}` : "");
+}
+
+function normalizeAddonPickerProduct(product: any) {
+  const productGid = toProductGid(product);
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const imageUrl = product?.images?.[0]?.originalSrc
+    || product?.images?.[0]?.url
+    || product?.image?.url
+    || product?.imageUrl
+    || null;
+
+  return {
+    id: productGid,
+    productId: toNumericShopifyId(productGid || product?.productId),
+    graphqlId: productGid,
+    handle: product?.handle ?? null,
+    variants: variants.map((variant: any) => {
+      const variantGid = toVariantGid(variant);
+      return {
+        variantId: toNumericShopifyId(variantGid || variant?.variantId),
+        variantGraphqlId: variantGid,
+        inventoryQuantity: typeof variant?.inventoryQuantity === "number" ? variant.inventoryQuantity : null,
+        inventoryPolicy: variant?.inventoryPolicy ?? null,
+        price: String(variant?.price ?? "0"),
+        variantTitle: variant?.title || variant?.variantTitle || "Default Title",
+      };
+    }),
+    hasOnlyDefaultVariant: product?.hasOnlyDefaultVariant ?? variants.length <= 1,
+    images: imageUrl ? [{ originalSrc: imageUrl }] : [],
+    title: product?.title || product?.name || "",
+    tags: Array.isArray(product?.tags) ? product.tags : [],
+  };
+}
+
+function normalizeAddonTier(tier: any, index: number) {
+  const eligibilityType = tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY";
+  const eligibilityValue = Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) || 1;
+  const discountType = tier?.discount?.type || tier?.discountType || "PERCENTAGE";
+  const discountValue = Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0;
+
+  return {
+    tierId: tier?.tierId || `tier${index + 1}`,
+    title: tier?.title || `Tier ${index + 1}`,
+    selectedAddonProducts: Array.isArray(tier?.selectedAddonProducts)
+      ? tier.selectedAddonProducts.map(normalizeAddonPickerProduct)
+      : [],
+    eligibilityCondition: {
+      type: eligibilityType,
+      value: eligibilityValue,
+      isValidateEligibilityConditionEnabled: tier?.eligibilityCondition?.isValidateEligibilityConditionEnabled !== false,
+    },
+    discount: {
+      type: discountType,
+      value: discountValue,
+    },
+    displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
+    conditions: Array.isArray(tier?.conditions)
+      ? tier.conditions.map((condition: any) => ({
+        type: condition?.type || "quantity",
+        condition: condition?.condition || "lessThanOrEqualTo",
+        value: String(condition?.value ?? "1"),
+      }))
+      : [],
+  };
+}
+
+function createDefaultAddonDraftTier(index = 0) {
+  return {
+    tierId: `tier${index + 1}`,
+    title: `Tier ${index + 1}`,
+    selectedAddonProducts: [],
+    eligibilityType: "QUANTITY",
+    eligibilityValue: 1,
+    discountType: "PERCENTAGE",
+    discountValue: 0,
+    displayVariantsAsIndividualProducts_addons: false,
+    displayFree: false,
+    conditions: [],
+  };
+}
+
+function createDefaultAddonTierCondition() {
+  return {
+    type: "quantity",
+    condition: "lessThanOrEqualTo",
+    value: "1",
+  };
+}
+
+function addonTierToDraft(tier: any, index: number) {
+  return {
+    ...createDefaultAddonDraftTier(index),
+    tierId: tier?.tierId || `tier${index + 1}`,
+    title: tier?.title || `Tier ${index + 1}`,
+    selectedAddonProducts: Array.isArray(tier?.selectedAddonProducts) ? tier.selectedAddonProducts : [],
+    eligibilityType: tier?.eligibilityCondition?.type || tier?.eligibilityType || "QUANTITY",
+    eligibilityValue: Number(tier?.eligibilityCondition?.value ?? tier?.eligibilityValue ?? 1) || 1,
+    discountType: tier?.discount?.type || tier?.discountType || "PERCENTAGE",
+    discountValue: Number(tier?.discount?.value ?? tier?.discountValue ?? 0) || 0,
+    displayVariantsAsIndividualProducts_addons: tier?.displayVariantsAsIndividualProducts_addons === true,
+    displayFree: false,
+    conditions: Array.isArray(tier?.conditions)
+      ? tier.conditions.map((condition: any) => ({
+        type: condition?.type || "quantity",
+        condition: condition?.condition || "lessThanOrEqualTo",
+        value: String(condition?.value ?? "1"),
+      }))
+      : [],
+  };
+}
+
+function buildAddonDraftFromPersonalizationData(personalizationData: any) {
+  const addonProducts = personalizationData?.addonProducts || {};
+  const tiers = Array.isArray(addonProducts?.tiers) && addonProducts.tiers.length > 0
+    ? addonProducts.tiers.map(addonTierToDraft)
+    : [createDefaultAddonDraftTier()];
+
+  return {
+    isPersonalizationEnabled: personalizationData?.isPersonalizationEnabled === true,
+    personalizeStepText: personalizationData?.personalizeStepText || "",
+    personalizePageSubtext: personalizationData?.personalizePageSubtext || "",
+    stepImage: personalizationData?.stepImage || null,
+    addonProductsEnabled: addonProducts?.isEnabled === true,
+    addonProductsTitle: addonProducts?.title || "",
+    addonTiers: tiers,
+    addonMultiLangData: addonProducts?.multiLangData || {},
+  };
+}
+
+function buildPersonalizationDataFromDraft(
+  addonDraft: any,
+  addonMessages: { discountText?: string; successMessage?: string } | null,
+) {
+  if (!addonDraft?.isPersonalizationEnabled) return null;
+
+  const addonTiers = Array.isArray(addonDraft?.addonTiers) && addonDraft.addonTiers.length > 0
+    ? addonDraft.addonTiers
+    : [createDefaultAddonDraftTier()];
+  const tiers = addonTiers.map(normalizeAddonTier);
+
+  const personalizationData: Record<string, any> = {
+    isPersonalizationEnabled: true,
+    personalizeStepText: addonDraft?.personalizeStepText || "",
+    personalizePageSubtext: addonDraft?.personalizePageSubtext || "",
+    stepImage: addonDraft?.stepImage || null,
+    addonProducts: {
+      isEnabled: addonDraft?.addonProductsEnabled === true,
+      title: addonDraft?.addonProductsTitle || "",
+      type: "MULTI_TIER",
+      tiers,
+      multiLangData: addonDraft?.addonMultiLangData || {},
+      addonsMessaging: {
+        isEnabled: Boolean(addonMessages?.discountText || addonMessages?.successMessage),
+        tier1: {
+          ineligibleState: addonMessages?.discountText || "",
+          eligibleState: addonMessages?.successMessage || "",
+        },
+      },
+    },
+  };
+
+  return personalizationData;
+}
+
 
 export default function ConfigureBundleFlow() {
   const loaderData = useLoaderData<LoaderData>();
@@ -297,7 +838,7 @@ export default function ConfigureBundleFlow() {
     loadingGif?: string | null;
     shopifyProductHandle?: string;
   };
-  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle } = loaderData;
+  const { bundleProduct: loadedBundleProduct, availableBundles, shop, apiKey, blockHandle, shopLocales = [], appEmbedEnabled = true, themeEditorUrl = null } = loaderData as any;
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
@@ -386,6 +927,83 @@ export default function ConfigureBundleFlow() {
     // Original values ref
     originalValuesRef,
   } = configState;
+  const suppressTopAppEmbedBannerForVisibility = activeSection === "bundle_visibility" || activeSection === "bundle_widget";
+  const parentProductStatusUi = getParentProductStatusUi(productStatus || bundleProduct?.status || loadedBundleProduct?.status);
+  const refreshParentProductStatusFromShopify = useCallback(() => {
+    const revalidateNow = () => {
+      revalidator.revalidate();
+    };
+    let cleanup = () => {};
+    const revalidateOnReturn = () => {
+      revalidateNow();
+      cleanup();
+    };
+    const revalidateOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        revalidateOnReturn();
+      }
+    };
+    cleanup = () => {
+      window.removeEventListener("focus", revalidateOnReturn);
+      document.removeEventListener("visibilitychange", revalidateOnVisible);
+    };
+
+    [1000, 3000, 6000].forEach((delay) => {
+      window.setTimeout(revalidateNow, delay);
+    });
+    window.addEventListener("focus", revalidateOnReturn, { once: true });
+    document.addEventListener("visibilitychange", revalidateOnVisible);
+    window.setTimeout(cleanup, 30000);
+  }, [revalidator]);
+
+  const [addonDraft, setAddonDraft] = useState(() =>
+    buildAddonDraftFromPersonalizationData((bundle as any).personalizationData)
+  );
+  const originalAddonDraftRef = useRef<any>(addonDraft);
+  const [activeAddonTierIndex, setActiveAddonTierIndex] = useState(0);
+  const [addonSelectedProductsTierIndex, setAddonSelectedProductsTierIndex] = useState<number | null>(null);
+  const [isAddonSelectedProductsModalOpen, setIsAddonSelectedProductsModalOpen] = useState(false);
+  const updateAddonDraft = useCallback((updates: Record<string, any>) => {
+    setAddonDraft((current: any) => ({ ...current, ...updates }));
+    markAsDirty();
+  }, [markAsDirty]);
+  const addonTierCount = Array.isArray(addonDraft.addonTiers) && addonDraft.addonTiers.length > 0
+    ? addonDraft.addonTiers.length
+    : 1;
+
+  useEffect(() => {
+    setActiveAddonTierIndex((currentIndex) => {
+      if (currentIndex < addonTierCount) return currentIndex;
+      return Math.max(0, addonTierCount - 1);
+    });
+  }, [addonTierCount]);
+  const shopDomain = useMemo(
+    () => (shop.includes('.myshopify.com') ? shop.replace('.myshopify.com', '') : shop),
+    [shop]
+  );
+
+  const [pageSlug, setPageSlug] = useState<string>(
+    bundle.shopifyPageHandle ?? slugify(bundle.name ?? '')
+  );
+  const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState<boolean>(
+    Boolean(bundle.shopifyPageHandle)
+  );
+  const originalPageSlugRef = useRef<string>(
+    bundle.shopifyPageHandle ?? slugify(bundle.name ?? '')
+  );
+  const normalizedPageSlug = useMemo(() => slugify(pageSlug), [pageSlug]);
+  const pageSlugError = useMemo(() => validateSlug(pageSlug), [pageSlug]);
+  const bundlePageUrl = useMemo(
+    () => bundle.shopifyPageHandle
+      ? `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`
+      : "",
+    [shopDomain, bundle.shopifyPageHandle]
+  );
+
+  useEffect(() => {
+    if (bundle.shopifyPageHandle || hasManuallyEditedSlug) return;
+    setPageSlug(slugify(formState.bundleName || ''));
+  }, [bundle.shopifyPageHandle, formState.bundleName, hasManuallyEditedSlug]);
 
 
   // Per-bundle promo banner background image state
@@ -403,14 +1021,6 @@ export default function ConfigureBundleFlow() {
   // Loading GIF state
   const [loadingGif, setLoadingGif] = useState<string | null>(bundle.loadingGif ?? null);
   const originalLoadingGifRef = useRef<string | null>(bundle.loadingGif ?? null);
-
-  // Pricing tier config state (full-page bundles)
-  const [tierConfig, setTierConfig] = useState<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
-  );
-  const originalTierConfigRef = useRef<{ label: string; linkedBundleId: string }[]>(
-    Array.isArray(bundle.tierConfig) ? (bundle.tierConfig as { label: string; linkedBundleId: string }[]) : []
-  );
 
   // Admin-controlled step timeline visibility (null = defer to theme editor)
   const [showStepTimeline, setShowStepTimeline] = useState<boolean>(
@@ -430,26 +1040,785 @@ export default function ConfigureBundleFlow() {
   const originalFloatingBadgeEnabledRef = useRef<boolean>((bundle as any).floatingBadgeEnabled ?? false);
   const originalFloatingBadgeTextRef = useRef<string>((bundle as any).floatingBadgeText ?? "");
 
+  // Bundle Settings state
+  const [showProductPrices, setShowProductPrices] = useState<boolean>((bundle as any).showProductPrices ?? true);
+  const [showCompareAtPrices, setShowCompareAtPrices] = useState<boolean>((bundle as any).showCompareAtPrices ?? false);
+  const [cartRedirectToCheckout, setCartRedirectToCheckout] = useState<boolean>((bundle as any).cartRedirectToCheckout ?? false);
+  const [allowQuantityChanges, setAllowQuantityChanges] = useState<boolean>((bundle as any).allowQuantityChanges ?? true);
+  const initialValidateQuantityPerProduct = ((bundle as any).validateQuantityPerProduct as { isEnabled?: boolean; allowedQuantity?: number } | null) ?? null;
+  const [quantityValidationEnabled, setQuantityValidationEnabled] = useState<boolean>(initialValidateQuantityPerProduct?.isEnabled === true);
+  const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
+  const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>(
+    (initialValidateQuantityPerProduct?.allowedQuantity ?? (bundle as any).maxQtyPerProduct ?? 1).toString()
+  );
+  const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
+  const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
+  const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
+  const [showTextOnPlusEnabled, setShowTextOnPlusEnabled] = useState<boolean>(
+    !!((bundle as any).textOverrides?.addToCartButton)
+  );
+  const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
+    ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
+  );
+  const [individualSellingPlanShowFor, setIndividualSellingPlanShowFor] = useState<IndividualSellingPlanShowFor>(
+    ((bundle as any).individualSellingPlanSelection as { showFor?: unknown } | null)?.showFor === "OOS_PRODUCTS"
+      ? "OOS_PRODUCTS"
+      : "ALL_PRODUCTS"
+  );
+  const originalShowProductPricesRef = useRef<boolean>((bundle as any).showProductPrices ?? true);
+  const originalShowCompareAtPricesRef = useRef<boolean>((bundle as any).showCompareAtPrices ?? false);
+  const originalCartRedirectToCheckoutRef = useRef<boolean>((bundle as any).cartRedirectToCheckout ?? false);
+  const originalAllowQuantityChangesRef = useRef<boolean>((bundle as any).allowQuantityChanges ?? true);
+
+  const directBundleSummary = (
+    ((bundle as any).bundleTextConfig as { bundleSummary?: { title?: string; subTitle?: string } } | null)?.bundleSummary
+  ) ?? {};
+  const initialTextOverrides = {
+    ...(((bundle as any).textOverrides as Record<string, string>) ?? {}),
+    yourBundle: directBundleSummary.title ?? "",
+    reviewBundle: directBundleSummary.subTitle ?? "",
+  };
+
+  // Text overrides state (Messages tab)
+  const [textOverrides, setTextOverrides] = useState<Record<string, string>>(
+    initialTextOverrides
+  );
+  const [textOverridesByLocale, setTextOverridesByLocale] = useState<Record<string, Record<string, string>>>(
+    ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
+  );
+  const originalTextOverridesRef = useRef<Record<string, string>>(
+    initialTextOverrides
+  );
+  const originalTextOverridesByLocaleRef = useRef<Record<string, Record<string, string>>>(
+    ((bundle as any).textOverridesByLocale as Record<string, Record<string, string>>) ?? {}
+  );
+  // Which locale the merchant is currently editing in the Messages tab
+  const [textOverridesLocale, setTextOverridesLocale] = useState<string>("en");
+  const [multiLanguageFields, setMultiLanguageFields] = useState<MultiLanguageField[]>([]);
+  const [multiLanguageTitle, setMultiLanguageTitle] = useState("Multi Language");
+  const [multiLanguageLayout, setMultiLanguageLayout] = useState<"rich" | "compact">("rich");
+  const [isMultiLanguageModalOpen, setIsMultiLanguageModalOpen] = useState(false);
+  const [multiLanguageTarget, setMultiLanguageTarget] = useState<StepSetupMultiLanguageTarget>({ type: "text-overrides" });
+
+  // Multi-language discount messaging state
+  const [discountMessagingMultiLanguageEnabled, setDiscountMessagingMultiLanguageEnabled] = useState<boolean>(
+    !!(bundle as any).pricing?.ruleMessagesByLocale
+  );
+  const originalDiscountMessagingMultiLanguageEnabledRef = useRef<boolean>(!!(bundle as any).pricing?.ruleMessagesByLocale);
+  const [ruleMessagesByLocale, setRuleMessagesByLocale] = useState<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
+    ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
+  );
+  const originalRuleMessagesByLocaleRef = useRef<Record<string, Record<string, { discountText: string; successMessage: string }>>>(
+    ((bundle as any).pricing?.ruleMessagesByLocale as Record<string, Record<string, { discountText: string; successMessage: string }>>) ?? {}
+  );
+  const [activeDiscountLocale, setActiveDiscountLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+  const [globalSuccessMessage, setGlobalSuccessMessage] = useState<string>(
+    (bundle as any).pricing?.messages?.successMessage ?? ""
+  );
+  const [successMessageByLocale, setSuccessMessageByLocale] = useState<Record<string, string>>(
+    ((bundle as any).pricing?.messages?.successMessageByLocale as Record<string, string>) ?? {}
+  );
+
+  // Tier text for Progress Bar Step-Based
+  const [tierTextByRuleId, setTierTextByRuleId] = useState<Record<string, { tierText: string; tierSubtext: string }>>(
+    ((bundle as any).pricing?.messages?.tierTextByRuleId as Record<string, { tierText: string; tierSubtext: string }>) ?? {}
+  );
+  const [tierTextByLocaleByRuleId, setTierTextByLocaleByRuleId] = useState<Record<string, Record<string, { tierText: string; tierSubtext: string }>>>(
+    ((bundle as any).pricing?.messages?.tierTextByLocaleByRuleId as Record<string, Record<string, { tierText: string; tierSubtext: string }>>) ?? {}
+  );
+  const progressBarMultiLangModalRef = useRef<any>(null);
+  const [isProgressBarMultiLangModalOpen, setIsProgressBarMultiLangModalOpen] = useState(false);
+  const [activeProgressBarLocale, setActiveProgressBarLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+  const bundleQuantityMultiLangModalRef = useRef<any>(null);
+  const [isBundleQuantityMultiLangModalOpen, setIsBundleQuantityMultiLangModalOpen] = useState(false);
+  const [activeBundleQuantityLocale, setActiveBundleQuantityLocale] = useState<string>(
+    shopLocales.find((l: { primary: boolean }) => l.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  );
+
   // Widget install loading state
   const [isInstallingWidget, setIsInstallingWidget] = useState(false);
 
   // Active step tab for Bundle Assets section (independent from Step Setup tab)
   const [activeAssetTabIndex, setActiveAssetTabIndex] = useState(0);
 
-  // Warning modal state: steps + tiers conflict
-  const [stepsTiersWarning, setStepsTiersWarning] = useState<{
-    open: boolean;
-    onConfirm: (() => void) | null;
-  }>({ open: false, onConfirm: null });
+  // Search bar enabled (bundle-level)
+  const [searchBarEnabled, setSearchBarEnabled] = useState<boolean>(
+    (bundle as any).searchBarEnabled ?? false
+  );
+  const originalSearchBarEnabledRef = useRef<boolean>((bundle as any).searchBarEnabled ?? false);
+
+  // Bundle Visibility — Bundle Widget state
+  const savedBundleUpsellConfig = ((bundle as any).bundleUpsellConfig ?? null) as any;
+  const savedWidgetConfiguration = savedBundleUpsellConfig?.widgetConfiguration;
+  const savedWidgetDisplayConfiguration = savedWidgetConfiguration?.displayConfiguration;
+  const [upsellWidgetEnabled, setUpsellWidgetEnabled] = useState<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
+  const [upsellWidgetDisplayMode, setUpsellWidgetDisplayMode] = useState<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const [upsellWidgetDisplayOn, setUpsellWidgetDisplayOn] = useState<string>(
+    (bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all")
+  );
+  const [upsellWidgetTitle, setUpsellWidgetTitle] = useState<string>(savedWidgetConfiguration?.title ?? "Bundle & Save");
+  const [upsellWidgetDescription, setUpsellWidgetDescription] = useState<string>(savedWidgetConfiguration?.description ?? "");
+  const [upsellWidgetButtonText, setUpsellWidgetButtonText] = useState<string>(
+    savedWidgetConfiguration?.buttonText ?? textOverrides.widgetButtonText ?? "Save More With Bundle"
+  );
+  const [upsellWidgetImageUrl, setUpsellWidgetImageUrl] = useState<string>(savedWidgetConfiguration?.imageUrl ?? "");
+  const [upsellWidgetLanguageMode, setUpsellWidgetLanguageMode] = useState<string>(
+    savedWidgetConfiguration?.languageMode ?? savedBundleUpsellConfig?.languageMode ?? "SINGLE"
+  );
+  const [upsellWidgetSelectedProducts, setUpsellWidgetSelectedProducts] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.selectedProducts));
+  const [upsellWidgetSpecificProductPages, setUpsellWidgetSpecificProductPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificProductPages));
+  const [upsellWidgetCollectionsSelectedData, setUpsellWidgetCollectionsSelectedData] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.collectionsSelectedData));
+  const [upsellWidgetSpecificCollectionPages, setUpsellWidgetSpecificCollectionPages] = useState<unknown[]>(asVisibilityArray(savedWidgetDisplayConfiguration?.showOnSpecificCollectionPages));
+  const [autoSelectBrowsedProduct, setAutoSelectBrowsedProduct] = useState<boolean>(
+    savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false
+  );
+  const isBundleVisibilityPending = !(Boolean(bundle.shopifyPageHandle) || upsellWidgetEnabled);
+
+  const originalUpsellWidgetEnabledRef = useRef<boolean>(savedWidgetConfiguration?.isEnabled ?? (bundle as any).upsellWidgetEnabled ?? false);
+  const originalUpsellWidgetDisplayModeRef = useRef<string>((bundle as any).upsellWidgetDisplayMode ?? "button");
+  const originalUpsellWidgetDisplayOnRef = useRef<string>((bundle as any).upsellWidgetDisplayOn ?? getVisibilityDisplayTarget(savedWidgetDisplayConfiguration, "all"));
+  const originalUpsellWidgetButtonTextRef = useRef<string>(savedWidgetConfiguration?.buttonText ?? (bundle as any).textOverrides?.widgetButtonText ?? "Save More With Bundle");
+  const originalAutoSelectBrowsedProductRef = useRef<boolean>(savedWidgetConfiguration?.useLinkProductAsDefaultProduct ?? (bundle as any).autoSelectBrowsedProduct ?? false);
+
+  // Bundle Banner upload state (Gap 2)
+  const [bundleBannerDesktopUrl, setBundleBannerDesktopUrl] = useState<string>((bundle as any).bundleBannerDesktopUrl ?? "");
+  const [bundleBannerMobileUrl, setBundleBannerMobileUrl] = useState<string>((bundle as any).bundleBannerMobileUrl ?? "");
+
+  // Bundle Level CSS state (Gap 3)
+  const [bundleLevelCss, setBundleLevelCss] = useState<string>((bundle as any).bundleLevelCss ?? "");
+
+  // Select Template state (main = DB-synced; pending = overlay working copy)
+  const [bundleDesignTemplate, setBundleDesignTemplate] = useState<string | null>((bundle as any).bundleDesignTemplate ?? null);
+  const [bundleDesignPresetId, setBundleDesignPresetId] = useState<string | null>((bundle as any).bundleDesignPresetId ?? null);
+  const [pendingDesignTemplate, setPendingDesignTemplate] = useState<string | null>(null);
+  const [pendingDesignPresetId, setPendingDesignPresetId] = useState<string | null>(null);
+
+  // Step chip navigation slide animation
+  const [slideKey, setSlideKey] = useState(0);
+  const [slideDir, setSlideDir] = useState<"forward" | "backward" | null>(null);
+
+  // Per-category active tab: keyed by `${stepId}__${catId}`, value 0=Products 1=Collections
+  const [categoryActiveTabs, setCategoryActiveTabs] = useState<Record<string, number>>({});
+  // Per-category open/collapsed state: keyed by `${stepId}__${catId}`
+  const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
+  const [categoryRulesOpen, setCategoryRulesOpen] = useState<Record<string, boolean>>({});
+
+  const getStepCategories = useCallback((stepId: string): any[] => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    return (((step as any)?.StepCategory as any[] | undefined) ?? []);
+  }, [stepsState.steps]);
+
+  const updateStepCategories = useCallback((stepId: string, updater: (categories: any[]) => any[]) => {
+    const categories = getStepCategories(stepId);
+    stepsState.updateStepField(stepId, "StepCategory", updater(categories));
+    markAsDirty();
+  }, [getStepCategories, markAsDirty, stepsState]);
+
+  const clearCategoryConditionRules = useCallback((stepId: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category) => ({
+      ...category,
+      conditions: [],
+      autoNextStepOnConditionMet: false,
+    })));
+  }, [updateStepCategories]);
+
+  const addCategoryConditionRule = useCallback((stepId: string, categoryIndex: number) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: [
+          ...conditions,
+          {
+            id: `category-rule-${Date.now()}`,
+            type: "quantity",
+            condition: "greaterThanOrEqualTo",
+            value: "01",
+          },
+        ],
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const removeCategoryConditionRule = useCallback((stepId: string, categoryIndex: number, ruleId: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: conditions.filter((rule: any, ruleIndex: number) => String(rule.id ?? ruleIndex) !== ruleId),
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const updateCategoryConditionRule = useCallback((stepId: string, categoryIndex: number, ruleId: string, field: string, value: string) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => {
+      if (index !== categoryIndex) return category;
+      const conditions = Array.isArray(category.conditions) ? category.conditions : [];
+      return {
+        ...category,
+        conditions: conditions.map((rule: any, ruleIndex: number) => (
+          String(rule.id ?? ruleIndex) === ruleId ? { ...rule, [field]: value } : rule
+        )),
+      };
+    }));
+  }, [updateStepCategories]);
+
+  const updateCategoryAutoNextRule = useCallback((stepId: string, categoryIndex: number, enabled: boolean) => {
+    updateStepCategories(stepId, (categories) => categories.map((category, index) => (
+      index === categoryIndex ? { ...category, autoNextStepOnConditionMet: enabled } : category
+    )));
+  }, [updateStepCategories]);
+
+  // Icon picker visibility (tracks which step's picker is open)
+  const [showIconPickerForStep, setShowIconPickerForStep] = useState<string | null>(null);
+
+  // Multi-language modal for step names
+  const [isStepLocaleModalOpen, setIsStepLocaleModalOpen] = useState(false);
+
+  // Select Template modal state
+  const selectTemplateModalRef = useRef<HTMLDivElement>(null);
+  const selectTemplateOpenButtonRef = useRef<HTMLButtonElement>(null);
+  const [isSelectTemplateModalOpen, setIsSelectTemplateModalOpen] = useState(false);
+  const [templateModalStep, setTemplateModalStep] = useState<"templates" | "colorsAndCorners" | "textAndImages" | "enableThemeExtension" | "confirm">("templates");
+  const templateFetcher = useFetcher();
+  const [templateSaveError, setTemplateSaveError] = useState<string | null>(null);
+  const lastTemplateRequestRef = useRef<{ template: string | null; presetId: string | null } | null>(null);
+  const lastTemplateResponseRef = useRef<unknown>(null);
 
   // Sync Bundle modal state
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [readinessOpen, setReadinessOpen] = useState(false);
+  const [hasPreview, setHasPreview] = useState(false);
+  const [productMenuOpen, setProductMenuOpen] = useState(false);
+
+  const defaultMultiLanguageLocale = useCallback(() => (
+    shopLocales.find((locale: { primary: boolean }) => locale.primary)?.locale ?? shopLocales[0]?.locale ?? "en"
+  ), [shopLocales]);
+
+  const openMultiLanguageModal = useCallback((title: string, fields: MultiLanguageField[]) => {
+    setMultiLanguageTarget({ type: "text-overrides" });
+    setMultiLanguageTitle(title);
+    setMultiLanguageFields(fields);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale]);
+
+  const openStepMultiLanguageModal = useCallback((stepId: string) => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    if (!step) return;
+    setMultiLanguageTarget({ type: "step", stepId });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("rich");
+    setMultiLanguageFields([
+      { key: "productPageStepText", label: "Step Name", fallback: step.name ?? "" },
+      { key: "productPageSubtext", label: "Step Title", fallback: step.pageTitle ?? "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale, stepsState.steps]);
+
+  const openStepCategoryMultiLanguageModal = useCallback((stepId: string, categoryIndex: number) => {
+    const step = stepsState.steps.find((candidate) => candidate.id === stepId) as any;
+    const category = ((step?.StepCategory as any[] | undefined) ?? [])[categoryIndex];
+    if (!category) return;
+    setMultiLanguageTarget({ type: "step-category", stepId, categoryIndex });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("rich");
+    setMultiLanguageFields([
+      { key: "name", label: "Category Name", fallback: category.name ?? `Category ${categoryIndex + 1}` },
+      { key: "title", label: "Category Title", fallback: category.title ?? "" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale, stepsState.steps]);
+
+  const openAddonStepMultiLanguageModal = useCallback(() => {
+    setMultiLanguageTarget({ type: "addon-step" });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("rich");
+    setMultiLanguageFields([
+      { key: "personalizeStepText", label: "Step Name", fallback: "Step Text" },
+      { key: "personalizePageSubtext", label: "Step Title", fallback: "Step Subtext" },
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [defaultMultiLanguageLocale]);
+
+  const openAddonSectionMultiLanguageModal = useCallback(() => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    setMultiLanguageTarget({ type: "addon-section" });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("compact");
+    setMultiLanguageFields([
+      { key: "addonProductsTitle", label: "Add on Section title", fallback: addonDraft.addonProductsTitle || "" },
+      ...addonTiers.map((tier: any, index: number) => ({
+        key: `tier${index + 1}Title`,
+        label: `Tier#${index + 1} Title`,
+        fallback: tier.title || `Tier ${index + 1}`,
+      })),
+    ]);
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [addonDraft.addonProductsTitle, addonDraft.addonTiers, defaultMultiLanguageLocale]);
+
+  const openAddonFooterMultiLanguageModal = useCallback(() => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    const savedAddonMessages = (bundle as any).personalizationData?.addonProducts?.addonsMessaging?.tier1 || {};
+    const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || {
+      discountText: savedAddonMessages.ineligibleState || "",
+      successMessage: savedAddonMessages.eligibleState || "",
+    };
+    setMultiLanguageTarget({ type: "addon-footer" });
+    setMultiLanguageTitle("Customize Text for Multiple Languages");
+    setMultiLanguageLayout("compact");
+    setMultiLanguageFields(addonTiers.flatMap((_: any, index: number) => [
+      { key: `tier${index + 1}MessageWhenRuleNotMet`, label: "Message when rule not met", fallback: addonMessages.discountText || "", headingBefore: `Tier ${index + 1}` },
+      { key: `tier${index + 1}SuccessMessage`, label: "Success Message", fallback: addonMessages.successMessage || "" },
+    ]));
+    setTextOverridesLocale(defaultMultiLanguageLocale());
+    setIsMultiLanguageModalOpen(true);
+  }, [addonDraft.addonTiers, bundle, defaultMultiLanguageLocale, ruleMessages]);
+
+  const updateLocalizedTextOverride = useCallback((locale: string, key: string, value: string) => {
+    setTextOverridesByLocale((prev) => ({
+      ...prev,
+      [locale]: {
+        ...(prev[locale] ?? {}),
+        [key]: value,
+      },
+    }));
+    markAsDirty();
+  }, [markAsDirty]);
+
+  const activeMultiLanguageValues = useMemo(() => {
+    if (multiLanguageTarget?.type === "step") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      return (step?.multiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    if (multiLanguageTarget?.type === "step-category") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      const category = ((step?.StepCategory as any[] | undefined) ?? [])[multiLanguageTarget.categoryIndex];
+      return (category?.multiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    if (
+      multiLanguageTarget?.type === "addon-step"
+      || multiLanguageTarget?.type === "addon-section"
+      || multiLanguageTarget?.type === "addon-footer"
+    ) {
+      return (addonDraft.addonMultiLangData ?? {}) as Record<string, Record<string, string>>;
+    }
+    return textOverridesByLocale;
+  }, [addonDraft.addonMultiLangData, multiLanguageTarget, stepsState.steps, textOverridesByLocale]);
+
+  const saveStepSetupMultiLanguageValues = useCallback((nextValues: Record<string, Record<string, string>>) => {
+    if (multiLanguageTarget?.type === "step") {
+      stepsState.updateStepField(multiLanguageTarget.stepId, "multiLangData", nextValues);
+      markAsDirty();
+      return;
+    }
+
+    if (multiLanguageTarget?.type === "step-category") {
+      const step = stepsState.steps.find((candidate) => candidate.id === multiLanguageTarget.stepId) as any;
+      const categories = ((step?.StepCategory as any[] | undefined) ?? []);
+      const updatedCategories = categories.map((category, index) => (
+        index === multiLanguageTarget.categoryIndex
+          ? {
+              ...category,
+              multiLangData: {
+                ...(category.multiLangData ?? {}),
+                ...nextValues,
+              },
+            }
+          : category
+      ));
+      stepsState.updateStepField(multiLanguageTarget.stepId, "StepCategory", updatedCategories);
+      markAsDirty();
+      return;
+    }
+
+    if (
+      multiLanguageTarget?.type === "addon-step"
+      || multiLanguageTarget?.type === "addon-section"
+      || multiLanguageTarget?.type === "addon-footer"
+    ) {
+      updateAddonDraft({ addonMultiLangData: nextValues });
+      return;
+    }
+
+    setTextOverridesByLocale(nextValues);
+    markAsDirty();
+  }, [markAsDirty, multiLanguageTarget, stepsState, updateAddonDraft]);
+
+  useEffect(() => {
+    setHasPreview(!!localStorage.getItem(`wpb_preview_${bundle.id}`));
+  }, [bundle.id]);
+
+  // Modal refs for s-modal web components
+  const productsModalRef = useRef<any>(null);
+  const collectionsModalRef = useRef<any>(null);
+  const syncModalRef = useRef<any>(null);
+  const templateVariablesModalRef = useRef<any>(null);
+  const discountVariablesModalRef = useRef<any>(null);
+  const addonVariablesModalRef = useRef<any>(null);
+  const addonSelectedProductsModalRef = useRef<any>(null);
+  const disableAddonStepModalRef = useRef<any>(null);
+  const [isDiscountVariablesModalOpen, setIsDiscountVariablesModalOpen] = useState(false);
+  const [isAddonVariablesModalOpen, setIsAddonVariablesModalOpen] = useState(false);
+  const [isDisableAddonStepModalOpen, setIsDisableAddonStepModalOpen] = useState(false);
+  const [showDiscardModal, setShowDiscardModal] = useState(false);
+
+  useEffect(() => {
+    isProductsModalOpen ? showPolarisModal(productsModalRef) : hidePolarisModal(productsModalRef);
+  }, [isProductsModalOpen]);
+
+  useEffect(() => {
+    isCollectionsModalOpen ? showPolarisModal(collectionsModalRef) : hidePolarisModal(collectionsModalRef);
+  }, [isCollectionsModalOpen]);
+
+  useEffect(() => {
+    isSyncModalOpen ? showPolarisModal(syncModalRef) : hidePolarisModal(syncModalRef);
+  }, [isSyncModalOpen]);
+
+  useEffect(() => {
+    isProgressBarMultiLangModalOpen ? showPolarisModal(progressBarMultiLangModalRef) : hidePolarisModal(progressBarMultiLangModalRef);
+  }, [isProgressBarMultiLangModalOpen]);
+
+  useEffect(() => {
+    isBundleQuantityMultiLangModalOpen ? showPolarisModal(bundleQuantityMultiLangModalRef) : hidePolarisModal(bundleQuantityMultiLangModalRef);
+  }, [isBundleQuantityMultiLangModalOpen]);
+
+  useEffect(() => {
+    isDiscountVariablesModalOpen ? showPolarisModal(discountVariablesModalRef) : hidePolarisModal(discountVariablesModalRef);
+  }, [isDiscountVariablesModalOpen]);
+
+  useEffect(() => {
+    isAddonVariablesModalOpen ? showPolarisModal(addonVariablesModalRef) : hidePolarisModal(addonVariablesModalRef);
+  }, [isAddonVariablesModalOpen]);
+
+  useEffect(() => {
+    isAddonSelectedProductsModalOpen ? showPolarisModal(addonSelectedProductsModalRef) : hidePolarisModal(addonSelectedProductsModalRef);
+  }, [isAddonSelectedProductsModalOpen]);
+
+  useEffect(() => {
+    isDisableAddonStepModalOpen ? showPolarisModal(disableAddonStepModalRef) : hidePolarisModal(disableAddonStepModalRef);
+  }, [isDisableAddonStepModalOpen]);
+
+  const closeDiscardModal = useCallback(() => {
+    setShowDiscardModal(false);
+  }, []);
+
+  const closeSelectTemplateModal = useCallback(() => {
+    setIsSelectTemplateModalOpen(false);
+    setTemplateModalStep("templates");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
+    requestAnimationFrame(() => {
+      selectTemplateOpenButtonRef.current?.focus();
+    });
+  }, []);
+
+  const getTemplateDialogFocusableElements = useCallback((): HTMLElement[] => {
+    if (!selectTemplateModalRef.current) {
+      return [];
+    }
+
+    return Array.from(
+      selectTemplateModalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((element) => (
+      !element.hasAttribute("disabled")
+      && element.tabIndex >= 0
+      && window.getComputedStyle(element).display !== "none"
+      && window.getComputedStyle(element).visibility !== "hidden"
+    ));
+  }, []);
+
+  const handleSelectTemplateDialogKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      closeSelectTemplateModal();
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = getTemplateDialogFocusableElements();
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    const activeElementIndex = activeElement ? focusableElements.indexOf(activeElement) : -1;
+    const first = focusableElements[0];
+    const last = focusableElements[focusableElements.length - 1];
+
+    if (activeElementIndex === -1) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
+
+    if (event.shiftKey && activeElementIndex === 0) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && activeElementIndex === focusableElements.length - 1) {
+      event.preventDefault();
+      first.focus();
+    }
+  }, [closeSelectTemplateModal, getTemplateDialogFocusableElements]);
+
+  const handleSelectTemplateBackdropClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      closeSelectTemplateModal();
+    }
+  }, [closeSelectTemplateModal]);
+
+  const openSelectTemplateModal = useCallback(() => {
+    setPendingDesignTemplate(bundleDesignTemplate);
+    setPendingDesignPresetId(bundleDesignPresetId);
+    setTemplateModalStep("templates");
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = null;
+    lastTemplateResponseRef.current = null;
+    setIsSelectTemplateModalOpen(true);
+  }, [bundleDesignTemplate, bundleDesignPresetId]);
+
+  const openDesignControlPanel = useCallback(() => {
+    navigate(FPB_DESIGN_CONTROL_PANEL_URL);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isSelectTemplateModalOpen) {
+      selectTemplateModalRef.current?.focus();
+    }
+  }, [isSelectTemplateModalOpen]);
+
+  useEffect(() => {
+    // formData is cleared by the time state returns to 'idle', so guard
+    // using the request ref set at submit time instead.
+    if (templateFetcher.state !== "idle" || !lastTemplateRequestRef.current) {
+      return;
+    }
+
+    if (templateFetcher.data == null) {
+      if (lastTemplateRequestRef.current) {
+        setTemplateSaveError("Unable to save template. Please try again.");
+      }
+      return;
+    }
+
+    if (templateFetcher.data === lastTemplateResponseRef.current) {
+      return;
+    }
+
+    lastTemplateResponseRef.current = templateFetcher.data;
+
+    const response = templateFetcher.data as { success?: boolean; error?: string };
+    const request = lastTemplateRequestRef.current;
+
+    if (response.success) {
+      if (request) {
+        setBundleDesignTemplate(request.template);
+        setBundleDesignPresetId(request.presetId);
+        setTemplateModalStep(appEmbedEnabled ? "confirm" : "enableThemeExtension");
+      }
+      setTemplateSaveError(null);
+      lastTemplateRequestRef.current = null;
+      return;
+    }
+
+    setTemplateSaveError(response.error || "Failed to save template settings.");
+  }, [appEmbedEnabled, templateFetcher.data, templateFetcher.formData, templateFetcher.state]);
+
+  const handleTemplateNext = useCallback(() => {
+    if (!pendingDesignTemplate || !pendingDesignPresetId) {
+      return;
+    }
+
+    setTemplateSaveError(null);
+    lastTemplateRequestRef.current = {
+      template: pendingDesignTemplate,
+      presetId: pendingDesignPresetId,
+    };
+    lastTemplateResponseRef.current = null;
+
+    const fd = new FormData();
+    fd.append("intent", "updateBundleDesignTemplate");
+    fd.append("bundleDesignTemplate", pendingDesignTemplate ?? "");
+    fd.append("bundleDesignPresetId", pendingDesignPresetId ?? "");
+    templateFetcher.submit(fd, { method: "POST" });
+  }, [pendingDesignTemplate, pendingDesignPresetId, templateFetcher]);
 
   // SaveBar visibility controlled by isDirty flag - no complex change detection needed!
+
+  function buildBundleUpsellConfig() {
+    return {
+      multiLangText: savedBundleUpsellConfig?.multiLangText ?? {},
+      languageMode: upsellWidgetLanguageMode,
+      widgetConfiguration: {
+        isEnabled: upsellWidgetEnabled,
+        type: "OFFER_WIDGET",
+        imageUrl: upsellWidgetImageUrl,
+        title: upsellWidgetTitle,
+        description: upsellWidgetDescription,
+        buttonText: upsellWidgetButtonText,
+        displayConfiguration: buildVisibilityDisplayConfiguration(
+          upsellWidgetDisplayOn,
+          upsellWidgetSelectedProducts,
+          upsellWidgetSpecificProductPages,
+          upsellWidgetCollectionsSelectedData,
+          upsellWidgetSpecificCollectionPages,
+        ),
+        useLinkProductAsDefaultProduct: autoSelectBrowsedProduct,
+        languageMode: upsellWidgetLanguageMode,
+      },
+    };
+  }
+
+  const normalizedPricingDisplayOptions = useMemo(() => normalizePricingDisplayOptions({
+    rules: pricingState.discountRules,
+    messages: {
+      displayOptions: pricingState.pricingDisplayOptions,
+    },
+    showProgressBar: pricingState.showDiscountProgressBar,
+    steps: stepsState.steps.map(step => ({
+      id: step.id,
+      enabled: step.enabled,
+      maxQuantity: step.maxQuantity,
+    })),
+  }), [
+    pricingState.discountRules,
+    pricingState.pricingDisplayOptions,
+    pricingState.showDiscountProgressBar,
+    stepsState.steps,
+  ]);
+
+  const normalizedRuleMessages = useMemo(() => normalizePricingRuleMessages({
+    rules: pricingState.discountRules,
+    messages: { ruleMessages },
+    method: pricingState.discountType,
+  }), [
+    pricingState.discountRules,
+    pricingState.discountType,
+    ruleMessages,
+  ]);
+  const bundleQuantityOptionsEligible = pricingState.discountType !== DiscountMethod.BUY_X_GET_Y
+    && pricingState.discountRules.length > 0
+    && pricingState.discountRules.every((rule) => rule.conditionType === "quantity");
+  const displayOptionsInactive = !pricingState.discountEnabled || pricingState.discountRules.length === 0;
+
+  useEffect(() => {
+    if (!bundleQuantityOptionsEligible && pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled) {
+      pricingState.setBundleQuantityOptionsEnabled(false);
+    }
+  }, [
+    bundleQuantityOptionsEligible,
+    pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled,
+    pricingState.setBundleQuantityOptionsEnabled,
+  ]);
+
+  const readinessItems = useMemo<BundleReadinessItem[]>(() => {
+    const hasProducts = stepsState.steps.reduce((totalProducts, step) => {
+      const legacyProducts = Array.isArray(step.StepProduct) ? step.StepProduct.length : 0;
+      const categoryProductCount = Array.isArray((step as any).StepCategory)
+        ? ((step as any).StepCategory as any[]).reduce(
+            (count: number, category: any) => count + (Array.isArray(category?.products) ? category.products.length : 0),
+            0,
+          )
+        : 0;
+      return totalProducts + legacyProducts + categoryProductCount;
+    }, 0) >= 3;
+    const hasBundleVisibility = Boolean(bundle.shopifyPageId || bundle.shopifyPageHandle || formState.bundleStatus === "active");
+    const parentProductActive = String(productStatus || loadedBundleProduct?.status || "").toLowerCase() === "active";
+
+    return [
+      { key: "embed",         label: "App Embed Enabled",           description: "Needed for your bundle to show up on store",          points: 15, done: appEmbedEnabled },
+      { key: "products",      label: "Minimum 3 Products Added",    description: "Add more products to build a better bundle",          points: 20, done: hasProducts },
+      { key: "discount",      label: "Set Up Discount",             description: "Bundles with offers tend to sell better",             points: 15, done: pricingState.discountEnabled },
+      { key: "preview",       label: "Preview Bundle",              description: "Check your bundle looks and works right",             points: 10, done: hasPreview },
+      { key: "visible",       label: "Set Up Bundle Visibility",    description: "Put your bundle where shoppers can find it",          points: 25, done: hasBundleVisibility },
+      { key: "product_active",label: "Set Parent Product to Active","description": "Unlisted bundles won't show in search",            points: 15, done: parentProductActive },
+    ];
+  }, [
+    appEmbedEnabled,
+    bundle.shopifyPageHandle,
+    bundle.shopifyPageId,
+    formState.bundleStatus,
+    hasPreview,
+    loadedBundleProduct?.status,
+    pricingState.discountEnabled,
+    productStatus,
+    stepsState.steps,
+  ]);
+
+  const readinessScore = readinessItems.reduce((sum, item) => sum + (item.done ? item.points : 0), 0);
+  const readinessClassName = readinessScore >= 80
+    ? fullPageBundleStyles.readinessButtonHigh
+    : readinessScore >= 40
+      ? fullPageBundleStyles.readinessButtonMedium
+      : fullPageBundleStyles.readinessButtonLow;
 
   // Save handler
   const handleSave = useCallback(async () => {
     try {
+      if (bundle.bundleType === 'full_page' && bundle.shopifyPageId) {
+        const normalizedSlugError = validateSlug(normalizedPageSlug);
+        if (normalizedSlugError) {
+          shopify.toast.show(normalizedSlugError, { isError: true, duration: 5000 });
+          return;
+        }
+
+        if (normalizedPageSlug !== (bundle.shopifyPageHandle ?? '')) {
+          const renameData = new FormData();
+          renameData.append("intent", "renamePageSlug");
+          renameData.append("newSlug", normalizedPageSlug);
+
+          const renameResponse = await fetch(window.location.pathname, {
+            method: "POST",
+            body: renameData,
+          });
+          const renameResult = await renameResponse.json() as {
+            success?: boolean;
+            error?: string;
+            newHandle?: string;
+            adjusted?: boolean;
+          };
+
+          if (!renameResponse.ok || !renameResult.success || !renameResult.newHandle) {
+            shopify.toast.show(
+              renameResult.error || "Could not rename page slug",
+              { isError: true, duration: 5000 }
+            );
+            return;
+          }
+
+          if (renameResult.adjusted && renameResult.newHandle !== normalizedPageSlug) {
+            shopify.toast.show(
+              `The slug '${normalizedPageSlug}' was taken - using '${renameResult.newHandle}' instead.`,
+              { duration: 6000 }
+            );
+          }
+
+          setPageSlug(renameResult.newHandle);
+          originalPageSlugRef.current = renameResult.newHandle;
+          setHasManuallyEditedSlug(true);
+        }
+      }
+
       // Prepare form data for submission
       const formData = new FormData();
       formData.append("intent", "saveBundle");
@@ -461,30 +1830,88 @@ export default function ConfigureBundleFlow() {
       // Merge collections data into steps before saving
       const stepsWithCollections = stepsState.steps.map(step => ({
         ...step,
+        isFreeGift: false,
+        freeGiftName: null,
+        addonLabel: null,
+        addonTitle: null,
+        addonIconUrl: null,
+        addonDisplayFree: false,
+        addonTiers: [],
         collections: selectedCollections[step.id] || step.collections || []
       }));
+      const pricingMessages = serializePricingDisplayOptions({
+        existingMessages: {
+          showDiscountMessaging: pricingState.discountMessagingEnabled,
+          ruleMessages: normalizedRuleMessages,
+        },
+        options: normalizedPricingDisplayOptions,
+      });
 
       formData.append("stepsData", JSON.stringify(stepsWithCollections));
+      const enrichedRuleMessages = Object.fromEntries(
+        Object.entries(normalizedRuleMessages).map(([id, msg]) => [
+          id,
+          { ...msg, successMessage: globalSuccessMessage || msg.successMessage },
+        ])
+      );
       formData.append("discountData", JSON.stringify({
         discountEnabled: pricingState.discountEnabled,
         discountType: pricingState.discountType,
         discountRules: pricingState.discountRules,
         showFooter: pricingState.showFooter,
+        showDiscountProgressBar: pricingState.showDiscountProgressBar,
         discountMessagingEnabled: pricingState.discountMessagingEnabled,
-        ruleMessages
+        ruleMessages: enrichedRuleMessages,
+        successMessage: globalSuccessMessage,
+        successMessageByLocale: discountMessagingMultiLanguageEnabled ? successMessageByLocale : null,
+        pricingDisplayOptions: pricingMessages.displayOptions,
+        discountMessagingMultiLanguageEnabled,
+        ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
+        tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
+        tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
       }));
       formData.append("stepConditions", JSON.stringify(conditionsState.stepConditions));
       formData.append("bundleProduct", JSON.stringify(bundleProduct));
       formData.append("promoBannerBgImage", promoBannerBgImage ?? "");
       formData.append("promoBannerBgImageCrop", promoBannerBgImageCrop ?? "");
       formData.append("loadingGif", loadingGif ?? "");
-      formData.append("tierConfigData", tierConfig.length > 0 ? JSON.stringify(tierConfig) : "");
-      // Only send showStepTimeline when >= 2 tiers are configured (server will reset to null otherwise)
-      if (tierConfig.length >= 2) {
-        formData.append("showStepTimeline", String(showStepTimeline));
-      }
       formData.append("floatingBadgeEnabled", String(floatingBadgeEnabled));
       formData.append("floatingBadgeText", floatingBadgeText);
+      formData.append("showProductPrices", String(showProductPrices));
+      formData.append("showCompareAtPrices", String(showCompareAtPrices));
+      formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
+      formData.append("allowQuantityChanges", String(allowQuantityChanges));
+      formData.append("searchBarEnabled", String(searchBarEnabled));
+      formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
+      formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
+      formData.append("bundleTextConfig", JSON.stringify({
+        bundleSummary: {
+          title: textOverrides.yourBundle ?? "",
+          subTitle: textOverrides.reviewBundle ?? "",
+        },
+      }));
+      const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || null;
+      const personalizationData = buildPersonalizationDataFromDraft(addonDraft, addonMessages);
+      formData.append("personalizationData", personalizationData ? JSON.stringify(personalizationData) : "");
+      formData.append("bundleUpsellConfig", JSON.stringify(buildBundleUpsellConfig()));
+      formData.append("upsellWidgetEnabled", String(upsellWidgetEnabled));
+      formData.append("upsellWidgetDisplayMode", upsellWidgetDisplayMode);
+      formData.append("upsellWidgetDisplayOn", upsellWidgetDisplayOn);
+      formData.append("autoSelectBrowsedProduct", String(autoSelectBrowsedProduct));
+      formData.append("bundleBannerDesktopUrl", bundleBannerDesktopUrl);
+      formData.append("bundleBannerMobileUrl", bundleBannerMobileUrl);
+      formData.append("bundleLevelCss", bundleLevelCss);
+      formData.append("productSlotsEnabled", String(productSlotsEnabled));
+      formData.append("maxQtyPerProduct", maxQtyPerProduct);
+      formData.append("productSlotIconUrl", productSlotIconUrl);
+      formData.append("validateQuantityPerProduct", JSON.stringify({
+        isEnabled: quantityValidationEnabled,
+        allowedQuantity: Number.parseInt(maxQtyPerProduct || "1", 10) || 1,
+      }));
+      formData.append("individualSellingPlanSelection", JSON.stringify({
+        isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
+        showFor: individualSellingPlanShowFor,
+      }));
 
       // Submit to server action using fetcher
 
@@ -507,8 +1934,10 @@ export default function ConfigureBundleFlow() {
     pricingState.discountType,
     pricingState.discountRules,
     pricingState.showFooter,
+    pricingState.showDiscountProgressBar,
     pricingState.discountMessagingEnabled,
-    ruleMessages,
+    normalizedPricingDisplayOptions,
+    normalizedRuleMessages,
     selectedCollections,
     conditionsState.stepConditions,
     bundleProduct,
@@ -516,51 +1945,95 @@ export default function ConfigureBundleFlow() {
     promoBannerBgImage,
     promoBannerBgImageCrop,
     loadingGif,
+    pageSlug,
+    normalizedPageSlug,
+    bundle.bundleType,
+    bundle.shopifyPageId,
+    bundle.shopifyPageHandle,
+    showStepTimeline,
+    floatingBadgeEnabled,
+    floatingBadgeText,
+    showProductPrices,
+    showCompareAtPrices,
+    cartRedirectToCheckout,
+    allowQuantityChanges,
+    searchBarEnabled,
+    textOverrides,
+    textOverridesByLocale,
+    ruleMessages,
+    addonDraft,
+    discountMessagingMultiLanguageEnabled,
+    globalSuccessMessage,
+    successMessageByLocale,
+    ruleMessagesByLocale,
+    upsellWidgetEnabled,
+    upsellWidgetDisplayMode,
+    upsellWidgetDisplayOn,
+    upsellWidgetTitle,
+    upsellWidgetDescription,
+    upsellWidgetButtonText,
+    upsellWidgetImageUrl,
+    upsellWidgetLanguageMode,
+    upsellWidgetSelectedProducts,
+    upsellWidgetSpecificProductPages,
+    upsellWidgetCollectionsSelectedData,
+    upsellWidgetSpecificCollectionPages,
+    autoSelectBrowsedProduct,
+    bundleBannerDesktopUrl,
+    bundleBannerMobileUrl,
+    bundleLevelCss,
+    productSlotsEnabled,
+    quantityValidationEnabled,
+    maxQtyPerProduct,
+    productSlotIconUrl,
+    individualSellingPlanEnabled,
+    individualSellingPlanShowFor,
     shopify
   ]);
 
-  // Function to enhance template list with user's selected template
-  const enhanceTemplateListWithUserSelection = useCallback((templates: any[]) => {
-    if (!formState.templateName || formState.templateName.trim() === '') {
-      return templates;
-    }
-
-    const userTemplateHandle = formState.templateName.startsWith('product.') ? formState.templateName : `product.${formState.templateName}`;
-
-    // Check if user's template already exists in the list
-    const templateExists = templates.some(t => t.handle === userTemplateHandle || t.handle === formState.templateName);
-
-    if (!templateExists) {
-      // Add user's selected template at the top of the list
-      const userTemplate = {
-        id: userTemplateHandle,
-        title: `🎯 ${formState.templateName} (Your Selection)`,
-        handle: userTemplateHandle,
-        description: `Custom template "${formState.templateName}" - your selected bundle container template`,
-        recommended: true,
-        bundleRelevant: true,
-        fileType: 'User Selected',
-        fullKey: `templates/${userTemplateHandle}.liquid`,
-        isBundleContainer: true,
-        isUserSelected: true
-      };
-
-      return [userTemplate, ...templates];
-    }
-
-    // If template exists, mark it as user selected
-    return templates.map(t => {
-      if (t.handle === userTemplateHandle || t.handle === formState.templateName) {
-        return {
-          ...t,
-          title: `🎯 ${t.title} (Your Selection)`,
-          recommended: true,
-          isUserSelected: true
-        };
-      }
-      return t;
-    });
-  }, [formState.templateName]);
+  const {
+    draggedStep,
+    dragOverIndex,
+    draggedCatKey,
+    dragOverCatKey,
+    setDragOverCatKey,
+    enhanceTemplateListWithUserSelection,
+    handleProductSelection,
+    handleSyncProduct,
+    handleSyncBundleConfirm,
+    handleBundleProductSelect,
+    cloneStep,
+    deleteStep,
+    navigateToStep,
+    handleDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleCatDragStart,
+    handleCatDragEnd,
+    handleCatDrop,
+    handleCollectionSelection,
+    updateRuleMessage,
+  } = useSharedBundleHandlers({
+    stepsState,
+    formState,
+    selectedCollections,
+    setSelectedCollections,
+    setRuleMessages,
+    setBundleProduct,
+    setProductTitle,
+    setProductImageUrl,
+    markAsDirty,
+    activeTabIndex,
+    setActiveTabIndex,
+    shopify,
+    fetcher,
+    setIsSyncModalOpen,
+    setSlideDir,
+    setSlideKey,
+    setShowIconPickerForStep,
+  });
 
   // Handle fetcher response
   // CRITICAL FIX: Only process NEW fetcher responses to prevent auto-save bug
@@ -595,9 +2068,11 @@ export default function ConfigureBundleFlow() {
             discountType: pricingState.discountType,
             discountRules: JSON.stringify(pricingState.discountRules),
             showFooter: pricingState.showFooter,
+            showDiscountProgressBar: pricingState.showDiscountProgressBar,
             discountMessagingEnabled: pricingState.discountMessagingEnabled,
+            pricingDisplayOptions: JSON.stringify(pricingState.pricingDisplayOptions),
             selectedCollections: JSON.stringify(selectedCollections),
-            ruleMessages: JSON.stringify(ruleMessages),
+            ruleMessages: JSON.stringify(normalizedRuleMessages),
             stepConditions: JSON.stringify(conditionsState.stepConditions),
             bundleProduct: bundleProduct || null,
             productStatus: productStatus,
@@ -607,10 +2082,24 @@ export default function ConfigureBundleFlow() {
           originalPromoBannerBgImageRef.current = promoBannerBgImage;
           originalPromoBannerBgImageCropRef.current = promoBannerBgImageCrop;
           originalLoadingGifRef.current = loadingGif;
-          originalTierConfigRef.current = tierConfig;
           originalShowStepTimelineRef.current = showStepTimeline;
           originalFloatingBadgeEnabledRef.current = floatingBadgeEnabled;
           originalFloatingBadgeTextRef.current = floatingBadgeText;
+          originalSearchBarEnabledRef.current = searchBarEnabled;
+          originalShowProductPricesRef.current = showProductPrices;
+          originalShowCompareAtPricesRef.current = showCompareAtPrices;
+          originalCartRedirectToCheckoutRef.current = cartRedirectToCheckout;
+          originalAllowQuantityChangesRef.current = allowQuantityChanges;
+          originalTextOverridesRef.current = textOverrides;
+          originalTextOverridesByLocaleRef.current = textOverridesByLocale;
+          originalAddonDraftRef.current = addonDraft;
+          originalDiscountMessagingMultiLanguageEnabledRef.current = discountMessagingMultiLanguageEnabled;
+          originalRuleMessagesByLocaleRef.current = ruleMessagesByLocale;
+          originalUpsellWidgetEnabledRef.current = upsellWidgetEnabled;
+          originalUpsellWidgetDisplayModeRef.current = upsellWidgetDisplayMode;
+          originalUpsellWidgetDisplayOnRef.current = upsellWidgetDisplayOn;
+          originalUpsellWidgetButtonTextRef.current = upsellWidgetButtonText;
+          originalAutoSelectBrowsedProductRef.current = autoSelectBrowsedProduct;
 
           // Reset dirty flag after successful save
           setIsDirty(false);
@@ -661,8 +2150,21 @@ export default function ConfigureBundleFlow() {
         } else if ('pageHandle' in result && result.pageHandle) {
           // Bundle page created successfully
           const pageUrl = (result as any).pageUrl;
+          const createdHandle = (result as any).pageHandle as string;
+          const slugAdjusted = Boolean((result as any).slugAdjusted);
           const installRequired = (result as any).widgetInstallationRequired;
           const installLink = (result as any).widgetInstallationLink;
+
+          setPageSlug(createdHandle);
+          originalPageSlugRef.current = createdHandle;
+          setHasManuallyEditedSlug(true);
+
+          if (slugAdjusted && createdHandle !== normalizedPageSlug) {
+            shopify.toast.show(
+              `The slug '${normalizedPageSlug}' was taken - using '${createdHandle}' instead.`,
+              { duration: 6000 }
+            );
+          }
 
           if (installRequired && installLink) {
             shopify.toast.show(
@@ -706,42 +2208,66 @@ export default function ConfigureBundleFlow() {
         }
       }
     }
-  }, [fetcher.data, fetcher.state]);
+  }, [fetcher.data, fetcher.state, normalizedPageSlug, revalidator, shopify]);
 
   // Discard handler - resets hook state and all local state
   const handleDiscard = useCallback(() => {
     hookHandleDiscard();
+    setPageSlug(originalPageSlugRef.current);
+    setHasManuallyEditedSlug(Boolean(bundle.shopifyPageHandle));
     setPromoBannerBgImage(originalPromoBannerBgImageRef.current);
     setPromoBannerBgImageCrop(originalPromoBannerBgImageCropRef.current);
     setLoadingGif(originalLoadingGifRef.current);
-    setTierConfig(originalTierConfigRef.current);
     setShowStepTimeline(originalShowStepTimelineRef.current);
-  }, [hookHandleDiscard]);
+    setFloatingBadgeEnabled(originalFloatingBadgeEnabledRef.current);
+    setFloatingBadgeText(originalFloatingBadgeTextRef.current);
+    setSearchBarEnabled(originalSearchBarEnabledRef.current);
+    setShowProductPrices(originalShowProductPricesRef.current);
+    setShowCompareAtPrices(originalShowCompareAtPricesRef.current);
+    setCartRedirectToCheckout(originalCartRedirectToCheckoutRef.current);
+    setAllowQuantityChanges(originalAllowQuantityChangesRef.current);
+    setTextOverrides(originalTextOverridesRef.current);
+    setTextOverridesByLocale(originalTextOverridesByLocaleRef.current);
+    setAddonDraft(originalAddonDraftRef.current);
+    setDiscountMessagingMultiLanguageEnabled(originalDiscountMessagingMultiLanguageEnabledRef.current);
+    setRuleMessagesByLocale(originalRuleMessagesByLocaleRef.current);
+    setUpsellWidgetEnabled(originalUpsellWidgetEnabledRef.current);
+    setUpsellWidgetDisplayMode(originalUpsellWidgetDisplayModeRef.current);
+    setUpsellWidgetDisplayOn(originalUpsellWidgetDisplayOnRef.current);
+    setUpsellWidgetButtonText(originalUpsellWidgetButtonTextRef.current);
+    setAutoSelectBrowsedProduct(originalAutoSelectBrowsedProductRef.current);
+  }, [bundle.shopifyPageHandle, hookHandleDiscard]);
+
+  const handleConfirmDiscard = useCallback(() => {
+    closeDiscardModal();
+    handleDiscard();
+  }, [closeDiscardModal, handleDiscard]);
+
+  const promptSaveBarBeforeNavigation = useCallback(() => {
+    shopify.toast.show("Save or discard your changes before moving to another section.", {
+      isError: true,
+      duration: 5000
+    });
+    void (shopify as any).saveBar?.leaveConfirmation?.();
+  }, [shopify]);
 
   // Navigation handlers with unsaved changes check
   const handleBackClick = useCallback(() => {
     if (isDirty && !forceNavigation) {
-      // Show user-friendly message about unsaved changes with force option
-      const proceed = confirm(
-        "You have unsaved changes. Are you sure you want to leave this page?\n\n" +
-        "Click 'OK' to leave anyway (changes will be lost)\n" +
-        "Click 'Cancel' to stay and save your changes"
-      );
-
-      if (proceed) {
-        setForceNavigation(true);
-        // Force navigation even with unsaved changes
-        navigate("/app/dashboard");
-      } else {
-        shopify.toast.show("Save or discard your changes to continue", {
-          isError: true,
-          duration: 4000
-        });
-      }
+      promptSaveBarBeforeNavigation();
       return;
     }
     navigate("/app/dashboard");
-  }, [isDirty, forceNavigation, navigate, shopify]);
+  }, [isDirty, forceNavigation, navigate, promptSaveBarBeforeNavigation]);
+
+  const enablePreviewGate = useEnablePreviewGate({
+    appEmbedEnabled,
+    themeEditorUrl,
+    onSilentBlock: () => shopify.toast.show("Theme editor is unavailable for this shop.", { isError: true }),
+    sessionKey: bundle.id,
+    autoShowOnMount: loaderData.configureMode === "edit" && isBundleVisibilityPending,
+    onSetupVisibility: () => setActiveSection("bundle_visibility"),
+  });
 
   const handlePreviewBundle = useCallback(() => {
     if (isDirty) {
@@ -753,99 +2279,188 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
-    if (bundle.bundleType === 'full_page') {
-      if (!bundle.shopifyPageHandle) {
-        // No published page yet — trigger draft preview page creation
-        const formData = new FormData();
-        formData.append("intent", "createPreviewPage");
-        fetcher.submit(formData, { method: "post" });
+    const executePreviewBundle = () => {
+      // FOR FULL-PAGE BUNDLES: Use page URL instead of product URL
+      if (bundle.bundleType === 'full_page') {
+        if (!bundle.shopifyPageHandle) {
+          // No published page yet — trigger draft preview page creation
+          const formData = new FormData();
+          formData.append("intent", "createPreviewPage");
+          fetcher.submit(formData, { method: "post" });
+          return;
+        }
+
+        const shopDomain = shop.includes('.myshopify.com')
+          ? shop.replace('.myshopify.com', '')
+          : shop.split('.')[0];
+
+        const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+
+        open(pageUrl, '_blank');
+        shopify.toast.show("Bundle page opened in new tab", { isError: false });
         return;
       }
 
-      // Construct page URL
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop.split('.')[0];
+      // FOR PRODUCT-PAGE BUNDLES: Use product URL
+      let productUrl = null;
+      const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
 
-      const pageUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
+      if (bundleProduct) {
 
+        // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
+        if (bundleProduct.onlineStorePreviewUrl) {
+          productUrl = bundleProduct.onlineStorePreviewUrl;
+        }
+        // Method 2: Fallback to onlineStoreUrl if preview URL not available
+        else if (bundleProduct.onlineStoreUrl) {
+          productUrl = bundleProduct.onlineStoreUrl;
+        }
+      }
 
-      open(pageUrl, '_blank');
-      shopify.toast.show("Bundle page opened in new tab", { isError: false });
+      // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
+      if (!productUrl && productHandle) {
+        if (shop.includes('shopifypreview.com')) {
+          productUrl = `https://${shop}/products/${productHandle}`;
+        } else {
+          const shopDomain = shop.includes('.myshopify.com')
+            ? shop.replace('.myshopify.com', '')
+            : shop;
+          productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
+        }
+      }
+      // Method 4: Fallback - Extract ID and use admin URL
+      else if (!productUrl && bundleProduct?.id) {
+        const productId = bundleProduct.id.includes('gid://shopify/Product/')
+          ? bundleProduct.id.split('/').pop()
+          : bundleProduct.id;
+
+        const shopDomain = shop.includes('.myshopify.com')
+          ? shop.replace('.myshopify.com', '')
+          : shop.split('.')[0];
+
+        productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
+      }
+
+      if (productUrl) {
+        open(productUrl, '_blank');
+
+        const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
+        const message = isPreviewUrl
+          ? "Bundle product preview opened in new tab"
+          : "Bundle product opened in new tab";
+
+        shopify.toast.show(message, { isError: false });
+      } else {
+        AppLogger.error('Bundle product data:', {}, bundleProduct);
+        shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
+          isError: true,
+          duration: 5000
+        });
+      }
+    };
+
+    if (bundle.bundleType === 'full_page') {
+      executePreviewBundle();
       return;
     }
 
-    // FOR PRODUCT-PAGE BUNDLES: Use product URL
-    let productUrl = null;
-    const productHandle = bundleProduct?.handle || bundle.shopifyProductHandle;
-
-    if (bundleProduct) {
-
-      // Method 1: Use onlineStorePreviewUrl first (works for both published and draft products)
-      if (bundleProduct.onlineStorePreviewUrl) {
-        productUrl = bundleProduct.onlineStorePreviewUrl;
-      }
-      // Method 2: Fallback to onlineStoreUrl if preview URL not available
-      else if (bundleProduct.onlineStoreUrl) {
-        productUrl = bundleProduct.onlineStoreUrl;
-      }
-    }
-
-    // Method 3: Construct URL from handle (GraphQL product handle or DB-stored handle)
-    if (!productUrl && productHandle) {
-      if (shop.includes('shopifypreview.com')) {
-        productUrl = `https://${shop}/products/${productHandle}`;
-      } else {
-        const shopDomain = shop.includes('.myshopify.com')
-          ? shop.replace('.myshopify.com', '')
-          : shop;
-        productUrl = `https://${shopDomain}.myshopify.com/products/${productHandle}`;
-      }
-    }
-    // Method 4: Fallback - Extract ID and use admin URL
-    else if (!productUrl && bundleProduct?.id) {
-      const productId = bundleProduct.id.includes('gid://shopify/Product/')
-        ? bundleProduct.id.split('/').pop()
-        : bundleProduct.id;
-
-      const shopDomain = shop.includes('.myshopify.com')
-        ? shop.replace('.myshopify.com', '')
-        : shop.split('.')[0];
-
-      productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
-    }
-
-    if (productUrl) {
-      open(productUrl, '_blank');
-
-      const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
-      const message = isPreviewUrl
-        ? "Bundle product preview opened in new tab"
-        : "Bundle product opened in new tab";
-
-      shopify.toast.show(message, { isError: false });
-    } else {
-      AppLogger.error('Bundle product data:', {}, bundleProduct);
-      shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
-        isError: true,
-        duration: 5000
-      });
-    }
-  }, [isDirty, bundle, bundleProduct, shop, shopify]);
+    enablePreviewGate.requestPreview(executePreviewBundle);
+  }, [isDirty, bundle, bundleProduct, shop, shopify, enablePreviewGate]);
 
   const handleSectionChange = useCallback((section: string) => {
+    if (section === activeSection) return;
+
     if (isDirty) {
-      // Show user-friendly message about unsaved changes
-      shopify.toast.show("Please save or discard your changes before switching sections", {
-        isError: true,
-        duration: 4000
-      });
+      promptSaveBarBeforeNavigation();
       return;
     }
 
     setActiveSection(section);
-  }, [isDirty, activeSection, shopify]);
+  }, [isDirty, activeSection, promptSaveBarBeforeNavigation]);
+
+  const openProductInAdmin = useCallback((productId: string) => {
+    const numericProductId = productId.startsWith("gid://")
+      ? productId.split("/").pop() ?? productId
+      : productId;
+    const productGid = productId.startsWith("gid://")
+      ? productId
+      : `gid://shopify/Product/${productId}`;
+    const storeHandle = shop?.replace('.myshopify.com', '');
+    const adminProductUrl = `https://admin.shopify.com/store/${storeHandle}/products/${numericProductId}`;
+    const openFallback = () => {
+      try {
+        shopify.navigate(adminProductUrl);
+      } catch (error) {
+        AppLogger.warn("Falling back to a new tab for Admin product navigation", { productId }, error as any);
+        window.open(adminProductUrl, "_blank");
+      }
+      refreshParentProductStatusFromShopify();
+    };
+    const intentsApi = (shopify as any).intents;
+    if (typeof intentsApi?.invoke === "function") {
+      try {
+        const intentResult = intentsApi.invoke("edit:shopify/Product", {
+          type: "shopify/Product",
+          value: productGid,
+        });
+        refreshParentProductStatusFromShopify();
+        if (typeof intentResult?.catch === "function") {
+          void intentResult.catch((error: unknown) => {
+            AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
+            openFallback();
+          });
+        }
+        return;
+      } catch (error) {
+        AppLogger.warn("Falling back after Product editor intent failed", { productId }, error as any);
+      }
+    }
+    openFallback();
+  }, [shop, shopify, refreshParentProductStatusFromShopify]);
+
+  const handleReadinessItemClick = useCallback((key: string) => {
+    setReadinessOpen(false);
+    switch (key) {
+      case "embed":
+        if (themeEditorUrl) window.open(themeEditorUrl, "_blank");
+        break;
+      case "products":
+        handleSectionChange("step_setup");
+        break;
+      case "discount":
+        handleSectionChange("discount_pricing");
+        break;
+      case "preview":
+        void handlePreviewBundle();
+        localStorage.setItem(`wpb_preview_${bundle.id}`, "1");
+        setHasPreview(true);
+        break;
+      case "visible":
+        handleSectionChange("bundle_visibility");
+        break;
+      case "product_active": {
+        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || bundle.shopifyProductId?.split('/').pop();
+        if (productId) {
+          openProductInAdmin(productId);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }, [themeEditorUrl, handleSectionChange, handlePreviewBundle, bundle.id, bundleProduct, openProductInAdmin]);
+
+  const handleGuidedTourStepChange = useCallback((step: TourStep) => {
+    if (step.sectionId) {
+      setActiveSection(step.sectionId);
+    }
+    setReadinessOpen(step.targetSection === "fpb-readiness-score");
+  }, []);
+
+  const handleTemplatePreview = useCallback(() => {
+    void handlePreviewBundle();
+    closeSelectTemplateModal();
+  }, [closeSelectTemplateModal, handlePreviewBundle]);
 
   // Modal handlers for products and collections view
   // handleShowProducts and handleShowCollections removed - modals managed inline
@@ -860,316 +2475,96 @@ export default function ConfigureBundleFlow() {
     setCurrentModalStepId('');
   }, []);
 
-  // Step management functions
+  const handleCloseAddonSelectedProductsModal = useCallback(() => {
+    setIsAddonSelectedProductsModalOpen(false);
+    setAddonSelectedProductsTierIndex(null);
+    hidePolarisModal(addonSelectedProductsModalRef);
+  }, []);
 
+  const openAddonSelectedProductsModal = useCallback((tierIndex: number) => {
+    setAddonSelectedProductsTierIndex(tierIndex);
+    setIsAddonSelectedProductsModalOpen(true);
+  }, []);
 
-  // NOTE: toggleStepExpansion, getUniqueProductCount, updateStepField, addConditionRule,
-  // removeConditionRule, updateConditionRule are now provided by stepsState and conditionsState hooks
-
-  // Product selection handlers
-  const handleProductSelection = useCallback(async (stepId: string) => {
-    try {
-      const step = stepsState.steps.find(s => s.id === stepId);
-      const currentProducts = step?.StepProduct || [];
-
-      // Build selectionIds from StepProduct
-      // When loaded from DB: use productId field
-      // When from resource picker: use id field
-      // If variants exist and are selected, include them in the format needed by resource picker
-      const selectionIds = currentProducts.map((p: any) => {
-        const productGid = p.productId || p.id; // productId from DB, id from picker
-
-        // Check if this product has specific variants selected
-        // If variants array exists and has items, include them in selectionIds
-        if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
-          const variantIds = p.variants.map((v: any) => ({ id: v.id }));
-          return {
-            id: productGid,
-            variants: variantIds
-          };
-        }
-
-        return { id: productGid };
-      });
-
-
-
-      const products = await shopify.resourcePicker({
-        type: "product",
-        multiple: true,
-        selectionIds: selectionIds,
-      });
-
-
-      if (products && products.selection) {
-
-        // Transform products to include imageUrl from images array
-        const transformedProducts = products.selection.map((product: any) => {
-          const imageUrl = product.images?.[0]?.originalSrc || product.images?.[0]?.url || product.image?.url || null;
-          return {
-            ...product,
-            imageUrl: imageUrl
-          };
-        });
-
-
-        // Update the step with selected products (this replaces the entire selection)
-        // Deselected products will not be in the selection array, so they're automatically removed
-        stepsState.setSteps(stepsState.steps.map(step =>
-          step.id === stepId
-            ? { ...step, StepProduct: transformedProducts }
-            : step
-        ) as any);
-
-        const addedCount = transformedProducts.length - currentProducts.length;
-        const message = addedCount > 0
-          ? `Added ${addedCount} product${addedCount !== 1 ? 's' : ''}!`
-          : addedCount < 0
-            ? `Removed ${Math.abs(addedCount)} product${Math.abs(addedCount) !== 1 ? 's' : ''}!`
-            : transformedProducts.length === 0
-              ? "All products removed"
-              : "Products updated successfully!";
-
-        shopify.toast.show(message);
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_PRODUCTS, { isError: true, duration: 5000 });
-      }
-    }
-  }, [stepsState.steps, stepsState.setSteps, shopify]);
-
-  const handleSyncProduct = useCallback(() => {
-    try {
-
-      // Show loading toast
-      shopify.toast.show("Syncing bundle product with Shopify...", { isError: false });
-
-      // Prepare form data for sync operation
-      const formData = new FormData();
-      formData.append("intent", "syncProduct");
-
-      // Submit to server action using fetcher
-      fetcher.submit(formData, { method: "post" });
-
-      // Response will be handled by the existing useEffect
-    } catch (error) {
-      AppLogger.error("Product sync failed:", {}, error as any);
-      shopify.toast.show((error as Error).message || ERROR_MESSAGES.FAILED_TO_SYNC_PRODUCT, { isError: true, duration: 5000 });
-    }
-  }, [fetcher, shopify]);
-
-  const handleSyncBundleConfirm = useCallback(() => {
-    setIsSyncModalOpen(false);
-    const formData = new FormData();
-    formData.append("intent", "syncBundle");
-    fetcher.submit(formData, { method: "post" });
-  }, [fetcher]);
-
-  const handleBundleProductSelect = useCallback(async () => {
-    try {
-      const products = await shopify.resourcePicker({
-        type: "product",
-        multiple: false,
-      });
-
-      if (products && products.length > 0) {
-        const selectedProduct = products[0] as any;
-        setBundleProduct(selectedProduct);
-        setProductTitle(selectedProduct.title || "");
-        setProductImageUrl(selectedProduct.featuredImage?.url || selectedProduct.images?.[0]?.originalSrc || "");
-
-        shopify.toast.show("Bundle product updated successfully", { isError: false });
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_BUNDLE_PRODUCT, { isError: true, duration: 5000 });
-      }
-    }
-  }, [shopify]);
-
-  // Step management handlers
-  const cloneStep = useCallback((stepId: string) => {
-    const stepToClone = stepsState.steps.find(step => step.id === stepId);
-    if (stepToClone) {
-      const newStep = {
-        ...stepToClone,
-        id: `step-${Date.now()}`,
-        name: `${stepToClone.name} (Copy)`,
-        StepProduct: stepToClone.StepProduct || []
+  const handleAddonSelectedProductRemove = useCallback((tierIndex: number, productIndex: number) => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    const updated = addonTiers.map((tier: any, index: number) => {
+      if (index !== tierIndex) return tier;
+      const selectedAddonProducts = Array.isArray(tier.selectedAddonProducts) ? tier.selectedAddonProducts : [];
+      return {
+        ...tier,
+        selectedAddonProducts: selectedAddonProducts.filter((_: any, selectedIndex: number) => selectedIndex !== productIndex),
       };
-      stepsState.setSteps(prev => {
-        const stepIndex = prev.findIndex(step => step.id === stepId);
-        const newSteps = [...prev];
-        newSteps.splice(stepIndex + 1, 0, newStep);
-        return newSteps;
-      });
-      shopify.toast.show("Step cloned successfully", { isError: false });
-    }
-  }, [stepsState.steps, stepsState.setSteps, shopify]);
+    });
+    updateAddonDraft({ addonTiers: updated });
+  }, [addonDraft.addonTiers, updateAddonDraft]);
 
-  const deleteStep = useCallback((stepId: string) => {
-    if (stepsState.steps.length <= 1) {
-      shopify.toast.show(ERROR_MESSAGES.CANNOT_DELETE_LAST_STEP, { isError: true, duration: 5000 });
-      return;
-    }
-
-    // Use hook's removeStep which handles expandedSteps cleanup and dirty flag
-    stepsState.removeStep(stepId);
-  }, [stepsState]);
-
-  // Drag and drop state
-  const [draggedStep, setDraggedStep] = useState<string | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  // Drag and drop handlers
-  const handleDragStart = useCallback((e: React.DragEvent, stepId: string, _index: number) => {
-    setDraggedStep(stepId);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/html", stepId);
-
-    // Add visual feedback by setting drag image
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = "0.5";
-  }, []);
-
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    setDraggedStep(null);
-    setDragOverIndex(null);
-
-    // Reset visual feedback
-    const dragElement = e.currentTarget as HTMLElement;
-    dragElement.style.opacity = "1";
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOverIndex(index);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if we're leaving the container entirely
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setDragOverIndex(null);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-
-    if (!draggedStep) return;
-
-    const dragIndex = stepsState.steps.findIndex(step => step.id === draggedStep);
-
-    if (dragIndex !== -1 && dragIndex !== dropIndex) {
-      stepsState.setSteps(prev => {
-        const newSteps = [...prev];
-        const draggedStepData = newSteps[dragIndex];
-        newSteps.splice(dragIndex, 1);
-        newSteps.splice(dropIndex, 0, draggedStepData);
-        return newSteps;
-      });
-
-      shopify.toast.show("Step reordered successfully", { isError: false });
+  const handleAddonSelectedProductAdd = useCallback(async (
+    tierIndex: number,
+    options?: { reopenSelectedProductsModal?: boolean },
+  ) => {
+    if (options?.reopenSelectedProductsModal) {
+      setAddonSelectedProductsTierIndex(tierIndex);
+      setIsAddonSelectedProductsModalOpen(false);
+      hidePolarisModal(addonSelectedProductsModalRef);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
     }
 
-    setDraggedStep(null);
-    setDragOverIndex(null);
-  }, [draggedStep, stepsState.steps, stepsState.setSteps, shopify]);
-
-  // NOTE: addStep is now provided by stepsState hook
-
-  // Collection management handlers
-  const handleCollectionSelection = useCallback(async (stepId: string) => {
+    const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+    const currentProducts = Array.isArray(addonTiers[tierIndex]?.selectedAddonProducts) ? addonTiers[tierIndex].selectedAddonProducts : [];
     try {
-      const currentCollections = selectedCollections[stepId] || [];
-
-      const collections = await shopify.resourcePicker({
-        type: "collection",
+      const picked = await (shopify as any).resourcePicker({
+        type: "product",
         multiple: true,
-        selectionIds: currentCollections.map((c: any) => ({ id: c.id })),
+        selectionIds: currentProducts.map((product: any) => ({ id: product.graphqlId || product.id })),
       });
-
-      if (collections && collections.length > 0) {
-
-        setSelectedCollections(prev => ({
-          ...prev,
-          [stepId]: collections as any
-        }));
-
-        const addedCount = collections.length - currentCollections.length;
-        const message = addedCount > 0
-          ? `Added ${addedCount} collection${addedCount !== 1 ? 's' : ''}!`
-          : addedCount < 0
-            ? `Removed ${Math.abs(addedCount)} collection${Math.abs(addedCount) !== 1 ? 's' : ''}!`
-            : "Collections updated successfully!";
-
-        shopify.toast.show(message, { isError: false });
-      } else if (collections && collections.length === 0) {
-        // User deselected all collections
-        setSelectedCollections(prev => ({
-          ...prev,
-          [stepId]: []
-        }));
-        shopify.toast.show("All collections removed", { isError: false });
-      }
-    } catch (error) {
-      // Resource picker throws an error when user cancels - this is expected behavior
-      // Enhanced error detection to catch more cancellation patterns
-      const errorMessage = typeof error === 'string' ? error :
-        (error && typeof error === 'object' && 'message' in error) ? (error as { message: string }).message : '';
-
-      const isCancellation = errorMessage?.toLowerCase().includes('cancel') ||
-        errorMessage?.toLowerCase().includes('abort') ||
-        errorMessage?.toLowerCase().includes('dismiss') ||
-        errorMessage?.toLowerCase().includes('close') ||
-        error === null || error === undefined;
-
-      // Only show error toast for actual errors, not user cancellations
-      if (!isCancellation && errorMessage && errorMessage.trim() !== '') {
-        shopify.toast.show(ERROR_MESSAGES.FAILED_TO_SELECT_COLLECTIONS, { isError: true, duration: 5000 });
+      const selection = Array.isArray(picked) ? picked : picked?.selection;
+      if (!selection) return;
+      const updated = addonTiers.map((tier: any, index: number) => (
+        index === tierIndex
+          ? {
+              ...tier,
+              selectedAddonProducts: selection.map(normalizeAddonPickerProduct),
+            }
+          : tier
+      ));
+      updateAddonDraft({ addonTiers: updated });
+    } finally {
+      if (options?.reopenSelectedProductsModal) {
+        setAddonSelectedProductsTierIndex(tierIndex);
+        setIsAddonSelectedProductsModalOpen(true);
       }
     }
-  }, [shopify, selectedCollections]);
+  }, [addonDraft.addonTiers, shopify, updateAddonDraft]);
 
-  // NOTE: Discount rule management (addDiscountRule, removeDiscountRule, updateDiscountRule)
-  // is now provided by pricingState hook
+  const handleDisableAddonStepConfirm = useCallback(() => {
+    setIsDisableAddonStepModalOpen(false);
+    updateAddonDraft({ isPersonalizationEnabled: false });
+  }, [updateAddonDraft]);
 
-  // Rule message management
-  const updateRuleMessage = useCallback((ruleId: string, field: 'discountText' | 'successMessage', value: string) => {
-    setRuleMessages(prev => ({
-      ...prev,
-      [ruleId]: {
-        ...prev[ruleId],
-        [field]: value
-      }
-    }));
-  }, []);
+  const handlePageSelectionBackdropClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    if (event.currentTarget === event.target) {
+      closePageSelectionModal();
+    }
+  }, [closePageSelectionModal]);
+
+  useModalHideListener(productsModalRef, handleCloseProductsModal);
+  useModalHideListener(collectionsModalRef, handleCloseCollectionsModal);
+  useModalHideListener(syncModalRef, () => setIsSyncModalOpen(false));
+  useModalHideListener(progressBarMultiLangModalRef, () => setIsProgressBarMultiLangModalOpen(false));
+  useModalHideListener(bundleQuantityMultiLangModalRef, () => setIsBundleQuantityMultiLangModalOpen(false));
+  useModalHideListener(discountVariablesModalRef, () => setIsDiscountVariablesModalOpen(false));
+  useModalHideListener(addonVariablesModalRef, () => setIsAddonVariablesModalOpen(false));
+  useModalHideListener(addonSelectedProductsModalRef, handleCloseAddonSelectedProductsModal);
+  useModalHideListener(disableAddonStepModalRef, () => setIsDisableAddonStepModalOpen(false));
+
+  // Add a new step and animate forward to it
+  const handleAddNewStep = useCallback(() => {
+    stepsState.addStep();
+    setSlideDir("forward");
+    setSlideKey(prev => prev + 1);
+    setActiveTabIndex(stepsState.steps.length);
+  }, [stepsState, setActiveTabIndex]);
 
   // Function to load available pages or templates based on bundle type
   const loadAvailablePages = useCallback(() => {
@@ -1198,14 +2593,21 @@ export default function ConfigureBundleFlow() {
   // Add to Storefront: creates a Shopify page for full-page bundles
   const handleAddToStorefront = useCallback(async () => {
     try {
+      const normalizedSlugError = validateSlug(normalizedPageSlug);
+      if (normalizedSlugError) {
+        shopify.toast.show(normalizedSlugError, { isError: true, duration: 5000 });
+        return;
+      }
+
       const formData = new FormData();
       formData.append("intent", "validateWidgetPlacement");
+      formData.append("desiredSlug", normalizedPageSlug);
       fetcher.submit(formData, { method: "post" });
     } catch (error) {
       AppLogger.error('Error creating bundle page:', {}, error as any);
       shopify.toast.show("Failed to create bundle page", { isError: true, duration: 5000 });
     }
-  }, [fetcher, shopify]);
+  }, [fetcher, normalizedPageSlug, shopify]);
 
   // Place widget handlers with page selection modal
   const handlePlaceWidget = useCallback(() => {
@@ -1218,6 +2620,60 @@ export default function ConfigureBundleFlow() {
     }
   }, [loadAvailablePages, shopify]);
 
+  const openVisibilityProductPicker = useCallback(async (target: "widget" | "embed") => {
+    const currentProducts = target === "widget" ? upsellWidgetSelectedProducts : [];
+    const picked = await (shopify as any).resourcePicker({
+      type: "product",
+      multiple: true,
+      action: "select",
+      selectionIds: buildVisibilitySelectionIds(currentProducts),
+    });
+    const selection = getVisibilityPickerSelection(picked);
+    if (!selection) return;
+
+    const selectedProducts = selection.map(normalizeVisibilityProductForDisplayConfiguration);
+    const pageTargets = selectedProducts.map(normalizeVisibilityProductPageTarget);
+
+    setUpsellWidgetSelectedProducts(selectedProducts);
+    setUpsellWidgetSpecificProductPages(pageTargets);
+    markAsDirty();
+  }, [markAsDirty, shopify, upsellWidgetSelectedProducts]);
+
+  const openVisibilityCollectionPicker = useCallback(async (target: "widget" | "embed") => {
+    const currentCollections = target === "widget" ? upsellWidgetCollectionsSelectedData : [];
+    const picked = await (shopify as any).resourcePicker({
+      type: "collection",
+      multiple: true,
+      action: "select",
+      selectionIds: buildVisibilitySelectionIds(currentCollections),
+    });
+    const selection = getVisibilityPickerSelection(picked);
+    if (!selection) return;
+
+    const collectionsSelectedData = selection.map(normalizeVisibilityCollectionForDisplayConfiguration);
+    const pageTargets = collectionsSelectedData.map(normalizeVisibilityCollectionPageTarget);
+
+    setUpsellWidgetCollectionsSelectedData(collectionsSelectedData);
+    setUpsellWidgetSpecificCollectionPages(pageTargets);
+    markAsDirty();
+  }, [markAsDirty, shopify, upsellWidgetCollectionsSelectedData]);
+
+  const removeVisibilityProductTarget = useCallback((target: "widget" | "embed", indexToRemove: number) => {
+    if (target === "widget") {
+      setUpsellWidgetSelectedProducts((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setUpsellWidgetSpecificProductPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }
+    markAsDirty();
+  }, [markAsDirty]);
+
+  const removeVisibilityCollectionTarget = useCallback((target: "widget" | "embed", indexToRemove: number) => {
+    if (target === "widget") {
+      setUpsellWidgetCollectionsSelectedData((prev) => prev.filter((_, index) => index !== indexToRemove));
+      setUpsellWidgetSpecificCollectionPages((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }
+    markAsDirty();
+  }, [markAsDirty]);
+
   const handlePageSelection = useCallback(async (template: any) => {
     if (!template?.handle) {
       shopify.toast.show("Template data is invalid", { isError: true, duration: 5000 });
@@ -1228,52 +2684,28 @@ export default function ConfigureBundleFlow() {
       ? shop.replace('.myshopify.com', '')
       : shop;
 
-    // Build theme editor deep link (used as fallback for non-page templates and on error)
+    // Build theme editor deep link with the selected page as the preview target.
     const buildThemeEditorUrl = () => {
-      const appBlockId = `${apiKey}/${blockHandle}`;
+      const placementBlockHandle = template.isPage
+        ? blockHandle
+        : (upsellWidgetDisplayMode === "button" ? "bundle-upsell-button" : "bundle-upsell-block");
+      const appBlockId = `${apiKey}/${placementBlockHandle}`;
       const templateParam = template.isPage ? 'page' : template.handle;
       const previewPath = template.isPage ? encodeURIComponent(`/pages/${template.handle}`) : '';
       return `https://${shopDomain}.myshopify.com/admin/themes/current/editor?template=${templateParam}&addAppBlockId=${appBlockId}&target=newAppsSection${previewPath ? `&previewPath=${previewPath}` : ''}`;
     };
 
-    // ── Full-page bundle: auto-install via Theme API (no theme editor needed) ──
+    // ── Full-page bundle: Shopify requires Theme Editor app-block placement. ──
     if (template.isPage) {
-      setIsInstallingWidget(true);
-      try {
-
-        const response = await fetch('/api/install-fpb-widget', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageHandle: template.handle }),
-        });
-
-        const result = await response.json() as { success: boolean; templateCreated?: boolean; templateAlreadyExists?: boolean; error?: string };
-
-        if (result.success) {
-          setSelectedPage(template);
-          closePageSelectionModal();
-          const msg = result.templateAlreadyExists
-            ? `Widget already installed — your bundle page is live.`
-            : `Widget installed! Your bundle page is live.`;
-          shopify.toast.show(msg, { isError: false, duration: 6000 });
-        } else {
-          // Auto-install failed — fall back to theme editor
-          AppLogger.error(`🚨 [INSTALL] Auto-install failed, falling back to theme editor`, { error: result.error });
-          setSelectedPage(template);
-          closePageSelectionModal();
-          shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
-          window.open(buildThemeEditorUrl(), '_blank');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        AppLogger.error(`🚨 [INSTALL] Unexpected error, falling back to theme editor`, { errorMessage });
-        setSelectedPage(template);
-        closePageSelectionModal();
-        shopify.toast.show(`Couldn't auto-install — opening Theme Editor instead.`, { isError: false, duration: 5000 });
-        window.open(buildThemeEditorUrl(), '_blank');
-      } finally {
-        setIsInstallingWidget(false);
+      if (!apiKey || !blockHandle) {
+        shopify.toast.show("App configuration missing. Please check app setup.", { isError: true, duration: 5000 });
+        return;
       }
+
+      setSelectedPage(template);
+      closePageSelectionModal();
+      shopify.toast.show(`Opening Theme Editor for "${template.title}". Add the full-page bundle block to this page template.`, { isError: false, duration: 5000 });
+      window.open(buildThemeEditorUrl(), '_blank');
       return;
     }
 
@@ -1301,62 +2733,11 @@ export default function ConfigureBundleFlow() {
       AppLogger.error('🚨 [THEME_EDITOR] Error in handlePageSelection:', { errorMessage }, error as any);
       shopify.toast.show(`Failed to open Theme Editor: ${errorMessage}`, { isError: true, duration: 5000 });
     }
-  }, [shop, shopify, bundle.id, apiKey, blockHandle]);
+  }, [shop, shopify, bundle.id, apiKey, blockHandle, upsellWidgetDisplayMode]);
 
   return (
-    <Page
-      title={`Configure: ${formState.bundleName}`}
-      subtitle="Set up your cart transform bundle configuration"
-      backAction={{
-        content: "Cart Transform Bundles",
-        onAction: handleBackClick,
-      }}
-      primaryAction={
-        bundle.shopifyPageHandle
-          ? {
-              content: "View on Storefront",
-              icon: ExternalIcon,
-              onAction: () => {
-                const shopDomain = shop.includes('.myshopify.com')
-                  ? shop.replace('.myshopify.com', '')
-                  : shop;
-                const storefrontUrl = `https://${shopDomain}.myshopify.com/pages/${bundle.shopifyPageHandle}`;
-                window.open(storefrontUrl, '_blank');
-                shopify.toast.show('Opening bundle page on storefront...', { duration: 3000 });
-              },
-            }
-          : {
-              content: "Add to Storefront",
-              onAction: () => { void handleAddToStorefront(); },
-              loading: fetcher.state === 'submitting',
-              disabled: false,
-            }
-      }
-      secondaryActions={[
-        ...(!bundle.shopifyPageHandle
-          ? [{
-              content: "Preview on Storefront",
-              icon: ViewIcon,
-              onAction: () => { void handlePreviewBundle(); },
-              loading: fetcher.state !== 'idle',
-              disabled: fetcher.state !== 'idle',
-            }]
-          : []),
-        {
-          content: "Sync Bundle",
-          icon: RefreshIcon,
-          destructive: true,
-          onAction: () => {
-            if (isDirty) {
-              shopify.toast.show("Save your changes before syncing", { isError: true });
-              return;
-            }
-            if (fetcher.state !== 'idle') return;
-            setIsSyncModalOpen(true);
-          },
-        },
-      ]}
-    >
+    <>
+      <div className={fullPageBundleStyles.editCanvas}>
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
         onSubmit={(e) => {
@@ -1365,7 +2746,7 @@ export default function ConfigureBundleFlow() {
         }}
         onReset={(e) => {
           e.preventDefault();
-          handleDiscard();
+          setShowDiscardModal(true);
         }}
       >
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
@@ -1384,7 +2765,7 @@ export default function ConfigureBundleFlow() {
           </button>
           <button
             type="button"
-            onClick={handleDiscard}
+            onClick={() => setShowDiscardModal(true)}
             disabled={fetcher.state !== "idle"}
           >
             Discard
@@ -1403,809 +2784,2240 @@ export default function ConfigureBundleFlow() {
           discountType: pricingState.discountType,
           discountRules: pricingState.discountRules,
           showFooter: pricingState.showFooter,
+          showDiscountProgressBar: pricingState.showDiscountProgressBar,
           discountMessagingEnabled: pricingState.discountMessagingEnabled,
-          ruleMessages
+          ruleMessages: normalizedRuleMessages,
+          pricingDisplayOptions: serializePricingDisplayOptions({
+            existingMessages: {
+              showDiscountMessaging: pricingState.discountMessagingEnabled,
+              ruleMessages: normalizedRuleMessages,
+            },
+            options: normalizedPricingDisplayOptions,
+          }).displayOptions,
+          discountMessagingMultiLanguageEnabled,
+          ruleMessagesByLocale: discountMessagingMultiLanguageEnabled ? ruleMessagesByLocale : null,
+          tierTextByRuleId: Object.keys(tierTextByRuleId).length > 0 ? tierTextByRuleId : null,
+          tierTextByLocaleByRuleId: Object.keys(tierTextByLocaleByRuleId).length > 0 ? tierTextByLocaleByRuleId : null,
         })} />
         <input type="hidden" name="stepConditions" value={JSON.stringify(conditionsState.stepConditions)} />
+      </form>
 
-        <Layout>
+        <div className={fullPageBundleStyles.canvasHeader}>
+          <div className={fullPageBundleStyles.canvasTitleGroup}>
+            <div className={fullPageBundleStyles.canvasTitleRow}>
+              <button
+                type="button"
+                className={fullPageBundleStyles.canvasBackButton}
+                onClick={handleBackClick}
+                aria-label="Back to dashboard"
+              >
+                ←
+              </button>
+              <h1 className={fullPageBundleStyles.canvasTitle}>Configure Bundle Flow</h1>
+            </div>
+          </div>
+          <div className={fullPageBundleStyles.canvasActions}>
+            <button
+              type="button"
+              className={`${fullPageBundleStyles.readinessButton} ${readinessClassName}`}
+              onClick={() => setReadinessOpen(true)}
+            >
+              <span className={fullPageBundleStyles.readinessScore}>{readinessScore}</span>
+              <span className={fullPageBundleStyles.readinessLabel}>Readiness Score</span>
+            </button>
+            <s-button
+              variant="secondary"
+              icon="view"
+              onClick={() => { void handlePreviewBundle(); }}
+              disabled={fetcher.state !== "idle"}
+            >
+              Preview Bundle
+            </s-button>
+          </div>
+        </div>
+
+        {!suppressTopAppEmbedBannerForVisibility && (
+          <AppEmbedBanner appEmbedEnabled={appEmbedEnabled} themeEditorUrl={themeEditorUrl} />
+        )}
+
+        {parentProductStatusUi.showUnlistedBanner && (
+          <UnlistedBundleBanner
+            shop={shop}
+            bundleProductId={bundleProduct?.id ?? bundle.shopifyProductId ?? null}
+            onManage={() => {
+              const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || bundle.shopifyProductId?.split('/').pop();
+              if (productId) openProductInAdmin(productId);
+            }}
+          />
+        )}
+
+        <div className={fullPageBundleStyles.editGrid}>
 
           {/* Left Sidebar */}
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="400">
-              {/* Bundle Setup Navigation Card */}
-              <Card>
-                <BlockStack gap="300">
-                  <Text variant="headingSm" as="h3">
-                    Bundle Setup
-                  </Text>
-                  <Text variant="bodySm" tone="subdued" as="p">
-                    Set-up your bundle builder
-                  </Text>
+          <div className={fullPageBundleStyles.leftColumn}>
+            <s-stack direction="block" gap="base">
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <div className={fullPageBundleStyles.leftCardHeader}>
+                    <h3 className={fullPageBundleStyles.leftCardTitle}>
+                      Bundle Product
+                    </h3>
+                    <div className={fullPageBundleStyles.productMenuWrapper}>
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.productMenuBtn}
+                        aria-label="Bundle product options"
+                        onClick={() => setProductMenuOpen((o) => !o)}
+                      >
+                        <s-icon type="menu-vertical" />
+                      </button>
+                      {productMenuOpen && (
+                        <>
+                          <div className={fullPageBundleStyles.productMenuBackdrop} onClick={() => setProductMenuOpen(false)} />
+                          <div className={fullPageBundleStyles.productMenuDropdown}>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); void handleBundleProductSelect(); }}
+                            >
+                              <s-icon type="edit" />
+                              <span>Replace Product</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.productMenuDropdownItem}
+                              onClick={() => { setProductMenuOpen(false); handleSyncProduct(); }}
+                            >
+                              <s-icon type="duplicate" />
+                              <span>Sync Product</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-                  <BlockStack gap="100">
+                  <div className={fullPageBundleStyles.bundleProductPanel}>
+                    <div className={fullPageBundleStyles.bundleProductSummary}>
+                      <div className={fullPageBundleStyles.bundleProductIconTile}>
+                        {productImageUrl ? (
+                          <img
+                            src={productImageUrl}
+                            alt=""
+                            className={fullPageBundleStyles.bundleProductIconImage}
+                          />
+                        ) : (
+                          <s-icon type="product" />
+                        )}
+                      </div>
+                      <span className={fullPageBundleStyles.bundleProductName}>
+                        {productTitle || bundleProduct?.title || formState.bundleName || "Bundle Product"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={fullPageBundleStyles.bundleProductEditButton}
+                      onClick={() => {
+                        const productId = bundleProduct?.legacyResourceId || bundleProduct?.id?.split('/').pop() || bundle.shopifyProductId?.split('/').pop();
+                        if (!productId) {
+                          void handleBundleProductSelect();
+                          return;
+                        }
+                        openProductInAdmin(productId);
+                      }}
+                    >
+                      <s-icon type="edit" />
+                      <span>Edit Product</span>
+                    </button>
+                  </div>
+
+                  <div className={fullPageBundleStyles.parentProductStatus}>
+                    <span>Parent Product Status</span>
+                    <s-badge tone={parentProductStatusUi.tone}>
+                      {parentProductStatusUi.label}
+                    </s-badge>
+                  </div>
+                </s-stack>
+              </s-section>
+
+              <s-section>
+                <s-stack direction="block" gap="small">
+                  <h3 className={fullPageBundleStyles.leftCardTitle}>
+                    Bundle Setup
+                  </h3>
+                  <p className={fullPageBundleStyles.leftCardSubtitle}>
+                    Set-up your bundle builder
+                  </p>
+
+                  <div className={fullPageBundleStyles.setupNavList}>
                     {bundleSetupItems
                       .filter(item => !item.fullPageOnly || bundle.bundleType === "full_page")
-                      .map((item) => (
-                        <Button
-                          key={item.id}
-                          variant={activeSection === item.id ? "primary" : "tertiary"}
-                          fullWidth
-                          textAlign="start"
-                          icon={item.icon}
-                          disabled={false}
-                          onClick={() => handleSectionChange(item.id)}
-                        >
-                          {item.label}
-                        </Button>
-                      ))}
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-
-              {/* Bundle Product Card - Only for product-page bundles */}
-              {bundle.bundleType !== 'full_page' && (
-                <Card>
-                  <BlockStack gap="300">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <Text variant="headingSm" as="h3">
-                        Bundle Product
-                      </Text>
-                      <Button
-                        variant="plain"
-                        tone="critical"
-                        onClick={handleSyncProduct}
-                      >
-                        Sync Product
-                      </Button>
-                    </InlineStack>
-
-                    {bundleProduct ? (
-                      <BlockStack gap="300">
-                        <InlineStack gap="300" blockAlign="center" wrap={false}>
-                          <Thumbnail
-                            source={productImageUrl || "/bundle.png"}
-                            alt={productTitle || "Bundle Product"}
-                            size="medium"
-                          />
-                          <InlineStack gap="200" blockAlign="center" wrap={false}>
-                            <Button
-                              variant="plain"
-                              onClick={() => {
-                                const productUrl = `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${bundleProduct.legacyResourceId || bundleProduct.id?.split('/').pop()}`;
-                                open(productUrl, '_blank');
-                              }}
-                              icon={ExternalIcon}
+                      .map((item) => {
+                        const isActive = activeSection === item.id || (item.id === "step_setup" && activeSection === "free_gift_addons") || (item.id === "bundle_visibility" && activeSection === "bundle_widget");
+                        let statusBadge: { label: string; tone?: string } | null = null;
+                        if (item.id === 'discount_pricing') {
+                          statusBadge = pricingState.discountEnabled ? null : { label: 'None' };
+                        }
+                        if (item.id === 'bundle_visibility') {
+                          const isOptimised = Boolean(bundle.shopifyPageHandle) || upsellWidgetEnabled;
+                          statusBadge = isOptimised ? { label: 'Optimised', tone: 'success' } : { label: 'Pending', tone: 'warning' };
+                        }
+                        return (
+                          <div key={item.id}>
+                            {item.id === "select_template" && (
+                              <hr style={{ margin: "8px 0", border: "none", borderTop: "1px solid #e1e3e5" }} />
+                            )}
+                            <button
+                              type="button"
+                              className={`${fullPageBundleStyles.setupNavItem} ${isActive ? fullPageBundleStyles.setupNavItemActive : ""}`}
+                              onClick={() => { if (item.id === "select_template") { openSelectTemplateModal(); } else { handleSectionChange(item.id); } }}
+                              ref={item.id === "select_template" ? selectTemplateOpenButtonRef : undefined}
                             >
-                              {productTitle || bundleProduct.title || "Untitled Product"}
-                            </Button>
-                            <Button
-                              variant="tertiary"
-                              size="slim"
-                              icon={RefreshIcon}
-                              onClick={handleBundleProductSelect}
-                              accessibilityLabel="Change bundle product"
-                            />
-                          </InlineStack>
-                        </InlineStack>
-                      </BlockStack>
-                    ) : (
-                      <div className={fullPageBundleStyles.productSelectionPlaceholder}>
-                        <BlockStack gap="100" inlineAlign="center">
-                          <Icon source={ProductIcon} />
-                          <Button
-                            variant="plain"
-                            onClick={handleBundleProductSelect}
-                          >
-                            Select Bundle Product
-                          </Button>
-                        </BlockStack>
-                      </div>
-                    )}
+                              <span className={fullPageBundleStyles.setupNavIcon} aria-hidden="true">
+                                {item.iconType
+                                  ? <s-icon type={item.iconType as any} />
+                                  : (isActive ? "●" : "○")}
+                              </span>
+                              <span className={fullPageBundleStyles.setupNavLabel}>{item.label}</span>
+                              <span className={fullPageBundleStyles.setupNavMeta}>
+                                {statusBadge && (
+                                  (statusBadge.label === 'Pending' || statusBadge.label === 'Optimised')
+                                    ? <VisibilityBadge isOptimised={statusBadge.label === 'Optimised'} />
+                                    : <s-badge tone={statusBadge.tone as any || "subdued"}>{statusBadge.label}</s-badge>
+                                )}
+                              </span>
+                            </button>
+                            {item.id === "step_setup" && (activeSection === "step_setup" || activeSection === "free_gift_addons") && (
+                              <div className={fullPageBundleStyles.subNav}>
+                                {stepSetupChildItems.map((child) => (
+                                  <button
+                                    key={child.id}
+                                    type="button"
+                                    className={`${fullPageBundleStyles.subNavItem} ${activeSection === child.id ? fullPageBundleStyles.subNavItemActive : ""}`}
+                                    onClick={() => {
+                                      if (child.id === "free_gift_addons") handleSectionChange("free_gift_addons");
+                                    }}
+                                  >
+                                    {child.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {item.id === "bundle_visibility" && (activeSection === "bundle_visibility" || activeSection === "bundle_widget") && (
+                              <div className={fullPageBundleStyles.subNav}>
+                                {bundleVisibilityChildItems.map((child) => (
+                                  <button
+                                    key={child.id}
+                                    type="button"
+                                    className={`${fullPageBundleStyles.subNavItem} ${activeSection === child.id ? fullPageBundleStyles.subNavItemActive : ""}`}
+                                    onClick={() => handleSectionChange(child.id)}
+                                  >
+                                    {child.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </s-stack>
+              </s-section>
 
-                    {/* Bundle Status Dropdown */}
-                    <BlockStack gap="200">
-                      <Text variant="headingSm" as="h4">
-                        Bundle Status
-                      </Text>
-                      <Select
-                        label="Bundle Status"
-                        options={statusOptions}
-                        value={formState.bundleStatus}
-                        onChange={(selected: string) => formState.setBundleStatus(selected as BundleStatus)}
-                        labelHidden
-                      />
-                    </BlockStack>
-                  </BlockStack>
-                </Card>
-              )}
-
-              {/* Bundle Status Card - For full-page bundles */}
-              {bundle.bundleType === 'full_page' && (
-                <Card>
-                  <BundleStatusSection
-                    status={formState.bundleStatus}
-                    onChange={formState.setBundleStatus}
-                  />
-                </Card>
-              )}
-
-
-            </BlockStack>
-          </Layout.Section>
+            </s-stack>
+          </div>
 
           {/* Main Content Area */}
-          <Layout.Section>
+          <div className={fullPageBundleStyles.mainColumn}>
             {activeSection === "step_setup" && (
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <BlockStack gap="100">
-                        <Text variant="headingSm" as="h3">
-                          Bundle Tabs
-                        </Text>
-                        <Text variant="bodyMd" tone="subdued" as="p">
-                          Configure each tab of your full-page bundle. Each tab represents a product selection step.
-                        </Text>
-                      </BlockStack>
-                      {/* Progress Indicator */}
-                      <Badge tone="info">
-                        {`${stepsState.steps.filter(step => step.StepProduct && step.StepProduct.length > 0).length} / ${stepsState.steps.length} Configured`}
-                      </Badge>
-                    </InlineStack>
-                  </BlockStack>
-
-                  {/* Tabs Navigation */}
-                  {stepsState.steps.length > 0 && (
-                    <Tabs
-                      tabs={stepsState.steps.map((step, index) => ({
-                        id: step.id,
-                        content: step.name || `Tab ${index + 1}`,
-                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
-                      }))}
-                      selected={activeTabIndex}
-                      onSelect={setActiveTabIndex}
-                    />
-                  )}
-
-                  {/* Active Tab Content */}
-                  <BlockStack gap="300">
-                    {stepsState.steps.map((step, index) => (
-                      activeTabIndex === index && (
-                      <Card
-                        key={step.id}
-                        background="bg-surface-secondary"
+              <div data-tour-target="fpb-step-setup">
+                <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.stepFlowCard}`}>
+                  <s-stack direction="block" gap="small">
+                    <div className={fullPageBundleStyles.stepFlowTitleRow}>
+                      <span className={fullPageBundleStyles.headingWithHelp}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 650 }}>Step Flow</h3>
+                        <QuestionHelpTooltip tooltipKey="stepFlow" />
+                      </span>
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.linkButton}
+                        onClick={() => window.open("https://wolfpackapps.com", "_blank")}
                       >
-                        <BlockStack gap="400">
-                          {/* Tab Header */}
-                          <InlineStack align="space-between" blockAlign="center" gap="300">
-                            <Text variant="bodyLg" fontWeight="semibold" as="p">
-                              {step.name || `Tab ${index + 1}`}
-                            </Text>
+                        How to setup?
+                      </button>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                      Create steps for your multi-step bundle here. Select product options for each step below
+                    </p>
+                  </s-stack>
 
-                            <InlineStack gap="100">
-                              <Button
-                                variant="tertiary"
-                                size="micro"
-                                icon={DuplicateIcon}
-                                onClick={() => cloneStep(step.id)}
-                                accessibilityLabel="Clone tab"
-                              />
-                              <Button
-                                variant="tertiary"
-                                size="micro"
-                                tone="critical"
-                                icon={DeleteIcon}
-                                onClick={() => deleteStep(step.id)}
-                                accessibilityLabel="Delete tab"
-                              />
-                            </InlineStack>
-                          </InlineStack>
+                  {/* Step Chip Navigation */}
+                  <div className={fullPageBundleStyles.stepNav}>
+                    {stepsState.steps.map((step, i) => (
+                      <button
+                        key={step.id}
+                        className={activeTabIndex === i ? fullPageBundleStyles.stepChipActive : fullPageBundleStyles.stepChip}
+                        onClick={() => navigateToStep(i)}
+                      >
+                        <span className={fullPageBundleStyles.stepChipNumber}>{i + 1}</span>
+                        <span className={fullPageBundleStyles.stepChipLabel}>{step.name || `Step ${i + 1}`}</span>
+                        <span className={fullPageBundleStyles.stepChipChevron}>›</span>
+                      </button>
+                    ))}
+                    <button className={fullPageBundleStyles.addStepBtn} onClick={handleAddNewStep}>
+                      <span aria-hidden="true">+</span>
+                      <span>Add Step</span>
+                    </button>
+                  </div>
+                </div>
 
-                          {/* Tab Content (always visible, no collapse) */}
-                          <BlockStack gap="400">
-                                {/* Step Name and Page Title */}
-                                <FormLayout>
-                                  <TextField
-                                    label="Step Name"
-                                    value={step.name}
-                                    onChange={(value) => stepsState.updateStepField(step.id, 'name', value)}
-                                    autoComplete="off"
-                                  />
-                                </FormLayout>
+                {/* Animated per-step content */}
+                {stepsState.steps.map((step, index) => activeTabIndex === index && (
+                  <div
+                    key={`${step.id}-${slideKey}`}
+                    className={slideDir === "forward" ? fullPageBundleStyles.slideForward : slideDir === "backward" ? fullPageBundleStyles.slideBackward : ""}
+                  >
+                    {/* Step Setup card */}
+                    <div className={fullPageBundleStyles.card}>
+                      <div className={fullPageBundleStyles.stepSetupHeader}>
+                        <div className={fullPageBundleStyles.stepSetupTitleGroup}>
+                          <h3 className={fullPageBundleStyles.stepSetupTitle}>Step Setup</h3>
+                          <s-switch
+                            accessibilityLabel="Enable step"
+                            checked={step.enabled !== false || undefined}
+                            onChange={(e) => {
+                              stepsState.updateStepField(step.id, "enabled", (e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
+                          />
+                        </div>
+                        <div className={fullPageBundleStyles.stepSetupActions}>
+                          <span title="Multi Language">
+                            <s-button
+                              variant="tertiary"
+                              icon="globe"
+                              accessibilityLabel="Multi Language"
+                              onClick={() => openStepMultiLanguageModal(step.id)}
+                            />
+                          </span>
+                          <span title="Clone current step">
+                            <s-button
+                              variant="tertiary"
+                              icon="duplicate"
+                              accessibilityLabel="Clone current step"
+                              onClick={() => cloneStep(step.id)}
+                            />
+                          </span>
+                          <span title="Delete current step">
+                            <s-button
+                              variant="tertiary"
+                              icon="delete"
+                              tone="critical"
+                              accessibilityLabel="Delete current step"
+                              onClick={() => deleteStep(step.id)}
+                            />
+                          </span>
+                        </div>
+                      </div>
+                      <p className={fullPageBundleStyles.stepSetupDescription}>
+                        Edit your step name (Only visible if more than one step is present)
+                      </p>
+                      <s-stack direction="block" gap="small">
+                        <s-text-field
+                          label="Step Name"
+                          placeholder="Eg:- Add product"
+                          value={step.name ?? ""}
+                          onInput={(e) => {
+                            stepsState.updateStepField(step.id, 'name', (e.target as HTMLInputElement).value);
+                            markAsDirty();
+                          }}
+                          autocomplete="off"
+                        />
+                      </s-stack>
+                    </div>
 
-                                {/* Products/Collections Tabs */}
-                                <BlockStack gap="300">
-                                  <Tabs
-                                    tabs={[
-                                      {
-                                        id: 'products',
-                                        content: 'Products',
-                                        badge: step.StepProduct && step.StepProduct.length > 0 ? stepsState.getUniqueProductCount(step.StepProduct).toString() : undefined,
-                                      },
-                                      {
-                                        id: 'collections',
-                                        content: 'Collections',
-                                      },
-                                    ]}
-                                    selected={stepsState.selectedTab}
-                                    onSelect={stepsState.setSelectedTab}
-                                  />
+                    {/* ── Category card ── */}
+                    <div className={fullPageBundleStyles.card}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Category</h3>
+                        <QuestionHelpTooltip tooltipKey="category" />
+                      </div>
+                      <p style={{ margin: "0 0 16px", fontSize: 14, color: "#6d7175" }}>
+                        Add all product selections in this step to a single category or separate them into multiple categories for better segregation.
+                      </p>
 
-                                  {stepsState.selectedTab === 0 && (
-                                    <BlockStack gap="200">
-                                      <Text as="p" variant="bodyMd" tone="subdued">
-                                        Products selected here will be displayed on this step
-                                      </Text>
-                                      <InlineStack gap="200" align="start">
-                                        <Button
-                                          variant="primary"
-                                          size="medium"
-                                          onClick={() => handleProductSelection(step.id)}
-                                        >
-                                          Add Products
-                                        </Button>
-                                        {step.StepProduct && step.StepProduct.length > 0 && (
-                                          <Badge tone="info">
-                                            {`${stepsState.getUniqueProductCount(step.StepProduct)} Selected`}
-                                          </Badge>
-                                        )}
-                                      </InlineStack>
-                                    </BlockStack>
-                                  )}
+                      {(((step.StepCategory as any[] | undefined) ?? []).length === 0) && (
+                        <div className={fullPageBundleStyles.emptyState}>No category defined yet</div>
+                      )}
 
-                                  {stepsState.selectedTab === 1 && (
-                                    <BlockStack gap="200">
-                                      <Text as="p" variant="bodyMd" tone="subdued">
-                                        Collections selected here will be displayed on this step
-                                      </Text>
-                                      <InlineStack gap="200" align="start">
-                                        <Button
-                                          variant="primary"
-                                          size="medium"
-                                          icon={CollectionIcon}
-                                          onClick={() => handleCollectionSelection(step.id)}
-                                        >
-                                          Add Collections
-                                        </Button>
-                                        {selectedCollections[step.id]?.length > 0 && (
-                                          <Badge tone="info">
-                                            {`${selectedCollections[step.id].length} Selected`}
-                                          </Badge>
-                                        )}
-                                      </InlineStack>
+                      {/* Per-category accordion rows collapsed by default */}
+                      {((step.StepCategory as any[] | undefined) ?? []).map((cat: any, catIndex: number) => {
+                        const catKey = `${step.id}__${cat.id ?? catIndex}`;
+                        const catActiveTab = categoryActiveTabs[catKey] ?? 0;
+                        const catProducts = (cat.products as any[]) ?? [];
+                        const catCollections = (cat.collections as any[]) ?? [];
+                        const isOpen = categoryOpen[catKey] ?? false;
+                        return (
+                          <div
+                            key={cat.id ?? catIndex}
+                            data-cat-key={catKey}
+                            className={`${fullPageBundleStyles.categoryAccordion}${dragOverCatKey === catKey ? ` ${fullPageBundleStyles.categoryDragOver}` : ''}`}
+                            onDragOver={(e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (draggedCatKey && draggedCatKey !== catKey) setDragOverCatKey(catKey); }}
+                            onDragLeave={(e: React.DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverCatKey(null); }}
+                            onDrop={(e: React.DragEvent) => handleCatDrop(e, step.id, catKey)}
+                          >
+                            {/* Header — click anywhere to toggle; action buttons stop propagation */}
+                            <div
+                              className={fullPageBundleStyles.categoryAccordionHeader}
+                              role="button"
+                              aria-expanded={isOpen}
+                              tabIndex={0}
+                              onClick={() => setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }))}
+                              onKeyDown={(e: React.KeyboardEvent) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }));
+                                }
+                              }}
+                            >
+                              <span
+                                className={fullPageBundleStyles.categoryDrag}
+                                aria-hidden="true"
+                                draggable="true"
+                                onDragStart={(e: React.DragEvent) => { e.stopPropagation(); handleCatDragStart(e, step.id, catKey); }}
+                                onDragEnd={handleCatDragEnd}
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                              >⠿</span>
+                              <span className={fullPageBundleStyles.categoryName}>
+                                {cat.name || `Category ${catIndex + 1}`}
+                              </span>
+                              <div
+                                className={fullPageBundleStyles.categoryActions}
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                              >
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.categoryIconButton}
+                                  aria-label="Clone"
+                                  title="Clone"
+                                  onClick={() => {
+                                    const cats = (step.StepCategory as any[]) ?? [];
+                                    stepsState.updateStepField(step.id, "StepCategory", [
+                                      ...cats,
+                                      { ...cats[catIndex], id: `cat-${Date.now()}`, name: `${cats[catIndex].name || `Category ${catIndex + 1}`} Copy`, sortOrder: cats.length },
+                                    ]);
+                                    markAsDirty();
+                                  }}
+                                >
+                                  <s-icon type="duplicate" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.categoryDeleteIconButton}
+                                  aria-label="Delete"
+                                  title="Delete"
+                                  onClick={() => {
+                                    const updated = ((step.StepCategory as any[]) ?? []).filter((_: any, i: number) => i !== catIndex);
+                                    stepsState.updateStepField(step.id, "StepCategory", updated);
+                                    markAsDirty();
+                                  }}
+                                >
+                                  <s-icon type="delete" />
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                className={fullPageBundleStyles.categoryChevron}
+                                aria-label={isOpen ? "Collapse category" : "Expand category"}
+                                onClick={(e: React.MouseEvent) => {
+                                  e.stopPropagation();
+                                  setCategoryOpen(prev => ({ ...prev, [catKey]: !prev[catKey] }));
+                                }}
+                              >
+                                {isOpen ? (
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                ) : (
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
 
-                                      {/* Display selected collections */}
-                                      {selectedCollections[step.id]?.length > 0 && (
-                                        <BlockStack gap="100">
-                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                            Selected Collections:
-                                          </Text>
-                                          <BlockStack gap="100">
-                                            {selectedCollections[step.id].map((collection: any) => (
-                                              <InlineStack key={collection.id} gap="200" blockAlign="center">
-                                                <Thumbnail
-                                                  source={collection.image?.url || "/bundle.png"}
-                                                  alt={collection.title}
-                                                  size="small"
-                                                />
-                                                <Text as="span" variant="bodyMd">{collection.title}</Text>
-                                                <Button
-                                                  variant="plain"
-                                                  size="micro"
-                                                  tone="critical"
-                                                  onClick={() => {
-                                                    setSelectedCollections(prev => ({
-                                                      ...prev,
-                                                      [step.id]: prev[step.id]?.filter(c => c.id !== collection.id) || []
-                                                    }));
-                                                  }}
-                                                >
-                                                  Remove
-                                                </Button>
-                                              </InlineStack>
-                                            ))}
-                                          </BlockStack>
-                                        </BlockStack>
+                            {/* Expandable body — only visible when open */}
+                            {isOpen && (
+                              <div className={fullPageBundleStyles.categoryAccordionBody}>
+                                <div className={fullPageBundleStyles.categoryFieldGroup}>
+                                  <label
+                                    className={fullPageBundleStyles.categoryFieldLabel}
+                                    htmlFor={`fpb-category-name-${catKey}`}
+                                  >
+                                    Category Name
+                                  </label>
+                                  <div className={fullPageBundleStyles.catNameRow}>
+                                    <div className={fullPageBundleStyles.categoryInputStack}>
+                                      <input
+                                        id={`fpb-category-name-${catKey}`}
+                                        className={fullPageBundleStyles.categoryNameInput}
+                                        type="text"
+                                        value={cat.name ?? ""}
+                                        placeholder={`Category ${catIndex + 1}`}
+                                        aria-label="Category name"
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                          const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                            i === catIndex ? { ...c, name: e.target.value, title: e.target.value } : c
+                                          );
+                                          stepsState.updateStepField(step.id, "StepCategory", updated);
+                                          markAsDirty();
+                                        }}
+                                      />
+                                      <p className={fullPageBundleStyles.categoryInputHelp}>Will be visible on the storefront</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className={fullPageBundleStyles.categoryTextButton}
+                                      onClick={() => openStepCategoryMultiLanguageModal(step.id, catIndex)}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                        <path d="M2 3.25h5.25M4.63 2v1.25M6.5 3.25c-.38 1.97-1.75 3.5-3.75 4.25M3.38 4.75c.55 1.1 1.45 1.95 2.72 2.55M7.25 12l.7-1.75m0 0L9.5 6.5l1.55 3.75m-3.1 0h3.1M12 12l-.95-1.75" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                      Multi Language
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className={fullPageBundleStyles.tabRow}>
+                                  <button
+                                    className={catActiveTab === 0 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                    onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catKey]: 0 }))}
+                                  >
+                                    Products
+                                    {catProducts.length > 0 && (
+                                      <span className={fullPageBundleStyles.tabBadge}>{catProducts.length}</span>
+                                    )}
+                                  </button>
+                                  <button
+                                    className={catActiveTab === 1 ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                                    onClick={() => setCategoryActiveTabs(prev => ({ ...prev, [catKey]: 1 }))}
+                                  >
+                                    Collections
+                                    {catCollections.length > 0 && (
+                                      <span className={fullPageBundleStyles.tabBadge}>{catCollections.length}</span>
+                                    )}
+                                  </button>
+                                </div>
+
+                                {catActiveTab === 0 && (
+                                  <div>
+                                    <p className={fullPageBundleStyles.categoryPickerHelp}>
+                                      Products selected here will be displayed on this step
+                                    </p>
+                                    <div className={fullPageBundleStyles.productActions}>
+                                      <s-button
+                                        variant="primary"
+                                        onClick={async () => {
+                                          const picked = await (shopify as any).resourcePicker({
+                                            type: "product",
+                                            multiple: true,
+                                            selectionIds: catProducts.map((p: any) => ({ id: p.id })),
+                                          });
+                                          if (!picked) return;
+                                          const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                            i === catIndex ? { ...c, products: picked.map((p: any) => ({
+                                              id: p.id,
+                                              title: p.title,
+                                              imageUrl: p.images?.[0]?.originalSrc || p.images?.[0]?.url || null,
+                                              variants: p.variants || null,
+                                              minQuantity: 1,
+                                              maxQuantity: 10,
+                                            })) } : c
+                                          );
+                                          stepsState.updateStepField(step.id, "StepCategory", updated);
+                                          markAsDirty();
+                                        }}
+                                      >
+                                        Add Products
+                                      </s-button>
+                                      {catProducts.length > 0 && (
+                                        <s-badge tone="success">{catProducts.length} Selected</s-badge>
                                       )}
-                                    </BlockStack>
-                                  )}
-                                </BlockStack>
+                                    </div>
+                                    {catProducts.length > 0 && (
+                                      <div className={fullPageBundleStyles.categoryProductList}>
+                                        {catProducts.map((product: any) => (
+                                          <div key={product.id} className={fullPageBundleStyles.categoryProductRow}>
+                                            <img
+                                              className={fullPageBundleStyles.categoryProductImage}
+                                              src={product.imageUrl || "/bundle.png"}
+                                              alt={product.title}
+                                            />
+                                            <span className={fullPageBundleStyles.categoryProductTitle}>{product.title}</span>
+                                            <button
+                                              type="button"
+                                              className={fullPageBundleStyles.categoryDangerButton}
+                                              onClick={() => {
+                                                const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                  i === catIndex ? { ...c, products: c.products.filter((p: any) => p.id !== product.id) } : c
+                                                );
+                                                stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                markAsDirty();
+                                              }}
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
 
-                                {/* Conditions Section */}
-                                <BlockStack gap="300">
-                                  <BlockStack gap="100">
-                                    <Text variant="headingSm" as="h4">
-                                      Conditions
-                                    </Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
-                                      Create Conditions based on amount or quantity of products added on this step.
-                                    </Text>
-                                    <Text as="p" variant="bodySm" tone="subdued">
-                                      Note: Conditions are only valid on this step
-                                    </Text>
-                                  </BlockStack>
+                                {catActiveTab === 1 && (
+                                  <div>
+                                    <p className={fullPageBundleStyles.categoryPickerHelp}>
+                                      Collections selected here will be displayed on this step
+                                    </p>
+                                    <div className={fullPageBundleStyles.productActions}>
+                                      <s-button
+                                        variant="primary"
+                                        onClick={async () => {
+                                          const picked = await (shopify as any).resourcePicker({
+                                            type: "collection",
+                                            multiple: true,
+                                            selectionIds: catCollections.map((c: any) => ({ id: c.id })),
+                                          });
+                                          if (!picked) return;
+                                          const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                            i === catIndex ? { ...c, collections: picked.map((col: any) => ({
+                                              id: col.id,
+                                              handle: col.handle,
+                                              title: col.title,
+                                            })) } : c
+                                          );
+                                          stepsState.updateStepField(step.id, "StepCategory", updated);
+                                          markAsDirty();
+                                        }}
+                                      >
+                                        Add Collections
+                                      </s-button>
+                                      {catCollections.length > 0 && (
+                                        <s-badge tone="success">{catCollections.length} Selected</s-badge>
+                                      )}
+                                    </div>
+                                    {catCollections.length > 0 && (
+                                      <div className={fullPageBundleStyles.categoryProductList}>
+                                        {catCollections.map((col: any) => (
+                                          <div key={col.id} className={fullPageBundleStyles.categoryProductRow}>
+                                            <img
+                                              className={fullPageBundleStyles.categoryProductImage}
+                                              src={col.image?.url || "/bundle.png"}
+                                              alt={col.title}
+                                            />
+                                            <span className={fullPageBundleStyles.categoryProductTitle}>{col.title}</span>
+                                            <button
+                                              type="button"
+                                              className={fullPageBundleStyles.categoryDangerButton}
+                                              onClick={() => {
+                                                const updated = ((step.StepCategory as any[]) ?? []).map((c: any, i: number) =>
+                                                  i === catIndex ? { ...c, collections: c.collections.filter((col2: any) => col2.id !== col.id) } : c
+                                                );
+                                                stepsState.updateStepField(step.id, "StepCategory", updated);
+                                                markAsDirty();
+                                              }}
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
 
-                                  {/* Existing Condition Rules */}
-                                  {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: any) => (
-                                    <Card key={rule.id} background="bg-surface-secondary">
-                                      <BlockStack gap="200">
-                                        <InlineStack align="space-between" blockAlign="center">
-                                          <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                            Condition #{ruleIndex + 1}
-                                          </Text>
-                                          <Button
-                                            variant="plain"
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.addSectionButton}
+                        onClick={() => {
+                          const cats = (step.StepCategory as any[]) ?? [];
+                          stepsState.updateStepField(step.id, "StepCategory", [
+                            ...cats,
+                            { id: `cat-${Date.now()}`, name: "", title: "", sortOrder: cats.length, products: [], collections: [] },
+                          ]);
+                          markAsDirty();
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                          <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                        </svg>
+                        Add Category
+                      </button>
+
+                      <div style={{ margin: "12px 0" }}><s-divider /></div>
+                      <s-checkbox
+                        label="Display variants as individual products"
+                        checked={step.displayVariantsAsIndividual ?? undefined}
+                        onChange={(e) => {
+                          const checked = (e.target as HTMLInputElement).checked;
+                          stepsState.updateStepField(step.id, "displayVariantsAsIndividual", checked);
+                          markAsDirty();
+                        }}
+                      />
+                    </div>
+
+                    {/* ── Rules Configuration card ── */}
+                    <div className={fullPageBundleStyles.card}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Rules Configuration</h3>
+                        <QuestionHelpTooltip tooltipKey="rulesConfiguration" />
+                      </div>
+                      <p style={{ margin: "0 0 8px", fontSize: 14, color: "#6d7175" }}>
+                        Apply rules to the entire step or to specific categories to guide your customer's selections.
+                      </p>
+                      <button
+                        type="button"
+                        className={fullPageBundleStyles.linkButton}
+                        style={{ marginBottom: 12, display: "inline-block" }}
+                        onClick={() => window.open("https://wolfpackapps.com", "_blank")}
+                      >
+                        Learn More
+                      </button>
+                      {(() => {
+                        const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
+                        const categoryRulesAvailable = stepCategories.length > 0;
+                        const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
+                        const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
+                        const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";
+                        const handleRuleModeChange = (nextMode: string) => {
+                          if (nextMode === "none") {
+                            conditionsState.clearStepConditions(step.id);
+                            clearCategoryConditionRules(step.id);
+                            return;
+                          }
+                          if (nextMode === "step") {
+                            clearCategoryConditionRules(step.id);
+                            if ((conditionsState.stepConditions[step.id] || []).length === 0) {
+                              conditionsState.addConditionRule(step.id);
+                            }
+                            return;
+                          }
+                          if (nextMode === "category" && categoryRulesAvailable) {
+                            conditionsState.clearStepConditions(step.id);
+                            if (!hasCategoryRules) {
+                              addCategoryConditionRule(step.id, 0);
+                            }
+                            return;
+                          }
+                        };
+                        const ruleModeOptions = [
+                          { label: "No rules", value: "none" },
+                          { label: "Step rules", value: "step" },
+                          ...(categoryRulesAvailable ? [{ label: "Category rules", value: "category" }] : []),
+                        ];
+
+                        return (
+                          <>
+                            <div style={{ display: "flex", gap: 20, marginBottom: 12 }}>
+                              {ruleModeOptions.map(opt => (
+                                <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 14 }}>
+                                <input
+                                  type="radio"
+                                  name={`step-rule-mode-${step.id}`}
+                                  value={opt.value}
+                                  checked={activeRuleMode === opt.value}
+                                  onChange={() => handleRuleModeChange(opt.value)}
+                                  style={{ margin: 0 }}
+                                />
+                                {opt.label}
+                                </label>
+                              ))}
+                            </div>
+
+                            {activeRuleMode === "category" ? (
+                              <div className={fullPageBundleStyles.categoryRulesList}>
+                                {stepCategories.map((cat: any, catIndex: number) => {
+                                  const catKey = `${step.id}__${cat.id ?? catIndex}`;
+                                  const rules = Array.isArray(cat.conditions) ? cat.conditions : [];
+                                  const isRulesOpen = categoryRulesOpen[catKey] ?? catIndex === 0;
+                                  const categoryLabel = cat.name || cat.title || `Category ${catIndex + 1}`;
+
+                                  return (
+                                    <div key={cat.id ?? catIndex} className={fullPageBundleStyles.categoryRuleAccordion}>
+                                      <button
+                                        type="button"
+                                        className={fullPageBundleStyles.categoryRuleHeader}
+                                        aria-expanded={isRulesOpen}
+                                        onClick={() => setCategoryRulesOpen(prev => ({ ...prev, [catKey]: !isRulesOpen }))}
+                                      >
+                                        <span>{categoryLabel} rules</span>
+                                        <span aria-hidden="true">{isRulesOpen ? "⌃" : "⌄"}</span>
+                                      </button>
+
+                                      {isRulesOpen && (
+                                        <div className={fullPageBundleStyles.categoryRuleBody}>
+                                          <p className={fullPageBundleStyles.categoryRuleHelp}>
+                                            Create Rules based on amount or quantity of products added on this category.
+                                            <br />
+                                            Note: Rules are only valid on this category
+                                          </p>
+
+                                          <div className={fullPageBundleStyles.rulesList}>
+                                            {rules.map((rule: any, ruleIndex: number) => {
+                                              const ruleId = String(rule.id ?? ruleIndex);
+                                              return (
+                                                <div key={ruleId} className={fullPageBundleStyles.categoryRuleBlock}>
+                                                  <div className={fullPageBundleStyles.ruleHeader}>
+                                                    <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                    <s-button
+                                                      variant="tertiary"
+                                                      tone="critical"
+                                                      onClick={() => removeCategoryConditionRule(step.id, catIndex, ruleId)}
+                                                    >
+                                                      Remove
+                                                    </s-button>
+                                                  </div>
+                                                  <div className={fullPageBundleStyles.categoryRuleFields}>
+                                                    <select
+                                                      className={fullPageBundleStyles.ruleInlineSelect}
+                                                      value={rule.type ?? "quantity"}
+                                                      onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "type", (e.target as HTMLSelectElement).value)}
+                                                      aria-label="Type"
+                                                    >
+                                                      {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                      ))}
+                                                    </select>
+                                                    <select
+                                                      className={fullPageBundleStyles.ruleInlineSelect}
+                                                      value={rule.condition ?? rule.operator ?? "greaterThanOrEqualTo"}
+                                                      onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "condition", (e.target as HTMLSelectElement).value)}
+                                                      aria-label="Condition"
+                                                    >
+                                                      {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                      ))}
+                                                    </select>
+                                                    <input
+                                                      type="number"
+                                                      className={fullPageBundleStyles.ruleInlineNumber}
+                                                      min={0}
+                                                      value={rule.value ?? ""}
+                                                      onChange={(e) => updateCategoryConditionRule(step.id, catIndex, ruleId, "value", (e.target as HTMLInputElement).value)}
+                                            autoComplete="off"
+                                                      aria-label="Value"
+                                                    />
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+
+                                          {rules.length === 1 && (
+                                            <s-checkbox
+                                              label="Auto Next When rule is met"
+                                              checked={cat.autoNextStepOnConditionMet === true || undefined}
+                                              onChange={(e) => updateCategoryAutoNextRule(step.id, catIndex, (e.target as HTMLInputElement).checked)}
+                                            />
+                                          )}
+
+                                          <button
+                                            type="button"
+                                            className={fullPageBundleStyles.addSectionButton}
+                                            onClick={() => addCategoryConditionRule(step.id, catIndex)}
+                                          >
+                                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                              <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                            </svg>
+                                            Add Rule
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <>
+                                {(conditionsState.stepConditions[step.id] || []).length === 0 ? (
+                                  <div className={fullPageBundleStyles.emptyState}>No rules defined yet</div>
+                                ) : (
+                                  <div className={fullPageBundleStyles.rulesList}>
+                                    {(conditionsState.stepConditions[step.id] || []).map((rule: any, ruleIndex: number) => (
+                                      <div key={rule.id} className={fullPageBundleStyles.ruleCard}>
+                                        <div className={fullPageBundleStyles.ruleHeader}>
+                                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                          <s-button
+                                            variant="tertiary"
                                             tone="critical"
                                             onClick={() => conditionsState.removeConditionRule(step.id, rule.id)}
                                           >
                                             Remove
-                                          </Button>
-                                        </InlineStack>
-
-                                        <InlineStack gap="200" align="start">
-                                          <Select
-                                            label="Condition Type"
-                                            options={[...STEP_CONDITION_TYPE_OPTIONS]}
-                                            value={rule.type}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'type', value)}
-                                          />
-                                          <Select
-                                            label="Operator"
-                                            options={[...STEP_CONDITION_OPERATOR_OPTIONS]}
-                                            value={rule.operator}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', value)}
-                                          />
-                                          <TextField
-                                            label="Value"
-                                            value={rule.value}
-                                            onChange={(value) => conditionsState.updateConditionRule(step.id, rule.id, 'value', value)}
-                                            autoComplete="off"
+                                          </s-button>
+                                        </div>
+                                        <div className={fullPageBundleStyles.ruleFields}>
+                                          <select
+                                            className={fullPageBundleStyles.ruleInlineSelect}
+                                            value={rule.type ?? ""}
+                                            onChange={(e) => conditionsState.updateConditionRule(step.id, rule.id, 'type', (e.target as HTMLSelectElement).value)}
+                                            aria-label="Type"
+                                          >
+                                            <option value="" disabled>Type</option>
+                                            {[...STEP_CONDITION_TYPE_OPTIONS].map(opt => (
+                                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                          </select>
+                                          <select
+                                            className={fullPageBundleStyles.ruleInlineSelect}
+                                            value={rule.operator ?? ""}
+                                            onChange={(e) => conditionsState.updateConditionRule(step.id, rule.id, 'operator', (e.target as HTMLSelectElement).value)}
+                                            aria-label="Condition"
+                                          >
+                                            <option value="" disabled>Condition</option>
+                                            {[...STEP_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                          </select>
+                                          <input
                                             type="number"
-                                            min="0"
+                                            className={fullPageBundleStyles.ruleInlineNumber}
+                                            min={0}
+                                            placeholder="0"
+                                            value={rule.value ?? ""}
+                                            onInput={(e) => conditionsState.updateConditionRule(step.id, rule.id, 'value', (e.target as HTMLInputElement).value)}
+                                            autoComplete="off"
+                                            aria-label="Value"
                                           />
-                                        </InlineStack>
-                                      </BlockStack>
-                                    </Card>
-                                  ))}
+                                        </div>
+                                        {(conditionsState.stepConditions[step.id] || []).length === 1 && (
+                                          <s-checkbox
+                                            label="Auto Next When rule is met"
+                                            checked={rule.autoNext === true || rule.autoNext === "true" || undefined}
+                                            onChange={(e) => {
+                                              conditionsState.updateConditionRule(step.id, rule.id, "autoNext", (e.target as HTMLInputElement).checked ? "true" : "false");
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.addSectionButton}
+                                  onClick={() => {
+                                    if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
+                                      shopify.toast.show('A step can have at most 2 rules', { isError: false });
+                                      return;
+                                    }
+                                    conditionsState.addConditionRule(step.id);
+                                  }}
+                                >
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                    <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                                  </svg>
+                                  Add Rule
+                                </button>
+                              </>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
 
-                                  <Button
-                                    variant="tertiary"
-                                    fullWidth
-                                    icon={PlusIcon}
-                                    onClick={() => {
-                                      if ((conditionsState.stepConditions[step.id] || []).length >= 2) {
-                                        shopify.toast.show('A step can have at most 2 conditions', { isError: false });
-                                        return;
-                                      }
-                                      conditionsState.addConditionRule(step.id);
-                                    }}
-                                  >
-                                    Add Rule
-                                  </Button>
-                                </BlockStack>
+                    {/* ── Step Config card ── */}
+                    <div className={fullPageBundleStyles.card}>
+                      <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 650, color: "#202223", letterSpacing: 0 }}>Step Config</h3>
+                      <div className={fullPageBundleStyles.stepConfigRow}>
+                        <div className={fullPageBundleStyles.iconColumn}>
+                          <div className={fullPageBundleStyles.iconBox}>
+                            {(step as any).stepImage ? (
+                              <>
+                                <img
+                                  src={(step as any).stepImage}
+                                  alt="Step icon"
+                                  className={fullPageBundleStyles.iconImg}
+                                />
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.iconRemoveButton}
+                                  aria-label="Remove step icon"
+                                  onClick={() => {
+                                    stepsState.updateStepField(step.id, 'stepImage', null);
+                                    setShowIconPickerForStep(null);
+                                    markAsDirty();
+                                  }}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                    <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                  </svg>
+                                </button>
+                              </>
+                            ) : (
+                              <div className={fullPageBundleStyles.iconPlaceholder}>
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                  <path d="M20 7l-8-4-8 4m16 0v10l-8 4m-8-4V7m16 5l-8 4-8-4" />
+                                </svg>
+                              </div>
+                            )}
+                          </div>
+                          {showIconPickerForStep === step.id && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowIconPickerForStep(null)}
+                              value={(step as any).stepImage ?? null}
+                              onChange={(url: string | null) => {
+                                stepsState.updateStepField(step.id, 'stepImage', url);
+                                setShowIconPickerForStep(null);
+                                markAsDirty();
+                              }}
+                              label=""
+                              hideCropEditor
+                            />
+                          )}
+                          <s-button
+                            onClick={() => setShowIconPickerForStep(prev => prev === step.id ? null : step.id)}
+                          >
+                            {(step as any).stepImage ? "Replace" : "Upload file"}
+                          </s-button>
+                        </div>
+                        <div className={fullPageBundleStyles.fieldsColumn}>
+                          <s-text-field
+                            label="Step Title"
+                            placeholder="Eg:- Customized T-shirt Bundle for you"
+                            value={(step as any).pageTitle ?? ""}
+                            onInput={(e) => {
+                              stepsState.updateStepField(step.id, 'pageTitle', (e.target as HTMLInputElement).value);
+                              markAsDirty();
+                            }}
+                          autocomplete="off"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                                {/* ── Step Options: Free Gift & Default Product ── */}
-                                <BlockStack gap="300">
-                                  <Divider />
-                                  <BlockStack gap="100">
-                                    <Text variant="headingSm" as="h4">Step Options</Text>
-                                    <Text as="p" variant="bodyMd" tone="subdued">
-                                      Advanced options for free gift steps and pre-selected (mandatory) products.
-                                    </Text>
-                                  </BlockStack>
-
-                                  {/* Free Gift toggle */}
-                                  <Checkbox
-                                    label="Free gift step"
-                                    helpText="This step is unlocked after all regular steps are complete. Products are shown at $0.00."
-                                    checked={step.isFreeGift === true}
-                                    onChange={(checked) => {
-                                      stepsState.updateStepField(step.id, 'isFreeGift', checked);
-                                      if (!checked) stepsState.updateStepField(step.id, 'freeGiftName', '');
-                                    }}
-                                  />
-
-                                  {step.isFreeGift && (
-                                    <FormLayout>
-                                      <TextField
-                                        label="Gift display name"
-                                        placeholder='e.g. "cap", "greeting card"'
-                                        helpText='Shown in the sidebar: "Add 2 more to claim a FREE cap!"'
-                                        value={step.freeGiftName || ''}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'freeGiftName', value)}
-                                        autoComplete="off"
-                                      />
-                                    </FormLayout>
-                                  )}
-
-                                  <Divider />
-
-                                  {/* Default (mandatory) product toggle */}
-                                  <Checkbox
-                                    label="Mandatory default product"
-                                    helpText="A specific variant is pre-selected when the bundle loads. Customers cannot remove it."
-                                    checked={step.isDefault === true}
-                                    onChange={(checked) => {
-                                      stepsState.updateStepField(step.id, 'isDefault', checked);
-                                      if (!checked) stepsState.updateStepField(step.id, 'defaultVariantId', '');
-                                    }}
-                                  />
-
-                                  {step.isDefault && (
-                                    <FormLayout>
-                                      <TextField
-                                        label="Default variant GID"
-                                        placeholder="gid://shopify/ProductVariant/123456789"
-                                        helpText="Paste the Shopify variant GID. It must be one of the products added to this step."
-                                        value={step.defaultVariantId || ''}
-                                        onChange={(value) => stepsState.updateStepField(step.id, 'defaultVariantId', value)}
-                                        autoComplete="off"
-                                      />
-                                      {step.StepProduct && step.StepProduct.length > 0 && (
-                                        <BlockStack gap="100">
-                                          <Text as="p" variant="bodySm" tone="subdued">
-                                            Available variants from products in this step:
-                                          </Text>
-                                          {step.StepProduct.flatMap((sp: any) =>
-                                            (sp.variants || []).map((v: any) => (
-                                              <Button
-                                                key={v.id || v.gid}
-                                                variant="plain"
-                                                size="micro"
-                                                onClick={() => stepsState.updateStepField(step.id, 'defaultVariantId', v.id || v.gid)}
-                                              >
-                                                {sp.title}{v.title && v.title !== 'Default Title' ? ` · ${v.title}` : ''} — {v.id || v.gid}
-                                              </Button>
-                                            ))
-                                          )}
-                                        </BlockStack>
-                                      )}
-                                    </FormLayout>
-                                  )}
-                                </BlockStack>
-
-                          </BlockStack>
-                        </BlockStack>
-                      </Card>
-                      )
-                    ))}
-
-                    {/* Add Tab Button */}
-                    <InlineStack gap="200" align="center">
-                      <Button
-                        variant="primary"
-                        icon={PlusIcon}
-                        onClick={() => {
-                          // Warn if going from 1 → 2 steps while tiers are already active (≥ 2)
-                          const isActivatingMultiStep = stepsState.steps.length === 1;
-                          if (isActivatingMultiStep && tierConfig.length >= 2) {
-                            setStepsTiersWarning({
-                              open: true,
-                              onConfirm: () => {
-                                stepsState.addStep();
-                                setActiveTabIndex(stepsState.steps.length);
-                              },
-                            });
-                            return;
-                          }
-                          stepsState.addStep();
-                          setActiveTabIndex(stepsState.steps.length); // Switch to new tab
-                        }}
-                      >
-                        Add New Tab
-                      </Button>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
+                  </div>
+                ))}
+              </div>
             )}
 
-            {activeSection === "discount_pricing" && (
-              <Card>
-                <BlockStack gap="400">
-                  <BlockStack gap="200">
-                    <Text variant="headingSm" as="h3">
-                      Discount & Pricing
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      Set up to 4 discount rules, applied from lowest to highest.
-                    </Text>
-                  </BlockStack>
+            {activeSection === "free_gift_addons" && (() => {
+              const savedAddonMessages = (bundle as any).personalizationData?.addonProducts?.addonsMessaging?.tier1 || {};
+              const addonMessages = ruleMessages[ADDON_MESSAGE_KEY] || {
+                discountText: savedAddonMessages.ineligibleState || "",
+                successMessage: savedAddonMessages.eligibleState || "",
+              };
 
-                  {/* Discount Enable Toggle - Using Checkbox as toggle */}
-                  <Checkbox
-                    label="Enable discount pricing for this bundle"
-                    checked={pricingState.discountEnabled}
-                    onChange={(value) => pricingState.setDiscountEnabled(value)}
-                    helpText="Turn on to configure discount rules and pricing options"
-                  />
-
-                  {pricingState.discountEnabled && (
-                    <BlockStack gap="400">
-                      {/* Discount Type */}
-                      <Select
-                        label="Discount Type"
-                        options={[...DISCOUNT_METHOD_OPTIONS]}
-                        value={pricingState.discountType}
-                        onChange={(value) => {
-                          pricingState.setDiscountType(value as DiscountMethod);
-                          // Clear existing rules when discount type changes
-                          pricingState.setDiscountRules([]);
-                          // Clear rule messages when discount type changes
-                          setRuleMessages({});
-                        }}
-                      />
-
-                      {/* Discount Rules - New Standardized Structure */}
-                      <BlockStack gap="300">
-                        {pricingState.discountRules.map((rule, index) => (
-                          <Card key={rule.id} background="bg-surface-secondary">
-                            <BlockStack gap="300">
-                              <InlineStack align="space-between" blockAlign="center">
-                                <Text as="h4" variant="bodyMd" fontWeight="medium">
-                                  Rule #{index + 1}
-                                </Text>
-                                <Button
-                                  variant="plain"
-                                  tone="critical"
-                                  onClick={() => pricingState.removeDiscountRule(rule.id)}
-                                >
-                                  Remove
-                                </Button>
-                              </InlineStack>
-
-                              {/* Condition Section */}
-                              <BlockStack gap="200">
-                                <Text as="p" variant="bodyMd" fontWeight="semibold">When:</Text>
-                                <InlineStack gap="200" align="start">
-                                  <Select
-                                    label="Type"
-                                    options={[...DISCOUNT_CONDITION_TYPE_OPTIONS]}
-                                    value={rule.condition.type}
-                                    onChange={(value) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, type: value as any }
-                                    })}
-                                  />
-                                  <Select
-                                    label="Operator"
-                                    options={[...DISCOUNT_OPERATOR_OPTIONS]}
-                                    value={rule.condition.operator}
-                                    onChange={(value) => pricingState.updateDiscountRule(rule.id, {
-                                      condition: { ...rule.condition, operator: value as any }
-                                    })}
-                                  />
-                                  <TextField
-                                    label={rule.condition.type === ConditionType.AMOUNT ? "Amount" : "Quantity"}
-                                    value={String(rule.condition.type === ConditionType.AMOUNT ? centsToAmount(rule.condition.value) : rule.condition.value)}
-                                    onChange={(value) => {
-                                      const numValue = Number(value) || 0;
-                                      const finalValue = rule.condition.type === ConditionType.AMOUNT ? amountToCents(numValue) : numValue;
-                                      pricingState.updateDiscountRule(rule.id, {
-                                        condition: { ...rule.condition, value: finalValue }
-                                      });
-                                    }}
-                                    type="number"
-                                    min="0"
-                                    step={rule.condition.type === ConditionType.AMOUNT ? 0.01 : 1}
-                                    helpText={rule.condition.type === ConditionType.AMOUNT ? "Amount in shop's currency" : undefined}
-                                    autoComplete="off"
-                                  />
-                                </InlineStack>
-                              </BlockStack>
-
-                              {/* Discount Section */}
-                              <BlockStack gap="200">
-                                <Text as="p" variant="bodyMd" fontWeight="semibold">Apply:</Text>
-                                <TextField
-                                  label={
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 'Discount Percentage' :
-                                      rule.discount.method === DiscountMethod.FIXED_AMOUNT_OFF ? 'Discount Amount' :
-                                        'Bundle Price'
-                                  }
-                                  value={String(
-                                    rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? rule.discount.value :
-                                      centsToAmount(rule.discount.value)
-                                  )}
-                                  onChange={(value) => {
-                                    const numValue = Number(value) || 0;
-                                    const finalValue = rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? numValue : amountToCents(numValue);
-                                    pricingState.updateDiscountRule(rule.id, {
-                                      discount: { ...rule.discount, value: finalValue }
-                                    });
-                                  }}
-                                  type="number"
-                                  min="0"
-                                  max={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "100" : undefined}
-                                  step={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? 1 : 0.01}
-                                  suffix={rule.discount.method === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
-                                  helpText={rule.discount.method !== DiscountMethod.PERCENTAGE_OFF ? "Amount in shop's currency" : undefined}
-                                  autoComplete="off"
-                                />
-                              </BlockStack>
-
-                              {/* Preview */}
-                              <Text as="p" variant="bodySm" tone="subdued">
-                                Preview: {generateRulePreview(rule)}
-                              </Text>
-                            </BlockStack>
-                          </Card>
-                        ))}
-
-                        {pricingState.discountRules.length < 4 ? (
-                          <Button
-                            variant="tertiary"
-                            fullWidth
-                            icon={PlusIcon}
-                            onClick={pricingState.addDiscountRule}
-                          >
-                            Add rule
-                          </Button>
-                        ) : (
-                          <Text as="p" variant="bodySm" tone="subdued" alignment="center">
-                            Maximum 4 discount rules reached
-                          </Text>
-                        )}
-                      </BlockStack>
-
-
-                      {/* Discount Messaging */}
-                      <BlockStack gap="300">
-                        <InlineStack align="space-between" blockAlign="center">
-                          <BlockStack gap="100">
-                            <Text variant="headingSm" as="h4">
-                              Discount Messaging
-                            </Text>
-                            <Text as="p" variant="bodyMd" tone="subdued">
-                              Edit how discount messages appear above the subtotal.
-                            </Text>
-                          </BlockStack>
-                          <Tooltip content="Show dynamic discount progress messages in the bundle widget (e.g. 'Add 2 more items to unlock 20% off')">
-                            <Checkbox
-                              label="Discount Messaging"
-                              checked={pricingState.discountMessagingEnabled}
-                              onChange={pricingState.setDiscountMessagingEnabled}
+              return (
+                <div data-tour-target="fpb-free-gift-addons">
+                  <s-stack direction="block" gap="small-100">
+                    <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsReferenceStepCard}`}>
+                      <div className={fullPageBundleStyles.panelHeader}>
+                        <div className={fullPageBundleStyles.addonsTitleCluster}>
+                          <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons and Gifting Step</h3>
+                          <label className={`${fullPageBundleStyles.addonsSwitch} ${fullPageBundleStyles.addonsReferenceSwitch}`}>
+                            <input
+                              type="checkbox"
+                              aria-label="Enable add-ons and gifting step"
+                              checked={addonDraft.isPersonalizationEnabled === true}
+                              onChange={(e) => {
+                                const checked = (e.target as HTMLInputElement).checked;
+                                if (checked) {
+                                  updateAddonDraft({ isPersonalizationEnabled: true });
+                                } else {
+                                  setIsDisableAddonStepModalOpen(true);
+                                }
+                              }}
                             />
-                          </Tooltip>
-                        </InlineStack>
-
-                        {/* Integrated Variables Helper */}
-                        <details>
-                          <summary className={fullPageBundleStyles.helpSummary}>
-                            Show Variables
-                          </summary>
-                          <div className={fullPageBundleStyles.helpContainer}>
-                            {/* Essential Variables */}
-                            <div className={fullPageBundleStyles.helpItem}>
-                              <strong>Essential (Most Used):</strong><br />
-                              <code>{'{{conditionText}}'}</code> - "₹100" or "2 items"<br />
-                              <code>{'{{discountText}}'}</code> - "₹50 off" or "20% off"<br />
-                              <code>{'{{bundleName}}'}</code> - Bundle name
-                            </div>
-
-                            {/* Specific Variables */}
-                            <div className={fullPageBundleStyles.helpItem}>
-                              <strong>Specific:</strong><br />
-                              <code>{'{{amountNeeded}}'}</code> - Amount needed (for spend-based)<br />
-                              <code>{'{{itemsNeeded}}'}</code> - Items needed (for quantity-based)<br />
-                              <code>{'{{progressPercentage}}'}</code> - Progress % (0-100)
-                            </div>
-
-                            {/* Pricing Variables */}
-                            <div className={fullPageBundleStyles.helpItem}>
-                              <strong>Pricing:</strong><br />
-                              <code>{'{{currentAmount}}'}</code> - Current total<br />
-                              <code>{'{{finalPrice}}'}</code> - Price after discount<br />
-                              <code>{'{{savingsAmount}}'}</code> - Amount saved
-                            </div>
-
-                            {/* Quick Examples */}
-                            <div className={fullPageBundleStyles.helpFooter}>
-                              <strong>Quick Examples:</strong><br />
-                              💰 <em>"Add {'{{conditionText}}'} to get {'{{discountText}}'}"</em><br />
-                              📊 <em>"{'{{progressPercentage}}'} % complete - {'{{conditionText}}'} more needed"</em><br />
-                              🎉 <em>"You saved {'{{savingsAmount}}'} on {'{{bundleName}}'}"</em>
+                            <span />
+                          </label>
+                        </div>
+                        <div className={fullPageBundleStyles.addonsHeaderActions}>
+                          <s-button variant="secondary" icon="globe" onClick={openAddonStepMultiLanguageModal}>
+                            Multi Language
+                          </s-button>
+                        </div>
+                      </div>
+                      <div className={`${fullPageBundleStyles.mediaFieldGrid} ${fullPageBundleStyles.addonsMediaFieldGrid}`}>
+                        <div className={fullPageBundleStyles.addonsIconReplaceGroup}>
+                          <div className={fullPageBundleStyles.addonsIconColumn}>
+                            <div className={fullPageBundleStyles.addonsIconBox}>
+                              {addonDraft.stepImage ? (
+                                <img src={addonDraft.stepImage} alt="Add-ons step icon" className={fullPageBundleStyles.iconImg} />
+                              ) : (
+                                <svg
+                                  className={fullPageBundleStyles.addonsGiftBoxDefault}
+                                  viewBox="0 0 48 48"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    d="M10 20H38V40C38 42.2 36.2 44 34 44H14C11.8 44 10 42.2 10 40V20Z"
+                                    fill="#F6F6F7"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M7 15H41V22H7V15Z"
+                                    fill="#FFFFFF"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path d="M24 15V44" stroke="currentColor" strokeWidth="2" />
+                                  <path d="M7 22H41" stroke="currentColor" strokeWidth="2" />
+                                  <path
+                                    d="M24 15C20.7 10.2 17.7 8 15.5 8C13.3 8 11.5 9.8 11.5 12C11.5 14.2 13.3 15 16 15H24Z"
+                                    fill="#FFFFFF"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M24 15C27.3 10.2 30.3 8 32.5 8C34.7 8 36.5 9.8 36.5 12C36.5 14.2 34.7 15 32 15H24Z"
+                                    fill="#FFFFFF"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
                             </div>
                           </div>
-                        </details>
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.addonsReplaceButton}
+                            onClick={() => setShowIconPickerForStep(prev => prev === "addon-direct" ? null : "addon-direct")}
+                          >
+                            {showIconPickerForStep === "addon-direct" ? "Close picker" : "Replace"}
+                          </button>
+                        </div>
+                        <div className={fullPageBundleStyles.addonsStepTextGroup}>
+                          <div className={fullPageBundleStyles.addonsStepNameGroup}>
+                            <s-text-field
+                              label="Step Name"
+                              value={addonDraft.personalizeStepText ?? ""}
+                              placeholder="Add On"
+                              onInput={(e) => {
+                                const value = (e.target as HTMLInputElement).value;
+                                updateAddonDraft({ personalizeStepText: value });
+                              }}
+                              autocomplete="off"
+                            />
+                          </div>
+                          <div className={fullPageBundleStyles.addonsStepTitleGroup}>
+                            <s-text-field
+                              label="Step Title"
+                              value={addonDraft.personalizePageSubtext ?? ""}
+                              onInput={(e) => {
+                                updateAddonDraft({ personalizePageSubtext: (e.target as HTMLInputElement).value });
+                              }}
+                              autocomplete="off"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {showIconPickerForStep === "addon-direct" && (
+                        <div className={fullPageBundleStyles.addonsIconPickerRow}>
+                          <FilePicker
+                            value={addonDraft.stepImage ?? null}
+                            onChange={(url: string | null) => {
+                              updateAddonDraft({ stepImage: url });
+                              setShowIconPickerForStep(null);
+                            }}
+                            label=""
+                            hideCropEditor
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                        {/* Dynamic rule-based messaging */}
-                        {pricingState.discountMessagingEnabled && (Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).length > 0 && (
-                          <BlockStack gap="300">
-                            {(Array.isArray(pricingState.discountRules) ? pricingState.discountRules : []).map((rule: any, index: number) => (
-                              <BlockStack key={rule.id} gap="300">
-                                <Card background="bg-surface-secondary">
-                                  <BlockStack gap="200">
-                                    <Text as="h4" variant="bodyMd" fontWeight="medium">
-                                      Rule #{index + 1} Messages
-                                    </Text>
-                                    <TextField
-                                      label="Discount Text"
-                                      value={ruleMessages[rule.id]?.discountText || 'Add {{conditionText}} to get {{discountText}}'}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'discountText', value)}
-                                      multiline={2}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer is close to qualifying for the discount"
-                                    />
-                                  </BlockStack>
-                                </Card>
+                    <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsCard}`}>
+                      <div className={fullPageBundleStyles.addonsHeaderLine}>
+                        <div className={fullPageBundleStyles.addonsTitleCluster}>
+                          <h3 className={fullPageBundleStyles.panelTitle}>Add-Ons with Bundles</h3>
+                          <label className={`${fullPageBundleStyles.addonsSwitch} ${fullPageBundleStyles.addonsReferenceSwitch}`}>
+                            <input
+                              type="checkbox"
+                              aria-label="Enable add-ons with bundles"
+                              checked={addonDraft.addonProductsEnabled === true}
+                              onChange={(e) => {
+                                updateAddonDraft({ addonProductsEnabled: (e.target as HTMLInputElement).checked });
+                              }}
+                            />
+                            <span />
+                          </label>
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.addonsHelpButton}
+                            onClick={() => window.open(ADDONS_HELP_ARTICLE_URL, "_blank")}
+                          >
+                            How to setup?
+                          </button>
+                        </div>
+                        <div className={fullPageBundleStyles.addonsHeaderActions}>
+                          <s-button variant="secondary" icon="globe" onClick={openAddonSectionMultiLanguageModal}>
+                            Multi Language
+                          </s-button>
+                        </div>
+                      </div>
+                      <p className={fullPageBundleStyles.panelDescription}>
+                        Enable customers to add extra items to their bundles at a discounted price, for free, or at full price.
+                      </p>
+                      <div className={fullPageBundleStyles.addonsFormStack}>
+                        <s-text-field
+                          label="Add on Section title"
+                          value={addonDraft.addonProductsTitle ?? ""}
+                          onInput={(e) => {
+                            updateAddonDraft({ addonProductsTitle: (e.target as HTMLInputElement).value });
+                          }}
+                          autocomplete="off"
+                        />
+                        {(() => {
+                          const addonTiers: any[] = Array.isArray(addonDraft.addonTiers)
+                            ? (addonDraft.addonTiers as any[])
+                            : [createDefaultAddonDraftTier()];
 
-                                <Card background="bg-surface-secondary">
-                                  <BlockStack gap="200">
-                                    <TextField
-                                      label="Success Message"
-                                      value={ruleMessages[rule.id]?.successMessage || 'Congratulations! You got {{discountText}} on {{bundleName}}! 🎉'}
-                                      onChange={(value) => updateRuleMessage(rule.id, 'successMessage', value)}
-                                      multiline={2}
-                                      autoComplete="off"
-                                      helpText="This message appears when the customer qualifies for the discount"
+                          const updateAddonTiers = (updated: any[]) => {
+                            updateAddonDraft({ addonTiers: updated });
+                          };
+                          const getAddonConditions = (tier: any) =>
+                            Array.isArray(tier?.conditions) ? tier.conditions : [];
+                          const addAddonTierCondition = (tierIndex: number) => {
+                            const updated = addonTiers.map((tier, i) => {
+                              if (i !== tierIndex) return tier;
+                              const conditions = getAddonConditions(tier);
+                              const defaultRule = {
+                                ...createDefaultAddonTierCondition(),
+                              };
+                              return {
+                                ...tier,
+                                conditions: [...conditions, defaultRule],
+                              };
+                            });
+                            updateAddonTiers(updated);
+                          };
+                          const removeAddonTierCondition = (tierIndex: number, ruleId: string) => {
+                            const updated = addonTiers.map((tier, i) => {
+                              if (i !== tierIndex) return tier;
+                              const conditions = getAddonConditions(tier);
+                              return {
+                                ...tier,
+                                conditions: conditions.filter((rule: any, idx: number) => String(rule.id ?? idx) !== ruleId),
+                              };
+                            });
+                            updateAddonTiers(updated);
+                          };
+                          const updateAddonTierCondition = (tierIndex: number, ruleId: string, field: string, value: string) => {
+                            const updated = addonTiers.map((tier, i) => {
+                              if (i !== tierIndex) return tier;
+                              const conditions = getAddonConditions(tier);
+                              return {
+                                ...tier,
+                                conditions: conditions.map((rule: any, idx: number) => (
+                                  String(rule.id ?? idx) === ruleId ? { ...rule, [field]: value } : rule
+                                )),
+                              };
+                            });
+                            updateAddonTiers(updated);
+                          };
+
+                              return (
+                                <>
+                                  {addonTiers.map((tier, idx) => {
+                                    const isActiveTier = activeAddonTierIndex === idx;
+
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className={`${fullPageBundleStyles.addonsTierCard} ${isActiveTier ? fullPageBundleStyles.addonsTierCardActive : ""}`}
+                                      >
+                                        <div
+                                          className={`${fullPageBundleStyles.addonsTierHeader} ${isActiveTier ? fullPageBundleStyles.addonsTierHeaderActive : ""}`}
+                                          role="button"
+                                          tabIndex={0}
+                                          aria-expanded={isActiveTier}
+                                          onClick={() => setActiveAddonTierIndex(idx)}
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter" || event.key === " ") {
+                                              event.preventDefault();
+                                              setActiveAddonTierIndex(idx);
+                                            }
+                                          }}
+                                        >
+                                          <h4 className={fullPageBundleStyles.addonsTierTitle}>Tier {idx + 1}</h4>
+                                          <span className={fullPageBundleStyles.addonsTierHeaderActions}>
+                                            <span className={fullPageBundleStyles.addonsTierDeleteButton} title={`Delete Tier ${idx + 1}`}>
+                                              <s-button
+                                                variant="tertiary"
+                                                icon="delete"
+                                                tone="critical"
+                                                accessibilityLabel={`Delete Tier ${idx + 1}`}
+                                                disabled={addonTiers.length <= 1 || undefined}
+                                                onClick={(event) => {
+                                                  event.stopPropagation();
+                                                  if (addonTiers.length > 1) {
+                                                    const updated = addonTiers.filter((_, i) => i !== idx);
+                                                    updateAddonTiers(updated);
+                                                    setActiveAddonTierIndex(Math.max(0, Math.min(activeAddonTierIndex, updated.length - 1)));
+                                                  }
+                                                }}
+                                              />
+                                            </span>
+                                            <span className={fullPageBundleStyles.addonsTierChevron} aria-hidden="true" />
+                                          </span>
+                                        </div>
+                                        {isActiveTier && (
+                                        <div className={fullPageBundleStyles.addonsTierBody}>
+                                          <s-stack direction="block" gap="small">
+                                            <s-text-field
+                                              label="Tier title"
+                                              value={tier.title ?? `Tier ${idx + 1}`}
+                                              onInput={(e) => {
+                                                const updated = addonTiers.map((t, i) =>
+                                                  i === idx ? { ...t, title: (e.target as HTMLInputElement).value } : t
+                                                );
+                                                updateAddonTiers(updated);
+                                              }}
+                                            autocomplete="off"
+                                            />
+                                            <div className={fullPageBundleStyles.addonsProductSelectionRow}>
+                                              <s-button
+                                                variant="primary"
+                                                onClick={() => handleAddonSelectedProductAdd(idx)}
+                                              >
+                                                Add Products
+                                              </s-button>
+                                              {Array.isArray(tier.selectedAddonProducts) && tier.selectedAddonProducts.length > 0 && (
+                                                <button
+                                                  type="button"
+                                                  className={`${fullPageBundleStyles.addonsSelectedCount} ${fullPageBundleStyles.addonsSelectedButton}`}
+                                                  onClick={() => openAddonSelectedProductsModal(idx)}
+                                                >
+                                                  {tier.selectedAddonProducts.length} Selected
+                                                </button>
+                                              )}
+                                            </div>
+                                            <s-checkbox
+                                              label="Display Variants as Individual Products"
+                                              checked={tier.displayVariantsAsIndividualProducts_addons === true || undefined}
+                                              onChange={(e) => {
+                                                const updated = addonTiers.map((t, i) =>
+                                                  i === idx ? { ...t, displayVariantsAsIndividualProducts_addons: (e.target as HTMLInputElement).checked } : t
+                                                );
+                                                updateAddonTiers(updated);
+                                              }}
+                                            />
+                                            <div className={fullPageBundleStyles.addonsDiscountGrid}>
+                                              <s-select
+                                                label="Discount Based on"
+                                                value={tier.eligibilityType || tier.eligibilityCondition?.type || "QUANTITY"}
+                                                onChange={(e) => {
+                                                  const updated = addonTiers.map((t, i) =>
+                                                    i === idx ? { ...t, eligibilityType: (e.target as HTMLSelectElement).value } : t
+                                                  );
+                                                  updateAddonTiers(updated);
+                                                }}
+                                              >
+                                                <s-option value="QUANTITY">Bundle Product Quantity</s-option>
+                                                <s-option value="AMOUNT">Bundle Value</s-option>
+                                              </s-select>
+                                              <s-number-field
+                                                label={(tier.eligibilityType || tier.eligibilityCondition?.type) === "AMOUNT" ? "Value" : "Qty"}
+                                                value={String(tier.eligibilityValue ?? tier.eligibilityCondition?.value ?? 1)}
+                                                onInput={(e) => {
+                                                  const updated = addonTiers.map((t, i) =>
+                                                    i === idx ? { ...t, eligibilityValue: Number((e.target as HTMLInputElement).value) || 0 } : t
+                                                  );
+                                                  updateAddonTiers(updated);
+                                                }}
+                                                min={0}
+                                              />
+                                              <s-number-field
+                                                label="Discount on Add-ons"
+                                                value={String(tier.discountValue ?? tier.discount?.value ?? 0)}
+                                                onInput={(e) => {
+                                                  const updated = addonTiers.map((t, i) =>
+                                                    i === idx ? { ...t, discountType: "PERCENTAGE", discountValue: Number((e.target as HTMLInputElement).value) || 0 } : t
+                                                  );
+                                                  updateAddonTiers(updated);
+                                                }}
+                                                min={0}
+                                                max={100}
+                                                suffix="%"
+                                              />
+                                            </div>
+                                            <div className={fullPageBundleStyles.addonsTierRules}>
+                                              <h5>Tier Rules</h5>
+                                              <p>Create Rules based on quantity of products added on this tier.</p>
+                                              <p>Note: Rules are only valid on this tier.</p>
+                                              {getAddonConditions(tier).length > 0 && (
+                                                <div className={fullPageBundleStyles.rulesList}>
+                                                  {getAddonConditions(tier).map((rule: any, ruleIndex: number) => (
+                                                    <div key={rule.id || ruleIndex} className={fullPageBundleStyles.ruleCard}>
+                                                      <div className={fullPageBundleStyles.ruleHeader}>
+                                                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Rule #{ruleIndex + 1}</h4>
+                                                        <s-button
+                                                          variant="tertiary"
+                                                          tone="critical"
+                                                          onClick={() => removeAddonTierCondition(idx, String(rule.id ?? ruleIndex))}
+                                                        >
+                                                          Remove
+                                                        </s-button>
+                                                      </div>
+                                                      <div className={fullPageBundleStyles.ruleFields}>
+                                                        <s-select
+                                                          label="Type"
+                                                          value={rule.type || "quantity"}
+                                                          onChange={(e) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "type", (e.target as HTMLSelectElement).value)}
+                                                        >
+                                                          <s-option value="quantity">Quantity</s-option>
+                                                          <s-option value="amount">Amount</s-option>
+                                                        </s-select>
+                                                        <s-select
+                                                          label="Condition"
+                                                          value={rule.condition || "lessThanOrEqualTo"}
+                                                          onChange={(e) => updateAddonTierCondition(idx, String(rule.id ?? ruleIndex), "condition", (e.target as HTMLSelectElement).value)}
+                                                        >
+                                                          {[...CATEGORY_CONDITION_OPERATOR_OPTIONS].map(opt => (
+                                                            <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                                                          ))}
+                                                        </s-select>
+                                                        <s-number-field
+                                                          label="Value"
+                                                          value={rule.value ?? ""}
+                                                          onInput={(e) => {
+                                                            updateAddonTierCondition(
+                                                              idx,
+                                                              String(rule.id ?? ruleIndex),
+                                                              "value",
+                                                              (e.target as HTMLInputElement).value
+                                                            );
+                                                          }}
+                                                          autocomplete="off"
+                                                        />
+                                                      </div>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+                                              <div className={fullPageBundleStyles.addonsTierRuleAction}>
+                                                <button
+                                                  type="button"
+                                                  className={fullPageBundleStyles.addonsTierFullWidthButton}
+                                                  onClick={() => addAddonTierCondition(idx)}
+                                                >
+                                                  Add Tier Rule
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </s-stack>
+                                        </div>
+                                      )}
+                                      </div>
+                                    );
+                                  })}
+                              <div className={fullPageBundleStyles.addonsTierAddAction}>
+                                <button
+                                  type="button"
+                                  className={fullPageBundleStyles.addonsTierFullWidthButton}
+                                  onClick={() => {
+                                    updateAddonTiers([...addonTiers, {
+                                      ...createDefaultAddonDraftTier(addonTiers.length),
+                                    }]);
+                                    setActiveAddonTierIndex(addonTiers.length);
+                                  }}
+                                >
+                                  Add Add Ons Tier
+                                </button>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+
+                    <div className={`${fullPageBundleStyles.card} ${fullPageBundleStyles.addonsFooterCard}`}>
+                      <div className={fullPageBundleStyles.panelHeader}>
+                        <h3 className={fullPageBundleStyles.panelTitle}>Footer Messaging</h3>
+                        <s-stack direction="inline" gap="small-100">
+                          <s-button variant="tertiary" onClick={() => setIsAddonVariablesModalOpen(true)}>
+                            Show Variables
+                          </s-button>
+                          <s-button variant="secondary" icon="globe" onClick={openAddonFooterMultiLanguageModal}>
+                            Multi Language
+                          </s-button>
+                        </s-stack>
+                      </div>
+                      <s-stack direction="block" gap="small">
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 650 }}>Tier 1</h4>
+                        <s-text-field
+                          label="Message when rule not met"
+                          value={addonMessages.discountText}
+                          placeholder="Add {{addonsConditionDiff}} more product(s) to claim {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons"
+                          onInput={(e) => {
+                            const value = (e.target as HTMLInputElement).value;
+                            setRuleMessages(prev => ({
+                              ...prev,
+                              [ADDON_MESSAGE_KEY]: {
+                                ...(prev[ADDON_MESSAGE_KEY] || addonMessages),
+                                discountText: value,
+                              },
+                            }));
+                            markAsDirty();
+                          }}
+                          autocomplete="off"
+                        />
+                        <s-text-field
+                          label="Success Message"
+                          value={addonMessages.successMessage}
+                          placeholder="Congrats you are eligible for {{addonsDiscountValue}}{{addonsDiscountValueUnit}} off on Add ons"
+                          onInput={(e) => {
+                            const value = (e.target as HTMLInputElement).value;
+                            setRuleMessages(prev => ({
+                              ...prev,
+                              [ADDON_MESSAGE_KEY]: {
+                                ...(prev[ADDON_MESSAGE_KEY] || addonMessages),
+                                successMessage: value,
+                              },
+                            }));
+                            markAsDirty();
+                          }}
+                          autocomplete="off"
+                        />
+                      </s-stack>
+                    </div>
+                  </s-stack>
+                </div>
+              );
+            })()}
+
+
+            {activeSection === "discount_pricing" && (
+              <div data-tour-target="fpb-discount-pricing">
+              <s-stack direction="block" gap="base">
+              <s-section>
+                <s-stack direction="block" gap="base">
+                  {/* Q1: Header with s-switch */}
+                  <s-stack direction="inline" gap="small">
+                    <s-stack direction="block" gap="small-400" inlineSize="100%">
+                      <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                        Discount &amp; Pricing
+                      </h3>
+                      <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+                        Set up discount rules, applied from lowest to highest.
+                      </p>
+                    </s-stack>
+	                    <s-switch
+	                      accessibilityLabel="Enable discount pricing"
+	                      label="Enable"
+	                      checked={pricingState.discountEnabled || undefined}
+	                      onChange={(e) => pricingState.setDiscountEnabled((e.target as HTMLInputElement).checked)}
+	                    />
+                  </s-stack>
+
+                  <s-banner tone="info">
+                    Tip: Discounts are calculated based on the products in cart, make sure to add the &quot;Default Product&quot; quantity or amount while configuring discounts.
+                  </s-banner>
+
+                  {/* Q2: Discount Type — always visible, grayed when disabled */}
+                  <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? 'auto' : 'none' }}>
+                    <s-select
+                      label="Discount Type"
+                      value={pricingState.discountType}
+                      onChange={(e) => {
+                        const nextDiscountType = (e.target as HTMLSelectElement).value as DiscountMethod;
+                        const nextRule = createNewPricingRule(nextDiscountType);
+                        pricingState.setDiscountType(nextDiscountType);
+                        pricingState.setDiscountRules([nextRule]);
+                        setRuleMessages({});
+                        setRuleMessagesByLocale({});
+                        setGlobalSuccessMessage("");
+                        setSuccessMessageByLocale({});
+                      }}
+                    >
+                      {[...DISCOUNT_METHOD_OPTIONS].map(opt => (
+                        <s-option key={opt.value} value={opt.value}>{opt.label}</s-option>
+                      ))}
+                    </s-select>
+                  </div>
+
+                  {/* Q2: Discount Rules — always visible, grayed when disabled */}
+                  <div style={{ opacity: pricingState.discountEnabled ? 1 : 0.45, pointerEvents: pricingState.discountEnabled ? 'auto' : 'none' }}>
+                    <s-stack direction="block" gap="small">
+                      {pricingState.discountRules.map((rule, index) => (
+                        <div key={rule.id} className={fullPageBundleStyles.discountRuleCard}>
+                          <s-stack direction="block" gap="small">
+                            <div className={fullPageBundleStyles.discountRuleHeader}>
+                              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                                Rule #{index + 1}
+                              </h4>
+                              <s-button
+                                variant="tertiary"
+                                tone="critical"
+                                onClick={() => pricingState.removeDiscountRule(rule.id)}
+                              >
+                                Remove
+                              </s-button>
+                            </div>
+
+                            {pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? (
+                              <div className={fullPageBundleStyles.bxyRuleBody}>
+                                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer buys</p>
+                                <s-number-field
+                                  label="Minimum quantity of items"
+                                  value={String(rule.customerBuys ?? 2)}
+                                  onInput={(e) => pricingState.updateDiscountRule(rule.id, {
+                                    customerBuys: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                  })}
+                                 min={1}
+                                />
+                                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Customer gets</p>
+                                <s-number-field
+                                  label="Quantity"
+                                  value={String(rule.customerGets ?? 1)}
+                                  onInput={(e) => pricingState.updateDiscountRule(rule.id, {
+                                    customerGets: Math.max(1, Number((e.target as HTMLInputElement).value) || 1)
+                                  })}
+                                 min={1}
+                                />
+                                <div className={fullPageBundleStyles.bxyRewardGrid}>
+                                  <s-number-field
+                                    label="Discount value"
+                                    value={String(rule.discountValue ?? 0)}
+                                    onInput={(e) => pricingState.updateDiscountRule(rule.id, {
+                                      discountValue: (() => {
+                                        const nextValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        return (rule.bxyDiscountType ?? 'percentage') === 'percentage'
+                                          ? Math.min(100, Math.max(0, nextValue))
+                                          : Math.max(0, nextValue);
+                                      })()
+                                    })}
+                                   min={0}
+                                    suffix={(rule.bxyDiscountType ?? "percentage") === "percentage" ? "%" : undefined}
+                                    prefix={(rule.bxyDiscountType ?? "percentage") === "fixed_amount" ? "₹" : undefined}
+                                    max={(rule.bxyDiscountType ?? "percentage") === "percentage" ? 100 : undefined}
+                                  />
+                                  <s-select
+                                    label="Discount type"
+                                    value={rule.bxyDiscountType ?? 'percentage'}
+                                    onChange={(e) => {
+                                      const bxyDiscountType = (e.target as HTMLSelectElement).value as 'percentage' | 'fixed_amount';
+                                      const currentValue = Number(rule.discountValue ?? 0) || 0;
+                                      pricingState.updateDiscountRule(rule.id, {
+                                        bxyDiscountType,
+                                        discountValue: bxyDiscountType === 'percentage'
+                                          ? Math.min(100, Math.max(0, currentValue))
+                                          : Math.max(0, currentValue),
+                                      });
+                                    }}
+                                  >
+                                    <s-option value="percentage">% off</s-option>
+                                    <s-option value="fixed_amount">₹ off</s-option>
+                                  </s-select>
+                                  <s-select
+                                    label="Apply Discount to"
+                                    value={rule.bxyApplyMode ?? 'lowest_priced'}
+                                    onChange={(e) => pricingState.updateDiscountRule(rule.id, {
+                                      bxyApplyMode: (e.target as HTMLSelectElement).value as 'lowest_priced' | 'latest_added'
+                                    })}
+                                  >
+                                    <s-option value="lowest_priced">The lowest priced items</s-option>
+                                    <s-option value="latest_added">The latest added items</s-option>
+                                  </s-select>
+                                </div>
+                              </div>
+                            ) : (
+                              <s-stack direction="block" gap="small-100">
+                                {pricingState.discountType === DiscountMethod.FIXED_BUNDLE_PRICE ? (
+                                  <div className={fullPageBundleStyles.discountFieldsRowPair}>
+                                    <s-number-field
+                                      label="Number of Products in Bundle"
+                                      value={String(rule.conditionValue ?? 0)}
+                                      onInput={(e) => pricingState.updateDiscountRule(rule.id, { conditionValue: Number((e.target as HTMLInputElement).value) || 0 })}
+                                     min={0}
                                     />
-                                  </BlockStack>
-                                </Card>
-                              </BlockStack>
+                                    <s-number-field
+                                      label="Price"
+                                      value={String(centsToAmount(rule.discountValue))}
+                                      onInput={(e) => pricingState.updateDiscountRule(rule.id, { discountValue: amountToCents(Number((e.target as HTMLInputElement).value) || 0) })}
+                                     min={0}
+                                      prefix="₹"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className={fullPageBundleStyles.discountFieldsRow}>
+                                    <s-select
+                                      label="Discount on"
+                                      value={rule.conditionType ?? 'quantity'}
+                                      onChange={(e) => pricingState.updateDiscountRule(rule.id, {
+                                        conditionType: (e.target as HTMLSelectElement).value as 'quantity' | 'amount'
+                                      })}
+                                    >
+                                      <s-option value="quantity">Quantity</s-option>
+                                      <s-option value="amount">Amount</s-option>
+                                    </s-select>
+                                    <s-number-field
+                                      label="is greater than or equal to"
+                                      value={String(rule.conditionType === 'amount' ? centsToAmount(rule.conditionValue) : rule.conditionValue)}
+                                      onInput={(e) => {
+                                        const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        const finalValue = rule.conditionType === 'amount' ? amountToCents(numValue) : numValue;
+                                        pricingState.updateDiscountRule(rule.id, { conditionValue: finalValue });
+                                      }}
+                                     min={0}
+                                      prefix={rule.conditionType === 'amount' ? "₹" : undefined}
+                                    />
+                                    <s-number-field
+                                      label={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "Percentage Off" : "Fixed Amount Off"}
+                                      value={String(pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? rule.discountValue : centsToAmount(rule.discountValue))}
+                                      onInput={(e) => {
+                                        const numValue = Number((e.target as HTMLInputElement).value) || 0;
+                                        const finalValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? numValue
+                                          : amountToCents(Math.max(0, numValue));
+                                        const safeValue = pricingState.discountType === DiscountMethod.PERCENTAGE_OFF
+                                          ? Math.min(100, Math.max(0, finalValue))
+                                          : finalValue;
+                                        pricingState.updateDiscountRule(rule.id, {
+                                          discountValue: safeValue,
+                                        });
+                                      }}
+                                     min={0}
+                                      max={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? 100 : undefined}
+                                      suffix={pricingState.discountType === DiscountMethod.PERCENTAGE_OFF ? "%" : undefined}
+                                      prefix={pricingState.discountType !== DiscountMethod.PERCENTAGE_OFF ? "₹" : undefined}
+                                    />
+                                  </div>
+                                )}
+                              </s-stack>
+                            )}
+                          </s-stack>
+                        </div>
+                      ))}
+
+                      {pricingState.discountRules.length < 4 ? (
+                        <s-button
+                          variant="secondary"
+                          icon="plus"
+                          inlineSize="fill"
+                          onClick={pricingState.addDiscountRule}
+                        >
+                          Add rule
+                        </s-button>
+                      ) : (
+                        <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                          Maximum 4 discount rules reached
+                        </p>
+                      )}
+                    </s-stack>
+                  </div>
+                </s-stack>
+              </s-section>
+
+              {/* Discount Display Options */}
+              <s-section>
+                <div className={displayOptionsInactive ? fullPageBundleStyles.displayOptionsInactive : undefined}>
+                  <s-stack direction="block" gap="small">
+                    <s-stack direction="block" gap="small-400">
+                      <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Discount Display Options</h4>
+                      <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                        Choose how discounts are displayed
+                      </p>
+                    </s-stack>
+                    {pricingState.discountType !== DiscountMethod.BUY_X_GET_Y && (
+                    <div className={fullPageBundleStyles.displayOptionRow}>
+                      <s-stack direction="inline" gap="small" alignItems="center" justifyContent="space-between">
+                        <s-stack direction="inline" gap="small" alignItems="center">
+                          <div className={fullPageBundleStyles.displayOptionText}>
+                            <p className={fullPageBundleStyles.displayOptionTitle}>Bundle Quantity Options</p>
+                            <p className={fullPageBundleStyles.displayOptionDescription}>
+                              Configure this section to enable quantity options.
+                            </p>
+                          </div>
+                          <s-switch
+                            checked={pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled || undefined}
+                            disabled={!bundleQuantityOptionsEligible || undefined}
+                            onChange={(e) => pricingState.setBundleQuantityOptionsEnabled((e.target as HTMLInputElement).checked)}
+                          />
+                        </s-stack>
+                        <s-button
+                          variant="secondary"
+                          icon="globe"
+                          disabled={!pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled || shopLocales.length === 0 || undefined}
+                          onClick={() => setIsBundleQuantityMultiLangModalOpen(true)}
+                        >
+                          Multi Language
+                        </s-button>
+                      </s-stack>
+                      <p className={fullPageBundleStyles.optionNote}>
+                        <strong>Note:</strong> Bundle Quantity Options can only be enabled when discount rules are based on quantity.
+                      </p>
+                      {pricingState.pricingDisplayOptions.bundleQuantityOptions.enabled && (
+                        <div className={fullPageBundleStyles.nestedDisplayOptions}>
+                        <s-stack direction="block" gap="small">
+                          {normalizedPricingDisplayOptions.bundleQuantityOptions.options.length === 0 ? (
+                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                              Add quantity-based discount rules to configure bundle quantity options.
+                            </p>
+                          ) : normalizedPricingDisplayOptions.bundleQuantityOptions.options.map((option, index) => (
+                            <div key={option.ruleId} className={fullPageBundleStyles.discountRuleCard}>
+                              <s-stack direction="block" gap="small-100">
+                                <s-stack direction="inline" gap="small" alignItems="center">
+                                  <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600, flex: 1 }}>
+                                    Rule #{index + 1}
+                                  </h5>
+                                  <s-button
+                                    variant="tertiary"
+                                    accessibilityLabel="Make this rule default"
+                                    onClick={() => pricingState.setBundleQuantityDefaultRule(option.ruleId)}
+                                  >
+                                    {option.isDefault ? "\u2605" : "\u2606"} Make this rule default
+                                  </s-button>
+                                </s-stack>
+                                {option.compatibility.status === "blocked" && (
+                                  <p style={{ margin: 0, fontSize: 12, color: "#8a6116" }}>
+                                    {option.compatibility.reason}
+                                  </p>
+                                )}
+                                <s-stack direction="inline" gap="small">
+                                  <s-text-field
+                                    label="Box Label"
+                                    value={option.label}
+                                    onInput={(e) => pricingState.updateBundleQuantityOption(option.ruleId, {
+                                      label: (e.target as HTMLInputElement).value,
+                                    })}
+                          autocomplete="off"
+                                  />
+                                  <s-text-field
+                                    label="Box Subtext"
+                                    value={option.subtext}
+                                    onInput={(e) => pricingState.updateBundleQuantityOption(option.ruleId, {
+                                      subtext: (e.target as HTMLInputElement).value,
+                                    })}
+                          autocomplete="off"
+                                  />
+                                </s-stack>
+                              </s-stack>
+                            </div>
+                          ))}
+                        </s-stack>
+                        </div>
+                      )}
+                    </div>
+                    )}
+                    <div className={fullPageBundleStyles.displayOptionRow}>
+                      <s-stack direction="inline" gap="small" alignItems="center" justifyContent="space-between">
+                        <s-stack direction="inline" gap="small" alignItems="center">
+                          <div className={fullPageBundleStyles.displayOptionText}>
+                            <p className={fullPageBundleStyles.displayOptionTitle}>Progress Bar</p>
+                            <p className={fullPageBundleStyles.displayOptionDescription}>
+                              Edit the progress bar content and settings.
+                            </p>
+                          </div>
+                          <s-switch
+                            checked={pricingState.showDiscountProgressBar || undefined}
+                            onChange={(e) => pricingState.setShowDiscountProgressBar((e.target as HTMLInputElement).checked)}
+                          />
+                        </s-stack>
+                        <s-button
+                          variant="secondary"
+                          icon="globe"
+                          disabled={!pricingState.showDiscountProgressBar || (pricingState.pricingDisplayOptions.progressBar.type || "step_based") !== "step_based" || shopLocales.length === 0 || undefined}
+                          onClick={() => setIsProgressBarMultiLangModalOpen(true)}
+                        >
+                          Multi Language
+                        </s-button>
+                      </s-stack>
+                    {pricingState.showDiscountProgressBar && (
+                      <div className={fullPageBundleStyles.nestedDisplayOptions}>
+                      <s-stack direction="block" gap="small">
+                        <s-choice-list
+                          label="Progress bar type"
+                          labelAccessibilityVisibility="exclusive"
+                          values={[pricingState.pricingDisplayOptions.progressBar.type || "step_based"]}
+                          onChange={(e) => {
+                            const val = ((e.currentTarget as any).values as string[] | undefined)?.[0];
+                            if (val) pricingState.setProgressBarType(val as "simple" | "step_based");
+                          }}
+                        >
+                          <s-choice value="simple">Simple Bar</s-choice>
+                          <s-choice value="step_based">Step-Based Bar</s-choice>
+                        </s-choice-list>
+                        {(pricingState.pricingDisplayOptions.progressBar.type || "step_based") === "step_based" ? (
+                          <s-stack direction="block" gap="small">
+                            {pricingState.discountRules.length === 0 ? (
+                              <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+                            ) : pricingState.discountRules.map((rule, index) => (
+                              <div key={rule.id} className={fullPageBundleStyles.discountRuleCard}>
+                                <s-stack direction="block" gap="small-100">
+                                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Rule #{index + 1}</p>
+                                  <s-stack direction="inline" gap="small">
+                                    <s-text-field
+                                      label="Tier Text"
+                                      value={tierTextByRuleId[rule.id]?.tierText ?? ""}
+                                      onInput={(e) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: val, tierSubtext: prev[rule.id]?.tierSubtext ?? "" } }));
+                                        markAsDirty();
+                                      }}
+                          autocomplete="off"
+                                    />
+                                    <s-text-field
+                                      label="Tier Subtext"
+                                      value={tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                                      onInput={(e) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        setTierTextByRuleId(prev => ({ ...prev, [rule.id]: { tierText: prev[rule.id]?.tierText ?? "", tierSubtext: val } }));
+                                        markAsDirty();
+                                      }}
+                          autocomplete="off"
+                                    />
+                                  </s-stack>
+                                </s-stack>
+                              </div>
                             ))}
-                          </BlockStack>
+                          </s-stack>
+                        ) : null}
+                      </s-stack>
+                      </div>
+                    )}
+                    </div>
+                    <div className={fullPageBundleStyles.displayOptionRow}>
+                      <s-stack direction="inline" gap="small" alignItems="center" justifyContent="space-between">
+                        <s-stack direction="inline" gap="small" alignItems="center">
+                          <div className={fullPageBundleStyles.displayOptionText}>
+                            <p className={fullPageBundleStyles.displayOptionTitle}>Discount Messaging</p>
+                            <p className={fullPageBundleStyles.displayOptionDescription}>
+                              Edit how discount messages appear above the subtotal.
+                            </p>
+                          </div>
+                          <s-switch
+                            checked={pricingState.discountMessagingEnabled || undefined}
+                            onChange={(e) => pricingState.setDiscountMessagingEnabled((e.target as HTMLInputElement).checked)}
+                          />
+                        </s-stack>
+                        {shopLocales.length > 0 && (
+                          <s-checkbox
+                            label="Enable multi-language"
+                            checked={discountMessagingMultiLanguageEnabled || undefined}
+                            disabled={!pricingState.discountMessagingEnabled || undefined}
+                            onChange={(e) => {
+                              setDiscountMessagingMultiLanguageEnabled((e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
+                          />
                         )}
-
-                        {/* Show message when no rules exist */}
-                        {pricingState.discountMessagingEnabled && pricingState.discountRules.length === 0 && (
-                          <Card background="bg-surface-secondary">
-                            <BlockStack gap="200" inlineAlign="center">
-                              <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
-                                Add discount rules to configure messaging
-                              </Text>
-                            </BlockStack>
-                          </Card>
+                      </s-stack>
+                    {pricingState.discountType === DiscountMethod.BUY_X_GET_Y && (
+                      <s-banner tone="info">
+                        Discount messaging displays the Total Quantity to Claim Offer (Buy + Get) to ensure customers add their rewards to the cart
+                      </s-banner>
+                    )}
+                    {pricingState.discountMessagingEnabled && (
+                      <div className={fullPageBundleStyles.nestedDisplayOptions}>
+                      <s-stack direction="block" gap="small">
+                        {discountMessagingMultiLanguageEnabled && shopLocales.length > 0 && (
+                          <s-stack direction="block" gap="small-100">
+                            <s-select
+                              label="Language"
+                              value={activeDiscountLocale}
+                              onChange={(e) => {
+                                const locale = (e.target as HTMLSelectElement).value;
+                                setActiveDiscountLocale(locale);
+                                const primaryLocale = shopLocales.find((l: any) => l.primary)?.locale ?? "en";
+                                if (locale !== primaryLocale && !ruleMessagesByLocale[locale]) {
+                                  setRuleMessagesByLocale(prev => ({ ...prev, [locale]: normalizedRuleMessages }));
+                                  markAsDirty();
+                                }
+                              }}
+                            >
+                              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+                              ))}
+                            </s-select>
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Active languages</p>
+                            <s-stack direction="inline" gap="small-100" >
+                              {shopLocales.filter((l: any) => l.primary).map((l: any) => (
+                                <s-chip key={l.locale}>{l.name}</s-chip>
+                              ))}
+                              {Object.keys(ruleMessagesByLocale)
+                                .filter(locale => !shopLocales.find((l: any) => l.locale === locale && l.primary))
+                                .map(locale => {
+                                  const locName = shopLocales.find((l: any) => l.locale === locale)?.name ?? locale;
+                                  return <s-chip key={locale}>{locName}</s-chip>;
+                                })}
+                            </s-stack>
+                          </s-stack>
                         )}
-                      </BlockStack>
-                    </BlockStack>
-                  )}
-                </BlockStack>
-              </Card>
+                        <div style={{ textAlign: "right" }}>
+                          <s-button variant="tertiary" onClick={() => setIsDiscountVariablesModalOpen(true)}>
+                            Show Variables
+                          </s-button>
+                        </div>
+                                {pricingState.discountRules.length > 0 ? (
+                                  <s-stack direction="block" gap="small">
+                                    {pricingState.discountRules.map((rule: any, index: number) => {
+                                      const localeMessages = discountMessagingMultiLanguageEnabled
+                                        ? (ruleMessagesByLocale[activeDiscountLocale]?.[rule.id] ?? normalizedRuleMessages[rule.id])
+                                        : normalizedRuleMessages[rule.id];
+                                      const defaultDiscountText = getDefaultDiscountRuleText(pricingState.discountType, index);
+                                      return (
+                                <div key={rule.id} className={fullPageBundleStyles.discountRuleCard}>
+                                  <s-stack direction="block" gap="small">
+                                    <h5 style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</h5>
+                                    <s-text-field
+                                      label="Discount Text"
+                                      value={localeMessages?.discountText || defaultDiscountText}
+                                      onInput={(e) => {
+                                        const val = (e.target as HTMLInputElement).value;
+                                        if (discountMessagingMultiLanguageEnabled) {
+                                          setRuleMessagesByLocale(prev => ({
+                                            ...prev,
+                                            [activeDiscountLocale]: {
+                                              ...(prev[activeDiscountLocale] || {}),
+                                              [rule.id]: { ...(prev[activeDiscountLocale]?.[rule.id] || {}), discountText: val },
+                                            },
+                                          }));
+                                          markAsDirty();
+                                        } else {
+                                          updateRuleMessage(rule.id, "discountText", val);
+                                        }
+                                      }}
+                          autocomplete="off"
+                                    />
+                                  </s-stack>
+                                </div>
+                              );
+                            })}
+                            <s-section>
+                              <s-stack direction="block" gap="small">
+                                <s-text-field
+                                  label="Success Message"
+                                  value={(() => {
+                                    const defaultMsg = getDefaultDiscountRuleSuccessMessage(pricingState.discountType);
+                                    const val = discountMessagingMultiLanguageEnabled
+                                      ? (successMessageByLocale[activeDiscountLocale] ?? globalSuccessMessage)
+                                      : globalSuccessMessage;
+                                    return val || defaultMsg;
+                                  })()}
+                                  onInput={(e) => {
+                                    const val = (e.target as HTMLInputElement).value;
+                                    if (discountMessagingMultiLanguageEnabled) {
+                                      setSuccessMessageByLocale(prev => ({ ...prev, [activeDiscountLocale]: val }));
+                                    } else {
+                                      setGlobalSuccessMessage(val);
+                                    }
+                                    markAsDirty();
+                                  }}
+                          autocomplete="off"
+                                />
+                              </s-stack>
+                            </s-section>
+                          </s-stack>
+                        ) : (
+                          <s-section>
+                            <p style={{ margin: 0, fontSize: 14, color: "#6d7175", textAlign: "center" }}>
+                              Add discount rules to configure messaging.
+                            </p>
+                          </s-section>
+                        )}
+                      </s-stack>
+                      </div>
+                    )}
+                    </div>
+                  </s-stack>
+                </div>
+              </s-section>
+              </s-stack>
+              </div>
             )}
 
-            {activeSection === "images_gifs" && (
-              <BlockStack gap="400">
-                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={ImageIcon} tone="subdued" />
-                    <BlockStack gap="0">
-                      <Text variant="headingSm" fontWeight="semibold" as="p">Media Assets</Text>
-                      <Text variant="bodyXs" tone="subdued" as="p">
+            {(activeSection === "images_gifs" || activeSection === "bundle_visibility") && (
+              <div data-tour-target="fpb-design-settings">
+              <s-stack direction="block" gap="base">
+                {activeSection === "bundle_visibility" && (
+                  <div className={fullPageBundleStyles.visibilityOverviewStack}>
+                    <div className={fullPageBundleStyles.visibilityOverviewCard}>
+                      <div className={fullPageBundleStyles.visibilityCardHeaderRow}>
+                        <div>
+                          <h3 className={fullPageBundleStyles.visibilityCardTitle}>App Embed Status</h3>
+                          <p className={fullPageBundleStyles.visibilityCardText}>
+                            {appEmbedEnabled
+                              ? "Your store is connected and ready. Your bundle can now render on your storefront."
+                              : "Enable the Theme app extension for Wolfpack Bundles to place and preview the bundle."}
+                          </p>
+                        </div>
+                        <div className={appEmbedEnabled ? fullPageBundleStyles.visibilityStatusEnabled : fullPageBundleStyles.visibilityStatusWarning}>
+                          {appEmbedEnabled ? "Enabled" : "Not enabled"}
+                        </div>
+                      </div>
+                      {!appEmbedEnabled && themeEditorUrl && (
+                        <button type="button" className={fullPageBundleStyles.visibilitySecondaryAction} onClick={() => window.open(themeEditorUrl, "_blank")}>
+                          Enable here
+                        </button>
+                      )}
+                    </div>
+
+                    <div className={fullPageBundleStyles.visibilityOverviewCard}>
+                      <div className={fullPageBundleStyles.visibilitySectionIntro}>
+                        <h3 className={fullPageBundleStyles.visibilityCardTitle}>Publishing Best Practices</h3>
+                        <p className={fullPageBundleStyles.visibilityCardText}>
+                        Pick a placement and follow the quick guide to make your bundle discoverable on your store.
+                        </p>
+                      </div>
+                      <div className={fullPageBundleStyles.visibilityGuideGrid}>
+                        {[
+                          { title: "Hero Banner",           desc: "Add a button to your homepage hero to drive shoppers directly to your bundle.",      img: "/Hero-Banner.png",            guide: "Copy your bundle link, open the theme editor, add or select an image banner, set the button label and link, then save." },
+                          { title: "Navigation Menu",       desc: "Add your bundle as a nav link so shoppers can find it from anywhere on your store.", img: "/Navigation-Menu.png",        guide: "Copy your bundle link, open Content > Menus, add the bundle as a main-menu item, then save the menu." },
+                          { title: "Announcement Banner",   desc: "Show your offer in the announcement bar so visitors see it instantly.",               img: "/Announcement-Bar.png",      guide: "Copy your bundle link, open the theme editor, enable the announcement bar, add offer copy and the bundle link, then save." },
+                          { title: "Featured Product Card", desc: "Feature your bundle product on your homepage so shoppers find it right away.",        img: "/floatingCardThumbnail.png", guide: "Add the bundle product to a collection, open the theme editor, select Featured Collection, choose that collection, lower the max product count, then save." },
+                        ].map(({ title, desc: description, img, guide }) => (
+                          <div key={title} className={fullPageBundleStyles.visibilityGuideCard}>
+                            <div className={fullPageBundleStyles.visibilityGuideMedia}>
+                              <img src={img} alt={title} />
+                            </div>
+                            <div className={fullPageBundleStyles.visibilityGuideBody}>
+                              <h4 className={fullPageBundleStyles.visibilityGuideTitle}>{title}</h4>
+                              <p className={fullPageBundleStyles.visibilityGuideDescription}>{description}</p>
+                              <div className={fullPageBundleStyles.visibilityGuideFooter}>
+                                <details>
+                                  <summary className={fullPageBundleStyles.visibilityGuideAction}>Quick Setup Guide</summary>
+                                  <p className={fullPageBundleStyles.visibilityGuideDescription}>{guide}</p>
+                                </details>
+                                <span className={fullPageBundleStyles.visibilitySetupTime}>5 min setup</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={fullPageBundleStyles.visibilityOverviewCard}>
+                      <div className={fullPageBundleStyles.visibilitySectionIntro}>
+                        <h3 className={fullPageBundleStyles.visibilityCardTitle}>Your Bundle Link</h3>
+                        <p className={fullPageBundleStyles.visibilityCardText}>
+                          Use this link to place your bundle anywhere - theme components, emails, ads, or social bios.
+                        </p>
+                      </div>
+                      <div className={fullPageBundleStyles.visibilityLinkRow}>
+                        <input
+                          className={fullPageBundleStyles.visibilityTextInput}
+                          aria-label="Bundle link"
+                          value={bundlePageUrl}
+                          disabled
+                          readOnly
+                        />
+                        {bundle.shopifyPageHandle && (
+                          <>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.visibilitySecondaryAction}
+                              onClick={() => {
+                                void navigator.clipboard?.writeText(bundlePageUrl);
+                                shopify.toast.show("Bundle link copied", { isError: false });
+                              }}
+                            >
+                              Copy Link
+                            </button>
+                            <button
+                              type="button"
+                              className={fullPageBundleStyles.visibilityPlainAction}
+                              onClick={() => window.open(bundlePageUrl, '_blank')}
+                            >
+                              View on Storefront
+                            </button>
+                          </>
+                        )}
+                        {!bundle.shopifyPageHandle && (
+                          <button
+                            type="button"
+                            className={fullPageBundleStyles.visibilityPrimaryAction}
+                            onClick={handleAddToStorefront}
+                            disabled={Boolean(pageSlugError) || isInstallingWidget}
+                          >
+                            {isInstallingWidget ? "Creating..." : "Create Page"}
+                          </button>
+                        )}
+                      </div>
+                      <label className={fullPageBundleStyles.visibilityFieldLabel}>
+                        <span>Page URL slug</span>
+                        <input
+                          className={fullPageBundleStyles.visibilityTextInput}
+                          value={pageSlug}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            setPageSlug(e.target.value);
+                            setHasManuallyEditedSlug(true);
+                            markAsDirty();
+                          }}
+                          onBlur={() => setPageSlug(slugify(pageSlug))}
+                        />
+                      </label>
+                      {pageSlugError && <p className={fullPageBundleStyles.visibilityCardText}>{pageSlugError}</p>}
+                    </div>
+
+                    <div className={fullPageBundleStyles.visibilityOverviewCard}>
+                      <h3 className={fullPageBundleStyles.visibilityCardTitle}>Want more placement options?</h3>
+                      <div className={fullPageBundleStyles.visibilitySetupPanel}>
+                        <div>
+                          <h4 className={fullPageBundleStyles.visibilitySetupTitle}>Bundle Widget</h4>
+                          <p className={fullPageBundleStyles.visibilityCardText}>
+                            This will display an upsell block or button on the product pages of your choice.
+                          </p>
+                        </div>
+                        <button type="button" className={fullPageBundleStyles.visibilityPrimaryAction} onClick={() => handleSectionChange("bundle_widget")}>
+                          Set up Bundle Widget
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeSection === "images_gifs" && (
+                <>
+                <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                  <s-stack direction="inline" gap="small-100">
+                    <s-icon type="upload" />
+                    <s-stack direction="block">
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Media Assets</p>
+                      <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                         Add visual media to enhance the bundle experience for shoppers.
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </Box>
+                      </p>
+                    </s-stack>
+                  </s-stack>
+                </div>
 
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Icon source={ImageIcon} tone="base" />
-                        <BlockStack gap="100">
-                          <Text variant="headingSm" fontWeight="semibold" as="p">Promo Banner</Text>
-                          <Text variant="bodyXs" tone="subdued" as="p">Wide banner displayed at the top of the full-page bundle</Text>
-                        </BlockStack>
-                      </InlineStack>
-                      <Badge tone="info">Page header</Badge>
-                    </InlineStack>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <s-stack direction="inline">
+                      <s-stack direction="inline" gap="small" inlineSize="100%">
+                        <s-icon type="upload" />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Promo Banner</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Wide banner displayed at the top of the full-page bundle</p>
+                        </s-stack>
+                      </s-stack>
+                      <s-badge tone="info">Page header</s-badge>
+                    </s-stack>
 
-                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                      <InlineStack gap="600">
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
-                          <Text variant="bodySm" as="p">JPG, PNG, WebP, GIF, SVG, AVIF</Text>
-                        </BlockStack>
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">1600 × 400 px · 4:1 ratio</Text>
-                        </BlockStack>
-                      </InlineStack>
-                    </Box>
+                    <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                      <s-stack direction="inline" gap="large">
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>FORMAT</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>JPG, PNG, WebP, GIF, SVG, AVIF</p>
+                        </s-stack>
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>RECOMMENDED SIZE</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>1600 × 400 px · 4:1 ratio</p>
+                        </s-stack>
+                      </s-stack>
+                    </div>
 
-                    <Divider />
+                    <s-divider />
 
                     <FilePicker
                       value={promoBannerBgImage}
@@ -2219,39 +5031,44 @@ export default function ConfigureBundleFlow() {
                         markAsDirty();
                       }}
                     />
-                  </BlockStack>
-                </Card>
+                  </s-stack>
+                </s-section>
 
                 {stepsState.steps.length > 0 && (
-                  <Card>
-                    <BlockStack gap="400">
-                      <InlineStack align="space-between" blockAlign="center">
-                        <InlineStack gap="300" blockAlign="center">
-                          <Icon source={ImageIcon} tone="base" />
-                          <BlockStack gap="100">
-                            <Text variant="headingSm" fontWeight="semibold" as="p">Step Images</Text>
-                            <Text variant="bodyXs" tone="subdued" as="p">Tab icon and banner image per step — shown in the widget</Text>
-                          </BlockStack>
-                        </InlineStack>
-                        <Badge tone="info">Per step</Badge>
-                      </InlineStack>
+                  <s-section>
+                    <s-stack direction="block" gap="base">
+                      <s-stack direction="inline">
+                        <s-stack direction="inline" gap="small" inlineSize="100%">
+                          <s-icon type="upload" />
+                          <s-stack direction="block" gap="small-400">
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Images</p>
+                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Tab icon and banner image per step — shown in the widget</p>
+                          </s-stack>
+                        </s-stack>
+                        <s-badge tone="info">Per step</s-badge>
+                      </s-stack>
 
-                      <Tabs
-                        tabs={stepsState.steps.map((step, index) => ({
-                          id: `asset-step-${step.id}`,
-                          content: step.name || `Step ${index + 1}`,
-                        }))}
-                        selected={activeAssetTabIndex}
-                        onSelect={setActiveAssetTabIndex}
-                      />
+                      <div>
+                        <div className={fullPageBundleStyles.tabRow}>
+                          {stepsState.steps.map((step, i) => (
+                            <button
+                              key={`asset-step-${step.id}`}
+                              onClick={() => setActiveAssetTabIndex(i)}
+                              className={activeAssetTabIndex === i ? fullPageBundleStyles.tabActive : fullPageBundleStyles.tab}
+                            >
+                              {step.name || `Step ${i + 1}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
                       {stepsState.steps.map((step, index) => activeAssetTabIndex === index && (
-                        <BlockStack key={step.id} gap="400">
-                          <BlockStack gap="200">
-                            <BlockStack gap="100">
-                              <Text variant="bodySm" fontWeight="semibold" as="p">Tab Icon</Text>
-                              <Text variant="bodyXs" tone="subdued" as="p">Circular icon in the step tab. Replaces the step number when set. Recommended: 100 × 100 px square.</Text>
-                            </BlockStack>
+                        <s-stack key={step.id} direction="block" gap="base">
+                          <s-stack direction="block" gap="small-100">
+                            <s-stack direction="block" gap="small-400">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Tab Icon</p>
+                              <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Circular icon in the step tab. Replaces the step number when set. Recommended: 100 × 100 px square.</p>
+                            </s-stack>
                             <FilePicker
                               label="Choose tab icon"
                               hideCropEditor
@@ -2261,15 +5078,15 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                             />
-                          </BlockStack>
+                          </s-stack>
 
-                          <Divider />
+                          <s-divider />
 
-                          <BlockStack gap="200">
-                            <BlockStack gap="100">
-                              <Text variant="bodySm" fontWeight="semibold" as="p">Step Banner Image</Text>
-                              <Text variant="bodyXs" tone="subdued" as="p">Full-width image above the product grid when this step is active. Recommended: 1600 × 400 px.</Text>
-                            </BlockStack>
+                          <s-stack direction="block" gap="small-100">
+                            <s-stack direction="block" gap="small-400">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Step Banner Image</p>
+                              <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Full-width image above the product grid when this step is active. Recommended: 1600 × 400 px.</p>
+                            </s-stack>
                             <FilePicker
                               label="Choose banner image"
                               hideCropEditor
@@ -2279,42 +5096,43 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                             />
-                          </BlockStack>
-                        </BlockStack>
+                          </s-stack>
+                        </s-stack>
                       ))}
-                    </BlockStack>
-                  </Card>
+                    </s-stack>
+                  </s-section>
                 )}
 
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Icon source={RefreshIcon} tone="magic" />
-                        <BlockStack gap="100">
-                          <Text variant="headingSm" fontWeight="semibold" as="p">Loading Animation</Text>
-                          <Text variant="bodyXs" tone="subdued" as="p">Overlay shown while bundle content is loading</Text>
-                        </BlockStack>
-                      </InlineStack>
-                      <Tooltip content="This setting controls the loading animation visible to shoppers on your storefront">
-                        <Badge tone="magic">Storefront</Badge>
-                      </Tooltip>
-                    </InlineStack>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <s-stack direction="inline">
+                      <s-stack direction="inline" gap="small" inlineSize="100%">
+                        <s-icon type="clock" />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Loading Animation</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Overlay shown while bundle content is loading</p>
+                        </s-stack>
+                      </s-stack>
+                      <RichHelpTooltip
+                        label="Storefront"
+                        tooltipKey="loadingAnimation"
+                      />
+                    </s-stack>
 
-                    <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                      <InlineStack gap="600">
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">FORMAT</Text>
-                          <Text variant="bodySm" as="p">GIF only</Text>
-                        </BlockStack>
-                        <BlockStack gap="100">
-                          <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">RECOMMENDED SIZE</Text>
-                          <Text variant="bodySm" as="p">Max 150 × 150 px</Text>
-                        </BlockStack>
-                      </InlineStack>
-                    </Box>
+                    <div style={{ padding: "var(--s-space-400)", background: "var(--s-color-bg-surface-secondary, #f6f6f7)", borderRadius: 8 }}>
+                      <s-stack direction="inline" gap="large">
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>FORMAT</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>GIF only</p>
+                        </s-stack>
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>RECOMMENDED SIZE</p>
+                          <p style={{ margin: 0, fontSize: 14 }}>Max 150 × 150 px</p>
+                        </s-stack>
+                      </s-stack>
+                    </div>
 
-                    <Divider />
+                    <s-divider />
 
                     <FilePicker
                       label="Choose loading GIF"
@@ -2327,368 +5145,1239 @@ export default function ConfigureBundleFlow() {
                     />
 
                     {loadingGif && (
-                      <BlockStack gap="200">
-                        <Text variant="bodyXs" fontWeight="semibold" tone="subdued" as="p">PREVIEW</Text>
+                      <s-stack direction="block" gap="small-100">
+                        <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
                         <img
                           src={loadingGif}
                           alt="Loading animation preview"
                           style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
                         />
-                      </BlockStack>
+                      </s-stack>
                     )}
-                  </BlockStack>
-                </Card>
+                  </s-stack>
+                </s-section>
 
-                <Card>
-                  <BlockStack gap="400">
-                    <InlineStack align="space-between" blockAlign="center">
-                      <InlineStack gap="300" blockAlign="center">
-                        <Icon source={DiscountIcon} tone="base" />
-                        <BlockStack gap="100">
-                          <Text variant="headingSm" fontWeight="semibold" as="p">Floating Promo Badge</Text>
-                          <Text variant="bodyXs" tone="subdued" as="p">Fixed badge at bottom-left of the page — session-dismissed when shopper clicks X</Text>
-                        </BlockStack>
-                      </InlineStack>
-                      <Badge tone="magic">Storefront</Badge>
-                    </InlineStack>
+                <s-section>
+                  <s-stack direction="block" gap="base">
+                    <s-stack direction="inline">
+                      <s-stack direction="inline" gap="small" inlineSize="100%">
+                        <s-icon type="note" />
+                        <s-stack direction="block" gap="small-400">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Floating Promo Badge</p>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Fixed badge at bottom-left of the page — session-dismissed when shopper clicks X</p>
+                        </s-stack>
+                      </s-stack>
+                      <s-badge tone="info">Storefront</s-badge>
+                    </s-stack>
 
-                    <Checkbox
-                      label="Show floating promo badge"
-                      checked={floatingBadgeEnabled}
-                      onChange={(val) => { setFloatingBadgeEnabled(val); markAsDirty(); }}
-                    />
+	                    <s-checkbox
+	                      label="Show floating promo badge"
+	                      checked={floatingBadgeEnabled || undefined}
+	                      onChange={(e) => { setFloatingBadgeEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+	                    />
 
                     {floatingBadgeEnabled && (
-                      <TextField
+                      <s-text-field
                         label="Badge text"
                         value={floatingBadgeText}
-                        onChange={(val) => { setFloatingBadgeText(val.slice(0, 60)); markAsDirty(); }}
-                        maxLength={60}
-                        showCharacterCount
+                        onInput={(e) => { setFloatingBadgeText((e.target as HTMLInputElement).value.slice(0, 60)); markAsDirty(); }}
                         placeholder="e.g. Save 20% today only!"
-                        autoComplete="off"
-                        helpText="Shown in the badge. Max 60 characters."
+                          autocomplete="off"
                       />
                     )}
-                  </BlockStack>
-                </Card>
-              </BlockStack>
+                  </s-stack>
+                </s-section>
+                </>
+                )}
+              </s-stack>
+              </div>
             )}
 
-            {activeSection === "pricing_tiers" && bundle.bundleType === "full_page" && (
-              <BlockStack gap="400">
-                <Box background="bg-surface-secondary" padding="300" borderRadius="200">
-                  <InlineStack gap="200" blockAlign="center">
-                    <Icon source={DiscountIcon} tone="subdued" />
-                    <BlockStack gap="0">
-                      <Text variant="headingSm" fontWeight="semibold" as="p">Pricing Tiers</Text>
-                      <Text variant="bodyXs" tone="subdued" as="p">
-                        Let shoppers switch between different bundle price points on the same page.
-                      </Text>
-                    </BlockStack>
-                  </InlineStack>
-                </Box>
+            {activeSection === "bundle_settings" && (() => {
+              const settingsStep = stepsState.steps[activeTabIndex] || stepsState.steps[0];
+              const individualSellingPlanBlocked = pricingState.discountType === DiscountMethod.BUY_X_GET_Y;
 
-                <PricingTiersSection
-                  tiers={tierConfig}
-                  availableBundles={availableBundles}
-                  currentBundleId={bundle.id}
-                  showStepTimeline={showStepTimeline}
-                  onShowStepTimelineChange={(val) => {
-                    setShowStepTimeline(val);
-                    markAsDirty();
-                  }}
-                  stepsCount={stepsState.steps.length}
-                  onStepsTiersConflictWarning={(onConfirm) => {
-                    setStepsTiersWarning({ open: true, onConfirm });
-                  }}
-                  onChange={(tiers) => {
-                    setTierConfig(tiers);
-                    markAsDirty();
-                  }}
-                />
-              </BlockStack>
+              return (
+                <div data-tour-target="fpb-bundle-settings">
+                  <s-stack direction="block" gap="base">
+
+                    {/* Pre Selected Product */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
+                          {settingsStep && (
+                            <s-switch
+                              accessibilityLabel="Enable pre selected product for active step"
+                              checked={settingsStep.isDefault || undefined}
+                              onChange={(e) => {
+                                stepsState.updateStepField(settingsStep.id, "isDefault", (e.target as HTMLInputElement).checked);
+                                markAsDirty();
+                              }}
+                            />
+                          )}
+                        </s-stack>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                          Choose products that should be added to bundle by default
+                        </p>
+                        <s-banner tone="info">
+                          Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
+                        </s-banner>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                          These products will be added to user&apos;s box automatically on the first step.
+                        </p>
+                        <s-button variant="primary" onClick={() => handleSectionChange("step_setup")}>
+                          Browse Products
+                        </s-button>
+                      </s-stack>
+                    </s-section>
+
+                    {/* Enable Quantity Validation + Product Slots + Slot Icon */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
+                          <s-checkbox
+                            accessibilityLabel="Enable quantity validation"
+                            checked={quantityValidationEnabled || undefined}
+                            onChange={(e) => { setQuantityValidationEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                          />
+                        </s-stack>
+                        <s-number-field
+                          label="Maximum allowed quantity per product"
+                          min={1}
+                          value={maxQtyPerProduct || "1"}
+                          disabled={!quantityValidationEnabled}
+                          onInput={(e) => { setMaxQtyPerProduct((e.target as HTMLInputElement).value); markAsDirty(); }}
+                          autocomplete="off"
+                        />
+                        {/* Product Slots sub-section */}
+                        {settingsStep && (
+                          <s-stack direction="block" gap="small-400">
+                            <s-stack direction="inline" alignItems="center" gap="small">
+                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>Product Slots</p>
+                              <s-checkbox
+                                accessibilityLabel="Enable product slots display"
+                                checked={productSlotsEnabled || undefined}
+                                onChange={(e) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
+                              />
+                            </s-stack>
+                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                              This feature displays empty slots on the storefront.
+                            </p>
+                          </s-stack>
+                        )}
+                        {/* Slot Icon — nested inside EQV section */}
+                        <s-stack direction="block" gap="small-400">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>
+                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                            You can change the default icon that renders in the empty slots
+                          </p>
+                          {showSlotIconPicker && (
+                            <FilePicker
+                              autoOpen
+                              onClose={() => setShowSlotIconPicker(false)}
+                              value={productSlotIconUrl || null}
+                              onChange={(url: string | null) => {
+                                setProductSlotIconUrl(url ?? "");
+                                setShowSlotIconPicker(false);
+                                markAsDirty();
+                              }}
+                              label="Slot Icon"
+                              hideCropEditor
+                            />
+                          )}
+                          <s-stack direction="inline" gap="small">
+                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
+                              Change Icon
+                            </s-button>
+                            <s-button
+                              variant="secondary"
+                              onClick={() => {
+                                setProductSlotIconUrl("");
+                                markAsDirty();
+                              }}
+                            >
+                              Reset
+                            </s-button>
+                          </s-stack>
+                          <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
+                            Note: Only applicable when rules are based on quantity
+                          </p>
+                        </s-stack>
+                      </s-stack>
+                    </s-section>
+
+                    {/* Variant Selector + Show Text on + Button */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <SettingsRow
+                          title="Variant Selector"
+                          description="Enable variant selection within the product cards instead of the quick look"
+                        >
+                          {settingsStep && (
+                          <s-switch
+                            accessibilityLabel="Variant selector"
+                            checked={settingsStep.displayVariantsAsIndividual ?? undefined}
+                            onChange={(e) => {
+                              const checked = (e.target as HTMLInputElement).checked;
+                              stepsState.updateStepField(settingsStep.id, "displayVariantsAsIndividual", checked);
+                              markAsDirty();
+                            }}
+                            />
+                          )}
+                        </SettingsRow>
+                        <SettingsRow
+                          title="Show Text on + Button"
+                          description="Replaces the + icon with a text button and moves it below the price."
+                        >
+                          <s-switch
+                            accessibilityLabel="Show text on plus button"
+                            checked={showTextOnPlusEnabled || undefined}
+                            onChange={(e) => {
+                              const enabled = (e.target as HTMLInputElement).checked;
+                              setShowTextOnPlusEnabled(enabled);
+                              if (!enabled) {
+                                setTextOverrides((prev) => ({ ...prev, addToCartButton: "" }));
+                              }
+                              markAsDirty();
+                            }}
+                          />
+                        </SettingsRow>
+                        {showTextOnPlusEnabled && (
+                          <s-stack direction="inline" gap="small" alignItems="end">
+                            <s-text-field
+                              label="Button text"
+                              value={textOverrides.addToCartButton ?? ""}
+                              placeholder="Add to Cart"
+                          autocomplete="off"
+                              onInput={(e) => {
+                                setTextOverrides((prev) => ({ ...prev, addToCartButton: (e.target as HTMLInputElement).value }));
+                                markAsDirty();
+                              }}
+                            />
+                            <s-button
+                              variant="secondary"
+                              icon="globe"
+                              onClick={() => openMultiLanguageModal("Add Button Text", [
+                                { key: "addToCartButton", label: "Button text", fallback: textOverrides.addToCartButton ?? "Add to Cart" },
+                              ])}
+                            >
+                              Multi Language
+                            </s-button>
+                          </s-stack>
+                        )}
+                        {individualSellingPlanBlocked && (
+                          <s-banner tone="warning">
+                            {INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE}
+                          </s-banner>
+                        )}
+                        <SettingsRow
+                          title="Pre-order &amp; Subscription Integration"
+                          description="Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle."
+                        >
+                          <s-switch
+                            accessibilityLabel="Enable pre-order and subscription integration"
+                            checked={!individualSellingPlanBlocked && individualSellingPlanEnabled || undefined}
+                            disabled={individualSellingPlanBlocked || undefined}
+                            onChange={(e) => {
+                              setIndividualSellingPlanEnabled((e.target as HTMLInputElement).checked);
+                              markAsDirty();
+                            }}
+                          />
+                        </SettingsRow>
+                        {!individualSellingPlanBlocked && individualSellingPlanEnabled && (
+                          <s-select
+                            label="Apply to products"
+                            value={individualSellingPlanShowFor}
+                            onChange={(e) => {
+                              setIndividualSellingPlanShowFor((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor);
+                              markAsDirty();
+                            }}
+                          >
+                            <s-option value="ALL_PRODUCTS">All products</s-option>
+                            <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
+                          </s-select>
+                        )}
+                      </s-stack>
+                    </s-section>
+
+                    {/* Bundle Cart */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Bundle Cart</h3>
+                          <s-button
+                            variant="secondary"
+                            icon="globe"
+                            onClick={() => openMultiLanguageModal("Bundle Cart", [
+                              { key: "yourBundle", label: "Bundle Cart Title", fallback: textOverrides.yourBundle ?? "Your Bundle" },
+                              { key: "reviewBundle", label: "Bundle Cart Subtitle", fallback: textOverrides.reviewBundle ?? "Review your bundle" },
+                            ])}
+                          >
+                            Multi Language
+                          </s-button>
+                        </s-stack>
+                        <div className={fullPageBundleStyles.settingsNestedFields}>
+                          <s-text-field
+                            label="Bundle Cart Title"
+                            value={textOverrides.yourBundle ?? ""}
+                            placeholder="Your Bundle"
+                          autocomplete="off"
+                            onInput={(e) => {
+                              setTextOverrides((prev) => ({ ...prev, yourBundle: (e.target as HTMLInputElement).value }));
+                              markAsDirty();
+                            }}
+                          />
+                          <s-text-field
+                            label="Bundle Cart Subtitle"
+                            value={textOverrides.reviewBundle ?? ""}
+                            placeholder="Review your bundle"
+                          autocomplete="off"
+                            onInput={(e) => {
+                              setTextOverrides((prev) => ({ ...prev, reviewBundle: (e.target as HTMLInputElement).value }));
+                              markAsDirty();
+                            }}
+                          />
+                        </div>
+                      </s-stack>
+                    </s-section>
+
+                    {/* Cart line item discount display */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <s-stack direction="inline" alignItems="center" gap="small">
+                          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>Cart line item discount display</p>
+                          <s-button variant="secondary" onClick={() => handleSectionChange("discount_pricing")}>
+                            Edit Defaults
+                          </s-button>
+                        </s-stack>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Shows how much the customer is saving on the bundle in cart</p>
+                        {[
+                          { value: "defaults", label: "Use app defaults", description: "Uses the discount format and label configured in your app settings." },
+                          { value: "custom", label: "Customize for this bundle", description: "Set a different discount format or label for this bundle only." },
+                        ].map(({ value, label, description }) => (
+                          <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                            <input
+                              type="radio"
+                              name="cartDiscountDisplay"
+                              value={value}
+                              checked={(textOverrides.cartDiscountDisplay ?? "defaults") === value}
+                              onChange={() => { setTextOverrides((prev) => ({ ...prev, cartDiscountDisplay: value })); markAsDirty(); }}
+                              style={{ marginTop: 3 }}
+                            />
+                            <span>
+                              <span style={{ display: "block", fontSize: 14 }}>{label}</span>
+                              <span style={{ display: "block", fontSize: 13, color: "#6d7175" }}>{description}</span>
+                            </span>
+                          </label>
+                        ))}
+                      </s-stack>
+                    </s-section>
+
+                    {/* Bundle Banner — 2-column side-by-side layout */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Bundle Banner</p>
+                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>Upload banner images for desktop and mobile views that will be displayed at the top of your bundle page.</p>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                          <div>
+                            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Desktop</p>
+                            <FilePicker
+                              value={bundleBannerDesktopUrl || null}
+                              onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
+                            />
+                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1900x230</span></p>
+                          </div>
+                          <div>
+                            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Mobile</p>
+                            <FilePicker
+                              value={bundleBannerMobileUrl || null}
+                              onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
+                            />
+                            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1100x500</span></p>
+                          </div>
+                        </div>
+                      </s-stack>
+                    </s-section>
+
+                    {/* Bundle Level CSS — collapsible */}
+                    <s-section>
+                      <s-stack direction="block" gap="small">
+                        <button
+                          type="button"
+                          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          onClick={() => setBundleLevelCssExpanded((prev) => !prev)}
+                        >
+                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Bundle Level CSS</h3>
+                          <span style={{ fontSize: 18, color: "#6d7175", display: "inline-block", transform: bundleLevelCssExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>▾</span>
+                        </button>
+                        {bundleLevelCssExpanded && (
+                          <textarea
+                            value={bundleLevelCss}
+                            placeholder="/* Add custom CSS for this bundle */"
+                            rows={6}
+                            style={{ width: "100%", fontFamily: "monospace", fontSize: 13, padding: "8px 10px", borderRadius: 6, border: "1px solid #c9cccf", resize: "vertical", boxSizing: "border-box" }}
+                            onInput={(e) => { setBundleLevelCss((e.target as HTMLTextAreaElement).value); markAsDirty(); }}
+                          />
+                        )}
+                      </s-stack>
+                    </s-section>
+                    <BundleStatusSection
+                        status={formState.bundleStatus}
+                        onChange={formState.setBundleStatus}
+                      />
+                  </s-stack>
+                </div>
+              );
+            })()}
+
+            {activeSection === "bundle_widget" && (
+              <div data-tour-target="fpb-bundle-widget">
+                <div className={fullPageBundleStyles.visibilityPanel}>
+                  <div className={fullPageBundleStyles.visibilityTitleSwitchRow}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.visibilityPanelTitle}>Product Page Bundle Upsell Widgets</h3>
+                      <p className={fullPageBundleStyles.visibilityCardText}>
+                        This will display an upsell block or button on the product pages of your choice.
+                      </p>
+                    </div>
+                    <s-switch
+                      checked={upsellWidgetEnabled || undefined}
+                      onChange={(e: any) => { setUpsellWidgetEnabled(e.target.checked); markAsDirty(); }}
+                    />
+                  </div>
+
+                  <div className={fullPageBundleStyles.upsellWidgetContent} style={{ opacity: upsellWidgetEnabled ? 1 : 0.4, pointerEvents: upsellWidgetEnabled ? undefined : 'none' }}>
+                  <div className={fullPageBundleStyles.visibilityPreviewFrame}>
+                    <img
+                      className={fullPageBundleStyles.visibilityPreviewFullImage}
+                      src={upsellWidgetDisplayMode === "button" ? "/Upsell-Button.png" : "/Upsell-Block.png"}
+                      alt={upsellWidgetDisplayMode === "button" ? "Upsell Button preview" : "Upsell Block preview"}
+                    />
+                    <div className={fullPageBundleStyles.visibilityRadioBar}>
+                      <label className={fullPageBundleStyles.visibilityRadioLabel}>
+                        <input
+                          type="radio"
+                          name="fpbUpsellWidgetType"
+                          value="block"
+                          checked={upsellWidgetDisplayMode !== "button"}
+                          onChange={() => { setUpsellWidgetDisplayMode("block"); markAsDirty(); }}
+                        />
+                        <span>Offer Upsell Block</span>
+                      </label>
+                      <label className={fullPageBundleStyles.visibilityRadioLabel}>
+                        <input
+                          type="radio"
+                          name="fpbUpsellWidgetType"
+                          value="button"
+                          checked={upsellWidgetDisplayMode === "button"}
+                          onChange={() => { setUpsellWidgetDisplayMode("button"); markAsDirty(); }}
+                        />
+                        <span>Offer Upsell Button</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className={fullPageBundleStyles.visibilityInfoBanner}>
+                    Select if you want the upsell block or button to appear on product pages.
+                  </div>
+
+                  <div className={fullPageBundleStyles.visibilityPanelSection}>
+                    <div className={fullPageBundleStyles.visibilitySectionHeader}>
+                      <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Widget Settings</h4>
+                      <s-button
+                        variant="secondary"
+                        icon="globe"
+                        disabled={shopLocales.length === 0 || undefined}
+                        onClick={() => openMultiLanguageModal("Bundle Widget", [
+                          { key: "widgetButtonText", label: "Widget Button Text", fallback: upsellWidgetButtonText },
+                        ])}
+                      >
+                        Multi Language
+                      </s-button>
+                    </div>
+                    <div className={fullPageBundleStyles.visibilityFieldStack}>
+                      <label className={fullPageBundleStyles.visibilityFieldLabel}>
+                        <span>Widget Button Text</span>
+                        <input
+                          className={fullPageBundleStyles.visibilityTextInput}
+                          value={upsellWidgetButtonText}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const value = e.target.value;
+                            setUpsellWidgetButtonText(value);
+                            setTextOverrides((prev) => ({ ...prev, widgetButtonText: value }));
+                            markAsDirty();
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className={fullPageBundleStyles.visibilityPanelSection}>
+                    <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Display Widget on</h4>
+                    <div className={fullPageBundleStyles.visibilityTargetOptions}>
+                      {[
+                        { value: "all",                   label: "All products in bundle"  },
+                        { value: "specific_products",     label: "Specific products"        },
+                        { value: "specific_collections",  label: "Specific collections"     },
+                      ].map(({ value, label }) => (
+                        <label key={value} className={fullPageBundleStyles.visibilityRadioLabel}>
+                          <input
+                            type="radio"
+                            name="fpbWidgetDisplayOn"
+                            value={value}
+                            checked={upsellWidgetDisplayOn === value}
+                            onChange={() => { setUpsellWidgetDisplayOn(value); markAsDirty(); }}
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {upsellWidgetDisplayOn === "specific_products" && (
+                      <div className={fullPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={fullPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityProductPicker("widget")}>
+                          Select products
+                        </button>
+                        <div className={fullPageBundleStyles.visibilitySelectionList}>
+                          {upsellWidgetSelectedProducts.map((product: any, index) => (
+                            <div key={getVisibilityResourceId(product) ?? index} className={fullPageBundleStyles.visibilitySelectionItem}>
+                              <span>{product.title ?? "Untitled product"}</span>
+                              <button type="button" onClick={() => removeVisibilityProductTarget("widget", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {upsellWidgetDisplayOn === "specific_collections" && (
+                      <div className={fullPageBundleStyles.visibilityTargetPicker}>
+                        <button type="button" className={fullPageBundleStyles.visibilitySecondaryAction} onClick={() => openVisibilityCollectionPicker("widget")}>
+                          Select collections
+                        </button>
+                        <div className={fullPageBundleStyles.visibilitySelectionList}>
+                          {upsellWidgetCollectionsSelectedData.map((collection: any, index) => (
+                            <div key={getVisibilityResourceId(collection) ?? index} className={fullPageBundleStyles.visibilitySelectionItem}>
+                              <span>{collection.title ?? "Untitled collection"}</span>
+                              <button type="button" onClick={() => removeVisibilityCollectionTarget("widget", index)}>Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className={fullPageBundleStyles.visibilityCheckboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={autoSelectBrowsedProduct}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setAutoSelectBrowsedProduct(e.target.checked); markAsDirty(); }}
+                    />
+                    <span>Add browsed product to bundle</span>
+                  </label>
+                  </div>
+                </div>
+
+                <div className={fullPageBundleStyles.visibilityPlacementCard}>
+                  <div>
+                    <h4 className={fullPageBundleStyles.visibilitySectionTitle}>Embed the Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"} at a custom location</h4>
+                    <p className={fullPageBundleStyles.visibilityCardText}>
+                      By default, the upsell {upsellWidgetDisplayMode === "button" ? "button" : "block"} is added below the Buy Button. You can move it to a custom spot on the product page if you prefer.
+                    </p>
+                  </div>
+                  <button type="button" className={fullPageBundleStyles.visibilityPrimaryAction} onClick={handlePlaceWidget}>
+                    Embed Upsell {upsellWidgetDisplayMode === "button" ? "Button" : "Block"}
+                  </button>
+                </div>
+              </div>
             )}
-          </Layout.Section>
-        </Layout>
-      </form>
-
-      {/* Steps + Tiers Conflict Warning Modal */}
-      <Modal
-        open={stepsTiersWarning.open}
-        onClose={() => setStepsTiersWarning({ open: false, onConfirm: null })}
-        title="Steps and Pricing Tiers conflict"
-        primaryAction={{
-          content: "Continue anyway",
-          onAction: () => {
-            stepsTiersWarning.onConfirm?.();
-            setStepsTiersWarning({ open: false, onConfirm: null });
-          },
-        }}
-        secondaryActions={[{
-          content: "Cancel",
-          onAction: () => setStepsTiersWarning({ open: false, onConfirm: null }),
-        }]}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <Text as="p" variant="bodyMd">
-              <strong>Using both steps and pricing tiers creates a confusing experience for shoppers.</strong>
-            </Text>
-            <Text as="p" variant="bodyMd">
-              Pricing tier pills work best with a <strong>single-step flat-grid bundle</strong> (e.g. pick any 3 products).
-              Your bundle has <strong>{stepsState.steps.length} steps</strong> configured, which guides shoppers through a sequential flow.
-            </Text>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              Continuing will configure tiers alongside steps. Consider reducing to 1 step for the best flat-grid BYOB experience.
-            </Text>
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+          </div>
+        </div>
 
       {/* Page Selection Modal */}
-      <Modal
-        open={isPageSelectionModalOpen}
-        onClose={() => !isInstallingWidget && closePageSelectionModal()}
-        title="Add to Storefront"
-        primaryAction={{
-          content: "Cancel",
-          onAction: () => closePageSelectionModal(),
-          disabled: isInstallingWidget,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <Text as="p" variant="bodySm" tone="subdued">
-              {bundle.bundleType === 'full_page'
-                ? 'Select the bundle page — we\'ll install the widget automatically. No Theme Editor needed.'
-                : 'Select a template to open the Theme Editor with widget placement.'}
-            </Text>
-
-            {isLoadingPages ? (
-              <BlockStack gap="300" inlineAlign="center">
-                <Spinner size="small" />
-                <Text as="p" variant="bodySm" tone="subdued">
-                  {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
-                </Text>
-              </BlockStack>
-            ) : availablePages.length > 0 ? (
-              <BlockStack gap="200">
-                {availablePages.map((template) => (
-                  <Card key={template.id || template.handle} padding="300">
-                    <InlineStack wrap={false} gap="300" align="space-between" blockAlign="center">
-                      <BlockStack gap="100">
-                        <InlineStack gap="200" blockAlign="center">
-                          <Text as="span" variant="bodyMd" fontWeight="medium">
-                            {template.title}
-                          </Text>
-                          {template.recommended && (
-                            <Badge tone="success">Bundle Product</Badge>
-                          )}
-                        </InlineStack>
-                        {template.description && (
-                          <Text as="p" variant="bodySm" tone="subdued">
-                            {template.description}
-                          </Text>
-                        )}
-                      </BlockStack>
-                      <Button
+      {isPageSelectionModalOpen && (
+        <div
+          role="presentation"
+          onClick={handlePageSelectionBackdropClick}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0, 0, 0, 0.45)",
+            padding: 20,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fpb-page-selection-modal-title"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: "min(560px, calc(100vw - 40px))",
+              overflow: "hidden",
+              border: "1px solid #d9d9d9",
+              borderRadius: 12,
+              background: "#ffffff",
+              boxShadow: "0 18px 48px rgba(0, 0, 0, 0.22)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                minHeight: 48,
+                padding: "0 12px",
+                borderBottom: "1px solid #ebebeb",
+              }}
+            >
+              <h2 id="fpb-page-selection-modal-title" style={{ margin: 0, fontSize: 14, fontWeight: 650, color: "#202223" }}>
+                Add Wolfpack Bundles to storefront
+              </h2>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={closePageSelectionModal}
+                disabled={isInstallingWidget}
+                style={{
+                  appearance: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 28,
+                  height: 28,
+                  border: "1px solid #d1d5db",
+                  borderRadius: 8,
+                  background: "#f3f4f6",
+                  color: "#5f6368",
+                  cursor: isInstallingWidget ? "not-allowed" : "pointer",
+                  fontSize: 18,
+                  lineHeight: 1,
+                  opacity: isInstallingWidget ? 0.6 : 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: 16 }}>
+              <p style={{ margin: "0 0 14px", fontSize: 14, color: "#6d7175" }}>
+                {bundle.bundleType === 'full_page'
+                  ? "Select a page to place and preview the bundle."
+                  : "Select a template to place and preview the bundle."}
+              </p>
+              {isLoadingPages ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <s-spinner />
+                  <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                    {bundle.bundleType === 'full_page' ? 'Loading pages...' : 'Loading templates...'}
+                  </p>
+                </div>
+              ) : availablePages.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {availablePages.map((template) => (
+                    <div key={template.id || template.handle} style={{ border: "1px solid #e1e3e5", borderRadius: 8, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{template.title}</span>
+                          {template.recommended && <s-badge tone="success">Bundle Product</s-badge>}
+                        </div>
+                        {template.description && <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>{template.description}</p>}
+                      </div>
+                      <s-button
+                        variant={template.recommended ? "primary" : undefined}
+                        loading={isInstallingWidget || undefined}
+                        disabled={isInstallingWidget || undefined}
                         onClick={() => handlePageSelection(template)}
-                        variant={template.recommended ? "primary" : "secondary"}
-                        icon={template.isPage ? undefined : ExternalIcon}
-                        size="slim"
-                        loading={isInstallingWidget}
-                        disabled={isInstallingWidget}
                       >
-                        {isInstallingWidget ? 'Installing…' : 'Select'}
-                      </Button>
-                    </InlineStack>
-                  </Card>
-                ))}
-              </BlockStack>
-            ) : (
-              <Card padding="400">
-                <BlockStack gap="300" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued" alignment="center">
+                        {isInstallingWidget ? 'Adding...' : 'Select'}
+                      </s-button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
                     {bundle.bundleType === 'full_page' ? 'No pages available' : 'No templates available'}
-                  </Text>
-                  <Button
-                    url="https://admin.shopify.com/admin/pages"
-                    external
-                  >
-                    Create Page
-                  </Button>
-                </BlockStack>
-              </Card>
-            )}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+                  </p>
+                  <s-button href="https://admin.shopify.com/admin/pages" target="_blank">Create page</s-button>
+                </div>
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 16px", borderTop: "1px solid #ebebeb" }}>
+              <s-button disabled={isInstallingWidget || undefined} onClick={closePageSelectionModal}>
+                Cancel
+              </s-button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selected Products Modal */}
-      <Modal
-        open={isProductsModalOpen}
-        onClose={handleCloseProductsModal}
-        title="Selected Products"
-        primaryAction={{
-          content: "Close",
-          onAction: handleCloseProductsModal,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
-              const selectedProducts = currentStep?.StepProduct || [];
+      <s-modal ref={productsModalRef} heading="Selected products">
+        {(() => {
+          const currentStep = stepsState.steps.find(step => step.id === currentModalStepId);
+          const selectedProducts = currentStep?.StepProduct || [];
+          return selectedProducts.length > 0 ? (
+            <s-stack direction="block" gap="small">
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>
+                {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected in this step.
+              </p>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                {selectedProducts.map((product: any, index: number) => {
+                  const productId = product.productId || product.id?.split('/').pop();
+                  return (
+                    <li key={product.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f2f3" }}>
+                      <s-stack direction="inline" gap="small">
+                        <img src={product.imageUrl || product.image?.url || "/bundle.png"} alt={product.title || 'Product'} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 4 }} />
+                        <s-stack direction="block" gap="small-400">
+                          <s-button
+                            variant="tertiary"
+                            onClick={() => {
+                              if (!productId) return;
+                              openProductInAdmin(productId);
+                            }}
+                            disabled={!productId || undefined}
+                          >
+                            {product.title || product.name || 'Unnamed Product'}
+                          </s-button>
+                          {product.variants && product.variants.length > 0 && (
+                            <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
+                              {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
+                            </p>
+                          )}
+                        </s-stack>
+                      </s-stack>
+                      <s-badge tone="info">Product</s-badge>
+                    </li>
+                  );
+                })}
+              </ul>
+            </s-stack>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No products selected for this step yet.</p>
+          );
+        })()}
+        <s-button slot="primary-action" onClick={handleCloseProductsModal}>Close</s-button>
+      </s-modal>
 
-              return selectedProducts.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text as="h4" variant="bodyMd" fontWeight="medium">
-                    {selectedProducts.length} product{selectedProducts.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {selectedProducts.map((product: any, index: number) => {
-                        // Extract product ID from Shopify GID (e.g., "gid://shopify/Product/123" -> "123")
-                        const productId = product.productId || product.id?.split('/').pop();
-                        const productUrl = productId
-                          ? `https://admin.shopify.com/store/${shop?.replace('.myshopify.com', '')}/products/${productId}`
-                          : undefined;
+      <s-modal id="addon-selected-products-modal" ref={addonSelectedProductsModalRef} heading="Selected Products">
+        {(() => {
+          const addonTiers = Array.isArray(addonDraft.addonTiers) ? addonDraft.addonTiers : [createDefaultAddonDraftTier()];
+          const tierIndex = addonSelectedProductsTierIndex ?? 0;
+          const tier = addonTiers[tierIndex] ?? addonTiers[0];
+          const selectedAddonProducts = Array.isArray(tier?.selectedAddonProducts) ? tier.selectedAddonProducts : [];
 
-                        return (
-                          <List.Item key={product.id || index}>
-                            <InlineStack gap="200" align="space-between" blockAlign="center">
-                              <InlineStack gap="300" blockAlign="center">
-                                <Thumbnail
-                                  source={product.imageUrl || product.image?.url || "/bundle.png"}
-                                  alt={product.title || product.name || 'Product'}
-                                  size="small"
-                                />
-                                <BlockStack gap="050">
-                                  {/* Make product title clickable to navigate to Shopify Admin product page */}
-                                  <Button
-                                    variant="plain"
-                                    onClick={() => productUrl && open(productUrl, '_blank')}
-                                    icon={ExternalIcon}
-                                    disabled={!productUrl}
-                                  >
-                                    {product.title || product.name || 'Unnamed Product'}
-                                  </Button>
-                                  {product.variants && product.variants.length > 0 && (
-                                    <Text as="p" variant="bodySm" tone="subdued">
-                                      {product.variants.length} variant{product.variants.length !== 1 ? 's' : ''} available
-                                    </Text>
-                                  )}
-                                </BlockStack>
-                              </InlineStack>
-                              <Badge tone="info">Product</Badge>
-                            </InlineStack>
-                          </List.Item>
-                        );
-                      })}
-                    </List>
-                  </Card>
-                </BlockStack>
-              ) : (
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No products selected for this step yet.
-                  </Text>
-                </BlockStack>
-              );
-            })()}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+          return selectedAddonProducts.length > 0 ? (
+            <s-stack direction="block" gap="small">
+              <ul className={fullPageBundleStyles.addonSelectedProductList}>
+                {selectedAddonProducts.map((product: any, index: number) => (
+                  <li key={product.graphqlId || product.id || index} className={fullPageBundleStyles.addonSelectedProductRow}>
+                    <button
+                      type="button"
+                      className={fullPageBundleStyles.addonSelectedProductDrag}
+                      aria-label={`Reorder ${product.title || "selected product"}`}
+                    >
+                      ::
+                    </button>
+                    <span className={fullPageBundleStyles.addonSelectedProductName}>
+                      {product.title || product.name || "Unnamed Product"}
+                    </span>
+                    <button
+                      type="button"
+                      className={fullPageBundleStyles.addonSelectedProductRemove}
+                      aria-label={`Remove ${product.title || "selected product"}`}
+                      onClick={() => handleAddonSelectedProductRemove(tierIndex, index)}
+                    >
+                      x
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </s-stack>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No products selected for this tier yet.</p>
+          );
+        })()}
+        <s-button
+          slot="secondary-actions"
+          variant="secondary"
+          commandFor="addon-selected-products-modal"
+          command="--hide"
+          onClick={handleCloseAddonSelectedProductsModal}
+        >
+          Close
+        </s-button>
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          onClick={() => handleAddonSelectedProductAdd(addonSelectedProductsTierIndex ?? 0, { reopenSelectedProductsModal: true })}
+        >
+          Add Products
+        </s-button>
+      </s-modal>
 
       {/* Selected Collections Modal */}
-      <Modal
-        open={isCollectionsModalOpen}
-        onClose={handleCloseCollectionsModal}
-        title="Selected Collections"
-        primaryAction={{
-          content: "Close",
-          onAction: handleCloseCollectionsModal,
-        }}
-      >
-        <Modal.Section>
-          <BlockStack gap="400">
-            {(() => {
-              const collections = selectedCollections[currentModalStepId] || [];
+      <s-modal ref={collectionsModalRef} heading="Selected collections">
+        {(() => {
+          const collections = selectedCollections[currentModalStepId] || [];
+          return collections.length > 0 ? (
+            <s-stack direction="block" gap="small">
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>
+                {collections.length} collection{collections.length !== 1 ? 's' : ''} selected in this step.
+              </p>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                {collections.map((collection: any, index: number) => (
+                  <li key={collection.id || index} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #f1f2f3" }}>
+                    <s-stack direction="block" gap="small-400">
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>{collection.title || 'Unnamed Collection'}</span>
+                      {collection.handle && <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>Handle: {collection.handle}</p>}
+                    </s-stack>
+                    <s-badge tone="success">Collection</s-badge>
+                  </li>
+                ))}
+              </ul>
+            </s-stack>
+          ) : (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>No collections selected for this step yet.</p>
+          );
+        })()}
+        <s-button slot="primary-action" onClick={handleCloseCollectionsModal}>Close</s-button>
+      </s-modal>
 
-              return collections.length > 0 ? (
-                <BlockStack gap="300">
-                  <Text as="h4" variant="bodyMd" fontWeight="medium">
-                    {collections.length} collection{collections.length !== 1 ? 's' : ''} selected for this step:
-                  </Text>
-                  <Card>
-                    <List type="bullet">
-                      {collections.map((collection: any, index: number) => (
-                        <List.Item key={collection.id || index}>
-                          <InlineStack gap="200" align="space-between">
-                            <BlockStack gap="050">
-                              <Text as="h5" variant="bodyMd" fontWeight="medium">
-                                {collection.title || 'Unnamed Collection'}
-                              </Text>
-                              {collection.handle && (
-                                <Text as="p" variant="bodySm" tone="subdued">
-                                  Handle: {collection.handle}
-                                </Text>
-                              )}
-                            </BlockStack>
-                            <Badge tone="success">Collection</Badge>
-                          </InlineStack>
-                        </List.Item>
-                      ))}
-                    </List>
-                  </Card>
-                </BlockStack>
-              ) : (
-                <BlockStack gap="200" inlineAlign="center">
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No collections selected for this step yet.
-                  </Text>
-                </BlockStack>
-              );
-            })()}
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+      {/* Template Variables Modal */}
+      <s-modal id="template-variables-modal" ref={templateVariablesModalRef} heading="Message variables" size="small">
+        <s-stack direction="block" gap="small">
+          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>
+            Use these variables in Wolfpack Bundles messages. The widget replaces them with live bundle and discount values.
+          </p>
+          <div className={fullPageBundleStyles.templateVariableGrid}>
+            {TEMPLATE_VARIABLES.map(([variable, description]) => (
+              <div key={variable} className={fullPageBundleStyles.templateVariableItem}>
+                <s-badge>{variable}</s-badge>
+                <s-text color="subdued">{description}</s-text>
+              </div>
+            ))}
+          </div>
+        </s-stack>
+        <s-button
+          slot="primary-action"
+          variant="primary"
+          commandFor="template-variables-modal"
+          command="--hide"
+          onClick={() => hidePolarisModal(templateVariablesModalRef)}
+        >
+          Done
+        </s-button>
+      </s-modal>
+
+      <s-modal id="discount-variables-modal" ref={discountVariablesModalRef} heading="Variables" size="base">
+        <div>
+          {TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={fullPageBundleStyles.discountVariableRow}>
+                <s-text color="subdued">{description}</s-text>
+                <span className={fullPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </s-modal>
+
+      <s-modal id="addon-variables-modal" ref={addonVariablesModalRef} heading="Variables" size="base">
+        <div>
+          {ADDON_TEMPLATE_VARIABLES.map(([variable, description], index) => (
+            <div key={variable}>
+              {index > 0 && <s-divider />}
+              <div className={fullPageBundleStyles.discountVariableRow}>
+                <s-text color="subdued">{description}</s-text>
+                <span className={fullPageBundleStyles.discountVariableCode}>{variable}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </s-modal>
+
+      <s-modal id="disable-addon-step-modal" ref={disableAddonStepModalRef} heading="Disable Personalization Step" size="small">
+        <p style={{ margin: 0, fontSize: 14 }}>
+          This will disable the add-ons step. Are you sure you want to disable?
+        </p>
+        <s-button slot="secondary-actions" onClick={() => setIsDisableAddonStepModalOpen(false)}>
+          Cancel
+        </s-button>
+        <s-button slot="primary-action" variant="primary" onClick={handleDisableAddonStepConfirm}>
+          Yes
+        </s-button>
+      </s-modal>
+
+      <BundleReadinessOverlay
+        items={readinessItems}
+        open={readinessOpen}
+        onOpenChange={setReadinessOpen}
+        onItemClick={handleReadinessItemClick}
+      />
+
+      <BundleGuidedTour
+        steps={FPB_TOUR_STEPS}
+        shop={shop}
+        enabled={loaderData.showFirstLoadTour === true}
+        onStepChange={handleGuidedTourStepChange}
+      />
+
+      <MultiLanguageTextModal
+        open={isMultiLanguageModalOpen}
+        title={multiLanguageTitle}
+        layout={multiLanguageLayout}
+        saveLabel={multiLanguageLayout === "compact" ? "Save and close" : undefined}
+        locales={shopLocales}
+        activeLocale={textOverridesLocale}
+        fields={multiLanguageFields}
+        valuesByLocale={activeMultiLanguageValues}
+        onActiveLocaleChange={setTextOverridesLocale}
+        onChange={updateLocalizedTextOverride}
+        onSave={saveStepSetupMultiLanguageValues}
+        onClose={() => setIsMultiLanguageModalOpen(false)}
+      />
+
+      <DiscardChangesModal
+        open={showDiscardModal}
+        onDiscard={handleConfirmDiscard}
+        onContinue={closeDiscardModal}
+      />
+
+      {isSelectTemplateModalOpen && (
+        <div
+          className={fullPageBundleStyles.templateDialogBackdrop}
+          role="presentation"
+          onMouseDown={handleSelectTemplateBackdropClick}
+          onClick={handleSelectTemplateBackdropClick}
+        >
+          <div
+            className={fullPageBundleStyles.templateDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fpb-template-dialog-title"
+            tabIndex={-1}
+            ref={selectTemplateModalRef}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={handleSelectTemplateDialogKeyDown}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className={fullPageBundleStyles.templateDialogHandle} aria-hidden="true" />
+            <div className={fullPageBundleStyles.templateDialogHeader}>
+              <h2 id="fpb-template-dialog-title" className={fullPageBundleStyles.templateDialogHeading}>
+                Customization
+              </h2>
+              <button
+                type="button"
+                className={fullPageBundleStyles.templateDialogClose}
+                aria-label="Close customization"
+                onClick={closeSelectTemplateModal}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            {templateModalStep === "templates" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Choose a design that suits your needs and fits your brand
+                      </p>
+                    </div>
+                    <s-button variant="secondary" onClick={() => setTemplateModalStep("colorsAndCorners")}>
+                      Customize Colors &amp; Language
+                    </s-button>
+                  </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={fullPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
+                  <div className={fullPageBundleStyles.templateDialogGrid}>
+                    {fullPageTemplateOptions.map((tpl) => {
+                      const isSelected = pendingDesignPresetId === tpl.presetId && pendingDesignTemplate === "FBP_SIDE_FOOTER";
+                      return (
+                        <button
+                          key={tpl.presetId}
+                          type="button"
+                          className={`${fullPageBundleStyles.templateOptionCard} ${isSelected ? fullPageBundleStyles.templateOptionCardSelected : ""}`}
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            setPendingDesignTemplate("FBP_SIDE_FOOTER");
+                            setPendingDesignPresetId(tpl.presetId);
+                          }}
+                        >
+                          <span className={fullPageBundleStyles.templateOptionImageFrame}>
+                            <img src={tpl.image} alt={tpl.label} className={fullPageBundleStyles.templateOptionImage} />
+                          </span>
+                          <span className={fullPageBundleStyles.templateOptionFooter}>
+                            <span className={fullPageBundleStyles.templateOptionLabel}>{tpl.label}</span>
+                            <span className={`${fullPageBundleStyles.templateOptionAction} ${isSelected ? fullPageBundleStyles.templateOptionActionSelected : ""}`}>
+                              {isSelected ? "Selected" : "Select"}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Next
+                  </s-button>
+                </div>
+              </>
+            ) : templateModalStep === "colorsAndCorners" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Fine tune colors and corners before previewing the bundle
+                      </p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateDialogTabs} role="tablist" aria-label="Template customization">
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("templates")}>Templates</button>
+                      <button type="button" className={`${fullPageBundleStyles.templateDialogTab} ${fullPageBundleStyles.templateDialogTabActive}`} aria-current="page">Colors and corners</button>
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("textAndImages")}>Text and images</button>
+                    </div>
+                  </div>
+                  <div className={fullPageBundleStyles.templateCustomizationGrid}>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Brand colors</h4>
+                      <p>Use Settings &rarr; Design color controls for primary, secondary, background, text, border, and discount accents.</p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Corners</h4>
+                      <p>Review border radius and card rounding before applying the selected template.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button variant="secondary" onClick={() => setTemplateModalStep("templates")}>Back</s-button>
+                  <s-button variant="primary" onClick={() => setTemplateModalStep("textAndImages")}>Next</s-button>
+                </div>
+              </>
+            ) : templateModalStep === "textAndImages" ? (
+              <>
+                <div className={fullPageBundleStyles.templateDialogBody}>
+                  <div className={fullPageBundleStyles.templateDialogIntro}>
+                    <div>
+                      <h3 className={fullPageBundleStyles.templateDialogSubheading}>Customize your bundle</h3>
+                      <p className={fullPageBundleStyles.templateDialogDescription}>
+                        Review template language, labels, and media before finishing customization
+                      </p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateDialogTabs} role="tablist" aria-label="Template customization">
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("templates")}>Templates</button>
+                      <button type="button" className={fullPageBundleStyles.templateDialogTab} onClick={() => setTemplateModalStep("colorsAndCorners")}>Colors and corners</button>
+                      <button type="button" className={`${fullPageBundleStyles.templateDialogTab} ${fullPageBundleStyles.templateDialogTabActive}`} aria-current="page">Text and images</button>
+                    </div>
+                  </div>
+                  {templateSaveError ? (
+                    <p role="alert" className={fullPageBundleStyles.templateDialogError}>{templateSaveError}</p>
+                  ) : null}
+                  <div className={fullPageBundleStyles.templateCustomizationGrid}>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Text and language</h4>
+                      <p>Review Product Card, Bundle Cart, Bundle, Popups, Toasts, and Addons text from Settings Language.</p>
+                    </div>
+                    <div className={fullPageBundleStyles.templateCustomizationCard}>
+                      <h4>Images and GIFs</h4>
+                      <p>Confirm template media, uploaded images, and loading GIFs before saving the template selection.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={fullPageBundleStyles.templateDialogFooter}>
+                  <s-button variant="secondary" onClick={() => setTemplateModalStep("colorsAndCorners")}>Back</s-button>
+                  <s-button
+                    variant="primary"
+                    disabled={!pendingDesignPresetId || undefined}
+                    loading={templateFetcher.state === "submitting" || undefined}
+                    onClick={handleTemplateNext}
+                  >
+                    Done
+                  </s-button>
+                </div>
+              </>
+            ) : templateModalStep === "enableThemeExtension" ? (
+              <div className={fullPageBundleStyles.templateDialogBody}>
+                <div className={fullPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={fullPageBundleStyles.templateDialogSubheading}>Enable your preview</h3>
+                  <p className={fullPageBundleStyles.templateDialogDescription}>A simple switch in your theme editor. Nothing changes on your store until you decide.</p>
+                </div>
+                <div className={fullPageBundleStyles.templateReadyPanel}>
+                  <div className={fullPageBundleStyles.templateReadyIcon}>
+                    <s-icon type="view" />
+                  </div>
+                  <h3 className={fullPageBundleStyles.templateReadyTitle}>Enable app embed</h3>
+                  <p className={fullPageBundleStyles.templateReadyText}>Open your theme editor, enable the Wolfpack Bundles app embed, then return here to preview your bundle.</p>
+                  <s-stack direction="inline" gap="small" alignItems="center" justifyContent="center">
+                    <s-button variant="secondary" onClick={() => themeEditorUrl ? window.open(themeEditorUrl, "_blank") : undefined}>Open theme editor</s-button>
+                    <s-button variant="primary" onClick={() => setTemplateModalStep("confirm")}>I've enabled it</s-button>
+                  </s-stack>
+                </div>
+              </div>
+            ) : (
+              <div className={fullPageBundleStyles.templateDialogBody}>
+                <div className={fullPageBundleStyles.templateDialogConfirmHeader}>
+                  <h3 className={fullPageBundleStyles.templateDialogSubheading}>View your bundle</h3>
+                  <p className={fullPageBundleStyles.templateDialogDescription}>View your bundle with your customizations</p>
+                </div>
+                <div className={fullPageBundleStyles.templateReadyPanel}>
+                  <div className={fullPageBundleStyles.templateReadyIcon}>
+                    <s-icon type="check" />
+                  </div>
+                  <h3 className={fullPageBundleStyles.templateReadyTitle}>Your bundle is ready</h3>
+                  <p className={fullPageBundleStyles.templateReadyText}>Preview it now with your customizations</p>
+                  <s-button variant="secondary" onClick={handleTemplatePreview}>Preview bundle</s-button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Sync Bundle Confirmation Modal */}
-      <Modal
-        open={isSyncModalOpen}
-        onClose={() => setIsSyncModalOpen(false)}
-        title="Sync Bundle?"
-        primaryAction={{
-          content: "Sync Bundle",
-          destructive: true,
-          loading: fetcher.state === 'submitting',
-          onAction: handleSyncBundleConfirm,
-        }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: () => setIsSyncModalOpen(false),
-          },
-        ]}
-      >
-        <Modal.Section>
-          <BlockStack gap="300">
-            <Text as="p" variant="bodyMd">
-              This will delete and re-create all Shopify data for this bundle:
-            </Text>
-            <List type="bullet">
-              <List.Item>The Shopify page will be deleted and re-created</List.Item>
-              <List.Item>All bundle and component metafields will be rewritten</List.Item>
-            </List>
-            <Text as="p" variant="bodyMd" tone="subdued">
-              Bundle analytics are preserved. This action cannot be undone.
-            </Text>
-          </BlockStack>
-        </Modal.Section>
-      </Modal>
+      <s-modal ref={syncModalRef} heading="Sync Wolfpack bundle?">
+        <s-stack direction="block" gap="small">
+          <p style={{ margin: 0, fontSize: 14 }}>Syncing refreshes the Shopify data used by this Wolfpack Bundles configuration.</p>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            <li>The Shopify page will be deleted and re-created</li>
+            <li>All bundle and component metafields will be rewritten</li>
+          </ul>
+          <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Bundle analytics are preserved. This action cannot be undone.</p>
+        </s-stack>
+        <s-button slot="primary-action" variant="primary" loading={fetcher.state === 'submitting' || undefined} onClick={handleSyncBundleConfirm}>
+          Sync bundle
+        </s-button>
+        <s-button slot="secondary-actions" onClick={() => setIsSyncModalOpen(false)}>Cancel</s-button>
+      </s-modal>
 
-    </Page>
+      {/* Bundle Quantity Options Multi Language Modal */}
+      <s-modal id="discount-bundle-quantity-language-modal" ref={bundleQuantityMultiLangModalRef} heading="Customize Text for Multiple Languages">
+        <s-stack direction="block" gap="small">
+          {shopLocales.length > 0 && (
+            <s-select
+              label="Select Language"
+              value={activeBundleQuantityLocale}
+              onChange={(e) => setActiveBundleQuantityLocale((e.target as HTMLSelectElement).value)}
+            >
+              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+              ))}
+            </s-select>
+          )}
+          {normalizedPricingDisplayOptions.bundleQuantityOptions.options.map((option, index) => {
+            const localizedOption = pricingState.pricingDisplayOptions.bundleQuantityOptions.optionsByLocaleByRuleId?.[activeBundleQuantityLocale]?.[option.ruleId];
+            return (
+              <s-section key={option.ruleId}>
+                <s-stack direction="block" gap="small-100">
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</p>
+                  <s-text-field
+                    label="Box Label"
+                    value={localizedOption?.label ?? option.label}
+                    onInput={(e) => pricingState.updateLocalizedBundleQuantityOption(
+                      activeBundleQuantityLocale,
+                      option.ruleId,
+                      { label: (e.target as HTMLInputElement).value }
+                    )}
+                          autocomplete="off"
+                  />
+                  <s-text-field
+                    label="Box Subtext"
+                    value={localizedOption?.subtext ?? option.subtext}
+                    onInput={(e) => pricingState.updateLocalizedBundleQuantityOption(
+                      activeBundleQuantityLocale,
+                      option.ruleId,
+                      { subtext: (e.target as HTMLInputElement).value }
+                    )}
+                          autocomplete="off"
+                  />
+                </s-stack>
+              </s-section>
+            );
+          })}
+        </s-stack>
+        <s-button slot="primary-action" onClick={() => setIsBundleQuantityMultiLangModalOpen(false)}>Save and close</s-button>
+      </s-modal>
+
+      {/* Progress Bar Multi Language Modal */}
+      <s-modal id="discount-progress-language-modal" ref={progressBarMultiLangModalRef} heading="Customize Text for Multiple Languages">
+        <s-stack direction="block" gap="small">
+          {shopLocales.length > 0 && (
+            <s-select
+              label="Select Language"
+              value={activeProgressBarLocale}
+              onChange={(e) => setActiveProgressBarLocale((e.target as HTMLSelectElement).value)}
+            >
+              {shopLocales.map((loc: { locale: string; name: string; primary: boolean }) => (
+                <s-option key={loc.locale} value={loc.locale}>{loc.name}{loc.primary ? " (default)" : ""}</s-option>
+              ))}
+            </s-select>
+          )}
+          {pricingState.discountRules.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 14, color: "#6d7175" }}>Add discount rules to configure tier text.</p>
+          ) : pricingState.discountRules.map((rule, index) => (
+                            <div key={rule.id} className={fullPageBundleStyles.discountRuleCard}>
+              <s-stack direction="block" gap="small-100">
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Rule #{index + 1}</p>
+                <s-stack direction="inline" gap="small">
+                <s-text-area
+                  label="Tier Text"
+                  value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? ""}
+                  onInput={(e) => {
+                    const val = (e.target as HTMLTextAreaElement).value;
+                    setTierTextByLocaleByRuleId(prev => ({
+                      ...prev,
+                      [activeProgressBarLocale]: {
+                        ...(prev[activeProgressBarLocale] || {}),
+                        [rule.id]: { tierText: val, tierSubtext: prev[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? "" },
+                      },
+                    }));
+                    markAsDirty();
+                  }}
+                          autocomplete="off"
+                />
+                <s-text-area
+                  label="Tier Subtext"
+                  value={tierTextByLocaleByRuleId[activeProgressBarLocale]?.[rule.id]?.tierSubtext ?? tierTextByRuleId[rule.id]?.tierSubtext ?? ""}
+                  onInput={(e) => {
+                    const val = (e.target as HTMLTextAreaElement).value;
+                    setTierTextByLocaleByRuleId(prev => ({
+                      ...prev,
+                      [activeProgressBarLocale]: {
+                        ...(prev[activeProgressBarLocale] || {}),
+                        [rule.id]: { tierText: prev[activeProgressBarLocale]?.[rule.id]?.tierText ?? tierTextByRuleId[rule.id]?.tierText ?? "", tierSubtext: val },
+                      },
+                    }));
+                    markAsDirty();
+                  }}
+                          autocomplete="off"
+                />
+                </s-stack>
+              </s-stack>
+            </div>
+          ))}
+        </s-stack>
+        <s-button slot="primary-action" onClick={() => setIsProgressBarMultiLangModalOpen(false)}>Save and close</s-button>
+      </s-modal>
+
+      <EnablePreviewModal {...enablePreviewGate.modalProps} />
+
+      </div>
+    </>
   );
 }

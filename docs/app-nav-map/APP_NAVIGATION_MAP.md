@@ -4,7 +4,7 @@
 > Any time a new page, modal, tab, sidebar section, or user flow is added or removed,
 > this document **must** be updated. See CLAUDE.md for the enforcement rule.
 
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-06-03
 **Environment mapped:** SIT (`wolfpack-product-bundles-sit`)
 **Test store:** `wolfpack-store-test-1.myshopify.com`
 
@@ -20,7 +20,8 @@ provides a persistent left-nav with the app's registered nav items.
 ```
 Wolfpack: Product Bundles -SIT
 ├── [root]              → /app/dashboard          (Dashboard)
-├── Design Control Panel → /app/design-control-panel
+├── Settings            → /app/settings
+├── Integrations        → /app/integrations
 ├── Analytics           → /app/attribution
 ├── Pricing             → /app/pricing
 └── Updates & FAQs      → /app/events
@@ -43,6 +44,7 @@ Dashboard
 ├── Subheader: "Access your bundles, customer support & more."
 │
 ├── [Button] "Create Bundle"  → opens Create Bundle Modal
+├── Language selector → persists one shop-wide embedded Admin UI language for all staff accounts on change
 │
 ├── Section: "Your Bundles"
 │   └── DataTable of bundles (empty state if none exist)
@@ -61,18 +63,34 @@ Dashboard
 └── Banner: Proxy health check / upgrade prompts (conditional)
 ```
 
-#### Modal: Create Bundle
-Triggered by: "Create Bundle" button
-**Screenshot:** `screenshots/06-create-bundle-modal.png`
+Dashboard preview behavior:
+- Product-page bundle preview opens `/products/{shopifyProductHandle}`.
+- Full-page bundle preview opens `/apps/product-bundles/wpb/{bundleId}`.
+
+#### "Create Bundle" Button
+Navigates to: `/app/bundles/create` (bundle type selection entry)
+
+---
+
+### 2.1a Create Bundle Entry — `/app/bundles/create`
+
+**Route file:** `app/routes/app/app.bundles.create/route.tsx`
 
 ```
-Create Bundle Modal
-├── TextField: Bundle Name
-├── TextField: Description (optional)
-├── RadioGroup: Bundle Type
-│   ├── Product Bundle (PDP)
-│   └── Landing Page Bundle (FPB)
-└── [Button] "Create" → POST action → redirect to configure page
+Create Bundle Entry
+├── Header: "Select bundle builder type" + "How do bundle builder types work?" link
+├── Bundle Type cards: Product Page Builder / Full Page Builder
+├── [Button] "Next" / Continue
+└── Modal: Bundle name only
+    ├── TextField: Bundle name (required, min 3 chars)
+    └── [Button] Save → POST action → redirect to existing configure page
+```
+
+Create redirect targets:
+```
+Product Page: `/app/bundles/product-page-bundle/configure/:bundleId?mode=create`
+Full Page: `/app/bundles/full-page-bundle/configure/:bundleId?mode=create`
+First-install first-bundle tour adds: `&first_load=true`
 ```
 
 #### Modal: Delete Bundle Confirmation
@@ -85,102 +103,57 @@ Delete Confirmation Modal (centered, small)
 
 ---
 
-### 2.2 Design Control Panel (DCP) — `/app/design-control-panel`
+### 2.2 Settings — `/app/settings`
 
-**Route file:** `app/routes/app/app.design-control-panel/route.tsx`
-**Screenshot:** `screenshots/01-dcp-landing.png`
+**Route file:** `app/routes/app/app.settings.tsx`
 
+Admin Settings hub:
 ```
-DCP Landing Page
-├── Header: "Design Control Panel"
-├── Subheader: "Customize the appearance of your bundles"
-│
-├── Card: "Landing Page Bundles"
-│   └── [Button] "Customize" → opens FPB Customization Modal (max overlay)
-│
-├── Card: "Product Bundles"
-│   └── [Button] "Customize" → opens PDP Customization Modal (max overlay)
-│
-└── Section: "Custom CSS"
-    ├── Tab: "Product Bundles"
-    ├── Tab: "Landing Page Bundles"
-    ├── TextArea: CSS Rules (50,000 char limit)
-    ├── Security notice (XSS patterns auto-stripped)
-    ├── [Button] "Save Custom CSS"
-    └── [Button] "CSS Guide" → opens CSS Guide Modal
+Settings
+├── Card: Design
+│   └── Shows Settings -> Design controls: brand colors, typography, corners, images and GIFs
+├── Card: Language
+│   └── Shows multilanguage mode, supported languages, shared Cart & Checkout strings, Landing Page Layout strings, and Product Page Layout strings
+└── Card: Controls
+    └── Shows recovered Additional Configurations facts split by Landing Page Layout and Product Page Layout
 ```
 
-#### Modal: FPB Customization (max overlay)
-Triggered by: "Customize" on Landing Page Bundles card
-**Screenshot:** `screenshots/07-dcp-fpb-modal.png`
+Primary action:
+- Design card Configure opens the Settings -> Design subpage
 
+---
+
+### 2.2b Integrations — `/app/integrations`
+
+**Route file:** `app/routes/app/app.integrations.tsx`
+
+Recovered Admin Integrations hub:
 ```
-FPB DCP Modal (3-column layout)
-│
-├── LEFT: NavigationSidebar
-│   ├── Global Colors
-│   ├── Product Card  [expandable group]
-│   │   ├── Product Card
-│   │   ├── Product Card Typography
-│   │   ├── Button
-│   │   ├── Added State
-│   │   ├── Quantity & Variant Selector
-│   │   ├── Search Input
-│   │   ├── Skeleton Loading
-│   │   └── Typography
-│   ├── Bundle Footer  [expandable group]
-│   │   ├── Footer
-│   │   ├── Footer Price
-│   │   ├── Footer Button
-│   │   ├── Footer Discount Progress
-│   │   └── Quantity Badge
-│   ├── General  [expandable group]
-│   │   ├── Header Tabs
-│   │   ├── Header Text
-│   │   ├── Empty State
-│   │   ├── Add to Cart Button
-│   │   ├── Toasts
-│   │   ├── Modal Close Button
-│   │   ├── Accessibility
-│   │   └── Widget Style
-│   ├── Bundle Header  [FPB only, expandable]
-│   ├── Promo Banner  [FPB only, expandable]
-│   └── Pricing Tier Pills  [FPB only, expandable]
-│
-├── CENTER: SettingsPanel
-│   ├── "Reset to defaults" button (top right, critical/plain)
-│   ├── Divider
-│   └── Dynamic settings form for active section
-│       (ColorPickers, RangeSliders with number input, Segmented controls, Toggles)
-│
-├── RIGHT: PreviewPanel
-│   ├── Viewport toggle: [Desktop] [Mobile]
-│   ├── Footer layout toggle: [Sidebar] [Floating Footer]  (FPB only)
-│   └── Live iframe preview (scaled, postMessage CSS updates)
-│
-└── BOTTOM: Save Bar
-    ├── "Unsaved changes" label
-    ├── [Button] "Discard"
-    └── [Button] "Save"
+Integrations Hub
+├── Request Integration action → https://wolfpackapps.com
+├── Pre-orders, Pickup & Delivery
+│   ├── Stoq → View Setup
+│   └── Zapiet → View Setup
+├── Subscriptions
+│   ├── Skio → View Setup
+│   ├── Appstle → View Setup
+│   └── Bold → View Setup
+├── Reviews
+│   └── Judge.me → View Setup
+├── Page Builders
+│   ├── PageFly → View Setup
+│   └── GemPages → View Setup
+└── Checkout
+    ├── Gokwik → View Setup
+    └── Shopflo → View Setup
 ```
 
-#### Modal: PDP Customization (max overlay)
-Triggered by: "Customize" on Product Bundles card
-**Screenshot:** `screenshots/08-dcp-pdp-modal.png`
+All setup actions currently open `https://wolfpackapps.com` until WPB-owned quick setup guides are published.
 
-```
-PDP DCP Modal (3-column layout — same as FPB except:)
-├── LEFT: NavigationSidebar (no Bundle Header / Promo Banner / Tier Pills)
-├── RIGHT: PreviewPanel — no footer layout toggle (single iframe)
-└── Same Settings Panel + Save Bar structure
-```
-
-#### Modal: CSS Guide
-Triggered by: "CSS Guide" button
-```
-CSS Guide Modal (max overlay)
-└── Help content: CSS variable reference, examples
-```
+Setup behavior:
+- `View Setup` expands an internal recovered setup summary for guide-based integrations.
+- `Open Chat Setup` expands the recovered chat-based setup summary for Zapiet.
+- External competitor help URLs are intentionally not embedded in source code; sanitized evidence remains in `docs/competitor-analysis/18-eb-settings-integrations-replication-evidence.md`.
 
 ---
 
@@ -269,14 +242,23 @@ FPB Configure Page
 │   │   └── [Button] "Add Step" → inline step builder
 │   │       └── Product/Collection picker per step → opens Product Picker
 │   │
-│   ├── Pricing
-│   │   ├── Discount type selector (percentage / fixed amount / fixed price)
-│   │   ├── Tier configuration (multi-tier pricing)
-│   │   └── Preview of effective prices
+│   ├── Discount & Pricing
+│   │   ├── Discount type selector: Fixed Amount Off / Percentage Off / Fixed Bundle Price / Buy X, get Y
+│   │   ├── Rule cards; Buy X, get Y uses Customer buys/gets, Discount value/type, and Apply Discount to
+│   │   ├── Bundle Quantity Options: Box Label/Subtext per eligible rule + Multi Language modal
+│   │   ├── Progress Bar: Simple Bar / Step-Based Bar + Multi Language modal
+│   │   └── Discount Messaging: per-rule Discount Text, one Success Message, Variables modal
 │   │
-│   └── Sync Bundle
-│       ├── Sync status / last synced timestamp
-│       └── [Button] "Sync Now" → background job
+│   ├── Sync Bundle
+│   │   ├── Sync status / last synced timestamp
+│   │   └── [Button] "Sync Now" → background job
+│   │
+│   └── Select Template        → select_template section
+│       ├── Heading: "Customize your bundle"
+│       ├── [Button] "Customize Colors & Language" → /app/settings
+│       └── 2×2 template grid (FPB: Standard Design, Classic Design, Compact Design, Horizontal Design)
+│           └── Each card: preview placeholder + label + [Select]/[Selected] button
+│               Persists: wpbLayoutTemplate (always FBP_SIDE_FOOTER) + wpbPresetId (STANDARD | CLASSIC | COMPACT | HORIZONTAL)
 │
 ├── Save Bar (App Bridge): [Discard] [Save]
 │
@@ -285,7 +267,10 @@ FPB Configure Page
     ├── Product Picker Modal (Shopify resource picker)
     ├── Page Selector Modal (select Shopify page)
     ├── Theme Templates Modal (choose product template)
-    └── Widget Placement Validation Modal
+    ├── Widget Placement Validation Modal
+    ├── Variables Modal (Discount Messaging variable reference)
+    ├── Bundle Quantity Options Multi Language Modal (Box Label / Box Subtext)
+    └── Progress Bar Multi Language Modal (Tier Text / Tier Subtext)
 ```
 
 ---
@@ -296,12 +281,99 @@ FPB Configure Page
 **URL:** `/app/bundles/product-page-bundle/configure/:bundleId`
 
 ```
-PDP Configure Page  (same tab structure as FPB except:)
-├── No "Target page" selector (widget lives on product page)
-├── No Theme Templates Modal
-├── No Widget Placement Validation Modal
-└── Same: Bundle Settings, Steps, Pricing, Sync Bundle tabs
+PPB Configure Page
+├── Sidebar Nav (6 sections — clone hierarchy)
+│   ├── [📝] Step Setup              → step_setup section
+│   ├── Discount & Pricing           → discount_pricing section
+│   ├── [👁] Bundle Visibility       → bundle_visibility section  [Pending badge when widget disabled]
+│   ├── [✏] Bundle Settings         → bundle_settings section
+│   ├── Subscriptions                → subscriptions section
+│   └── [📦] Select Template        → select_template section
+│
+├── Step Setup
+│   ├── Bundle product picker (Shopify resource picker)
+│   ├── Accordion step cards (DnD reorder)
+│   │   ├── Step name, min/max qty
+│   │   ├── Products / Collections pickers
+│   │   ├── Step conditions
+│   │   └── isFreeGift toggle + addon fields (label, title, icon, displayFree, unlockAfterCompletion)
+│   └── [+ Add Step] button
+│
+├── Discount & Pricing
+│   ├── Enable toggle + discount type selector: Fixed Amount Off / Percentage Off / Fixed Bundle Price / Buy X, get Y
+│   ├── Buy X, get Y rule builder (shown when selected)
+│   │   └── Per-rule: Customer buys, Customer gets, Discount value/type, Apply Discount to
+│   ├── Standard and Fixed Bundle Price rule builders (shown for other types)
+│   ├── Bundle Quantity Options sub-section
+│   │   ├── Per-rule: Box Label + Box Subtext inputs + Make this rule default action
+│   │   └── Multi Language modal: Select Language, Box Label, Box Subtext
+│   ├── Progress Bar sub-section
+│   │   ├── Style: Simple Bar / Step-Based Bar radio
+│   │   └── Multi Language modal: Select Language, Tier Text, Tier Subtext
+│   └── Discount Messaging sub-section
+│       ├── Per-rule Discount Text + one global Success Message
+│       └── Variables modal: five supported discount template variables
+│
+├── Bundle Visibility
+│   ├── App Embed Status (inline AppEmbedBanner when disabled)
+│   ├── Publishing Best Practices (2×2 card grid)
+│   ├── Your Bundle Link (copy + preview button)
+│   └── Bundle Widget sub-section
+│       ├── Toggle: upsellWidgetEnabled
+│       ├── Display Mode: radio (block / button)
+│       ├── Display On: select (all / specific_products / specific_collections)
+│       └── Auto-Select Browsed Product: toggle (autoSelectBrowsedProduct)
+│
+├── Bundle Settings
+│   ├── Pre Selected Product
+│   │   ├── Enable toggle
+│   │   ├── Tip banner
+│   │   ├── Default products title
+│   │   ├── Multi Language
+│   │   └── Browse Products (Shopify resource picker)
+│   ├── Enable Quantity Validation
+│   │   ├── Enable toggle
+│   │   ├── Maximum allowed quantity per product
+│   │   ├── Pro Tip banner
+│   │   ├── Product Slots toggle
+│   │   ├── Product Slots helper text
+│   │   ├── Slot Icon: [Change Icon] opens bundle-level image picker; [Reset] clears icon
+│   │   ├── Slot Icon scope: per-bundle Bundle Settings control only; no Design Control Panel route
+│   │   ├── Note: only applies when rules are quantity-based
+│   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
+│   ├── Cart line item discount display
+│   │   └── [Button] "Edit Defaults" → /app/settings
+│   ├── Bundle Banners (bundleBannerDesktopUrl + bundleBannerMobileUrl)
+│   ├── Custom CSS textarea (bundleLevelCss — sanitized via processCss)
+│   └── Bundle Status
+│
+├── Subscriptions
+│   ├── Bundle Subscriptions
+│   ├── How to setup?
+│   ├── Text: "Allow customers to purchase the bundle as a subscription"
+│   ├── [Button] "Get Subscription Plans" → POST validateSellingPlanGroups
+│   └── No-common-plan warning when selected products do not share a selling plan group
+│
+├── Select Template
+│   ├── Heading: "Customize your bundle"
+│   ├── [Button] "Customize Colors & Language" → /app/settings
+│   └── 2×2 template grid (PPB: Product List, Product Grid, Horizontal Slots, Vertical Slots)
+│       └── Each card: preview placeholder + label + [Select]/[Selected] button
+│           Persists: wpbLayoutTemplate (PDP_INPAGE | PDP_MODAL) + wpbPresetId (CASCADE | COGNIVE | MODAL | SIMPLIFIED)
+│
+└── Floating Readiness Gauge (position: fixed, bottom-left)
+    ├── Circular SVG progress ring (score 0–100)
+    ├── Expandable checklist: Steps configured, Bundle product linked,
+    │   Discount set up, Widget enabled, App embed active
+    └── Click to expand/collapse
 ```
+
+**Widget storefront features (as of v2.9.0):**
+- Step slot cards (empty/filled/locked states) with `addonLabel` for free gift tabs
+- Quantity option pills (from `displayOptions.bundleQuantityOptions`)
+- Gift message UI: textarea + optional From/To fields + char counter
+- Progress bar (from `displayOptions.progressBar`)
+- Gift message cart line item with `_bundle_id` + `_gift_message` properties
 
 ---
 
@@ -340,12 +412,12 @@ Billing Page
           └── [Save] → [Sync Bundle tab → Sync Now]
 ```
 
-### Flow C: Design Customisation (DCP)
+### Flow C: Design Customisation
 ```
-/app/design-control-panel
+/app/settings
   └── [Customize] (FPB or PDP)
       └── Max modal opens
-          ├── Click sidebar section → Settings panel updates
+          ├── Click Design card → Settings -> Design panel opens
           ├── Change setting → Preview iframe updates via postMessage (no reload)
           ├── [Mobile] viewport toggle → iframe resets to 375px
           ├── [Floating Footer] layout toggle (FPB) → crossfade to other iframe
@@ -372,9 +444,9 @@ Billing Page
 |---|---|
 | `/apps/product-bundles/api/bundle/:id.json` | Storefront bundle config (HMAC verified) |
 | `/apps/product-bundles/api/bundles.json` | All active bundles for shop |
-| `/api/preview/pdp` | PDP preview page (DCP iframe) |
-| `/api/preview/fpb` | FPB preview page (DCP iframe) |
+| `/apps/product-bundles/api/cart-bundle-details` | Signed storefront route that merges EB-style cart `bundle_details` metafield entries |
 | `/apps/product-bundles/api/design-settings/:shop` | CSS vars for storefront widgets |
+| `/apps/product-bundles/api/language-settings/:shop` | Settings -> Language JSON for storefront widget text and cart labels |
 | `/api/billing/create` | Initiate subscription |
 | `/api/billing/confirm` | Confirm subscription |
 | `/api/billing/cancel` | Cancel subscription |
@@ -394,11 +466,8 @@ Billing Page
 
 | File | What it shows |
 |---|---|
-| `screenshots/01-dcp-landing.png` | DCP landing page (two Customize cards + Custom CSS) |
 | `screenshots/02-dashboard.png` | Dashboard (empty state — no bundles) |
 | `screenshots/03-analytics.png` | Analytics / Attribution page |
 | `screenshots/04-pricing.png` | Pricing page (Free vs Grow) |
 | `screenshots/05-events.png` | Updates & FAQs page |
 | `screenshots/06-create-bundle-modal.png` | Create Bundle modal |
-| `screenshots/07-dcp-fpb-modal.png` | DCP FPB max modal (sidebar nav + settings + preview) |
-| `screenshots/08-dcp-pdp-modal.png` | DCP PDP max modal |

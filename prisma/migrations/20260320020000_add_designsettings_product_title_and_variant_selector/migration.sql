@@ -1,6 +1,6 @@
 -- Migration: Add productTitleVisibility and variantSelector* fields to DesignSettings
--- These fields existed in the TypeScript types and DCP settings panels but were
--- never persisted to the DB (BUG-01 and BUG-02 from DCP bugs audit).
+-- These fields existed in the TypeScript types and legacy Settings design panels but were
+-- never persisted to the DB (BUG-01 and BUG-02 from Settings design bugs audit).
 
 ALTER TABLE "DesignSettings"
   ADD COLUMN IF NOT EXISTS "productTitleVisibility"      BOOLEAN   DEFAULT true,

@@ -552,6 +552,7 @@ export class BillingService {
           shopDomain,
           name: shopName,
           email,
+          firstCreateTourEligible: true,
           subscriptions: {
             create: {
               plan: "free",

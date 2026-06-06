@@ -1,0 +1,13 @@
+ALTER TABLE "StepCategory" ADD COLUMN "title" TEXT;
+ALTER TABLE "StepCategory" ADD COLUMN "subTitle" TEXT;
+ALTER TABLE "StepCategory" ADD COLUMN "categoryRank" INTEGER;
+ALTER TABLE "StepCategory" ADD COLUMN "selectedProducts" JSONB;
+ALTER TABLE "StepCategory" ADD COLUMN "collectionsData" JSONB;
+ALTER TABLE "StepCategory" ADD COLUMN "collectionsSelectedData" JSONB;
+ALTER TABLE "StepCategory" ADD COLUMN "conditions" JSONB;
+ALTER TABLE "StepCategory" ADD COLUMN "categoryBanner" TEXT;
+ALTER TABLE "StepCategory" ADD COLUMN "categoryImg" TEXT;
+ALTER TABLE "StepCategory" ADD COLUMN "autoNextStepOnConditionMet" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "StepCategory" ADD COLUMN "displayVariantsAsIndividualProducts" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "StepCategory" ADD COLUMN "displayVariantsAsSwatches" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "StepCategory" ADD COLUMN "multiLangData" JSONB;

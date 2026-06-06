@@ -31,8 +31,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({
       success: true,
       created: false,
-      templatePath: "theme-app-extension",
-      message: `Bundle functionality available via theme app extension. Add the Bundle Builder block to your product template through the theme editor.`,
+      templatePath: "templates/product.json",
+      message: "Bundle functionality is available through the default product template. Add the Bundle Builder block in the theme editor.",
       bundleId,
       themeExtensionRequired: true,
       restrictionMessage: "Shopify restricts direct theme file creation. Use Theme Customizer to add the Bundle Builder block to your product template."

@@ -18,6 +18,7 @@ import { useBundleSteps } from "./useBundleSteps";
 import { useBundleConditions } from "./useBundleConditions";
 import { useBundlePricing } from "./useBundlePricing";
 import { FullPageLayout, type BundleStatus } from "../constants/bundle";
+import { normalizePricingRuleMessages } from "../lib/pricing-display-options";
 
 // ============================================
 // TYPES
@@ -46,6 +47,8 @@ export interface BundleProductData {
   handle?: string;
   status: string;
   featuredImage?: { url: string };
+  featuredMedia?: { image?: { url?: string | null } | null } | null;
+  media?: { nodes?: Array<{ image?: { url?: string | null } | null } | null> } | null;
   images?: { originalSrc: string }[];
 }
 
@@ -58,6 +61,16 @@ export interface UseBundleConfigurationProps {
 // ============================================
 // HOOK IMPLEMENTATION
 // ============================================
+
+export function getBundleProductImageUrl(loadedBundleProduct?: any): string {
+  return (
+    loadedBundleProduct?.featuredImage?.url ||
+    loadedBundleProduct?.featuredMedia?.image?.url ||
+    loadedBundleProduct?.media?.nodes?.find((node: any) => node?.image?.url)?.image?.url ||
+    loadedBundleProduct?.images?.[0]?.originalSrc ||
+    ""
+  );
+}
 
 export function useBundleConfigurationState({
   bundle,
@@ -123,6 +136,7 @@ export function useBundleConfigurationState({
   const transformedSteps = useMemo(() =>
     (bundle.steps || []).map((step: any) => ({
       ...step,
+      stepImage: step.stepImage ?? step.timelineIconUrl ?? null,
       StepProduct: (step.StepProduct || []).map((sp: any) => ({
         ...sp,
         id: sp.productId,
@@ -204,10 +218,7 @@ export function useBundleConfigurationState({
   const [bundleProduct, setBundleProductRaw] = useState<any>(loadedBundleProduct || null);
   const [productStatus, setProductStatusRaw] = useState(loadedBundleProduct?.status || "ACTIVE");
   const [productTitle, setProductTitle] = useState(loadedBundleProduct?.title || "");
-  const [productImageUrl, setProductImageUrl] = useState(
-    loadedBundleProduct?.featuredImage?.url ||
-    loadedBundleProduct?.images?.[0]?.originalSrc || ""
-  );
+  const [productImageUrl, setProductImageUrl] = useState(getBundleProductImageUrl(loadedBundleProduct));
 
   // Wrapped setters that trigger dirty flag
   const setBundleProduct = useCallback((value: any) => {
@@ -239,7 +250,16 @@ export function useBundleConfigurationState({
   }, [markAsDirty]);
 
   // Rule messages state
-  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>({});
+  const initialRuleMessages = useMemo(
+    () => normalizePricingRuleMessages({
+      rules: Array.isArray(bundle.pricing?.rules) ? bundle.pricing.rules : [],
+      messages: bundle.pricing?.messages || {},
+      method: bundle.pricing?.method,
+    }),
+    [bundle.pricing?.messages, bundle.pricing?.method, bundle.pricing?.rules]
+  );
+
+  const [ruleMessages, setRuleMessagesRaw] = useState<Record<string, { discountText: string; successMessage: string }>>(initialRuleMessages);
 
   const setRuleMessages = useCallback((
     value: Record<string, { discountText: string; successMessage: string }> |
@@ -271,13 +291,31 @@ export function useBundleConfigurationState({
     discountType: pricingState.discountType,
     discountRules: JSON.stringify(pricingState.discountRules),
     showFooter: pricingState.showFooter,
+    showDiscountProgressBar: pricingState.showDiscountProgressBar,
     discountMessagingEnabled: pricingState.discountMessagingEnabled,
+    pricingDisplayOptions: JSON.stringify(pricingState.pricingDisplayOptions),
     selectedCollections: JSON.stringify({}),
-    ruleMessages: JSON.stringify({}),
+    ruleMessages: JSON.stringify(initialRuleMessages),
     stepConditions: JSON.stringify(conditionsState.stepConditions),
     bundleProduct: loadedBundleProduct || null,
     productStatus: loadedBundleProduct?.status || "ACTIVE",
   });
+
+  const syncLoadedBundleProductStatus = useCallback(() => {
+    setBundleProductRaw(loadedBundleProduct || null);
+    setProductStatusRaw(loadedBundleProduct?.status || "ACTIVE");
+    setProductTitle(loadedBundleProduct?.title || "");
+    setProductImageUrl(getBundleProductImageUrl(loadedBundleProduct));
+    originalValuesRef.current = {
+      ...originalValuesRef.current,
+      bundleProduct: loadedBundleProduct || null,
+      productStatus: loadedBundleProduct?.status || "ACTIVE",
+    };
+  }, [loadedBundleProduct]);
+
+  useEffect(() => {
+    syncLoadedBundleProductStatus();
+  }, [syncLoadedBundleProductStatus]);
 
   // ===== DISCARD HANDLER =====
   const handleDiscard = useCallback(() => {
@@ -301,7 +339,9 @@ export function useBundleConfigurationState({
       pricingState.setDiscountType(originalValues.discountType);
       pricingState.setDiscountRules(JSON.parse(originalValues.discountRules));
       pricingState.setShowFooter(originalValues.showFooter);
+      pricingState.setShowDiscountProgressBar(originalValues.showDiscountProgressBar);
       pricingState.setDiscountMessagingEnabled(originalValues.discountMessagingEnabled);
+      pricingState.setPricingDisplayOptions(JSON.parse(originalValues.pricingDisplayOptions));
 
       // Reset collections
       setSelectedCollections(JSON.parse(originalValues.selectedCollections));
@@ -351,7 +391,9 @@ export function useBundleConfigurationState({
       discountType: pricingState.discountType,
       discountRules: JSON.stringify(pricingState.discountRules),
       showFooter: pricingState.showFooter,
+      showDiscountProgressBar: pricingState.showDiscountProgressBar,
       discountMessagingEnabled: pricingState.discountMessagingEnabled,
+      pricingDisplayOptions: JSON.stringify(pricingState.pricingDisplayOptions),
       selectedCollections: JSON.stringify(selectedCollections),
       ruleMessages: JSON.stringify(ruleMessages),
       stepConditions: JSON.stringify(conditionsState.stepConditions),

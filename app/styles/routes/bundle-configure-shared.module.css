@@ -1,0 +1,790 @@
+/* Shared configure-page primitives. FPB styles are the source of truth. */
+
+.card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.stepSetupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.stepSetupTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stepSetupActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.stepSetupTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.stepSetupDescription {
+  margin: 0 0 10px;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.pendingBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #ffd79d;
+  color: #4a1504;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.optimisedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #d3f5d0;
+  color: #1a4020;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}
+
+.pendingTooltipCard {
+  width: 200px;
+  padding: 10px 12px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(31, 41, 55, 0.14);
+  color: #202223;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.pendingTooltipCard::before {
+  position: absolute;
+  top: -6px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  border-left: 1px solid #dfe3e8;
+  border-top: 1px solid #dfe3e8;
+  background: #ffffff;
+  content: "";
+}
+
+.stepConfigRow {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.iconColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.iconBox {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.iconImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.iconPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a8a8a8;
+}
+
+.iconRemoveButton {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #d72c0d;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.fieldsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panelTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.panelDescription {
+  margin: 6px 0 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.mediaFieldGrid {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.visibilityGuideGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.visibilityGuideCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e3e5e7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.visibilityGuideMedia {
+  height: 120px;
+  border-radius: 8px;
+  background: #f1f2f4;
+  overflow: hidden;
+}
+
+.visibilityGuideMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.widgetPreviewMedia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border: 1px solid #e3e5e7;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fafbfb 0%, #f1f2f4 100%);
+  color: #6d7175;
+}
+
+.widgetPreviewButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 190px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #202223;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.visibilitySetupTime {
+  color: #6d7175;
+  font-size: 12px;
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #edf0f2;
+}
+
+.settingsRow:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.settingsRowText {
+  flex: 1;
+  min-width: 0;
+}
+
+.settingsRowTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settingsRowDescription {
+  margin: 4px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settingsRowControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 168px;
+}
+
+.displayOptionRow {
+  position: relative;
+  overflow: visible;
+  padding: 12px 0;
+  border-top: 1px solid #edf0f2;
+}
+
+.displayOptionRow:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.displayOptionText {
+  flex: 1;
+  min-width: 0;
+}
+
+.displayOptionTitle {
+  margin: 0;
+  color: #202223;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.displayOptionDescription {
+  margin: 3px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.nestedDisplayOptions {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid #edf0f2;
+  border-radius: 8px;
+  background: #fafbfb;
+}
+
+.optionNote {
+  margin: 8px 0 0;
+  color: #6d7175;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.optionNote strong {
+  color: #202223;
+}
+
+.categoryDrag {
+  display: grid;
+  place-items: center;
+  color: #303030;
+  font-size: 15px;
+  line-height: 1;
+  cursor: grab;
+  flex-shrink: 0;
+}
+
+.categoryName {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  color: #202223;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.categoryIconButton,
+.categoryTextButton,
+.categoryDangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #303030;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.categoryIconButton {
+  width: 28px;
+  padding: 0;
+  font-size: 15px;
+}
+
+.categoryIconButton + .categoryIconButton {
+  border-left-color: #d9d9d9;
+}
+
+.categoryTextButton,
+.categoryDangerButton {
+  gap: 5px;
+  padding: 4px 8px;
+}
+
+.categoryTextButton {
+  min-height: 36px;
+  padding: 0 12px;
+  border-color: #d9d9d9;
+  border-radius: 7px;
+  background: #ffffff;
+}
+
+.categoryIconButton:hover,
+.categoryTextButton:hover {
+  border-color: #d4d4d4;
+  background: #f7f7f7;
+  color: #111111;
+}
+
+.categoryDangerButton {
+  color: #8e1f0b;
+}
+
+.categoryDeleteIconButton {
+  width: 28px;
+  padding: 0;
+  color: #d72c0d;
+}
+
+.categoryDangerButton:hover {
+  border-color: #fed3c2;
+  background: #fff4f4;
+  color: #5f1507;
+}
+
+.categoryAccordion {
+  margin-bottom: 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.categoryAccordionHeader {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto 28px;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 14px 20px;
+  min-height: 58px;
+  background: #f7f7f7;
+  cursor: pointer;
+  user-select: none;
+}
+
+.categoryAccordionHeader:hover {
+  background: #f3f3f3;
+}
+
+.categoryAccordionHeader:focus-visible {
+  outline: 2px solid #005bd3;
+  outline-offset: 2px;
+}
+
+.categoryAccordionHeader[aria-expanded="true"] {
+  border-bottom: 1px solid #e5e7eb;
+  background: #f7f7f7;
+}
+
+.categoryAccordionBody {
+  padding: 12px 16px 16px;
+  background: #ffffff;
+}
+
+.categoryFieldLabel {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.categoryInputStack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.categoryInputHelp {
+  margin: 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.categoryDragOver {
+  border: 2px solid #458fff;
+  box-shadow: 0 0 0 3px rgba(69, 143, 255, 0.12);
+}
+
+.categoryNameInput {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #8c9196;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.categoryNameInput:hover {
+  border-color: #919eab;
+}
+
+.categoryNameInput:focus {
+  border-color: #458fff;
+  box-shadow: 0 0 0 2px rgba(69, 143, 255, 0.15);
+}
+
+.categoryPickerHelp {
+  margin: 0 0 14px;
+  color: #303030;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.categoryProductList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.categoryProductRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+}
+
+.categoryProductImage {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: #f1f1f1;
+}
+
+.categoryProductTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #303030;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ruleCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ruleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ruleFields {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.discountRuleCard {
+  display: block;
+  padding: 12px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #f6f6f7;
+}
+
+/* Three-column row for Percentage Off / Fixed Amount Off rule fields. */
+.discountFieldsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+/* Two-column row for Fixed Bundle Price rule fields (number of products + price). */
+.discountFieldsRowPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: end;
+}
+
+@media (max-width: 700px) {
+  .discountFieldsRow,
+  .discountFieldsRowPair {
+    grid-template-columns: 1fr;
+  }
+}
+
+.discountRuleHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.displayOptionsInactive {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.emptyState {
+  border: 1.5px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 28px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.rulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.categoryRulesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoryRuleAccordion {
+  overflow: hidden;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.categoryRuleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 0;
+  background: #ffffff;
+  color: #202223;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.categoryRuleHeader:hover {
+  background: #f6f6f7;
+}
+
+.categoryRuleHeader[aria-expanded="true"] {
+  border-bottom: 1px solid #edf0f2;
+}
+
+.categoryRuleBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.categoryRuleInlinePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 1px solid #e3e3e3;
+  padding-top: 14px;
+}
+
+.categoryRuleHelp {
+  margin: 0;
+  color: #6d7175;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.categoryRuleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Inline unlabelled rule fields row — EB-style, no Polaris labels */
+.categoryRuleFields {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.ruleInlineSelect {
+  height: 32px;
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #c9cccf;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #202223;
+  padding: 0 4px 0 8px;
+  cursor: pointer;
+}
+
+.ruleInlineSelect:focus {
+  outline: 2px solid #005bd3;
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.ruleInlineNumber {
+  height: 32px;
+  width: 72px;
+  flex-shrink: 0;
+  border: 1px solid #c9cccf;
+  border-radius: 4px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #202223;
+  padding: 0 6px;
+  text-align: left;
+}
+
+.ruleInlineNumber:focus {
+  outline: 2px solid #005bd3;
+  outline-offset: 1px;
+  border-color: transparent;
+}

@@ -93,6 +93,75 @@ const ConditionValidator = (function () {
   }
 
   /**
+   * Normalize an operator name. The validator accepts both Wolfpack-style
+   * snake_case (`greater_than_or_equal_to`) and EB-style camelCase
+   * (`greaterThanOrEqualTo`) so the same evaluator works against step rules
+   * (snake_case) and category rules (camelCase, persisted from the admin
+   * UI's CATEGORY_CONDITION_OPERATOR_OPTIONS).
+   */
+  function _normalizeOperator(operator) {
+    if (typeof operator !== 'string' || operator.length === 0) return operator;
+    if (operator.indexOf('_') !== -1) return operator;
+    return operator.replace(/([A-Z])/g, '_$1').toLowerCase();
+  }
+
+  function _sumQuantities(selections) {
+    let total = 0;
+    if (!selections) return total;
+    for (const qty of Object.values(selections)) {
+      total += Number(qty) || 0;
+    }
+    return total;
+  }
+
+  function _collectCategoryProductIds(category) {
+    const ids = new Set();
+    const products = Array.isArray(category && category.products) ? category.products : [];
+    for (const product of products) {
+      const raw = product && (product.id || product.productId || product.graphqlId);
+      if (raw == null || raw === '') continue;
+      // Strip GID prefix (e.g. "gid://shopify/Product/123" → "123") so that the
+      // Set matches numeric IDs used as widget selection keys.
+      const id = String(raw).replace(new RegExp('^gid://shopify/[^/]+/'), '');
+      if (id) ids.add(id);
+    }
+    return ids;
+  }
+
+  /**
+   * Evaluate whether a single category's rules are satisfied by the current
+   * step selections. Categories with no `conditions` are always satisfied.
+   *
+   * Used by `isStepConditionSatisfied` in category-rule mode.
+   */
+  function evaluateCategoryRules(category, stepSelections) {
+    const rules = Array.isArray(category && category.conditions) ? category.conditions : [];
+    if (rules.length === 0) return true;
+
+    const productIds = _collectCategoryProductIds(category);
+    const selections = stepSelections || {};
+    let categoryTotal = 0;
+    for (const pid of Object.keys(selections)) {
+      if (productIds.has(String(pid))) {
+        categoryTotal += Number(selections[pid]) || 0;
+      }
+    }
+
+    for (const rule of rules) {
+      const operator = _normalizeOperator(rule && (rule.operator || rule.condition));
+      const value = Number(rule && rule.value);
+      if (!Number.isFinite(value)) continue;
+      if (!_evaluateSatisfied(operator, value, categoryTotal)) return false;
+    }
+    return true;
+  }
+
+  function _isCategoryRuleMode(step) {
+    const categories = Array.isArray(step && step.categories) ? step.categories : [];
+    return categories.some(c => Array.isArray(c && c.conditions) && c.conditions.length > 0);
+  }
+
+  /**
    * Check whether a step's current selection fully satisfies its condition(s).
    * Called at navigation time (Next / Add to Cart) to gate step completion.
    *
@@ -104,6 +173,18 @@ const ConditionValidator = (function () {
    */
   function isStepConditionSatisfied(step, currentSelections) {
     if (!step) return true;
+
+    // Category-rule mode: when any category has non-empty `conditions`, the
+    // step is satisfied when every category with conditions is independently
+    // satisfied. Step-level conditions are ignored in this mode (mutually
+    // exclusive with category rules per the admin UI).
+    if (_isCategoryRuleMode(step)) {
+      const categories = Array.isArray(step.categories) ? step.categories : [];
+      for (const cat of categories) {
+        if (!evaluateCategoryRules(cat, currentSelections)) return false;
+      }
+      return true;
+    }
 
     const selections = currentSelections || {};
     let total = 0;
@@ -126,6 +207,37 @@ const ConditionValidator = (function () {
     }
 
     return true;
+  }
+
+  function getAllowedQuantityPerProduct(validateQuantityPerProduct) {
+    if (!validateQuantityPerProduct || validateQuantityPerProduct.isEnabled !== true) {
+      return null;
+    }
+
+    const allowed = Number(validateQuantityPerProduct.allowedQuantity);
+    if (!Number.isFinite(allowed) || allowed < 1) {
+      return 1;
+    }
+
+    return Math.floor(allowed);
+  }
+
+  function canUpdateProductQuantity(validateQuantityPerProduct, currentQuantity, newQuantity) {
+    const limit = getAllowedQuantityPerProduct(validateQuantityPerProduct);
+    if (limit === null) {
+      return { allowed: true, limit: null };
+    }
+
+    const current = Number(currentQuantity) || 0;
+    const proposed = Number(newQuantity) || 0;
+    if (proposed <= current) {
+      return { allowed: true, limit };
+    }
+
+    return {
+      allowed: proposed <= limit,
+      limit,
+    };
   }
 
   // ─── Private helpers ──────────────────────────────────────────────────────
@@ -189,6 +301,10 @@ const ConditionValidator = (function () {
     calculateStepTotalAfterUpdate,
     canUpdateQuantity,
     isStepConditionSatisfied,
+    evaluateCategoryRules,
+    isCategoryRuleMode: _isCategoryRuleMode,
+    getAllowedQuantityPerProduct,
+    canUpdateProductQuantity,
   };
 }());
 

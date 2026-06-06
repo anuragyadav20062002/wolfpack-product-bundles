@@ -62,18 +62,29 @@ export class TemplateManager {
       return this.createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo);
     }
 
-    // Extract rule data using nested structure
-    const conditionType = ruleToUse.condition.type;
-    const targetValue = ruleToUse.condition.value;
-    const conditionOperator = ruleToUse.condition.operator;
-    const discountMethod = ruleToUse.discount.method;
-    const rawDiscountValue = ruleToUse.discount.value;
+    const discountMethod = PricingCalculator.getDiscountMethod(bundle);
+    const conditionType = PricingCalculator.getRuleConditionType(ruleToUse);
+    const targetValue = PricingCalculator.getRuleConditionValue(ruleToUse, discountMethod);
+    const conditionOperator = PricingCalculator.getRuleConditionOperator(ruleToUse);
+    const rawDiscountValue = PricingCalculator.getRuleDiscountValue(ruleToUse);
+    const discountedItems = discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y
+      ? String(Number(ruleToUse.customerGets || 0))
+      : (conditionType === 'quantity' ? targetValue.toString() : '0');
 
     // Calculate condition-specific values
     const conditionData = this.calculateConditionData(conditionType, targetValue, conditionOperator, totalPrice, totalQuantity, currencyInfo);
 
     // Calculate discount-specific values
-    const discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo);
+    let discountData = this.calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, ruleToUse);
+    const dtoDiscountDisplay = this.getRuleDiscountDisplay(bundle, ruleToUse);
+    if (dtoDiscountDisplay?.valueToken && this.shouldUseDtoDiscountDisplay(discountMethod, ruleToUse)) {
+      discountData = {
+        ...discountData,
+        discountText: dtoDiscountDisplay.text,
+        discountValue: dtoDiscountDisplay.valueToken,
+        discountValueUnit: ''
+      };
+    }
 
     // Calculate progress
     const currentProgress = conditionType === 'amount' ? totalPrice : totalQuantity;
@@ -87,6 +98,11 @@ export class TemplateManager {
 
       // Discount-specific variables
       discountText: discountData.discountText,
+      discountConditionDiff: conditionType === 'amount' ? conditionData.amountNeeded : conditionData.itemsNeeded,
+      discountUnit: conditionType === 'amount' ? currencyInfo.display.symbol : '',
+      discountValue: discountData.discountValue,
+      discountValueUnit: discountData.discountValueUnit,
+      discountedItems,
 
       // Qualification status
       alreadyQualified: conditionData.alreadyQualified || false,
@@ -226,7 +242,7 @@ export class TemplateManager {
     }
   }
 
-  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo) {
+  static calculateDiscountData(discountMethod, rawDiscountValue, currencyInfo, rule = null) {
     if (rawDiscountValue == null) {
       console.warn('[BUNDLE_WIDGET] calculateDiscountData: rawDiscountValue is', rawDiscountValue);
     }
@@ -236,7 +252,9 @@ export class TemplateManager {
       case BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF:
         const percentage = Math.round(safeValue);
         return {
-          discountText: `${percentage}% off`
+          discountText: `${percentage}% off`,
+          discountValue: String(percentage),
+          discountValueUnit: '%'
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF:
@@ -249,7 +267,9 @@ export class TemplateManager {
         );
         const amountOff = (convertedAmount / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${amountOff} off`
+          discountText: `${currencyInfo.display.symbol}${amountOff} off`,
+          discountValue: amountOff,
+          discountValueUnit: currencyInfo.display.symbol
         };
 
       case BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE:
@@ -262,14 +282,96 @@ export class TemplateManager {
         );
         const bundlePrice = (convertedPrice / 100).toFixed(2);
         return {
-          discountText: `${currencyInfo.display.symbol}${bundlePrice}`
+          discountText: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValue: `${currencyInfo.display.symbol}${bundlePrice}`,
+          discountValueUnit: ''
+        };
+
+      case BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y:
+        if ((rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount') {
+          const convertedBxyAmount = CurrencyManager.convertCurrency(
+            safeValue,
+            currencyInfo.calculation.code,
+            currencyInfo.display.code,
+            currencyInfo.display.rate
+          );
+          const bxyAmountOff = (convertedBxyAmount / 100).toFixed(2);
+          return {
+            discountText: `${currencyInfo.display.symbol}${bxyAmountOff} off`,
+            discountValue: `${currencyInfo.display.symbol}${bxyAmountOff}`,
+            discountValueUnit: ''
+          };
+        }
+        const bxyPercentage = Math.round(safeValue);
+        return {
+          discountText: `${bxyPercentage}% off`,
+          discountValue: String(bxyPercentage),
+          discountValueUnit: '%'
         };
 
       default:
         return {
-          discountText: 'discount'
+          discountText: 'discount',
+          discountValue: String(safeValue),
+          discountValueUnit: ''
         };
     }
+  }
+
+  static shouldUseDtoDiscountDisplay(discountMethod, rule = null) {
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF) {
+      return true;
+    }
+
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.BUY_X_GET_Y) {
+      return (rule?.bxyDiscountType || rule?.discountType) === 'fixed_amount';
+    }
+
+    return false;
+  }
+
+  static getRuleDiscountDisplay(bundle, rule = null) {
+    const messages = bundle?.pricing?.messages;
+    const ruleId = rule?.id ? String(rule.id) : '';
+    const bundleQuantityOptions = messages?.displayOptions?.bundleQuantityOptions || {};
+    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+    const tierTextByRuleId = messages?.tierTextByRuleId || {};
+    const candidates = [];
+
+    if (ruleId) {
+      candidates.push(optionsByRuleId[ruleId]?.subtext);
+      candidates.push(tierTextByRuleId[ruleId]?.tierSubtext);
+    }
+
+    const defaultRuleId = bundleQuantityOptions.defaultRuleId ? String(bundleQuantityOptions.defaultRuleId) : '';
+    if (defaultRuleId && defaultRuleId !== ruleId) {
+      candidates.push(optionsByRuleId[defaultRuleId]?.subtext);
+      candidates.push(tierTextByRuleId[defaultRuleId]?.tierSubtext);
+    }
+
+    const text = candidates.find(value => typeof value === 'string' && value.trim());
+    if (!text) return null;
+
+    const valueToken = this.extractDiscountValueToken(text);
+    if (!valueToken) return null;
+
+    return {
+      text: text.trim(),
+      valueToken
+    };
+  }
+
+  static extractDiscountValueToken(displayText) {
+    if (typeof displayText !== 'string') return '';
+
+    const token = displayText
+      .trim()
+      .replace(/^save\s+/i, '')
+      .replace(/\s+discount$/i, '')
+      .replace(/\s+off$/i, '')
+      .trim();
+
+    return /\d/.test(token) ? token : '';
   }
 
   static createEmptyVariables(bundle, totalPrice, totalQuantity, discountInfo, currencyInfo) {
@@ -279,6 +381,11 @@ export class TemplateManager {
       itemsNeeded: '0',
       conditionText: '0 items',
       discountText: 'No discount',
+      discountConditionDiff: '0',
+      discountUnit: '',
+      discountValue: '0',
+      discountValueUnit: '',
+      discountedItems: '0',
 
       // Progress variables
       currentAmount: CurrencyManager.formatMoney(totalPrice, currencyInfo.display.format),

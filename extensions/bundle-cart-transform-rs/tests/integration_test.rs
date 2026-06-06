@@ -2,14 +2,110 @@
 mod tests {
     use bundle_cart_transform_rs::{cart_transform_run, schema};
     use shopify_function::run_function_with_input;
+    use std::collections::HashMap;
 
     // =========================================================================
     // MERGE OPERATION TESTS
     // =========================================================================
 
+    fn merge_attributes(output: &schema::FunctionRunResult) -> HashMap<String, String> {
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+
+        merge
+            .attributes
+            .as_ref()
+            .expect("merge attributes should be present")
+            .iter()
+            .map(|attr| (attr.key.clone(), attr.value.clone()))
+            .collect()
+    }
+
+    fn messaging_merge_input(cart_transform_fragment: &str) -> String {
+        let cart_transform_fragment = if cart_transform_fragment.trim().is_empty() {
+            r#""cartTransform": { "bundleCartLineMessaging": null },"#.to_string()
+        } else {
+            cart_transform_fragment.to_string()
+        };
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102"
+                ]
+            },
+            "component_quantities": { "value": [1, 2] },
+            "price_adjustment": { "method": "percentage_off", "value": 20.0 }
+        }])
+        .to_string();
+        let display_properties = serde_json::json!({
+            "box": "1",
+            "items": "1 x 18k Bloom Earrings, 2 x 18k Pedal Ring - 6 (6)",
+            "retailPrice": "₹50",
+            "youSave": {
+                "amount": "₹10",
+                "percentage": "20%",
+                "amountPercentage": "₹10 (20%)"
+            }
+        })
+        .to_string();
+
+        format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            {cart_transform_fragment}
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-attrs" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "18k Bloom Earrings" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "30.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 2,
+                        "easyBundleOfferId": {{ "value": "bundle-attrs" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "18k Pedal Ring - 6 (6)" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "10.00" }},
+                            "totalAmount": {{ "amount": "20.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        )
+    }
+
     #[test]
     fn test_empty_cart_no_operations() {
-        let input = r#"{"presentmentCurrencyRate":"1.0","cart":{"lines":[]}}"#;
+        let input = r#"{"presentmentCurrencyRate":"1.0","cartTransform":{"bundleCartLineMessaging":null},"cart":{"lines":[]}}"#;
         let output: schema::FunctionRunResult =
             run_function_with_input(cart_transform_run, input).expect("should not error");
         assert!(output.operations.is_empty());
@@ -19,10 +115,11 @@ mod tests {
     fn test_non_bundle_line_ignored() {
         let input = r#"{
             "presentmentCurrencyRate": "1.0",
+            "cartTransform": { "bundleCartLineMessaging": null },
             "cart": {
                 "lines": [{
                     "id": "line1", "quantity": 1,
-                    "bundleId": null, "bundleName": null, "stepType": null,
+                    "easyBundleOfferId": null, "easyBundleName": null, "stepType": null,
                     "merchandise": {
                         "__typename": "ProductVariant",
                         "id": "gid://shopify/ProductVariant/111",
@@ -56,12 +153,13 @@ mod tests {
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
             "cart": {{
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-abc" }},
-                        "bundleName": {{ "value": "Test Bundle" }},
+                        "easyBundleOfferId": {{ "value": "MIX-894502_K1K_1" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -78,8 +176,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-abc" }},
-                        "bundleName": {{ "value": "Test Bundle" }},
+                        "easyBundleOfferId": {{ "value": "MIX-894502_K1K_2" }},
+                        "easyBundleName": {{ "value": "Test Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -122,6 +220,272 @@ mod tests {
     }
 
     #[test]
+    fn test_merge_excludes_gift_message_auxiliary_line() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102"
+                ]
+            },
+            "component_quantities": { "value": [1, 1] },
+            "price_adjustment": {
+                "method": "percentage_off",
+                "value": 5.0,
+                "conditions": { "type": "quantity", "operator": "gte", "value": 2 }
+            }
+        }])
+        .to_string();
+
+        let display = serde_json::json!({
+            "box": "1",
+            "items": "1 x Widget A, 1 x Widget B",
+            "retailPrice": "$50.00",
+            "youSave": {
+                "amount": "$2.50",
+                "percentage": "5%",
+                "amountPercentage": "$2.50 (5%)"
+            }
+        })
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "easyBundleName": {{ "value": "Message Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null,
+                            "component_quantities": null,
+                            "price_adjustment": null,
+                            "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "30.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "easyBundleName": {{ "value": "Message Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null,
+                            "component_quantities": null,
+                            "price_adjustment": null,
+                            "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Widget B" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "20.00" }},
+                            "totalAmount": {{ "amount": "20.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "message-line", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-message" }},
+                        "easyBundleName": {{ "value": "Message Bundle" }},
+                        "stepType": {{ "value": "gift_message" }},
+                        "bundleDisplayProperties": null,
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/9999",
+                            "component_parents": null,
+                            "component_reference": null,
+                            "component_quantities": null,
+                            "price_adjustment": null,
+                            "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/9", "title": "Message Product" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "6.93" }},
+                            "totalAmount": {{ "amount": "6.93" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+        assert_eq!(merge.cart_lines.len(), 2);
+        assert!(
+            merge
+                .cart_lines
+                .iter()
+                .all(|line| line.cart_line_id != "message-line")
+        );
+
+        let retail_total = merge
+            .attributes
+            .as_ref()
+            .and_then(|attrs| {
+                attrs
+                    .iter()
+                    .find(|attr| attr.key == "_bundle_total_retail_cents")
+                    .map(|attr| attr.value.as_str())
+            });
+        assert_eq!(retail_total, Some("5000"));
+    }
+
+    #[test]
+    fn test_merge_buy_x_get_y_component_parent() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102",
+                    "gid://shopify/ProductVariant/103"
+                ]
+            },
+            "component_quantities": { "value": [1, 1, 1] },
+            "price_adjustment": {
+                "method": "buy_x_get_y",
+                "value": 100.0,
+                "customerBuys": 2,
+                "customerGets": 1,
+                "discountType": "percentage",
+                "applyDiscountTo": "lowest_priced",
+                "conditions": { "type": "quantity", "operator": "gte", "value": 3 }
+            }
+        }])
+        .to_string();
+        let display_properties = serde_json::json!({
+            "box": "1",
+            "items": "3 x Widget",
+            "retailPrice": "$30.00",
+            "youSave": {
+                "amount": "$10.00",
+                "percentage": "33.33%",
+                "amountPercentage": "$10.00 (33.33%)"
+            }
+        })
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 3,
+                        "easyBundleOfferId": {{ "value": "bundle-bxy" }},
+                        "easyBundleName": {{ "value": "BXY Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "10.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+        assert_eq!(merge.parent_variant_id, "gid://shopify/ProductVariant/999");
+        let pct = merge
+            .price
+            .as_ref()
+            .and_then(|p| p.percentage_decrease.as_ref())
+            .map(|v| v.value.to_string());
+        assert_eq!(pct.as_deref(), Some("33.3333"));
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(attributes.get("Items").map(String::as_str), Some("3 x Widget"));
+        assert_eq!(attributes.get("Retail Price").map(String::as_str), Some("$30.00"));
+        assert_eq!(attributes.get("You Save").map(String::as_str), Some("$10.00 (33.33%)"));
+    }
+
+    #[test]
+    fn test_merge_emits_public_cart_line_messaging_by_default() {
+        let input = messaging_merge_input("");
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(attributes.get("Box").map(String::as_str), Some("1"));
+        assert_eq!(attributes.get("_Items").map(String::as_str), Some(""));
+        assert_eq!(
+            attributes.get("Items").map(String::as_str),
+            Some("1 x 18k Bloom Earrings, 2 x 18k Pedal Ring - 6 (6)")
+        );
+        assert_eq!(attributes.get("Retail Price").map(String::as_str), Some("₹50"));
+        assert_eq!(attributes.get("You Save").map(String::as_str), Some("₹10 (20%)"));
+    }
+
+    #[test]
+    fn test_merge_uses_cart_line_messaging_settings_from_function_owner() {
+        let settings = serde_json::json!({
+            "isEnabled": true,
+            "showBundleContains": false,
+            "showOriginalPrice": false,
+            "discountDisplay": {
+                "isEnabled": false,
+                "format": "amount_percentage"
+            }
+        })
+        .to_string();
+        let input = messaging_merge_input(&format!(
+            r#""cartTransform": {{ "bundleCartLineMessaging": {{ "value": {settings:?} }} }},"#
+        ));
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(attributes.get("Box").map(String::as_str), Some("1"));
+        assert_eq!(attributes.get("_Items").map(String::as_str), Some(""));
+        assert!(!attributes.contains_key("Items"));
+        assert!(!attributes.contains_key("Retail Price"));
+        assert!(!attributes.contains_key("You Save"));
+    }
+
+    #[test]
     fn test_merge_duplicate_name_unique_title() {
         let cp = serde_json::json!([{
             "id": "gid://shopify/ProductVariant/999",
@@ -134,12 +498,13 @@ mod tests {
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
             "cart": {{
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-001" }},
-                        "bundleName": {{ "value": "Summer Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-001" }},
+                        "easyBundleName": {{ "value": "Summer Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant", "id": "gid://shopify/ProductVariant/101",
@@ -152,8 +517,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "bundle-002" }},
-                        "bundleName": {{ "value": "Summer Bundle" }},
+                        "easyBundleOfferId": {{ "value": "bundle-002" }},
+                        "easyBundleName": {{ "value": "Summer Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant", "id": "gid://shopify/ProductVariant/201",
@@ -210,12 +575,13 @@ mod tests {
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
             "cart": {{
                 "lines": [
                     {{
                         "id": "line1", "quantity": 1,
-                        "bundleId": {{ "value": "sidebar-instance-1" }},
-                        "bundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "easyBundleOfferId": {{ "value": "sidebar-instance-1" }},
+                        "easyBundleName": {{ "value": "Full Page Sidebar Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -232,8 +598,8 @@ mod tests {
                     }},
                     {{
                         "id": "line2", "quantity": 1,
-                        "bundleId": {{ "value": "sidebar-instance-1" }},
-                        "bundleName": {{ "value": "Full Page Sidebar Bundle" }},
+                        "easyBundleOfferId": {{ "value": "sidebar-instance-1" }},
+                        "easyBundleName": {{ "value": "Full Page Sidebar Bundle" }},
                         "stepType": null,
                         "merchandise": {{
                             "__typename": "ProductVariant",
@@ -274,6 +640,128 @@ mod tests {
         assert_eq!(pct.as_deref(), Some("20.0"));
     }
 
+    #[test]
+    fn test_merge_applies_selected_addon_discount_attributes() {
+        let cp = serde_json::json!([{
+            "id": "gid://shopify/ProductVariant/999",
+            "component_reference": {
+                "value": [
+                    "gid://shopify/ProductVariant/101",
+                    "gid://shopify/ProductVariant/102",
+                    "gid://shopify/ProductVariant/103"
+                ]
+            },
+            "component_quantities": { "value": [1, 1, 1] },
+            "price_adjustment": { "method": "fixed_amount_off", "value": 500.0 }
+        }])
+        .to_string();
+        let display_properties = serde_json::json!({
+            "box": "1",
+            "items": "1 x Widget A, 1 x Widget B, 1 x Add-on",
+            "retailPrice": "$110.00",
+            "youSave": {
+                "amount": "$11.00",
+                "percentage": "10%",
+                "amountPercentage": "$11.00 (10%)"
+            }
+        })
+        .to_string();
+
+        let input = format!(
+            r#"{{
+            "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
+            "cart": {{
+                "lines": [
+                    {{
+                        "id": "line1", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "easyBundleName": {{ "value": "Add-on Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/101",
+                            "component_parents": {{ "value": {cp:?} }},
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/1", "title": "Widget A" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "30.00" }},
+                            "totalAmount": {{ "amount": "30.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "line2", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "easyBundleName": {{ "value": "Add-on Bundle" }},
+                        "stepType": null,
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/102",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/2", "title": "Widget B" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "20.00" }},
+                            "totalAmount": {{ "amount": "20.00" }}
+                        }}
+                    }},
+                    {{
+                        "id": "addon-line", "quantity": 1,
+                        "easyBundleOfferId": {{ "value": "bundle-with-addon" }},
+                        "easyBundleName": {{ "value": "Add-on Bundle" }},
+                        "stepType": {{ "value": "addon:PERCENTAGE:10" }},
+                        "bundleDisplayProperties": {{ "value": {display_properties:?} }},
+                        "merchandise": {{
+                            "__typename": "ProductVariant",
+                            "id": "gid://shopify/ProductVariant/103",
+                            "component_parents": null,
+                            "component_reference": null, "component_quantities": null,
+                            "price_adjustment": null, "component_pricing": null,
+                            "product": {{ "id": "gid://shopify/Product/3", "title": "Add-on" }}
+                        }},
+                        "cost": {{
+                            "amountPerQuantity": {{ "amount": "60.00" }},
+                            "totalAmount": {{ "amount": "60.00" }}
+                        }}
+                    }}
+                ]
+            }}
+        }}"#
+        );
+
+        let output: schema::FunctionRunResult =
+            run_function_with_input(cart_transform_run, &input).expect("should not error");
+        assert_eq!(output.operations.len(), 1);
+
+        let merge = match &output.operations[0] {
+            schema::CartOperation::LinesMerge(m) => m,
+            _ => panic!("expected Merge operation"),
+        };
+        let pct = merge
+            .price
+            .as_ref()
+            .and_then(|p| p.percentage_decrease.as_ref())
+            .map(|v| v.value.to_string());
+        assert_eq!(pct.as_deref(), Some("10.0"));
+
+        let attributes = merge_attributes(&output);
+        assert_eq!(
+            attributes.get("_bundle_total_savings_cents").map(String::as_str),
+            Some("1100")
+        );
+        assert_eq!(
+            attributes.get("_bundle_discount_percent").map(String::as_str),
+            Some("10.00")
+        );
+        assert_eq!(attributes.get("You Save").map(String::as_str), Some("$11.00 (10%)"));
+    }
+
     // =========================================================================
     // EXPAND OPERATION TESTS
     // =========================================================================
@@ -294,11 +782,12 @@ mod tests {
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
             "cart": {{
                 "lines": [{{
                     "id": "flex-line", "quantity": 1,
-                    "bundleId": null,
-                    "bundleName": {{ "value": "Flex Bundle" }},
+                    "easyBundleOfferId": null,
+                    "easyBundleName": {{ "value": "Flex Bundle" }},
                     "stepType": null,
                     "merchandise": {{
                         "__typename": "ProductVariant",
@@ -347,11 +836,12 @@ mod tests {
         let input = format!(
             r#"{{
             "presentmentCurrencyRate": "1.0",
+            "cartTransform": {{ "bundleCartLineMessaging": null }},
             "cart": {{
                 "lines": [{{
                     "id": "flex-line-2", "quantity": 1,
-                    "bundleId": null,
-                    "bundleName": {{ "value": "No Discount Bundle" }},
+                    "easyBundleOfferId": null,
+                    "easyBundleName": {{ "value": "No Discount Bundle" }},
                     "stepType": null,
                     "merchandise": {{
                         "__typename": "ProductVariant",

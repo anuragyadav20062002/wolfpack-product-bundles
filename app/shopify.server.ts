@@ -5,7 +5,6 @@ import {
   shopifyApp,
   LATEST_API_VERSION,
 } from "@shopify/shopify-app-remix/server";
-import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { CachedSessionStorage } from "./lib/cached-session-storage.server";
 import prisma from "./db.server";
 import { createStorefrontAccessToken } from "./services/storefront-token.server";
@@ -15,6 +14,9 @@ import { ensureVariantBundleMetafieldDefinitions } from "./services/bundles/meta
 import { syncThemeColors } from "./services/theme-colors.server";
 import { activateUtmPixel } from "./services/pixel-activation.server";
 import { AppLogger } from "./lib/logger";
+import { ensureShopHasExpiringOfflineSession } from "./services/offline-token.server";
+
+const sessionStorage = new CachedSessionStorage(prisma);
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -23,7 +25,7 @@ const shopify = shopifyApp({
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
-  sessionStorage: new CachedSessionStorage(new PrismaSessionStorage(prisma)),
+  sessionStorage,
   distribution: AppDistribution.AppStore,
   future: {
     unstable_newEmbeddedAuthStrategy: true,
@@ -119,6 +121,12 @@ const shopify = shopifyApp({
       } catch (error: any) {
         AppLogger.error("Error during cart transform setup", { shop: session.shop }, error);
       }
+
+      try {
+        await ensureShopHasExpiringOfflineSession(prisma, session.shop, sessionStorage);
+      } catch (error: any) {
+        AppLogger.error("Failed to migrate offline session to expiring token", { shop: session.shop }, error);
+      }
     },
   },
   ...(process.env.SHOP_CUSTOM_DOMAIN
@@ -132,4 +140,4 @@ export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;
 export const login = shopify.login;
-export const sessionStorage = shopify.sessionStorage;
+export { sessionStorage };

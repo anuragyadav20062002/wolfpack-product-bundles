@@ -11,6 +11,7 @@
 export interface ComponentPricing {
   variantId: string;        // "gid://shopify/ProductVariant/123"
   title?: string;           // Product title (for checkout display)
+  imageUrl?: string;        // Product image URL (for checkout display)
   retailPrice: number;      // 9800 (cents) = $98.00
   bundlePrice: number;      // 8820 (cents) = $88.20
   discountPercent: number;  // 10.00 (percentage)
@@ -32,6 +33,10 @@ export interface MetafieldSizeCheck {
 export interface PriceAdjustment {
   method: string;
   value: number;
+  customerBuys?: number;
+  customerGets?: number;
+  discountType?: string;
+  applyDiscountTo?: string;
   conditions?: {
     type: string;
     operator: string;
@@ -51,20 +56,44 @@ export interface BundleUiConfig {
   bundleType: string;
   shopifyProductId: string | null;
   fullPagePageHandle?: string | null;
+  bundleDesignTemplate?: string | null;
+  bundleDesignPresetId?: string | null;
+  bundleDesignTemplateData?: { templateId: string } | null;
+  defaultProductsData?: Record<string, unknown>;
+  boxSelection?: Record<string, unknown> | null;
+  bundleUpsellConfig?: Record<string, unknown> | null;
+  bundleTextConfig?: Record<string, unknown> | null;
+  personalizationData?: Record<string, unknown> | null;
+  discountDisplayOverride?: Record<string, unknown> | null;
+  individualSellingPlanSelection?: Record<string, unknown>;
+  validateQuantityPerProduct?: Record<string, unknown>;
+  productSlotsEnabled?: boolean;
+  productSlotIconUrl?: string | null;
+  useSingleStepCategoriesAsBundleSteps?: boolean;
+  renderFilledSlotsAsHorizontalStacked?: boolean | null;
+  showProductComparedAtPrice?: boolean;
   bundleVariantId: string;
   steps: BundleUiStep[];
   pricing: BundleUiPricing | null;
   messaging: BundleUiMessaging;
   promoBannerBgImage?: string | null;
   promoBannerBgImageCrop?: string | null;
+  bundleBannerDesktopUrl?: string | null;
+  bundleBannerMobileUrl?: string | null;
   loadingGif?: string | null;
-  /** Widget style for product-page bundle (skai-lama-bottom-sheet-redesign).
+  /** Widget style for product-page bundle.
    *  Absent = 'classic' — backward-compatible default. */
   widgetStyle?: 'classic' | 'bottom-sheet';
   /** Show fixed-position floating promo badge on storefront (bottom-left). */
   floatingBadgeEnabled?: boolean;
   /** Text shown in the floating promo badge (max 60 chars). */
   floatingBadgeText?: string;
+  /** Per-bundle English text overrides for widget strings. */
+  textOverrides?: BundleTextOverrides | null;
+  /** Per-locale text overrides keyed by Shopify locale code (e.g. "fr", "de"). */
+  textOverridesByLocale?: Record<string, Partial<BundleTextOverrides>> | null;
+  /** When true, loads the headless SDK instead of the pre-built widget (product-page bundles only). */
+  sdkMode?: boolean;
 }
 
 export interface BundleUiStep {
@@ -79,10 +108,24 @@ export interface BundleUiStep {
   conditionValue?: string;
   conditionOperator2?: string;
   conditionValue2?: string;
-  /** If true, this step is a free gift step — unlocks after all paid steps complete. */
+  /** If true, this step is a free gift / add-on step. */
   isFreeGift?: boolean;
-  /** Display name for the free gift (e.g. "cap", "greeting card"). */
+  /** Legacy display name for the free gift. Superseded by addonLabel. */
   freeGiftName?: string;
+  /** Add-on step tab label (shown in step navigator). */
+  addonLabel?: string | null;
+  /** Add-on step panel heading. */
+  addonTitle?: string | null;
+  /** Button text when adding an add-on product (storefront CTA). */
+  addonAddText?: string | null;
+  /** Button text when replacing a selected add-on product (storefront CTA). */
+  addonReplaceText?: string | null;
+  /** URL of uploaded icon for the add-on step tab. */
+  addonIconUrl?: string | null;
+  /** Show products at $0.00 in this step. */
+  addonDisplayFree?: boolean;
+  /** Lock this step tab until prior steps meet minQuantity. */
+  addonUnlockAfterCompletion?: boolean;
   /** If true, this step is pre-filled and not shown in the bottom-sheet modal tabs. */
   isDefault?: boolean;
   /** Variant ID pre-selected for default steps. */
@@ -91,8 +134,8 @@ export interface BundleUiStep {
   discountBadgeLabel?: string;
   /** URL for the category image shown in the empty slot card. */
   categoryImageUrl?: string;
-  /** URL for the step's timeline icon (user-uploadable; separate from bannerImageUrl). */
-  timelineIconUrl?: string;
+  /** Runtime Step Config image key used by the public bundle config. */
+  stepImage?: string;
   /** Merchant-chosen option dimension rendered as button group on product cards (e.g. "Size"). */
   primaryVariantOption?: string | null;
 }
@@ -120,6 +163,29 @@ export interface BundleUiMessaging {
   successTemplate: string;
   showFooter: boolean;
   showDiscountMessaging?: boolean;
+  showDiscountProgressBar?: boolean;
+  /** Persisted from `BundlePricing.displayOptions` — qty option pills + progress bar config. */
+  displayOptions?: any | null;
+}
+
+/** Overridable user-visible strings in the bundle widget. */
+export interface BundleTextOverrides {
+  /** Primary CTA button — "Add to Cart" / "Add Bundle to Cart" */
+  addToCartButton?: string;
+  /** Footer next-step button — "Next" */
+  nextButton?: string;
+  /** Footer last-step button — "Done" */
+  doneButton?: string;
+  /** Free gift product badge — "Free" */
+  freeBadge?: string;
+  /** Already-included product badge — "Included" */
+  includedBadge?: string;
+  /** Sidebar / sheet header title (FPB) — "Your Bundle" */
+  yourBundle?: string;
+  /** ATC loading state — "Adding to Cart..." */
+  addingToCart?: string;
+  /** PDP incomplete-steps state — "Complete All Steps to Continue" */
+  completeSteps?: string;
 }
 
 /**

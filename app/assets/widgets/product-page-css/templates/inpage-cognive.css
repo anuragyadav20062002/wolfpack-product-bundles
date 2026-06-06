@@ -1,0 +1,305 @@
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] {
+  width:100%;
+  max-width:none;
+  margin:0 auto}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bundle-steps {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  width:100%;
+  gap:22px;
+  margin:0}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-section {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  width:100%}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-title {
+  font-size:14px;
+  font-weight:700;
+  line-height:1.4;
+  color:#111111;
+  margin:0;
+  text-align:left}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-category-tabs {
+  grid-template-columns:minmax(0,2.4fr) minmax(56px,0.8fr);
+  gap:10px}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-category-tab {
+  min-height:54px;
+  padding:8px 10px;
+  border:1px solid #1e1e1e;
+  border-radius:5px;
+  font-size:14px;
+  line-height:normal}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
+  gap:15px;
+  width:100%;
+  height:410px;
+  padding:0 8px 15px;
+  box-sizing:border-box;
+  overflow:hidden auto;
+  align-items:start;
+  justify-items:stretch}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-card {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:10px;
+  width:100%;
+  min-height:0;
+  padding:0;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  box-shadow:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-card .selected-overlay,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-card .product-stock-badge {
+  display:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-image {
+  width:100%;
+  height:auto;
+  aspect-ratio:1;
+  border-radius:8px;
+  overflow:hidden;
+  background:#111111}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-image img {
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-content-wrapper {
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:10px}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-title,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-price-row {
+  grid-column:auto;
+  text-align:center;
+  align-items:center}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-title {
+  color:#1e1e1e;
+  font-size:14px;
+  font-weight:700;
+  line-height:normal;
+  min-height:18px;
+  max-height:36px;
+  overflow:hidden}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-price-row {
+  display:flex;
+  justify-content:center;
+  gap:6px;
+  min-height:18px;
+  margin:0;
+  line-height:normal}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-price,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-price-strike {
+  color:#000000;
+  font-size:14px;
+  font-weight:700;
+  line-height:normal}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .variant-selector-wrapper,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .variant-selector {
+  width:100%}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-product-grid .product-add-btn {
+  width:100%;
+  height:32px;
+  min-height:32px;
+  grid-column:auto;
+  grid-row:auto;
+  justify-self:stretch;
+  padding:4px 14px;
+  border-radius:5px;
+  background:#000000;
+  color:#ffffff;
+  font-size:14px;
+  font-weight:700;
+  line-height:normal}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer {
+  position:relative;
+  display:grid !important;
+  grid-template-columns:1fr;
+  gap:10px;
+  width:100%;
+  margin:0;
+  padding:15px 0;
+  border-top:0;
+  background:transparent}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-drawer {
+  position:relative;
+  min-height:0}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-toggle {
+  position:absolute;
+  top:-29px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  max-width:75%;
+  height:22px;
+  padding:0 10px;
+  border:0;
+  border-radius:10px;
+  background:#000000;
+  color:#ffffff;
+  font-size:12px;
+  font-weight:400;
+  line-height:22px;
+  white-space:nowrap}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-toggle-label {
+  overflow:hidden;
+  text-overflow:ellipsis}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-toggle-count {
+  flex:0 0 auto}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-list {
+  display:none;
+  flex-direction:column;
+  gap:7px;
+  margin:0 0 2px}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-drawer--open .bw-ppb-cascade-selected-list {
+  display:flex}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-item {
+  display:grid;
+  grid-template-columns:32px minmax(0,1fr) 28px;
+  gap:8px;
+  align-items:center;
+  min-height:34px;
+  padding:4px;
+  border:1px solid #e4e4e4;
+  border-radius:4px;
+  background:#ffffff}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-item img {
+  width:32px;
+  height:32px;
+  object-fit:cover;
+  border-radius:3px;
+  background:#111111}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-item span {
+  min-width:0;
+  overflow:hidden;
+  color:#111111;
+  font-size:12px;
+  font-weight:600;
+  line-height:14px;
+  text-overflow:ellipsis;
+  white-space:nowrap}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-selected-item button {
+  width:24px;
+  height:24px;
+  border:0;
+  border-radius:50%;
+  background:#f2f2f2;
+  color:#111111;
+  font-size:16px;
+  line-height:20px;
+  cursor:pointer}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-cognive-footer .bw-ppb-cascade-discount-message {
+  margin:0;
+  color:#444444;
+  font-size:14px;
+  font-weight:500;
+  line-height:normal;
+  text-align:center}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .add-bundle-to-cart {
+  width:100%;
+  max-width:none;
+  height:41px;
+  margin:0;
+  padding:8px 4px;
+  border-radius:5px;
+  background:#000000;
+  color:#ffffff;
+  font-size:14px;
+  font-weight:700;
+  line-height:25px;
+  opacity:1;
+  box-shadow:none;
+  transform:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .add-bundle-to-cart:disabled,
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .add-bundle-to-cart.disabled {
+  background:#8a8a8a;
+  color:#ffffff;
+  opacity:1;
+  cursor:not-allowed;
+  transform:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-dynamic-checkout-visual {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  max-width:none;
+  box-sizing:border-box;
+  height:47px;
+  margin:0 0 20px;
+  border-radius:0;
+  background:#111111;
+  color:#ffffff;
+  font-size:15px;
+  font-weight:500;
+  line-height:18px;
+  cursor:default;
+  user-select:none}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid .bw-slot-card {
+  width:100%;
+  max-width:none;
+  min-height:0;
+  aspect-ratio:auto;
+  margin:0;
+  display:flex;
+  flex-direction:column}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-slot-card__image-wrapper {
+  width:100%;
+  aspect-ratio:1;
+  overflow:hidden}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-slot-card__image {
+  width:100%;
+  height:100%;
+  object-fit:cover}
+
+#bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-slot-card__label {
+  text-align:center;
+  white-space:normal}
+
+@media (max-width:480px) {
+  #bundle-builder-app[data-ppb-template-type="PDP_INPAGE"][data-ppb-design-preset="COGNIVE"] .bw-ppb-inpage-step-grid {
+  grid-template-columns:repeat(2, minmax(0, 1fr))}
+}

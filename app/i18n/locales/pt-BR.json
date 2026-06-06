@@ -1,0 +1,200 @@
+{
+  "nav": {
+    "dashboard": "Painel",
+    "designControlPanel": "Painel de controle de design",
+    "settings": "Configurações",
+    "integrations": "Integrações",
+    "analytics": "Análises",
+    "pricing": "Preços",
+    "events": "Atualizações e perguntas frequentes"
+  },
+  "dashboard": {
+    "title": "Dashboard: Wolfpack Bundle Builder",
+    "subtitle": "Acesse seus bundles, suporte ao cliente e muito mais.",
+    "header": {
+      "syncCollections": "Sincronizar coleções",
+      "createBundle": "Criar bundle",
+      "changelog": "Registro de alterações"
+    },
+    "support": {
+      "heroTitle": "Libere todo o potencial da sua loja.",
+      "heroDesc": "Nossos especialistas ajudarão você a criar bundles de alta conversão em uma sessão estratégica individual gratuita.",
+      "heading": "Precisa de ajuda? Fale com Parth, o fundador!",
+      "body": "Obtenha suporte para configuração de bundles, estilização personalizada e problemas técnicos.",
+      "onlineNow": "ONLINE AGORA",
+      "availability": "Seg–Sex • Resposta em 1 hora",
+      "cta": "Conversar com Parth",
+      "imageAlt": "Parth, fundador",
+      "imageLoading": "Carregando foto de perfil de Parth"
+    },
+    "appEmbeds": {
+      "headingMain": "Incorporações de aplicativo",
+      "headingHint": "(Ative para tornar o bundle visível na loja)",
+      "instruction": "Clique em Loja online → Editar tema → Ative o botão e salve"
+    },
+    "filters": {
+      "status": "Status",
+      "bundleType": "Tipo de bundle",
+      "byStatus": "Filtrar por status",
+      "byType": "Filtrar por tipo",
+      "all": "Todos"
+    },
+    "status": {
+      "active": "Ativo",
+      "draft": "Rascunho",
+      "unlisted": "Não listado"
+    },
+    "bundleType": {
+      "product_page": "Página de produto",
+      "full_page": "Página completa"
+    },
+    "search": {
+      "label": "Pesquisar bundles",
+      "placeholder": "Pesquisar...."
+    },
+    "table": {
+      "bundleName": "Nome do bundle",
+      "status": "Status",
+      "type": "Tipo",
+      "actions": "Ações"
+    },
+    "emptyState": {
+      "title": "Nenhum bundle ainda",
+      "body": "Você ainda não criou nenhum bundle para sua loja. Comece agora e aumente suas vendas agrupando seus melhores produtos."
+    },
+    "noResults": "Nenhum bundle corresponde aos filtros atuais",
+    "pagination": {
+      "page": "Página {{current}} de {{total}}",
+      "perPageLabel": "Bundles por página",
+      "per10": "10 por página",
+      "per20": "20 por página",
+      "per50": "50 por página",
+      "prev": "Página anterior",
+      "next": "Próxima página"
+    },
+    "actions": {
+      "moreActions": "Mais ações",
+      "editBundle": "Editar bundle",
+      "previewBundle": "Visualizar na loja",
+      "previewUnavailable": "Salve o bundle para visualizar",
+      "cloneBundle": "Clonar bundle",
+      "deleteBundle": "Excluir bundle",
+      "confirmClone": "Tem certeza de que deseja clonar este bundle?",
+      "cloneSuccess": "Bundle clonado com sucesso",
+      "deleteSuccess": "Bundle excluído",
+      "themeEditorUnavailable": "O link do editor de tema não está disponível para esta loja."
+    },
+    "deleteModal": {
+      "heading": "Excluir bundle?",
+      "delete": "Excluir",
+      "cancel": "Cancelar",
+      "body": "Esta ação não pode ser desfeita. Toda a configuração do bundle, etapas e regras de desconto serão excluídas permanentemente."
+    },
+    "resources": {
+      "bundleInspiration": "Inspiração de bundle",
+      "support": "Suporte",
+      "exploreUpdate": "Explorar atualizações",
+      "sdkDocumentation": "Documentação do SDK",
+      "bundleGallery": "Galeria de bundles"
+    },
+    "language": {
+      "label": "Idioma",
+      "en": "English",
+      "fr": "Français",
+      "de": "Deutsch",
+      "es": "Español",
+      "ja": "日本語",
+      "pt-BR": "Português (BR)",
+      "save": "Salvar",
+      "saveSuccess": "Idioma de administração salvo",
+      "saveError": "Não foi possível salvar o idioma de administração"
+    }
+  },
+  "tooltips": {
+    "stepFlow": {
+      "title": "Step Flow",
+      "description": "Steps will render as navigation items on top of the bundle builder"
+    },
+    "category": {
+      "title": "Category",
+      "description": "Categories will appear as tabs inside each step"
+    },
+    "rulesConfiguration": {
+      "title": "Rules guide shopper selections",
+      "description": "Use step rules for one selection limit, or category rules when each category needs its own rule."
+    },
+    "bundleQuantityOptions": {
+      "title": "Bundle Quantity Options",
+      "description": "Show quantity-based discount rules as selectable bundle boxes. Each box can have its own label, subtext, and default rule."
+    },
+    "discountProgressBar": {
+      "title": "Progress Bar",
+      "description": "Show shoppers how close they are to the next discount. Simple uses one bar, while Step Based shows discount milestones."
+    },
+    "discountMessaging": {
+      "title": "Discount Messaging",
+      "description": "Customize the messages shown before a discount unlocks and after shoppers qualify."
+    },
+    "loadingAnimation": {
+      "title": "Storefront Loading Animation",
+      "description": "Shown while Wolfpack Bundles loads bundle content on the storefront."
+    },
+    "bundleVisibilityPending": {
+      "description": "Tracks whether your bundle is discoverable by shoppers. Optimises when you copy your bundle link and place it on your store, enable the Bundle Widget, or set up the Bundle Embed."
+    }
+  },
+  "common": {
+    "actions": {
+      "close": "Fechar", "dismiss": "Dispensar", "manage": "Gerenciar", "enableHere": "Ativar aqui",
+      "maybeLater": "Talvez mais tarde", "setUpVisibility": "Configurar visibilidade", "reinstallApp": "Reinstalar aplicativo",
+      "upgradeNow": "Fazer upgrade agora", "viewPlans": "Ver planos", "discardChanges": "Descartar alterações", "continueEditing": "Continuar editando"
+    },
+    "appEmbed": { "body": "Ative a extensão de aplicativo do tema para Wolfpack Bundles para posicionar e visualizar o pacote." },
+    "previewGate": { "title": "A visibilidade do seu pacote ainda não está configurada", "body": "Seu pacote está ativo, mas os compradores não conseguem encontrá-lo. Configure a visibilidade para mudar isso." },
+    "unlistedBundle": { "title": "Seu pacote não está listado", "body": "O pacote está oculto nos resultados de pesquisa e nas páginas de coleções da loja. Para que ele seja encontrado, altere o status do produto do pacote para Ativo em Produtos da Shopify." },
+    "proxyHealth": { "title": "Proxy do aplicativo não conectado", "body": "Os widgets de pacote de página inteira não serão carregados na vitrine. Reinstale o aplicativo para corrigir isso." },
+    "upgradePrompt": {
+      "limitReachedTitle": "Limite de pacotes atingido", "limitReachedBody": "Você usou todos os {{limit}} pacotes do plano Gratuito. Faça upgrade para Grow e tenha até 20 pacotes.",
+      "approachingTitle": "Limite de pacotes próximo", "approachingBody": "Você está usando {{current}} de {{limit}} pacotes. Faça upgrade para Grow e tenha até 20 pacotes.",
+      "usageBody": "Você está usando {{current}} de {{limit}} pacotes no plano Gratuito. Precisa de mais? Faça upgrade para Grow e tenha 20 pacotes."
+    },
+    "discardChanges": { "title": "Descartar todas as alterações não salvas", "body": "Ao descartar as alterações, você excluirá todas as edições feitas desde o último salvamento." },
+    "multiLanguage": {
+      "title": "Personalizar texto para vários idiomas", "saveAndClose": "Salvar e fechar", "translations": "Traduções",
+      "helper": "Use a lista suspensa nesta seção para especificar o idioma que deseja editar", "chooseLanguage": "Escolher idioma para editar",
+      "customText": "Texto personalizado", "inputHelper": "Insira o texto para o idioma selecionado", "textSettings": "Configurações de texto"
+    },
+    "readiness": {
+      "itemAccessibility": "Item de prontidão {{label}}", "points": "+{{points}} pontos", "ready": "Seu pacote está pronto para vender!",
+      "notReady": "Seu pacote ainda não está pronto para vender.", "toggleAccessibility": "Alternar pontuação de prontidão",
+      "title": "Pontuação de prontidão", "helper": "Conclua todas as etapas para maximizar o sucesso do seu pacote."
+    },
+    "bundleStatus": { "title": "Status do pacote", "options": { "active": "Ativo", "draft": "Rascunho", "archived": "Arquivado", "unlisted": "Não listado (campanhas publicitárias)" } }
+  },
+  "createBundle": {
+    "title": "Criar pacote", "dashboard": "Painel", "heading": "Selecionar tipo de criador de pacotes", "help": "Como funcionam os tipos de criador de pacotes?",
+    "steps": { "details": "Nome do pacote\ne descrição", "configuration": "Configuração", "pricing": "Preços", "assets": "Recursos" },
+    "validation": { "required": "O nome do pacote é obrigatório", "minLength": "O nome do pacote deve ter pelo menos 3 caracteres" },
+    "fields": { "name": "Nome do pacote", "namePlaceholder": "Ex.: pacote de camisetas", "description": "Descrição", "descriptionPlaceholder": "Ex.: este é um pacote de camisetas" },
+    "bundleType": {
+      "heading": "Tipo de pacote",
+      "productPage": { "title": "Criador de pacotes na página do produto", "description": "Exibir o criador de pacotes nas páginas de produto existentes (recomendado para a maioria das lojas)", "alt": "Pacote da página do produto" },
+      "fullPage": { "title": "Criador de pacotes de página inteira", "description": "Criar uma página de destino dedicada para seu pacote com abas e personalização completa", "alt": "Pacote de página inteira" }
+    },
+    "actions": { "selected": "Selecionado", "select": "Selecionar", "next": "Avançar" }
+  },
+  "billing": {
+    "pricePerMonth": "US$ {{price}}/mês",
+    "actions": { "tryAgain": "Tentar novamente", "contactSupport": "Falar com o suporte", "cancel": "Cancelar" },
+    "error": { "heading": "Problema na assinatura", "missingChargeId": "Falha na confirmação da assinatura: ID da cobrança ausente.", "confirmationFailed": "Não foi possível confirmar a assinatura com a Shopify.", "unexpected": "Ocorreu um erro inesperado durante a configuração da assinatura." },
+    "upgradeModal": {
+      "heading": "Fazer upgrade para o plano Grow", "confirm": "Confirmar upgrade - US$ {{price}}/mês", "redirect": "Você será redirecionado para a Shopify para concluir sua assinatura.",
+      "benefitsHeading": "O que você recebe com o Grow:", "bundleLimit": "Até 20 pacotes (atualmente {{current}}/{{limit}})", "billedMonthly": "Cobrado mensalmente pela Shopify",
+      "benefits": { "noRevenueCap": "Sem limite de receita de pacotes - o plano gratuito é limitado a US$ 500/mês", "advancedDiscounts": "Regras avançadas de desconto", "prioritySupport": "Suporte prioritário" }
+    },
+    "success": { "heading": "Boas-vindas ao plano Grow!", "body": "Sua assinatura foi ativada. Agora você tem acesso a todos os recursos premium.", "bundleLimit": "Limite de pacotes", "bundleLimitValue": "20 pacotes", "designControl": "Controle de design", "fullAccess": "Acesso completo", "support": "Suporte", "priority": "Prioritário" },
+    "cards": { "currentPlan": "Plano atual", "freePrice": "Grátis", "freeDescription": "Para vendas de pacotes de até US$ 500/mês - grátis até você crescer", "includes": "Inclui:", "freePlan": "Plano gratuito", "mostPopular": "Mais popular", "perMonth": "/ mês", "growDescription": "Para vendas de pacotes acima de US$ 500/mês - sem limite de receita", "growIncludes": "Tudo do plano Grátis, mais:", "upgradeToGrow": "Fazer upgrade para Grow", "cancelAnytimeBilled": "Cancele quando quiser. Cobrado pela Shopify." },
+    "cta": { "heading": "Pronto para expandir seu negócio de pacotes?", "body": "Faça upgrade para o plano Grow para duplicar os pacotes, personalizar totalmente o design e ter suporte prioritário.", "highlights": { "bundles": "20 pacotes", "design": "Painel de controle de design", "support": "Suporte prioritário" }, "upgrade": "Fazer upgrade para Grow - US$ {{price}}/mês", "cancelAnytime": "Cancele quando quiser" },
+    "route": { "title": "Assinatura e cobrança", "dashboard": "Painel", "currentPlan": "Plano atual", "active": "Ativo", "inactive": "Inativo", "bundleUsage": "Uso de pacotes", "bundleCount": "{{current}} / {{limit}} pacotes", "limitReached": "Você atingiu seu limite de pacotes.", "limitUpgrade": "Faça upgrade para Grow para ter mais pacotes.", "overview": "Visão geral dos pacotes", "activeBundles": "Pacotes ativos", "totalSteps": "Total de etapas", "productPage": "Página do produto", "fullPage": "Página inteira", "cancelSubscription": "Cancelar assinatura", "cancelHeading": "Cancelar assinatura?", "downgradeBody": "Você mudará para o plano Gratuito com limite de {{limit}} pacotes.", "archiveWarning": "Aviso: você tem {{current}} pacotes. Os {{excess}} pacotes excedentes serão arquivados (não excluídos).", "confirmCancellation": "Confirmar cancelamento", "keepSubscription": "Manter assinatura", "features": "Recursos do seu plano", "wantMore": "Quer mais recursos?", "viewPlans": "Ver todos os planos", "needHelp": "Precisa de ajuda?", "helpBody": "Tem dúvidas sobre cobrança ou precisa de um plano personalizado? Nossa equipe está aqui para ajudar." }
+  }
+}

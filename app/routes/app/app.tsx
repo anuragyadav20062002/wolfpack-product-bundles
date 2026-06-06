@@ -2,50 +2,84 @@ import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { Outlet, useLoaderData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
-import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { authenticate } from "../../shopify.server";
+import { authenticate, sessionStorage } from "../../shopify.server";
+import prisma from "../../db.server";
 import { ErrorPage } from "../../components/ErrorPage";
+import { I18nextProvider, useTranslation } from "react-i18next";
+import { useEffect } from "react";
+import { i18n } from "../../i18n/config";
+import { getPolarisLocale } from "../../i18n/polaris-locales.server";
+import { MantleTracker } from "../../components/MantleTracker";
+import { ensureShopHasExpiringOfflineSession } from "../../services/offline-token.server";
+import { AppLogger } from "../../lib/logger";
+import { loadShopAdminLocale } from "../../services/admin-locale.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-// Layout handles auth: token exchange, exit-iframe bounce, and session storage.
-// Child routes under /app authenticate via App Bridge's Authorization header
-// (added automatically on client-side navigations).
-//
-// IMPORTANT: app._index.tsx must NOT call authenticate.admin() or do server-side
-// redirects — Remix runs layout and child loaders in parallel, and a child
-// redirect short-circuits Promise.all before the layout's token exchange completes.
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  const { session } = await authenticate.admin(request);
+  try {
+    await ensureShopHasExpiringOfflineSession(prisma, session.shop, sessionStorage);
+  } catch (error) {
+    AppLogger.error("Failed to ensure expiring offline session during app load", {
+      component: "app.app",
+      shop: session.shop,
+    }, error);
+  }
+  const locale = await loadShopAdminLocale(session.shop);
+  const polarisTranslations = getPolarisLocale(locale);
+  const mantleAppToken = process.env.MANTLE_APP_TOKEN || "";
+  return {
+    apiKey: process.env.SHOPIFY_API_KEY || "",
+    locale,
+    polarisTranslations,
+    shop: session.shop,
+    mantleAppToken,
+  };
 };
 
-export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+function AdminNavigation() {
+  const { t } = useTranslation();
 
   return (
-    <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <NavMenu>
-        <a href="/app/dashboard" rel="home">
-          Dashboard
-        </a>
-        <a href="/app/design-control-panel">Design Control Panel</a>
-        <a href="/app/attribution">Analytics</a>
-        <a href="/app/pricing">Pricing</a>
-        <a href="/app/events">Updates &amp; FAQs</a>
-      </NavMenu>
-      <Outlet />
+    <ui-nav-menu>
+      <a href="/app/dashboard" rel="home">{t("nav.dashboard")}</a>
+      <a href="/app/settings">{t("nav.settings")}</a>
+      <a href="/app/integrations">{t("nav.integrations")}</a>
+      <a href="/app/attribution">{t("nav.analytics")}</a>
+      <a href="/app/pricing">{t("nav.pricing")}</a>
+      <a href="/app/events">{t("nav.events")}</a>
+    </ui-nav-menu>
+  );
+}
+
+export default function App() {
+  const { apiKey, locale, polarisTranslations, shop, mantleAppToken } = useLoaderData<typeof loader>();
+
+  useEffect(() => {
+    if (i18n.language !== locale) {
+      void i18n.changeLanguage(locale);
+    }
+  }, [locale]);
+
+  return (
+    <AppProvider isEmbeddedApp apiKey={apiKey} i18n={polarisTranslations}>
+      <I18nextProvider i18n={i18n}>
+        {mantleAppToken ? (
+          <MantleTracker appToken={mantleAppToken} customerId={shop} />
+        ) : null}
+        {/* polaris.js deferred so App Bridge (injected above by AppProvider) initialises first */}
+        <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
+        <AdminNavigation />
+        <Outlet />
+      </I18nextProvider>
     </AppProvider>
   );
 }
 
-// Shopify needs Remix to catch some thrown responses, so that their headers are included in the response.
-// For 4xx application errors we show a branded error page; auth errors are delegated to boundary.error().
 export function ErrorBoundary() {
   const error = useRouteError();
-  // boundary.error() handles Shopify auth redirects (401/403 from authenticate.admin).
-  // For all other route error responses (4xx from application code), show our branded page.
   if (isRouteErrorResponse(error) && error.status !== 401 && error.status !== 403) {
     return <ErrorPage error={error} />;
   }

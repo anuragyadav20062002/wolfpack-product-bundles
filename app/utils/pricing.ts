@@ -13,7 +13,7 @@ export type ProgressBarTone = "success" | "highlight" | "critical";
 /**
  * Badge tone types from Polaris
  */
-export type BadgeTone = "success" | "attention" | "critical" | "info";
+export type BadgeTone = "success" | "warning" | "critical" | "info";
 
 /**
  * Calculate usage percentage from current count and limit
@@ -47,7 +47,7 @@ export function getProgressBarTone(percentage: number): ProgressBarTone {
  */
 export function getBadgeTone(percentage: number): BadgeTone {
   if (percentage >= 90) return "critical";
-  if (percentage >= 70) return "attention";
+  if (percentage >= 70) return "warning";
   return "success";
 }
 

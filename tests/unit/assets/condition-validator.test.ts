@@ -20,7 +20,14 @@ export {};
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const ConditionValidator = require('../../../app/assets/widgets/shared/condition-validator.js');
 
-const { calculateStepTotalAfterUpdate, canUpdateQuantity, isStepConditionSatisfied, OPERATORS } = ConditionValidator;
+const {
+  calculateStepTotalAfterUpdate,
+  canUpdateQuantity,
+  isStepConditionSatisfied,
+  getAllowedQuantityPerProduct,
+  canUpdateProductQuantity,
+  OPERATORS,
+} = ConditionValidator;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -103,6 +110,42 @@ describe('canUpdateQuantity — no condition', () => {
   it('returns null limitText when allowed', () => {
     const step = makeStep(EQ, 2);
     expect(canUpdateQuantity(step, {}, 'A', 1).limitText).toBeNull();
+  });
+});
+
+// ─── canUpdateProductQuantity — per-product validation ───────────────────────
+
+describe('canUpdateProductQuantity — per-product validation', () => {
+  it('returns null limit when quantity validation is disabled', () => {
+    expect(getAllowedQuantityPerProduct({ isEnabled: false, allowedQuantity: 1 })).toBeNull();
+    expect(canUpdateProductQuantity({ isEnabled: false, allowedQuantity: 1 }, 1, 2)).toEqual({
+      allowed: true,
+      limit: null,
+    });
+  });
+
+  it('defaults enabled validation to a max of 1 when allowedQuantity is invalid', () => {
+    expect(getAllowedQuantityPerProduct({ isEnabled: true, allowedQuantity: 0 })).toBe(1);
+    expect(getAllowedQuantityPerProduct({ isEnabled: true, allowedQuantity: 'bad' })).toBe(1);
+  });
+
+  it('allows an increase up to the allowed per-product quantity', () => {
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 2 }, 1, 2)).toEqual({
+      allowed: true,
+      limit: 2,
+    });
+  });
+
+  it('blocks an increase above the allowed per-product quantity', () => {
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 1, 2)).toEqual({
+      allowed: false,
+      limit: 1,
+    });
+  });
+
+  it('always allows decreases and removals', () => {
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 2, 1).allowed).toBe(true);
+    expect(canUpdateProductQuantity({ isEnabled: true, allowedQuantity: 1 }, 1, 0).allowed).toBe(true);
   });
 });
 
@@ -589,5 +632,118 @@ describe('Regression: reported bug scenarios', () => {
     expect(canUpdateQuantity(step, { A: 1, B: 1, C: 1 }, 'D', 1).allowed).toBe(false);
     // A:1,B:1,C:1 = 3 → satisfied
     expect(isStepConditionSatisfied(step, { A: 1, B: 1, C: 1 })).toBe(true);
+  });
+});
+
+// ─── Category-mode rules (category-rules-2) ──────────────────────────────────
+
+describe('isStepConditionSatisfied — category mode', () => {
+  function makeCategory(name: string, productIds: string[], rules: any[] = []) {
+    return {
+      categoryId: `cat-${name}`,
+      name,
+      products: productIds.map(id => ({ id })),
+      conditions: rules,
+    };
+  }
+
+  it('single category with snake_case operator — rule met', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', operator: 'greater_than_or_equal_to', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1, p2: 1 })).toBe(true);
+  });
+
+  it('single category with EB-style camelCase operator — rule met', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1, p2: 1 })).toBe(true);
+  });
+
+  it('single category — rule not met when not enough selections in that category', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(false);
+  });
+
+  it('two categories — both must be satisfied', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1', 'p2'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }]),
+        makeCategory('B', ['p3', 'p4'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1, p3: 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(false); // B unsatisfied
+    expect(isStepConditionSatisfied(step, { p3: 1 })).toBe(false); // A unsatisfied
+  });
+
+  it('categories without conditions do not gate the step', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }]),
+        makeCategory('B', ['p2']), // no conditions
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p2: 1 })).toBe(false); // A unsatisfied; B doesn't compensate
+  });
+
+  it('selections outside the category do not count toward its rule', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1'], [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    // p2 isn't in category A, so it doesn't help A reach its quantity threshold.
+    expect(isStepConditionSatisfied(step, { p1: 1, p2: 5 })).toBe(false);
+    expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(true);
+  });
+
+  it('falls through to step-level check when no category has conditions', () => {
+    const step = {
+      ...makeStep(GTE, 3),
+      categories: [makeCategory('A', ['p1'])], // no conditions
+    };
+    // Step-level rule kicks in: total >= 3
+    expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(false);
+    expect(isStepConditionSatisfied(step, { p1: 3 })).toBe(true);
+  });
+
+  it('LESS_THAN_OR_EQUAL_TO works in category mode', () => {
+    const step = {
+      categories: [
+        makeCategory('A', ['p1'], [{ type: 'quantity', condition: 'lessThanOrEqualTo', value: 2 }]),
+      ],
+    };
+    expect(isStepConditionSatisfied(step, { p1: 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p1: 2 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { p1: 3 })).toBe(false);
+  });
+
+  it('GID-format product ID in category matches numeric product ID selection key (regression: category-rules-3)', () => {
+    // Runtime category products arrive with GID ids from compactProductReference.
+    // After widget translates variant→product ID and validator strips the GID,
+    // both sides resolve to the same numeric product ID.
+    const step = {
+      categories: [
+        {
+          categoryId: 'cat-1',
+          products: [{ id: 'gid://shopify/Product/9427287703811', title: 'Test Product' }],
+          conditions: [{ type: 'quantity', condition: 'greaterThanOrEqualTo', value: 1 }],
+        },
+      ],
+    };
+    // Selection key is numeric product ID (widget translates variant ID → product ID before calling validator)
+    expect(isStepConditionSatisfied(step, { '9427287703811': 1 })).toBe(true);
+    expect(isStepConditionSatisfied(step, { '9427287703811': 0 })).toBe(false);
   });
 });

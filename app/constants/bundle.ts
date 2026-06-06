@@ -44,7 +44,7 @@ export const BUNDLE_STATUS_OPTIONS = [
   { label: "Unlisted (Ad Campaigns)", value: BundleStatus.UNLISTED },
 ] as const;
 
-/** Bundle type options for the DCP selector */
+/** Bundle type options for Settings design selectors */
 export const BUNDLE_TYPE_OPTIONS = [
   { label: "Product Page Bundle", value: BundleType.PRODUCT_PAGE },
   { label: "Full Page Bundle", value: BundleType.FULL_PAGE },
@@ -58,6 +58,7 @@ export const BUNDLE_TYPE_OPTIONS = [
 export const STEP_CONDITION_TYPE_OPTIONS = [
   { label: "Quantity", value: "quantity" },
   { label: "Amount", value: "amount" },
+  { label: "Weight", value: "weight" },
 ] as const;
 
 /** Operator options for step condition rules */
@@ -69,15 +70,25 @@ export const STEP_CONDITION_OPERATOR_OPTIONS = [
   { label: "is less than or equal to", value: "less_than_or_equal_to" },
 ] as const;
 
+/** Operator options for category condition rules */
+export const CATEGORY_CONDITION_OPERATOR_OPTIONS = [
+  { label: "is equal to", value: "equalTo" },
+  { label: "is greater than", value: "greaterThan" },
+  { label: "is less than", value: "lessThan" },
+  { label: "is greater than or equal to", value: "greaterThanOrEqualTo" },
+  { label: "is less than or equal to", value: "lessThanOrEqualTo" },
+] as const;
+
 // ============================================
 // DISCOUNT RULE OPTIONS
 // ============================================
 
 /** Discount method options for pricing rules */
 export const DISCOUNT_METHOD_OPTIONS = [
-  { label: "Percentage Off", value: DiscountMethod.PERCENTAGE_OFF },
   { label: "Fixed Amount Off", value: DiscountMethod.FIXED_AMOUNT_OFF },
+  { label: "Percentage Off", value: DiscountMethod.PERCENTAGE_OFF },
   { label: "Fixed Bundle Price", value: DiscountMethod.FIXED_BUNDLE_PRICE },
+  { label: "Buy X, get Y", value: DiscountMethod.BUY_X_GET_Y },
 ] as const;
 
 /** Condition type options for discount rules */

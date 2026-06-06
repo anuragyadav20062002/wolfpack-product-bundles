@@ -1,3 +1,4 @@
+/* eslint-disable import/first */
 /**
  * Unit Tests for widget-full-page-bundle.server.ts — preview functions
  *
@@ -5,6 +6,8 @@
  */
 
 import { createMockGraphQLResponse } from '../../setup';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // Mock logger
 jest.mock('../../../app/lib/logger', () => ({
@@ -34,6 +37,7 @@ import {
   createFullPageBundle,
   publishPreviewPage,
   getPreviewPageUrl,
+  refreshFullPageBundlePageBody,
 } from '../../../app/services/widget-installation/widget-full-page-bundle.server';
 import { resolveUniqueHandle } from '../../../app/lib/slug-utils';
 
@@ -45,6 +49,41 @@ const bundleName = 'My Kit';
 const pageId = 'gid://shopify/Page/999';
 const pageHandle = 'my-kit';
 const PREVIEW_URL = 'https://test-shop.myshopify.com/pages/my-kit?preview_key=abc123';
+
+function makeBundle(overrides: Record<string, any> = {}) {
+  return {
+    id: bundleId,
+    name: bundleName,
+    description: null,
+    status: 'active',
+    bundleType: 'full_page',
+    fullPageLayout: null,
+    bundleDesignTemplate: 'FBP_SIDE_FOOTER',
+    bundleDesignPresetId: 'DEFAULT',
+    defaultProductsData: {},
+    boxSelection: null,
+    bundleUpsellConfig: null,
+    bundleTextConfig: null,
+    personalizationData: null,
+    discountDisplayOverride: null,
+    individualSellingPlanSelection: {},
+    validateQuantityPerProduct: {},
+    productSlotsEnabled: false,
+    productSlotIconUrl: null,
+    useSingleStepCategoriesAsBundleSteps: false,
+    renderFilledSlotsAsHorizontalStacked: null,
+    shopifyProductId: null,
+    steps: [],
+    pricing: null,
+    showProductPrices: true,
+    showCompareAtPrices: true,
+    cartRedirectToCheckout: false,
+    allowQuantityChanges: true,
+    textOverrides: null,
+    textOverridesByLocale: null,
+    ...overrides,
+  };
+}
 
 function makeAdminForDraft(opts: { withPreviewUrl?: string; createPageSuccess?: boolean } = {}) {
   const { withPreviewUrl = PREVIEW_URL, createPageSuccess = true } = opts;
@@ -186,6 +225,33 @@ describe('publishPreviewPage', () => {
     expect(call[1].variables.id).toBe(pageId);
   });
 
+  it('refreshes page body before publishing when bundle context is provided', async () => {
+    const admin = { graphql: jest.fn() };
+    admin.graphql
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          pageUpdate: {
+            page: { id: pageId, handle: pageHandle },
+            userErrors: [],
+          },
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          pageUpdate: {
+            page: { id: pageId, handle: pageHandle, isPublished: true },
+            userErrors: [],
+          },
+        })
+      );
+
+    const result = await publishPreviewPage(admin, pageId, bundleId, mockSession.shop);
+
+    expect(result.success).toBe(true);
+    const bodyCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
+    expect(bodyCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
+  });
+
   it('returns failure when pageUpdate returns userErrors', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
@@ -232,6 +298,32 @@ describe('getPreviewPageUrl', () => {
     expect(result.previewUrl).toBe(`https://test-shop.myshopify.com/pages/${pageHandle}`);
   });
 
+  it('refreshes existing preview page body when a bundle id is provided', async () => {
+    const admin = { graphql: jest.fn() };
+    admin.graphql
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          page: { id: pageId, handle: pageHandle },
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockGraphQLResponse({
+          pageUpdate: {
+            page: { id: pageId, handle: pageHandle },
+            userErrors: [],
+          },
+        })
+      );
+
+    const result = await getPreviewPageUrl(admin, pageId, mockSession.shop, bundleId);
+
+    expect(result.success).toBe(true);
+    const updateCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
+    expect(updateCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
+    expect(updateCall?.[1]?.variables?.page?.body).toContain('data-wpb-full-page-bundle');
+    expect(updateCall?.[1]?.variables?.page?.body).not.toContain('/apps/product-bundles/assets/');
+  });
+
   it('returns pageNotFound when page query returns null', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
@@ -251,5 +343,49 @@ describe('getPreviewPageUrl', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toContain('Timeout');
+  });
+});
+
+describe('refreshFullPageBundlePageBody', () => {
+  beforeEach(() => { jest.clearAllMocks(); });
+
+  it('writes one clean hidden marker with escaped bundle config and no app-proxy assets', async () => {
+    const admin = { graphql: jest.fn() };
+    admin.graphql.mockResolvedValueOnce(
+      createMockGraphQLResponse({
+        pageUpdate: {
+          page: { id: pageId, handle: pageHandle },
+          userErrors: [],
+        },
+      })
+    );
+
+    const result = await refreshFullPageBundlePageBody(admin, pageId, bundleId, mockSession.shop, makeBundle({
+      bundleDesignTemplate: null,
+      bundleDesignPresetId: null,
+    }));
+
+    expect(result.success).toBe(true);
+    const body = admin.graphql.mock.calls[0]?.[1]?.variables?.page?.body;
+    expect((body.match(/data-wpb-full-page-bundle/g) ?? []).length).toBe(1);
+    expect(body).toContain(`data-bundle-id="${bundleId}"`);
+    expect(body).toContain('data-bundle-config="{&quot;id&quot;:&quot;bundle-abc123&quot;');
+    expect(body).toContain('&quot;bundleDesignTemplate&quot;:&quot;FBP_SIDE_FOOTER&quot;');
+    expect(body).toContain('&quot;bundleDesignPresetId&quot;:&quot;DEFAULT&quot;');
+    expect(body).toContain('data-bundle-settings="{');
+    expect(body).not.toContain('hidden\n>');
+    expect(body).not.toContain('/apps/product-bundles/assets/');
+  });
+});
+
+describe('full-page app embed hydration contract', () => {
+  it('exposes and calls the full-page initializer when hydrating a marker', () => {
+    const widgetSource = readFileSync(join(process.cwd(), 'app/assets/bundle-widget-full-page.js'), 'utf8');
+    const embedSource = readFileSync(join(process.cwd(), 'extensions/bundle-builder/blocks/bundle-app-embed.liquid'), 'utf8');
+
+    expect(widgetSource).toContain('window.WolfpackFullPageBundle.init = initializeFullPageWidget');
+    expect(embedSource).toContain('function initializeHydratedFullPageBundle()');
+    expect(embedSource).toContain('window.WolfpackFullPageBundle.init()');
+    expect(embedSource).toContain('script.addEventListener');
   });
 });

@@ -1,0 +1,22 @@
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+    "chrome-devtools-mcp@latest",
+    "--autoConnect",
+]
+
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+
+[mcp_servers.render]
+url = "https://mcp.render.com/mcp"
+
+[mcp_servers.render.http_headers]
+Authorization = "Bearer rnd_DkuvlJknvtzXY5Ha0GJ36NNY79jd"
+
+[mcp_servers.shopify-dev-mcp]
+command = "npx"
+args = [
+    "-y",
+    "@shopify/dev-mcp@latest",
+]
