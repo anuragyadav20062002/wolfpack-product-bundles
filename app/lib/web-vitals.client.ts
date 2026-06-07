@@ -92,30 +92,6 @@ export function reportWebVitals(options: { appVersion?: string } = {}) {
   onFCP(fire);
 }
 
-/**
- * Returns a live snapshot of the most recent metric values. Used by the
- * dev-only `?perf=1` overlay so the merchant-success team can read live
- * values without opening DevTools.
- */
-export type LiveVitalsSnapshot = Partial<Record<Metric["name"], { value: number; rating: Metric["rating"] }>>;
-
-const live: LiveVitalsSnapshot = {};
-
-export function subscribeLiveVitals(listener: (snapshot: LiveVitalsSnapshot) => void): () => void {
-  if (typeof window === "undefined") return () => {};
-  const update = (metric: Metric) => {
-    live[metric.name] = { value: metric.value, rating: metric.rating };
-    listener({ ...live });
-  };
-  onLCP(update, { reportAllChanges: true });
-  onINP(update, { reportAllChanges: true });
-  onCLS(update, { reportAllChanges: true });
-  onTTFB(update);
-  onFCP(update);
-  // No teardown API in web-vitals — return a noop. Caller is expected to mount once.
-  return () => {};
-}
-
 export function getSessionId(): string | null {
   if (typeof window === "undefined") return null;
   return ensureSessionId();

@@ -7,29 +7,13 @@ import { authenticate, sessionStorage } from "../../shopify.server";
 import prisma from "../../db.server";
 import { ErrorPage } from "../../components/ErrorPage";
 import { I18nextProvider, useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { i18n } from "../../i18n/config";
 import { getPolarisLocale } from "../../i18n/polaris-locales.server";
 import { MantleTracker } from "../../components/MantleTracker";
-import { PerfDebugOverlay } from "../../components/PerfDebugOverlay";
 import { ensureShopHasExpiringOfflineSession } from "../../services/offline-token.server";
 import { AppLogger } from "../../lib/logger";
 import { loadShopAdminLocale } from "../../services/admin-locale.server";
-
-/** Returns true if the current URL has `?perf=1` so the merchant-success team
- *  can flip on the live Web Vitals overlay without a deploy. Runs client-side
- *  only; SSR returns false to avoid hydration mismatch. */
-function useIsPerfOverlayEnabled(): boolean {
-  const [enabled, setEnabled] = useState(false);
-  useEffect(() => {
-    try {
-      setEnabled(new URLSearchParams(window.location.search).get("perf") === "1");
-    } catch {
-      /* ignore */
-    }
-  }, []);
-  return enabled;
-}
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
@@ -72,7 +56,6 @@ function AdminNavigation() {
 
 export default function App() {
   const { apiKey, locale, polarisTranslations, shop, mantleAppToken } = useLoaderData<typeof loader>();
-  const perfOverlayEnabled = useIsPerfOverlayEnabled();
 
   useEffect(() => {
     if (i18n.language !== locale) {
@@ -90,7 +73,6 @@ export default function App() {
         <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
         <AdminNavigation />
         <Outlet />
-        <PerfDebugOverlay enabled={perfOverlayEnabled} />
       </I18nextProvider>
     </AppProvider>
   );
