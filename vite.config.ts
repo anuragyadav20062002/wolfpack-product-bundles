@@ -95,7 +95,17 @@ export default defineConfig({
         // across navigations + across deploys (until the bundle's deps change).
         manualChunks: (id: string) => {
           if (!id.includes('node_modules')) return undefined;
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+          if (
+            id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/scheduler/') ||
+            // Issue: admin-lcp-phase5-recharts-lazy-1 — keep React's
+            // useSyncExternalStore shim with React, NOT with charts. It's
+            // shared by react-redux (recharts' dep) and react-i18next, and
+            // Vite's default split was pulling vendor-charts onto every
+            // i18next-using route.
+            id.includes('node_modules/use-sync-external-store/')
+          ) {
             return 'vendor-react';
           }
           if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-') || id.includes('node_modules/victory-vendor/')) {

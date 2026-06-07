@@ -27,22 +27,13 @@ import db from "../../db.server";
 import "../../components/analytics/shared/tokens.css";
 import {
   FunnelHero,
-  EngagementPulse,
-  RevenueAttribution,
   BundlePerformanceMatrix,
   LiveActivityFeed,
   TopCampaigns,
 } from "../../components/analytics";
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { LazyEngagementPulse, LazyRevenueAttribution } from "../../components/analytics/lazy";
+import { ChartCardSkeleton } from "../../components/skeletons/ChartCardSkeleton";
+import { useState, useCallback, useMemo, useEffect, useRef, Suspense } from "react";
 import styles from "../../styles/routes/app-attribution.module.css";
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -55,13 +46,6 @@ function formatRevenue(cents: number, currency = "USD"): string {
   }).format(cents / 100);
 }
 
-function formatRevenueShort(cents: number): string {
-  const d = cents / 100;
-  if (d >= 1_000_000) return `$${(d / 1_000_000).toFixed(1)}M`;
-  if (d >= 1_000) return `$${(d / 1_000).toFixed(1)}k`;
-  return `$${Math.round(d)}`;
-}
-
 function formatGrowth(current: number, previous: number): string | null {
   if (previous === 0) return null;
   const pct = ((current - previous) / previous) * 100;
@@ -72,21 +56,11 @@ function isPositiveGrowth(current: number, previous: number): boolean {
   return current >= previous;
 }
 
-function formatDateKey(isoDate: string): string {
-  const [, m, d] = isoDate.split("-");
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${months[parseInt(m, 10) - 1]} ${parseInt(d, 10)}`;
-}
-
 const DOT_CLASSES = [
   styles.dot0, styles.dot1, styles.dot2, styles.dot3, styles.dot4, styles.dot5,
 ];
 function platformDotClass(i: number) {
   return DOT_CLASSES[i] ?? styles.dotDefault;
-}
-
-function chartXFormatter(dateKey: string) {
-  return formatDateKey(dateKey);
 }
 
 // ─── Action ──────────────────────────────────────────────────
@@ -717,114 +691,6 @@ function BundleKpiRow({ summary: s, compare }: { summary: BundleRevenueSummary; 
   );
 }
 
-// ─── BundleTrendChart ─────────────────────────────────────────
-
-function BundleTrendChart({
-  trend,
-  days,
-  isClient,
-}: {
-  trend: TrendPoint[];
-  days: number;
-  isClient: boolean;
-}) {
-  const xAxisInterval = useMemo(() => {
-    const count = trend.length;
-    if (count <= 8) return 0;
-    if (count <= 31) return 4;
-    return Math.floor(count / 8);
-  }, [trend.length]);
-
-  const tooltipFormatter = useCallback(
-    (value: unknown, name: unknown): [string, string] => {
-      const label = name === "bundleRevenue" ? "Bundle Revenue" : "Total Revenue";
-      return [formatRevenue(value as number), label];
-    },
-    [],
-  );
-
-  if (!isClient || trend.length <= 1) return null;
-
-  return (
-    <div className={styles.sectionCard}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionTitle}>Revenue Trend</span>
-        <span className={styles.sectionCount}>
-          {days >= 90 ? "weekly" : "daily"}
-        </span>
-      </div>
-      <div style={{ padding: "20px 16px 16px" }}>
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart
-            data={trend}
-            margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
-          >
-            <defs>
-              <linearGradient id="bundleRevGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#008060" stopOpacity={0.22} />
-                <stop offset="95%" stopColor="#008060" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f2f3" vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickFormatter={chartXFormatter}
-              tick={{ fontSize: 11, fill: "#8c9196" }}
-              axisLine={false}
-              tickLine={false}
-              interval={xAxisInterval}
-            />
-            <YAxis
-              tickFormatter={formatRevenueShort}
-              tick={{ fontSize: 11, fill: "#8c9196" }}
-              axisLine={false}
-              tickLine={false}
-              width={56}
-            />
-            <RechartsTooltip
-              formatter={tooltipFormatter}
-              contentStyle={{
-                border: "1px solid #e1e3e5",
-                borderRadius: 8,
-                fontSize: 13,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              }}
-              labelFormatter={(label) => formatDateKey(label as string)}
-            />
-            <Area
-              type="monotone"
-              dataKey="bundleRevenue"
-              stroke="#008060"
-              strokeWidth={2}
-              fill="url(#bundleRevGrad)"
-              dot={false}
-              activeDot={{ r: 4, fill: "#008060" }}
-            />
-            <Area
-              type="monotone"
-              dataKey="totalRevenue"
-              stroke="#5c6ac4"
-              strokeWidth={1.5}
-              strokeDasharray="4 2"
-              fill="none"
-              dot={false}
-              activeDot={{ r: 3, fill: "#5c6ac4" }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-        <div className={styles.trendLegend}>
-          <span className={styles.trendLegendItem}>
-            <span className={styles.trendDotGreen} /> Bundle Revenue
-          </span>
-          <span className={styles.trendLegendItem}>
-            <span className={styles.trendDotPurple} /> Total Revenue
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── BundleLeaderboardCard ─────────────────────────────────────
 
 function BundleLeaderboardCard({ leaderboard }: { leaderboard: LeaderboardRow[] }) {
@@ -1185,17 +1051,21 @@ export default function AttributionDashboard() {
               gap: 16,
             }}
           >
-            <EngagementPulse
-              engagedSessions={engagedSessions}
-              prevEngagedSessions={prevEngagedSessions}
-              engagementToOrderPct={engagementToOrderPct}
-              trend={engagementTrend}
-            />
-            <RevenueAttribution
-              summary={bundleRevenueSummary}
-              trend={bundleRevenueTrend}
-              formatRevenue={formatRevenue}
-            />
+            <Suspense fallback={<ChartCardSkeleton label="Loading engagement chart" />}>
+              <LazyEngagementPulse
+                engagedSessions={engagedSessions}
+                prevEngagedSessions={prevEngagedSessions}
+                engagementToOrderPct={engagementToOrderPct}
+                trend={engagementTrend}
+              />
+            </Suspense>
+            <Suspense fallback={<ChartCardSkeleton label="Loading revenue attribution chart" />}>
+              <LazyRevenueAttribution
+                summary={bundleRevenueSummary}
+                trend={bundleRevenueTrend}
+                formatRevenue={formatRevenue}
+              />
+            </Suspense>
           </div>
 
           <BundlePerformanceMatrix

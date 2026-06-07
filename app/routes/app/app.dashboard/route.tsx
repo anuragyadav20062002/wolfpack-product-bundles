@@ -1,5 +1,5 @@
-import { json, type ActionFunctionArgs, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
+import { defer, json, type ActionFunctionArgs, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
+import { Await, useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { OptimisedImage } from "../../../components/OptimisedImage";
 import { loaderCache } from "../../../lib/loader-cache.server";
 import { ServerTiming } from "../../../lib/server-timing.server";
@@ -7,11 +7,12 @@ import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
-import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
+import { useCallback, useRef, useEffect, useMemo, memo, useState, Suspense } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
 import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
+import { DashboardBannerSkeleton } from "../../../components/skeletons/DashboardBannerSkeleton";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
@@ -106,63 +107,61 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }));
 
   const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
-  const SHOP_GRAPHQL_TTL_MS = 60_000;
   const SHORT_TTL_MS = 30_000;
 
-  // Run the four remaining independent loaders in parallel, with caching where safe.
-  // trackAll returns an object keyed by the task names — destructure with rename
-  // so the timing-header names stay W3C-token style (hyphens) while the locals
-  // keep their original snake/camel shape.
-  const {
-    "embed-check": embedCheck,
-    billing: subscriptionInfo,
-    "proxy-health": proxyHealthy,
-    "owner-name": ownerFirstName,
-  } = await timing.trackAll({
-    "embed-check": () => loaderCache.memo(
-      `embed-check:${session.shop}`,
-      () => checkAppEmbedEnabled(admin, session.shop, { blockHandles: ["bundle-app-embed"] }),
-      SHORT_TTL_MS,
-    ),
-    billing: () => loaderCache.memo(
-      `billing:${session.shop}`,
-      async () => {
-        try { return await BillingService.getSubscriptionInfo(session.shop); }
-        catch (error) {
-          AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
-          return null;
-        }
-      },
-      SHORT_TTL_MS,
-    ),
-    "proxy-health": async () => {
-      try {
-        const controller = new AbortController();
-        const proxyTimer = setTimeout(() => controller.abort(), 3000);
-        const proxyRes = await fetch(`https://${session.shop}/apps/product-bundles/api/proxy-health`, { signal: controller.signal });
-        clearTimeout(proxyTimer);
-        if (proxyRes.status === 404) {
-          const ct = proxyRes.headers.get("content-type") ?? "";
-          if (ct.includes("text/html")) {
-            AppLogger.warn("App proxy health check failed", { component: "app.dashboard", operation: "proxy-health-check", shop: session.shop });
-            return false;
-          }
-        }
-      } catch { /* Timeout — default healthy */ }
-      return true;
+  // Issue: admin-lcp-phase6-defer-skeletons-1.
+  // embed-check stays eager — its outputs (`themeEditorUrl`, `appEmbedEnabled`)
+  // are consumed inside `useCallback` click handlers that must be wired at
+  // first render. Cached for ~30 s so its actual cost is usually <30 ms.
+  // billing + proxy-health are kicked off concurrently here and surfaced via
+  // a deferred `banners` promise so the bundles table can paint without
+  // blocking on the 3-second proxy-health abort timeout.
+  const billingPromise = loaderCache.memo(
+    `billing:${session.shop}`,
+    async () => {
+      try { return await BillingService.getSubscriptionInfo(session.shop); }
+      catch (error) {
+        AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
+        return null;
+      }
     },
-    "owner-name": () => loaderCache.memo(
-      `owner-name:${session.shop}`,
-      async () => {
-        try {
-          const shopRes = await admin.graphql(`query { shop { billingAddress { firstName } } }`);
-          const shopData = await shopRes.json();
-          return (shopData?.data?.shop?.billingAddress?.firstName ?? "") as string;
-        } catch { return ""; }
-      },
-      SHOP_GRAPHQL_TTL_MS,
-    ),
-  });
+    SHORT_TTL_MS,
+  );
+  const proxyHealthPromise = (async () => {
+    try {
+      const controller = new AbortController();
+      const proxyTimer = setTimeout(() => controller.abort(), 3000);
+      const proxyRes = await fetch(`https://${session.shop}/apps/product-bundles/api/proxy-health`, { signal: controller.signal });
+      clearTimeout(proxyTimer);
+      if (proxyRes.status === 404) {
+        const ct = proxyRes.headers.get("content-type") ?? "";
+        if (ct.includes("text/html")) {
+          AppLogger.warn("App proxy health check failed", { component: "app.dashboard", operation: "proxy-health-check", shop: session.shop });
+          return false;
+        }
+      }
+    } catch { /* Timeout — default healthy */ }
+    return true;
+  })();
+
+  const embedCheck = await timing.track("embed-check", () => loaderCache.memo(
+    `embed-check:${session.shop}`,
+    () => checkAppEmbedEnabled(admin, session.shop, { blockHandles: ["bundle-app-embed"] }),
+    SHORT_TTL_MS,
+  ));
+
+  const banners = (async () => {
+    const [subscriptionInfo, proxyHealthy] = await Promise.all([billingPromise, proxyHealthPromise]);
+    return {
+      subscription: subscriptionInfo ? {
+        plan: subscriptionInfo.plan,
+        currentBundleCount: subscriptionInfo.currentBundleCount,
+        bundleLimit: subscriptionInfo.bundleLimit,
+        canCreateBundle: subscriptionInfo.canCreateBundle,
+      } : null,
+      proxyHealthy,
+    };
+  })();
 
   const themeEditorUrl = embedCheck.themeId
     ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`
@@ -197,19 +196,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     })();
   }
 
-  // proxyHealthy + ownerFirstName were folded into the trackAll above so they
-  // run concurrently with embed-check and billing.
-
-  return json({
-    bundles: bundlesWithPreview, shop: session.shop, appUrl, proxyHealthy, ownerFirstName,
-    subscription: subscriptionInfo ? {
-      plan: subscriptionInfo.plan,
-      currentBundleCount: subscriptionInfo.currentBundleCount,
-      bundleLimit: subscriptionInfo.bundleLimit,
-      canCreateBundle: subscriptionInfo.canCreateBundle,
-    } : null,
+  return defer({
+    bundles: bundlesWithPreview,
+    shop: session.shop,
+    appUrl,
     themeEditorUrl,
     appEmbedEnabled,
+    banners,
   }, { headers: timing.toHeaders() });
 };
 
@@ -284,7 +277,7 @@ const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPrev
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl, themeEditorUrl, appEmbedEnabled } = useLoaderData<typeof loader>();
+  const { bundles, shop, appUrl, themeEditorUrl, appEmbedEnabled, banners } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
@@ -649,16 +642,24 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Banners */}
-          {!proxyHealthy && <ProxyHealthBanner shop={shop} appUrl={appUrl} />}
-          {subscription && (
-            <UpgradePromptBanner
-              plan={subscription.plan}
-              currentBundleCount={subscription.currentBundleCount}
-              bundleLimit={subscription.bundleLimit}
-              canCreateBundle={subscription.canCreateBundle}
-            />
-          )}
+          {/* Banners — deferred via admin-lcp-phase6-defer-skeletons-1 */}
+          <Suspense fallback={<DashboardBannerSkeleton />}>
+            <Await resolve={banners}>
+              {(b) => (
+                <>
+                  {!b.proxyHealthy && <ProxyHealthBanner shop={shop} appUrl={appUrl} />}
+                  {b.subscription && (
+                    <UpgradePromptBanner
+                      plan={b.subscription.plan}
+                      currentBundleCount={b.subscription.currentBundleCount}
+                      bundleLimit={b.subscription.bundleLimit}
+                      canCreateBundle={b.subscription.canCreateBundle}
+                    />
+                  )}
+                </>
+              )}
+            </Await>
+          </Suspense>
 
           {/* Top cards */}
           <div className={dashboardStyles.topCardsGrid}>

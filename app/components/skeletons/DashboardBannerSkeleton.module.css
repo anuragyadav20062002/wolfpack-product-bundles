@@ -1,0 +1,18 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.banner {
+  height: 64px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f6f6f7 0%, #ececed 50%, #f6f6f7 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
