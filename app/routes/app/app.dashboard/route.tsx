@@ -1,6 +1,8 @@
 import { json, type ActionFunctionArgs, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
 import { OptimisedImage } from "../../../components/OptimisedImage";
+import { loaderCache } from "../../../lib/loader-cache.server";
+import { ServerTiming } from "../../../lib/server-timing.server";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -48,9 +50,15 @@ export const links: LinksFunction = () => [
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await requireAdminSession(request);
+  // Issue: admin-lcp-phase4-loaders-1.
+  // Was: sequential awaits for bundles -> embed-check -> billing -> proxy-health -> shop-graphql.
+  // Now: bundles first (required for the rest), then Promise.all the four independent
+  // calls. embed-check + billing + shop-graphql additionally cached via loaderCache so
+  // back-to-back admin navigations re-use the same result within 30 s.
+  const timing = new ServerTiming();
+  const { session, admin } = await timing.track("auth", () => requireAdminSession(request));
 
-  const bundles = await db.bundle.findMany({
+  const bundles = await timing.track("db.bundles", () => db.bundle.findMany({
     where: {
       shopId: session.shop,
       status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED] }
@@ -61,7 +69,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       pricing: { select: { enabled: true } },
     },
     orderBy: { createdAt: "desc" },
-  });
+  }));
 
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
@@ -71,18 +79,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     try {
       const productIds = bundlesNeedingBackfill.map(b => b.shopifyProductId).filter(Boolean);
       const GET_PRODUCTS = `query GetProductHandles($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle } } }`;
-      const response = await admin.graphql(GET_PRODUCTS, { variables: { ids: productIds } });
+      const response = await timing.track("graphql.product-handles", () => admin.graphql(GET_PRODUCTS, { variables: { ids: productIds } }));
       const data = await response.json();
       if (data.data?.nodes) {
+        // Parallelise the per-bundle DB updates instead of awaiting each in series.
+        const updates: Promise<unknown>[] = [];
         for (const node of data.data.nodes) {
           if (node?.id && node?.handle) {
             const bundleToUpdate = bundlesNeedingBackfill.find(b => b.shopifyProductId === node.id);
             if (bundleToUpdate) {
               bundleToUpdate.shopifyProductHandle = node.handle;
-              await db.bundle.update({ where: { id: bundleToUpdate.id }, data: { shopifyProductHandle: node.handle } });
+              updates.push(db.bundle.update({ where: { id: bundleToUpdate.id }, data: { shopifyProductHandle: node.handle } }));
             }
           }
         }
+        if (updates.length > 0) await timing.track("db.backfill-updates", () => Promise.all(updates));
       }
     } catch (error) {
       AppLogger.error("Failed to backfill product handles", { component: "app.dashboard", operation: "backfill-product-handles" }, error);
@@ -95,20 +106,60 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }));
 
   const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
-  const embedCheck = await checkAppEmbedEnabled(admin, session.shop, {
-    blockHandles: ["bundle-app-embed"],
+  const SHOP_GRAPHQL_TTL_MS = 60_000;
+  const SHORT_TTL_MS = 30_000;
+
+  // Run the four remaining independent loaders in parallel, with caching where safe.
+  const [embedCheck, subscriptionInfo, proxyHealthy, ownerFirstName] = await timing.trackAll({
+    "embed-check": () => loaderCache.memo(
+      `embed-check:${session.shop}`,
+      () => checkAppEmbedEnabled(admin, session.shop, { blockHandles: ["bundle-app-embed"] }),
+      SHORT_TTL_MS,
+    ),
+    "billing": () => loaderCache.memo(
+      `billing:${session.shop}`,
+      async () => {
+        try { return await BillingService.getSubscriptionInfo(session.shop); }
+        catch (error) {
+          AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
+          return null;
+        }
+      },
+      SHORT_TTL_MS,
+    ),
+    "proxy-health": async () => {
+      try {
+        const controller = new AbortController();
+        const proxyTimer = setTimeout(() => controller.abort(), 3000);
+        const proxyRes = await fetch(`https://${session.shop}/apps/product-bundles/api/proxy-health`, { signal: controller.signal });
+        clearTimeout(proxyTimer);
+        if (proxyRes.status === 404) {
+          const ct = proxyRes.headers.get("content-type") ?? "";
+          if (ct.includes("text/html")) {
+            AppLogger.warn("App proxy health check failed", { component: "app.dashboard", operation: "proxy-health-check", shop: session.shop });
+            return false;
+          }
+        }
+      } catch { /* Timeout — default healthy */ }
+      return true;
+    },
+    "owner-name": () => loaderCache.memo(
+      `owner-name:${session.shop}`,
+      async () => {
+        try {
+          const shopRes = await admin.graphql(`query { shop { billingAddress { firstName } } }`);
+          const shopData = await shopRes.json();
+          return (shopData?.data?.shop?.billingAddress?.firstName ?? "") as string;
+        } catch { return ""; }
+      },
+      SHOP_GRAPHQL_TTL_MS,
+    ),
   });
+
   const themeEditorUrl = embedCheck.themeId
     ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`
     : null;
   const appEmbedEnabled = embedCheck.enabled;
-
-  let subscriptionInfo = null;
-  try {
-    subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
-  } catch (error) {
-    AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
-  }
 
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {
@@ -138,27 +189,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     })();
   }
 
-  let proxyHealthy = true;
-  try {
-    const controller = new AbortController();
-    const proxyTimer = setTimeout(() => controller.abort(), 3000);
-    const proxyRes = await fetch(`https://${session.shop}/apps/product-bundles/api/proxy-health`, { signal: controller.signal });
-    clearTimeout(proxyTimer);
-    if (proxyRes.status === 404) {
-      const ct = proxyRes.headers.get('content-type') ?? '';
-      if (ct.includes('text/html')) {
-        proxyHealthy = false;
-        AppLogger.warn('App proxy health check failed', { component: 'app.dashboard', operation: 'proxy-health-check', shop: session.shop });
-      }
-    }
-  } catch { /* Timeout — default healthy */ }
-
-  let ownerFirstName = '';
-  try {
-    const shopRes = await admin.graphql(`query { shop { billingAddress { firstName } } }`);
-    const shopData = await shopRes.json();
-    ownerFirstName = shopData?.data?.shop?.billingAddress?.firstName ?? '';
-  } catch { /* Non-critical */ }
+  // proxyHealthy + ownerFirstName were folded into the trackAll above so they
+  // run concurrently with embed-check and billing.
 
   return json({
     bundles: bundlesWithPreview, shop: session.shop, appUrl, proxyHealthy, ownerFirstName,
@@ -170,7 +202,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     } : null,
     themeEditorUrl,
     appEmbedEnabled,
-  });
+  }, { headers: timing.toHeaders() });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
