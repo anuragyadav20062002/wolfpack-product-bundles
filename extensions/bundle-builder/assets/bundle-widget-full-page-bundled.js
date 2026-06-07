@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.22
- * Built   : 2026-06-06
+ * Version : 3.0.23
+ * Built   : 2026-06-07
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.22';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.23';
 (function() {
   'use strict';
 
@@ -4407,7 +4407,11 @@ class BundleWidgetFullPage {
       clearBtn.className = 'fpb-mobile-summary-clear-btn';
       clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Clear</span>`;
       clearBtn.addEventListener('click', () => {
+
         this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        this.currentStepIndex = 0;
+        this.searchQuery = '';
+        this.activeCollectionId = null;
         this.compactMobileSummaryTrayExpanded = false;
         this.reRenderFullPage();
       });
@@ -4656,7 +4660,11 @@ class BundleWidgetFullPage {
       clearBtn.className = 'side-panel-clear-btn';
       clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
       clearBtn.addEventListener('click', () => {
+
         this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+        this.currentStepIndex = 0;
+        this.searchQuery = '';
+        this.activeCollectionId = null;
         this.reRenderFullPage();
       });
       header.appendChild(clearBtn);
