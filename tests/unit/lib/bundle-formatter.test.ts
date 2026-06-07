@@ -195,6 +195,57 @@ describe("formatBundleForWidget", () => {
     ]);
   });
 
+  it("promotes category products into full-page step products when StepProduct is empty", () => {
+    const highVariantProduct = Array.from({ length: 11 }, (_, index) => ({
+      id: `gid://shopify/ProductVariant/${48191691456771 + index}`,
+      price: "123.00",
+      compareAtPrice: "246.00",
+      title: `Dark Blue / For iphone 6 6S Plus #${index + 1}`,
+      availableForSale: true,
+      image: { originalSrc: "https://cdn.shopify.com/variant.jpg" },
+    }));
+
+    const step = makeStep({
+      StepProduct: [],
+      StepCategory: [
+        {
+          id: "category98476",
+          title: "Pick audit items",
+          products: [
+            {
+              id: "gid://shopify/Product/9427287703811",
+              title: "123Luxury Armor Matte Case",
+              imageUrl: "https://cdn.shopify.com/category-product.jpg",
+              variants: highVariantProduct,
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = formatBundleForWidget(makeBundle({ steps: [step] }) as any);
+    const product = result.steps[0].products[0];
+
+    expect(result.steps[0].products).toHaveLength(1);
+    expect(product).toMatchObject({
+      id: "gid://shopify/Product/9427287703811",
+      title: "123Luxury Armor Matte Case",
+      featuredImage: { url: "https://cdn.shopify.com/category-product.jpg" },
+      price: 12300,
+      available: true,
+    });
+    expect(product.variants).toHaveLength(11);
+    expect(product.variants[0]).toMatchObject({
+      id: "48191691456771",
+      gid: "gid://shopify/ProductVariant/48191691456771",
+      title: "Dark Blue / For iphone 6 6S Plus #1",
+      price: 12300,
+      compareAtPrice: 24600,
+      available: true,
+      image: { url: "https://cdn.shopify.com/variant.jpg" },
+    });
+  });
+
   it("preserves hydrated category fields for storefront runtime", () => {
     const condition = { type: "quantity", condition: "greaterThanOrEqualTo", value: "01" };
     const selectedCollection = { id: "gid://shopify/Collection/333", handle: "frontpage", title: "Home page" };

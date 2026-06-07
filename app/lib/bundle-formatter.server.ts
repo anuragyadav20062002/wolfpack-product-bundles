@@ -107,8 +107,51 @@ interface FormattedPricing {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getStepSourceProducts(step: any): any[] {
-  return Array.isArray(step.StepProduct) ? [...step.StepProduct] : [];
+function getProductIdFromSource(product: any): string {
+  return getProductId(product);
+}
+
+function getCategorySourceProducts(step: any): any[] {
+  if (!Array.isArray(step.StepCategory)) return [];
+
+  return step.StepCategory.flatMap((category: any) => {
+    const categoryProducts = Array.isArray(category?.products) ? category.products : [];
+    const selectedProducts = Array.isArray(category?.selectedProducts) ? category.selectedProducts : [];
+    return [...categoryProducts, ...selectedProducts];
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dedupeProductsById(products: any[]): any[] {
+  const seenIds = new Set<string>();
+  const result: any[] = [];
+
+  products.forEach((product) => {
+    const productId = getProductIdFromSource(product);
+    if (!productId) return;
+
+    const normalized = productId.includes("/") ? productId : `gid://shopify/Product/${productId}`;
+    if (seenIds.has(normalized)) return;
+
+    seenIds.add(normalized);
+    result.push(product);
+  });
+
+  return result;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getStepSourceProducts(step: any, bundleType: string): any[] {
+  const explicitProducts = Array.isArray(step.StepProduct) ? [...step.StepProduct] : [];
+
+  if (bundleType !== "full_page") {
+    return explicitProducts;
+  }
+
+  return dedupeProductsById([
+    ...explicitProducts,
+    ...getCategorySourceProducts(step),
+  ]);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,8 +180,9 @@ function getImageUrl(image: any): string | null {
 export function formatBundleForWidget(bundle: any): FormattedBundle {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const steps = (bundle.steps ?? []).map((step: any) => {
+    const bundleType = bundle.bundleType;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stepProducts = getStepSourceProducts(step);
+    const stepProducts = getStepSourceProducts(step, bundleType);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const productsArray: FormattedProduct[] = stepProducts.map((sp: any) => {
