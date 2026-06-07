@@ -3,7 +3,8 @@
   "private": true,
   "version": "2.0.0",
   "scripts": {
-    "build": "remix vite:build",
+    "build": "npm run optimise:images && remix vite:build",
+    "optimise:images": "node scripts/optimise-public-images.mjs",
     "build:widgets": "node scripts/build-widget-bundles.js all && node scripts/minify-assets.js js",
     "build:widgets:full-page": "node scripts/build-widget-bundles.js full-page && node scripts/minify-assets.js js",
     "build:widgets:product-page": "node scripts/build-widget-bundles.js product-page && node scripts/minify-assets.js js",
@@ -54,9 +55,9 @@
     "@remix-run/react": "^2.16.1",
     "@remix-run/serve": "^2.16.1",
     "@shopify/app-bridge-react": "^4.1.6",
-    "@shopify/shopify-api": "^11.14.1",
     "@shopify/polaris": "^12.0.0",
     "@shopify/polaris-icons": "^8.11.1",
+    "@shopify/shopify-api": "^11.14.1",
     "@shopify/shopify-app-remix": "^3.8.5",
     "@shopify/shopify-app-session-storage-prisma": "^6.0.9",
     "@tailwindcss/postcss": "^4.1.12",
@@ -76,7 +77,9 @@
     "tailwindcss": "^4.1.12",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
-    "vite-tsconfig-paths": "^5.0.1"
+    "vite-tsconfig-paths": "^5.0.1",
+    "sharp": "^0.34.5",
+    "web-vitals": "^5.3.0"
   },
   "devDependencies": {
     "@preact/signals": "^2.3.0",

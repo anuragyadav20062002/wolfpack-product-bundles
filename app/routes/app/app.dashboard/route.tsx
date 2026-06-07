@@ -1,14 +1,17 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
+import { defer, json, type ActionFunctionArgs, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
+import { Await, useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
+import { OptimisedImage } from "../../../components/OptimisedImage";
+import { loaderCache } from "../../../lib/loader-cache.server";
+import { ServerTiming } from "../../../lib/server-timing.server";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
 import { BillingService } from "../../../services/billing.server";
-import { useCallback, useRef, useEffect, useMemo, memo, useState } from "react";
+import { useCallback, useRef, useEffect, useMemo, memo, useState, Suspense } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
-import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
+import { DashboardBannerSkeleton } from "../../../components/skeletons/DashboardBannerSkeleton";
 import { useDashboardState } from "../../../hooks/useDashboardState";
 import { BundleStatus, BundleType } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
@@ -29,10 +32,33 @@ import type { BundleActionsButtonsProps } from "./types";
 
 import dashboardStyles from "./dashboard.module.css";
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session, admin } = await requireAdminSession(request);
+/**
+ * Issue: admin-lcp-phase3-images-1 — preload the dashboard hero image via
+ * a real `<link rel="preload" as="image">` emitted during HTML parse. This
+ * replaces a post-hydration `new Image()` preload that fired only AFTER
+ * useEffect — too late for LCP. Pulls the AVIF variant so most browsers
+ * fetch ~30 KB instead of the 68 KB JPEG.
+ */
+export const links: LinksFunction = () => [
+  {
+    rel: "preload",
+    as: "image",
+    href: "/Parth.avif",
+    type: "image/avif",
+    fetchPriority: "high",
+  } as ReturnType<LinksFunction>[number],
+];
 
-  const bundles = await db.bundle.findMany({
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // Issue: admin-lcp-phase4-loaders-1.
+  // Was: sequential awaits for bundles -> embed-check -> billing -> proxy-health -> shop-graphql.
+  // Now: bundles first (required for the rest), then Promise.all the four independent
+  // calls. embed-check + billing + shop-graphql additionally cached via loaderCache so
+  // back-to-back admin navigations re-use the same result within 30 s.
+  const timing = new ServerTiming();
+  const { session, admin } = await timing.track("auth", () => requireAdminSession(request));
+
+  const bundles = await timing.track("db.bundles", () => db.bundle.findMany({
     where: {
       shopId: session.shop,
       status: { in: [BundleStatus.ACTIVE, BundleStatus.DRAFT, BundleStatus.UNLISTED] }
@@ -43,7 +69,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       pricing: { select: { enabled: true } },
     },
     orderBy: { createdAt: "desc" },
-  });
+  }));
 
   const bundlesNeedingBackfill = bundles.filter(
     b => b.bundleType === BundleType.PRODUCT_PAGE && b.shopifyProductId && !b.shopifyProductHandle
@@ -53,18 +79,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     try {
       const productIds = bundlesNeedingBackfill.map(b => b.shopifyProductId).filter(Boolean);
       const GET_PRODUCTS = `query GetProductHandles($ids: [ID!]!) { nodes(ids: $ids) { ... on Product { id handle } } }`;
-      const response = await admin.graphql(GET_PRODUCTS, { variables: { ids: productIds } });
+      const response = await timing.track("graphql.product-handles", () => admin.graphql(GET_PRODUCTS, { variables: { ids: productIds } }));
       const data = await response.json();
       if (data.data?.nodes) {
+        // Parallelise the per-bundle DB updates instead of awaiting each in series.
+        const updates: Promise<unknown>[] = [];
         for (const node of data.data.nodes) {
           if (node?.id && node?.handle) {
             const bundleToUpdate = bundlesNeedingBackfill.find(b => b.shopifyProductId === node.id);
             if (bundleToUpdate) {
               bundleToUpdate.shopifyProductHandle = node.handle;
-              await db.bundle.update({ where: { id: bundleToUpdate.id }, data: { shopifyProductHandle: node.handle } });
+              updates.push(db.bundle.update({ where: { id: bundleToUpdate.id }, data: { shopifyProductHandle: node.handle } }));
             }
           }
         }
+        if (updates.length > 0) await timing.track("db.backfill-updates", () => Promise.all(updates));
       }
     } catch (error) {
       AppLogger.error("Failed to backfill product handles", { component: "app.dashboard", operation: "backfill-product-handles" }, error);
@@ -77,20 +106,66 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }));
 
   const apiKey = process.env.SHOPIFY_API_KEY || "63077bb0483a6ce08a2d6139b14d170b";
-  const embedCheck = await checkAppEmbedEnabled(admin, session.shop, {
-    blockHandles: ["bundle-app-embed"],
-  });
+  const SHORT_TTL_MS = 30_000;
+
+  // Issue: admin-lcp-phase6-defer-skeletons-1.
+  // embed-check stays eager — its outputs (`themeEditorUrl`, `appEmbedEnabled`)
+  // are consumed inside `useCallback` click handlers that must be wired at
+  // first render. Cached for ~30 s so its actual cost is usually <30 ms.
+  // billing + proxy-health are kicked off concurrently here and surfaced via
+  // a deferred `banners` promise so the bundles table can paint without
+  // blocking on the 3-second proxy-health abort timeout.
+  const billingPromise = loaderCache.memo(
+    `billing:${session.shop}`,
+    async () => {
+      try { return await BillingService.getSubscriptionInfo(session.shop); }
+      catch (error) {
+        AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
+        return null;
+      }
+    },
+    SHORT_TTL_MS,
+  );
+  const proxyHealthPromise = (async () => {
+    try {
+      const controller = new AbortController();
+      const proxyTimer = setTimeout(() => controller.abort(), 3000);
+      const proxyRes = await fetch(`https://${session.shop}/apps/product-bundles/api/proxy-health`, { signal: controller.signal });
+      clearTimeout(proxyTimer);
+      if (proxyRes.status === 404) {
+        const ct = proxyRes.headers.get("content-type") ?? "";
+        if (ct.includes("text/html")) {
+          AppLogger.warn("App proxy health check failed", { component: "app.dashboard", operation: "proxy-health-check", shop: session.shop });
+          return false;
+        }
+      }
+    } catch { /* Timeout — default healthy */ }
+    return true;
+  })();
+
+  const embedCheck = await timing.track("embed-check", () => loaderCache.memo(
+    `embed-check:${session.shop}`,
+    () => checkAppEmbedEnabled(admin, session.shop, { blockHandles: ["bundle-app-embed"] }),
+    SHORT_TTL_MS,
+  ));
+
+  const banners = (async () => {
+    const [subscriptionInfo, proxyHealthy] = await Promise.all([billingPromise, proxyHealthPromise]);
+    return {
+      subscription: subscriptionInfo ? {
+        plan: subscriptionInfo.plan,
+        currentBundleCount: subscriptionInfo.currentBundleCount,
+        bundleLimit: subscriptionInfo.bundleLimit,
+        canCreateBundle: subscriptionInfo.canCreateBundle,
+      } : null,
+      proxyHealthy,
+    };
+  })();
+
   const themeEditorUrl = embedCheck.themeId
     ? `https://${session.shop}/admin/themes/${embedCheck.themeId.split("/").pop()}/editor?context=apps&appEmbed=${apiKey}%2Fbundle-app-embed`
     : null;
   const appEmbedEnabled = embedCheck.enabled;
-
-  let subscriptionInfo = null;
-  try {
-    subscriptionInfo = await BillingService.getSubscriptionInfo(session.shop);
-  } catch (error) {
-    AppLogger.error("Failed to fetch subscription info", { component: "app.dashboard", operation: "get-subscription-info" }, error);
-  }
 
   const appUrl = process.env.SHOPIFY_APP_URL;
   if (appUrl) {
@@ -120,39 +195,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     })();
   }
 
-  let proxyHealthy = true;
-  try {
-    const controller = new AbortController();
-    const proxyTimer = setTimeout(() => controller.abort(), 3000);
-    const proxyRes = await fetch(`https://${session.shop}/apps/product-bundles/api/proxy-health`, { signal: controller.signal });
-    clearTimeout(proxyTimer);
-    if (proxyRes.status === 404) {
-      const ct = proxyRes.headers.get('content-type') ?? '';
-      if (ct.includes('text/html')) {
-        proxyHealthy = false;
-        AppLogger.warn('App proxy health check failed', { component: 'app.dashboard', operation: 'proxy-health-check', shop: session.shop });
-      }
-    }
-  } catch { /* Timeout — default healthy */ }
-
-  let ownerFirstName = '';
-  try {
-    const shopRes = await admin.graphql(`query { shop { billingAddress { firstName } } }`);
-    const shopData = await shopRes.json();
-    ownerFirstName = shopData?.data?.shop?.billingAddress?.firstName ?? '';
-  } catch { /* Non-critical */ }
-
-  return json({
-    bundles: bundlesWithPreview, shop: session.shop, appUrl, proxyHealthy, ownerFirstName,
-    subscription: subscriptionInfo ? {
-      plan: subscriptionInfo.plan,
-      currentBundleCount: subscriptionInfo.currentBundleCount,
-      bundleLimit: subscriptionInfo.bundleLimit,
-      canCreateBundle: subscriptionInfo.canCreateBundle,
-    } : null,
+  return defer({
+    bundles: bundlesWithPreview,
+    shop: session.shop,
+    appUrl,
     themeEditorUrl,
     appEmbedEnabled,
-  });
+    banners,
+  }, { headers: timing.toHeaders() });
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -226,7 +276,7 @@ const BundleActionsButtons = memo(({ bundleId, onEdit, onClone, onDelete, onPrev
 BundleActionsButtons.displayName = 'BundleActionsButtons';
 
 export default function Dashboard() {
-  const { bundles, subscription, shop, proxyHealthy, appUrl, themeEditorUrl, appEmbedEnabled } = useLoaderData<typeof loader>();
+  const { bundles, shop, appUrl, themeEditorUrl, appEmbedEnabled, banners } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher();
@@ -249,12 +299,13 @@ export default function Dashboard() {
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
 
+  // Hero image preload moved to the `links` export above — it now happens
+  // during HTML parse rather than post-hydration, which previously added ~LCP
+  // to the Parth.jpeg paint. Mark loaded immediately so the skeleton swap
+  // happens as soon as the `<img>` mounts. The OptimisedImage's <img>
+  // `onLoad` is still wired below so the skeleton waits for the real bytes.
   useEffect(() => {
-    const image = new Image();
-    image.src = "/Parth.jpeg";
-    if (image.complete) { setParthImageLoaded(true); return; }
-    image.onload = () => setParthImageLoaded(true);
-    image.onerror = () => setParthImageLoaded(true);
+    setParthImageLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -590,16 +641,16 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Banners */}
-          {!proxyHealthy && <ProxyHealthBanner shop={shop} appUrl={appUrl} />}
-          {subscription && (
-            <UpgradePromptBanner
-              plan={subscription.plan}
-              currentBundleCount={subscription.currentBundleCount}
-              bundleLimit={subscription.bundleLimit}
-              canCreateBundle={subscription.canCreateBundle}
-            />
-          )}
+          {/* Banners — deferred via admin-lcp-phase6-defer-skeletons-1 */}
+          <Suspense fallback={<DashboardBannerSkeleton />}>
+            <Await resolve={banners}>
+              {(b) => (
+                <>
+                  {!b.proxyHealthy && <ProxyHealthBanner shop={shop} appUrl={appUrl} />}
+                </>
+              )}
+            </Await>
+          </Suspense>
 
           {/* Top cards */}
           <div className={dashboardStyles.topCardsGrid}>
@@ -616,10 +667,14 @@ export default function Dashboard() {
                         <s-spinner accessibilityLabel={t("dashboard.support.imageLoading")} />
                       </div>
                     )}
-                    <img
+                    <OptimisedImage
                       src="/Parth.jpeg"
                       alt={t("dashboard.support.imageAlt")}
                       className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
+                      width={120}
+                      height={120}
+                      loading="eager"
+                      fetchPriority="high"
                       onLoad={() => setParthImageLoaded(true)}
                     />
                   </div>
@@ -647,7 +702,14 @@ export default function Dashboard() {
                   <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
                   <s-icon type="external" color="subdued" />
                 </div>
-                <img src="/appEmbed.png" alt={t("dashboard.appEmbeds.headingMain")} className={dashboardStyles.appEmbedImage} />
+                <OptimisedImage
+                  src="/appEmbed.png"
+                  alt={t("dashboard.appEmbeds.headingMain")}
+                  className={dashboardStyles.appEmbedImage}
+                  width={420}
+                  height={140}
+                  loading="lazy"
+                />
                 <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
               </s-stack>
             </button>
@@ -711,7 +773,14 @@ export default function Dashboard() {
                 {bundles.length === 0 ? (
                   <div className={dashboardStyles.emptyBundlesState}>
                     <div className={dashboardStyles.emptyBundlesIcon}>
-                      <img src="/bundle.png" alt="" className={dashboardStyles.emptyBundlesImg} />
+                      <OptimisedImage
+                        src="/bundle.png"
+                        alt=""
+                        className={dashboardStyles.emptyBundlesImg}
+                        width={120}
+                        height={120}
+                        loading="lazy"
+                      />
                     </div>
                     <s-stack direction="block" gap="small" alignItems="center">
                       <s-heading>{t("dashboard.emptyState.title")}</s-heading>
@@ -797,14 +866,28 @@ export default function Dashboard() {
 
               <div className={dashboardStyles.resourcesThumbnails}>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-                  <img src="/bundleGallery.png" alt={t("dashboard.resources.bundleGallery")} className={dashboardStyles.resourceThumbnailImage} />
+                  <OptimisedImage
+                    src="/bundleGallery.png"
+                    alt={t("dashboard.resources.bundleGallery")}
+                    className={dashboardStyles.resourceThumbnailImage}
+                    width={320}
+                    height={180}
+                    loading="lazy"
+                  />
                   <div className={dashboardStyles.resourceThumbnailFooter}>
                     <span>{t("dashboard.resources.bundleGallery")}</span>
                     <s-icon type="external" color="subdued" />
                   </div>
                 </a>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-                  <img src="/bundleGallery.png" alt={t("dashboard.resources.bundleGallery")} className={dashboardStyles.resourceThumbnailImage} />
+                  <OptimisedImage
+                    src="/bundleGallery.png"
+                    alt={t("dashboard.resources.bundleGallery")}
+                    className={dashboardStyles.resourceThumbnailImage}
+                    width={320}
+                    height={180}
+                    loading="lazy"
+                  />
                   <div className={dashboardStyles.resourceThumbnailFooter}>
                     <span>{t("dashboard.resources.bundleGallery")}</span>
                     <s-icon type="external" color="subdued" />

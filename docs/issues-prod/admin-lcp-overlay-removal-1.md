@@ -1,0 +1,34 @@
+# Issue: Remove PerfDebugOverlay (?perf=1 LCP overlay)
+**Issue ID:** admin-lcp-overlay-removal-1
+**Status:** Completed
+**Priority:** 🟢 Low
+**Created:** 2026-06-07
+**Last Updated:** 2026-06-07 22:46
+
+## Overview
+
+The `?perf=1` debug overlay shipped in `admin-lcp-measurement-1` to give merchant-success a screenshot-able Web Vitals readout. Server-side telemetry (`/api/web-vitals` + Server-Timing headers) now covers that use case end-to-end, and the live overlay was distracting during the Phase 5/6 LCP work. Removing it cleans the admin root layout and trims dead code in `web-vitals.client.ts`.
+
+## Progress Log
+
+### 2026-06-07 22:43 - Plan + cleanup scope
+- Confirmed `PerfDebugOverlay` is the sole caller of `subscribeLiveVitals` / `LiveVitalsSnapshot`.
+- Deleting both the component and the live-vitals subscription helpers; keeping `reportWebVitals` + `getSessionId` (still used by the root telemetry pipeline).
+- Files: `app/components/PerfDebugOverlay.tsx` (delete), `app/routes/app/app.tsx` (unwire), `app/lib/web-vitals.client.ts` (trim).
+
+## Related Documentation
+- Predecessor issue: `docs/issues-prod/admin-lcp-measurement-1.md`
+- Successors: `admin-lcp-phase5-recharts-lazy-1`, `admin-lcp-phase6-defer-skeletons-1`
+
+### 2026-06-07 22:46 - Cleanup applied
+- Deleted `app/components/PerfDebugOverlay.tsx`.
+- Removed `useIsPerfOverlayEnabled` hook, import, and `<PerfDebugOverlay/>` mount from `app/routes/app/app.tsx`. Dropped the now-unused `useState` from the React import.
+- Removed `subscribeLiveVitals`, `LiveVitalsSnapshot`, and the in-module `live` snapshot store from `app/lib/web-vitals.client.ts`. `reportWebVitals` + `getSessionId` retained — both still wired into the telemetry pipeline.
+- Lint pass: 0 errors on the three edited files. Pre-existing warnings untouched.
+
+## Phases Checklist
+- [x] Delete `PerfDebugOverlay.tsx`
+- [x] Unwire from `app/routes/app/app.tsx`
+- [x] Trim `subscribeLiveVitals` + `LiveVitalsSnapshot` from `web-vitals.client.ts`
+- [x] Lint pass on edited files
+- [x] Commit

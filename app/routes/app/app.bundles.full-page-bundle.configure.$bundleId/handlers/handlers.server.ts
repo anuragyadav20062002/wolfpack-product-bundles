@@ -612,6 +612,8 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
       ? JSON.parse(validateQuantityPerProductRaw)
       : { isEnabled: false, allowedQuantity: 1 };
     const individualSellingPlanSelection = parseIndividualSellingPlanSelection(formData);
+    const defaultProductsDataRaw = formData.get("defaultProductsData") as string | null;
+    const defaultProductsData = defaultProductsDataRaw ? JSON.parse(defaultProductsDataRaw) : null;
     const quantityValidationEnabled = validateQuantityPerProduct?.isEnabled === true;
     const stepsData = JSON.parse(formData.get("stepsData") as string);
     const discountData = JSON.parse(formData.get("discountData") as string);
@@ -778,6 +780,7 @@ export async function handleSaveBundle(admin: ShopifyAdmin, session: Session, bu
         productSlotIconUrl,
         validateQuantityPerProduct,
         individualSellingPlanSelection,
+        ...(defaultProductsData !== null && { defaultProductsData }),
         // Update steps if provided
         ...(stepsData && {
           steps: {

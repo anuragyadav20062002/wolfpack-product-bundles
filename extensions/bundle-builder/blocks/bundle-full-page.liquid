@@ -130,15 +130,6 @@
     window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
   </script>
 
-  <script>
-    // Section block is rendering — hide any body-embed duplicate to prevent two widgets
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.shopify-block.shopify-app-block').forEach(function(el) {
-        if (el.querySelector('[data-bundle-type="full_page"]')) el.style.display = 'none';
-      });
-    });
-  </script>
-
   {% # theme-check-disable RemoteAsset %}
   <link
     rel="stylesheet"

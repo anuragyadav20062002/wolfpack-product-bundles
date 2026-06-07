@@ -7,6 +7,7 @@ import { handleCreateBundle } from "../app.dashboard/handlers/handlers.server";
 import { BundleType } from "../../../constants/bundle";
 import { showPolarisModal } from "../_shared/bundle-configure/modal-utils";
 import styles from "./create-bundle.module.css";
+import { OptimisedImage } from "../../../components/OptimisedImage";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await requireAdminSession(request);
@@ -126,7 +127,15 @@ export default function CreateBundleWizard() {
                   onClick={() => handleSelectBundleType(BundleType.PRODUCT_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <img src="/ppb.png" alt={t("createBundle.bundleType.productPage.alt")} className={styles.bundleThumbnailImg} />
+                    <OptimisedImage
+                      src="/ppb.png"
+                      alt={t("createBundle.bundleType.productPage.alt")}
+                      className={styles.bundleThumbnailImg}
+                      width={320}
+                      height={200}
+                      loading="eager"
+                      fetchPriority="high"
+                    />
                   </div>
                   <div className={styles.bundleCardBody}>
                     <div className={styles.bundleCardText}>
@@ -147,7 +156,15 @@ export default function CreateBundleWizard() {
                   onClick={() => handleSelectBundleType(BundleType.FULL_PAGE)}
                 >
                   <div className={styles.bundleThumbnailWrap}>
-                    <img src="/fpb.png" alt={t("createBundle.bundleType.fullPage.alt")} className={styles.bundleThumbnailImg} />
+                    <OptimisedImage
+                      src="/fpb.png"
+                      alt={t("createBundle.bundleType.fullPage.alt")}
+                      className={styles.bundleThumbnailImg}
+                      width={320}
+                      height={200}
+                      loading="eager"
+                      fetchPriority="high"
+                    />
                   </div>
                   <div className={styles.bundleCardBody}>
                     <div className={styles.bundleCardText}>

@@ -1,0 +1,46 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "throttlingMethod": "simulate",
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1440,
+          "height": 900,
+          "deviceScaleFactor": 1,
+          "disabled": false
+        },
+        "onlyCategories": ["performance"],
+        "skipAudits": [
+          "uses-http2",
+          "redirects-http",
+          "is-on-https"
+        ]
+      }
+    },
+    "assert": {
+      "preset": "lighthouse:no-pwa",
+      "assertions": {
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 2000, "aggregationMethod": "median" }],
+        "interaction-to-next-paint": ["warn", { "maxNumericValue": 200, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 200, "aggregationMethod": "median" }],
+        "first-contentful-paint": ["warn", { "maxNumericValue": 1500, "aggregationMethod": "median" }],
+        "speed-index": ["warn", { "maxNumericValue": 2500, "aggregationMethod": "median" }],
+        "uses-long-cache-ttl": "off",
+        "unused-javascript": ["warn", { "maxLength": 5 }],
+        "unused-css-rules": ["warn", { "maxLength": 5 }],
+        "uses-text-compression": "error",
+        "uses-responsive-images": "warn",
+        "uses-optimized-images": "warn",
+        "modern-image-formats": "warn",
+        "render-blocking-resources": ["warn", { "maxLength": 2 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}
