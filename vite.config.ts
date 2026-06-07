@@ -43,7 +43,7 @@ export default defineConfig({
     cors: {
       preflightContinue: true,
     },
-    port: Number(process.env.PORT || 3000),
+    port: Number(process.env.PORT ?? 3000),
     hmr: hmrConfig,
     fs: {
       // See https://vitejs.dev/config/server-options.html#server-fs-allow for more information
@@ -61,7 +61,13 @@ export default defineConfig({
         v3_relativeSplatPath: true,
         v3_throwAbortReason: true,
         v3_lazyRouteDiscovery: true,
-        v3_singleFetch: false,
+        // Issue: admin-lcp-phase2-universal-wins-1.
+        // Remix's single-fetch parallelises child-route data loading and
+        // removes a serial waterfall during navigation. Safe to enable as
+        // long as no loader returns non-serializable values (Maps, Sets,
+        // BigInts, Dates outside `defer()` payloads). Audited 2026-06-07:
+        // every admin loader returns plain JSON shapes via Remix `json()`.
+        v3_singleFetch: true,
         v3_routeConfig: true,
       },
     }),
@@ -82,7 +88,27 @@ export default defineConfig({
             return 'assets/minimal-routes-[hash].js';
           }
           return 'assets/[name]-[hash].js';
-        }
+        },
+        // Issue: admin-lcp-phase2-universal-wins-1 — manual chunking.
+        // Before: every admin route re-shipped recharts, polaris, react.
+        // After: long-lived vendor bundles get their own files, cached
+        // across navigations + across deploys (until the bundle's deps change).
+        manualChunks: (id: string) => {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/recharts/') || id.includes('node_modules/d3-') || id.includes('node_modules/victory-vendor/')) {
+            return 'vendor-charts';
+          }
+          if (id.includes('node_modules/@shopify/')) {
+            return 'vendor-shopify';
+          }
+          if (id.includes('node_modules/@remix-run/')) {
+            return 'vendor-remix';
+          }
+          return undefined;
+        },
       },
       onwarn: (warning, warn) => {
         // Suppress empty chunk warnings for known minimal routes
