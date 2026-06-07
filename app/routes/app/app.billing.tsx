@@ -25,7 +25,6 @@ import {
 import {
   UpgradeSuccessBanner,
   SubscriptionErrorBanner,
-  UpgradeCTACard,
 } from "../../components/billing";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -180,10 +179,6 @@ export default function BillingPage() {
 
   const isCancelling = fetcher.state === "submitting" && fetcher.formData?.get("intent") === "cancel";
 
-  const handleViewPricing = useCallback(() => {
-    navigate("/app/pricing");
-  }, [navigate]);
-
   const handleCancelSubscription = useCallback(() => {
     fetcher.submit({ intent: "cancel" }, { method: "post" });
     closeCancelConfirm();
@@ -233,7 +228,7 @@ export default function BillingPage() {
           {showErrorBanner && data.callbackError && (
             <SubscriptionErrorBanner
               errorCode={data.callbackError}
-              onRetry={handleViewPricing}
+              onRetry={dismissErrorBanner}
               onDismiss={dismissErrorBanner}
             />
           )}
@@ -372,9 +367,6 @@ export default function BillingPage() {
             </s-stack>
           </s-section>
 
-          {/* Upgrade CTA for Free Users */}
-          {isFreePlan && <UpgradeCTACard onUpgrade={handleViewPricing} />}
-
           {/* Plan Features */}
           <s-section>
             <s-stack direction="block" gap="base">
@@ -389,17 +381,6 @@ export default function BillingPage() {
                   </s-stack>
                 ))}
               </div>
-              {isFreePlan && (
-                <>
-                  <s-divider />
-                  <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                    {t("billing.route.wantMore")}{" "}
-                    <s-button variant="tertiary" onClick={handleViewPricing}>
-                      {t("billing.route.viewPlans")}
-                    </s-button>
-                  </p>
-                </>
-              )}
             </s-stack>
           </s-section>
 

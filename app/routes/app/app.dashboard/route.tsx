@@ -10,7 +10,6 @@ import { BillingService } from "../../../services/billing.server";
 import { useCallback, useRef, useEffect, useMemo, memo, useState, Suspense } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { checkAppEmbedEnabled } from "../../../services/theme/app-embed-check.server";
-import { UpgradePromptBanner } from "../../../components/UpgradePromptBanner";
 import { ProxyHealthBanner } from "../../../components/ProxyHealthBanner";
 import { DashboardBannerSkeleton } from "../../../components/skeletons/DashboardBannerSkeleton";
 import { useDashboardState } from "../../../hooks/useDashboardState";
@@ -648,14 +647,6 @@ export default function Dashboard() {
               {(b) => (
                 <>
                   {!b.proxyHealthy && <ProxyHealthBanner shop={shop} appUrl={appUrl} />}
-                  {b.subscription && (
-                    <UpgradePromptBanner
-                      plan={b.subscription.plan}
-                      currentBundleCount={b.subscription.currentBundleCount}
-                      bundleLimit={b.subscription.bundleLimit}
-                      canCreateBundle={b.subscription.canCreateBundle}
-                    />
-                  )}
                 </>
               )}
             </Await>

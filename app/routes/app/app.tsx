@@ -48,7 +48,6 @@ function AdminNavigation() {
       <a href="/app/settings">{t("nav.settings")}</a>
       <a href="/app/integrations">{t("nav.integrations")}</a>
       <a href="/app/attribution">{t("nav.analytics")}</a>
-      <a href="/app/pricing">{t("nav.pricing")}</a>
       <a href="/app/events">{t("nav.events")}</a>
     </ui-nav-menu>
   );
