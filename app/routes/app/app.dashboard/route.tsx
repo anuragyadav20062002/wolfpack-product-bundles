@@ -1,5 +1,6 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LinksFunction, type LoaderFunctionArgs } from "@remix-run/node";
 import { useFetcher, useNavigate, useLoaderData, Link, useSearchParams } from "@remix-run/react";
+import { OptimisedImage } from "../../../components/OptimisedImage";
 import { requireAdminSession } from "../../../lib/auth-guards.server";
 import db from "../../../db.server";
 import { AppLogger } from "../../../lib/logger";
@@ -28,6 +29,23 @@ import {
 import type { BundleActionsButtonsProps } from "./types";
 
 import dashboardStyles from "./dashboard.module.css";
+
+/**
+ * Issue: admin-lcp-phase3-images-1 — preload the dashboard hero image via
+ * a real `<link rel="preload" as="image">` emitted during HTML parse. This
+ * replaces a post-hydration `new Image()` preload that fired only AFTER
+ * useEffect — too late for LCP. Pulls the AVIF variant so most browsers
+ * fetch ~30 KB instead of the 68 KB JPEG.
+ */
+export const links: LinksFunction = () => [
+  {
+    rel: "preload",
+    as: "image",
+    href: "/Parth.avif",
+    type: "image/avif",
+    fetchPriority: "high",
+  } as ReturnType<LinksFunction>[number],
+];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
@@ -249,12 +267,13 @@ export default function Dashboard() {
   const typePopoverRef = useRef<any>(null);
   const fetcherIntentRef = useRef<string | null>(null);
 
+  // Hero image preload moved to the `links` export above — it now happens
+  // during HTML parse rather than post-hydration, which previously added ~LCP
+  // to the Parth.jpeg paint. Mark loaded immediately so the skeleton swap
+  // happens as soon as the `<img>` mounts. The OptimisedImage's <img>
+  // `onLoad` is still wired below so the skeleton waits for the real bytes.
   useEffect(() => {
-    const image = new Image();
-    image.src = "/Parth.jpeg";
-    if (image.complete) { setParthImageLoaded(true); return; }
-    image.onload = () => setParthImageLoaded(true);
-    image.onerror = () => setParthImageLoaded(true);
+    setParthImageLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -616,10 +635,14 @@ export default function Dashboard() {
                         <s-spinner accessibilityLabel={t("dashboard.support.imageLoading")} />
                       </div>
                     )}
-                    <img
+                    <OptimisedImage
                       src="/Parth.jpeg"
                       alt={t("dashboard.support.imageAlt")}
                       className={`${dashboardStyles.supportAvatarImage} ${parthImageLoaded ? dashboardStyles.supportAvatarImageLoaded : ""}`}
+                      width={120}
+                      height={120}
+                      loading="eager"
+                      fetchPriority="high"
                       onLoad={() => setParthImageLoaded(true)}
                     />
                   </div>
@@ -647,7 +670,14 @@ export default function Dashboard() {
                   <s-heading>{t("dashboard.appEmbeds.headingMain")} <span className={dashboardStyles.appEmbedHeadingHint}>{t("dashboard.appEmbeds.headingHint")}</span></s-heading>
                   <s-icon type="external" color="subdued" />
                 </div>
-                <img src="/appEmbed.png" alt={t("dashboard.appEmbeds.headingMain")} className={dashboardStyles.appEmbedImage} />
+                <OptimisedImage
+                  src="/appEmbed.png"
+                  alt={t("dashboard.appEmbeds.headingMain")}
+                  className={dashboardStyles.appEmbedImage}
+                  width={420}
+                  height={140}
+                  loading="lazy"
+                />
                 <s-text color="subdued">{t("dashboard.appEmbeds.instruction")}</s-text>
               </s-stack>
             </button>
@@ -711,7 +741,14 @@ export default function Dashboard() {
                 {bundles.length === 0 ? (
                   <div className={dashboardStyles.emptyBundlesState}>
                     <div className={dashboardStyles.emptyBundlesIcon}>
-                      <img src="/bundle.png" alt="" className={dashboardStyles.emptyBundlesImg} />
+                      <OptimisedImage
+                        src="/bundle.png"
+                        alt=""
+                        className={dashboardStyles.emptyBundlesImg}
+                        width={120}
+                        height={120}
+                        loading="lazy"
+                      />
                     </div>
                     <s-stack direction="block" gap="small" alignItems="center">
                       <s-heading>{t("dashboard.emptyState.title")}</s-heading>
@@ -797,14 +834,28 @@ export default function Dashboard() {
 
               <div className={dashboardStyles.resourcesThumbnails}>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-                  <img src="/bundleGallery.png" alt={t("dashboard.resources.bundleGallery")} className={dashboardStyles.resourceThumbnailImage} />
+                  <OptimisedImage
+                    src="/bundleGallery.png"
+                    alt={t("dashboard.resources.bundleGallery")}
+                    className={dashboardStyles.resourceThumbnailImage}
+                    width={320}
+                    height={180}
+                    loading="lazy"
+                  />
                   <div className={dashboardStyles.resourceThumbnailFooter}>
                     <span>{t("dashboard.resources.bundleGallery")}</span>
                     <s-icon type="external" color="subdued" />
                   </div>
                 </a>
                 <a href="https://wolfpackapps.com/" target="_blank" rel="noopener noreferrer" className={dashboardStyles.resourceThumbnailCard}>
-                  <img src="/bundleGallery.png" alt={t("dashboard.resources.bundleGallery")} className={dashboardStyles.resourceThumbnailImage} />
+                  <OptimisedImage
+                    src="/bundleGallery.png"
+                    alt={t("dashboard.resources.bundleGallery")}
+                    className={dashboardStyles.resourceThumbnailImage}
+                    width={320}
+                    height={180}
+                    loading="lazy"
+                  />
                   <div className={dashboardStyles.resourceThumbnailFooter}>
                     <span>{t("dashboard.resources.bundleGallery")}</span>
                     <s-icon type="external" color="subdued" />

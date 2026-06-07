@@ -25,6 +25,7 @@ import {
   DISCOUNT_METHOD_OPTIONS,
 } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
+import { OptimisedImage } from "../../../components/OptimisedImage";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
@@ -6133,7 +6134,15 @@ export default function ConfigureBundleFlow() {
                           }}
                         >
                           <span className={fullPageBundleStyles.templateOptionImageFrame}>
-                            <img src={tpl.image} alt={tpl.label} className={fullPageBundleStyles.templateOptionImage} />
+                            <OptimisedImage
+                              src={tpl.image}
+                              alt={tpl.label}
+                              className={fullPageBundleStyles.templateOptionImage}
+                              width={400}
+                              height={300}
+                              loading="eager"
+                              fetchPriority="high"
+                            />
                           </span>
                           <span className={fullPageBundleStyles.templateOptionFooter}>
                             <span className={fullPageBundleStyles.templateOptionLabel}>{tpl.label}</span>
