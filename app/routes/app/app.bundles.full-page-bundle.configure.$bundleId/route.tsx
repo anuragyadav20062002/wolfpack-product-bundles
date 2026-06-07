@@ -94,6 +94,16 @@ type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
 
 const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
+function getFileNameFromUrl(url: string): string {
+  try {
+    const path = new URL(url).pathname;
+    const fileName = path.split("/").pop();
+    return fileName ? decodeURIComponent(fileName) : "No file chosen";
+  } catch {
+    return "No file chosen";
+  }
+}
+
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
@@ -5273,6 +5283,14 @@ export default function ConfigureBundleFlow() {
                           <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                             You can change the default icon that renders in the empty slots
                           </p>
+                          <s-stack direction="inline" gap="small">
+                            <s-button variant="secondary" onClick={() => setShowSlotIconPicker(true)}>
+                              Upload file
+                            </s-button>
+                            <span style={{ marginTop: "4px", fontSize: "12px", color: "#6d7175" }}>
+                              {productSlotIconUrl ? getFileNameFromUrl(productSlotIconUrl) : "No file chosen"}
+                            </span>
+                          </s-stack>
                           {showSlotIconPicker && (
                             <FilePicker
                               autoOpen
@@ -5284,6 +5302,7 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                               label="Slot Icon"
+                              uploadLabel="No file chosen"
                               hideCropEditor
                             />
                           )}

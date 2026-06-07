@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.21
+ * Version : 3.0.22
  * Built   : 2026-06-06
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.21';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.22';
 (function() {
   'use strict';
 
@@ -361,6 +361,14 @@ class CurrencyManager {
     };
   }
 
+  /**
+   * Convert an amount from shop base currency to the customer's display currency,
+   * then format it. Use this everywhere a price is rendered to the customer.
+   *
+   * @param {number} amount  Price in shop base currency cents
+   * @param {object} currencyInfo  Result of getCurrencyInfo()
+   * @returns {string}  Formatted price string in the display currency
+   */
   static convertAndFormat(amount, currencyInfo) {
     const rate = currencyInfo.display.rate;
     const converted = currencyInfo.isMultiCurrency && rate && isFinite(rate)
@@ -5154,7 +5162,7 @@ class BundleWidgetProductPage {
         </div>
       `).join('')}
       <style>
-
+        /* Skeleton loading state - solid pulsating cards */
         .product-card.skeleton-loading {
           pointer-events: none;
           cursor: default;
@@ -5170,6 +5178,7 @@ class BundleWidgetProductPage {
           box-shadow: none;
         }
 
+        /* Full card pulsating effect */
         .skeleton-card-content {
           position: absolute;
           top: 0;

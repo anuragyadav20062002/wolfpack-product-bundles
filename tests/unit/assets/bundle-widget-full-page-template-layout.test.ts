@@ -103,6 +103,13 @@ describe("Full Page widget template layout contract", () => {
     expect(source).toContain("getSummaryProductVariantDisplay(item)");
     expect(source).toContain("getParentTitleFromDisplayTitle(item.title)");
     expect(source).toContain("getSummaryVariantFromDisplayTitle(normalizedTitle)");
+    expect(source).toContain("const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');");
+    expect(source).toContain("fpb-mobile-summary-empty-product-image");
+    expect(source).toContain("const emptyStateIcon = emptyStateIconUrl");
+    expect(source).toContain("side-panel-product-slot--empty");
+    expect(source).toContain("if (this._shouldRenderProductSlots()) {");
+    expect(source).toContain("const requiredSlots = Math.max(");
+    expect(source).toContain("const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length)");
     expect(horizontalStaticCss).not.toContain("object-fit:contain");
     expect(storefrontStyles).toContain(".fpb-h .product-add-btn");
     expect(storefrontStyles).toContain("width:35px");
