@@ -110,13 +110,21 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const SHORT_TTL_MS = 30_000;
 
   // Run the four remaining independent loaders in parallel, with caching where safe.
-  const [embedCheck, subscriptionInfo, proxyHealthy, ownerFirstName] = await timing.trackAll({
+  // trackAll returns an object keyed by the task names — destructure with rename
+  // so the timing-header names stay W3C-token style (hyphens) while the locals
+  // keep their original snake/camel shape.
+  const {
+    "embed-check": embedCheck,
+    billing: subscriptionInfo,
+    "proxy-health": proxyHealthy,
+    "owner-name": ownerFirstName,
+  } = await timing.trackAll({
     "embed-check": () => loaderCache.memo(
       `embed-check:${session.shop}`,
       () => checkAppEmbedEnabled(admin, session.shop, { blockHandles: ["bundle-app-embed"] }),
       SHORT_TTL_MS,
     ),
-    "billing": () => loaderCache.memo(
+    billing: () => loaderCache.memo(
       `billing:${session.shop}`,
       async () => {
         try { return await BillingService.getSubscriptionInfo(session.shop); }

@@ -51,6 +51,32 @@ describe("ServerTiming.trackAll", () => {
     expect(t.toHeader()).toContain("a;dur=");
     expect(t.toHeader()).toContain("b;dur=");
   });
+
+  it("returns a plain object keyed by task name, NOT an array (regression)", async () => {
+    // This shape contract is critical for callers — destructuring as an array
+    // would throw "(intermediate value) is not iterable" at runtime.
+    const t = new ServerTiming();
+    const result = await t.trackAll({
+      "embed-check": () => Promise.resolve({ enabled: true }),
+      billing: () => Promise.resolve({ plan: "free" }),
+    });
+    expect(Array.isArray(result)).toBe(false);
+    expect(Symbol.iterator in (result as object)).toBe(false);
+    expect(typeof (result as Record<string, unknown>)["embed-check"]).toBe("object");
+    expect((result as { billing: { plan: string } }).billing.plan).toBe("free");
+  });
+
+  it("supports hyphenated task names so Server-Timing tokens stay W3C-compliant", async () => {
+    const t = new ServerTiming();
+    const result = await t.trackAll({
+      "owner-name": () => Promise.resolve("Aditya"),
+      "proxy-health": () => Promise.resolve(true),
+    });
+    expect((result as Record<string, unknown>)["owner-name"]).toBe("Aditya");
+    expect((result as Record<string, unknown>)["proxy-health"]).toBe(true);
+    expect(t.toHeader()).toContain("owner-name;dur=");
+    expect(t.toHeader()).toContain("proxy-health;dur=");
+  });
 });
 
 describe("ServerTiming.toHeader sanitization", () => {
