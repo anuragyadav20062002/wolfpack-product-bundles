@@ -23,12 +23,10 @@ import { requireAdminSession } from "../../lib/auth-guards.server";
 import db from "../../db.server";
 import { AppLogger } from "../../lib/logger";
 import { MetafieldCleanupService } from "../../services/metafield-cleanup.server";
-import { SubscriptionGuard } from "../../services/subscription-guard.server";
 import { BillingService } from "../../services/billing.server";
 import { BundleStatus, BundleType } from "../../constants/bundle";
 import { useCallback, useRef, useEffect } from "react";
 import { BundleSetupInstructions } from "../../components/BundleSetupInstructions";
-import { UpgradePromptBanner } from "../../components/UpgradePromptBanner";
 import { useCartTransformState } from "../../hooks/useCartTransformState";
 import cartTransformStyles from "../../styles/routes/cart-transform.module.css";
 
@@ -136,12 +134,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
   // Handle different actions
   if (intent === "cloneBundle") {
-    // Check subscription limits before cloning
-    const limitCheck = await SubscriptionGuard.enforceBundleLimit(shop);
-    if (limitCheck) {
-      return limitCheck; // Return 403 response if limit reached
-    }
-
     const bundleId = formData.get("bundleId") as string;
 
     try {
@@ -364,12 +356,6 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   // Original create bundle logic
-  // Check subscription limits before creating new bundle
-  const limitCheck = await SubscriptionGuard.enforceBundleLimit(shop);
-  if (limitCheck) {
-    return limitCheck; // Return 403 response if limit reached
-  }
-
   const bundleName = formData.get("bundleName");
   const description = formData.get("description");
 
@@ -667,18 +653,6 @@ export default function CartTransformBundles() {
         ]}
       >
       <Layout>
-        {/* Upgrade Prompt Banner for Free Users */}
-        {subscription && (
-          <Layout.Section>
-            <UpgradePromptBanner
-              plan={subscription.plan}
-              currentBundleCount={subscription.currentBundleCount}
-              bundleLimit={subscription.bundleLimit}
-              canCreateBundle={subscription.canCreateBundle}
-            />
-          </Layout.Section>
-        )}
-
         <Layout.Section>
           <Card>
             <BlockStack gap="300">

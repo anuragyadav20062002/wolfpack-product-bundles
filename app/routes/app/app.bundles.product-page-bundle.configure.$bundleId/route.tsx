@@ -4534,20 +4534,30 @@ export default function ConfigureBundleFlow() {
                         <p style={{ margin: 0, fontSize: 13, color: "#8c9196" }}>
                           Let customers select a unique selling plan (subscription, pre-order, etc.) for each product in the bundle.
                         </p>
-                        <s-select
-                          label="Apply to products"
-                          value={individualSellingPlanShowFor}
-                          disabled={individualSellingPlanBlocked || !individualSellingPlanEnabled || undefined}
-                          onChange={(e) => {
-                            setIndividualSellingPlanShowFor(
-                              ((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor)
-                            );
-                            markAsDirty();
-                          }}
-                        >
-                          <s-option value="ALL_PRODUCTS">All products</s-option>
-                          <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
-                        </s-select>
+                        {!individualSellingPlanBlocked && individualSellingPlanEnabled && (
+                          <s-stack direction="block" gap="small-200">
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#202223" }}>Apply to products</p>
+                            {([
+                              { value: "ALL_PRODUCTS", label: "Show for all products", description: "Display selling plan options on every product in the bundle." },
+                              { value: "OOS_PRODUCTS", label: "Show only for out of stock products", description: "Display selling plan options only when a product is out of stock (e.g. for pre-orders)." },
+                            ] as { value: IndividualSellingPlanShowFor; label: string; description: string }[]).map(({ value, label, description }) => (
+                              <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                                <input
+                                  type="radio"
+                                  name="individualSellingPlanShowFor"
+                                  value={value}
+                                  checked={individualSellingPlanShowFor === value}
+                                  onChange={() => { setIndividualSellingPlanShowFor(value); markAsDirty(); }}
+                                  style={{ marginTop: 3, flexShrink: 0 }}
+                                />
+                                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#202223" }}>{label}</span>
+                                  <span style={{ fontSize: 12, color: "#6d7175" }}>{description}</span>
+                                </span>
+                              </label>
+                            ))}
+                          </s-stack>
+                        )}
                       </s-stack>
                     </s-section>
 

@@ -159,14 +159,6 @@ export default function AppIndex() {
         >
           Documentation
         </a>
-        <span className={styles.footerDot} />
-        <button
-          className={styles.footerLink}
-          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-          onClick={() => navigate("/app/pricing")}
-        >
-          View Plans
-        </button>
       </div>
     </div>
   );

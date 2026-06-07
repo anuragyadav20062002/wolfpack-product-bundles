@@ -80,6 +80,11 @@ import {
 import { BundleStatusSection } from "../_shared/bundle-configure/BundleStatusSection";
 import { useSharedBundleHandlers } from "../../../hooks/useSharedBundleHandlers";
 import { INDIVIDUAL_SELLING_PLAN_BLOCKED_MESSAGE } from "../../../lib/bundle-config/product-page-admin-sections";
+import {
+  buildDefaultProductEntryFromPicker,
+  normalizeDefaultProductsData,
+  type DefaultProductsData,
+} from "../../../lib/bundle-config/default-products";
 
 // Types - extracted to separate module for better organization
 import type { LoaderData } from "./types";
@@ -1065,6 +1070,13 @@ export default function ConfigureBundleFlow() {
   const [productSlotIconUrl, setProductSlotIconUrl] = useState<string>((bundle as any).productSlotIconUrl ?? "");
   const [showSlotIconPicker, setShowSlotIconPicker] = useState(false);
   const [bundleLevelCssExpanded, setBundleLevelCssExpanded] = useState(false);
+  const initialDefaultProductsData = useMemo(
+    () => normalizeDefaultProductsData((bundle as any).defaultProductsData),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [bundle]
+  );
+  const [defaultProductsData, setDefaultProductsData] = useState<DefaultProductsData>(initialDefaultProductsData);
+  const originalDefaultProductsDataRef = useRef<DefaultProductsData>(initialDefaultProductsData);
   const [showTextOnPlusEnabled, setShowTextOnPlusEnabled] = useState<boolean>(
     !!((bundle as any).textOverrides?.addToCartButton)
   );
@@ -1520,6 +1532,10 @@ export default function ConfigureBundleFlow() {
     isDisableAddonStepModalOpen ? showPolarisModal(disableAddonStepModalRef) : hidePolarisModal(disableAddonStepModalRef);
   }, [isDisableAddonStepModalOpen]);
 
+  const buildDefaultProductsData = useCallback(() => {
+    return normalizeDefaultProductsData(defaultProductsData);
+  }, [defaultProductsData]);
+
   const closeDiscardModal = useCallback(() => {
     setShowDiscardModal(false);
   }, []);
@@ -1923,6 +1939,7 @@ export default function ConfigureBundleFlow() {
         isEnabled: pricingState.discountType === DiscountMethod.BUY_X_GET_Y ? false : individualSellingPlanEnabled,
         showFor: individualSellingPlanShowFor,
       }));
+      formData.append("defaultProductsData", JSON.stringify(buildDefaultProductsData()));
 
       // Submit to server action using fetcher
 
@@ -1999,6 +2016,8 @@ export default function ConfigureBundleFlow() {
     productSlotIconUrl,
     individualSellingPlanEnabled,
     individualSellingPlanShowFor,
+    defaultProductsData,
+    buildDefaultProductsData,
     shopify
   ]);
 
@@ -5214,33 +5233,77 @@ export default function ConfigureBundleFlow() {
 
                     {/* Pre Selected Product */}
                     <s-section>
-                      <s-stack direction="block" gap="small">
-                        <s-stack direction="inline" alignItems="center" gap="small">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
-                          {settingsStep && (
-                            <s-switch
-                              accessibilityLabel="Enable pre selected product for active step"
-                              checked={settingsStep.isDefault || undefined}
-                              onChange={(e) => {
-                                stepsState.updateStepField(settingsStep.id, "isDefault", (e.target as HTMLInputElement).checked);
+                      {(() => {
+                        const defaultProductsEnabled = defaultProductsData.isDefaultProductsEnabled === true;
+                        const selectedDefaultProducts = defaultProductsData.products ?? [];
+                        const defaultProductCount = selectedDefaultProducts.length;
+                        const defaultProductSelectionIds = selectedDefaultProducts
+                          .map((product: any) => product.graphqlId || product.productId || product.id)
+                          .filter(Boolean)
+                          .map((id: string) => ({ id }));
+                        const handleDefaultProductPicker = async () => {
+                          const picked = await (shopify as any).resourcePicker({
+                            type: "product",
+                            multiple: true,
+                            action: "select",
+                            selectionIds: defaultProductSelectionIds,
+                          });
+                          if (!picked) return;
+                          const defaultProducts = picked
+                            .map(buildDefaultProductEntryFromPicker)
+                            .filter((p: any): p is NonNullable<ReturnType<typeof buildDefaultProductEntryFromPicker>> => Boolean(p));
+                          setDefaultProductsData((prev) => ({
+                            isDefaultProductsEnabled: true,
+                            defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                            products: defaultProducts,
+                          }));
+                          markAsDirty();
+                        };
+                        return (
+                          <s-stack direction="block" gap="small">
+                            <s-stack direction="inline" alignItems="center" gap="small">
+                              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Pre Selected Product</h3>
+                              <s-switch
+                                accessibilityLabel="Enable pre selected product"
+                                checked={defaultProductsEnabled || undefined}
+                                onChange={(e) => {
+                                  const checked = (e.target as HTMLInputElement).checked;
+                                  setDefaultProductsData((prev) => ({
+                                    ...prev,
+                                    isDefaultProductsEnabled: checked,
+                                    defaultProductsTitle: prev.defaultProductsTitle ?? "",
+                                    products: prev.products ?? [],
+                                  }));
+                                  markAsDirty();
+                                }}
+                              />
+                            </s-stack>
+                            <s-banner tone="info">
+                              Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
+                            </s-banner>
+                            <s-text-field
+                              label="Default products title"
+                              value={defaultProductsData.defaultProductsTitle ?? ""}
+                              onInput={(e) => {
+                                const value = (e.target as HTMLInputElement).value;
+                                setDefaultProductsData((prev) => ({ ...prev, defaultProductsTitle: value }));
                                 markAsDirty();
                               }}
+                              autocomplete="off"
                             />
-                          )}
-                        </s-stack>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          Choose products that should be added to bundle by default
-                        </p>
-                        <s-banner tone="info">
-                          Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
-                        </s-banner>
-                        <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                          These products will be added to user&apos;s box automatically on the first step.
-                        </p>
-                        <s-button variant="primary" onClick={() => handleSectionChange("step_setup")}>
-                          Browse Products
-                        </s-button>
-                      </s-stack>
+                            <s-stack direction="inline" alignItems="center" gap="small">
+                              <s-button
+                                variant={defaultProductsEnabled ? "primary" : "secondary"}
+                                disabled={!defaultProductsEnabled || undefined}
+                                onClick={handleDefaultProductPicker}
+                              >
+                                Browse Products
+                              </s-button>
+                              {defaultProductCount > 0 && <s-badge tone="success">{defaultProductCount} selected</s-badge>}
+                            </s-stack>
+                          </s-stack>
+                        );
+                      })()}
                     </s-section>
 
                     {/* Enable Quantity Validation + Product Slots + Slot Icon */}
@@ -5407,17 +5470,28 @@ export default function ConfigureBundleFlow() {
                           />
                         </SettingsRow>
                         {!individualSellingPlanBlocked && individualSellingPlanEnabled && (
-                          <s-select
-                            label="Apply to products"
-                            value={individualSellingPlanShowFor}
-                            onChange={(e) => {
-                              setIndividualSellingPlanShowFor((e.target as HTMLSelectElement).value as IndividualSellingPlanShowFor);
-                              markAsDirty();
-                            }}
-                          >
-                            <s-option value="ALL_PRODUCTS">All products</s-option>
-                            <s-option value="OOS_PRODUCTS">Out of stock products</s-option>
-                          </s-select>
+                          <s-stack direction="block" gap="small-200">
+                            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#202223" }}>Apply to products</p>
+                            {([
+                              { value: "ALL_PRODUCTS", label: "Show for all products", description: "Display selling plan options on every product in the bundle." },
+                              { value: "OOS_PRODUCTS", label: "Show only for out of stock products", description: "Display selling plan options only when a product is out of stock (e.g. for pre-orders)." },
+                            ] as { value: IndividualSellingPlanShowFor; label: string; description: string }[]).map(({ value, label, description }) => (
+                              <label key={value} style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer" }}>
+                                <input
+                                  type="radio"
+                                  name="individualSellingPlanShowFor"
+                                  value={value}
+                                  checked={individualSellingPlanShowFor === value}
+                                  onChange={() => { setIndividualSellingPlanShowFor(value); markAsDirty(); }}
+                                  style={{ marginTop: 3, flexShrink: 0 }}
+                                />
+                                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                  <span style={{ fontSize: 13, fontWeight: 500, color: "#202223" }}>{label}</span>
+                                  <span style={{ fontSize: 12, color: "#6d7175" }}>{description}</span>
+                                </span>
+                              </label>
+                            ))}
+                          </s-stack>
                         )}
                       </s-stack>
                     </s-section>

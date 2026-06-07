@@ -10,7 +10,6 @@ import db from "../../../../db.server";
 import type { ShopifyAdmin } from "../../../../lib/auth-guards.server";
 import { AppLogger } from "../../../../lib/logger";
 import { MetafieldCleanupService } from "../../../../services/metafield-cleanup.server";
-import { SubscriptionGuard } from "../../../../services/subscription-guard.server";
 import { WidgetInstallationService } from "../../../../services/widget-installation.server";
 import { BundleStatus, BundleType, FullPageLayout } from "../../../../constants/bundle";
 import { ERROR_MESSAGES } from "../../../../constants/errors";
@@ -181,11 +180,6 @@ export async function handleCloneBundle(
   session: { shop: string },
   formData: FormData
 ) {
-  const limitCheck = await SubscriptionGuard.enforceBundleLimit(session.shop);
-  if (limitCheck) {
-    return limitCheck;
-  }
-
   const bundleId = formData.get("bundleId") as string;
 
   try {
@@ -400,11 +394,6 @@ export async function handleCreateBundle(
   session: { shop: string },
   formData: FormData
 ) {
-  const limitCheck = await SubscriptionGuard.enforceBundleLimit(session.shop);
-  if (limitCheck) {
-    return limitCheck;
-  }
-
   const bundleName = formData.get("bundleName");
   const bundleType = formData.get("bundleType");
 
