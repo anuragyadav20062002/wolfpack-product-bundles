@@ -284,17 +284,34 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }),
   ]);
 
-  const bundleIds = [...new Set(
-    currentAttributions.filter(a => a.bundleId).map(a => a.bundleId!)
-  )];
-  const bundles = bundleIds.length > 0
+  // Issue: admin-lcp-phase4-loaders-1.
+  // Was: 3 separate db.bundle.findMany calls (here, at viewsByBundle, at matrixBundles)
+  // each filtering by a different ID set, executed sequentially. p95 cost ~600 ms.
+  // Now: union all bundle ids needed by the page, fire ONE query, then partition.
+  const attributionBundleIds = currentAttributions
+    .filter(a => a.bundleId)
+    .map(a => a.bundleId!);
+  const viewBundleIds = viewEvents.filter(v => v.bundleId).map(v => v.bundleId!);
+  const engagementBundleIds = engagementRows.map(r => r.bundleId);
+  const activityBundleIds = recentActivity.map(r => r.bundleId);
+  const allBundleIds = [...new Set([
+    ...attributionBundleIds,
+    ...viewBundleIds,
+    ...engagementBundleIds,
+    ...activityBundleIds,
+  ])];
+
+  const allBundles = allBundleIds.length > 0
     ? await db.bundle.findMany({
-        where: { id: { in: bundleIds } },
+        where: { id: { in: allBundleIds } },
         select: { id: true, name: true, status: true },
       })
     : [];
-  const bundleNameMap = Object.fromEntries(bundles.map(b => [b.id, b.name]));
-  const bundleStatusMap = Object.fromEntries(bundles.map(b => [b.id, b.status]));
+  const fullBundleMap: Record<string, { name: string; status: string }> = {};
+  for (const b of allBundles) fullBundleMap[b.id] = { name: b.name, status: b.status };
+  const bundleIds = [...new Set(attributionBundleIds)];
+  const bundleNameMap = Object.fromEntries(allBundles.map(b => [b.id, b.name]));
+  const bundleStatusMap = Object.fromEntries(allBundles.map(b => [b.id, b.status]));
 
   const totalRevenue = currentAttributions.reduce((s, a) => s + a.revenue, 0);
   const totalOrders = currentAttributions.length;
@@ -419,17 +436,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       viewsByBundleMap[v.bundleId] = (viewsByBundleMap[v.bundleId] ?? 0) + 1;
     }
   }
-  const viewOnlyBundleIds = Object.keys(viewsByBundleMap).filter(id => !(id in bundleNameMap));
-  const viewOnlyBundles = viewOnlyBundleIds.length > 0
-    ? await db.bundle.findMany({
-        where: { id: { in: viewOnlyBundleIds } },
-        select: { id: true, name: true },
-      })
-    : [];
-  const allBundleNameMap = { ...bundleNameMap, ...Object.fromEntries(viewOnlyBundles.map(b => [b.id, b.name])) };
-
+  // bundleNameMap already covers every bundle id referenced by viewEvents (it was
+  // included in allBundleIds above). No follow-up findMany needed.
   const viewsByBundle = Object.entries(viewsByBundleMap)
-    .map(([bundleId, views]) => ({ bundleId, name: allBundleNameMap[bundleId] ?? "Unknown Bundle", views }))
+    .map(([bundleId, views]) => ({ bundleId, name: bundleNameMap[bundleId] ?? "Unknown Bundle", views }))
     .sort((a, b) => b.views - a.views)
     .slice(0, 10);
 
@@ -447,22 +457,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const engagementTrend = buildEngagementTrendSeries(engagementRowsTyped, since, until);
   const prevEngagedUnique = new Set(prevEngagementRows.map(r => r.sessionId)).size;
 
-  // Collect any extra bundle ids we need for the matrix that weren't already loaded.
+  // fullBundleMap already covers every bundle id from engagement + activity + attributions
+  // (built in the single consolidated findMany above). Just compute the matrix id set.
   const matrixBundleIds = [...new Set([
     ...bundleIds,
     ...engagementRows.map(r => r.bundleId),
     ...recentActivity.map(r => r.bundleId),
   ])];
-  const extraBundleIds = matrixBundleIds.filter(id => !bundleNameMap[id]);
-  const extraBundles = extraBundleIds.length > 0
-    ? await db.bundle.findMany({
-        where: { id: { in: extraBundleIds } },
-        select: { id: true, name: true, status: true },
-      })
-    : [];
-  const fullBundleMap: Record<string, { name: string; status: string }> = {};
-  for (const b of bundles) fullBundleMap[b.id] = { name: b.name, status: b.status };
-  for (const b of extraBundles) fullBundleMap[b.id] = { name: b.name, status: b.status };
 
   const matrixBundles = matrixBundleIds.map(id => {
     const meta = fullBundleMap[id];

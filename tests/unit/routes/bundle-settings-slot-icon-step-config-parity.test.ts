@@ -41,6 +41,22 @@ describe.each([
     expect(block).not.toContain('handleSectionChange("step_setup")');
     expect(block).not.toContain('"stepImage"');
   });
+
+  it("shows upload-control shell", () => {
+    if (_bundleType !== "FPB") {
+      return;
+    }
+
+    const block = slotIconBlock(source);
+    expect(block).toContain("Upload file");
+    expect(block).toContain("No file chosen");
+  });
+
+  it("keeps change/reset controls", () => {
+    const block = slotIconBlock(source);
+    expect(block).toContain("Change Icon");
+    expect(block).toContain("Reset");
+  });
 });
 
 describe("FPB Slot Icon save contract", () => {

@@ -25,6 +25,7 @@ import {
   DISCOUNT_METHOD_OPTIONS,
 } from "../../../constants/bundle";
 import { useTranslation } from "react-i18next";
+import { OptimisedImage } from "../../../components/OptimisedImage";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
@@ -93,6 +94,16 @@ const fullPageTemplateOptions = [
 type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
 
 const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
+
+function getFileNameFromUrl(url: string): string {
+  try {
+    const path = new URL(url).pathname;
+    const fileName = path.split("/").pop();
+    return fileName ? decodeURIComponent(fileName) : "No file chosen";
+  } catch {
+    return "No file chosen";
+  }
+}
 
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
@@ -5273,6 +5284,14 @@ export default function ConfigureBundleFlow() {
                           <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
                             You can change the default icon that renders in the empty slots
                           </p>
+                          <s-stack direction="inline" gap="small">
+                            <s-button variant="secondary" onClick={() => setShowSlotIconPicker(true)}>
+                              Upload file
+                            </s-button>
+                            <span style={{ marginTop: "4px", fontSize: "12px", color: "#6d7175" }}>
+                              {productSlotIconUrl ? getFileNameFromUrl(productSlotIconUrl) : "No file chosen"}
+                            </span>
+                          </s-stack>
                           {showSlotIconPicker && (
                             <FilePicker
                               autoOpen
@@ -5284,6 +5303,7 @@ export default function ConfigureBundleFlow() {
                                 markAsDirty();
                               }}
                               label="Slot Icon"
+                              uploadLabel="No file chosen"
                               hideCropEditor
                             />
                           )}
@@ -6114,7 +6134,15 @@ export default function ConfigureBundleFlow() {
                           }}
                         >
                           <span className={fullPageBundleStyles.templateOptionImageFrame}>
-                            <img src={tpl.image} alt={tpl.label} className={fullPageBundleStyles.templateOptionImage} />
+                            <OptimisedImage
+                              src={tpl.image}
+                              alt={tpl.label}
+                              className={fullPageBundleStyles.templateOptionImage}
+                              width={400}
+                              height={300}
+                              loading="eager"
+                              fetchPriority="high"
+                            />
                           </span>
                           <span className={fullPageBundleStyles.templateOptionFooter}>
                             <span className={fullPageBundleStyles.templateOptionLabel}>{tpl.label}</span>

@@ -1638,20 +1638,26 @@ class BundleWidgetFullPage {
       activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
       2
     );
-    const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
-    for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
-      const emptyCard = document.createElement('div');
-      emptyCard.className = 'fpb-mobile-summary-empty-product-card';
-      emptyCard.innerHTML = `
-        <div class="fpb-mobile-summary-empty-product-image"></div>
-        <div class="fpb-mobile-summary-empty-product-info">
-          <span class="fpb-mobile-summary-empty-product-title"></span>
-          <span class="fpb-mobile-summary-empty-product-variant"></span>
-          <span class="fpb-mobile-summary-empty-product-price"></span>
-        </div>
-        <span class="fpb-mobile-summary-empty-product-action"></span>
-      `;
-      productsList.appendChild(emptyCard);
+    if (this._shouldRenderProductSlots()) {
+      const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
+      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+      for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+        const emptyCard = document.createElement('div');
+        emptyCard.className = 'fpb-mobile-summary-empty-product-card';
+        const emptyStateIcon = emptyStateIconUrl
+          ? `<img src="${emptyStateIconUrl}" alt="" width="63" height="63" style="width:63px;height:63px;object-fit:contain">`
+          : '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:32px;line-height:1;font-weight:700;color:#a6a3a3">+</span>';
+        emptyCard.innerHTML = `
+          <div class="fpb-mobile-summary-empty-product-image">${emptyStateIcon}</div>
+          <div class="fpb-mobile-summary-empty-product-info">
+            <span class="fpb-mobile-summary-empty-product-title"></span>
+            <span class="fpb-mobile-summary-empty-product-variant"></span>
+            <span class="fpb-mobile-summary-empty-product-price"></span>
+          </div>
+          <span class="fpb-mobile-summary-empty-product-action"></span>
+        `;
+        productsList.appendChild(emptyCard);
+      }
     }
 
     bundleItems.appendChild(productsList);
@@ -1984,12 +1990,35 @@ class BundleWidgetFullPage {
         activeStep?.maxQuantity || activeStep?.minQuantity || 2,
         2
       );
-      const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
-      for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
-        const emptySlot = document.createElement('div');
-        emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
-        emptySlot.textContent = '+';
-        productsContainer.appendChild(emptySlot);
+      if (this._shouldRenderProductSlots()) {
+        const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
+        const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+        for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+          const emptySlot = document.createElement('div');
+          emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
+          if (emptyStateIconUrl) {
+            const img = document.createElement('img');
+            img.src = emptyStateIconUrl;
+            img.alt = '';
+            img.width = 40;
+            img.height = 40;
+            img.style.objectFit = 'contain';
+            emptySlot.appendChild(img);
+          } else {
+            const emptyText = document.createElement('span');
+            emptyText.textContent = '+';
+            emptyText.style.display = 'flex';
+            emptyText.style.alignItems = 'center';
+            emptyText.style.justifyContent = 'center';
+            emptyText.style.width = '100%';
+            emptyText.style.height = '100%';
+            emptyText.style.fontSize = '24px';
+            emptyText.style.lineHeight = '1';
+            emptyText.style.fontWeight = '700';
+            emptySlot.appendChild(emptyText);
+          }
+          productsContainer.appendChild(emptySlot);
+        }
       }
     }
     panel.appendChild(productsContainer);
