@@ -5278,29 +5278,45 @@ export default function ConfigureBundleFlow() {
                                 }}
                               />
                             </s-stack>
+                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                              Choose products that should be added to bundle by default
+                            </p>
                             <s-banner tone="info">
                               Tip: Discounts are based on all items in your cart. Don&apos;t forget to include the Pre Selected Product&apos;s quantity or amount when setting up discounts.
                             </s-banner>
-                            <s-text-field
-                              label="Default products title"
-                              value={defaultProductsData.defaultProductsTitle ?? ""}
-                              onInput={(e) => {
-                                const value = (e.target as HTMLInputElement).value;
-                                setDefaultProductsData((prev) => ({ ...prev, defaultProductsTitle: value }));
-                                markAsDirty();
-                              }}
-                              autocomplete="off"
-                            />
-                            <s-stack direction="inline" alignItems="center" gap="small">
-                              <s-button
-                                variant={defaultProductsEnabled ? "primary" : "secondary"}
-                                disabled={!defaultProductsEnabled || undefined}
-                                onClick={handleDefaultProductPicker}
-                              >
+                            {!defaultProductsEnabled && (
+                              <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                                These products will be added to user&apos;s box automatically on the first step.
+                              </p>
+                            )}
+                            {defaultProductsEnabled && (
+                              <>
+                                <s-text-field
+                                  label="Default products title"
+                                  value={defaultProductsData.defaultProductsTitle ?? ""}
+                                  onInput={(e) => {
+                                    const value = (e.target as HTMLInputElement).value;
+                                    setDefaultProductsData((prev) => ({ ...prev, defaultProductsTitle: value }));
+                                    markAsDirty();
+                                  }}
+                                  autocomplete="off"
+                                />
+                                <div>
+                                  <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600 }}>Choose default products</p>
+                                  <s-stack direction="inline" alignItems="center" gap="small">
+                                    <s-button variant="primary" onClick={handleDefaultProductPicker}>
+                                      Browse Products
+                                    </s-button>
+                                    {defaultProductCount > 0 && <s-badge tone="success">{defaultProductCount} selected</s-badge>}
+                                  </s-stack>
+                                </div>
+                              </>
+                            )}
+                            {!defaultProductsEnabled && (
+                              <s-button variant="secondary" disabled>
                                 Browse Products
                               </s-button>
-                              {defaultProductCount > 0 && <s-badge tone="success">{defaultProductCount} selected</s-badge>}
-                            </s-stack>
+                            )}
                           </s-stack>
                         );
                       })()}
@@ -5311,7 +5327,7 @@ export default function ConfigureBundleFlow() {
                       <s-stack direction="block" gap="small">
                         <s-stack direction="inline" alignItems="center" gap="small">
                           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1 }}>Enable Quantity Validation</h3>
-                          <s-checkbox
+                          <s-switch
                             accessibilityLabel="Enable quantity validation"
                             checked={quantityValidationEnabled || undefined}
                             onChange={(e) => { setQuantityValidationEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -5330,7 +5346,7 @@ export default function ConfigureBundleFlow() {
                           <s-stack direction="block" gap="small-400">
                             <s-stack direction="inline" alignItems="center" gap="small">
                               <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>Product Slots</p>
-                              <s-checkbox
+                              <s-switch
                                 accessibilityLabel="Enable product slots display"
                                 checked={productSlotsEnabled || undefined}
                                 onChange={(e) => { setProductSlotsEnabled((e.target as HTMLInputElement).checked); markAsDirty(); }}
@@ -5577,18 +5593,44 @@ export default function ConfigureBundleFlow() {
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                           <div>
                             <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Desktop</p>
-                            <FilePicker
-                              value={bundleBannerDesktopUrl || null}
-                              onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
-                            />
+                            {bundleBannerDesktopUrl ? (
+                              <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: "1px solid #c9cccf" }}>
+                                <img src={bundleBannerDesktopUrl} alt="Banner Image: Desktop" style={{ width: "100%", display: "block", maxHeight: 180, objectFit: "cover" }} />
+                                <button
+                                  type="button"
+                                  onClick={() => { setBundleBannerDesktopUrl(""); markAsDirty(); }}
+                                  style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid #c9cccf", borderRadius: 4, cursor: "pointer", padding: "4px 10px", fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, color: "#d72c0d" }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <FilePicker
+                                value={null}
+                                onChange={(url) => { setBundleBannerDesktopUrl(url ?? ""); markAsDirty(); }}
+                              />
+                            )}
                             <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1900x230</span></p>
                           </div>
                           <div>
                             <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 500 }}>Banner Image: Mobile</p>
-                            <FilePicker
-                              value={bundleBannerMobileUrl || null}
-                              onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
-                            />
+                            {bundleBannerMobileUrl ? (
+                              <div style={{ position: "relative", borderRadius: 8, overflow: "hidden", border: "1px solid #c9cccf" }}>
+                                <img src={bundleBannerMobileUrl} alt="Banner Image: Mobile" style={{ width: "100%", display: "block", maxHeight: 180, objectFit: "cover" }} />
+                                <button
+                                  type="button"
+                                  onClick={() => { setBundleBannerMobileUrl(""); markAsDirty(); }}
+                                  style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid #c9cccf", borderRadius: 4, cursor: "pointer", padding: "4px 10px", fontSize: 12, fontWeight: 500, display: "flex", alignItems: "center", gap: 4, color: "#d72c0d" }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ) : (
+                              <FilePicker
+                                value={null}
+                                onChange={(url) => { setBundleBannerMobileUrl(url ?? ""); markAsDirty(); }}
+                              />
+                            )}
                             <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6d7175" }}>Recommended Size: <span style={{ color: "#202223" }}>1100x500</span></p>
                           </div>
                         </div>

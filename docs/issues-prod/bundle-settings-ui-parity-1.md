@@ -4,7 +4,7 @@
 **Status:** Completed
 **Priority:** 🔴 High
 **Created:** 2026-06-08
-**Last Updated:** 2026-06-08 23:30
+**Last Updated:** 2026-06-09 00:30
 
 ## Overview
 
@@ -72,6 +72,19 @@ Same as PPB plus: Product Slots (sub of Qty Validation), Slot Icon, Variant Sele
 - ✅ Identified all gaps
 - ✅ Created issue file
 
+### 2026-06-09 00:30 - Phase 3 Completed
+
+- ✅ FPB Pre Selected Product section restructured to match EB:
+  - Toggle (`s-switch`) + heading in inline row
+  - Description text: "Choose products that should be added to bundle by default"
+  - Info banner with tip text (when toggle OFF: shows note about automatic box add)
+  - "Default products title" field and Browse Products button shown only when toggle ON
+- ✅ FPB Enable Quantity Validation: `s-checkbox` → `s-switch`
+- ✅ FPB Product Slots: `s-checkbox` → `s-switch`
+- ✅ FPB Bundle Banner: replaced FilePicker thumbnail (52×52) with full-width image card + overlaid Remove button (desktop + mobile)
+- ✅ PPB Enable Quantity Validation: `s-checkbox` → `s-switch`
+- ✅ ESLint: 0 errors on all modified files
+
 ### 2026-06-08 23:30 - All Phases Completed
 - ✅ Phase 1 — FPB defaultProductsData:
   - Added imports: `buildDefaultProductEntryFromPicker`, `normalizeDefaultProductsData`, `DefaultProductsData`
@@ -90,3 +103,4 @@ Same as PPB plus: Product Slots (sub of Qty Validation), Slot Icon, Variant Sele
 ## Phases Checklist
 - [x] Phase 1: FPB — Add defaultProductsData state, UI, and handler persistence ✅
 - [x] Phase 2: FPB + PPB — Change "Apply to products" to radio buttons ✅
+- [x] Phase 3: UI Polish — Toggle placements, upload area, Pre Selected Product copy ✅
