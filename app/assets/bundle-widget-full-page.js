@@ -1076,17 +1076,8 @@ class BundleWidgetFullPage {
       // Wire the preset + template data attributes so the preset-scoped CSS
       // rules in bundle-widget-full-page.css activate.
       FullPagePreset.markContainer(this.container, this.selectedBundle);
-
-      // Full-page bundle: Render with tabs layout (async to load products)
-      const layout = this.resolveFullPageLayout();
-      if (layout === 'footer_side') {
-        await this.renderFullPageLayoutWithSidebar();
-      } else {
-        await this.renderFullPageLayout();
-      }
-    } else {
-      // Product-page bundle: Render with step boxes (current implementation)
-      this.renderProductPageLayout();
+      await this.renderFullPageLayoutWithSidebar();
+      return;
     }
   }
 
@@ -1810,6 +1801,10 @@ class BundleWidgetFullPage {
     const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
     const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
     const summaryText = this.getBundleSummaryText();
+    const isClassicDesktopSidebar =
+      this.resolveFullPageLayout() === 'footer_side' &&
+      this.getFullPageDesignPreset() === 'CLASSIC' &&
+      !isMobileSheet;
 
     // Header: "Your Bundle" + Clear
     const header = document.createElement('div');
@@ -1858,8 +1853,12 @@ class BundleWidgetFullPage {
       panel.appendChild(tierCta);
     }
 
-    const boxSelection = this.renderBoxSelectionOptions(totalQuantity);
-    if (!isStandardDesktopSidebar && boxSelection) {
+    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+    const boxSelection = this.renderBoxSelectionOptions(
+      isClassicDesktopSidebar ? selectedBoxSelectionQuantity : totalQuantity
+    );
+
+    if ((isClassicDesktopSidebar || !isStandardDesktopSidebar) && boxSelection) {
       panel.appendChild(boxSelection);
     }
 
@@ -1906,134 +1905,150 @@ class BundleWidgetFullPage {
     // Item count label
     const countLabel = document.createElement('div');
     countLabel.className = 'side-panel-item-count';
-    countLabel.textContent = isStandardDesktopSidebar
-      ? `${allSelectedProducts.length} item(s)`
-      : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+    countLabel.textContent = isClassicDesktopSidebar
+      ? `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`
+      : isStandardDesktopSidebar
+        ? `${allSelectedProducts.length} item(s)`
+        : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
     panel.appendChild(countLabel);
 
-    // Selected products list
-    const productsContainer = document.createElement('div');
-    productsContainer.className = 'side-panel-products';
-    if (isStandardDesktopSidebar) {
-      productsContainer.classList.add('side-panel-products--standard');
-    }
-    if (isHorizontalPreset) {
-      productsContainer.classList.add('side-panel-products--slots');
-    }
-
-    if (allSelectedProducts.length > 0) {
-      allSelectedProducts.forEach(item => {
-        const summaryTitle = this.getSummaryProductDisplayTitle(item);
-        const variantInfo = this.getSummaryProductVariantDisplay(item);
-        const row = document.createElement('div');
-        row.className = 'side-panel-product-row';
-        if (isHorizontalPreset) {
-          row.classList.add('side-panel-product-slot');
-        }
-
-        const imgSrc = this._getSelectedProductImageSrc(item);
-
-        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-        const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
-        const priceHtml = isFreeGiftItem
-          ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
-          : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
-
-        if (isStandardDesktopSidebar) {
-          row.innerHTML = `
-            <div class="side-panel-product-img-wrap">
-              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-            </div>
-            <div class="side-panel-product-info">
-              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
-              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-              ${priceHtml}
-            </div>
-            <div class="side-panel-product-action"></div>
-          `;
-        } else {
-          row.innerHTML = `
-            <div class="side-panel-product-img-wrap">
-              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-            </div>
-            <div class="side-panel-product-info">
-              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
-              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-            </div>
-            ${priceHtml}
-          `;
-        }
-
-        // Remove button — hidden for default (mandatory) products
-        if (!item.isDefault) {
-          const removeBtn = document.createElement('button');
-          removeBtn.className = 'side-panel-product-remove';
-          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
-          removeBtn.addEventListener('click', () => {
-            const stepIndex = item.stepIndex;
-            const productId = item.variantId || item.productId || item.id;
-            const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-            this.updateProductSelection(stepIndex, productId, 0);
-            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
-            ToastManager.showWithUndo(
-              `Removed "${truncated}"`,
-              () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-              5000
-            );
-          });
-          if (isStandardDesktopSidebar) {
-            row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
-          } else {
-            row.appendChild(removeBtn);
-          }
-        }
-
-        productsContainer.appendChild(row);
-      });
-    } else if (isStandardDesktopSidebar) {
-      this._renderStandardSidebarEmptySlots(productsContainer);
-    }
-    if (isHorizontalPreset) {
-      const requiredSlots = Math.max(
-        totalQuantity + 1,
-        activeStep?.maxQuantity || activeStep?.minQuantity || 2,
-        2
+    // Selected products list / Classic slots
+    if (isClassicDesktopSidebar) {
+      const classicSlotCount = this.getClassicSidebarSlotCount(
+        allSelectedProducts,
+        activeStep
       );
-      if (this._shouldRenderProductSlots()) {
-        const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
-        const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
-        for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
-          const emptySlot = document.createElement('div');
-          emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
-          if (emptyStateIconUrl) {
-            const img = document.createElement('img');
-            img.src = emptyStateIconUrl;
-            img.alt = '';
-            img.width = 40;
-            img.height = 40;
-            img.style.objectFit = 'contain';
-            emptySlot.appendChild(img);
-          } else {
-            const emptyText = document.createElement('span');
-            emptyText.textContent = '+';
-            emptyText.style.display = 'flex';
-            emptyText.style.alignItems = 'center';
-            emptyText.style.justifyContent = 'center';
-            emptyText.style.width = '100%';
-            emptyText.style.height = '100%';
-            emptyText.style.fontSize = '24px';
-            emptyText.style.lineHeight = '1';
-            emptyText.style.fontWeight = '700';
-            emptySlot.appendChild(emptyText);
+    
+      const classicSlots = this.renderClassicSidebarSlots(
+        allSelectedProducts,
+        classicSlotCount
+      );
+    
+      panel.appendChild(classicSlots);
+    } else {
+      const productsContainer = document.createElement('div');
+      productsContainer.className = 'side-panel-products';
+      if (isStandardDesktopSidebar) {
+        productsContainer.classList.add('side-panel-products--standard');
+      }
+      if (isHorizontalPreset) {
+        productsContainer.classList.add('side-panel-products--slots');
+      }
+
+      if (allSelectedProducts.length > 0) {
+        allSelectedProducts.forEach(item => {
+          const summaryTitle = this.getSummaryProductDisplayTitle(item);
+          const variantInfo = this.getSummaryProductVariantDisplay(item);
+          const row = document.createElement('div');
+          row.className = 'side-panel-product-row';
+          if (isHorizontalPreset) {
+            row.classList.add('side-panel-product-slot');
           }
-          productsContainer.appendChild(emptySlot);
+
+          const imgSrc = this._getSelectedProductImageSrc(item);
+
+          const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+          const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
+          const priceHtml = isFreeGiftItem
+            ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+            : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
+
+          if (isStandardDesktopSidebar) {
+            row.innerHTML = `
+              <div class="side-panel-product-img-wrap">
+                ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+                ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+              </div>
+              <div class="side-panel-product-info">
+                <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
+                ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+                ${priceHtml}
+              </div>
+              <div class="side-panel-product-action"></div>
+            `;
+          } else {
+            row.innerHTML = `
+              <div class="side-panel-product-img-wrap">
+                ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+                ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+              </div>
+              <div class="side-panel-product-info">
+                <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
+                ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+              </div>
+              ${priceHtml}
+            `;
+          }
+
+          // Remove button — hidden for default (mandatory) products
+          if (!item.isDefault) {
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'side-panel-product-remove';
+            removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+            removeBtn.addEventListener('click', () => {
+              const stepIndex = item.stepIndex;
+              const productId = item.variantId || item.productId || item.id;
+              const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+              this.updateProductSelection(stepIndex, productId, 0);
+              const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
+              ToastManager.showWithUndo(
+                `Removed "${truncated}"`,
+                () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+                5000
+              );
+            });
+            if (isStandardDesktopSidebar) {
+              row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
+            } else {
+              row.appendChild(removeBtn);
+            }
+          }
+
+          productsContainer.appendChild(row);
+        });
+      } else if (isStandardDesktopSidebar) {
+        this._renderStandardSidebarEmptySlots(productsContainer);
+      }
+      if (isHorizontalPreset) {
+        const requiredSlots = Math.max(
+          totalQuantity + 1,
+          activeStep?.maxQuantity || activeStep?.minQuantity || 2,
+          2
+        );
+        if (this._shouldRenderProductSlots()) {
+          const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
+          const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+          for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+            const emptySlot = document.createElement('div');
+            emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
+            if (emptyStateIconUrl) {
+              const img = document.createElement('img');
+              img.src = emptyStateIconUrl;
+              img.alt = '';
+              img.width = 40;
+              img.height = 40;
+              img.style.objectFit = 'contain';
+              emptySlot.appendChild(img);
+            } else {
+              const emptyText = document.createElement('span');
+              emptyText.textContent = '+';
+              emptyText.style.display = 'flex';
+              emptyText.style.alignItems = 'center';
+              emptyText.style.justifyContent = 'center';
+              emptyText.style.width = '100%';
+              emptyText.style.height = '100%';
+              emptyText.style.fontSize = '24px';
+              emptyText.style.lineHeight = '1';
+              emptyText.style.fontWeight = '700';
+              emptySlot.appendChild(emptyText);
+            }
+            productsContainer.appendChild(emptySlot);
+          }
         }
       }
+      panel.appendChild(productsContainer);
     }
-    panel.appendChild(productsContainer);
-
+    
     if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
       const skeletonContainer = document.createElement('div');
       skeletonContainer.className = 'side-panel-skeleton-slots';
@@ -2042,7 +2057,7 @@ class BundleWidgetFullPage {
     }
 
     // Free gift section (locked or unlocked)
-    if (!isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
+    if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
 
     // Total
     const totalSection = document.createElement('div');
@@ -2085,7 +2100,9 @@ class BundleWidgetFullPage {
     const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
       ? this._resolveText('nextButton', 'Next')
       : 'Next Step';
-    nextBtn.textContent = (conditionless || isLastStep) ? 'Add to Cart' : nextStepLabel;
+      nextBtn.textContent = (conditionless || isLastStep)
+        ? this._resolveText('addToCartButton', 'Add to Cart')
+        : nextStepLabel;
     if (sidebarTierCtaContent) {
       const labelHtml = sidebarTierCtaContent.label
         ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
@@ -2100,6 +2117,10 @@ class BundleWidgetFullPage {
     }
     nextBtn.addEventListener('click', () => {
       if (conditionless || isLastStep) {
+        if (!this.canCheckoutWithBoxSelection()) {
+          this.showBoxSelectionValidationMessage();
+          return;
+        }
         this.addBundleToCart();
       } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
         const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
@@ -2281,6 +2302,108 @@ class BundleWidgetFullPage {
     });
 
     return wrapper;
+  }
+
+  getClassicSidebarSlotCount(allSelectedProducts = [], activeStep = null) {
+    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+    const boxRules = this.getBoxSelectionRules();
+    const activeBoxRule = this.getActiveBoxSelectionRule(
+      boxRules,
+      selectedBoxSelectionQuantity
+    );
+  
+    const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
+    const stepQuantity = Number(activeStep?.maxQuantity || activeStep?.minQuantity || 0);
+    const selectedCount = Array.isArray(allSelectedProducts) ? allSelectedProducts.length : 0;
+  
+    if (activeBoxQuantity > 0) {
+      return Math.max(activeBoxQuantity, selectedCount);
+    }
+  
+    return Math.max(stepQuantity, selectedCount + 1, 2);
+  }
+  
+  renderClassicSidebarSlots(allSelectedProducts = [], slotCount = 0) {
+    const slots = document.createElement('div');
+    slots.className = 'classic-sidebar-slots';
+  
+    const safeSlotCount = Math.max(0, Number(slotCount || 0));
+  
+    for (let slotIndex = 0; slotIndex < safeSlotCount; slotIndex += 1) {
+      const item = allSelectedProducts[slotIndex];
+      const slot = document.createElement('div');
+  
+      slot.className = item
+        ? 'classic-sidebar-slot classic-sidebar-slot--filled'
+        : 'classic-sidebar-slot classic-sidebar-slot--empty';
+  
+      slot.dataset.slotIndex = String(slotIndex);
+  
+      if (item) {
+        const summaryTitle = this.getSummaryProductDisplayTitle(item);
+        const imgSrc = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+        const productId = item.variantId || item.productId || item.id;
+  
+        slot.dataset.productId = String(productId || '');
+  
+        slot.innerHTML = `
+          <img
+            src="${imgSrc}"
+            alt="${this._escapeHTML(summaryTitle)}"
+            class="classic-sidebar-slot-img"
+            loading="lazy"
+          >
+          ${
+            !item.isDefault
+              ? `<button
+                  type="button"
+                  class="classic-sidebar-slot-remove"
+                  aria-label="Remove ${this._escapeHTML(summaryTitle)}"
+                >×</button>`
+              : ''
+          }
+        `;
+  
+        const removeBtn = slot.querySelector('.classic-sidebar-slot-remove');
+        if (removeBtn && productId) {
+          removeBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+  
+            const removedItem = {
+              stepIndex: item.stepIndex,
+              variantId: productId,
+              quantity: item.quantity,
+              title: summaryTitle,
+            };
+  
+            this.updateProductSelection(item.stepIndex, productId, 0);
+  
+            const truncated = summaryTitle && summaryTitle.length > 25
+              ? summaryTitle.substring(0, 25) + '...'
+              : (summaryTitle || 'Product');
+  
+            ToastManager.showWithUndo(
+              `Removed "${truncated}"`,
+              () => {
+                this.updateProductSelection(
+                  removedItem.stepIndex,
+                  removedItem.variantId,
+                  removedItem.quantity
+                );
+              },
+              5000
+            );
+          });
+        }
+      } else {
+        slot.setAttribute('aria-label', 'Empty bundle slot');
+        slot.innerHTML = `<span aria-hidden="true">+</span>`;
+      }
+  
+      slots.appendChild(slot);
+    }
+  
+    return slots;
   }
 
   // Escape HTML special characters to prevent innerHTML injection
@@ -6987,15 +7110,11 @@ class BundleWidgetFullPage {
   }
 
   resolveFullPageLayout(bundle = this.selectedBundle) {
-    if (bundle?.bundleDesignTemplate === 'FBP_SIDE_FOOTER') {
-      return 'footer_side';
-    }
-
-    return bundle?.fullPageLayout || 'footer_bottom';
+    return 'footer_side';
   }
 
   getFullPageTemplate(bundle = this.selectedBundle) {
-    return bundle?.bundleDesignTemplate || 'FBP_SIDE_FOOTER';
+    return 'FBP_SIDE_FOOTER';
   }
 
   getFullPageDesignPreset(bundle = this.selectedBundle) {
@@ -7013,20 +7132,20 @@ class BundleWidgetFullPage {
   }
 
   resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
-    const boxSelection = bundle?.boxSelection;
-    const boxSelectionEnabled = boxSelection?.isEnabled === true && Array.isArray(boxSelection.rules) && boxSelection.rules.length > 0;
-    if (
-      this.resolveFullPageLayout(bundle) === 'footer_side' &&
-      (this.getFullPageDesignPreset(bundle) === 'DEFAULT' || this.getFullPageDesignPreset(bundle) === 'CLASSIC' || this.getFullPageDesignPreset(bundle) === 'COMPACT') &&
-      !boxSelectionEnabled
-    ) {
-      return 'icon';
+    const showTextOnAddButton =
+    bundle?.showTextOnAddButton === true 
+
+    if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
+      return showTextOnAddButton ? 'text' : 'icon';
     }
-    return 'text';
+  
+    return showTextOnAddButton ? 'text' : 'icon';
   }
 
   getProductAddButtonText() {
-    return this._resolveText('productAddButton', 'Add To Box');
+    return this.resolveFullPageCardCtaMode() === 'text'
+      ? this._resolveText('productAddButton', 'Add +')
+      : '+';
   }
 
   applyFullPageDesignPresetMarker() {
@@ -7372,12 +7491,12 @@ class BundleWidgetFullPage {
       const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
 
       if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
-        this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
+        this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout;
         this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
         this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
         this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
         if (this.bundleData?.[bundleId]) {
-          this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout || 'footer_bottom';
+          this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout;
           this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
           this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
           this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
