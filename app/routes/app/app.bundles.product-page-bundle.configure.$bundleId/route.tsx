@@ -1565,7 +1565,7 @@ export default function ConfigureBundleFlow() {
       return;
     }
 
-    enablePreviewGate.requestPreview(() => {
+    enablePreviewGate.requestPreview(async () => {
     // Pick the URL via the shared helper. When the theme app extension is
     // enabled AND the bundle is active or unlisted, this returns the live
     // storefront URL so the merchant sees the customer-facing experience;
@@ -1593,28 +1593,54 @@ export default function ConfigureBundleFlow() {
       productUrl = `https://admin.shopify.com/store/${shopDomain}/products/${productId}`;
     }
 
-    if (productUrl) {
-      // Add template view parameter if template name is set
-      if (formState.templateName && !productUrl.includes('/admin.shopify.com/')) {
-        const separator = productUrl.includes('?') ? '&' : '?';
-        productUrl += `${separator}view=${formState.templateName}`;
-      }
-
-      open(productUrl, '_blank');
-
-      const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
-      const message = isPreviewUrl
-        ? "Bundle product preview opened in new tab"
-        : "Bundle product opened in new tab";
-
-      shopify.toast.show(message, { isError: false });
-    } else {
+    if (!productUrl) {
       AppLogger.error('Bundle product data:', {}, bundleProduct);
       shopify.toast.show("Unable to determine bundle product URL. Please check bundle product configuration.", {
         isError: true,
         duration: 5000
       });
+      return;
     }
+
+    const isStorefrontUrl = !productUrl.includes('/admin.shopify.com/');
+
+    // Open a new tab synchronously so the browser keeps the click gesture
+    // (and doesn't block as a popup) across the async templateSuffix sync.
+    const previewWindow = window.open("about:blank", "_blank", "noopener,noreferrer");
+
+    // Sync the product's templateSuffix with the bundle's intended template
+    // so the bare /products/{handle} URL serves it — no ?view= needed.
+    // Place Widget already does this on its own path; this covers merchants
+    // who preview before placing the widget. Empty templateName → null
+    // suffix (default product template).
+    if (isStorefrontUrl && bundleProduct?.id) {
+      try {
+        const formData = new FormData();
+        formData.append("intent", "assignProductTemplate");
+        formData.append("productId", bundleProduct.id);
+        formData.append("templateSuffix", (formState.templateName || "").trim());
+        await fetch(window.location.href, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (err) {
+        AppLogger.error('Failed to sync product templateSuffix before preview', {}, err);
+        // Continue — best-effort sync.
+      }
+    }
+
+    if (previewWindow && !previewWindow.closed) {
+      previewWindow.location.href = productUrl;
+    } else {
+      window.open(productUrl, "_blank", "noopener,noreferrer");
+    }
+
+    const isPreviewUrl = bundleProduct && productUrl === bundleProduct.onlineStorePreviewUrl;
+    const message = isPreviewUrl
+      ? "Bundle product preview opened in new tab"
+      : "Bundle product opened in new tab";
+
+    shopify.toast.show(message, { isError: false });
     });
   }, [isDirty, bundle, bundleProduct, shop, shopify, formState.templateName, enablePreviewGate, appEmbedEnabled]);
 
