@@ -181,3 +181,83 @@ describe("CachedSessionStorage passthrough methods", () => {
     expect(prisma.session.count).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("CachedSessionStorage refresh resilience", () => {
+  function makeExpiringRow() {
+    return makeRow({
+      expires: new Date(Date.now() + 1_000),
+      refreshToken: "refresh-token",
+      refreshTokenExpiresAt: new Date(Date.now() + 60_000),
+    });
+  }
+
+  it("drops the row and returns undefined when refresh fails with HTTP 401", async () => {
+    const prisma = makePrisma(makeExpiringRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    offlineTokenModule.refreshOfflineSession.mockRejectedValueOnce(
+      new Error(
+        "Offline token request failed: 401 This request requires an active refresh_token",
+      ),
+    );
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(result).toBeUndefined();
+    expect(prisma.session.delete).toHaveBeenCalledWith({
+      where: { id: "offline_test.myshopify.com" },
+    });
+  });
+
+  it("drops the row when refresh fails with invalid_grant", async () => {
+    const prisma = makePrisma(makeExpiringRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    offlineTokenModule.refreshOfflineSession.mockRejectedValueOnce(
+      new Error("Offline token request failed: 400 invalid_grant"),
+    );
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(result).toBeUndefined();
+    expect(prisma.session.delete).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns the stale row on a transient refresh failure (no delete)", async () => {
+    const prisma = makePrisma(makeExpiringRow());
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+    offlineTokenModule.refreshOfflineSession.mockRejectedValueOnce(
+      new Error("fetch failed"),
+    );
+
+    const result = await storage.loadSession("offline_test.myshopify.com");
+
+    expect(result?.accessToken).toBe("shpat_test");
+    expect(prisma.session.delete).not.toHaveBeenCalled();
+  });
+
+  it("filters out a bad row in findSessionsByShop while keeping the healthy one", async () => {
+    const badRow = {
+      ...makeExpiringRow(),
+      id: "offline_bad.myshopify.com",
+    };
+    const goodRow = makeRow({
+      id: "offline_good.myshopify.com",
+      accessToken: "shpat_good",
+    });
+    const prisma = makePrisma();
+    prisma.session.findMany.mockResolvedValue([badRow, goodRow]);
+    offlineTokenModule.refreshOfflineSession.mockRejectedValueOnce(
+      new Error(
+        "Offline token request failed: 401 This request requires an active refresh_token",
+      ),
+    );
+    const storage = new CachedSessionStorage(prisma as any, 60_000);
+
+    const result = await storage.findSessionsByShop("test.myshopify.com");
+
+    expect(result).toHaveLength(1);
+    expect(result[0].accessToken).toBe("shpat_good");
+    expect(prisma.session.delete).toHaveBeenCalledWith({
+      where: { id: "offline_bad.myshopify.com" },
+    });
+  });
+});

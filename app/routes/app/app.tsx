@@ -68,7 +68,7 @@ export default function App() {
         {mantleAppToken ? (
           <MantleTracker appToken={mantleAppToken} customerId={shop} />
         ) : null}
-        {/* polaris.js deferred so App Bridge (injected above by AppProvider) initialises first */}
+        {/* polaris.js deferred so App Bridge (loaded statically from app/root.tsx <head>) initialises first */}
         <script src="https://cdn.shopify.com/shopifycloud/polaris.js" defer />
         <AdminNavigation />
         <Outlet />

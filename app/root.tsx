@@ -1,23 +1,37 @@
+import type { LoaderFunctionArgs } from "@remix-run/node";
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
   useRouteError,
+  useRouteLoaderData,
 } from "@remix-run/react";
 import { useEffect } from "react";
 import CrispChat from "./components/CrispChat";
 import { ErrorPage } from "./components/ErrorPage";
 import { reportWebVitals } from "./lib/web-vitals.client";
 
+export const loader = async (_args: LoaderFunctionArgs) => {
+  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+};
+
 export function ErrorBoundary() {
   const error = useRouteError();
+  // Root loader may not have run if the error happened before it; fall back to "".
+  const rootData = useRouteLoaderData<typeof loader>("root");
+  const apiKey = rootData?.apiKey ?? "";
   return (
     <html>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        {/* Shopify mandate (March 13, 2024): app-bridge.js must be the first
+            <script> tag in <head>, before any other scripts. */}
+        <meta name="shopify-api-key" content={apiKey} />
+        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
         <link rel="preconnect" href="https://cdn.shopify.com/" />
         <link
           rel="stylesheet"
@@ -34,6 +48,8 @@ export function ErrorBoundary() {
 }
 
 export default function App() {
+  const { apiKey } = useLoaderData<typeof loader>();
+
   // Wire Core Web Vitals reporting (LCP, INP, CLS, TTFB, FCP) once on first
   // mount. Posts to /api/web-vitals — see app/lib/web-vitals.client.ts.
   // Idempotent: subsequent calls are no-ops, safe under React StrictMode.
@@ -46,6 +62,11 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        {/* Shopify mandate (March 13, 2024): app-bridge.js must be the first
+            <script> tag in <head>, before any other scripts. The unversioned
+            CDN URL is the official auto-updating endpoint — do not pin. */}
+        <meta name="shopify-api-key" content={apiKey} />
+        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js" />
         {/*
           Issue: admin-lcp-phase2-universal-wins-1 — font loading strategy.
           Phase 1 baseline showed FCP == LCP at 4.4 s with the Inter stylesheet
