@@ -14,6 +14,7 @@ import {
   shouldRefreshOfflineSession,
   type OfflineSessionRecord,
 } from "../services/offline-token.server";
+import { AppLogger } from "./logger";
 
 const DEFAULT_TTL_MS = 10 * 60 * 1000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
@@ -71,6 +72,12 @@ export class CachedSessionStorage {
     }
 
     const hydratedRow = await this.refreshOfflineRowIfNeeded(row);
+    if (!hydratedRow) {
+      // Refresh failed because the refresh token was rejected by Shopify; the row
+      // has been deleted. Return undefined so the SDK performs fresh token exchange.
+      this.cache.delete(id);
+      return undefined;
+    }
     const session = this.rowToSession(hydratedRow);
     this.cache.set(id, {
       session,
@@ -124,9 +131,12 @@ export class CachedSessionStorage {
       orderBy: [{ expires: "desc" }],
     });
 
-    return Promise.all(
-      rows.map(async (row) => this.rowToSession(await this.refreshOfflineRowIfNeeded(row))),
+    const hydrated = await Promise.all(
+      rows.map((row) => this.refreshOfflineRowIfNeeded(row)),
     );
+    return hydrated
+      .filter((row): row is SessionRow => row !== null)
+      .map((row) => this.rowToSession(row));
   }
 
   async isReady(): Promise<boolean> {
@@ -144,16 +154,42 @@ export class CachedSessionStorage {
     return false;
   }
 
-  private async refreshOfflineRowIfNeeded(row: SessionRow): Promise<SessionRow> {
+  private async refreshOfflineRowIfNeeded(row: SessionRow): Promise<SessionRow | null> {
     if (row.isOnline || !shouldRefreshOfflineSession(row)) {
       return row;
     }
 
-    return (await refreshOfflineSession(
-      this.prisma,
-      row,
-      this,
-    )) as SessionRow;
+    try {
+      return (await refreshOfflineSession(this.prisma, row, this)) as SessionRow;
+    } catch (error) {
+      if (isRefreshTokenUnusable(error)) {
+        // Shopify rejected the refresh token. Drop the row so the SDK falls back
+        // to a fresh token exchange via id_token instead of looping on the bad
+        // refresh on every admin load.
+        AppLogger.warn(
+          "[CachedSessionStorage] Dropping session — refresh token rejected by Shopify",
+          { component: "cached-session-storage", shop: row.shop, sessionId: row.id },
+          error as Error,
+        );
+        this.cache.delete(row.id);
+        try {
+          await this.prisma.session.delete({ where: { id: row.id } });
+        } catch {
+          // Row may already be gone; nothing to do.
+        }
+        return null;
+      }
+
+      // Transient failure (network blip, Shopify 5xx, …). Keep the stale row so
+      // read-only requests can still proceed; downstream code surfaces re-auth
+      // when the access token itself is rejected.
+      AppLogger.warn(
+        "[CachedSessionStorage] Offline session refresh failed; serving stale row",
+        { component: "cached-session-storage", shop: row.shop, sessionId: row.id },
+        error as Error,
+      );
+      return row;
+    }
   }
 
   private cachedSessionNeedsRefresh(session: Session): boolean {
@@ -232,4 +268,12 @@ export class CachedSessionStorage {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// requestOfflineToken formats errors as "Offline token request failed: {status} {description}".
+// A 401, or any response that explicitly names `invalid_grant`, signals that the
+// refresh token itself is no longer accepted — the row must be dropped, not retried.
+function isRefreshTokenUnusable(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /Offline token request failed:\s*401\b/.test(message) || /invalid_grant/i.test(message);
 }
