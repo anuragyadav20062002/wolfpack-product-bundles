@@ -1,21 +1,26 @@
-export function installCogniveTemplate(BundleWidgetProductPage) {
-  const prototype = BundleWidgetProductPage.prototype;
+import { resolveProductPageTemplateConfig } from './registry.js';
 
-  prototype._isProductPageGridTemplate = function() {
-    return this._getProductPageTemplateType() === 'PDP_INPAGE'
-      && this._getProductPageDesignPreset() === 'COGNIVE';
-  };
+export const cogniveTemplateMethods = {
+  _isProductPageGridTemplate() {
+    const config = resolveProductPageTemplateConfig({
+      templateType: this._getProductPageTemplateType(),
+      designPreset: this._getProductPageDesignPreset(),
+      renderFilledSlotsAsHorizontalStacked: this.selectedBundle?.renderFilledSlotsAsHorizontalStacked,
+    });
 
-  prototype._isProductPageCogniveTemplate = function() {
+    return config?.id === 'GRID';
+  },
+
+  _isProductPageCogniveTemplate() {
     return this._isProductPageGridTemplate();
-  };
+  },
 
-  prototype._usesCompactInpageProductCards = function() {
+  _usesCompactInpageProductCards() {
     return Boolean(this._isProductPageCascadeTemplate?.() || this._isProductPageGridTemplate());
-  };
+  },
 
-  prototype._renderCogniveFooter = function(el) {
+  _renderCogniveFooter(el) {
     this._renderCascadeFooter(el);
     el.classList.add('bw-ppb-cognive-footer');
-  };
-}
+  },
+};

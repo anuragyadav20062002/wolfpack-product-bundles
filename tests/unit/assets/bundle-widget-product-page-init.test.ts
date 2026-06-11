@@ -10,8 +10,23 @@
  * matching the existing bundle-bottom-sheet.test.ts approach.
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+
+function readCssWithImports(filePath: string, seen = new Set<string>()): string {
+  const absolutePath = join(process.cwd(), filePath);
+  if (seen.has(absolutePath)) return '';
+  seen.add(absolutePath);
+
+  const css = readFileSync(absolutePath, 'utf8');
+  return css.replace(/@import\s+["']([^"']+)["'];/g, (_statement, importPath: string) => {
+    const resolvedPath = relative(
+      process.cwd(),
+      join(dirname(absolutePath), importPath),
+    );
+    return readCssWithImports(resolvedPath, seen);
+  });
+}
 
 function readProductPageStyles() {
   return [
@@ -19,6 +34,37 @@ function readProductPageStyles() {
     'app/assets/widgets/product-page-css/templates/inpage-cascade.css',
     'app/assets/widgets/product-page-css/templates/inpage-cognive.css',
     'app/assets/widgets/product-page-css/templates/modal-slots.css',
+  ]
+    .map((filePath) => readCssWithImports(filePath))
+    .join('\n');
+}
+
+function readProductPageWidgetSources() {
+  const methodFiles = readdirSync(join(process.cwd(), 'app/assets/widgets/product-page/methods'))
+    .filter((file) => file.endsWith('.js'))
+    .sort()
+    .map((file) => `app/assets/widgets/product-page/methods/${file}`);
+
+  return [
+    'app/assets/bundle-widget-product-page.js',
+    'app/assets/widgets/product-page/templates/modal-slot-template.js',
+    'app/assets/widgets/product-page/templates/cascade-template.js',
+    'app/assets/widgets/product-page/templates/cognive-template.js',
+    ...methodFiles,
+  ]
+    .map((filePath) => readFileSync(join(process.cwd(), filePath), 'utf8'))
+    .join('\n');
+}
+
+function readFullPageWidgetSources() {
+  const methodFiles = readdirSync(join(process.cwd(), 'app/assets/widgets/full-page/methods'))
+    .filter((file) => file.endsWith('.js'))
+    .sort()
+    .map((file) => `app/assets/widgets/full-page/methods/${file}`);
+
+  return [
+    'app/assets/bundle-widget-full-page.js',
+    ...methodFiles,
   ]
     .map((filePath) => readFileSync(join(process.cwd(), filePath), 'utf8'))
     .join('\n');
@@ -284,10 +330,7 @@ describe('resolveProductPageStorefrontApiBase — storefront hydration URLs', ()
 
 describe('Product Page widget product-form placement contract', () => {
   it('relocates the widget container after the product add-to-cart form before rendering', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('_relocateContainerToProductForm');
     expect(source).toContain('form[action*="/cart/add"]');
@@ -298,10 +341,7 @@ describe('Product Page widget product-form placement contract', () => {
 
 describe('Product Page widget native product price contract', () => {
   it('hides the native product price in the product form scope before rendering PPB controls', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('_hideNativeProductPrice');
     expect(source.indexOf('this._relocateContainerToProductForm();')).toBeLessThan(
@@ -323,10 +363,7 @@ describe('Product Page widget native product price contract', () => {
 
 describe('Product Page modal-slot visual contract', () => {
   it('renders modal-slot empty states with section titles, product slot labels, and the reference-matched button stack', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
     const modalSlotTemplate = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
@@ -361,10 +398,7 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('drives EB modal slot orientation from consumed JSON instead of the template label alone', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
     const modalSlotTemplate = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
@@ -380,10 +414,8 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('loads PPB Horizontal Slots template code from a dedicated source module before Cascade and widget initialization', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
+    const entrySource = readFileSync(join(process.cwd(), 'app/assets/bundle-widget-product-page.js'), 'utf8');
     const buildScript = readFileSync(
       join(process.cwd(), 'scripts/build-widget-bundles.js'),
       'utf8',
@@ -398,21 +430,22 @@ describe('Product Page modal-slot visual contract', () => {
     expect(buildScript.indexOf("app/assets/widgets/product-page/templates/modal-slot-template.js")).toBeLessThan(
       buildScript.indexOf("app/assets/widgets/product-page/templates/cascade-template.js"),
     );
-    expect(source).toContain("import { installModalSlotTemplate } from './widgets/product-page/templates/modal-slot-template.js';");
-    expect(source).toContain('installModalSlotTemplate(BundleWidgetProductPage);');
-    expect(source.indexOf('installModalSlotTemplate(BundleWidgetProductPage);')).toBeLessThan(
-      source.indexOf('installCascadeTemplate(BundleWidgetProductPage);'),
+    expect(source).toContain("import { modalSlotTemplateMethods } from './widgets/product-page/templates/modal-slot-template.js';");
+    expect(source).toContain('modalSlotTemplateMethods,');
+    expect(source.indexOf('modalSlotTemplateMethods,')).toBeLessThan(
+      source.indexOf('cascadeTemplateMethods,'),
     );
-    expect(source.indexOf('installModalSlotTemplate(BundleWidgetProductPage);')).toBeLessThan(
+    expect(source.indexOf('modalSlotTemplateMethods,')).toBeLessThan(
       source.indexOf('initializeProductPageWidget();'),
     );
-    expect(source).not.toContain('  _createModalSlotStepSection(step) {');
-    expect(source).not.toContain('  createEmptyStateCard(step, stepIndex, instanceIndex = 0) {');
+    expect(entrySource).not.toContain('  _createModalSlotStepSection(step) {');
+    expect(entrySource).not.toContain('  createEmptyStateCard(step, stepIndex, instanceIndex = 0) {');
 
-    expect(modalSlotTemplate).toContain('export function installModalSlotTemplate(BundleWidgetProductPage)');
-    expect(modalSlotTemplate).toContain('prototype._createModalSlotStepSection = function');
-    expect(modalSlotTemplate).toContain('prototype.createEmptyStateCard = function');
-    expect(modalSlotTemplate).toContain('prototype._appendSlotIcon = function');
+    expect(modalSlotTemplate).toContain('export const modalSlotTemplateMethods =');
+    expect(modalSlotTemplate).not.toContain('installModalSlotTemplate');
+    expect(modalSlotTemplate).toContain('_createModalSlotStepSection(step)');
+    expect(modalSlotTemplate).toContain('createEmptyStateCard(step, stepIndex, instanceIndex = 0)');
+    expect(modalSlotTemplate).toContain('_appendSlotIcon(iconWrapper)');
 
     expect(css).toContain('#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"]');
     expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');
@@ -438,7 +471,7 @@ describe('Product Page modal-slot visual contract', () => {
 
     expect(verticalStart).toBeGreaterThan(-1);
     expect(horizontalStart).toBeGreaterThan(verticalStart);
-    expect(modalSlotTemplate).toContain("this._getProductPageDesignPreset() === 'SIMPLIFIED'");
+    expect(modalSlotTemplate).toContain("config?.id === 'VERTICAL_SLOTS'");
     expect(modalSlotTemplate).toContain("label.textContent = isModalSlotTemplate ? `Product ${slotNumber}`");
 
     expect(verticalCss).toContain('width:100%');
@@ -486,13 +519,9 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('renders only one quantity increase button in PPB in-page product cards', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+    const inpageRenderer = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/product-page/methods/inpage-render-methods.js'),
       'utf8',
-    );
-    const inpageRenderer = source.slice(
-      source.indexOf('_renderInpageStepProducts'),
-      source.indexOf('    this.attachProductEventHandlers(target, stepIndex);'),
     );
 
     const increaseButtonMatches = inpageRenderer.match(/class="qty-btn qty-increase"/g) ?? [];
@@ -500,10 +529,8 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('renders EB-style PPB in-page category tabs from the consumed step categories', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
+    const entrySource = readFileSync(join(process.cwd(), 'app/assets/bundle-widget-product-page.js'), 'utf8');
     const css = readProductPageStyles();
 
     expect(source).toContain('_createInpageCategoryTabs');
@@ -527,10 +554,7 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('renders the PPB Product List template with EB-style cascade rows and footer controls', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
     const css = readProductPageStyles();
     const cascadeTemplate = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page/templates/cascade-template.js'),
@@ -545,8 +569,6 @@ describe('Product Page modal-slot visual contract', () => {
     expect(source).toContain('gbbMixPageWrapper');
     expect(source).toContain('gbbMixProductPageWrapperV2');
     expect(source).toContain('gbbMixCascadeProductWrapper');
-    expect(source).toContain('gbbMixCascadeProductLeftSection');
-    expect(source).toContain('gbbMixCascadeProductRightSection');
     expect(source).toContain('gbbMixCascadeAddBtn');
     expect(cascadeTemplate).toContain('bw-ppb-cascade-selected-toggle');
     expect(cascadeTemplate).toContain('gbbMixCascadeFooterWrapper');
@@ -568,10 +590,7 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('keeps static PPB runtime presentation in CSS instead of inline JS styles', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
     const modalSlotTemplate = readFileSync(
       join(process.cwd(), 'app/assets/widgets/product-page/templates/modal-slot-template.js'),
       'utf8',
@@ -609,10 +628,8 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('loads PPB Product List template code from a dedicated source module before widget initialization', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
+    const entrySource = readFileSync(join(process.cwd(), 'app/assets/bundle-widget-product-page.js'), 'utf8');
     const buildScript = readFileSync(
       join(process.cwd(), 'scripts/build-widget-bundles.js'),
       'utf8',
@@ -631,23 +648,21 @@ describe('Product Page modal-slot visual contract', () => {
       productPageBuildFunction.indexOf('${processedWidget}'),
     );
 
-    expect(source).toContain("import { installCascadeTemplate } from './widgets/product-page/templates/cascade-template.js';");
-    expect(source).toContain('installCascadeTemplate(BundleWidgetProductPage);');
-    expect(source.indexOf('installCascadeTemplate(BundleWidgetProductPage);')).toBeLessThan(
+    expect(source).toContain("import { cascadeTemplateMethods } from './widgets/product-page/templates/cascade-template.js';");
+    expect(source).toContain('cascadeTemplateMethods,');
+    expect(source.indexOf('cascadeTemplateMethods,')).toBeLessThan(
       source.indexOf('initializeProductPageWidget();'),
     );
-    expect(source).not.toContain('  _renderCascadeFooter(el) {');
+    expect(entrySource).not.toContain('  _renderCascadeFooter(el) {');
 
-    expect(cascadeTemplate).toContain('export function installCascadeTemplate(BundleWidgetProductPage)');
-    expect(cascadeTemplate).toContain('prototype._renderCascadeFooter = function');
-    expect(cascadeTemplate).toContain('prototype._isProductPageCascadeTemplate = function');
+    expect(cascadeTemplate).toContain('export const cascadeTemplateMethods =');
+    expect(cascadeTemplate).not.toContain('installCascadeTemplate');
+    expect(cascadeTemplate).toContain('_renderCascadeFooter(el)');
+    expect(cascadeTemplate).toContain('_isProductPageCascadeTemplate()');
   });
 
   it('renders the PPB Product Grid template from a dedicated COGNIVE module with EB-style responsive cards', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
     const buildScript = readFileSync(
       join(process.cwd(), 'scripts/build-widget-bundles.js'),
       'utf8',
@@ -659,19 +674,20 @@ describe('Product Page modal-slot visual contract', () => {
     );
 
     expect(buildScript).toContain("app/assets/widgets/product-page/templates/cognive-template.js");
-    expect(source).toContain("import { installCogniveTemplate } from './widgets/product-page/templates/cognive-template.js';");
-    expect(source).toContain('installCogniveTemplate(BundleWidgetProductPage);');
-    expect(source.indexOf('installCascadeTemplate(BundleWidgetProductPage);')).toBeLessThan(
-      source.indexOf('installCogniveTemplate(BundleWidgetProductPage);'),
+    expect(source).toContain("import { cogniveTemplateMethods } from './widgets/product-page/templates/cognive-template.js';");
+    expect(source).toContain('cogniveTemplateMethods,');
+    expect(source.indexOf('cascadeTemplateMethods,')).toBeLessThan(
+      source.indexOf('cogniveTemplateMethods,'),
     );
-    expect(source.indexOf('installCogniveTemplate(BundleWidgetProductPage);')).toBeLessThan(
+    expect(source.indexOf('cogniveTemplateMethods,')).toBeLessThan(
       source.indexOf('initializeProductPageWidget();'),
     );
 
-    expect(cogniveTemplate).toContain('export function installCogniveTemplate(BundleWidgetProductPage)');
-    expect(cogniveTemplate).toContain('prototype._isProductPageGridTemplate = function');
-    expect(cogniveTemplate).toContain("this._getProductPageDesignPreset() === 'COGNIVE'");
-    expect(cogniveTemplate).toContain('prototype._renderCogniveFooter = function');
+    expect(cogniveTemplate).toContain('export const cogniveTemplateMethods =');
+    expect(cogniveTemplate).not.toContain('installCogniveTemplate');
+    expect(cogniveTemplate).toContain('_isProductPageGridTemplate()');
+    expect(cogniveTemplate).toContain("config?.id === 'GRID'");
+    expect(cogniveTemplate).toContain('_renderCogniveFooter(el)');
     expect(cogniveTemplate).toContain('this._renderCascadeFooter(el);');
     expect(source).toContain('this._isProductPageGridTemplate()');
     expect(source).toContain('this._renderCogniveFooter(el);');
@@ -691,10 +707,7 @@ describe('Product Page modal-slot visual contract', () => {
   });
 
   it('renders PPB discount tier pills from rule-id display DTOs', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
+    const source = readProductPageWidgetSources();
 
     expect(source).toContain('getProductPageTierPillContent(rule, index, qtyOpts)');
     expect(source).toContain('getProductPageTierPillContent(rule, index, qtyOpts) {');
@@ -708,20 +721,22 @@ describe('Product Page modal-slot visual contract', () => {
 
 describe('Product Page bundle cart add transport contract', () => {
   it('submits PPB cart adds as EB-style multipart fields to /cart/add', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
+    const source = readProductPageWidgetSources();
+    const cartSubmitSource = readFileSync(
+      join(process.cwd(), 'app/assets/widgets/shared/engine/cart-submit.js'),
       'utf8',
     );
 
     expect(source).toContain("fetch('/cart/add',");
-    expect(source).toContain('new FormData()');
+    expect(source).toContain('buildProductPageCartFormData(cartItems');
+    expect(cartSubmitSource).toContain('new FormData()');
     const indexToken = ['$', '{index}'].join('');
-    expect(source).toContain(`items[${indexToken}][id]`);
-    expect(source).toContain(`items[${indexToken}][quantity]`);
-    expect(source).toContain(`items[${indexToken}][properties][Box]`);
-    expect(source).toContain(`items[${indexToken}][properties][_easyBundle:OfferId]`);
-    expect(source).toContain(`items[${indexToken}][properties][_easyBundle:prodQty]`);
-    expect(source).toContain(`items[${indexToken}][properties][_bundleName]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][id]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][quantity]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][Box]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_easyBundle:OfferId]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_easyBundle:prodQty]`);
+    expect(cartSubmitSource).toContain(`items[${indexToken}][properties][_bundleName]`);
     expect(source).toContain("const properties = {};");
     expect(source).not.toContain("'_bundle_name': this.selectedBundle.name");
     expect(source).not.toContain("'_step_index'");
@@ -729,10 +744,7 @@ describe('Product Page bundle cart add transport contract', () => {
   });
 
   it('keeps FPB cart adds on JSON /cart/add.js', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("fetch('/cart/add.js',");
     expect(source).toContain("'Content-Type': 'application/json'");
@@ -740,14 +752,8 @@ describe('Product Page bundle cart add transport contract', () => {
   });
 
   it('syncs EB-style bundle_details cart metafields for PPB and FPB through the signed app proxy', () => {
-    const ppbSource = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-product-page.js'),
-      'utf8',
-    );
-    const fpbSource = readFileSync(
-      join(process.cwd(), 'app/assets/bundle-widget-full-page.js'),
-      'utf8',
-    );
+    const ppbSource = readProductPageWidgetSources();
+    const fpbSource = readFullPageWidgetSources();
 
     [ppbSource, fpbSource].forEach((source) => {
       expect(source).toContain("fetch('/apps/product-bundles/api/cart-bundle-details'");
@@ -759,7 +765,7 @@ describe('Product Page bundle cart add transport contract', () => {
       expect(source).not.toContain('fetch(`/api/${version}/graphql.json`');
     });
 
-    expect(ppbSource).toContain('bundleDetailsKey: `${offerId}_${sessionKey}`');
+    expect(readFileSync(join(process.cwd(), 'app/assets/widgets/shared/engine/cart-submit.js'), 'utf8')).toContain('bundleDetailsKey: `${offerId}_${sessionKey}`');
     expect(ppbSource).toContain('await this.syncBundleDetailsCartMetafield(cartContext.bundleDetailsKey, cartContext.sourceProperties)');
     expect(fpbSource).toContain('await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties)');
   });

@@ -4358,16 +4358,20 @@ export default function ConfigureBundleFlow() {
                       hideCropEditor
                     />
 
-                    {loadingGif && (
-                      <s-stack direction="block" gap="small-100">
-                        <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
-                        <img
-                          src={loadingGif}
-                          alt="Loading animation preview"
-                          style={{ maxWidth: 150, maxHeight: 150, borderRadius: 8, border: "1px solid #e1e3e5" }}
-                        />
-                      </s-stack>
-                    )}
+                    <s-stack direction="block" gap="small-100">
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "#6d7175" }}>PREVIEW</p>
+                      <div
+                        className={productPageBundleStyles.loadingAnimationPreview}
+                        role="img"
+                        aria-label={loadingGif ? "Loading animation preview" : "Default loading spinner preview"}
+                      >
+                        {loadingGif ? (
+                          <img src={loadingGif} alt="" />
+                        ) : (
+                          <span className={productPageBundleStyles.loadingAnimationPreviewSpinner} aria-hidden="true" />
+                        )}
+                      </div>
+                    </s-stack>
                   </s-stack>
                 </s-section>
               </s-stack>

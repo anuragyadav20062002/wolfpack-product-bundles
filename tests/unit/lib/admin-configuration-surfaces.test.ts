@@ -29,6 +29,12 @@ describe("recovered admin surfaces contract", () => {
       "Images & GIFs",
     ]);
     expect(DESIGN_CONFIGURATION[0]?.fields.map((field) => field.label)).toContain("Primary Color");
+    expect(DESIGN_CONFIGURATION.find((tab) => tab.title === "Images & GIFs")?.fields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Bundle Loading GIF", kind: "loadingSpinner", value: "Default spinner" }),
+        expect.objectContaining({ label: "Checkout GIF", kind: "loadingSpinner", value: "Default spinner" }),
+      ])
+    );
     expect(LANGUAGE_CONFIGURATION.enabled).toBe(true);
     expect(LANGUAGE_CONFIGURATION.selectedLanguage).toBe("English");
     expect(LANGUAGE_CONFIGURATION.supportedLanguages).toContain("Portuguese (BR)");

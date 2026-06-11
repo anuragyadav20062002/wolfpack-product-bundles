@@ -1,0 +1,33 @@
+/*
+ * FPB Classic Design - scoped static CSS for the CLASSIC preset.
+ * Runtime geometry previously lived in classic-template.js; keep rules scoped to
+ * .fpb-preset-classic or CLASSIC root attributes.
+ */
+
+[data-bundle-type="full_page"][data-fpb-design-preset="CLASSIC"] {
+  width: min(100vw, 1536px);
+  max-width: 1536px;
+  margin-left: calc(50% - min(50vw, 768px));
+  padding: 10px;
+  box-sizing: border-box;
+  background: var(--bundle-full-page-bg-color);
+}
+
+.fpb-preset-classic {
+  --classic-grid-gap: 15px;
+  --classic-card-radius: 10px;
+  --classic-card-padding: 8px;
+  --classic-card-gap: 8px;
+
+  --classic-desktop-card-image-extra: 12px;
+  --classic-desktop-icon-card-extra: 104px;
+  --classic-desktop-text-card-extra: 152px;
+
+  --classic-mobile-card-width: 177.5px;
+  --classic-mobile-icon-card-height: 263px;
+  --classic-mobile-text-card-height: 300px;
+  --classic-mobile-image-height: 150px;
+
+  --classic-icon-button-size: 35px;
+  --classic-text-button-height: 38px;
+}

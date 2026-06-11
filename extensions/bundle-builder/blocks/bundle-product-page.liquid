@@ -91,6 +91,20 @@
 <script>
   {% assign server_url_field = shop.metafields[app_namespace]['serverUrl'] %}
   window.__BUNDLE_APP_URL__ = {% if server_url_field %}{{ server_url_field.value | json }}{% else %}null{% endif %};
+  window.__WOLFPACK_PPB_TEMPLATE_CSS_URLS__ = Object.assign(
+    {},
+    window.__WOLFPACK_PPB_TEMPLATE_CSS_URLS__ || {},
+    {
+      CASCADE: {{ 'bundle-widget-product-page-cascade.css' | asset_url | json }},
+      COGNIVE: {{ 'bundle-widget-product-page-cognive.css' | asset_url | json }},
+      GRID: {{ 'bundle-widget-product-page-cognive.css' | asset_url | json }},
+      LIST: {{ 'bundle-widget-product-page-cascade.css' | asset_url | json }},
+      MODAL: {{ 'bundle-widget-product-page-modal.css' | asset_url | json }},
+      SIMPLIFIED: {{ 'bundle-widget-product-page-modal.css' | asset_url | json }},
+      HORIZONTAL_SLOTS: {{ 'bundle-widget-product-page-modal.css' | asset_url | json }},
+      VERTICAL_SLOTS: {{ 'bundle-widget-product-page-modal.css' | asset_url | json }}
+    }
+  );
 </script>
 
 {% # theme-check-disable RemoteAsset %}

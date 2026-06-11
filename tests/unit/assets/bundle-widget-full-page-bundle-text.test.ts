@@ -1,12 +1,10 @@
+import { readFullPageWidgetSources } from './widget-source-helpers';
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 describe("Full Page widget bundle summary text contract", () => {
   it("renders the direct bundleTextConfig bundle summary title and subtitle", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("getBundleSummaryText()");
     expect(source).toContain("this.selectedBundle?.bundleTextConfig?.bundleSummary");
@@ -15,14 +13,11 @@ describe("Full Page widget bundle summary text contract", () => {
   });
 
   it("renders saved step subtext in the Full Page content body without the search box", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
     const css = readFileSync(
       join(
         process.cwd(),
-        "app/assets/widgets/full-page-css/bundle-widget-full-page.css",
+        "app/assets/widgets/full-page-css/base/part-02.css",
       ),
       "utf8",
     );

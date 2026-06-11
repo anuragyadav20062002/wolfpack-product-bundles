@@ -1,10 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
+import { readProductPageWidgetSources } from './widget-source-helpers';
 
-const source = fs.readFileSync(
-  path.join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-  "utf8",
-);
+const source = readProductPageWidgetSources();
 
 describe("product-page widget bundle Slot Icon", () => {
   it("renders the bundle-level slot icon in empty slots before falling back to the plus SVG", () => {

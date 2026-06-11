@@ -14,6 +14,17 @@
   (function () {
     var fullPageScriptUrl = {{ 'bundle-widget-full-page-bundled.js' | asset_url | json }};
     var fullPageStyleUrl = {{ 'bundle-widget-full-page.css' | asset_url | json }};
+    window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ = Object.assign(
+      {},
+      window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {},
+      {
+        DEFAULT: {{ 'bundle-widget-full-page-standard.css' | asset_url | json }},
+        STANDARD: {{ 'bundle-widget-full-page-standard.css' | asset_url | json }},
+        CLASSIC: {{ 'bundle-widget-full-page-classic.css' | asset_url | json }},
+        COMPACT: {{ 'bundle-widget-full-page-compact.css' | asset_url | json }},
+        HORIZONTAL: {{ 'bundle-widget-full-page-horizontal.css' | asset_url | json }}
+      }
+    );
 
     function ensureStylesheet(href) {
       if (!href || document.querySelector('link[href="' + href + '"]')) return;

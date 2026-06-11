@@ -1,10 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
+import { readFullPageWidgetSources } from './widget-source-helpers';
 
-const source = fs.readFileSync(
-  path.join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-  "utf8",
-);
+const source = readFullPageWidgetSources();
 
 describe("full-page widget bundle Slot Icon", () => {
   it("renders the bundle-level slot icon in empty cards before falling back to the plus SVG", () => {

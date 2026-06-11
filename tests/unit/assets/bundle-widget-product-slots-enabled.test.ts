@@ -1,14 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
+import { readFullPageWidgetSources, readProductPageWidgetSources } from './widget-source-helpers';
 
-const productPageSource = fs.readFileSync(
-  path.join(process.cwd(), "app/assets/bundle-widget-product-page.js"),
-  "utf8",
-);
-const fullPageSource = fs.readFileSync(
-  path.join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-  "utf8",
-);
+const productPageSource = readProductPageWidgetSources();
+const fullPageSource = readFullPageWidgetSources();
 
 describe("storefront Product Slots bundle setting", () => {
   it("PPB reads productSlotsEnabled before rendering empty slot cards", () => {
