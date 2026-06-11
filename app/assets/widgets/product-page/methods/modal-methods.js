@@ -1,6 +1,23 @@
 import { ConditionValidator } from '../../shared/condition-validator.js';
 import { CurrencyManager, ToastManager, ComponentGenerator } from '../../../bundle-widget-components.js';
 
+export function resolveProductPageCardButtonText({
+  currentQuantity = 0,
+  currentStep = {},
+  outOfStock = false,
+  defaultAddText = 'Add +',
+} = {}) {
+  if (outOfStock) return 'Out of stock';
+
+  const rawText = currentQuantity > 0
+    ? (currentStep?.addonReplaceText || 'Selected ✓')
+    : (currentStep?.addonAddText || defaultAddText);
+
+  return String(rawText)
+    .replace(/\{\{\s*allowedQuantity\s*\}\}/g, String(currentQuantity))
+    .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
+}
+
 export const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -192,7 +209,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
           ` : ''}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-            ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add to Cart'))}
+            ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
           </button>
         </div>
       </div>
@@ -285,7 +302,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
 
   // Quantity button handlers
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('qty-btn')) {
+    if (e.target.classList.contains('qty-btn') || e.target.classList.contains('inline-qty-btn')) {
       e.stopPropagation();
       const productId = e.target.dataset.productId;
       const isIncrease = e.target.classList.contains('qty-increase');
@@ -318,7 +335,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
   newProductGrid.addEventListener('click', (e) => {
     const productCard = e.target.closest('.product-card');
     if (!productCard) return;
-    if (e.target.closest('.product-add-btn, .qty-btn, .variant-selector, button, input, select, a')) return;
+    if (e.target.closest('.product-add-btn, .qty-btn, .inline-qty-btn, .variant-selector, button, input, select, a')) return;
 
     const productImage = e.target.closest('.product-image');
     const productTitle = e.target.closest('.product-title');

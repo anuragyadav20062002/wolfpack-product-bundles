@@ -6,22 +6,32 @@
   box-sizing:border-box}
 
 [data-fpb-design-preset=COMPACT] {
-  --compact-card-height-extra:104px;
-  --compact-image-height-extra:12px;
+  --compact-card-height-extra:95.265625px;
+  --compact-image-height-extra:16px;
   --compact-mobile-card-height:245px;
   --compact-mobile-image-height:150px}
 
 @media (min-width:1024px) {
+  .layout-sidebar[data-fpb-design-preset=COMPACT] > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
+    width:calc(100% - 71.1875px);
+    margin-left:33.59375px;
+    margin-right:37.59375px}
+
   .layout-sidebar[data-fpb-design-preset=COMPACT] .sidebar-layout-wrapper {
     display:grid;
-    grid-template-columns:0.6fr 0.4fr;
+    grid-template-columns:minmax(0,791.28125px) 527.53125px;
     gap:30px;
     max-width:1455px;
     padding:0;
     align-items:start}
 
   .layout-sidebar[data-fpb-design-preset=COMPACT] .sidebar-content {
-    padding:0 0 120px}
+    width:100%;
+    max-width:none;
+    margin:0;
+    padding:0 0 120px;
+    justify-self:stretch;
+    align-self:stretch}
 
   .layout-sidebar[data-fpb-design-preset=COMPACT] .fpb-step-category-title {
     font-size:16px;
@@ -43,7 +53,7 @@
     min-height:calc((100cqw - 30px)/3 + var(--compact-card-height-extra,104px));
     display:grid;
     grid-template-columns:minmax(0,1fr);
-    grid-template-rows:calc((100cqw - 30px)/3 - var(--compact-image-height-extra,12px)) 49px 35px;
+    grid-template-rows:calc((100cqw - 30px)/3 - var(--compact-image-height-extra,16px)) 39.625px 39.640625px;
     gap:8px;
     padding:8px;
     border:0;
@@ -60,6 +70,86 @@
     margin:0;
     border-radius:8px;
     border-bottom:none}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper {
+    grid-row:2 / span 2;
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 74.484375px!important;
+    grid-template-rows:39.625px 39.640625px!important;
+    gap:0 5px!important;
+    width:100%!important;
+    min-width:0!important;
+    height:79.265625px!important;
+    padding:0!important;
+    overflow:visible!important;
+    align-items:start!important}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title {
+    grid-row:1;
+    grid-column:1 / -1;
+    width:100%!important;
+    height:39.625px!important;
+    min-height:39.625px!important;
+    margin:0!important;
+    padding:0!important;
+    color:var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
+    font-size:16px!important;
+    line-height:22px!important;
+    font-weight:700!important;
+    text-align:left;
+    letter-spacing:0!important;
+    overflow:visible!important}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row {
+    grid-row:2;
+    grid-column:1;
+    width:100%!important;
+    height:39.640625px!important;
+    min-height:39.640625px!important;
+    margin:0!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    text-align:left!important;
+    overflow:visible!important}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price {
+    font-size:16px!important;
+    font-weight:700!important;
+    line-height:normal!important;
+    letter-spacing:0!important}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action {
+    grid-row:2;
+    grid-column:2;
+    width:74.484375px!important;
+    height:35px!important;
+    min-height:35px!important;
+    margin:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    align-self:start!important;
+    justify-self:end!important}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn {
+    width:35px!important;
+    min-width:35px!important;
+    height:35px!important;
+    padding:0!important;
+    border-radius:5px!important;
+    font-size:0!important;
+    line-height:1!important;
+    box-shadow:none!important;
+    align-self:center;
+    justify-self:center}
+
+  .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .product-add-btn::before {
+    content:"+";
+    font-size:16px;
+    font-weight:700;
+    line-height:1}
 
   .layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-side-panel {
     width:100%;

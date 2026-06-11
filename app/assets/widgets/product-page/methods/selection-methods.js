@@ -1,5 +1,47 @@
 import { ConditionValidator } from '../../shared/condition-validator.js';
 import { ToastManager } from '../../../bundle-widget-components.js';
+import { resolveProductPageCardButtonText } from './modal-methods.js';
+
+function createInlineQuantityControl(productId, quantity, increaseDisabled) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('inline-quantity-controls', 'bw-quantity-control');
+  wrapper.dataset.productId = productId;
+
+  const decreaseButton = document.createElement('button');
+  decreaseButton.type = 'button';
+  decreaseButton.classList.add('inline-qty-btn', 'qty-decrease', 'bw-quantity-control__button');
+  decreaseButton.dataset.productId = productId;
+  decreaseButton.textContent = '−';
+
+  const display = document.createElement('span');
+  display.classList.add('inline-qty-display', 'bw-quantity-control__value');
+  display.textContent = String(quantity);
+
+  const increaseButton = document.createElement('button');
+  increaseButton.type = 'button';
+  increaseButton.classList.add('inline-qty-btn', 'qty-increase', 'bw-quantity-control__button');
+  increaseButton.dataset.productId = productId;
+  increaseButton.textContent = '+';
+  if (increaseDisabled) {
+    increaseButton.disabled = true;
+    increaseButton.setAttribute('aria-disabled', 'true');
+  }
+
+  wrapper.appendChild(decreaseButton);
+  wrapper.appendChild(display);
+  wrapper.appendChild(increaseButton);
+
+  return wrapper;
+}
+
+function createProductPageAddButton(productId, text) {
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.classList.add('product-add-btn', 'bw-product-card__add-button');
+  addButton.dataset.productId = productId;
+  addButton.textContent = text;
+  return addButton;
+}
 
 function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex) {
   for (let i = fromIndex + 1; i < steps.length; i++) {
@@ -150,10 +192,17 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     : this.container;
   const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
   if (productCard) {
-    const quantityDisplay = productCard.querySelector('.qty-display');
+    const quantityDisplay = productCard.querySelector('.qty-display')
+      || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
     const selectedOverlay = productCard.querySelector('.selected-overlay');
     const increaseBtn = productCard.querySelector('.qty-increase');
+    const actionWrapper = productCard.querySelector('.product-card-action')
+      || productCard.querySelector('.bw-product-card__action');
+    const existingInlineControls = productCard.querySelector('.inline-quantity-controls');
+    const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    const defaultAddText = cascadeRow ? 'Add +' : this._resolveText('productCardAddButton', 'Add to Cart');
 
     if (quantityDisplay) {
       quantityDisplay.textContent = quantity;
@@ -175,18 +224,54 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
+    if (actionWrapper && quantity > 0) {
+      actionWrapper.classList.add('is-expanded');
+      if (addBtn) addBtn.remove();
+      if (!existingInlineControls) {
+        const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
+          this.selectedBundle?.validateQuantityPerProduct
+        );
+        const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+        const atMaxStock = available !== null && quantity >= available;
+        const atMaxProductQuantity = productQuantityLimit !== null && quantity >= productQuantityLimit;
+        actionWrapper.appendChild(createInlineQuantityControl(
+          productId,
+          quantity,
+          outOfStock || atMaxStock || atMaxProductQuantity,
+        ));
+      }
+    } else if (actionWrapper && quantity <= 0) {
+      actionWrapper.classList.remove('is-expanded');
+      if (existingInlineControls) existingInlineControls.remove();
+      if (!addBtn) {
+        actionWrapper.appendChild(createProductPageAddButton(
+          productId,
+          resolveProductPageCardButtonText({
+            currentQuantity: quantity,
+            currentStep: step,
+            outOfStock: false,
+            defaultAddText,
+          }),
+        ));
+      }
+    }
+
     if (addBtn) {
-      const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
-      const step = this.selectedBundle?.steps?.[stepIndex];
       if (quantity > 0) {
-        addBtn.textContent = cascadeRow
-          ? (step?.addonReplaceText || this._resolveText('includedBadge', 'Selected ✓'))
-          : this._resolveText('includedBadge', 'Selected ✓');
+        addBtn.textContent = resolveProductPageCardButtonText({
+          currentQuantity: quantity,
+          currentStep: step,
+          outOfStock: false,
+          defaultAddText,
+        });
         addBtn.classList.add('added');
       } else {
-        addBtn.textContent = cascadeRow
-          ? (step?.addonAddText || 'Add +')
-          : this._resolveText('productCardAddButton', 'Add to Cart');
+        addBtn.textContent = resolveProductPageCardButtonText({
+          currentQuantity: quantity,
+          currentStep: step,
+          outOfStock: false,
+          defaultAddText,
+        });
         addBtn.classList.remove('added');
       }
     }

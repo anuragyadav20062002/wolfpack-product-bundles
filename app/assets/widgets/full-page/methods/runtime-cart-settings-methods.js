@@ -353,7 +353,8 @@ getFullPageDesignPreset(bundle = this.selectedBundle) {
 
 resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   const showTextOnAddButton =
-  bundle?.showTextOnAddButton === true 
+  bundle?.showTextOnAddButton === true
+  || bundle?.showTextOnPlusEnabled === true;
 
   if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
     return showTextOnAddButton ? 'text' : 'icon';

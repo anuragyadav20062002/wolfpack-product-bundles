@@ -2,7 +2,9 @@
 
 **Issue:** feedback-jun26-7
 **Created:** 2026-05-29
-**Outcome:** ✅ Wolfpack already implements the equivalent flow end-to-end. No production code changes required.
+**Outcome:** Superseded by 2026-06-11 live evidence. EB's Product Page Bundle widget should be treated as a Buy buttons replacement/override, not as a merchant-positioned app block that must be dragged into place.
+
+> 2026-06-11 correction: Shopify Theme Editor showed the EB PPB widget while the native **Buy buttons** block was selected. The merchant had not placed a separate EB block under Buy buttons; EB overrides/injects into the Buy buttons block itself.
 
 ## Live evidence (EB storefront)
 
@@ -19,25 +21,24 @@ Captured 2026-05-29 from `yash-wolfpack.myshopify.com/products/wpb-complete-audi
 
 Order in the product-info column: Quantity controls → bundle widget steps + product cards → bundle's own "Add Bundle to Cart" button (top 1092) → Shopify "Buy It Now" payment button (top 1154).
 
-The widget renders wherever the merchant placed the app block (here it's in the product-form section), and the block hides the native ATC so the bundle ATC sits in its place. **No auto-injection anywhere.**
+Earlier note, now stale: the widget was interpreted as rendering wherever the merchant placed the app block. Current evidence shows the parity frame is the native Buy buttons/product-form footprint. Product-card geometry, widget width, and CTA/payment placement must be checked inside that footprint.
 
 ## Wolfpack equivalents
 
 | Behavior | EB | Wolfpack | Status |
 |---|---|---|---|
 | Global theme app embed | Easy Bundle embed | `bundle-app-embed` block (checked by `app/services/theme/app-embed-check.server.ts` via `WOLFPACK_APP_HANDLES`) | ✅ |
-| PDP app block | Product Page Builder block | `extensions/bundle-builder/blocks/bundle-product-page.liquid`, schema `target: "section"`, `enabled_on.templates: ["product"]` (line 121) | ✅ |
-| Hide native Shopify ATC on bundle products | Yes (CSS injected by block) | Lines 51–66 of `bundle-product-page.liquid`, gated on `block.settings.hide_native_buttons` (default true). Selectors include `.product-form__cart-submit`, `button[name="add"]:not(.bundle-add-to-cart)`, `.shopify-payment-button`, etc. | ✅ |
+| Buy buttons replacement/override | EB renders inside the native product-form/Buy buttons footprint | Wolfpack currently relocates `#bundle-builder-app` next to the native product form at runtime (`_relocateContainerToProductForm`) and hides native product price. The Liquid block is still a section app block. | Needs current parity audit |
+| Hide native Shopify ATC on bundle products | EB hides the native ATC in captured storefront evidence; Buy It Now remains visible on the live 2026-06-11 EB product page | Wolfpack hides native ATC and `.shopify-payment-button` via `bundle-product-page.liquid` when `hide_native_buttons` is enabled. | Needs current parity audit |
 | Custom bundle ATC button | `<div class="gbbMixCascadeFooterBtnsWrapper">…Add Bundle to Cart…</div>` | Line 48: `<button class="add-bundle-to-cart">{{ block.settings.add_to_cart_label }}</button>` | ✅ |
 | "Place Widget" deep-link from admin | Yes — toast "Product Page Builder added", Theme Editor opens with block pre-selected | `handlePlaceWidget` (`route.tsx:1697`) → page-selection modal → `buildProductPageThemeEditorDeepLink` (`product-page-admin-sections.ts:149`) → toast `"Opening theme editor for {template.title}. You'll be able to add the bundle widget to your theme."` | ✅ |
 | Deep-link URL spec | Shopify's official `template + addAppBlockId + target + previewPath` | `https://{shop}/admin/themes/current/editor?template={handle}&addAppBlockId={apiKey}/{blockHandle}&target=newAppsSection&bundleId={id}&previewPath=/products/{handle}` — line 158 | ✅ |
 
 ## What we explicitly do NOT do (per user direction)
 
-- ❌ No auto-injection JS in the theme app embed.
-- ❌ No DCP `pdpWidgetPlacement` toggle.
-- ❌ No Liquid block schema changes for placement (Shopify section editor handles drag-and-drop).
-- ❌ No `WIDGET_VERSION` bump for #7 (no widget code changed).
+- Do not use the stale "merchant dragged the widget block" interpretation for future PPB parity work.
+- Validate PPB inside the native Buy buttons/product-form footprint.
+- Treat native ATC/payment visibility as template/theme behavior that must be measured before changing source.
 
 ## Verification on Wolfpack SIT
 

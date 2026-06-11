@@ -1,6 +1,6 @@
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] {
   width:100%;
-  max-width:100%;
+  max-width:300px;
   margin:0}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"] .bundle-includes:empty {
@@ -34,14 +34,14 @@
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] {
   width:100%;
-  max-width:100%;
+  max-width:300px;
   margin:0}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bundle-steps,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-section,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid--simplified {
   width:100%;
-  max-width:100%}
+  max-width:300px}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid--simplified .step-box {
   display:grid;
@@ -85,7 +85,8 @@
   align-items:center;
   min-height:60px;
   padding:10px 12px;
-  gap:12px}
+  gap:12px;
+  border:2px dashed #000000}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-grid--simplified .plus-icon {
   margin:0;
@@ -114,14 +115,14 @@
   grid-template-columns:1fr;
   gap:12px;
   width:100%;
-  max-width:100%}
+  max-width:300px}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .bundle-steps {
   display:flex;
   flex-direction:column;
   gap:26px;
   width:100%;
-  max-width:100%;
+  max-width:300px;
   margin:20px 0 12px;
   padding:0;
   align-items:stretch}
@@ -131,7 +132,7 @@
   grid-template-columns:minmax(0,1fr);
   gap:10px;
   width:100%;
-  max-width:100%}
+  max-width:300px}
 
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="SIMPLIFIED"][data-ppb-slot-orientation="vertical"] .bw-ppb-modal-slot-title {
   color:#000000;
@@ -147,7 +148,7 @@
   grid-template-columns:1fr;
   gap:16px;
   width:100%;
-  max-width:100%;
+  max-width:300px;
   align-items:start;
   justify-items:stretch}
 
@@ -348,10 +349,12 @@
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:16px;
-  width:100%;
+  width:300px;
+  height:200px;
   align-items:start;
   justify-items:stretch}
 
+#bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .step-box.add-more-card,
 #bundle-builder-app[data-ppb-template-type="PDP_MODAL"][data-ppb-design-preset="MODAL"][data-ppb-slot-orientation="horizontal"] .bw-ppb-modal-slot-grid .bw-slot-card--empty {
   display:grid;
   grid-template-columns:minmax(0,76.923%);

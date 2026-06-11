@@ -1,15 +1,26 @@
 @media (min-width: 1024px) {
   .fpb-preset-classic .sidebar-layout-wrapper {
     display: grid;
-    grid-template-columns: 0.6897fr 0.3103fr;
+    grid-template-columns: minmax(0, calc(100% - 428.938px)) 413.938px;
     gap: var(--classic-grid-gap);
     max-width: 1455px;
     padding: 0;
     align-items: start;
   }
 
+  .fpb-preset-classic > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
+    width: calc(100% - 71.1875px);
+    margin-left: 33.59375px;
+    margin-right: 37.59375px;
+  }
+
   .fpb-preset-classic .sidebar-content {
+    width: 100%;
+    max-width: none;
+    margin: 0;
     padding: 0 0 120px;
+    justify-self: stretch;
+    align-self: stretch;
   }
 
   .fpb-preset-classic .bundle-banners {
@@ -93,11 +104,11 @@
     gap: var(--classic-card-gap);
     padding: var(--classic-card-padding);
     border-radius: var(--classic-card-radius);
-    border: 1px solid var(--bundle-product-card-border-color, var(--bundle-side-panel-product-border, currentColor));
+    border: 0;
     box-shadow: none;
-    background: var(--bundle-product-card-bg, var(--bundle-side-panel-product-bg, var(--bundle-full-page-bg-color)));
+    background: var(--bundle-product-card-bg, #fff);
     color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-    overflow: hidden;
+    overflow: visible;
   }
 
   .fpb-preset-classic .sidebar-content .product-image {
@@ -188,29 +199,51 @@
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"] .sidebar-content .product-content-wrapper {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--classic-icon-button-size);
+    grid-template-columns: minmax(0, 1fr) 74.484375px;
     grid-template-rows: 49px var(--classic-icon-button-size);
     gap: 8px 5px;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
   }
 
   .fpb-preset-classic[data-fpb-card-cta-mode="icon"] .sidebar-content .product-title {
     grid-row: 1;
     grid-column: 1 / -1;
+    width: 100%;
     height: 49px;
     min-height: 49px;
     text-align: left;
+    padding: 0 0 5px;
+    overflow: visible;
   }
 
-  .fpb-preset-classic[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action {
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"] .sidebar-content .product-price-row {
     grid-row: 2;
-    grid-column: 2;
-    width: var(--classic-icon-button-size);
+    grid-column: 1;
+    width: 100%;
     height: var(--classic-icon-button-size);
     min-height: var(--classic-icon-button-size);
     margin: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    text-align: left;
+    flex-direction: row;
+    overflow: visible;
+  }
+
+  .fpb-preset-classic[data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action {
+    grid-row: 2;
+    grid-column: 2;
+    width: 74.484375px;
+    height: var(--classic-icon-button-size);
+    min-height: var(--classic-icon-button-size);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
     align-self: start;
     justify-self: end;
   }

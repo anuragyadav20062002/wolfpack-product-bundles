@@ -2,6 +2,7 @@ import { BUNDLE_WIDGET, CurrencyManager, ComponentGenerator, ToastManager } from
 import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
+import { resolveProductPageCardButtonText } from './modal-methods.js';
 
 function bsIsDefaultStep(step) { return !!step?.isDefault; }
 
@@ -82,7 +83,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
     const addButton = `
       <button class="product-add-btn${usesCascadeCards ? ' gbbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-        ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +'))}
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
       </button>
     `;
 
@@ -95,9 +96,7 @@ _renderInpageStepProducts(stepIndex, target) {
           variantSelectorHtml: this.renderVariantSelector(product),
           mode: 'row',
           className: `bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
-          addButtonText: outOfStock
-            ? 'Out of stock'
-            : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +')),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -114,9 +113,7 @@ _renderInpageStepProducts(stepIndex, target) {
           variantSelectorHtml: this.renderVariantSelector(product),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
-          addButtonText: outOfStock
-            ? 'Out of stock'
-            : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +')),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
