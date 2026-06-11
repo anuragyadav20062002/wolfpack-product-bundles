@@ -178,6 +178,20 @@ The npm scripts run `scripts/generate-extension-templates.js` first — never ca
 
 ---
 
+## 🧪 Shopify Dev Environment Rule
+
+**NEVER run `npm run dev` autonomously.** The development server will always be provided by the user.
+
+If asked or prompted about starting the dev environment, provide instructions only. Tell the user to start the SIT app config explicitly with the SIT TOML, not the standard PROD config:
+
+```bash
+shopify app dev --config shopify.app.wolfpack-product-bundles-sit.toml
+```
+
+Do not run dev against the standard PROD `shopify.web.toml` / production Shopify app configuration.
+
+---
+
 ## 🔧 Widget Bundle Build Process
 
 **ALWAYS build after modifying these source files:**
