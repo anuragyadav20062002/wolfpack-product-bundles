@@ -121,35 +121,4 @@ describe("FPB bundle banner storefront contract", () => {
     expect(settingsBuilder).toContain("bundleBannerMobileUrl: bundle.bundleBannerMobileUrl ?? null");
   });
 
-  it("renders desktop and mobile FPB banner images before template content", () => {
-    const widgetSource = readFileSync(join(process.cwd(), "app/assets/bundle-widget-full-page.js"), "utf8");
-    const fpbCss = readFileSync(
-      join(process.cwd(), "app/assets/widgets/full-page-css/bundle-widget-full-page.css"),
-      "utf8",
-    );
-    const ppbCss = readFileSync(
-      join(process.cwd(), "app/assets/widgets/product-page-css/bundle-widget.css"),
-      "utf8",
-    );
-
-    expect(widgetSource).toContain("createBundleBanners()");
-    expect(widgetSource).toContain("bundleBannerDesktopUrl");
-    expect(widgetSource).toContain("bundleBannerMobileUrl");
-    expect(widgetSource).toContain("ensureBundleBannerRuntimeStyles()");
-    expect(widgetSource).toContain("wpb-fpb-bundle-banner-runtime-styles");
-    expect(widgetSource).toContain("bundle-banners");
-    expect(widgetSource).toContain("bundle-banner-image--desktop");
-    expect(widgetSource).toContain("bundle-banner-image--mobile");
-    expect(widgetSource).toContain("@media (max-width: 639px)");
-    expect(widgetSource.indexOf("const bundleBanners = this.createBundleBanners();")).toBeLessThan(
-      widgetSource.indexOf("const stepTimeline = this.createStepTimeline();"),
-    );
-
-    expect(fpbCss).not.toContain(".bundle-banners");
-    expect(fpbCss).not.toContain(".bundle-banner-image--desktop");
-    expect(fpbCss).not.toContain(".bundle-banner-image--mobile");
-    expect(ppbCss).not.toContain(".bundle-banners");
-    expect(ppbCss).not.toContain(".bundle-banner-image--desktop");
-    expect(ppbCss).not.toContain(".bundle-banner-image--mobile");
-  });
 });

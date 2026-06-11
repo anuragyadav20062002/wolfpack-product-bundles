@@ -101,6 +101,28 @@ npm test | npm run test:unit | npm run test:watch | npm run test:coverage
 
 TDD does NOT apply to: one-line config changes, CSS-only changes, docs changes, route annotation comments.
 
+### 🚫 No UI Styling or Placement Unit Tests
+
+**A unit test must verify a component's BEHAVIOUR, never its CSS, class names, or where it sits on the screen.** These tests are useless: they fail on harmless cosmetic refactors, never catch real bugs, and ossify implementation details.
+
+**Banned patterns — do not write, and remove on sight:**
+- Reading a `.css` / `.module.css` file with `fs.readFileSync(...)` and asserting on CSS properties (`width:`, `height:`, `padding:`, `margin:`, `grid-template-columns`, `font-size:`, `color:`, `background:`, `border-radius:`, etc.).
+- Reading a `.tsx` / `.jsx` / `.js` source file and asserting that a CSS class name is present (`expect(source).toContain("styles.someClass")` or `expect(source).toContain('className="...')`).
+- Asserting on element order via `indexOf` comparisons on source text (`expect(source.indexOf("A")).toBeLessThan(source.indexOf("B"))`) to verify "X renders before Y on screen".
+- Reading widget JS sources to grep for CSS selectors, layout markers, or visual contracts.
+- "Pixel parity" / "layout contract" / "UI contract" tests that snapshot how a component LOOKS in source code.
+
+**What you SHOULD test:**
+- Pure functions: inputs → outputs. (A function whose JOB is to produce CSS as a string — e.g. a CSS generator — is fair game, because its OUTPUT is the behaviour.)
+- Conditional rendering / branching logic: render with prop X, assert a returned value or side effect — NOT a class name.
+- Data flow: action dispatched → state changed → API called with the right shape.
+- Route action/loader behaviour: happy path + error cases.
+- Auth guards, validation, business rules.
+
+**File-name red flags that almost always indicate a styling test:** `*-layout.test.ts`, `*-ui-contract.test.ts`, `*-parity-contract.test.ts`, `*-shell-layout.test.ts`, `*-admin-layout.test.ts`. New files matching these patterns are almost always wrong; treat them as a code smell during review.
+
+If you need to verify visual parity with a competitor or design, do it with Chrome DevTools MCP / visual diff — not with a Jest test that greps a CSS file.
+
 ### Test Spec Files — Mandatory in TDD Sessions
 
 Create `test-spec/{module-name}.spec.md` alongside every TDD session.
@@ -137,6 +159,7 @@ Reference in commit: `[issue-id] test: add unit tests for {module}\nSpec: test-s
 12. ❌ NO unnecessary API fallback chains — use the single correct source per official docs
 13. ❌ NEVER commit Chrome DevTools investigation screenshots
 14. ❌ NO competitor references in code (`eb`, `skai`, `skailama`, `easybundles`) — docs only
+15. ❌ NO unit tests that assert on CSS, class names, or element placement — see No UI Styling or Placement Unit Tests rule
 
 ---
 

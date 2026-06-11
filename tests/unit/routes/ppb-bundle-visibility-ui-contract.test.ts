@@ -8,13 +8,6 @@ const routeSource = fs.readFileSync(
   ),
   "utf8",
 );
-const stylesSource = fs.readFileSync(
-  path.join(
-    process.cwd(),
-    "app/styles/routes/product-page-bundle-configure.module.css",
-  ),
-  "utf8",
-);
 
 describe("product-page Bundle Visibility Admin direct contract", () => {
   it("builds bundleUpsellConfig from current Widget and Embed controls before save", () => {
@@ -38,31 +31,6 @@ describe("product-page Bundle Visibility Admin direct contract", () => {
     expect(routeSource).toContain("savedBundleUpsellConfig?.upsellConfiguration");
     expect(routeSource).toContain("setUpsellWidgetTitle");
     expect(routeSource).toContain("setBundleEmbedTitle");
-  });
-
-  it("uses a custom evidence-style visibility overview shell instead of plain Polaris sections", () => {
-    expect(routeSource).toContain("productPageBundleStyles.visibilityOverviewCard");
-    expect(routeSource).toContain("productPageBundleStyles.visibilityGuideAction");
-    expect(routeSource).toContain("Quick Setup Guide →");
-    expect(routeSource).toContain("productPageBundleStyles.visibilitySetupPanel");
-    expect(routeSource).toContain("Set up Bundle Widget");
-    expect(routeSource).toContain("Set up Bundle Embed");
-    expect(stylesSource).toContain(".visibilityOverviewCard");
-    expect(stylesSource).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
-    expect(stylesSource).toContain(".visibilityGuideAction");
-    expect(stylesSource).toContain("background: #111111;");
-  });
-
-  it("uses custom Widget and Embed cards with inline title toggles and placement CTAs", () => {
-    expect(routeSource).toContain("productPageBundleStyles.visibilityPanel");
-    expect(routeSource).toContain("productPageBundleStyles.visibilityTitleSwitchRow");
-    expect(routeSource).toContain("productPageBundleStyles.visibilityPreviewFrame");
-    expect(routeSource).toContain("productPageBundleStyles.visibilitySettingsGrid");
-    expect(routeSource).toContain("productPageBundleStyles.visibilityPlacementCard");
-    expect(routeSource).toContain("Place app block on the theme");
-    expect(stylesSource).toContain(".visibilityPanel");
-    expect(stylesSource).toContain(".visibilityTitleSwitchRow");
-    expect(stylesSource).toContain(".visibilityPlacementCard");
   });
 
   it("wires Widget product and collection targeting through App Bridge resource pickers", () => {
