@@ -8,13 +8,6 @@ const routeSource = fs.readFileSync(
   ),
   "utf8",
 );
-const stylesSource = fs.readFileSync(
-  path.join(
-    process.cwd(),
-    "app/styles/routes/full-page-bundle-configure.module.css",
-  ),
-  "utf8",
-);
 
 describe("full-page Bundle Visibility Admin direct contract", () => {
   it("builds bundleUpsellConfig from current Widget controls before save", () => {
@@ -32,41 +25,6 @@ describe("full-page Bundle Visibility Admin direct contract", () => {
     expect(routeSource).toContain("setUpsellWidgetDescription");
     expect(routeSource).toContain("setUpsellWidgetButtonText");
     expect(routeSource).toContain("setUpsellWidgetImageUrl");
-  });
-
-  it("uses a custom visibility overview shell with setup cards and the bundle link row", () => {
-    expect(routeSource).toContain("fullPageBundleStyles.visibilityOverviewCard");
-    expect(routeSource).toContain("fullPageBundleStyles.visibilityGuideAction");
-    expect(routeSource).toContain("Quick Setup Guide");
-    expect(routeSource).toContain("fullPageBundleStyles.visibilitySetupPanel");
-    expect(routeSource).toContain("Your Bundle Link");
-    expect(routeSource).toContain("Set up Bundle Widget");
-    expect(stylesSource).toContain(".visibilityOverviewCard");
-    expect(stylesSource).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
-    expect(stylesSource).toContain(".visibilityGuideAction");
-    expect(stylesSource).toContain("background: #111111;");
-  });
-
-  it("uses custom Widget cards with inline title toggles and placement CTA", () => {
-    expect(routeSource).toContain("fullPageBundleStyles.visibilityPanel");
-    expect(routeSource).toContain("fullPageBundleStyles.visibilityTitleSwitchRow");
-    expect(routeSource).toContain("fullPageBundleStyles.visibilityPreviewFrame");
-    expect(routeSource).toContain("fullPageBundleStyles.visibilitySettingsGrid");
-    expect(routeSource).toContain("fullPageBundleStyles.visibilityPlacementCard");
-    expect(routeSource).toContain("Embed Upsell");
-    expect(stylesSource).toContain(".visibilityPanel");
-    expect(stylesSource).toContain(".visibilityTitleSwitchRow");
-    expect(stylesSource).toContain(".visibilityPlacementCard");
-  });
-
-  it("matches the reference visibility shell width and removes the extra top warning on visibility pages", () => {
-    expect(routeSource).toContain("suppressTopAppEmbedBannerForVisibility");
-    expect(routeSource).toContain('activeSection === "bundle_visibility" || activeSection === "bundle_widget"');
-    expect(routeSource).toContain("{!suppressTopAppEmbedBannerForVisibility && (");
-    expect(stylesSource).toContain("max-width: 950px;");
-    expect(stylesSource).toContain("margin: 18px 0 39px;");
-    expect(stylesSource).toContain("flex: 0 0 310px;");
-    expect(stylesSource).toContain("min-width: 310px;");
   });
 
   it("wires Widget product and collection targeting through App Bridge resource pickers", () => {

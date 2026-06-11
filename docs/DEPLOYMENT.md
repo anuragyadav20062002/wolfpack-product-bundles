@@ -640,7 +640,7 @@ echo "Deployed v1.0.0 on $(date)" >> DEPLOYMENT_LOG.md
 
 ## Related Documentation
 
-- [Architecture Overview](ARCHITECTURE_OVERVIEW.md)
+- [Application Architecture](APPLICATION_ARCHITECTURE.md)
 - [API Endpoints](API_ENDPOINTS.md)
 - [Database Schema](DATABASE_SCHEMA.md)
 - [Subscription Billing Guide](shopify_subscription_billing_guide.md)
