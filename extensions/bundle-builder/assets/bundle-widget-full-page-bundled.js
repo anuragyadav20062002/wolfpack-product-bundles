@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.23
- * Built   : 2026-06-08
+ * Version : 3.0.24
+ * Built   : 2026-06-11
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.23';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.24';
 (function() {
   'use strict';
 
@@ -1521,10 +1521,10 @@ class ComponentGenerator {
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
       return `
-        <div class="inline-quantity-controls">
-          <button class="inline-qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-          <span class="inline-qty-display">${currentQuantity}</span>
-          <button class="inline-qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+        <div class="inline-quantity-controls bw-quantity-control">
+          <button class="inline-qty-btn qty-decrease bw-quantity-control__button" data-product-id="${selectionKey}">−</button>
+          <span class="inline-qty-display bw-quantity-control__value">${currentQuantity}</span>
+          <button class="inline-qty-btn qty-increase bw-quantity-control__button" data-product-id="${selectionKey}">+</button>
         </div>
       `;
     };
@@ -1532,8 +1532,8 @@ class ComponentGenerator {
     const renderBottomAction = () => {
       if (actionMode === 'expandingQuantity') {
         return `
-          <div class="product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
+          <div class="product-card-action bw-product-card__action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn bw-product-card__add-button" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
           </div>
         `;
       }
@@ -1541,7 +1541,7 @@ class ComponentGenerator {
       if (isSelected) {
         return renderInlineQuantityControls();
       }
-      return `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
+      return `<button class="product-add-btn bw-product-card__add-button" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
     };
 
     const renderVariantBadge = () => {
@@ -1552,23 +1552,23 @@ class ComponentGenerator {
     };
 
     return `
-      <div class="product-card ${isSelected ? 'selected' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         ${isSelected ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
 
-        <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
+        <div class="product-image bw-product-card__media">
+          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
-        <div class="product-content-wrapper">
-          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
+        <div class="product-content-wrapper bw-product-card__body">
+          <div class="product-title bw-product-card__title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
-            <div class="product-price-row">
-              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-              <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+            <div class="product-price-row bw-product-card__price">
+              ${product.compareAtPrice ? `<span class="product-price-strike bw-product-card__compare-price">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+              <span class="product-price bw-product-card__current-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
             </div>
           ` : ''}
 
@@ -1702,29 +1702,11 @@ class ComponentGenerator {
 }
 
 function createDefaultLoadingAnimation() {
-
-  if (!document.getElementById('bundle-default-loading-keyframes')) {
-    const style = document.createElement('style');
-    style.id = 'bundle-default-loading-keyframes';
-    style.textContent = `
-      @keyframes bundle-dot-pulse {
-        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-        40% { transform: scale(1); opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'bundle-loading-overlay__default-animation';
-
-  wrapper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40" role="img" aria-label="Loading">
-  <circle cx="20" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out -0.32s infinite; transform-origin: 20px 20px;" />
-  <circle cx="60" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out -0.16s infinite; transform-origin: 60px 20px;" />
-  <circle cx="100" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out 0s infinite; transform-origin: 100px 20px;" />
-</svg>`;
-
-  return wrapper;
+  const spinner = document.createElement('div');
+  spinner.className = 'bundle-loading-overlay__spinner';
+  spinner.setAttribute('role', 'status');
+  spinner.setAttribute('aria-label', 'Loading');
+  return spinner;
 }
 
 const DEFAULT_HIDE_TIMEOUT_MS = 400;
@@ -2065,450 +2047,753 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 /**
- * Bundle Product Modal Component
+ * Shared discount progress renderer.
  *
- * Handles the product variant selection modal for full-page bundles.
- * Opens when user clicks "Choose Options" on a product card.
- *
- * Features:
- * - Image gallery with thumbnails
- * - Variant selection dropdowns
- * - Quantity controls
- * - Add To Box functionality
- * - Responsive mobile layout
- *
- * @version 1.0.0
+ * Accepts prepared progress data so FPB and PPB can keep their pricing and
+ * discount calculation ownership while sharing the DOM contract.
  */
 
-class BundleProductModal {
-  constructor(widget) {
-    this.widget = widget;
-    this.modalElement = null;
-    this.currentProduct = null;
-    this.currentStep = null;
-    this.selectedVariant = null;
-    this.selectedQuantity = 1;
-    this.selectedImageIndex = 0;
+function renderDiscountProgress(progressData = {}, options = {}) {
+  const progressPercent = normalizePercent(progressData.progressPercent);
+  const mode = options.mode || 'bar';
+  const message = progressData.message || '';
+  const milestones = Array.isArray(progressData.milestones) ? progressData.milestones : [];
+  const rootClasses = [
+    'bw-discount-progress',
+    `bw-discount-progress--mode-${escapeAttribute(mode)}`,
+    progressData.success ? 'bw-discount-progress--success' : '',
+    options.className || '',
+  ].filter(Boolean).join(' ');
 
-    this.init();
-  }
+  return `
+    <div class="${rootClasses}" data-bw-discount-progress="true" style="--bw-discount-progress-width:${progressPercent}%">
+      ${message ? `<div class="bw-discount-progress__message ${escapeAttribute(options.messageClassName || '')}">${escapeHtml(message)}</div>` : ''}
+      ${renderMilestones(milestones, options)}
+      <div class="bw-discount-progress__track ${escapeAttribute(options.trackClassName || '')}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progressPercent}">
+        <div class="bw-discount-progress__fill ${escapeAttribute(options.fillClassName || '')}"></div>
+      </div>
+      ${options.renderSubtitleList ? renderMilestoneSubtitleList(milestones, options) : ''}
+    </div>
+  `;
+}
 
-  /**
-   * Initialize modal
-   */
-  init() {
-    this.createModalHTML();
-    this.attachEventListeners();
-  }
+function renderMilestones(milestones, options) {
+  if (!milestones.length) return '';
 
-  /**
-   * Create modal DOM structure
-   */
-  createModalHTML() {
-    const modalHTML = `
-      <div class="bundle-modal-overlay" id="bundle-product-modal">
-        <div class="bundle-modal-container">
-          <!-- Mobile Drag Handle for Swipe-to-Dismiss -->
-          <div class="bundle-modal-drag-handle">
-            <div class="bundle-modal-drag-indicator"></div>
-          </div>
-          <button class="bundle-modal-close" aria-label="Close modal">&times;</button>
+  const listClassName = escapeAttribute(options.milestoneListClassName || 'bw-discount-progress__milestones');
+  const itemClassName = options.milestoneClassName || 'bw-discount-progress__milestone';
+  const reachedClassName = options.milestoneReachedClassName || 'bw-discount-progress__milestone--reached';
+  const titleClassName = escapeAttribute(options.milestoneTitleClassName || 'bw-discount-progress__milestone-title');
+  const subtitleClassName = escapeAttribute(options.milestoneSubtitleClassName || 'bw-discount-progress__milestone-subtitle');
+  const includeInlineSubtitle = options.renderInlineSubtitles !== false;
 
-          <div class="bundle-modal-content">
-            <!-- Left Column: Image Gallery with Carousel -->
-            <div class="bundle-modal-images">
-              <div class="bundle-modal-main-image-container">
-                <button class="bundle-modal-carousel-btn bundle-modal-carousel-prev" id="modal-carousel-prev" aria-label="Previous image">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                  </svg>
-                </button>
-                <div class="bundle-modal-main-image">
-                  <img src="" alt="Product image" id="modal-main-image">
-                </div>
-                <button class="bundle-modal-carousel-btn bundle-modal-carousel-next" id="modal-carousel-next" aria-label="Next image">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                  </svg>
-                </button>
-                <div class="bundle-modal-image-counter" id="modal-image-counter">
-                  <!-- Image counter will be inserted here (e.g., "1 / 5") -->
-                </div>
-              </div>
-              <div class="bundle-modal-thumbnails" id="modal-thumbnails">
-                <!-- Thumbnails will be inserted here -->
-              </div>
-            </div>
+  const items = milestones.map((milestone) => {
+    const classes = [
+      itemClassName,
+      milestone?.isReached ? reachedClassName : '',
+    ].filter(Boolean).map(escapeAttribute).join(' ');
+    const title = escapeHtml(milestone?.title || '');
+    const subtitle = escapeHtml(milestone?.subTitle || '');
 
-            <!-- Right Column: Product Details -->
-            <div class="bundle-modal-details">
-              <div class="bundle-modal-header">
-                <h2 class="bundle-modal-title" id="modal-product-title"></h2>
-                <div class="bundle-modal-selection-summary" id="modal-selection-summary" style="display: none;">
-                  <svg class="selection-check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <span>Selected: <strong id="modal-selection-text"></strong></span>
-                </div>
-                <div class="bundle-modal-price" id="modal-product-price"></div>
-              </div>
-
-              <div class="bundle-modal-description" id="modal-product-description"></div>
-
-              <!-- Variant Selectors (above quantity) -->
-              <div class="bundle-modal-variants" id="modal-variants-container">
-                <!-- Variant selectors will be inserted here -->
-              </div>
-
-              <!-- Quantity Selector (below variants) -->
-              <div class="bundle-modal-quantity">
-                <label class="bundle-modal-quantity-label">Quantity</label>
-                <div class="bundle-modal-quantity-controls">
-                  <button class="bundle-modal-qty-btn" id="modal-qty-decrease">−</button>
-                  <span class="bundle-modal-qty-display" id="modal-qty-display">1</span>
-                  <button class="bundle-modal-qty-btn" id="modal-qty-increase">+</button>
-                </div>
-              </div>
-
-              <button class="bundle-modal-add-btn" id="modal-add-to-box">
-                Add To Box
-              </button>
-            </div>
-          </div>
-        </div>
+    return `
+      <div class="${classes}">
+        <span class="${titleClassName}">${title}</span>
+        ${includeInlineSubtitle && subtitle ? `<span class="${subtitleClassName}">${subtitle}</span>` : ''}
       </div>
     `;
+  }).join('');
 
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    this.modalElement = document.getElementById('bundle-product-modal');
-  }
+  return `<div class="${listClassName}">${items}</div>`;
+}
 
-  /**
-   * Attach event listeners
-   */
-  attachEventListeners() {
+function renderMilestoneSubtitleList(milestones, options) {
+  if (!milestones.length) return '';
 
-    const closeBtn = this.modalElement.querySelector('.bundle-modal-close');
-    closeBtn.addEventListener('click', () => this.close());
+  const listClassName = escapeAttribute(options.subtitleListClassName || 'bw-discount-progress__milestone-subtitles');
+  const subtitleClassName = options.milestoneSubtitleClassName || 'bw-discount-progress__milestone-subtitle';
+  const reachedClassName = options.milestoneReachedClassName || 'bw-discount-progress__milestone--reached';
+  const items = milestones.map((milestone) => {
+    const classes = [
+      subtitleClassName,
+      milestone?.isReached ? reachedClassName : '',
+    ].filter(Boolean).map(escapeAttribute).join(' ');
 
-    this.modalElement.addEventListener('click', (e) => {
-      if (e.target === this.modalElement) {
-        this.close();
-      }
-    });
+    return `<span class="${classes}">${escapeHtml(milestone?.subTitle || '')}</span>`;
+  }).join('');
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.modalElement.classList.contains('active')) {
-        this.close();
-      }
-    });
+  return `<div class="${listClassName}">${items}</div>`;
+}
 
-    document.getElementById('modal-carousel-prev').addEventListener('click', () => {
-      this.navigateCarousel(-1);
-    });
+function normalizePercent(value) {
+  const numericValue = Number(value || 0);
+  if (!Number.isFinite(numericValue)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
 
-    document.getElementById('modal-carousel-next').addEventListener('click', () => {
-      this.navigateCarousel(1);
-    });
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-    document.getElementById('modal-qty-decrease').addEventListener('click', () => {
-      this.updateQuantity(Math.max(1, this.selectedQuantity - 1));
-    });
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
 
-    document.getElementById('modal-qty-increase').addEventListener('click', () => {
-      this.updateQuantity(this.selectedQuantity + 1);
-    });
+function appendBannerImage(documentRef, wrapper, url, className) {
+  if (!url) return;
 
-    document.getElementById('modal-add-to-box').addEventListener('click', () => {
-      this.addToBundle();
-    });
+  const img = documentRef.createElement('img');
+  img.className = className;
+  img.src = url;
+  img.alt = '';
+  img.loading = 'lazy';
+  wrapper.appendChild(img);
+}
 
-    this.setupSwipeGestures();
-  }
+function createBundleBannerElement(config = {}, documentRef = document) {
+  const desktopBannerUrl = config.desktopBannerUrl;
+  const mobileBannerUrl = config.mobileBannerUrl;
+  if (!desktopBannerUrl && !mobileBannerUrl) return null;
 
-  /**
-   * Setup swipe gestures for mobile
-   * - Swipe down on container to dismiss
-   * - Swipe left/right on image to navigate carousel
-   */
-  setupSwipeGestures() {
-    const modalContainer = this.modalElement.querySelector('.bundle-modal-container');
-    const imageContainer = this.modalElement.querySelector('.bundle-modal-main-image-container');
+  const wrapper = documentRef.createElement('div');
+  wrapper.className = 'bundle-banners';
+  if (desktopBannerUrl) wrapper.classList.add('bundle-banners--has-desktop');
+  if (mobileBannerUrl) wrapper.classList.add('bundle-banners--has-mobile');
 
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
-    let isSwiping = false;
+  appendBannerImage(documentRef, wrapper, desktopBannerUrl, 'bundle-banner-image bundle-banner-image--desktop');
+  appendBannerImage(documentRef, wrapper, mobileBannerUrl, 'bundle-banner-image bundle-banner-image--mobile');
 
-    const dragHandle = this.modalElement.querySelector('.bundle-modal-drag-handle');
-    if (dragHandle) {
-      dragHandle.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = Date.now();
-        isSwiping = true;
-        modalContainer.style.transition = 'none';
-      }, { passive: true });
+  return wrapper;
+}
 
-      dragHandle.addEventListener('touchmove', (e) => {
-        if (!isSwiping) return;
-        const currentY = e.touches[0].clientY;
-        const deltaY = currentY - touchStartY;
+function createStepBannerImageElement(step = {}, escapeHtml = value => value, documentRef = document) {
+  if (!step.bannerImageUrl) return null;
 
-        if (deltaY > 0) {
-          modalContainer.style.transform = `translateY(${deltaY}px)`;
-          modalContainer.style.opacity = Math.max(0.5, 1 - deltaY / 300);
-        }
-      }, { passive: true });
+  const wrapper = documentRef.createElement('div');
+  wrapper.className = 'step-banner-image';
 
-      dragHandle.addEventListener('touchend', (e) => {
-        if (!isSwiping) return;
-        isSwiping = false;
+  const img = documentRef.createElement('img');
+  img.src = step.bannerImageUrl;
+  img.alt = escapeHtml(step.name || '');
+  wrapper.appendChild(img);
 
-        const deltaY = e.changedTouches[0].clientY - touchStartY;
-        const deltaTime = Date.now() - touchStartTime;
+  return wrapper;
+}
 
-        modalContainer.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    createBundleBannerElement,
+    createStepBannerImageElement,
+  };
+}
 
-        if ((deltaY > 100 && deltaTime < 300) || deltaY > 150) {
-          modalContainer.style.transform = 'translateY(100%)';
-          modalContainer.style.opacity = '0';
-          setTimeout(() => {
-            this.close();
-            modalContainer.style.transform = '';
-            modalContainer.style.opacity = '';
-          }, 300);
-        } else {
+/**
+ * Shared quantity control renderer.
+ *
+ * Keeps legacy class names for event-handler compatibility while adding a
+ * stable `bw-quantity-control` contract for migrated templates.
+ */
 
-          modalContainer.style.transform = '';
-          modalContainer.style.opacity = '';
-        }
-      }, { passive: true });
-    }
+function renderQuantityControl({
+  variantId,
+  quantity = 0,
+  decreaseDisabled = false,
+  increaseDisabled = false,
+  className = '',
+} = {}) {
+  const key = escapeHtml(variantId || '');
+  const normalizedQuantity = Math.max(0, Number(quantity || 0));
+  const classes = ['bw-quantity-control', 'inline-quantity-controls', className]
+    .filter(Boolean)
+    .join(' ');
 
-    if (imageContainer) {
-      imageContainer.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartTime = Date.now();
-      }, { passive: true });
+  return `
+    <div class="${classes}" data-product-id="${key}">
+      <button type="button" class="bw-quantity-control__button inline-qty-btn qty-decrease" data-product-id="${key}" ${decreaseDisabled ? 'disabled aria-disabled="true"' : ''}>−</button>
+      <span class="bw-quantity-control__value inline-qty-display">${normalizedQuantity}</span>
+      <button type="button" class="bw-quantity-control__button inline-qty-btn qty-increase" data-product-id="${key}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+    </div>
+  `;
+}
 
-      imageContainer.addEventListener('touchend', (e) => {
-        const deltaX = e.changedTouches[0].clientX - touchStartX;
-        const deltaTime = Date.now() - touchStartTime;
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-        if (Math.abs(deltaX) > 50 && deltaTime < 300) {
-          if (deltaX > 0) {
+const DEFAULT_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"%3E%3Crect width="400" height="400" fill="%23f3f4f6"/%3E%3C/svg%3E';
 
-            this.navigateCarousel(-1);
-          } else {
+function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo = {}, options = {}) {
+  const selectionKey = product.variantId || product.id || '';
+  const quantity = Math.max(0, Number(currentQuantity || 0));
+  const isSelected = quantity > 0;
+  const mode = options.mode || 'grid';
+  const title = product.parentTitle || product.title || '';
+  const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
+  const price = formatPrice(product.price, currencyInfo);
+  const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
+  const rootClasses = [
+    'bw-product-card',
+    'product-card',
+    `bw-product-card--mode-${escapeAttribute(mode)}`,
+    isSelected ? 'bw-product-card--selected selected' : '',
+    options.className || '',
+  ].filter(Boolean).join(' ');
 
-            this.navigateCarousel(1);
-          }
-        }
-      }, { passive: true });
-    }
-  }
-
-  /**
-   * Navigate carousel by direction
-   * @param {number} direction - -1 for previous, 1 for next
-   */
-  navigateCarousel(direction) {
-    const images = this.getProductImages();
-    if (images.length <= 1) return;
-
-    let newIndex = this.selectedImageIndex + direction;
-
-    if (newIndex < 0) {
-      newIndex = images.length - 1;
-    } else if (newIndex >= images.length) {
-      newIndex = 0;
-    }
-
-    this.selectImage(newIndex);
-  }
-
-  /**
-   * Open modal with product data
-   * @param {Object} product - Product data
-   * @param {Object} step - Step data
-   */
-  open(product, step) {
-
-    this.currentProduct = product;
-    this.currentStep = step;
-    this.selectedQuantity = 1;
-    this.selectedImageIndex = 0;
-
-    this.populateModal();
-
-    this.modalElement.classList.add('active');
-    document.body.classList.add('modal-open');
-  }
-
-  /**
-   * Close modal
-   */
-  close() {
-    this.modalElement.classList.remove('active');
-    document.body.classList.remove('modal-open');
-
-    this.currentProduct = null;
-    this.currentStep = null;
-    this.selectedVariant = null;
-    this.selectedQuantity = 1;
-    this.selectedImageIndex = 0;
-  }
-
-  /**
-   * Populate modal with product data
-   */
-  populateModal() {
-
-    const displayTitle = this.currentProduct.parentTitle || this.currentProduct.title;
-    document.getElementById('modal-product-title').textContent = displayTitle;
-
-    const descriptionEl = document.getElementById('modal-product-description');
-    if (this.currentProduct.description) {
-      descriptionEl.textContent = this.currentProduct.description;
-      descriptionEl.style.display = 'block';
-    } else {
-      descriptionEl.style.display = 'none';
-    }
-
-    this.loadImages();
-
-    this.createVariantSelectors();
-
-    this.updatePrice();
-
-    document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
-  }
-
-  /**
-   * Get normalized images array from product
-   * Handles various image data formats: imageUrl, image.src, images array, featuredImage.url
-   * @returns {string[]} Array of image URLs
-   */
-  getProductImages() {
-    const product = this.currentProduct;
-    const images = [];
-
-    if (product.images && Array.isArray(product.images)) {
-
-      product.images.forEach(img => {
-        if (typeof img === 'string') {
-          images.push(img);
-        } else if (img?.url) {
-          images.push(img.url);
-        } else if (img?.src) {
-          images.push(img.src);
-        }
-      });
-    }
-
-    if (images.length === 0) {
-      if (product.imageUrl) {
-        images.push(product.imageUrl);
-      } else if (product.image?.src) {
-        images.push(product.image.src);
-      } else if (product.featuredImage?.url) {
-        images.push(product.featuredImage.url);
-      }
-    }
-
-    return images;
-  }
-
-  /**
-   * Load product images
-   */
-  loadImages() {
-    const images = this.getProductImages();
-    const mainImageEl = document.getElementById('modal-main-image');
-    const thumbnailsContainer = document.getElementById('modal-thumbnails');
-    const imageCounter = document.getElementById('modal-image-counter');
-    const prevBtn = document.getElementById('modal-carousel-prev');
-    const nextBtn = document.getElementById('modal-carousel-next');
-
-    if (images.length === 0) {
-
-      mainImageEl.src = BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-      mainImageEl.alt = this.currentProduct.title;
-      thumbnailsContainer.innerHTML = '';
-      imageCounter.style.display = 'none';
-      prevBtn.style.display = 'none';
-      nextBtn.style.display = 'none';
-      return;
-    }
-
-    mainImageEl.src = images[0];
-    mainImageEl.alt = this.currentProduct.title;
-
-    if (images.length > 1) {
-      prevBtn.style.display = 'flex';
-      nextBtn.style.display = 'flex';
-      imageCounter.style.display = 'block';
-      this.updateImageCounter();
-
-      thumbnailsContainer.innerHTML = images.map((image, index) => `
-        <div class="bundle-modal-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">
-          <img src="${image}" alt="${this.currentProduct.title} - Image ${index + 1}">
+  return `
+    <div class="${rootClasses}" data-bw-product-card="true" data-product-id="${escapeAttribute(selectionKey)}" data-current-selected-variant-id="${escapeAttribute(selectionKey)}">
+      <div class="bw-product-card__media product-image">
+        <img class="bw-product-card__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
+        ${options.stockBadgeHtml || ''}
+      </div>
+      <div class="bw-product-card__body product-content-wrapper">
+        <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+        ${price ? `
+          <div class="bw-product-card__price product-price-row">
+            ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
+            <span class="bw-product-card__current-price product-price">${escapeHtml(price)}</span>
+          </div>
+        ` : ''}
+        ${options.variantSelectorHtml || ''}
+        <div class="bw-product-card__action product-card-action ${isSelected ? 'is-expanded' : ''}">
+          ${isSelected
+            ? renderQuantityControl({
+              variantId: selectionKey,
+              quantity,
+              decreaseDisabled: options.decreaseDisabled === true,
+              increaseDisabled: options.increaseDisabled === true,
+            })
+            : renderAddButton(selectionKey, options)}
         </div>
-      `).join('');
+      </div>
+    </div>
+  `;
+}
 
-      thumbnailsContainer.querySelectorAll('.bundle-modal-thumbnail').forEach((thumbnail) => {
-        thumbnail.addEventListener('click', () => {
-          const index = parseInt(thumbnail.dataset.index);
-          this.selectImage(index);
-        });
-      });
-    } else {
-      prevBtn.style.display = 'none';
-      nextBtn.style.display = 'none';
-      imageCounter.style.display = 'none';
-      thumbnailsContainer.innerHTML = '';
-    }
+function renderAddButton(selectionKey, options) {
+  const disabled = options.addDisabled === true;
+  const text = options.addButtonText || '+';
+
+  return `
+    <button type="button" class="bw-product-card__add-button product-add-btn" data-product-id="${escapeAttribute(selectionKey)}" ${disabled ? 'disabled aria-disabled="true"' : ''}>
+      ${escapeHtml(text)}
+    </button>
+  `;
+}
+
+function formatPrice(value, currencyInfo) {
+  if (value == null || value === '') return '';
+
+  const amount = Number(value || 0) / 100;
+  const format = currencyInfo?.display?.format || '${{amount}}';
+  return format.replace('{{amount}}', amount.toFixed(2));
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+/**
+ * Shared selected product row renderer.
+ *
+ * Renders prepared display data only; selection rules, default-product rules,
+ * and free-gift lock state stay in the caller until templates migrate.
+ */
+
+const SELECTED_ROW_PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"%3E%3Crect width="96" height="96" fill="%23f3f4f6"/%3E%3C/svg%3E';
+
+function renderSelectedProductRow(product = null, options = {}) {
+  if (!product) return renderEmptyRow(options);
+
+  const selectionKey = product.variantId || product.id || product.productId || '';
+  const title = product.title || product.parentTitle || '';
+  const variantTitle = product.variantTitle || product.variant || '';
+  const quantity = Math.max(1, Number(product.quantity || 1));
+  const imageUrl = product.imageUrl || product.image?.src || SELECTED_ROW_PLACEHOLDER_IMAGE;
+  const removable = product.isDefault !== true && product.isLocked !== true && options.removable !== false;
+  const classes = [
+    'bw-selected-row',
+    'bw-selected-row--filled',
+    product.isDefault ? 'bw-selected-row--default' : '',
+    product.isFreeGift ? 'bw-selected-row--free-gift' : '',
+    product.isLocked ? 'bw-selected-row--locked' : '',
+    options.className || '',
+  ].filter(Boolean).join(' ');
+
+  return `
+    <div class="${classes}" data-bw-selected-row="true" data-variant-id="${escapeAttribute(selectionKey)}">
+      <div class="bw-selected-row__media">
+        <img class="bw-selected-row__image" src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(title)}" loading="lazy">
+      </div>
+      <div class="bw-selected-row__body">
+        <div class="bw-selected-row__title">${escapeHtml(title)}</div>
+        ${variantTitle ? `<div class="bw-selected-row__variant">${escapeHtml(variantTitle)}</div>` : ''}
+        ${product.priceText ? `<div class="bw-selected-row__price">${escapeHtml(product.priceText)}</div>` : ''}
+        ${renderBadges(product)}
+      </div>
+      <div class="bw-selected-row__action">
+        <span class="bw-selected-row__quantity">x${quantity}</span>
+        ${removable ? `
+          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Remove ${escapeAttribute(title)}">
+            Remove
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderEmptyRow(options) {
+  const label = options.emptyLabel || 'Empty slot';
+
+  return `
+    <div class="bw-selected-row bw-selected-row--empty ${options.className || ''}" data-bw-selected-row="true">
+      <div class="bw-selected-row__media bw-selected-row__media--empty"></div>
+      <div class="bw-selected-row__body">
+        <div class="bw-selected-row__title bw-selected-row__title--empty">${escapeHtml(label)}</div>
+        <div class="bw-selected-row__skeleton-line"></div>
+      </div>
+      <div class="bw-selected-row__action bw-selected-row__action--empty"></div>
+    </div>
+  `;
+}
+
+function renderBadges(product) {
+  const badges = [];
+  if (product.isDefault) badges.push('Included');
+  if (product.isFreeGift) badges.push(product.isLocked ? 'Locked gift' : 'Free gift');
+  if (badges.length === 0) return '';
+
+  return `
+    <div class="bw-selected-row__badges">
+      ${badges.map((badge) => `<span class="bw-selected-row__badge">${escapeHtml(badge)}</span>`).join('')}
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+/**
+ * Shared selected product slot renderer.
+ *
+ * Slots can be used by sidebars, modal summaries, and mobile trays. The caller
+ * supplies prepared slot/product state and owns all business rules.
+ */
+
+function renderSelectedProductSlots(slots = [], options = {}) {
+  const mode = options.mode || 'grid';
+  const classes = [
+    'bw-selected-slots',
+    `bw-selected-slots--mode-${escapeAttribute(mode)}`,
+    options.className || '',
+  ].filter(Boolean).join(' ');
+
+  return `
+    <div class="${classes}" data-bw-selected-slots="true">
+      ${slots.map((slot, index) => renderSlot(slot, index, options)).join('')}
+    </div>
+  `;
+}
+
+function renderSlot(slot = {}, index, options) {
+  const product = slot.product || null;
+  const slotId = slot.id || `slot-${index}`;
+  const label = slot.label || `Slot ${index + 1}`;
+  const statusClasses = getStatusClasses(product);
+  const classes = [
+    'bw-selected-slot',
+    product ? 'bw-selected-slot--filled' : 'bw-selected-slot--empty',
+    ...statusClasses,
+  ].join(' ');
+
+  if (!product) {
+    return `
+      <button type="button" class="${classes}" data-bw-selected-slot="true" data-slot-id="${escapeAttribute(slotId)}" data-action="select-slot">
+        <span class="bw-selected-slot__placeholder"></span>
+        <span class="bw-selected-slot__label">${escapeHtml(label)}</span>
+      </button>
+    `;
   }
 
-  /**
-   * Update image counter display
-   */
-  updateImageCounter() {
-    const images = this.getProductImages();
-    const imageCounter = document.getElementById('modal-image-counter');
-    if (imageCounter && images.length > 1) {
-      imageCounter.textContent = `${this.selectedImageIndex + 1} / ${images.length}`;
-    }
-  }
+  return `
+    <div class="${classes}" data-bw-selected-slot="true" data-slot-id="${escapeAttribute(slotId)}">
+      ${slot.label ? `<div class="bw-selected-slot__label">${escapeHtml(slot.label)}</div>` : ''}
+      ${renderSelectedProductRow(product, {
+        className: 'bw-selected-slot__row',
+        removable: product.isDefault !== true && product.isLocked !== true && options.removable !== false,
+      })}
+    </div>
+  `;
+}
 
-  /**
-   * Select image by index
-   * @param {number} index - Image index
-   */
-  selectImage(index) {
-    const images = this.getProductImages();
-    if (index < 0 || index >= images.length) return;
+function getStatusClasses(product) {
+  if (!product) return [];
 
-    this.selectedImageIndex = index;
+  return [
+    product.isDefault ? 'bw-selected-slot--default' : '',
+    product.isFreeGift ? 'bw-selected-slot--free-gift' : '',
+    product.isLocked ? 'bw-selected-slot--locked' : '',
+  ].filter(Boolean);
+}
 
-    const mainImageEl = document.getElementById('modal-main-image');
-    mainImageEl.src = images[index];
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-    document.querySelectorAll('.bundle-modal-thumbnail').forEach((thumb, i) => {
-      thumb.classList.toggle('active', i === index);
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+/**
+ * Shared step timeline renderers.
+ *
+ * The widget controller still owns state, paging, and click behavior. This
+ * component owns the stable DOM contract used by template timelines.
+ */
+
+function renderStepTimelineEntry({
+  stepIndex = 0,
+  timelineType = 'step',
+  label = '',
+  iconHtml = '',
+  checkmarkHtml = '',
+  classes = [],
+} = {}) {
+  const className = [
+    'timeline-step',
+    ...classes,
+  ].filter(Boolean).join(' ');
+
+  return `
+    <div class="${escapeAttribute(className)}" data-step-index="${escapeAttribute(stepIndex)}" data-timeline-type="${escapeAttribute(timelineType)}">
+      <div class="timeline-icon-wrapper">
+        ${iconHtml || ''}
+        <div class="timeline-checkmark">${checkmarkHtml || ''}</div>
+      </div>
+      <span class="timeline-step-name">${escapeHtml(label)}</span>
+    </div>
+  `;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, '&#96;');
+}
+
+function createBundleState(input = {}) {
+  const bundle = input.bundle || null;
+  const steps = Array.isArray(input.steps)
+    ? input.steps
+    : (Array.isArray(bundle?.steps) ? bundle.steps : []);
+
+  return {
+    bundle,
+    steps,
+    selectedProducts: cloneSelectedProducts(input.selectedProducts),
+    stepProductData: Array.isArray(input.stepProductData) ? input.stepProductData : [],
+    currentStepIndex: Number.isInteger(input.currentStepIndex) ? input.currentStepIndex : 0,
+  };
+}
+
+function cloneSelectedProducts(selectedProducts) {
+  if (!Array.isArray(selectedProducts)) return [];
+
+  return selectedProducts.map((stepSelections) => {
+    if (!stepSelections || typeof stepSelections !== 'object') return {};
+    return { ...stepSelections };
+  });
+}
+
+function getCurrentStep(state) {
+  const steps = Array.isArray(state?.steps) ? state.steps : [];
+  return steps[state?.currentStepIndex || 0] || null;
+}
+
+function getSelectedQuantity(state) {
+  return getSelectedEntries(state).reduce((total, entry) => total + entry.quantity, 0);
+}
+
+function getSelectedSubtotalCents(state) {
+  return getSelectedEntries(state).reduce((total, entry) => {
+    const product = findProductByVariantId(state, entry.variantId);
+    const price = Number(product?.price || 0);
+    return total + (price * entry.quantity);
+  }, 0);
+}
+
+function getDiscountProgressData({ currentValue = 0, targetValue = 0, message = '' } = {}) {
+  const current = Math.max(0, Number(currentValue || 0));
+  const target = Math.max(0, Number(targetValue || 0));
+  const progressPercent = target > 0
+    ? Math.max(0, Math.min(100, Math.round((current / target) * 100)))
+    : 0;
+
+  return {
+    currentValue: current,
+    targetValue: target,
+    progressPercent,
+    message: String(message || ''),
+    success: target > 0 && current >= target,
+  };
+}
+
+function getSelectedEntries(state) {
+  const selectedProducts = Array.isArray(state?.selectedProducts) ? state.selectedProducts : [];
+  const entries = [];
+
+  selectedProducts.forEach((stepSelections, stepIndex) => {
+    if (!stepSelections || typeof stepSelections !== 'object') return;
+
+    Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+      const normalizedQuantity = Number(quantity || 0);
+      if (normalizedQuantity <= 0) return;
+      entries.push({ stepIndex, variantId, quantity: normalizedQuantity });
     });
+  });
 
-    this.updateImageCounter();
+  return entries;
+}
 
-    const activeThumbnail = document.querySelector('.bundle-modal-thumbnail.active');
-    if (activeThumbnail) {
-      activeThumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
+function getSelectedProductEntries(state, options = {}) {
+  const stepProductData = Array.isArray(state?.stepProductData) ? state.stepProductData : [];
+  const normalizeSelectionKey = options.normalizeSelectionKey || ((value) => String(value));
+
+  return getSelectedEntries(state).reduce((entries, entry) => {
+    const sourceProducts = stepProductData[entry.stepIndex] || [];
+    const products = typeof options.expandProductsByStep === 'function'
+      ? options.expandProductsByStep(sourceProducts, entry.stepIndex)
+      : sourceProducts;
+    const product = (Array.isArray(products) ? products : []).find((candidate) =>
+      normalizeSelectionKey(candidate?.variantId || candidate?.id) === normalizeSelectionKey(entry.variantId)
+    );
+
+    if (!product) return entries;
+
+    entries.push({ ...entry, product });
+    return entries;
+  }, []);
+}
+
+function getTimelineEntryState({
+  entry = {},
+  currentStepIndex = 0,
+  isCompleted = false,
+  isAccessible = true,
+  hasMultipleCategoryEntry = false,
+} = {}) {
+  const step = entry.step || {};
+  const isDefaultStep = step.isDefault === true;
+  const isCategoryEntry = entry.type === 'multiple_categories';
+  const isCurrent = Number(entry.stepIndex) === Number(currentStepIndex)
+    && (!hasMultipleCategoryEntry || isCategoryEntry);
+  const completed = Boolean(isCompleted);
+  const accessible = isAccessible !== false;
+  const classes = [];
+
+  if (isDefaultStep) classes.push('timeline-step--included');
+  if (isCurrent) classes.push('timeline-step--active');
+  if (completed) classes.push('timeline-step--completed');
+  if (!isCurrent && !completed) classes.push('timeline-step--inactive');
+  if (!accessible) classes.push('timeline-step--locked');
+
+  return {
+    isDefaultStep,
+    isCurrent,
+    isCompleted: completed,
+    isAccessible: accessible,
+    classes,
+  };
+}
+
+function findProductByVariantId(state, variantId) {
+  const stepProductData = Array.isArray(state?.stepProductData) ? state.stepProductData : [];
+
+  for (const products of stepProductData) {
+    if (!Array.isArray(products)) continue;
+    const product = products.find((item) => String(item?.variantId) === String(variantId));
+    if (product) return product;
   }
 
-  /**
-   * Create variant selector with button/swatch style options
-   */
+  return null;
+}
+
+function addSelectedProduct(state, { stepIndex, variantId, quantity = 1 }) {
+  const selectedProducts = cloneSelectedProducts(state?.selectedProducts);
+  ensureStep(selectedProducts, stepIndex);
+
+  const currentQuantity = Number(selectedProducts[stepIndex][variantId] || 0);
+  selectedProducts[stepIndex][variantId] = currentQuantity + Math.max(0, Number(quantity || 0));
+
+  return { ...state, selectedProducts };
+}
+
+function removeSelectedProduct(state, { stepIndex, variantId, quantity = 1 }) {
+  const selectedProducts = cloneSelectedProducts(state?.selectedProducts);
+  ensureStep(selectedProducts, stepIndex);
+
+  const currentQuantity = Number(selectedProducts[stepIndex][variantId] || 0);
+  const nextQuantity = currentQuantity - Math.max(1, Number(quantity || 1));
+
+  if (nextQuantity > 0) {
+    selectedProducts[stepIndex][variantId] = nextQuantity;
+  } else {
+    delete selectedProducts[stepIndex][variantId];
+  }
+
+  return { ...state, selectedProducts };
+}
+
+function clearStepSelection(state, stepIndex) {
+  const selectedProducts = cloneSelectedProducts(state?.selectedProducts);
+  ensureStep(selectedProducts, stepIndex);
+  selectedProducts[stepIndex] = {};
+
+  return { ...state, selectedProducts };
+}
+
+function ensureStep(selectedProducts, stepIndex) {
+  while (selectedProducts.length <= stepIndex) {
+    selectedProducts.push({});
+  }
+  if (!selectedProducts[stepIndex] || typeof selectedProducts[stepIndex] !== 'object') {
+    selectedProducts[stepIndex] = {};
+  }
+}
+
+const DEFAULT_CART_LINE_LABELS = {
+  items: 'Items',
+  retailPrice: 'Retail Price',
+  youSave: 'You Save',
+};
+
+function buildCartLineSourceProperties({
+  selectedLines = [],
+  retailPrice = '',
+  discountAmount = '',
+  discountPercentage = null,
+  box = '1',
+} = {}) {
+  const displayProperties = {
+    box: String(box || '1'),
+    items: selectedLines
+      .map(({ product = {}, quantity = 0 }) => `${Number(quantity || 0)} x ${product.title || product.id}`)
+      .join(', '),
+    retailPrice: String(retailPrice || ''),
+  };
+
+  if (discountAmount) {
+    const percentage = `${Math.round(Number(discountPercentage || 0))}%`;
+    displayProperties.youSave = {
+      amount: String(discountAmount),
+      percentage,
+      amountPercentage: `${discountAmount} (${percentage})`,
+    };
+  }
+
+  return {
+    _bundle_display_properties: JSON.stringify(displayProperties),
+  };
+}
+
+function buildCartLineDisplayProperties(displayProperties = {}, labels = DEFAULT_CART_LINE_LABELS) {
+  const cartLineLabels = {
+    ...DEFAULT_CART_LINE_LABELS,
+    ...labels,
+  };
+  const properties = {
+    Box: displayProperties.box || '1',
+    [cartLineLabels.items]: displayProperties.items,
+    [cartLineLabels.retailPrice]: displayProperties.retailPrice,
+    _bundle_display_properties: JSON.stringify(displayProperties),
+  };
+
+  if (displayProperties.youSave?.amountPercentage) {
+    properties[cartLineLabels.youSave] = displayProperties.youSave.amountPercentage;
+  }
+
+  return properties;
+}
+
+function extractBundleDetailsSourceProperties(cartItems = []) {
+  const firstItem = cartItems.find(item => item?.properties?._bundle_display_properties);
+  return firstItem?.properties || {};
+}
+
+function buildProductPageCartFormData(cartItems = [], {
+  bundleName = '',
+  offerId = '',
+  sessionKey = '',
+} = {}) {
+  const formData = new FormData();
+
+  cartItems.forEach((item, index) => {
+    const itemNumber = index + 1;
+    formData.append(`items[${index}][id]`, String(item.id));
+    formData.append(`items[${index}][quantity]`, String(item.quantity));
+
+    if (item.selling_plan) {
+      formData.append(`items[${index}][selling_plan]`, String(item.selling_plan));
+    }
+
+    Object.entries(item.properties || {}).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+      formData.append(`items[${index}][properties][${key}]`, String(value));
+    });
+    formData.append(`items[${index}][properties][Box]`, String(itemNumber));
+    formData.append(`items[${index}][properties][_bundleName]`, bundleName);
+    formData.append(`items[${index}][properties][_easyBundle:OfferId]`, `${offerId}_${sessionKey}_${itemNumber}`);
+    formData.append(`items[${index}][properties][_easyBundle:prodQty]`, String(item.quantity));
+  });
+
+  return {
+    formData,
+    bundleDetailsKey: `${offerId}_${sessionKey}`,
+    sourceProperties: extractBundleDetailsSourceProperties(cartItems),
+  };
+}
+
+const BundleModalVariantMethods = {
   createVariantSelectors() {
     const variantsContainer = document.getElementById('modal-variants-container');
     const variants = this.currentProduct.variants || [];
@@ -2593,7 +2878,7 @@ class BundleProductModal {
     });
 
     this.updateSelectedVariant();
-  }
+  },
 
   /**
    * Check if option is likely a color option
@@ -2610,7 +2895,7 @@ class BundleProductModal {
     const commonColors = ['red', 'blue', 'green', 'black', 'white', 'yellow', 'pink', 'purple', 'orange', 'brown', 'grey', 'gray', 'navy', 'beige', 'cream'];
     const colorMatches = values.filter(v => commonColors.some(c => v.toLowerCase().includes(c)));
     return colorMatches.length > values.length / 2;
-  }
+  },
 
   /**
    * Get CSS style for color swatch
@@ -2639,7 +2924,7 @@ class BundleProductModal {
     }
 
     return 'background: linear-gradient(135deg, #f0f0f0, #e0e0e0)';
-  }
+  },
 
   /**
    * Select a variant option
@@ -2663,7 +2948,7 @@ class BundleProductModal {
     }
 
     this.updateSelectedVariant();
-  }
+  },
 
   /**
    * Update selected variant based on button selections
@@ -2695,7 +2980,7 @@ class BundleProductModal {
     this.updateVariantImage();
 
     this.updateOptionAvailability();
-  }
+  },
 
   /**
    * Update selection summary display
@@ -2719,7 +3004,7 @@ class BundleProductModal {
 
     summaryText.textContent = selectedValues.join(' / ');
     summaryContainer.style.display = 'flex';
-  }
+  },
 
   /**
    * Update availability state of variant option buttons
@@ -2754,7 +3039,7 @@ class BundleProductModal {
         btn.disabled = !hasAvailableVariant;
       });
     });
-  }
+  },
 
   /**
    * Update main image when variant changes (if variant has specific image)
@@ -2777,7 +3062,7 @@ class BundleProductModal {
         }
       }
     }
-  }
+  },
 
   /**
    * Update price display
@@ -2802,13 +3087,8 @@ class BundleProductModal {
     }
 
     priceEl.innerHTML = priceHTML;
-  }
+  },
 
-  /**
-   * Format price with currency
-   * @param {number} price - Price in cents
-   * @returns {string} Formatted price
-   */
   formatPrice(price) {
 
     if (this.widget && this.widget.formatPrice) {
@@ -2817,7 +3097,7 @@ class BundleProductModal {
 
     const dollars = (price / 100).toFixed(2);
     return `$${dollars}`;
-  }
+  },
 
   /**
    * Update availability status
@@ -2838,12 +3118,292 @@ class BundleProductModal {
       addBtn.textContent = 'Add To Box';
       addBtn.classList.remove('out-of-stock');
     }
-  }
+  },
 
   /**
    * Update quantity
    * @param {number} quantity - New quantity
    */
+};
+
+/**
+ * Bundle Product Modal Component
+ *
+ * Handles the product variant selection modal for full-page bundles.
+ * Opens when user clicks "Choose Options" on a product card.
+ *
+ * Features:
+ * - Product image, title, and description
+ * - Variant selection dropdowns
+ * - Quantity controls
+ * - Add To Box functionality
+ * - Responsive mobile layout
+ *
+ * @version 1.0.0
+ */
+
+class BundleProductModal {
+  constructor(widget) {
+    this.widget = widget;
+    this.modalElement = null;
+    this.currentProduct = null;
+    this.currentStep = null;
+    this.selectedVariant = null;
+    this.selectedQuantity = 1;
+
+    this.init();
+  }
+
+  /**
+   * Initialize modal
+   */
+  init() {
+    this.createModalHTML();
+    this.attachEventListeners();
+  }
+
+  /**
+   * Create modal DOM structure
+   */
+  createModalHTML() {
+    const modalHTML = `
+      <div class="bundle-modal-overlay" id="bundle-product-modal">
+        <div class="bundle-modal-container">
+          <!-- Mobile Drag Handle for Swipe-to-Dismiss -->
+          <div class="bundle-modal-drag-handle">
+            <div class="bundle-modal-drag-indicator"></div>
+          </div>
+          <button class="bundle-modal-close" aria-label="Close modal">&times;</button>
+
+          <div class="bundle-modal-content">
+            <!-- Left Column: Product Image -->
+            <div class="bundle-modal-images">
+              <div class="bundle-modal-main-image-container">
+                <div class="bundle-modal-main-image">
+                  <img src="" alt="Product image" id="modal-main-image">
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Product Details -->
+            <div class="bundle-modal-details">
+              <div class="bundle-modal-header">
+                <h2 class="bundle-modal-title" id="modal-product-title"></h2>
+                <div class="bundle-modal-selection-summary" id="modal-selection-summary" style="display: none;">
+                  <svg class="selection-check-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M13 4L6 11L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Selected: <strong id="modal-selection-text"></strong></span>
+                </div>
+                <div class="bundle-modal-price" id="modal-product-price"></div>
+              </div>
+
+              <div class="bundle-modal-description" id="modal-product-description"></div>
+
+              <!-- Variant Selectors (above quantity) -->
+              <div class="bundle-modal-variants" id="modal-variants-container">
+                <!-- Variant selectors will be inserted here -->
+              </div>
+
+              <!-- Quantity Selector (below variants) -->
+              <div class="bundle-modal-quantity">
+                <label class="bundle-modal-quantity-label">Quantity</label>
+                <div class="bundle-modal-quantity-controls">
+                  <button class="bundle-modal-qty-btn" id="modal-qty-decrease">−</button>
+                  <span class="bundle-modal-qty-display" id="modal-qty-display">1</span>
+                  <button class="bundle-modal-qty-btn" id="modal-qty-increase">+</button>
+                </div>
+              </div>
+
+              <button class="bundle-modal-add-btn" id="modal-add-to-box">
+                Add To Box
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    this.modalElement = document.getElementById('bundle-product-modal');
+  }
+
+  /**
+   * Attach event listeners
+   */
+  attachEventListeners() {
+
+    const closeBtn = this.modalElement.querySelector('.bundle-modal-close');
+    closeBtn.addEventListener('click', () => this.close());
+
+    this.modalElement.addEventListener('click', (e) => {
+      if (e.target === this.modalElement) {
+        this.close();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.modalElement.classList.contains('active')) {
+        this.close();
+      }
+    });
+
+    document.getElementById('modal-qty-decrease').addEventListener('click', () => {
+      this.updateQuantity(Math.max(1, this.selectedQuantity - 1));
+    });
+
+    document.getElementById('modal-qty-increase').addEventListener('click', () => {
+      this.updateQuantity(this.selectedQuantity + 1);
+    });
+
+    document.getElementById('modal-add-to-box').addEventListener('click', () => {
+      this.addToBundle();
+    });
+
+    this.setupSwipeGestures();
+  }
+
+  /**
+   * Setup swipe gestures for mobile
+   * - Swipe down on container to dismiss
+   */
+  setupSwipeGestures() {
+    const modalContainer = this.modalElement.querySelector('.bundle-modal-container');
+
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
+
+    const dragHandle = this.modalElement.querySelector('.bundle-modal-drag-handle');
+    if (dragHandle) {
+      dragHandle.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isSwiping = true;
+        modalContainer.style.transition = 'none';
+      }, { passive: true });
+
+      dragHandle.addEventListener('touchmove', (e) => {
+        if (!isSwiping) return;
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - touchStartY;
+
+        if (deltaY > 0) {
+          modalContainer.style.transform = `translateY(${deltaY}px)`;
+          modalContainer.style.opacity = Math.max(0.5, 1 - deltaY / 300);
+        }
+      }, { passive: true });
+
+      dragHandle.addEventListener('touchend', (e) => {
+        if (!isSwiping) return;
+        isSwiping = false;
+
+        const deltaY = e.changedTouches[0].clientY - touchStartY;
+        const deltaTime = Date.now() - touchStartTime;
+
+        modalContainer.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+        if ((deltaY > 100 && deltaTime < 300) || deltaY > 150) {
+          modalContainer.style.transform = 'translateY(100%)';
+          modalContainer.style.opacity = '0';
+          setTimeout(() => {
+            this.close();
+            modalContainer.style.transform = '';
+            modalContainer.style.opacity = '';
+          }, 300);
+        } else {
+
+          modalContainer.style.transform = '';
+          modalContainer.style.opacity = '';
+        }
+      }, { passive: true });
+    }
+  }
+
+  /**
+   * Open modal with product data
+   * @param {Object} product - Product data
+   * @param {Object} step - Step data
+   */
+  open(product, step) {
+
+    this.currentProduct = product;
+    this.currentStep = step;
+    this.selectedQuantity = 1;
+
+    this.populateModal();
+
+    this.modalElement.classList.add('active');
+    document.body.classList.add('modal-open');
+  }
+
+  /**
+   * Close modal
+   */
+  close() {
+    this.modalElement.classList.remove('active');
+    document.body.classList.remove('modal-open');
+
+    this.currentProduct = null;
+    this.currentStep = null;
+    this.selectedVariant = null;
+    this.selectedQuantity = 1;
+  }
+
+  /**
+   * Populate modal with product data
+   */
+  populateModal() {
+
+    const displayTitle = this.currentProduct.parentTitle || this.currentProduct.title;
+    document.getElementById('modal-product-title').textContent = displayTitle;
+
+    const descriptionEl = document.getElementById('modal-product-description');
+    if (this.currentProduct.description) {
+      descriptionEl.textContent = this.currentProduct.description;
+      descriptionEl.style.display = 'block';
+    } else {
+      descriptionEl.style.display = 'none';
+    }
+
+    this.loadImage();
+
+    this.createVariantSelectors();
+
+    this.updatePrice();
+
+    document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
+  }
+
+  /**
+   * Get normalized product image.
+   * Handles imageUrl, image.src, images array, and featuredImage.url.
+   * @returns {string} Image URL
+   */
+  getProductImage() {
+    const product = this.currentProduct;
+    if (!product) return BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+
+    if (product.imageUrl) return product.imageUrl;
+    if (product.image?.src) return product.image.src;
+    if (product.featuredImage?.url) return product.featuredImage.url;
+
+    const firstImage = Array.isArray(product.images) ? product.images[0] : null;
+    if (typeof firstImage === 'string') return firstImage;
+    if (firstImage?.url) return firstImage.url;
+    if (firstImage?.src) return firstImage.src;
+
+    return BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+  }
+
+  loadImage() {
+    const mainImageEl = document.getElementById('modal-main-image');
+    if (!mainImageEl) return;
+
+    mainImageEl.src = this.getProductImage();
+    mainImageEl.alt = this.currentProduct?.title || 'Product image';
+  }
+
   updateQuantity(quantity) {
     this.selectedQuantity = Math.max(1, quantity);
     document.getElementById('modal-qty-display').textContent = this.selectedQuantity;
@@ -2902,1241 +3462,7091 @@ class BundleProductModal {
   }
 }
 
+Object.assign(
+  BundleProductModal.prototype,
+  BundleModalVariantMethods,
+);
+
   window.BundleProductModal = BundleProductModal;
 
-function installStandardTemplate(BundleWidgetFullPage) {
-  const prototype = BundleWidgetFullPage.prototype;
+const FPB_STANDARD_TEMPLATE_CONFIG = {
+  id: 'STANDARD',
+  presetId: 'DEFAULT',
+  aliases: ['DEFAULT', 'STANDARD', 'DEFAULT_FBP'],
+  productCard: {
+    mode: 'grid',
+    columns: {
+      desktop: 3,
+      mobile: 2,
+    },
+    ctaMode: 'icon',
+  },
+  summary: {
+    mode: 'rows',
+    emptyState: 'skeletonRows',
+  },
+  discountProgress: {
+    mode: 'stepped',
+    placement: ['sidebar', 'mobileTray'],
+  },
+  timeline: {
+    mode: 'standard',
+  },
+};
 
-  prototype.ensureStandardPresetRuntimeStyles = function() {
-    if (this.getFullPageDesignPreset() !== 'DEFAULT') return;
-    if (document.getElementById('wpb-fpb-standard-runtime-styles')) return;
+const FPB_CLASSIC_TEMPLATE_CONFIG = {
+  id: 'CLASSIC',
+  presetId: 'CLASSIC',
+  aliases: ['CLASSIC'],
+  productCard: {
+    mode: 'grid',
+    columns: {
+      desktop: 4,
+      mobile: 2,
+    },
+    ctaMode: 'iconOrText',
+  },
+  summary: {
+    mode: 'slots',
+    emptyState: 'slotGrid',
+  },
+  discountProgress: {
+    mode: 'stepped',
+    placement: ['sidebar', 'mobileTray'],
+  },
+  timeline: {
+    mode: 'classic',
+  },
+};
 
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-standard-runtime-styles';
-    const baseStyles = '[data-bundle-type=full_page][data-fpb-design-preset=DEFAULT]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=DEFAULT]{--standard-card-height:352px;--ih:240px;--mw:177.5px;--mh:264px;--mih:150px;--cg:15px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper{display:grid;grid-template-columns:minmax(0,calc(100% - 381.266px)) 366.266px;gap:15px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:16px;line-height:29px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--cg,15px);margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:var(--standard-card-height,352px);min-height:var(--standard-card-height,352px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:240px 40px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:738px;margin-top:0;padding:20px}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:var(--ih,240px);min-height:var(--ih,240px);aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:40px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:40px;height:40px;font-size:16px!important;line-height:22px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:16px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:14px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .product-add-btn::before{content:"+";font-size:16px;font-weight:700;line-height:1}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .product-add-btn.added::before{content:"✓"}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] > :is(.bundle-banners,.category-tabs,.sidebar-layout-wrapper){width:100%;margin-left:0;margin-right:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .sidebar-layout-wrapper .sidebar-content{padding:0 0 120px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid-container{width:100%;max-width:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--cg,15px);justify-content:stretch;margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{min-height:var(--mh,264px);height:var(--mh,264px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:var(--mih,150px) 42px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:var(--mih,150px);min-height:var(--mih,150px);width:100%;min-width:0;aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-content-wrapper{grid-row:2 / span 2;display:grid;grid-template-columns:minmax(0,1fr) 35px;grid-template-rows:42px 40px;gap:8px 5px;width:100%;min-width:0;padding:0;overflow:hidden;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-title{grid-row:1;grid-column:1 / -1;width:100%;min-height:42px;height:42px;font-size:14px!important;line-height:18px!important;font-weight:700!important;text-align:left;letter-spacing:0!important;margin:0;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-row{grid-row:2;grid-column:1;width:100%;height:35px;min-height:35px;margin:0;display:flex;flex-direction:row;gap:5px;align-items:center;justify-content:flex-start;text-align:left;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price{font-size:14px!important;font-weight:700!important;line-height:35px!important;letter-spacing:0!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-price-strike{font-size:12px!important;line-height:35px!important}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-variant-badge,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-spacer,.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-quantity-wrapper{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card-action{grid-row:2;grid-column:2;width:35px;height:35px;min-height:35px;margin:0;display:flex;align-items:center;justify-content:center;align-self:start;justify-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .sidebar-content .product-add-btn{width:35px;min-width:35px;height:35px;padding:0;border-radius:5px;font-size:0;line-height:1;box-shadow:none;align-self:center;justify-self:center}}';
-    const timelineStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT] .step-timeline--standard{width:100%;margin:0 0 24px;padding:0;display:block}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-items-container{width:var(--standard-timeline-width,60%);height:76.8px;margin:24px auto 0;display:grid;grid-template-columns:repeat(var(--standard-timeline-count,2),minmax(0,1fr));grid-template-rows:76.8px;place-items:normal center;justify-content:center;position:relative;isolation:isolate}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-item{width:max-content;max-width:100%;height:76.8px;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:40px 36.8px;place-items:start center;justify-items:center;align-items:start;position:relative;z-index:2}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-step-img-container{width:40px;height:40px;box-sizing:border-box;display:grid;place-items:center;border-radius:50%;background:#fff;padding:4px;border:2px solid #d4d5d6;position:relative;z-index:2;filter:none!important;opacity:1!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .timeline-step--active .standard-navigation-step-img-container{border:4px solid #000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-image{display:block;width:100%;height:100%;object-fit:contain;opacity:1!important;filter:none!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title-container{display:grid;place-items:center normal;padding:4px 2px;min-width:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title{margin:0;color:#000;font-size:16px;font-weight:700;line-height:28.8px;text-align:center;white-space:normal}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar-container{position:absolute;top:17px;left:var(--standard-timeline-progress-left,25%);width:var(--standard-timeline-progress-width,50%);height:6px;border-radius:20px;overflow:hidden;z-index:0;pointer-events:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar{width:100%;height:6px;background:#ccc}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-steps-progress-bar-filled{width:var(--standard-timeline-progress-fill,0%);height:6px;background:#1e1e1e}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-arrow--prev{left:-12px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-arrow--next{right:-12px}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .step-timeline--standard{margin:0 0 14px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-items-container{width:calc(100% - 15px);height:61.6px;margin:7.5px auto 0;grid-template-rows:61.6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-item{height:61.6px;grid-template-rows:40px 21.6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title-container{padding:0 2px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .standard-navigation-title{font-size:12px;line-height:21.6px}}';
-    const remainingParityStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:50.8px;display:grid;grid-auto-flow:column;grid-auto-columns:max-content;justify-content:flex-start;gap:20px;margin:0 0 20px;padding:0;overflow:visible}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:50.8px;display:grid;grid-template-columns:max-content;grid-template-rows:30px;align-items:center;padding:10px;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab::after{display:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-rows{display:grid;gap:0;margin:0;padding:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{width:100%;height:68.8px;display:grid;grid-template-columns:minmax(0,max-content) 20px;align-items:start;justify-content:space-between;padding:14px 0;border:0;background:transparent;border-radius:0;font-size:16px;line-height:28.8px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row::after{content:"";width:20px;height:20px;display:block;background:currentColor;clip-path:polygon(25% 35%,50% 60%,75% 35%,80% 42%,50% 72%,20% 42%)}.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:0;border-radius:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-title{font-size:25px;line-height:30px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-subtitle{font-size:15px;line-height:27px;margin:0 0 12px;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-template-columns:minmax(0,1fr) 157px;gap:5px;margin-top:14px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157px;min-width:157px;height:41px;border-radius:5px;padding:8px;font-size:16px;line-height:22px;font-weight:700}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-card--expanded-variant .product-title{display:grid!important;grid-template-rows:21px 14px;gap:5px;line-height:normal!important}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-title-main,.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-title-variant{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tabs{height:49px;gap:20px;margin:0 0 16px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .category-tab{height:49px;font-size:15px;line-height:27px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-step-category-title{font-size:18px;line-height:32.4px;margin:0 0 10px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-category-section-row{height:72.4px;padding:14px 0;font-size:18px;line-height:32.4px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .product-card--expanded-variant .product-title{font-size:12px!important;grid-template-rows:24px 15px;gap:5px;line-height:normal!important}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray{display:grid;position:sticky;grid-template-columns:360px;grid-template-rows:126.5625px 58px;bottom:0;left:10px;width:370px;height:195.5625px;padding:5px;border-radius:0;box-shadow:none;background:#fff;z-index:9999}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-btn-next{width:360px;height:38px;border-radius:5px;padding:8px;font-size:14px;line-height:22px;font-weight:700}}';
-    const sidebarStyles = '.layout-sidebar[data-fpb-design-preset=DEFAULT][data-fpb-card-cta-mode=icon] .full-page-side-panel,.layout-sidebar[data-fpb-design-preset=DEFAULT] .full-page-side-panel{border:1px solid #e3e3e3;border-radius:10px;grid-template-columns:324.266px;grid-template-rows:55px 158.969px 298.797px 70px;min-height:639.766px;height:639.766px;max-height:none;top:80px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header{display:grid;grid-template-columns:minmax(0,1fr) 82.9375px;grid-template-rows:55px;gap:8px;margin:0;grid-row:1;grid-column:1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-header-copy{display:grid;grid-template-rows:30px 20px;gap:5px;min-width:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-subtitle{font-size:14px;line-height:20px;margin:0;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-clear-btn{display:grid;grid-template-columns:22px 32.9375px;grid-template-rows:25.1875px;gap:0;width:82.9375px;height:35.1875px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-discount-message{grid-row:2;grid-column:1;margin:0;padding:5px 0 0;font-size:16px;font-weight:700;line-height:28.8px;text-align:left;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-discount-progress.fpb-dp-sidebar{grid-row:2;grid-column:1;align-self:end}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-item-count{grid-row:3;grid-column:1;align-self:start;font-size:16px;font-weight:400;line-height:28.8px;color:#000;margin:0}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-products{grid-row:3;grid-column:1;align-self:start;display:grid;grid-template-columns:314.266px;grid-template-rows:75px 170px;gap:15px;width:324.266px;height:260px;min-height:260px;max-height:260px;padding:0 10px 0 0;margin:38.797px 0 0;overflow:hidden}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-row{display:grid;grid-template-columns:75px 158.328px 62.9375px;grid-template-rows:75px;gap:9px;padding:0;border:0;background:transparent}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-img-wrap{width:75px;height:75px;border-radius:5px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-product-img{width:75px;height:75px;border-radius:5px;object-fit:cover}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot{display:grid;grid-template-columns:75px 168.656px 50.6094px;grid-template-rows:75px;gap:10px;height:75px;animation:none}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot:nth-child(2){height:170px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-thumb{width:75px;height:75px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-lines{height:48px;gap:5px;align-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-line{background:#e1e1e1;border-radius:10px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-name{width:134.922px;height:14px;padding:7px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-variant{width:101.188px;height:12px;padding:6px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-slot .line-price{width:42.1562px;height:12px;padding:6px;flex:initial}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-skeleton-remove{width:50.6094px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;align-self:center}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-action-container{grid-row:4;grid-column:1;grid-template-columns:162.125px 162.141px;grid-template-rows:44px;gap:0;margin:10px 0 0;padding:15px 0 0;align-items:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total{display:grid;grid-template-columns:162.125px;grid-template-rows:18px 18px;gap:8px;align-items:center;justify-content:start}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total-label{font-size:14px;font-weight:700;line-height:normal;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-total-final{font-size:16px;font-weight:700;line-height:18px;color:#000}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-nav{display:grid;grid-template-columns:0 157.141px;grid-template-rows:44px;gap:5px}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next{width:157.141px;min-width:157.141px;height:41px;padding:8px;border:0;border-radius:5px;background:#000;color:#fff;font-size:16px;font-weight:700;line-height:25px;opacity:1}.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-btn-next:disabled{opacity:1;cursor:pointer}.layout-sidebar[data-fpb-design-preset=DEFAULT] .fpb-sidebar-tier-cta,.layout-sidebar[data-fpb-design-preset=DEFAULT] .box-selection-container,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-free-gift,.layout-sidebar[data-fpb-design-preset=DEFAULT] .side-panel-addon-message{display:none!important}';
-    const mobileFooterStyles = '@media(max-width:767px){.fpb-mobile-summary-count-badge{cursor:pointer}.fpb-mobile-summary-count-badge::before{content:"";width:8px;height:8px;border-left:2px solid #fff;border-top:2px solid #fff;transform:rotate(45deg);margin:4px 7px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 270px;height:407.5625px}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded .fpb-mobile-summary-count-badge::before{transform:rotate(225deg);margin:-3px 7px 0 0}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}.fpb-mobile-summary-discount-text{display:flex;align-items:center;justify-content:center;width:360px;min-height:25.2px;margin:0;padding:0;color:#000;font-size:14px;font-weight:700;line-height:25.2px;text-align:center}.fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar{width:310px;height:96px;margin:0;overflow:visible}.fpb-mobile-summary-tray .fpb-dp-sidebar.fpb-dp-step_based{display:grid;grid-template-columns:310px;grid-template-rows:33.1953px 12px 51.1875px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-list{height:33.1953px;margin:0;padding:0 0 8px;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track{align-self:center;height:6px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle-list{height:51.1875px;margin:0;padding:8px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title{color:#333;font-size:14px;font-weight:500;line-height:25.2px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle{color:#888;font-size:12px;font-weight:400;line-height:21.6px}.fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:204px 38px;width:360px;height:270px;padding:10px 0;background:#fff;box-sizing:border-box}.fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 140px;width:360px;height:204px}.fpb-mobile-summary-bundle-header{display:grid;grid-template-columns:273.344px 78.6562px;grid-template-rows:43px;width:360px;height:54px;padding:0 0 10px;box-sizing:border-box}.fpb-mobile-summary-bundle-copy{display:grid;grid-template-columns:273.344px;grid-template-rows:18px 20px;gap:5px;min-width:0}.fpb-mobile-summary-bundle-title{font-size:20px;line-height:18px;font-weight:700;color:#000}.fpb-mobile-summary-bundle-subtitle{font-size:12px;line-height:20px;font-weight:400;color:#000}.fpb-mobile-summary-clear-btn{display:grid;grid-template-columns:22px 28.6562px;grid-template-rows:22px;align-items:center;width:78.6562px;height:32px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54;font-size:12px;line-height:21.6px;font-weight:400}.fpb-mobile-summary-clear-btn svg{width:22px;height:22px}.fpb-mobile-summary-products-list{display:grid;grid-template-columns:360px;grid-template-rows:60px 65px;gap:10px;width:360px;height:140px;padding:5px 0 0;overflow:auto;box-sizing:border-box}.fpb-mobile-summary-product-row{display:grid;grid-template-columns:65px 213px 64px;grid-template-rows:60px;gap:9px;width:360px;height:60px}.fpb-mobile-summary-product-image-wrap{width:65px;height:60px;border:1px solid #cfc9c9;border-radius:8px;overflow:hidden}.fpb-mobile-summary-product-image{display:block;width:63px;height:63px;object-fit:cover}.fpb-mobile-summary-product-image-placeholder{width:63px;height:63px;background:#e1e1e1}.fpb-mobile-summary-product-info{display:block;width:213px;height:60px;min-width:0;overflow:hidden}.fpb-mobile-summary-product-title{display:block;width:213px;height:25.2px;color:#000;font-size:14px;line-height:25.2px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fpb-mobile-summary-product-variant{display:none}.fpb-mobile-summary-product-price{display:block;color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-action{display:grid;grid-template-columns:max-content 40px;grid-template-rows:40px;align-items:center;justify-content:center;width:64px;height:60px}.fpb-mobile-summary-product-qty{color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-remove{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:9999px;background:transparent;color:#000}.fpb-mobile-summary-product-remove svg{width:22px;height:22px}.fpb-mobile-summary-empty-product-card{display:grid;grid-template-columns:65px 212px 63px;grid-template-rows:65px;gap:10px;width:360px;height:65px}.fpb-mobile-summary-empty-product-image{width:65px;height:65px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-info{display:flex;flex-direction:column;gap:5px;align-self:center;width:212px;height:48px}.fpb-mobile-summary-empty-product-title{width:169px;height:14px;padding:7px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-variant{width:127px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-price{width:53px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-action{align-self:center;width:63px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}}';
-    style.textContent = baseStyles + timelineStyles + remainingParityStyles + sidebarStyles + mobileFooterStyles;
-    document.head.appendChild(style);
-  };
+const FPB_COMPACT_TEMPLATE_CONFIG = {
+  id: 'COMPACT',
+  presetId: 'COMPACT',
+  aliases: ['COMPACT'],
+  productCard: {
+    mode: 'compact',
+    columns: {
+      desktop: 3,
+      mobile: 2,
+    },
+    ctaMode: 'iconOrText',
+  },
+  summary: {
+    mode: 'compactSlots',
+    emptyState: 'slotGrid',
+  },
+  discountProgress: {
+    mode: 'stepped',
+    placement: ['sidebar', 'mobileTray'],
+  },
+  timeline: {
+    mode: 'compact',
+  },
+};
+
+const FPB_HORIZONTAL_TEMPLATE_CONFIG = {
+  id: 'HORIZONTAL',
+  presetId: 'HORIZONTAL',
+  aliases: ['HORIZONTAL'],
+  productCard: {
+    mode: 'row',
+    columns: {
+      desktop: 1,
+      mobile: 1,
+    },
+    ctaMode: 'iconOrText',
+  },
+  summary: {
+    mode: 'rows',
+    emptyState: 'skeletonRows',
+  },
+  discountProgress: {
+    mode: 'stepped',
+    placement: ['sidebar', 'mobileTray'],
+  },
+  timeline: {
+    mode: 'horizontal',
+  },
+};
+
+const FPB_TEMPLATE_CONFIGS = {
+  STANDARD: FPB_STANDARD_TEMPLATE_CONFIG,
+  CLASSIC: FPB_CLASSIC_TEMPLATE_CONFIG,
+  COMPACT: FPB_COMPACT_TEMPLATE_CONFIG,
+  HORIZONTAL: FPB_HORIZONTAL_TEMPLATE_CONFIG,
+};
+
+function resolveFullPageTemplateConfig({ presetId = '', templateId = '' } = {}) {
+  const rawPreset = String(presetId || templateId || 'DEFAULT').toUpperCase();
+  const normalizedPreset = rawPreset === 'DEFAULT' || rawPreset === 'DEFAULT_FBP'
+    ? 'STANDARD'
+    : rawPreset;
+
+  return Object.values(FPB_TEMPLATE_CONFIGS).find((config) =>
+    config.id === normalizedPreset
+    || config.presetId === rawPreset
+    || config.aliases?.includes(rawPreset)
+  ) || FPB_TEMPLATE_CONFIGS.STANDARD;
 }
 
-function installClassicTemplate(BundleWidgetFullPage) {
-  const prototype = BundleWidgetFullPage.prototype;
-
-  prototype.ensureClassicPresetRuntimeStyles = function() {
-    if (this.getFullPageDesignPreset() !== 'CLASSIC') return;
-    if (document.getElementById('wpb-fpb-classic-runtime-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-classic-runtime-styles';
-
-    const baseStyles = `
-      [data-bundle-type="full_page"][data-fpb-design-preset="CLASSIC"] {
-        width: min(100vw, 1536px);
-        max-width: 1536px;
-        margin-left: calc(50% - min(50vw, 768px));
-        padding: 10px;
-        box-sizing: border-box;
-        background: var(--bundle-full-page-bg-color);
-      }
-
-      [data-fpb-design-preset="CLASSIC"] {
-        --classic-grid-gap: 15px;
-        --classic-card-radius: 10px;
-        --classic-card-padding: 8px;
-        --classic-card-gap: 8px;
-
-        --classic-desktop-card-image-extra: 12px;
-        --classic-desktop-icon-card-extra: 104px;
-        --classic-desktop-text-card-extra: 152px;
-
-        --classic-mobile-card-width: 177.5px;
-        --classic-mobile-icon-card-height: 263px;
-        --classic-mobile-text-card-height: 300px;
-        --classic-mobile-image-height: 150px;
-
-        --classic-icon-button-size: 35px;
-        --classic-text-button-height: 38px;
-        --classic-sidebar-slot-size: 75px;
-      }
-    `;
-
-    const desktopStyles = `
-      @media (min-width: 1024px) {
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-layout-wrapper {
-          display: grid;
-          grid-template-columns: 0.6897fr 0.3103fr;
-          gap: var(--classic-grid-gap);
-          max-width: 1455px;
-          padding: 0;
-          align-items: start;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content {
-          padding: 0 0 120px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .bundle-banners {
-          width: 100%;
-          margin: 0 0 18px;
-          border-radius: var(--bundle-promo-banner-radius);
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .bundle-banner-image {
-          display: block;
-          width: 100%;
-          height: auto;
-          object-fit: cover;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-step-category-title {
-          font-size: 16px;
-          line-height: 29px;
-          margin: 0 0 10px;
-          color: var(--bundle-full-page-title-color, currentColor);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tabs {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
-          height: 40.8px;
-          margin: 0 0 20px;
-          padding: 0;
-          overflow: visible;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab {
-          height: 40.8px;
-          display: grid;
-          align-items: center;
-          padding: 4px 22px;
-          border-radius: 99px;
-          border-color: var(--bundle-tabs-border-color, var(--bundle-global-primary-button, currentColor));
-          background: var(--bundle-tabs-inactive-bg-color, var(--bundle-full-page-bg-color));
-          color: var(--bundle-tabs-inactive-text-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 16px;
-          line-height: 28.8px;
-          font-weight: 700;
-          box-shadow: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab.active {
-          background: var(--bundle-tabs-active-bg-color, var(--bundle-global-primary-button, currentColor));
-          color: var(--bundle-tabs-active-text-color, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
-          border-color: var(--bundle-tabs-active-bg-color, var(--bundle-global-primary-button, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab::after,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .category-tab .tab-indicator {
-          display: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .full-page-product-grid-container {
-          width: 95%;
-          max-width: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .full-page-product-grid {
-          container-type: inline-size;
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: var(--classic-grid-gap);
-          margin: 0 0 20px;
-          padding: 0;
-          overflow: visible;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-card {
-          width: 100%;
-          min-width: 0;
-          max-width: none;
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: var(--classic-card-gap);
-          padding: var(--classic-card-padding);
-          border-radius: var(--classic-card-radius);
-          border: 1px solid var(--bundle-product-card-border-color, var(--bundle-side-panel-product-border, currentColor));
-          box-shadow: none;
-          background: var(--bundle-product-card-bg, var(--bundle-side-panel-product-bg, var(--bundle-full-page-bg-color)));
-          color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-card.selected {
-          border-color: var(--bundle-product-card-selected-border-color, var(--bundle-global-primary-button, currentColor));
-          box-shadow: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .selected-overlay {
-          display: none !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-image {
-          width: 100%;
-          min-width: 0;
-          aspect-ratio: auto;
-          margin: 0;
-          border-radius: var(--bundle-full-page-product-image-border-radius, calc(var(--classic-card-radius) - 2px));
-          border: 0;
-          background: var(--bundle-full-page-product-image-bg, var(--bundle-product-card-bg, var(--bundle-full-page-bg-color)));
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: var(--bundle-product-card-image-fit, contain);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-content-wrapper {
-          width: 100%;
-          min-width: 0;
-          padding: 0;
-          overflow: hidden;
-          align-items: start;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-title {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 16px !important;
-          line-height: 22px !important;
-          font-weight: 700 !important;
-          letter-spacing: 0 !important;
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-price-row {
-          width: 100%;
-          height: 35px;
-          min-height: 35px;
-          margin: 0;
-          display: flex;
-          flex-direction: row;
-          gap: 5px;
-          align-items: center;
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-price {
-          color: var(--bundle-product-final-price-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 16px !important;
-          font-weight: 700 !important;
-          line-height: 35px !important;
-          letter-spacing: 0 !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-price-strike {
-          color: var(--bundle-product-strike-price-color, var(--bundle-side-panel-text-color, currentColor));
-          font-size: 14px !important;
-          line-height: 35px !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-variant-badge,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-spacer,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-quantity-wrapper {
-          display: none !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-add-btn {
-          box-shadow: none;
-          background: var(--bundle-add-btn-color, var(--bundle-global-primary-button, currentColor));
-          color: var(--bundle-button-text-color, var(--bundle-global-button-text, var(--bundle-full-page-bg-color)));
-          border: 0;
-          font-family: inherit;
-          cursor: pointer;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .inline-quantity-controls {
-          box-shadow: none;
-          background: transparent;
-          overflow: visible;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .inline-qty-btn {
-          background: var(--bundle-inline-qty-bg, var(--bundle-add-btn-color, var(--bundle-global-primary-button, currentColor)));
-          color: var(--bundle-inline-qty-text, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
-          border: 0;
-          box-shadow: none;
-          font-family: inherit;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .inline-qty-display,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .inline-quantity-display-only {
-          color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-          font-family: inherit;
-          font-weight: 700;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-card {
-          height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 + var(--classic-desktop-icon-card-extra));
-          min-height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 + var(--classic-desktop-icon-card-extra));
-          grid-template-rows:
-            calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 - var(--classic-desktop-card-image-extra))
-            92px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-image {
-          height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 - var(--classic-desktop-card-image-extra));
-          min-height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 - var(--classic-desktop-card-image-extra));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-content-wrapper {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) var(--classic-icon-button-size);
-          grid-template-rows: 49px var(--classic-icon-button-size);
-          gap: 8px 5px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-title {
-          grid-row: 1;
-          grid-column: 1 / -1;
-          height: 49px;
-          min-height: 49px;
-          text-align: left;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-price-row {
-          grid-row: 2;
-          grid-column: 1;
-          justify-content: flex-start;
-          text-align: left;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action {
-          grid-row: 2;
-          grid-column: 2;
-          width: var(--classic-icon-button-size);
-          height: var(--classic-icon-button-size);
-          min-height: var(--classic-icon-button-size);
-          margin: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          align-self: start;
-          justify-self: end;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn {
-          width: var(--classic-icon-button-size);
-          min-width: var(--classic-icon-button-size);
-          height: var(--classic-icon-button-size);
-          padding: 0;
-          border-radius: var(--bundle-add-btn-radius, 5px);
-          font-size: 0;
-          line-height: 1;
-          align-self: center;
-          justify-self: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn::before {
-          content: "+";
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 1;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn.added::before {
-          content: "✓";
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action.has-selected-quantity-badge {
-          grid-column: 1 / -1;
-          width: 100%;
-          justify-self: stretch;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-selected-action-row {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) var(--classic-icon-button-size);
-          gap: 5px;
-          align-items: center;
-          width: 100%;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .inline-quantity-display-only {
-          display: grid;
-          place-items: center;
-          width: var(--classic-icon-button-size);
-          height: var(--classic-icon-button-size);
-          border-radius: var(--bundle-add-btn-radius, 5px);
-          background: var(--bundle-add-btn-color, var(--bundle-global-primary-button, currentColor));
-          color: var(--bundle-button-text-color, var(--bundle-full-page-bg-color));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-card {
-          height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 + var(--classic-desktop-text-card-extra));
-          min-height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 + var(--classic-desktop-text-card-extra));
-          grid-template-rows:
-            calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 - var(--classic-desktop-card-image-extra))
-            138px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-image {
-          height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 - var(--classic-desktop-card-image-extra));
-          min-height: calc((100cqw - (var(--classic-grid-gap) * 3)) / 4 - var(--classic-desktop-card-image-extra));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-content-wrapper {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: 49px 35px var(--classic-text-button-height);
-          gap: 8px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-title {
-          grid-row: 1;
-          height: 49px;
-          min-height: 49px;
-          text-align: center;
-          align-content: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-price-row {
-          grid-row: 2;
-          justify-content: center;
-          text-align: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-card-action {
-          grid-row: 3;
-          width: 100%;
-          height: var(--classic-text-button-height);
-          min-height: var(--classic-text-button-height);
-          margin: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-add-btn {
-          width: 100%;
-          height: var(--classic-text-button-height);
-          min-width: 0;
-          padding: 0 16px;
-          border-radius: var(--bundle-button-border-radius, 99px);
-          font-size: 16px;
-          line-height: var(--classic-text-button-height);
-          font-weight: 700;
-          text-align: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .inline-quantity-controls {
-          width: 100%;
-          height: var(--classic-text-button-height);
-          border-radius: 0;
-          display: grid;
-          grid-template-columns: var(--classic-text-button-height) minmax(0, 1fr) var(--classic-text-button-height);
-          gap: 8px;
-          align-items: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .inline-qty-btn {
-          width: var(--classic-text-button-height);
-          height: var(--classic-text-button-height);
-          border-radius: var(--bundle-add-btn-radius, 5px);
-          font-size: 22px;
-          line-height: 1;
-          font-weight: 700;
-          padding: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .inline-qty-display {
-          min-width: 0;
-          padding: 0;
-          font-size: 18px;
-          line-height: var(--classic-text-button-height);
-          text-align: center;
-        }
-      }
-    `;
-
-    const sidebarStyles = `
-      @media (min-width: 1024px) {
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .full-page-side-panel {
-          width: 100%;
-          flex: initial;
-          min-height: 609px;
-          height: auto;
-          max-height: none;
-          margin-top: 0;
-          padding: 20px;
-          border: 1px solid var(--bundle-side-panel-border, currentColor);
-          border-radius: var(--bundle-side-panel-btn-radius, 10px);
-          background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
-          color: var(--bundle-side-panel-text-color, var(--bundle-global-primary-text, currentColor));
-          top: 80px;
-          box-sizing: border-box;
-          box-shadow: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-header {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          grid-template-rows: auto;
-          gap: 8px;
-          margin: 0;
-          align-items: start;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-header-copy {
-          display: grid;
-          grid-template-rows: auto auto;
-          gap: 5px;
-          min-width: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-title {
-          font-size: 20px;
-          line-height: 30px;
-          font-weight: 700;
-          color: var(--bundle-side-panel-title-color, var(--bundle-global-primary-text, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-subtitle {
-          font-size: 14px;
-          line-height: 20px;
-          margin: 0;
-          color: var(--bundle-side-panel-text-color, var(--bundle-global-primary-text, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-clear-btn {
-          display: grid;
-          grid-template-columns: 22px max-content;
-          grid-template-rows: 25.1875px;
-          gap: 4px;
-          min-width: 82.9375px;
-          height: 35.1875px;
-          padding: 5px 14px;
-          border: 0;
-          border-radius: var(--bundle-side-panel-btn-radius, 5px);
-          background: var(--bundle-side-panel-clear-bg, color-mix(in srgb, var(--bundle-side-panel-clear-color, var(--bundle-global-primary-button, currentColor)) 12%, transparent));
-          color: var(--bundle-side-panel-clear-color, var(--bundle-global-primary-button, currentColor));
-          align-items: center;
-          justify-content: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-box-selection-wrapper {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 10px;
-          margin: 16px 0 20px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-box-selection-option {
-          min-height: 62px;
-          border: 1px solid var(--bundle-sidebar-button-bg, var(--bundle-global-primary-button, currentColor));
-          border-radius: var(--bundle-side-panel-btn-radius, 6px);
-          background: var(--bundle-side-panel-product-bg, var(--bundle-full-page-bg-color));
-          color: var(--bundle-sidebar-button-bg, var(--bundle-global-primary-button, currentColor));
-          display: grid;
-          justify-items: center;
-          align-content: center;
-          gap: 4px;
-          padding: 8px;
-          text-align: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-box-selection-option-active {
-          background: var(--bundle-sidebar-button-bg, var(--bundle-global-primary-button, currentColor));
-          color: var(--bundle-sidebar-button-text, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-box-selection-title {
-          font-size: 15px;
-          font-weight: 700;
-          line-height: 1.2;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-box-selection-subtext {
-          font-size: 14px;
-          font-weight: 500;
-          line-height: 1.2;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-discount-message {
-          margin: 0;
-          padding: 5px 0 0;
-          background: transparent;
-          color: var(--bundle-side-panel-discount-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 28.8px;
-          text-align: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-discount-progress.fpb-dp-sidebar {
-          margin: 8px 0 0;
-          padding: 0;
-          background: transparent;
-          color: var(--bundle-side-panel-text-color, currentColor);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-dp-sidebar .fpb-dp-track {
-          height: 8px;
-          background: var(--fpb-discount-track-empty, var(--bundle-side-panel-product-border, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-dp-sidebar .fpb-dp-fill {
-          background: var(--fpb-discount-track-filled, var(--bundle-global-primary-button, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-item-count {
-          font-size: 16px;
-          font-weight: 400;
-          line-height: 28.8px;
-          color: var(--bundle-side-panel-text-color, var(--bundle-global-primary-text, currentColor));
-          margin: 18px 0 10px;
-          padding: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slots {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 14px;
-          margin: 10px 0 34px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slot {
-          position: relative;
-          aspect-ratio: 1 / 1;
-          border-radius: var(--bundle-side-panel-btn-radius, 5px);
-          display: grid;
-          place-items: center;
-          background: var(--bundle-side-panel-product-bg, var(--bundle-full-page-bg-color));
-          color: var(--bundle-side-panel-product-title-color, var(--bundle-global-primary-text, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slot--filled {
-          border: 1px solid var(--bundle-side-panel-product-border, currentColor);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slot--filled img {
-          width: 100%;
-          height: 100%;
-          object-fit: var(--bundle-product-card-image-fit, contain);
-          padding: 6px;
-          box-sizing: border-box;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slot--empty {
-          border: 1.5px dashed var(--bundle-global-primary-button, currentColor);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slot--empty span {
-          color: var(--bundle-global-primary-text, currentColor);
-          font-size: 32px;
-          line-height: 1;
-          font-weight: 700;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .classic-sidebar-slot-remove {
-          position: absolute;
-          top: -9px;
-          right: -9px;
-          width: 22px;
-          height: 22px;
-          border: 0;
-          border-radius: 50%;
-          padding: 0;
-          display: grid;
-          place-items: center;
-          background: var(--bundle-side-panel-remove-hover, var(--bundle-side-panel-remove-color, currentColor));
-          color: var(--bundle-button-text-color, var(--bundle-full-page-bg-color));
-          font-size: 16px;
-          line-height: 1;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-products {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: 15px;
-          width: 100%;
-          max-height: 260px;
-          padding: 0 10px 0 0;
-          margin: 10px 0 24px;
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-row {
-          display: grid;
-          grid-template-columns: var(--classic-sidebar-slot-size) minmax(0, 1fr) 62.9375px;
-          grid-template-rows: var(--classic-sidebar-slot-size);
-          gap: 9px;
-          padding: 0;
-          border: 0;
-          background: transparent;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-img-wrap,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-img {
-          width: var(--classic-sidebar-slot-size);
-          height: var(--classic-sidebar-slot-size);
-          border-radius: var(--bundle-side-panel-btn-radius, 5px);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-img {
-          object-fit: var(--bundle-product-card-image-fit, cover);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-info {
-          display: grid;
-          grid-template-rows: 20px 28.8px;
-          gap: 0;
-          align-self: start;
-          min-width: 0;
-          height: var(--classic-sidebar-slot-size);
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-title {
-          display: block;
-          width: 100%;
-          height: 20px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          color: var(--bundle-side-panel-product-title-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 14px;
-          font-weight: 400;
-          line-height: 20px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-price {
-          display: block;
-          color: var(--bundle-side-panel-product-price-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 28.8px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-action {
-          display: grid;
-          place-items: center;
-          width: 62.9375px;
-          height: var(--classic-sidebar-slot-size);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-remove {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          color: var(--bundle-side-panel-remove-color, var(--bundle-global-primary-text, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-slot {
-          display: grid;
-          grid-template-columns: var(--classic-sidebar-slot-size) minmax(0, 1fr) 50.6094px;
-          grid-template-rows: var(--classic-sidebar-slot-size);
-          gap: 10px;
-          height: var(--classic-sidebar-slot-size);
-          animation: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-thumb {
-          width: var(--classic-sidebar-slot-size);
-          height: var(--classic-sidebar-slot-size);
-          border: 1.5px dashed currentColor;
-          border-radius: var(--bundle-side-panel-btn-radius, 5px);
-          background: transparent;
-          color: var(--bundle-side-panel-next-bg, var(--bundle-global-primary-button, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-lines {
-          height: 48px;
-          gap: 5px;
-          align-self: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-line,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-remove {
-          background: var(--bundle-skeleton-base-bg, currentColor);
-          border-radius: var(--bundle-side-panel-btn-radius, 10px);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-slot .line-name {
-          width: 134.922px;
-          height: 14px;
-          padding: 7px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-slot .line-variant {
-          width: 101.188px;
-          height: 12px;
-          padding: 6px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-slot .line-price {
-          width: 42.1562px;
-          height: 12px;
-          padding: 6px;
-          flex: initial;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-skeleton-remove {
-          width: 50.6094px;
-          height: 20px;
-          padding: 10px;
-          align-self: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-action-container {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) 181.969px;
-          grid-template-rows: auto;
-          gap: 12px;
-          margin: 10px 0 0;
-          padding: 15px 0 0;
-          border-top: 1px solid var(--bundle-side-panel-divider-color, var(--bundle-side-panel-border, currentColor));
-          align-items: end;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-total {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: auto auto;
-          gap: 8px;
-          align-items: center;
-          justify-content: start;
-          padding: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-total-label {
-          font-size: 14px;
-          font-weight: 700;
-          line-height: normal;
-          color: var(--bundle-side-panel-total-label-color, var(--bundle-global-primary-text, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-total-prices {
-          display: flex;
-          align-items: baseline;
-          gap: 6px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-total-original {
-          color: var(--bundle-side-panel-total-original-color, var(--bundle-side-panel-text-color, currentColor));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-total-final {
-          color: var(--bundle-side-panel-total-final-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 18px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-nav {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: 44px;
-          gap: 5px;
-          margin: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-btn-next {
-          width: 100%;
-          min-width: 0;
-          height: 41px;
-          padding: 8px;
-          border: 0;
-          border-radius: var(--bundle-side-panel-btn-radius, 5px);
-          background: var(--bundle-side-panel-next-bg, var(--bundle-global-primary-button, currentColor));
-          color: var(--bundle-side-panel-next-color, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 25px;
-          opacity: 1;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-btn-next:disabled {
-          opacity: 1;
-          cursor: pointer;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .fpb-sidebar-tier-cta,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-free-gift,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-addon-message {
-          display: none !important;
-        }
-      }
-    `;
-
-    const mobileStyles = `
-      @media (max-width: 767px) {
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] > :is(.bundle-banners, .category-tabs, .sidebar-layout-wrapper) {
-          width: 100%;
-          margin-left: 0;
-          margin-right: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-layout-wrapper .sidebar-content {
-          padding: 0 0 120px !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .full-page-product-grid-container {
-          width: 100%;
-          max-width: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .full-page-product-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, var(--classic-mobile-card-width)));
-          gap: var(--classic-grid-gap);
-          justify-content: center;
-          margin: 0 0 20px;
-          padding: 0;
-          overflow: visible;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-card {
-          width: var(--classic-mobile-card-width);
-          min-width: 0;
-          max-width: var(--classic-mobile-card-width);
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          gap: var(--classic-card-gap);
-          padding: var(--classic-card-padding);
-          border: 1px solid var(--bundle-product-card-border-color, var(--bundle-side-panel-product-border, currentColor));
-          border-radius: var(--classic-card-radius);
-          box-shadow: none;
-          background: var(--bundle-product-card-bg, var(--bundle-full-page-bg-color));
-          color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-          overflow: visible;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-card.selected {
-          border-color: var(--bundle-product-card-selected-border-color, var(--bundle-global-primary-button, currentColor));
-          box-shadow: none;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .selected-overlay {
-          display: none !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-image {
-          width: 100%;
-          min-width: 0;
-          height: var(--classic-mobile-image-height);
-          min-height: var(--classic-mobile-image-height);
-          aspect-ratio: auto;
-          margin: 0;
-          border-radius: var(--bundle-full-page-product-image-border-radius, calc(var(--classic-card-radius) - 2px));
-          border: 0;
-          background: var(--bundle-full-page-product-image-bg, var(--bundle-product-card-bg, var(--bundle-full-page-bg-color)));
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: var(--bundle-product-card-image-fit, contain);
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-content-wrapper {
-          width: 100%;
-          min-width: 0;
-          padding: 0;
-          overflow: hidden;
-          align-items: start;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-title {
-          width: 100%;
-          margin: 0;
-          padding: 0;
-          color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 12px !important;
-          line-height: normal !important;
-          font-weight: 400 !important;
-          letter-spacing: 0 !important;
-          overflow: visible;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-price-row {
-          width: 100%;
-          height: 35px;
-          min-height: 35px;
-          margin: 0;
-          display: flex;
-          flex-direction: row;
-          gap: 5px;
-          align-items: center;
-          overflow: hidden;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-price {
-          color: var(--bundle-product-final-price-color, var(--bundle-global-primary-text, currentColor));
-          font-size: 14px !important;
-          font-weight: 700 !important;
-          line-height: 35px !important;
-          letter-spacing: 0 !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-price-strike {
-          color: var(--bundle-product-strike-price-color, var(--bundle-side-panel-text-color, currentColor));
-          font-size: 12px !important;
-          line-height: 35px !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-variant-badge,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-spacer,
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-quantity-wrapper {
-          display: none !important;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"] .sidebar-content .product-add-btn {
-          box-shadow: none;
-          background: var(--bundle-add-btn-color, var(--bundle-global-primary-button, currentColor));
-          color: var(--bundle-button-text-color, var(--bundle-full-page-bg-color));
-          border: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-card {
-          height: var(--classic-mobile-icon-card-height);
-          min-height: var(--classic-mobile-icon-card-height);
-          grid-template-rows: var(--classic-mobile-image-height) 89px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-content-wrapper {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) var(--classic-icon-button-size);
-          grid-template-rows: 41px var(--classic-icon-button-size);
-          gap: 8px 5px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-title {
-          grid-row: 1;
-          grid-column: 1 / -1;
-          height: 41px;
-          min-height: 41px;
-          text-align: left;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-price-row {
-          grid-row: 2;
-          grid-column: 1;
-          justify-content: flex-start;
-          text-align: left;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-card-action {
-          grid-row: 2;
-          grid-column: 2;
-          position: static;
-          right: auto;
-          bottom: auto;
-          width: var(--classic-icon-button-size);
-          height: var(--classic-icon-button-size);
-          min-height: var(--classic-icon-button-size);
-          margin: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          align-self: start;
-          justify-self: end;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .sidebar-content .product-add-btn {
-          width: var(--classic-icon-button-size);
-          min-width: var(--classic-icon-button-size);
-          height: var(--classic-icon-button-size);
-          padding: 0;
-          border-radius: var(--bundle-add-btn-radius, 5px);
-          font-size: 0;
-          line-height: 1;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .product-add-btn::before {
-          content: "+";
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 1;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="icon"] .product-add-btn.added::before {
-          content: "✓";
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-card {
-          height: var(--classic-mobile-text-card-height);
-          min-height: var(--classic-mobile-text-card-height);
-          grid-template-rows: var(--classic-mobile-image-height) 126px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-content-wrapper {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr);
-          grid-template-rows: 41px 35px var(--classic-text-button-height);
-          gap: 8px;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-title {
-          grid-row: 1;
-          height: 41px;
-          min-height: 41px;
-          text-align: center;
-          align-content: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-price-row {
-          grid-row: 2;
-          justify-content: center;
-          text-align: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-card-action {
-          grid-row: 3;
-          width: 100%;
-          height: var(--classic-text-button-height);
-          min-height: var(--classic-text-button-height);
-          margin: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .product-add-btn {
-          width: 100%;
-          min-width: 0;
-          height: var(--classic-text-button-height);
-          padding: 0 14px;
-          border-radius: var(--bundle-button-border-radius, 99px);
-          font-size: 14px;
-          line-height: var(--classic-text-button-height);
-          font-weight: 700;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .inline-quantity-controls {
-          width: 100%;
-          height: var(--classic-text-button-height);
-          background: transparent;
-          box-shadow: none;
-          border-radius: 0;
-          display: grid;
-          grid-template-columns: var(--classic-text-button-height) minmax(0, 1fr) var(--classic-text-button-height);
-          gap: 8px;
-          align-items: center;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .inline-qty-btn {
-          width: var(--classic-text-button-height);
-          height: var(--classic-text-button-height);
-          border-radius: var(--bundle-add-btn-radius, 5px);
-          background: var(--bundle-inline-qty-bg, var(--bundle-add-btn-color, var(--bundle-global-primary-button, currentColor)));
-          color: var(--bundle-inline-qty-text, var(--bundle-button-text-color, var(--bundle-full-page-bg-color)));
-          border: 0;
-          font-size: 22px;
-          line-height: 1;
-          font-weight: 700;
-          padding: 0;
-        }
-
-        .layout-sidebar[data-fpb-design-preset="CLASSIC"][data-fpb-card-cta-mode="text"] .sidebar-content .inline-qty-display {
-          color: var(--bundle-product-card-font-color, var(--bundle-global-primary-text, currentColor));
-          min-width: 0;
-          padding: 0;
-          font-size: 18px;
-          line-height: var(--classic-text-button-height);
-          text-align: center;
-          font-weight: 700;
-        }
-
-        .fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded {
-          grid-template-rows: 126.5625px 234.906px;
-          height: 361.46875px;
-        }
-
-        .fpb-mobile-classic-footer .fpb-mobile-summary-products-section {
-          display: grid;
-          position: relative;
-          grid-template-columns: 360px;
-          grid-template-rows: 168.906px 38px;
-          width: 360px;
-          height: 234.906px;
-          padding: 10px 0;
-          gap: 8px;
-          background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
-          box-sizing: border-box;
-        }
-
-        .fpb-mobile-classic-footer .fpb-mobile-summary-bundle-items {
-          display: grid;
-          grid-template-columns: 360px;
-          grid-template-rows: 54px 104.906px;
-          width: 360px;
-          height: 168.906px;
-        }
-
-        .fpb-mobile-classic-footer .fpb-mobile-summary-products-list {
-          display: grid;
-          grid-template-columns: 360px;
-          grid-template-rows: 65px 65px;
-          gap: 10px;
-          width: 360px;
-          height: 104.906px;
-          padding: 5px 0 0;
-          overflow: auto;
-          box-sizing: border-box;
-        }
-
-        .fpb-mobile-classic-footer .fpb-mobile-summary-empty-product-card {
-          display: grid;
-          grid-template-columns: 65px 211.531px 63.4688px;
-          grid-template-rows: 65px;
-          gap: 10px;
-          width: 360px;
-          height: 65px;
-        }
-      }
-    `;
-
-    style.textContent = baseStyles + desktopStyles + sidebarStyles + mobileStyles;
-    document.head.appendChild(style);
+const standardTemplateMethods = {
+  ensureStandardPresetRuntimeStyles() {
+    return this.getFullPageDesignPreset() === FPB_STANDARD_TEMPLATE_CONFIG.presetId;
+  },
+};
+
+const classicTemplateMethods = {
+  ensureClassicPresetRuntimeStyles() {
+    return this.getFullPageDesignPreset() === FPB_CLASSIC_TEMPLATE_CONFIG.presetId;
+  },
+};
+
+const compactTemplateMethods = {
+  ensureCompactPresetRuntimeStyles() {
+    return this.getFullPageDesignPreset() === FPB_COMPACT_TEMPLATE_CONFIG.presetId;
+  },
+};
+
+const horizontalTemplateMethods = {
+  ensureHorizontalSidePanelSlotRuntimeStyles() {
+    return this.getFullPageDesignPreset() === FPB_HORIZONTAL_TEMPLATE_CONFIG.presetId;
+  },
+};
+
+const buildSharedCartLineDisplayProperties = buildCartLineDisplayProperties;
+const buildSharedCartLineSourceProperties = buildCartLineSourceProperties;
+
+const fullPageAnalyticsConfigMethods = {
+_ensureWpbSessionId() {
+  if (this._wpbSessionId) return this._wpbSessionId;
+  try {
+    const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId || 'unknown';
+    const storageKey = `wpb_session_${bundleId}`;
+    const existing = sessionStorage.getItem(storageKey);
+    if (existing) { this._wpbSessionId = existing; return existing; }
+    const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `wpb-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    sessionStorage.setItem(storageKey, id);
+    this._wpbSessionId = id;
+    return id;
+  } catch (_e) {
+    this._wpbSessionId = `wpb-${Date.now()}`;
+    return this._wpbSessionId;
+  }
+},
+
+_emitStorefrontEvent(name, detail = {}) {
+  try {
+    const fullDetail = Object.assign({
+      bundleId: this.selectedBundle?.id || null,
+      bundleType: this.container?.dataset?.bundleType || 'full_page',
+      presetId: this.getFullPageDesignPreset?.() || null,
+      sessionId: this._ensureWpbSessionId(),
+      timestamp: new Date().toISOString(),
+    }, detail);
+    window.dispatchEvent(new CustomEvent(`wpb:${name}`, { detail: fullDetail, bubbles: true }));
+  } catch (_e) {
+
+  }
+},
+
+_sendEngagementBeacon(eventName) {
+  try {
+    const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId;
+    if (!bundleId) return;
+    const guardKey = `wpb_engaged_${bundleId}`;
+    if (sessionStorage.getItem(guardKey) === '1') return;
+    const sessionId = this._ensureWpbSessionId();
+    const shopId = window.Shopify?.shop || this.container?.dataset?.shop || window.location.hostname;
+    const payload = {
+      shopId,
+      bundleId,
+      sessionId,
+      presetId: this.getFullPageDesignPreset?.() || null,
+      bundleType: this.container?.dataset?.bundleType || 'full_page',
+      eventName: `wpb:${eventName}`,
+      landingPage: window.location.pathname + window.location.search,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString(),
+    };
+    sessionStorage.setItem(guardKey, '1');
+    fetch('/apps/product-bundles/api/attribution/engagement', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {  });
+  } catch (_e) {
+
+  }
+},
+
+hidePageLoadingContent() {
+  try {
+
+    const pageContent = this.container.parentElement;
+
+    if (pageContent) {
+
+      const siblings = Array.from(pageContent.children);
+      siblings.forEach(sibling => {
+
+        if (sibling !== this.container &&
+            (sibling.textContent.includes('Loading bundle builder') ||
+             sibling.textContent.includes('Loading...'))) {
+          sibling.style.display = 'none';
+        }
+      });
+    }
+
+  } catch (error) {
+
+  }
+},
+
+/**
+ * Load Settings design CSS
+ * Injects custom CSS from Settings -> Design into the page
+ */
+loadDesignSettingsCSS() {
+  try {
+
+    const existingLink = document.querySelector('link[href*="design-settings"]');
+    if (!existingLink) return;
+
+    const appUrl = window.__BUNDLE_APP_URL__;
+    if (!appUrl) return;
+
+    const shop = window.Shopify?.shop || this.container.dataset.shop;
+    if (!shop) return;
+
+    existingLink.addEventListener('error', () => {
+      const directUrl = `${appUrl}/api/design-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+      const fallback = document.createElement('link');
+      fallback.rel = 'stylesheet';
+      fallback.type = 'text/css';
+      fallback.href = directUrl;
+      document.head.appendChild(fallback);
+      existingLink.remove();
+    }, { once: true });
+
+  } catch (_e) {
+
+  }
+},
+
+async loadLanguageSettings() {
+  try {
+    const shop = window.Shopify?.shop || this.container.dataset.shop;
+    if (!shop) return;
+
+    const locale = window.Shopify?.locale || 'en';
+    const endpoint = `/apps/product-bundles/api/language-settings/${encodeURIComponent(shop)}?bundleType=full_page&locale=${encodeURIComponent(locale)}`;
+    const response = await fetch(endpoint, { credentials: 'same-origin' });
+    if (!response.ok) return;
+
+    const languageSettings = await response.json();
+    this.config.languageSettings = languageSettings;
+    this.config.languageData = languageSettings.activeLanguageData || null;
+    this.config.sharedCartLabels = languageSettings.sharedCartLabels || null;
+    this.config.textOverrides = {
+      ...(this.config.textOverrides || {}),
+      ...(languageSettings.textOverrides || {})
+    };
+  } catch (_) {
+
+  }
+},
+
+async loadControlsSettings() {
+  try {
+    const shop = window.Shopify?.shop || this.container.dataset.shop;
+    if (!shop) return;
+
+    const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
+    const response = await fetch(endpoint, { credentials: 'same-origin' });
+    if (!response.ok) return;
+
+    this.config.controlsSettings = await response.json();
+  } catch (_) {
+
+  }
+},
+
+_getLandingPageControls() {
+  return this.config.controlsSettings?.activeControls
+    || this.config.controlsSettings?.settingsControls?.landingPage
+    || null;
+},
+
+_runControlsScript(script) {
+  if (!script || typeof script !== 'string') return;
+  try {
+    new Function(script).call(window);
+  } catch (_) {
+
+  }
+},
+
+_handlePostAddToCartAction(actionConfig) {
+  const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
+  this._runControlsScript(checkout.executeScript);
+
+  const target = checkout.action === 'checkout' ? '/checkout' : '/cart';
+  this._emitStorefrontEvent('checkout-clicked', { target });
+
+  setTimeout(() => {
+    window.location.href = target;
+  }, 1000);
+},
+
+_scheduleCartTransformSelfHeal() {
+  try {
+    if (window.Shopify?.designMode) return;
+
+    const shop = window.Shopify?.shop || this.container.dataset.shop || window.location.hostname;
+    if (!shop) return;
+
+    const storageKey = `wolfpack:cart-transform-heal:${shop}`;
+    const lastCheckedAt = Number(window.localStorage?.getItem(storageKey) || 0);
+    const now = Date.now();
+    const cooldownMs = 24 * 60 * 60 * 1000;
+
+    if (lastCheckedAt && now - lastCheckedAt < cooldownMs) return;
+
+    window.setTimeout(() => {
+      fetch('/apps/product-bundles/api/cart-transform-heal', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+      })
+        .then(response => {
+          if (response.ok) {
+            window.localStorage?.setItem(storageKey, String(now));
+          }
+        })
+        .catch(() => {});
+    }, 1500);
+  } catch (_error) {
+
+  }
+},
+
+parseConfiguration() {
+  const dataset = this.container.dataset;
+
+  this.config = {
+    bundleId: dataset.bundleId || null,
+    isContainerProduct: dataset.isContainerProduct === 'true',
+    containerBundleId: dataset.containerBundleId || null,
+    hideDefaultButtons: dataset.hideDefaultButtons === 'true',
+    showTitle: dataset.showTitle === 'true',
+    showDescription: dataset.showDescription !== 'false',
+    showStepNumbers: dataset.showStepNumbers !== 'false',
+    showFooterMessaging: dataset.showFooterMessaging !== 'false',
+    showStepTimeline: dataset.showStepTimeline !== 'false',
+    showCategoryTabs: dataset.showCategoryTabs !== 'false',
+
+    customTitle: dataset.customTitle || null,
+    customDescription: dataset.customDescription || null,
+
+    productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
+    productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
+
+    showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
+
+    showPromoBanner: dataset.showPromoBanner !== 'false',
+
+    discountTextTemplate: 'Add {conditionText} to get {discountText}',
+    successMessageTemplate: 'Congratulations! You got {discountText}!',
+    showDiscountProgressBar: false,
+    discountProgressBarType: 'step_based',
+    discountProgressTextTemplate: null,
+    discountProgressSuccessTemplate: null,
+    currentProductId: window.currentProductId,
+    currentProductGid: window.currentProductGid,
+    currentProductHandle: window.currentProductHandle,
+    currentProductCollections: window.currentProductCollections,
+    tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
   };
-}
 
-function installCompactTemplate(BundleWidgetFullPage) {
-  const prototype = BundleWidgetFullPage.prototype;
+  this.tierConfig = this.config.tierConfig;
 
-  prototype.ensureCompactPresetRuntimeStyles = function() {
-    if (this.getFullPageDesignPreset() !== 'COMPACT') return;
-    if (document.getElementById('wpb-fpb-compact-runtime-styles')) return;
+  try {
+    this.bundleSettings = JSON.parse(dataset.bundleSettings || 'null') || {};
+  } catch {
+    this.bundleSettings = {};
+  }
 
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-compact-runtime-styles';
-    style.textContent = '[data-bundle-type=full_page][data-fpb-design-preset=COMPACT]{width:min(100vw,1536px);max-width:1536px;margin-left:calc(50% - min(50vw,768px));padding:10px;box-sizing:border-box}[data-fpb-design-preset=COMPACT]{--compact-card-height-extra:104px;--compact-image-height-extra:12px;--compact-mobile-card-height:245px;--compact-mobile-image-height:150px}@media(min-width:1024px){.layout-sidebar[data-fpb-design-preset=COMPACT] .sidebar-layout-wrapper{display:grid;grid-template-columns:0.6fr 0.4fr;gap:30px;max-width:1455px;padding:0;align-items:start}.layout-sidebar[data-fpb-design-preset=COMPACT] .sidebar-content{padding:0 0 120px}.layout-sidebar[data-fpb-design-preset=COMPACT] .fpb-step-category-title{font-size:16px;line-height:29px;margin:16px 0 10px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{container-type:inline-size;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px;margin:0 0 20px;padding:0}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{width:100%;min-width:0;max-width:none;height:calc((100cqw - 30px)/3 + var(--compact-card-height-extra,104px));min-height:calc((100cqw - 30px)/3 + var(--compact-card-height-extra,104px));display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:calc((100cqw - 30px)/3 - var(--compact-image-height-extra,12px)) 49px 35px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{width:100%;min-width:0;height:calc((100cqw - 30px)/3 - var(--compact-image-height-extra,12px));min-height:calc((100cqw - 30px)/3 - var(--compact-image-height-extra,12px));aspect-ratio:auto;margin:0;border-radius:8px;border-bottom:none}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .full-page-side-panel{width:100%;flex:initial;min-height:656px;margin-top:16px;padding:20px;grid-template-columns:minmax(0,1fr)}}@media(max-width:767px){.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .full-page-product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-card{height:245px;min-height:var(--compact-mobile-card-height,245px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:150px 23px 40px;gap:8px;padding:8px;border:0;border-radius:10px;box-shadow:none;background:#fff}.layout-sidebar[data-fpb-design-preset=COMPACT][data-fpb-card-cta-mode=icon] .sidebar-content .product-image{height:var(--compact-mobile-image-height,150px);min-height:var(--compact-mobile-image-height,150px)}}';
-    document.head.appendChild(style);
+  this.applyCardLayoutSettings();
+},
+
+/**
+ * Apply card layout settings from Theme Editor as CSS variables
+ */
+applyCardLayoutSettings() {
+  document.documentElement.style.setProperty(
+    '--bundle-product-card-spacing',
+    `${this.config.productCardSpacing}px`
+  );
+  document.documentElement.style.setProperty(
+    '--bundle-product-cards-per-row',
+    this.config.productCardsPerRow
+  );
+},
+
+async loadBundleData() {
+  let bundleData = null;
+
+  const bundleType = this.container.dataset.bundleType;
+  const bundleId = this.container.dataset.bundleId;
+
+  if (bundleType === 'full_page' && bundleId) {
+
+    const cachedConfig = this.container.dataset.bundleConfig;
+    if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
+      try {
+        const parsed = JSON.parse(cachedConfig);
+        const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
+        if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
+          bundleData = { [parsed.id]: parsed };
+        }
+      } catch (_e) {
+
+      }
+    }
+
+    if (!bundleData) {
+
+      const RETRY_DELAY_MS = 3000;
+      const RETRYABLE_STATUSES = new Set([503, 504]);
+
+      const fetchBundleData = async () => {
+
+        const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+
+          let errorDetails = `${response.status} ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            errorDetails = JSON.stringify(errorData);
+          } catch (e) {
+          }
+          const err = new Error(`API request failed: ${errorDetails}`);
+          err.status = response.status;
+          throw err;
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.bundle) {
+          return { [data.bundle.id]: data.bundle };
+        } else {
+          throw new Error('Invalid API response structure');
+        }
+      };
+
+      try {
+        try {
+          bundleData = await fetchBundleData();
+        } catch (firstErr) {
+
+          if (RETRYABLE_STATUSES.has(firstErr.status)) {
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            bundleData = await fetchBundleData();
+          } else {
+            throw firstErr;
+          }
+        }
+      } catch (error) {
+        throw error;
+      }
+    }
+  } else {
+
+    const configValue = this.container.dataset.bundleConfig;
+    if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
+      try {
+        const singleBundle = JSON.parse(configValue);
+
+        if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
+          bundleData = { [singleBundle.id]: singleBundle };
+        } else {
+        }
+      } catch (error) {
+      }
+    } else {
+    }
+
+    if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
+
+      const isThemeEditor = window.Shopify?.designMode ||
+                           window.isThemeEditorContext ||
+                           window.location.pathname.includes('/editor') ||
+                           window.location.search.includes('preview_theme_id');
+
+      const bundleIdFromDataset = this.container.dataset.bundleId;
+
+      if (isThemeEditor && bundleIdFromDataset) {
+        this.showThemeEditorPreview(bundleIdFromDataset);
+        return;
+      }
+
+      const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
+      throw new Error(errorMsg);
+    }
+  }
+
+  this.bundleData = bundleData;
+},
+
+selectBundle() {
+  this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
+  if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+    this.selectedBundle = this.bundleData[this.config.bundleId];
+  }
+
+  this.updateMessagesFromBundle();
+},
+};
+
+const fullPageInitialRenderMethods = {
+updateMessagesFromBundle() {
+
+  const messaging = this.selectedBundle?.messaging;
+  const pricingMessages = this.selectedBundle?.pricing?.messages;
+  const pricingDisplay = this.selectedBundle?.pricing?.display;
+  const displayOptions = messaging?.displayOptions || pricingMessages?.displayOptions || {};
+  const progressBarOptions = displayOptions?.progressBar || {};
+
+  if (messaging) {
+    if (messaging.progressTemplate) {
+      this.config.discountTextTemplate = messaging.progressTemplate;
+    }
+    if (messaging.successTemplate) {
+      this.config.successMessageTemplate = messaging.successTemplate;
+    }
+
+    this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
+    this.config.showDiscountProgressBar = progressBarOptions.enabled === true || messaging.showDiscountProgressBar === true;
+
+  } else if (pricingMessages) {
+
+    const shopLocale = window.Shopify?.locale;
+    const byLocale = pricingMessages.ruleMessagesByLocale;
+    const localeRuleMessages = shopLocale && byLocale?.[shopLocale];
+    const ruleMessages = localeRuleMessages || pricingMessages.ruleMessages;
+    const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
+    if (firstRuleMsg?.discountText) {
+      this.config.discountTextTemplate = firstRuleMsg.discountText;
+    }
+    if (firstRuleMsg?.successMessage) {
+      this.config.successMessageTemplate = firstRuleMsg.successMessage;
+    }
+
+    this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
+    this.config.showDiscountProgressBar =
+      progressBarOptions.enabled === true ||
+      pricingMessages.showDiscountProgressBar === true ||
+      pricingDisplay?.showDiscountProgressBar === true;
+
+  } else {
+    this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
+    this.config.showDiscountProgressBar = pricingDisplay?.showDiscountProgressBar === true;
+  }
+
+  this.config.discountProgressBarType = progressBarOptions.type === 'simple' ? 'simple' : 'step_based';
+  this.config.discountProgressTextTemplate = progressBarOptions.progressText || this.config.discountTextTemplate;
+  this.config.discountProgressSuccessTemplate = progressBarOptions.successText || this.config.successMessageTemplate;
+},
+
+applyPersonalizationAddonProducts() {
+  const addonStep = this.buildAddonStepFromPersonalization();
+  if (!addonStep) return;
+
+  this.selectedBundle.steps = (this.selectedBundle.steps || []).filter(step => !step.isFreeGift);
+  this.selectedBundle.steps = [...(this.selectedBundle.steps || []), addonStep];
+},
+
+buildAddonStepFromPersonalization() {
+  const personalizationData = this.selectedBundle?.personalizationData;
+  const addonProducts = personalizationData?.addonProducts;
+  if (personalizationData?.isPersonalizationEnabled !== true || addonProducts?.isEnabled !== true) {
+    return null;
+  }
+
+  const tiers = Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
+  const selectedAddonProducts = tiers.flatMap(tier =>
+    Array.isArray(tier?.selectedAddonProducts)
+      ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
+      : []
+  );
+  if (selectedAddonProducts.length === 0) return null;
+
+  const firstTier = tiers[0] || {};
+
+  return {
+    id: 'personalization-addons',
+    name: personalizationData.personalizeStepText || addonProducts.title || '',
+    position: (this.selectedBundle?.steps?.length || 0) + 1,
+    minQuantity: 0,
+    maxQuantity: selectedAddonProducts.length,
+    enabled: true,
+    isFreeGift: true,
+    addonLabel: personalizationData.personalizeStepText || addonProducts.title || '',
+    freeGiftName: addonProducts.title || personalizationData.personalizeStepText || '',
+    addonTitle: addonProducts.title || personalizationData.personalizePageSubtext || '',
+    addonIconUrl: personalizationData.stepImage || null,
+    addonDisplayFree: Number(firstTier?.discount?.value || 0) >= 100 && firstTier?.discount?.type === 'PERCENTAGE',
+    addonUnlockAfterCompletion: true,
+    addonTiers: tiers,
+    addonEligibilityCondition: firstTier?.eligibilityCondition || null,
+    addonDiscount: firstTier?.discount || null,
+    addonMessaging: addonProducts.addonsMessaging || null,
+    displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
+    StepProduct: selectedAddonProducts,
+    products: selectedAddonProducts,
+    collections: [],
   };
-}
+},
 
-function installHorizontalTemplate(BundleWidgetFullPage) {
-  const prototype = BundleWidgetFullPage.prototype;
+normalizePersonalizationAddonProduct(product) {
+  const productGid = product?.graphqlId || product?.id || (product?.productId ? `gid://shopify/Product/${product.productId}` : '');
+  const imageUrl = product?.images?.[0]?.originalSrc
+    || product?.images?.[0]?.url
+    || product?.image?.src
+    || product?.imageUrl
+    || '';
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
 
-  prototype.ensureHorizontalSidePanelSlotRuntimeStyles = function() {
-    if (this.getFullPageDesignPreset() !== 'HORIZONTAL') return;
-    if (document.getElementById('wpb-fpb-horizontal-runtime-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-horizontal-runtime-styles';
-    const desktopSummaryStyles = `.fpb-h .product-title{display:-webkit-box;display:-webkit-flexbox;display:flex;white-space:normal;word-break:break-word;overflow:hidden;text-overflow:ellipsis;-webkit-box-orient:vertical;line-clamp:2;-webkit-line-clamp:2}.fpb-h .product-card--expanded-variant .product-title{display:block;line-height:normal}.fpb-h .product-card--expanded-variant .product-variant-badge{display:none}`;
-    const summaryMobileStyles = `.fpb-mobile-summary-count-badge{cursor:pointer}.fpb-mobile-summary-count-badge::before{content:"";width:8px;height:8px;border-left:2px solid #fff;border-top:2px solid #fff;transform:rotate(45deg);margin:4px 7px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded{grid-template-rows:126.5625px 270px;height:407.5625px}.fpb-mobile-summary-tray.fpb-mobile-summary-tray-expanded .fpb-mobile-summary-count-badge::before{transform:rotate(225deg);margin:-3px 7px 0 0}.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray .side-panel-discount-message{height:126.5625px;overflow:hidden}.fpb-mobile-summary-discount-text{display:flex;align-items:center;justify-content:center;width:360px;min-height:25.2px;margin:0;padding:0;color:#000;font-size:14px;font-weight:700;line-height:25.2px;text-align:center}.fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar{width:310px;height:96px;margin:0;overflow:visible}.fpb-mobile-summary-tray .fpb-dp-sidebar.fpb-dp-step_based{display:grid;grid-template-columns:310px;grid-template-rows:33.1953px 12px 51.1875px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-list{height:33.1953px;margin:0;padding:0 0 8px;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-dp-track{align-self:center;height:6px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle-list{height:51.1875px;margin:0;padding:8px 0 0;box-sizing:border-box}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title{color:#333;font-size:14px;font-weight:500;line-height:25.2px}.fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle{color:#888;font-size:12px;font-weight:400;line-height:21.6px}.fpb-mobile-summary-products-section{display:grid;position:relative;grid-template-columns:360px;grid-template-rows:204px 38px;width:360px;height:270px;padding:10px 0;background:#fff;box-sizing:border-box}.fpb-mobile-summary-bundle-items{display:grid;grid-template-columns:360px;grid-template-rows:54px 140px;width:360px;height:204px}.fpb-mobile-summary-bundle-header{display:grid;grid-template-columns:273.344px 78.6562px;grid-template-rows:43px;width:360px;height:54px;padding:0 0 10px;box-sizing:border-box}.fpb-mobile-summary-bundle-copy{display:grid;grid-template-columns:273.344px;grid-template-rows:18px 20px;gap:5px;min-width:0}.fpb-mobile-summary-bundle-title{font-size:20px;line-height:18px;font-weight:700;color:#000}.fpb-mobile-summary-bundle-subtitle{font-size:12px;line-height:20px;font-weight:400;color:#000}.fpb-mobile-summary-clear-btn{display:grid;grid-template-columns:22px 28.6562px;grid-template-rows:22px;align-items:center;width:78.6562px;height:32px;padding:5px 14px;border:0;border-radius:5px;background:#fdecea;color:#d13d54;font-size:12px;line-height:21.6px;font-weight:400}.fpb-mobile-summary-clear-btn svg{width:22px;height:22px}.fpb-mobile-summary-products-list{display:grid;grid-template-columns:360px;grid-template-rows:60px 65px;gap:10px;width:360px;height:140px;padding:5px 0 0;overflow:auto;box-sizing:border-box}.fpb-mobile-summary-product-row{display:grid;grid-template-columns:65px 213px 64px;grid-template-rows:60px;gap:9px;width:360px;height:60px}.fpb-mobile-summary-product-image-wrap{width:65px;height:60px;border:1px solid #cfc9c9;border-radius:8px;overflow:hidden}.fpb-mobile-summary-product-image{display:block;width:63px;height:63px;object-fit:cover}.fpb-mobile-summary-product-image-placeholder{width:63px;height:63px;background:#e1e1e1}.fpb-mobile-summary-product-info{display:block;width:213px;height:60px;min-width:0;overflow:hidden}.fpb-mobile-summary-product-title{display:block;width:213px;height:25.2px;color:#000;font-size:14px;line-height:25.2px;font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fpb-mobile-summary-product-variant{display:none}.fpb-mobile-summary-product-price{display:block;color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-action{display:grid;grid-template-columns:max-content 40px;grid-template-rows:40px;align-items:center;justify-content:center;width:64px;height:60px}.fpb-mobile-summary-product-qty{color:#000;font-size:15px;line-height:27px;font-weight:700}.fpb-mobile-summary-product-remove{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:9999px;background:transparent;color:#000}.fpb-mobile-summary-product-remove svg{width:22px;height:22px}.fpb-mobile-summary-empty-product-card{display:grid;grid-template-columns:65px 212px 63px;grid-template-rows:65px;gap:10px;width:360px;height:65px}.fpb-mobile-summary-empty-product-image{width:65px;height:65px;border:2px dashed #a6a3a3;border-radius:5px;background:#e1e1e1;box-sizing:border-box;display:flex;align-items:center;justify-content:center}.fpb-mobile-summary-empty-product-info{display:flex;flex-direction:column;gap:5px;align-self:center;width:212px;height:48px}.fpb-mobile-summary-empty-product-title{width:169px;height:14px;padding:7px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-variant{width:127px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-price{width:53px;height:12px;padding:6px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}.fpb-mobile-summary-empty-product-action{align-self:center;width:63px;height:20px;padding:10px;border-radius:10px;background:#e1e1e1;box-sizing:border-box}`;
-    style.textContent = desktopSummaryStyles + summaryMobileStyles;
-    document.head.appendChild(style);
+  return {
+    productId: productGid,
+    id: productGid,
+    title: product?.title || '',
+    handle: product?.handle || '',
+    imageUrl,
+    price: variants[0]?.price || product?.price || '0',
+    compareAtPrice: variants[0]?.compareAtPrice || null,
+    variants: variants.map(variant => {
+      const variantGid = variant.variantGraphqlId || variant.id || (variant.variantId ? `gid://shopify/ProductVariant/${variant.variantId}` : productGid);
+      return {
+        id: variantGid,
+        title: variant.variantTitle || variant.title || 'Default Title',
+        price: variant.price || '0',
+        compareAtPrice: variant.compareAtPrice || null,
+        available: variant.available !== false,
+        quantityAvailable: typeof variant.inventoryQuantity === 'number' ? variant.inventoryQuantity : null,
+        currentlyNotInStock: false,
+        image: imageUrl ? { src: imageUrl } : null,
+      };
+    }),
   };
-}
+},
+
+initializeDataStructures() {
+  const stepsCount = this.selectedBundle.steps.length;
+
+  this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
+
+  this._initDefaultProducts();
+
+  this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
+},
+
+/**
+ * Show a helpful preview in theme editor when testing on non-bundle products
+ */
+showThemeEditorPreview(bundleId) {
+
+  this.container.innerHTML = `
+    <div style="
+      padding: 32px 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: 2px dashed #667eea;
+      border-radius: 12px;
+      text-align: center;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    ">
+      <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+      <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
+      <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
+        Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
+      </p>
+      <div style="
+        margin: 20px auto 0;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        max-width: 400px;
+        text-align: left;
+        font-size: 13px;
+        line-height: 1.6;
+      ">
+        <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
+        <div style="opacity: 0.9;">
+          This widget will automatically display on <strong>bundle container products</strong>.
+          <br><br>
+          <strong>To see it in action:</strong>
+          <ol style="margin: 8px 0; padding-left: 20px;">
+            <li>Save your theme</li>
+            <li>Navigate to a bundle product page</li>
+            <li>The widget will appear with product selection steps</li>
+          </ol>
+        </div>
+      </div>
+      <div style="
+        margin-top: 20px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 6px;
+        font-size: 12px;
+        opacity: 0.8;
+      ">
+        💡 <strong>Tip:</strong> You're currently previewing on a regular product. The widget only activates on products configured as bundle containers.
+      </div>
+    </div>
+  `;
+},
+
+setupDOMElements() {
+
+  this.elements = {
+    header: this.container.querySelector('.bundle-header') || this.createHeader(),
+    stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
+    footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
+    modal: this.ensureModal()
+  };
+
+  if (!this.container.querySelector('.bundle-header')) {
+    this.container.appendChild(this.elements.header);
+  }
+  if (!this.container.querySelector('.bundle-steps')) {
+    this.container.appendChild(this.elements.stepsContainer);
+  }
+  if (!this.container.querySelector('.bundle-footer-messaging')) {
+    this.container.appendChild(this.elements.footer);
+  }
+},
+
+createHeader() {
+  const header = document.createElement('div');
+  header.className = 'bundle-header';
+
+  const title = this.config.customTitle || this.selectedBundle.name;
+
+  const description = this.config.customDescription || this.selectedBundle.description;
+
+  const titleHTML = `<h2 class="bundle-title">${ComponentGenerator.escapeHtml(title)}</h2>`;
+  const descriptionHTML = (description && this.config.showDescription)
+    ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(description)}</p>`
+    : '';
+
+  header.innerHTML = `
+    ${titleHTML}
+    ${descriptionHTML}
+  `;
+  return header;
+},
+
+createStepsContainer() {
+  const container = document.createElement('div');
+  container.className = 'bundle-steps';
+  return container;
+},
+
+createFooter() {
+  const footer = document.createElement('div');
+  footer.className = 'bundle-footer-messaging';
+  footer.style.display = 'none';
+  footer.innerHTML = `
+    <div class="footer-discount-text"></div>
+  `;
+  return footer;
+},
+
+ensureModal() {
+  let modal = document.getElementById('bundle-builder-modal');
+
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'bundle-builder-modal';
+    modal.className = 'bundle-builder-modal';
+    modal.style.display = 'none';
+    modal.innerHTML = `
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-step-title"></div>
+          <div class="modal-tabs-wrapper">
+            <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
+            <div class="modal-tabs"></div>
+            <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
+          </div>
+          <span class="close-button">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="product-grid"></div>
+        </div>
+        <div class="modal-footer">
+          <!-- Centered Grouped Content Container -->
+          <div class="modal-footer-grouped-content">
+            <!-- Total Pill - Sits Above Buttons -->
+            <div class="modal-footer-total-pill">
+              <span class="total-price-strike"></span>
+              <span class="total-price-final"></span>
+              <span class="price-cart-separator">|</span>
+              <span class="cart-badge-wrapper">
+                <span class="cart-badge-count">0</span>
+                <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
+                  <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+              </span>
+            </div>
+
+            <!-- Buttons Row - Below Pill -->
+            <div class="modal-footer-buttons-row">
+              <button class="modal-nav-button prev-button">BACK</button>
+              <button class="modal-nav-button next-button">NEXT</button>
+            </div>
+
+            <!-- Discount Messaging Section -->
+            <div class="modal-footer-discount-messaging">
+              <div class="footer-discount-text"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    this.setupTabScrollArrows(modal);
+  }
+
+  return modal;
+},
+
+setupTabScrollArrows(modal) {
+  const tabsContainer = modal.querySelector('.modal-tabs');
+  const leftArrow = modal.querySelector('.tab-arrow-left');
+  const rightArrow = modal.querySelector('.tab-arrow-right');
+
+  if (!tabsContainer || !leftArrow || !rightArrow) return;
+
+  const scrollAmount = 200;
+
+  leftArrow.addEventListener('click', () => {
+    tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  });
+
+  rightArrow.addEventListener('click', () => {
+    tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  });
+
+  const updateArrowVisibility = () => {
+    const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
+
+    leftArrow.style.display = scrollLeft > 0 ? 'flex' : 'none';
+    rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
+  };
+
+  tabsContainer.addEventListener('scroll', updateArrowVisibility);
+
+  setTimeout(updateArrowVisibility, 100);
+
+  this.updateTabArrows = updateArrowVisibility;
+},
+
+async renderUI() {
+  this.renderHeader();
+  await this.renderSteps();
+  this.renderFooter();
+},
+
+renderHeader() {
+
+  const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+  if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+    this.elements.header.style.display = 'none';
+    return;
+  }
+
+  if (!this.config.showTitle) {
+    this.elements.header.style.display = 'none';
+    return;
+  }
+
+  this.elements.header.style.display = 'block';
+},
+
+async renderSteps() {
+
+  this.elements.stepsContainer.innerHTML = '';
+
+  if (!this.selectedBundle || !this.selectedBundle.steps) {
+    return;
+  }
+
+  const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
+
+  if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
+
+    FullPagePreset.markContainer(this.container, this.selectedBundle);
+    await this.renderFullPageLayoutWithSidebar();
+    return;
+  }
+},
+
+};
+
+const fullPageResponsiveLayoutMethods = {
+renderProductPageLayout() {
+  this.selectedBundle.steps.forEach((step, index) => {
+    const stepElement = this.createStepElement(step, index);
+    this.elements.stepsContainer.appendChild(stepElement);
+  });
+},
+
+async renderFullPageLayout() {
+
+  this.hidePageTitle();
+
+  this.elements.stepsContainer.innerHTML = '';
+  this.elements.stepsContainer.classList.add('full-page-layout');
+  this.applyFullPageDesignPresetMarker();
+  this.ensureBundleBannerRuntimeStyles();
+  this.ensureCompactPresetRuntimeStyles();
+  this.ensureHorizontalSidePanelSlotRuntimeStyles();
+
+  const contentSection = document.createElement('div');
+  contentSection.className = 'full-page-content-section';
+
+  const bundleBanners = this.createBundleBanners();
+  if (bundleBanners) {
+    contentSection.appendChild(bundleBanners);
+  }
+
+  const promoBanner = this.createPromoBanner();
+  if (promoBanner) {
+    contentSection.appendChild(promoBanner);
+  }
+
+  if (this.config.showStepTimeline) {
+    const stepTimeline = this.createStepTimeline();
+    contentSection.appendChild(stepTimeline);
+  }
+
+  const contentHeader = this.createStepContentHeader(this.currentStepIndex);
+  if (contentHeader) contentSection.appendChild(contentHeader);
+
+  const stepBanner = this.createStepBannerImage(this.currentStepIndex);
+  if (stepBanner) contentSection.appendChild(stepBanner);
+
+  if (this.shouldRenderFullPageSearch()) {
+    const searchInput = this.createSearchInput();
+    contentSection.appendChild(searchInput);
+  }
+
+  if (this.config.showCategoryTabs) {
+    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+    if (categoryTabs) {
+      contentSection.appendChild(categoryTabs);
+    }
+  }
+
+  const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
+  if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
+
+  const productGridContainer = document.createElement('div');
+  productGridContainer.className = 'full-page-product-grid-container';
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  contentSection.appendChild(productGridContainer);
+  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
+  if (categoryRows) contentSection.appendChild(categoryRows);
+
+  this.elements.stepsContainer.appendChild(contentSection);
+
+  this.renderFullPageFooter();
+
+  if (this.selectedBundle?.loadingGif) {
+    this.showLoadingOverlay(this.selectedBundle.loadingGif);
+  }
+  try {
+    await this.loadStepProducts(this.currentStepIndex);
+
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    productGridContainer.innerHTML = '';
+    productGridContainer.appendChild(productGrid);
+
+    this.renderFullPageFooter();
+
+    this.hideLoadingOverlay();
+
+    this.preloadNextStep();
+  } catch (error) {
+    this.hideLoadingOverlay();
+    productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+  }
+},
+
+async renderFullPageLayoutWithSidebar() {
+  this.hidePageTitle();
+
+  this.elements.stepsContainer.innerHTML = '';
+  this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
+  this.applyFullPageDesignPresetMarker();
+  this.ensureBundleBannerRuntimeStyles();
+  this.ensureStandardPresetRuntimeStyles();
+  this.ensureClassicPresetRuntimeStyles();
+  this.ensureCompactPresetRuntimeStyles();
+  this.ensureHorizontalSidePanelSlotRuntimeStyles();
+
+  if (this.elements.footer) {
+    this.elements.footer.style.display = 'none';
+  }
+
+  const bundleBanners = this.createBundleBanners();
+  if (bundleBanners) {
+    this.elements.stepsContainer.appendChild(bundleBanners);
+  }
+
+  if (this.config.showStepTimeline) {
+    this.elements.stepsContainer.appendChild(this.createStepTimeline());
+  }
+
+  const contentHeader = this.createStepContentHeader(this.currentStepIndex);
+  if (contentHeader) this.elements.stepsContainer.appendChild(contentHeader);
+
+  if (this.config.showCategoryTabs) {
+    const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
+    if (categoryTabs) this.elements.stepsContainer.appendChild(categoryTabs);
+  }
+
+  const twoColWrapper = document.createElement('div');
+  twoColWrapper.className = 'sidebar-layout-wrapper';
+
+  const contentSection = document.createElement('div');
+  contentSection.className = 'full-page-content-section sidebar-content';
+
+  const promoBanner = this.createPromoBanner();
+  if (promoBanner) contentSection.appendChild(promoBanner);
+
+  const stepBanner = this.createStepBannerImage(this.currentStepIndex);
+  if (stepBanner) contentSection.appendChild(stepBanner);
+
+  if (this.shouldRenderFullPageSearch()) {
+    contentSection.appendChild(this.createSearchInput());
+  }
+
+  const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
+  if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
+
+  const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
+  if (currentStep?.isFreeGift && currentStep?.addonTitle) {
+    const freeHeading = document.createElement('div');
+    freeHeading.className = 'fpb-step-free-heading';
+    freeHeading.textContent = currentStep.addonTitle;
+    contentSection.appendChild(freeHeading);
+  }
+
+  const productGridContainer = document.createElement('div');
+  productGridContainer.className = 'full-page-product-grid-container';
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+  contentSection.appendChild(productGridContainer);
+  const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
+  if (categoryRows) contentSection.appendChild(categoryRows);
+
+  twoColWrapper.appendChild(contentSection);
+
+  const sidePanel = document.createElement('div');
+  sidePanel.className = 'full-page-side-panel';
+  this.renderSidePanel(sidePanel);
+  twoColWrapper.appendChild(sidePanel);
+
+  this.elements.stepsContainer.appendChild(twoColWrapper);
+
+  if (this.selectedBundle?.loadingGif) {
+    this.showLoadingOverlay(this.selectedBundle.loadingGif);
+  }
+  try {
+    await this.loadStepProducts(this.currentStepIndex);
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    productGridContainer.innerHTML = '';
+    productGridContainer.appendChild(productGrid);
+    this.renderSidePanel(sidePanel);
+    this.hideLoadingOverlay();
+    this.preloadNextStep();
+    this._renderMobileBottomBar();
+  } catch (error) {
+    this.hideLoadingOverlay();
+    productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+    this._renderMobileBottomBar();
+  }
+},
+
+_renderMobileBottomBar({ preserveOpen = false } = {}) {
+  const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
+  const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
+  const wasCompactSummaryExpanded = preserveOpen
+    && previousSheet?.classList.contains('fpb-mobile-summary-tray-expanded');
+
+  document.querySelector('.fpb-mobile-bottom-bar')?.remove();
+  document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
+  document.querySelector('.fpb-mobile-backdrop')?.remove();
+  document.body.classList.remove('fpb-compact-mobile-summary-active');
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const selectedCount = this.getAllSelectedProductsData().filter(p => !p.isDefault).length;
+  const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
+  const isComplete = this.areBundleConditionsMet();
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'fpb-mobile-backdrop';
+
+  const sheet = document.createElement('div');
+  sheet.className = 'fpb-mobile-bottom-sheet';
+  const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
+  if (usesCompactMobileSummaryTray) {
+    sheet.classList.add('fpb-mobile-summary-tray');
+    if (this.getFullPageDesignPreset() === 'CLASSIC') {
+      sheet.classList.add('fpb-mobile-classic-footer');
+    }
+    this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
+    this._populateCompactMobileSummaryTray(sheet);
+    sheet.classList.add('is-open');
+    document.body.classList.add('fpb-compact-mobile-summary-active');
+    document.body.appendChild(sheet);
+    return;
+  }
+
+  this._populateMobileSheet(sheet);
+
+  const bar = document.createElement('div');
+  bar.className = 'fpb-mobile-bottom-bar';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'fpb-mobile-toggle-btn';
+  toggleBtn.setAttribute('aria-label', 'View bundle summary');
+  toggleBtn.innerHTML = `<span class="fpb-caret">&#9650;</span><span class="fpb-mobile-toggle-count">${selectedCount}</span>`;
+  toggleBtn.addEventListener('click', () => {
+    const open = sheet.classList.toggle('is-open');
+    backdrop.classList.toggle('is-open', open);
+    toggleBtn.querySelector('.fpb-caret').innerHTML = open ? '&#9660;' : '&#9650;';
+  });
+  backdrop.addEventListener('click', () => {
+    sheet.classList.remove('is-open');
+    backdrop.classList.remove('is-open');
+    toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9650;';
+  });
+
+  const totalEl = document.createElement('div');
+  totalEl.className = 'fpb-mobile-total';
+  totalEl.textContent = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
+
+  const conditionlessMobile = this.bundleHasNoConditions();
+  const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+  const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
+  const ctaBtn = document.createElement('button');
+  ctaBtn.className = 'fpb-mobile-cta-btn';
+  ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
+  if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
+  ctaBtn.addEventListener('click', () => {
+    if (conditionlessMobile || (isLastStep && isComplete)) {
+      if (!this.canCheckoutWithBoxSelection()) {
+        this.showBoxSelectionValidationMessage();
+        return;
+      }
+      this.addBundleToCart();
+    } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
+      this.activeCollectionId = null;
+      this.searchQuery = '';
+      this.currentStepIndex++;
+      this.renderFullPageLayoutWithSidebar();
+    } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
+      ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
+    } else {
+      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+    }
+  });
+
+  bar.appendChild(toggleBtn);
+  bar.appendChild(totalEl);
+  bar.appendChild(ctaBtn);
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(sheet);
+  document.body.appendChild(bar);
+
+  if (wasOpen) {
+    sheet.classList.add('is-open');
+    backdrop.classList.add('is-open');
+    toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
+  }
+},
+
+_populateMobileSheet(sheet) {
+  sheet.innerHTML = '';
+  this.renderSidePanel(sheet);
+},
+
+usesCompactMobileSummaryTray() {
+  const preset = this.getFullPageDesignPreset();
+  return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
+},
+};
+
+const fullPageMobileSummaryMethods = {
+_populateCompactMobileSummaryTray(sheet) {
+  sheet.innerHTML = '';
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
+    (sum, item) => sum + (Number(item.quantity) || 1),
+    0
+  );
+
+  const countBadge = document.createElement('div');
+  countBadge.className = 'fpb-mobile-summary-count-badge';
+  countBadge.setAttribute('role', 'button');
+  countBadge.setAttribute('tabindex', '0');
+  countBadge.setAttribute('aria-label', 'Review your bundle');
+  countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
+  countBadge.textContent = String(selectedFooterQuantity);
+  countBadge.addEventListener('click', () => {
+    this._toggleCompactMobileSummaryTray(sheet);
+  });
+  countBadge.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this._toggleCompactMobileSummaryTray(sheet);
+    }
+  });
+  sheet.appendChild(countBadge);
+
+  sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
+
+  if (this.selectedBundle?.pricing?.enabled) {
+    const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
+    const discountBlock = document.createElement('div');
+    discountBlock.className = 'side-panel-discount-message';
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+    );
+    let discountMessage = '';
+    if (combinedDiscountInfo.hasDiscount) {
+      discountMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+        variables
+      );
+    } else if (nextRule) {
+      discountMessage = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+        variables
+      );
+    }
+    if (discountMessage) {
+      const msgEl = document.createElement('div');
+      msgEl.className = 'fpb-mobile-summary-discount-text';
+      msgEl.innerHTML = discountMessage;
+      discountBlock.appendChild(msgEl);
+    }
+
+    const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
+    if (shouldShowProgressBar) {
+      const progressBar = this._renderDiscountProgress({
+        placement: "sidebar",
+        combinedDiscountInfo,
+        totalPrice,
+        totalQuantity,
+        unitPrices,
+      });
+      if (progressBar) {
+        progressBar.classList.add('fpb-dp-sidebar');
+        discountBlock.appendChild(progressBar);
+      }
+    }
+
+    if (discountBlock.childElementCount > 0) {
+      sheet.appendChild(discountBlock);
+    }
+  }
+
+  const navSection = document.createElement('div');
+  navSection.className = 'side-panel-nav';
+  const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
+  const conditionlessMobile = this.bundleHasNoConditions();
+  const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
+  const actionButton = this._createMobileSummaryActionButton({
+    finalPrice,
+    currencyInfo,
+    conditionlessMobile,
+    hasSelectionMobile,
+    isLastStep,
+    isComplete: this.areBundleConditionsMet()
+  });
+  navSection.appendChild(actionButton);
+  if (this.compactMobileSummaryTrayExpanded) {
+    const productsSection = document.createElement('div');
+    productsSection.className = 'fpb-mobile-summary-products-section';
+    productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
+    productsSection.appendChild(navSection);
+    sheet.appendChild(productsSection);
+  } else {
+    sheet.appendChild(navSection);
+  }
+},
+
+_toggleCompactMobileSummaryTray(sheet) {
+  const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
+  if (!hasSelectedSummaryProducts) {
+    this.compactMobileSummaryTrayExpanded = false;
+    this._populateCompactMobileSummaryTray(sheet);
+    return;
+  }
+  this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
+  this._populateCompactMobileSummaryTray(sheet);
+},
+
+_renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
+  const allSelectedProducts = this.getAllSelectedProductsData();
+  const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+  const summaryText = this.getBundleSummaryText();
+
+  const bundleItems = document.createElement('div');
+  bundleItems.className = 'fpb-mobile-summary-bundle-items';
+
+  const header = document.createElement('div');
+  header.className = 'fpb-mobile-summary-bundle-header';
+
+  const headerCopy = document.createElement('div');
+  headerCopy.className = 'fpb-mobile-summary-bundle-copy';
+  const title = document.createElement('div');
+  title.className = 'fpb-mobile-summary-bundle-title';
+  title.textContent = summaryText.title;
+  const subtitle = document.createElement('div');
+  subtitle.className = 'fpb-mobile-summary-bundle-subtitle';
+  subtitle.textContent = summaryText.subTitle;
+  headerCopy.append(title, subtitle);
+  header.appendChild(headerCopy);
+
+  if (allSelectedProducts.length > 0) {
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'fpb-mobile-summary-clear-btn';
+    clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Clear</span>`;
+    clearBtn.addEventListener('click', () => {
+
+      this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+      this.currentStepIndex = 0;
+      this.searchQuery = '';
+      this.activeCollectionId = null;
+      this.compactMobileSummaryTrayExpanded = false;
+      this.reRenderFullPage();
+    });
+    header.appendChild(clearBtn);
+  }
+  bundleItems.appendChild(header);
+
+  const productsList = document.createElement('div');
+  productsList.className = 'fpb-mobile-summary-products-list';
+
+  allSelectedProducts.forEach(item => {
+    const summaryTitle = this.getSummaryProductDisplayTitle(item);
+    const variantInfo = this.getSummaryProductVariantDisplay(item);
+    const row = document.createElement('div');
+    row.className = 'fpb-mobile-summary-product-row';
+    const imgSrc = this._getSelectedProductImageSrc(item);
+    const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+    const priceText = CurrencyManager.convertAndFormat(
+      isFreeGiftItem ? 0 : item.price * item.quantity,
+      currencyInfo
+    );
+
+    row.innerHTML = `
+      <div class="fpb-mobile-summary-product-image-wrap">
+        ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
+      </div>
+      <div class="fpb-mobile-summary-product-info">
+        <span class="fpb-mobile-summary-product-title">${this._escapeHTML(summaryTitle)}</span>
+        ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+        <span class="fpb-mobile-summary-product-price">${priceText}</span>
+      </div>
+      <div class="fpb-mobile-summary-product-action">
+        <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
+      </div>
+    `;
+
+    if (!item.isDefault) {
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'fpb-mobile-summary-product-remove';
+      removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+      removeBtn.addEventListener('click', () => {
+        const stepIndex = item.stepIndex;
+        const productId = item.variantId || item.productId || item.id;
+        const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+        this.updateProductSelection(stepIndex, productId, 0);
+        const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
+        ToastManager.showWithUndo(
+          `Removed "${truncated}"`,
+          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+          5000
+        );
+      });
+      row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
+    }
+
+    productsList.appendChild(row);
+  });
+
+  const requiredSlots = Math.max(
+    allSelectedProducts.length + 1,
+    activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
+    2
+  );
+  if (this._shouldRenderProductSlots()) {
+    const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
+    const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+    for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+      const emptyCard = document.createElement('div');
+      emptyCard.className = 'fpb-mobile-summary-empty-product-card';
+      const emptyStateIcon = emptyStateIconUrl
+        ? `<img src="${emptyStateIconUrl}" alt="" width="63" height="63" style="width:63px;height:63px;object-fit:contain">`
+        : '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:32px;line-height:1;font-weight:700;color:#a6a3a3">+</span>';
+      emptyCard.innerHTML = `
+        <div class="fpb-mobile-summary-empty-product-image">${emptyStateIcon}</div>
+        <div class="fpb-mobile-summary-empty-product-info">
+          <span class="fpb-mobile-summary-empty-product-title"></span>
+          <span class="fpb-mobile-summary-empty-product-variant"></span>
+          <span class="fpb-mobile-summary-empty-product-price"></span>
+        </div>
+        <span class="fpb-mobile-summary-empty-product-action"></span>
+      `;
+      productsList.appendChild(emptyCard);
+    }
+  }
+
+  bundleItems.appendChild(productsList);
+  return bundleItems;
+},
+
+_createMobileSummaryActionButton({
+  finalPrice,
+  currencyInfo,
+  conditionlessMobile,
+  hasSelectionMobile,
+  isLastStep,
+  isComplete
+}) {
+  const ctaBtn = document.createElement('button');
+  ctaBtn.className = 'side-panel-btn side-panel-btn-next';
+  const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
+  const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
+  const shouldAddToCart = !shouldAdvance && (conditionlessMobile || (isLastStep && isComplete));
+  const actionText = shouldAddToCart
+    ? this._resolveText('addToCartButton', 'Add to Cart')
+    : this._resolveText('nextButton', 'Next');
+  const priceText = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
+  const labelSpan = document.createElement('span');
+  labelSpan.className = 'fpb-mobile-summary-action-label';
+  labelSpan.textContent = actionText;
+  const separatorSpan = document.createElement('span');
+  separatorSpan.className = 'fpb-mobile-summary-action-separator';
+  separatorSpan.textContent = '•';
+  const priceSpan = document.createElement('span');
+  priceSpan.className = 'fpb-mobile-summary-action-price';
+  priceSpan.textContent = priceText;
+  ctaBtn.append(labelSpan, separatorSpan, priceSpan);
+  if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
+  ctaBtn.addEventListener('click', () => {
+    if (shouldAddToCart) {
+      if (!this.canCheckoutWithBoxSelection()) {
+        this.showBoxSelectionValidationMessage();
+        return;
+      }
+      this.addBundleToCart();
+    } else {
+      const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
+      if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
+        const previousStepIndex = this.currentStepIndex;
+        this.activeCollectionId = null;
+        this.searchQuery = '';
+        this.currentStepIndex = targetStepIndex;
+        this._emitStorefrontEvent('step-changed', { previousStepIndex, currentStepIndex: targetStepIndex, direction: 'next' });
+        this.renderFullPageLayoutWithSidebar();
+      } else if (!this.canNavigateToStep(targetStepIndex)) {
+        ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      }
+    }
+  });
+  return ctaBtn;
+},
+
+getBundleSummaryText() {
+  const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+  return {
+    title: typeof summary.title === 'string' && summary.title.trim()
+      ? summary.title
+      : 'Your Bundle',
+    subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
+      ? summary.subTitle
+      : 'Review your bundle'
+  };
+},
+
+getBundleContentSummaryText() {
+  const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
+  return {
+    title: typeof summary.title === 'string' ? summary.title.trim() : '',
+    subTitle: typeof summary.subTitle === 'string' ? summary.subTitle.trim() : ''
+  };
+},
+
+getCurrentStepContentText(stepIndex) {
+  const step = this.selectedBundle?.steps?.[stepIndex];
+  return {
+    subtext: typeof step?.pageTitle === 'string' ? step.pageTitle.trim() : ''
+  };
+},
+
+createStepContentHeader(stepIndex) {
+  const contentText = this.getCurrentStepContentText(stepIndex);
+  if (!contentText.subtext) return null;
+
+  const header = document.createElement('div');
+  header.className = 'fpb-full-page-content-header';
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'fpb-full-page-content-subtitle fpb-step-subtext';
+  subtitle.textContent = contentText.subtext;
+  header.appendChild(subtitle);
+
+  return header;
+},
+
+shouldRenderFullPageSearch() {
+  if (this.resolveFullPageLayout() === 'footer_side') {
+    return false;
+  }
+  return this.resolveFullPageCardCtaMode() !== 'icon';
+},
+
+usesSelectedQuantityBadge() {
+  return this.resolveFullPageCardCtaMode() === 'icon';
+},
+
+_isStandardDesktopSidebar(panel) {
+  const preset = this.getFullPageDesignPreset();
+  return this.resolveFullPageLayout() === 'footer_side'
+    && (preset === 'DEFAULT' || preset === 'CLASSIC')
+    && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
+},
+
+createStandardSidebarSelectedRow(item, currencyInfo) {
+  const summaryTitle = this.getSummaryProductDisplayTitle(item);
+  const variantInfo = this.getSummaryProductVariantDisplay(item);
+  const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+  const priceText = isFreeGiftItem
+    ? CurrencyManager.convertAndFormat(0, currencyInfo)
+    : CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo);
+  const wrapper = document.createElement('div');
+
+  wrapper.innerHTML = renderSelectedProductRow({
+    id: item.variantId || item.productId || item.id,
+    title: summaryTitle,
+    variantTitle: variantInfo,
+    imageUrl: this._getSelectedProductImageSrc(item),
+    quantity: item.quantity,
+    priceText,
+    isDefault: item.isDefault === true,
+    isFreeGift: isFreeGiftItem,
+  }).trim();
+
+  const row = wrapper.firstElementChild;
+  row?.classList?.add('side-panel-product-row');
+  return row;
+},
+
+createStandardSidebarDiscountProgress({ discountMessage, combinedDiscountInfo, totalPrice, totalQuantity }) {
+  const activeRule = combinedDiscountInfo?.applicableRule
+    || PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity)
+    || null;
+  if (!activeRule) return null;
+
+  const conditionType = PricingCalculator.getRuleConditionType(activeRule);
+  const targetValue = PricingCalculator.getRuleConditionValue(
+    activeRule,
+    PricingCalculator.getDiscountMethod(this.selectedBundle)
+  );
+  const currentValue = conditionType === 'amount' ? totalPrice : totalQuantity;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderDiscountProgress(
+    getDiscountProgressData({
+      currentValue,
+      targetValue,
+      message: discountMessage || '',
+    }),
+    { mode: this.config.discountProgressBarType === 'simple' ? 'bar' : 'stepped' }
+  ).trim();
+
+  const progress = wrapper.firstElementChild;
+  progress?.classList?.add('bw-discount-progress--standard-sidebar');
+  progress?.classList?.add('fpb-dp-sidebar');
+  return progress;
+},
+
+};
+
+const fullPageSidePanelMethods = {
+renderSidePanel(panel) {
+  if (!panel) return;
+  panel.innerHTML = '';
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+  const allSelectedProducts = this.getAllSelectedProductsData();
+  const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
+  const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
+  const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
+  const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
+  const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
+  const summaryText = this.getBundleSummaryText();
+  const isClassicDesktopSidebar =
+    this.resolveFullPageLayout() === 'footer_side' &&
+    this.getFullPageDesignPreset() === 'CLASSIC' &&
+    !isMobileSheet;
+
+  const header = document.createElement('div');
+  header.className = 'side-panel-header';
+  const headerCopy = document.createElement('div');
+  headerCopy.className = 'side-panel-header-copy';
+  const headerTitle = document.createElement('span');
+  headerTitle.className = 'side-panel-title';
+  headerTitle.textContent = summaryText.title;
+  if (isStandardDesktopSidebar) {
+    headerCopy.appendChild(headerTitle);
+    header.appendChild(headerCopy);
+  } else {
+    header.appendChild(headerTitle);
+  }
+
+  if (isStandardDesktopSidebar || allSelectedProducts.length > 0) {
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'side-panel-clear-btn';
+    clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
+    clearBtn.addEventListener('click', () => {
+
+      this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
+      this.currentStepIndex = 0;
+      this.searchQuery = '';
+      this.activeCollectionId = null;
+      this.reRenderFullPage();
+    });
+    header.appendChild(clearBtn);
+  }
+  panel.appendChild(header);
+
+  const subtitle = document.createElement('p');
+  subtitle.className = 'side-panel-subtitle';
+  subtitle.textContent = summaryText.subTitle;
+  if (isStandardDesktopSidebar) {
+    headerCopy.appendChild(subtitle);
+  } else {
+    panel.appendChild(subtitle);
+  }
+
+  const tierCta = this.createSidebarTierCta(nextRule);
+  if (!isStandardDesktopSidebar && !isClassicDesktopSidebar && tierCta) {
+    panel.appendChild(tierCta);
+  }
+
+  const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+  const boxSelection = this.renderBoxSelectionOptions(
+    isClassicDesktopSidebar ? selectedBoxSelectionQuantity : totalQuantity
+  );
+
+  if ((isClassicDesktopSidebar || !isStandardDesktopSidebar) && boxSelection) {
+    panel.appendChild(boxSelection);
+  }
+
+  if (this.selectedBundle?.pricing?.enabled) {
+    const variables = TemplateManager.createDiscountVariables(
+      this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
+    );
+    let discountMessage = '';
+    if (combinedDiscountInfo.hasDiscount) {
+      discountMessage = TemplateManager.replaceVariables(
+        this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
+        variables
+      );
+    } else if (nextRule) {
+      discountMessage = TemplateManager.replaceVariables(
+        this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
+        variables
+      );
+    }
+    if (discountMessage) {
+      discountMessage = this._formatSidebarDiscountMessage(discountMessage);
+      const msgEl = document.createElement('div');
+      msgEl.className = 'side-panel-discount-message';
+      msgEl.innerHTML = discountMessage;
+      panel.appendChild(msgEl);
+    }
+
+    if (this.config.showDiscountProgressBar) {
+      const progressBar = isStandardDesktopSidebar
+        ? this.createStandardSidebarDiscountProgress({
+          discountMessage,
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+        })
+        : this._renderDiscountProgress({
+          placement: "sidebar",
+          combinedDiscountInfo,
+          totalPrice,
+          totalQuantity,
+          unitPrices,
+        });
+      if (progressBar) {
+        progressBar.classList.add('fpb-dp-sidebar');
+        panel.appendChild(progressBar);
+      }
+    }
+  }
+
+  const countLabel = document.createElement('div');
+  countLabel.className = 'side-panel-item-count';
+  countLabel.textContent = isClassicDesktopSidebar
+    ? `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`
+    : isStandardDesktopSidebar
+      ? `${allSelectedProducts.length} item(s)`
+      : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
+  panel.appendChild(countLabel);
+
+  if (isClassicDesktopSidebar) {
+    const classicSlotCount = this.getClassicSidebarSlotCount(
+      allSelectedProducts,
+      activeStep
+    );
+
+    const classicSlots = this.renderClassicSidebarSlots(
+      allSelectedProducts,
+      classicSlotCount
+    );
+
+    panel.appendChild(classicSlots);
+  } else {
+    const productsContainer = document.createElement('div');
+    productsContainer.className = 'side-panel-products';
+    if (isStandardDesktopSidebar) {
+      productsContainer.classList.add('side-panel-products--standard');
+    }
+    if (isHorizontalPreset) {
+      productsContainer.classList.add('side-panel-products--slots');
+    }
+
+    if (allSelectedProducts.length > 0) {
+      allSelectedProducts.forEach(item => {
+        if (isStandardDesktopSidebar) {
+          const row = this.createStandardSidebarSelectedRow(item, currencyInfo);
+          const removeBtn = row?.querySelector('[data-action="remove-selected-product"]');
+          if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+              const stepIndex = item.stepIndex;
+              const productId = item.variantId || item.productId || item.id;
+              const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+              const summaryTitle = this.getSummaryProductDisplayTitle(item);
+              this.updateProductSelection(stepIndex, productId, 0);
+              const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
+              ToastManager.showWithUndo(
+                `Removed "${truncated}"`,
+                () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+                5000
+              );
+            });
+          }
+          if (row) productsContainer.appendChild(row);
+          return;
+        }
+
+        const summaryTitle = this.getSummaryProductDisplayTitle(item);
+        const variantInfo = this.getSummaryProductVariantDisplay(item);
+        const row = document.createElement('div');
+        row.className = 'side-panel-product-row';
+        if (isHorizontalPreset) {
+          row.classList.add('side-panel-product-slot');
+        }
+
+        const imgSrc = this._getSelectedProductImageSrc(item);
+
+        const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
+        const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
+        const priceHtml = isFreeGiftItem
+          ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
+          : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
+
+        if (isStandardDesktopSidebar) {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+              ${priceHtml}
+            </div>
+            <div class="side-panel-product-action"></div>
+          `;
+        } else {
+          row.innerHTML = `
+            <div class="side-panel-product-img-wrap">
+              ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
+              ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
+            </div>
+            <div class="side-panel-product-info">
+              <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
+              ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
+            </div>
+            ${priceHtml}
+          `;
+        }
+
+        if (!item.isDefault) {
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'side-panel-product-remove';
+          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+          removeBtn.addEventListener('click', () => {
+            const stepIndex = item.stepIndex;
+            const productId = item.variantId || item.productId || item.id;
+            const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
+            this.updateProductSelection(stepIndex, productId, 0);
+            const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
+            ToastManager.showWithUndo(
+              `Removed "${truncated}"`,
+              () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+              5000
+            );
+          });
+          if (isStandardDesktopSidebar) {
+            row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
+          } else {
+            row.appendChild(removeBtn);
+          }
+        }
+
+        productsContainer.appendChild(row);
+      });
+    } else if (isStandardDesktopSidebar) {
+      this._renderStandardSidebarEmptySlots(productsContainer);
+    }
+    if (isHorizontalPreset) {
+      const requiredSlots = Math.max(
+        totalQuantity + 1,
+        activeStep?.maxQuantity || activeStep?.minQuantity || 2,
+        2
+      );
+      if (this._shouldRenderProductSlots()) {
+        const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
+        const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+        for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
+          const emptySlot = document.createElement('div');
+          emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
+          if (emptyStateIconUrl) {
+            const img = document.createElement('img');
+            img.src = emptyStateIconUrl;
+            img.alt = '';
+            img.width = 40;
+            img.height = 40;
+            img.style.objectFit = 'contain';
+            emptySlot.appendChild(img);
+          } else {
+            const emptyText = document.createElement('span');
+            emptyText.textContent = '+';
+            emptyText.style.display = 'flex';
+            emptyText.style.alignItems = 'center';
+            emptyText.style.justifyContent = 'center';
+            emptyText.style.width = '100%';
+            emptyText.style.height = '100%';
+            emptyText.style.fontSize = '24px';
+            emptyText.style.lineHeight = '1';
+            emptyText.style.fontWeight = '700';
+            emptySlot.appendChild(emptyText);
+          }
+          productsContainer.appendChild(emptySlot);
+        }
+      }
+    }
+    panel.appendChild(productsContainer);
+  }
+
+  if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
+    const skeletonContainer = document.createElement('div');
+    skeletonContainer.className = 'side-panel-skeleton-slots';
+    this._renderSidebarProductSkeletons(skeletonContainer);
+    panel.appendChild(skeletonContainer);
+  }
+
+  if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
+
+  const totalSection = document.createElement('div');
+  totalSection.className = 'side-panel-total';
+  totalSection.innerHTML = `
+    <span class="side-panel-total-label">Total</span>
+    <div class="side-panel-total-prices">
+      ${combinedDiscountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+      <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
+    </div>
+  `;
+  if (isMobileSheet) {
+    panel.appendChild(totalSection);
+    return;
+  }
+
+  const actionSection = document.createElement('div');
+  actionSection.className = 'side-panel-action-container';
+  actionSection.appendChild(totalSection);
+
+  const navSection = document.createElement('div');
+  navSection.className = 'side-panel-nav';
+
+  const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+  const canProceed = this.canProceedToNextStep();
+  const conditionless = this.bundleHasNoConditions();
+  const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
+  const sidebarTierCtaContent = (conditionless || isLastStep)
+    ? this.getSidebarTierCtaContent(nextRule)
+    : null;
+  if (sidebarTierCtaContent) {
+    actionSection.style.gridTemplateColumns = '1fr';
+    actionSection.style.gap = '8px';
+    totalSection.style.alignItems = 'center';
+  }
+
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'side-panel-btn side-panel-btn-next';
+  const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
+    ? this._resolveText('nextButton', 'Next')
+    : 'Next Step';
+    nextBtn.textContent = (conditionless || isLastStep)
+      ? this._resolveText('addToCartButton', 'Add to Cart')
+      : nextStepLabel;
+  if (sidebarTierCtaContent) {
+    const labelHtml = sidebarTierCtaContent.label
+      ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
+      : '';
+    const subtextHtml = sidebarTierCtaContent.subtext
+      ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
+      : '';
+    nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
+  }
+  if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
+    nextBtn.disabled = true;
+  }
+  nextBtn.addEventListener('click', () => {
+    if (conditionless || isLastStep) {
+      if (!this.canCheckoutWithBoxSelection()) {
+        this.showBoxSelectionValidationMessage();
+        return;
+      }
+      this.addBundleToCart();
+    } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
+      const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
+      ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
+    } else if (this.canProceedToNextStep()) {
+      this.activeCollectionId = null;
+      this.searchQuery = '';
+      this.currentStepIndex++;
+      this.renderFullPageLayoutWithSidebar();
+    } else {
+      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+    }
+  });
+
+  navSection.appendChild(nextBtn);
+  actionSection.appendChild(navSection);
+  panel.appendChild(actionSection);
+},
+
+createSidebarTierCta(nextRule) {
+  const content = this.getSidebarTierCtaContent(nextRule);
+  if (!content) return null;
+
+  const { label, subtext } = content;
+
+  const cta = document.createElement('div');
+  cta.className = 'fpb-sidebar-tier-cta';
+
+  if (label) {
+    const title = document.createElement('div');
+    title.className = 'fpb-sidebar-tier-cta-title';
+    title.textContent = label;
+    cta.appendChild(title);
+  }
+
+  if (subtext) {
+    const detail = document.createElement('div');
+    detail.className = 'fpb-sidebar-tier-cta-subtext';
+    detail.textContent = subtext;
+    cta.appendChild(detail);
+  }
+
+  return cta;
+},
+};
+
+const fullPageBoxSelectionSidebarMethods = {
+getSidebarTierCtaContent(nextRule) {
+  const pricing = this.selectedBundle?.pricing;
+  if (!pricing?.enabled) return null;
+
+  const displayOptions = pricing.messages?.displayOptions || {};
+  const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
+  const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
+  const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
+  const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
+  const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
+  const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
+  const label = typeof option?.label === 'string' && option.label.trim()
+    ? option.label.trim()
+    : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
+  const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
+    ? option.subtext.trim()
+    : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
+
+  if (!label && !subtext) return null;
+  return { label, subtext };
+},
+
+getBoxSelectionRules() {
+  const boxSelection = this.selectedBundle?.boxSelection;
+  if (!boxSelection || boxSelection.isEnabled !== true || !Array.isArray(boxSelection.rules)) {
+    return [];
+  }
+
+  return boxSelection.rules
+    .map(rule => ({
+      ruleId: String(rule.ruleId || ''),
+      boxQuantity: Number(rule.boxQuantity || 0),
+      boxLabel: String(rule.boxLabel || ''),
+      boxSubtext: String(rule.boxSubtext || ''),
+      isDefaultSelected: rule.isDefaultSelected === true,
+    }))
+    .filter(rule => rule.ruleId && rule.boxQuantity > 0)
+    .sort((a, b) => a.boxQuantity - b.boxQuantity);
+},
+
+getActiveBoxSelectionRule(rules, totalQuantity) {
+  if (!Array.isArray(rules) || rules.length === 0) return null;
+
+  const selected = this.selectedBoxSelectionRuleId
+    ? rules.find(rule => rule.ruleId === this.selectedBoxSelectionRuleId)
+    : null;
+  if (selected) return selected;
+
+  const reachedRule = rules
+    .filter(rule => Number(totalQuantity || 0) >= rule.boxQuantity)
+    .sort((a, b) => b.boxQuantity - a.boxQuantity)[0];
+  if (reachedRule) return reachedRule;
+
+  return rules.find(rule => rule.isDefaultSelected) || rules[0];
+},
+
+getSelectedBoxSelectionQuantity() {
+  return this.getAllSelectedProductsData().reduce((total, item) => {
+    if (item.isDefault === true || item.isFreeGift === true) return total;
+    return total + (Number(item.quantity || 0) || 0);
+  }, 0);
+},
+
+getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
+  const boxSelection = this.selectedBundle?.boxSelection;
+  const rules = this.getBoxSelectionRules();
+  const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+  const isEnabled = boxSelection?.isEnabled === true
+    && boxSelection?.validateBoxSelectionQuantity === true
+    && !!activeRule;
+
+  if (!isEnabled) {
+    return {
+      isEnabled: false,
+      isValid: true,
+      activeRule,
+      totalQuantity: Number(totalQuantity || 0),
+    };
+  }
+
+  return {
+    isEnabled: true,
+    isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
+    activeRule,
+    totalQuantity: Number(totalQuantity || 0),
+  };
+},
+
+canCheckoutWithBoxSelection() {
+  return this.getBoxSelectionValidationState().isValid;
+},
+
+showBoxSelectionValidationMessage() {
+  const state = this.getBoxSelectionValidationState();
+  if (!state.isEnabled || state.isValid) return;
+
+  ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
+},
+
+renderBoxSelectionOptions(totalQuantity = 0) {
+  const rules = this.getBoxSelectionRules();
+  if (rules.length === 0) return null;
+
+  const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'fpb-box-selection-wrapper';
+
+  rules.forEach(rule => {
+    const option = document.createElement('button');
+    const isActive = activeRule?.ruleId === rule.ruleId;
+    option.type = 'button';
+    option.className = 'fpb-box-selection-option' + (isActive ? ' fpb-box-selection-option-active' : '');
+    option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    option.dataset.ruleId = rule.ruleId;
+
+    const title = document.createElement('span');
+    title.className = 'fpb-box-selection-title';
+    title.textContent = rule.boxLabel;
+    option.appendChild(title);
+
+    if (rule.boxSubtext) {
+      const subtext = document.createElement('span');
+      subtext.className = 'fpb-box-selection-subtext';
+      subtext.textContent = rule.boxSubtext;
+      option.appendChild(subtext);
+    }
+
+    option.addEventListener('click', () => {
+      this.selectedBoxSelectionRuleId = rule.ruleId;
+      this.reRenderFullPage();
+    });
+
+    wrapper.appendChild(option);
+  });
+
+  return wrapper;
+},
+
+getClassicSidebarSlotCount(allSelectedProducts = [], activeStep = null) {
+  const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
+  const boxRules = this.getBoxSelectionRules();
+  const activeBoxRule = this.getActiveBoxSelectionRule(
+    boxRules,
+    selectedBoxSelectionQuantity
+  );
+
+  const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
+  const stepQuantity = Number(activeStep?.maxQuantity || activeStep?.minQuantity || 0);
+  const selectedCount = Array.isArray(allSelectedProducts) ? allSelectedProducts.length : 0;
+
+  if (activeBoxQuantity > 0) {
+    return Math.max(activeBoxQuantity, selectedCount);
+  }
+
+  return Math.max(stepQuantity, selectedCount + 1, 2);
+},
+
+renderClassicSidebarSlots(allSelectedProducts = [], slotCount = 0) {
+  const safeSlotCount = Math.max(0, Number(slotCount || 0));
+  const slotData = [];
+
+  for (let slotIndex = 0; slotIndex < safeSlotCount; slotIndex += 1) {
+    const item = allSelectedProducts[slotIndex];
+
+    if (item) {
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const productId = item.variantId || item.productId || item.id;
+      slotData.push({
+        id: `classic-slot-${slotIndex}`,
+        label: summaryTitle,
+        product: {
+          id: productId,
+          title: summaryTitle,
+          variantTitle: this.getSummaryProductVariantDisplay(item),
+          imageUrl: this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE,
+          quantity: item.quantity,
+          isDefault: item.isDefault === true,
+          stepIndex: item.stepIndex,
+        },
+      });
+    } else {
+      slotData.push({
+        id: `classic-slot-${slotIndex}`,
+        label: 'Empty bundle slot',
+      });
+    }
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderSelectedProductSlots(slotData, {
+    className: 'classic-sidebar-slots bw-selected-slots--classic-sidebar',
+  }).trim();
+  const slots = wrapper.firstElementChild;
+
+  slots?.querySelectorAll('[data-action="remove-selected-product"]').forEach(removeBtn => {
+    removeBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const productId = removeBtn.dataset.variantId;
+      const item = allSelectedProducts.find(selectedItem =>
+        String(selectedItem.variantId || selectedItem.productId || selectedItem.id) === String(productId)
+      );
+      if (!item || !productId) return;
+
+      const summaryTitle = this.getSummaryProductDisplayTitle(item);
+      const removedItem = {
+        stepIndex: item.stepIndex,
+        variantId: productId,
+        quantity: item.quantity,
+        title: summaryTitle,
+      };
+
+      this.updateProductSelection(item.stepIndex, productId, 0);
+
+      const truncated = summaryTitle && summaryTitle.length > 25
+        ? summaryTitle.substring(0, 25) + '...'
+        : (summaryTitle || 'Product');
+
+      ToastManager.showWithUndo(
+        `Removed "${truncated}"`,
+        () => {
+          this.updateProductSelection(
+            removedItem.stepIndex,
+            removedItem.variantId,
+            removedItem.quantity
+          );
+        },
+        5000
+      );
+    });
+  });
+
+  return slots;
+},
+
+_escapeHTML(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+},
+
+_getSelectedProductImageSrc(item = {}) {
+  const getImageSrc = (image) => {
+    if (!image) return '';
+    if (typeof image === 'string') return image;
+    return image.src
+      || image.url
+      || image.originalSrc
+      || image.transformedSrc
+      || '';
+  };
+
+  return getImageSrc(item.variantImage)
+    || getImageSrc(item.variantImage?.src)
+    || getImageSrc(item.variant?.image)
+    || (typeof item.image === 'string' ? item.image : '')
+    || item.image?.src
+    || item.image?.url
+    || item.image?.originalSrc
+    || getImageSrc(item.imageUrl)
+    || item.featuredImage?.url
+    || item.featuredImage?.src
+    || getImageSrc(item.featuredImage)
+    || getImageSrc(item.images?.[0])
+    || getImageSrc(item.productImageUrl);
+},
+
+_formatSidebarDiscountMessage(discountMessage) {
+  const message = typeof discountMessage === 'string' ? discountMessage.trim() : '';
+  return message.replace(/!+\s*$/, '');
+},
+
+_getDefaultTimelineIcon(step) {
+  if (step.isDefault) {
+
+    return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+  if (step.isFreeGift) {
+
+    return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="20 12 20 22 4 22 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="2" y="7" width="20" height="5" rx="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="12" y1="22" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+},
+
+_getStepSelectedQuantity(stepIndex) {
+  const stepSelections = this.selectedProducts?.[stepIndex] || {};
+  return Object.values(stepSelections).reduce((total, qty) => total + (Number(qty) || 0), 0);
+},
+
+_getStepRequiredQuantity(step) {
+  if (!step) return 1;
+
+  const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const primaryValue = toNumber(step.conditionValue);
+  const secondaryValue = toNumber(step.conditionValue2);
+  const minQuantity = toNumber(step.minQuantity);
+  const maxQuantity = toNumber(step.maxQuantity);
+  const OPERATORS = ConditionValidator.OPERATORS;
+
+  const targetForOperator = (operator, value) => {
+    if (value == null) return null;
+    switch (operator) {
+      case OPERATORS.GREATER_THAN:
+        return value + 1;
+      case OPERATORS.LESS_THAN:
+        return Math.max(1, value - 1);
+      case OPERATORS.LESS_THAN_OR_EQUAL_TO:
+      case OPERATORS.EQUAL_TO:
+      case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
+        return value;
+      default:
+        return null;
+    }
+  };
+
+  const targets = [
+    targetForOperator(step.conditionOperator, primaryValue),
+    targetForOperator(step.conditionOperator2, secondaryValue),
+    minQuantity,
+    maxQuantity,
+  ].filter((value) => value != null && value > 0);
+
+  return targets.length > 0 ? Math.max(...targets) : 1;
+},
+
+_getStepProgressRatio(stepIndex) {
+  const step = this.selectedBundle?.steps?.[stepIndex];
+  if (!step) return 0;
+  if (this.isStepCompleted(stepIndex)) return 1;
+
+  const requiredQuantity = this._getStepRequiredQuantity(step);
+  const selectedQuantity = this._getStepSelectedQuantity(stepIndex);
+  return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
+},
+
+_getDefaultTimelineIconDataUri(step) {
+  const svg = this._getDefaultTimelineIcon(step)
+    .replace('class="timeline-step-icon--svg"', 'xmlns="http://www.w3.org/2000/svg"')
+    .replace(' xmlns="http://www.w3.org/2000/svg"', '');
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+},
+
+_isStandardSideFooterTimeline() {
+  return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+},
+
+buildStepTimelineEntries() {
+  const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const entries = [];
+
+  steps.forEach((step, index) => {
+    const stepLabel = (step.isFreeGift && step.addonLabel) ? step.addonLabel : step.name;
+    entries.push({
+      type: 'step',
+      step,
+      stepIndex: index,
+      label: stepLabel,
+    });
+
+    if (this.shouldRenderMultipleCategoryTimelineEntry(step)) {
+      entries.push({
+        type: 'multiple_categories',
+        step,
+        stepIndex: index,
+        label: 'Multiple Categories',
+      });
+    }
+  });
+
+  return entries;
+},
+
+getStandardTimelinePageSize() {
+  return window.innerWidth < 768 ? 4 : 5;
+},
+};
+
+const fullPageTimelineBannerMethods = {
+getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex) {
+  const entries = Array.isArray(timelineEntries) ? timelineEntries : [];
+  const timelinePageSize = this.getStandardTimelinePageSize();
+
+  if (entries.length <= timelinePageSize) {
+    this.standardTimelineWindowStart = 0;
+    this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+    return {
+      visibleEntries: entries,
+      windowStart: 0,
+      pageSize: timelinePageSize,
+      isPaged: false,
+    };
+  }
+
+  const activeChanged = this.standardTimelineLastActiveEntryIndex !== activeEntryIndex;
+  let windowStart = Number.isFinite(this.standardTimelineWindowStart)
+    ? this.standardTimelineWindowStart
+    : 0;
+
+  if (activeChanged && (activeEntryIndex < windowStart || activeEntryIndex >= windowStart + timelinePageSize)) {
+    windowStart = activeEntryIndex;
+  }
+
+  if (windowStart + timelinePageSize > entries.length) {
+    windowStart = entries.length - timelinePageSize;
+  }
+
+  windowStart = Math.max(0, windowStart);
+  this.standardTimelineWindowStart = windowStart;
+  this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
+
+  return {
+    visibleEntries: entries.slice(windowStart, windowStart + timelinePageSize),
+    windowStart,
+    pageSize: timelinePageSize,
+    isPaged: true,
+  };
+},
+
+ensureTimelinePagingStyles() {
+  return true;
+},
+
+shouldRenderMultipleCategoryTimelineEntry(step) {
+  if (!step || step.isFreeGift === true) return false;
+  return this.getStepCategoryTabEntries(step).length > 1;
+},
+
+createStepTimeline() {
+  if (this._isStandardSideFooterTimeline()) {
+    return this.createStandardStepTimeline();
+  }
+
+  const timeline = document.createElement('div');
+  timeline.className = 'step-timeline';
+
+  if (!this.selectedBundle || !this.selectedBundle.steps) {
+    return timeline;
+  }
+
+  const timelineEntries = this.buildStepTimelineEntries();
+  const totalEntryCount = Math.max(timelineEntries.length, 1);
+  const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+  )));
+  const {
+    visibleEntries,
+    windowStart,
+    pageSize,
+    isPaged,
+  } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+  const visibleEntryCount = Math.max(visibleEntries.length, 1);
+
+  if (isPaged) {
+    this.ensureTimelinePagingStyles();
+  }
+  timeline.classList.toggle('step-timeline--paged', isPaged);
+  timeline.dataset.windowStart = String(windowStart);
+  timeline.dataset.pageSize = String(pageSize);
+  timeline.dataset.totalEntries = String(totalEntryCount);
+
+  const createTimelineArrow = (direction) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = direction === 'prev'
+      ? 'timeline-navigation-arrow timeline-navigation-arrow--prev'
+      : 'timeline-navigation-arrow timeline-navigation-arrow--next';
+    button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+    button.textContent = direction === 'prev' ? '‹' : '›';
+    button.addEventListener('click', () => {
+      if (direction === 'prev') {
+        this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+      } else {
+        this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+      }
+      this.reRenderFullPage();
+    });
+    return button;
+  };
+
+  if (isPaged && windowStart > 0) {
+    timeline.appendChild(createTimelineArrow('prev'));
+  }
+
+  if (isPaged && windowStart + visibleEntryCount < totalEntryCount) {
+    timeline.appendChild(createTimelineArrow('next'));
+  }
+
+  visibleEntries.forEach((entry, displayIndex) => {
+    const step = entry.step;
+    const index = entry.stepIndex;
+    const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
+    const isCategoryEntry = entry.type === 'multiple_categories';
+    const timelineState = getTimelineEntryState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isCompleted: isCategoryEntry
+        ? this.isStepCompleted(index)
+        : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex),
+      isAccessible: this.isStepAccessible(index),
+      hasMultipleCategoryEntry,
+    });
+
+    const tabLabel = entry.label;
+    const escapedName = this._escapeHTML(tabLabel) || `Step ${index + 1}`;
+
+    const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+    const iconContent = uploadedIconUrl
+      ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
+      : this._getDefaultTimelineIcon(step);
+
+    const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+
+    const stepWrapper = document.createElement('div');
+    stepWrapper.innerHTML = renderStepTimelineEntry({
+      stepIndex: index,
+      timelineType: entry.type,
+      label: tabLabel || `Step ${index + 1}`,
+      iconHtml: iconContent,
+      checkmarkHtml: checkmarkSvg,
+      classes: timelineState.classes,
+    }).trim();
+    const stepEl = stepWrapper.firstElementChild;
+
+    if (entry.type === 'step' && timelineState.isAccessible && !timelineState.isDefaultStep) {
+      stepEl.style.cursor = 'pointer';
+      stepEl.addEventListener('click', () => {
+        if (!this.isStepAccessible(index)) {
+          ToastManager.show('Please complete the previous steps first.');
+          return;
+        }
+        if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+          ToastManager.show('Please meet the step conditions before proceeding.');
+          return;
+        }
+        this.currentStepIndex = index;
+        this.searchQuery = '';
+        this.activeCollectionId = null;
+        this.reRenderFullPage();
+      });
+    }
+
+    timeline.appendChild(stepEl);
+
+    if (displayIndex < visibleEntries.length - 1) {
+      const connectorEl = document.createElement('div');
+      connectorEl.className = 'timeline-connector';
+      const connectorFill = document.createElement('div');
+      connectorFill.className = 'timeline-connector-fill';
+      connectorFill.style.display = 'block';
+      connectorFill.style.width = `${Math.round(this._getStepProgressRatio(index) * 100)}%`;
+      connectorEl.appendChild(connectorFill);
+      timeline.appendChild(connectorEl);
+    }
+  });
+
+  return timeline;
+},
+
+createStandardStepTimeline() {
+  const timeline = document.createElement('div');
+  timeline.className = 'step-timeline step-timeline--standard';
+
+  if (!this.selectedBundle || !this.selectedBundle.steps) {
+    return timeline;
+  }
+
+  const timelineEntries = this.buildStepTimelineEntries();
+  const totalEntryCount = Math.max(timelineEntries.length, 1);
+  const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
+    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+  )));
+  const {
+    visibleEntries,
+    windowStart,
+    pageSize,
+    isPaged,
+  } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
+  const entryCount = Math.max(visibleEntries.length, 1);
+  const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
+    entry.type === 'step' && entry.stepIndex === this.currentStepIndex
+  )));
+  const progressFill = entryCount > 1
+    ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
+    : 0;
+  const progressLeft = 100 / (entryCount * 2);
+  const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
+  const timelineWidth = Math.min(100, entryCount * 30);
+
+  timeline.style.setProperty('--standard-timeline-count', String(entryCount));
+  timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
+  timeline.style.setProperty('--standard-timeline-total-count', String(totalEntryCount));
+  timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
+  timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
+  timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
+  timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
+  timeline.classList.toggle('standard-timeline--paged', isPaged);
+
+  const itemsContainer = document.createElement('div');
+  itemsContainer.className = 'standard-navigation-items-container';
+  itemsContainer.classList.toggle('standard-navigation-items-container--paged', isPaged);
+  itemsContainer.dataset.windowStart = String(windowStart);
+  itemsContainer.dataset.pageSize = String(pageSize);
+  itemsContainer.dataset.totalEntries = String(totalEntryCount);
+
+  const createTimelineArrow = (direction) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = direction === 'prev'
+      ? 'standard-navigation-arrow standard-navigation-arrow--prev'
+      : 'standard-navigation-arrow standard-navigation-arrow--next';
+    button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
+    button.textContent = direction === 'prev' ? '‹' : '›';
+    button.addEventListener('click', () => {
+      if (direction === 'prev') {
+        this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
+      } else {
+        this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
+      }
+      this.reRenderFullPage();
+    });
+    return button;
+  };
+
+  if (isPaged && windowStart > 0) {
+    itemsContainer.appendChild(createTimelineArrow('prev'));
+  }
+
+  if (isPaged && windowStart + entryCount < totalEntryCount) {
+    itemsContainer.appendChild(createTimelineArrow('next'));
+  }
+
+  visibleEntries.forEach((entry) => {
+    const step = entry.step;
+    const index = entry.stepIndex;
+    const itemEl = document.createElement('div');
+    itemEl.className = 'standard-navigation-item timeline-step';
+    itemEl.dataset.stepIndex = index;
+    itemEl.dataset.timelineType = entry.type;
+
+    const timelineState = getTimelineEntryState({
+      entry,
+      currentStepIndex: this.currentStepIndex,
+      isCompleted: entry.type === 'step'
+        && !(entry.type === 'step' && index === this.currentStepIndex)
+        && this.isStepCompleted(index),
+      isAccessible: this.isStepAccessible(index),
+      hasMultipleCategoryEntry: false,
+    });
+    timelineState.classes.forEach((className) => itemEl.classList.add(className));
+
+    const escapedName = this._escapeHTML(entry.label) || `Step ${index + 1}`;
+    const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
+    const iconUrl = uploadedIconUrl || this._getDefaultTimelineIconDataUri(step);
+
+    itemEl.innerHTML = `
+      <div class="standard-navigation-step-img-container timeline-icon-wrapper">
+        <img class="standard-navigation-image timeline-step-icon" src="${this._escapeHTML(iconUrl)}" alt="${escapedName}">
+      </div>
+      <div class="standard-navigation-title-container">
+        <p class="standard-navigation-title timeline-step-name">${escapedName}</p>
+      </div>
+    `;
+
+    if (entry.type === 'step' && timelineState.isAccessible && !timelineState.isDefaultStep) {
+      itemEl.style.cursor = 'pointer';
+      itemEl.addEventListener('click', () => {
+        if (!this.isStepAccessible(index)) {
+          ToastManager.show('Please complete the previous steps first.');
+          return;
+        }
+        if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
+          ToastManager.show('Please meet the step conditions before proceeding.');
+          return;
+        }
+        this.currentStepIndex = index;
+        this.searchQuery = '';
+        this.activeCollectionId = null;
+        this.reRenderFullPage();
+      });
+    }
+
+    itemsContainer.appendChild(itemEl);
+  });
+
+  if (entryCount > 1) {
+    const progressContainer = document.createElement('div');
+    progressContainer.className = 'standard-steps-progress-bar-container';
+    progressContainer.innerHTML = `
+      <div class="standard-steps-progress-bar">
+        <div class="standard-steps-progress-bar-filled"></div>
+      </div>
+    `;
+    itemsContainer.appendChild(progressContainer);
+  }
+
+  timeline.appendChild(itemsContainer);
+  return timeline;
+},
+
+createStepBannerImage(stepIndex) {
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  return createStepBannerImageElement(step, value => this._escapeHTML(value), document);
+},
+
+createBundleBanners() {
+  return createBundleBannerElement({
+    desktopBannerUrl: this.selectedBundle?.bundleBannerDesktopUrl,
+    mobileBannerUrl: this.selectedBundle?.bundleBannerMobileUrl,
+  }, document);
+},
+
+ensureBundleBannerRuntimeStyles() {
+  return true;
+},
+
+getStepQuantityHint(step) {
+  if (!step) return null;
+
+  const { conditionOperator, conditionValue, conditionOperator2, conditionValue2, minQuantity, maxQuantity } = step;
+  const OPERATORS = ConditionValidator.OPERATORS;
+
+  if (conditionOperator && conditionValue != null) {
+    const val = Number(conditionValue);
+
+    if (conditionOperator2 && conditionValue2 != null) {
+      const val2 = Number(conditionValue2);
+      const min = Math.min(val, val2);
+      const max = Math.max(val, val2);
+      return `Pick ${min}–${max}`;
+    }
+
+    switch (conditionOperator) {
+      case OPERATORS.EQUAL_TO:                  return `Pick ${val}`;
+      case OPERATORS.GREATER_THAN:              return `Pick ${val + 1}+`;
+      case OPERATORS.GREATER_THAN_OR_EQUAL_TO:  return `Pick ${val}+`;
+      case OPERATORS.LESS_THAN:                 return `Up to ${val - 1}`;
+      case OPERATORS.LESS_THAN_OR_EQUAL_TO:     return `Up to ${val}`;
+      default:                                  return null;
+    }
+  }
+
+  const min = minQuantity != null ? Number(minQuantity) : null;
+  const max = maxQuantity != null ? Number(maxQuantity) : null;
+  if (min && max && min !== max) return `Pick ${min}–${max}`;
+  if (min && min > 1) return `Pick ${min}+`;
+  if (max && max > 1) return `Up to ${max}`;
+  return null;
+},
+
+getStepProductImages(stepIndex) {
+  const selectedProducts = this.selectedProducts[stepIndex] || {};
+  const productImages = [];
+
+  Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
+    if (quantity > 0) {
+      const product = this.stepProductData[stepIndex]?.find(p => (p.variantId || p.id) === variantId);
+      if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
+        productImages.push({
+          url: product.imageUrl,
+          alt: product.title || 'Product'
+        });
+      }
+    }
+  });
+
+  return productImages;
+},
+
+};
+
+const fullPageSearchCategoryMethods = {
+createSearchInput() {
+  const searchContainer = document.createElement('div');
+  searchContainer.className = 'step-search-container';
+
+  searchContainer.innerHTML = `
+    <div class="step-search-input-wrapper">
+      <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input
+        type="text"
+        class="step-search-input"
+        placeholder="Search products..."
+        value="${this.searchQuery}"
+        autocomplete="off"
+      />
+      <button class="step-search-clear" type="button" style="display: ${this.searchQuery ? 'flex' : 'none'}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  const input = searchContainer.querySelector('.step-search-input');
+  const clearBtn = searchContainer.querySelector('.step-search-clear');
+
+  input.addEventListener('input', (e) => {
+    const value = e.target.value;
+
+    clearBtn.style.display = value ? 'flex' : 'none';
+
+    if (this.searchDebounceTimer) {
+      clearTimeout(this.searchDebounceTimer);
+    }
+
+    this.searchDebounceTimer = setTimeout(() => {
+      this.searchQuery = value;
+      this.updateProductGridWithSearch();
+    }, 300);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.style.display = 'none';
+    this.searchQuery = '';
+    this.updateProductGridWithSearch();
+    input.focus();
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      input.value = '';
+      clearBtn.style.display = 'none';
+      this.searchQuery = '';
+      this.updateProductGridWithSearch();
+    }
+  });
+
+  return searchContainer;
+},
+
+updateProductGridWithSearch() {
+  const gridContainer = this.container.querySelector('.full-page-product-grid-container');
+  if (!gridContainer) return;
+
+  const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+  gridContainer.innerHTML = '';
+  gridContainer.appendChild(productGrid);
+},
+
+hidePageTitle() {
+  const configName = (() => {
+    if (this.selectedBundle?.name) return this.selectedBundle.name;
+    try {
+      const rawConfig = this.container?.dataset?.bundleConfig;
+      if (!rawConfig) return '';
+      return JSON.parse(rawConfig)?.name || '';
+    } catch (e) {
+      return '';
+    }
+  })();
+  const normalizedConfigName = String(configName || '').trim().toLowerCase();
+
+  const selectors = [
+    '.main-page-title',
+    '.page-title',
+    'h1.page-title',
+    '.page-width h1',
+    '.section-template--*__main-padding h1',
+    '[class*="main-padding"] h1.h0'
+  ];
+
+  for (const selector of selectors) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(el => {
+
+        if (el.closest('.promo-banner')) return;
+
+        el.remove();
+      });
+    } catch (e) {
+
+    }
+  }
+
+  const pageTitleContainers = document.querySelectorAll('.page-width--narrow');
+  pageTitleContainers.forEach(container => {
+
+    const hasPageTitle = container.querySelector('.main-page-title, .page-title, h1.h0');
+    const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
+
+    if (hasPageTitle && !hasOtherContent) {
+      container.remove();
+    }
+  });
+
+  if (!normalizedConfigName) return;
+
+  document.querySelectorAll('h1').forEach(el => {
+    if (el.closest('.bundle-widget-container, .promo-banner')) return;
+    const normalizedTitle = String(el.textContent || '').trim().toLowerCase();
+    if (normalizedTitle !== normalizedConfigName) return;
+
+    const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
+    if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
+      titleSection.remove();
+      return;
+    }
+
+    const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
+    if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
+      titleBlock.remove();
+    } else {
+      el.remove();
+    }
+  });
+},
+
+createPromoBanner() {
+
+  if (this.config.showPromoBanner === false) {
+    return null;
+  }
+
+  const promoBannerEnabled = getComputedStyle(document.documentElement)
+    .getPropertyValue('--bundle-promo-banner-enabled')
+    .trim();
+
+  if (promoBannerEnabled === '0') {
+    return null;
+  }
+
+  const bundleName = this.selectedBundle?.name || 'Build Your Bundle';
+  const pricing = this.selectedBundle?.pricing;
+  const rules = pricing?.rules || [];
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+  let promoTitle = bundleName;
+  let promoSubtitle = '';
+  let promoNote = '';
+  let discountMessage = '';
+
+  if (pricing?.enabled && rules.length > 0) {
+    const pricingMethod = pricing.method || 'percentage_off';
+    const bestRule = rules.reduce((best, rule) => {
+      const dv = rule.discountValue ?? 0;
+      const bestDv = best.discountValue ?? 0;
+      const isPercent = pricingMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+      const discountValue = isPercent ? dv : dv / 100;
+      const bestValue = isPercent ? bestDv : bestDv / 100;
+      return discountValue > bestValue ? rule : best;
+    }, rules[0]);
+
+    const targetQty = bestRule.conditionValue ?? 0;
+    const conditionOperator = bestRule.conditionOperator;
+    const discountMethod = pricingMethod;
+    const discountValue = bestRule.discountValue ?? 0;
+
+    const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
+
+    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
+      discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
+    } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
+      const formattedAmount = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
+      discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
+    } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
+      const formattedPrice = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
+      discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
+    }
+  }
+
+  if (pricing?.messages?.banner) {
+    discountMessage = pricing.messages.banner;
+  }
+
+  if (discountMessage) {
+    promoNote = discountMessage;
+  }
+
+  const tierBadges = this.createPromoDiscountTierBadges(pricing, currencyInfo);
+  const banner = document.createElement('div');
+  banner.className = 'promo-banner';
+  banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
+  banner.innerHTML = `
+    ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
+    <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
+    ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
+    ${tierBadges}
+  `;
+
+  const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
+  if (bgImageUrl) {
+    banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
+    banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
+    banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
+
+    const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
+    if (cropRaw) {
+      try {
+        const crop = JSON.parse(cropRaw);
+        const cw = crop.width / 100;
+        const ch = cw * (3 / 16);
+        const cx = crop.x / 100;
+        const cy = crop.y / 100;
+        const bgSize = `${(1 / cw) * 100}%`;
+        const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
+        const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
+        banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
+        banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
+      } catch (_e) {
+
+      }
+    }
+  }
+
+  return banner;
+},
+
+createPromoDiscountTierBadges(pricing, currencyInfo) {
+  const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
+  if (!pricing?.enabled || rules.length === 0) return '';
+
+  const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
+  const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
+  const badges = rules
+    .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
+    .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+    .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
+    .filter(Boolean)
+    .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
+
+  if (badges.length === 0) return '';
+  return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
+},
+
+formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {
+  const ruleId = String(rule?.id || '');
+  const tierText = pricing?.messages?.tierTextByRuleId?.[ruleId];
+  if (tierText?.tierText && tierText?.tierSubtext) {
+    return `${tierText.tierText} / ${tierText.tierSubtext}`;
+  }
+  if (tierText?.tierText) return tierText.tierText;
+  if (tierText?.tierSubtext) return tierText.tierSubtext;
+
+  const threshold = Number(rule?.conditionValue || 0) || 0;
+  const discountValue = Number(rule?.discountValue || 0) || 0;
+  if (!threshold || !discountValue) return '';
+
+  const thresholdText = rule.conditionType === 'amount'
+    ? CurrencyManager.convertAndFormat(threshold, currencyInfo)
+    : String(threshold);
+  let discountText = '';
+  const discountMethod = pricing?.method || 'percentage_off';
+  if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+    discountText = `${discountValue}%`;
+  } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF || discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
+    discountText = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
+  }
+
+  return discountText ? `${thresholdText} / ${discountText}` : thresholdText;
+},
+
+collectStepProductIds(step) {
+  const productIds = [];
+  const addProductId = (product) => {
+    const id = product?.id || product?.graphqlId || product?.productId;
+    if (id && !productIds.includes(id)) productIds.push(id);
+  };
+
+  (step.products || []).forEach(addProductId);
+  (step.categories || []).forEach(category => {
+    (category.products || []).forEach(addProductId);
+    (category.selectedProducts || []).forEach(addProductId);
+  });
+
+  return productIds;
+},
+
+collectStepCollectionHandles(step) {
+  const handles = [];
+  const addCollectionHandle = (collection) => {
+    const handle = collection?.handle;
+    if (handle && !handles.includes(handle)) handles.push(handle);
+  };
+
+  (step.collections || []).forEach(addCollectionHandle);
+  (step.categories || []).forEach(category => {
+    (category.collections || []).forEach(addCollectionHandle);
+    (category.collectionsData || []).forEach(addCollectionHandle);
+    (category.collectionsSelectedData || []).forEach(addCollectionHandle);
+  });
+
+  return handles;
+},
+
+getStepCategoryTabEntries(step) {
+  if (!Array.isArray(step.categories)) return [];
+
+  return step.categories
+    .map((category, index) => {
+      const id = category.categoryId || category.id || `category-${index}`;
+      const title = category.title || category.name;
+      if (!id || !title) return null;
+
+      const handles = [];
+      const productIds = [];
+      const addHandle = (collection) => {
+        const handle = collection?.handle;
+        if (handle && !handles.includes(handle)) handles.push(handle);
+      };
+      const addProductId = (product) => {
+        const productId = product?.id || product?.graphqlId || product?.productId;
+        if (productId && !productIds.includes(productId)) productIds.push(productId);
+      };
+
+      (category.collections || []).forEach(addHandle);
+      (category.collectionsData || []).forEach(addHandle);
+      (category.collectionsSelectedData || []).forEach(addHandle);
+      (category.products || []).forEach(addProductId);
+      (category.selectedProducts || []).forEach(addProductId);
+
+      return {
+        id,
+        title,
+        handles,
+        productIds,
+        displayVariantsAsIndividualProducts: category.displayVariantsAsIndividualProducts === true,
+        displayVariantsAsSwatches: category.displayVariantsAsSwatches === true,
+      };
+    })
+    .filter(entry => entry && (entry.handles.length > 0 || entry.productIds.length > 0));
+},
+
+getActiveStepCategoryId(step) {
+  const categoryEntries = this.getStepCategoryTabEntries(step);
+  if (categoryEntries.length === 0) return this.activeCollectionId;
+  if (this.activeCollectionId && categoryEntries.some(entry => entry.id === this.activeCollectionId)) {
+    return this.activeCollectionId;
+  }
+  return categoryEntries[0].id;
+},
+
+getActiveStepCategoryEntry(step) {
+  const categoryEntries = this.getStepCategoryTabEntries(step);
+  const activeCategoryId = this.getActiveStepCategoryId(step);
+  return categoryEntries.find(entry => entry.id === activeCategoryId) || null;
+},
+
+shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
+  if (activeCategory) {
+    return activeCategory.displayVariantsAsIndividualProducts === true;
+  }
+
+  const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
+  if (hasCategoryEntries) {
+    return false;
+  }
+
+  return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+},
+
+createActiveCategoryTitle(stepIndex) {
+  if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+    return null;
+  }
+
+  const activeCategory = this.getActiveStepCategoryEntry(this.selectedBundle.steps[stepIndex]);
+  if (!activeCategory?.title) return null;
+
+  const title = document.createElement('div');
+  title.className = 'fpb-step-category-title';
+  title.textContent = activeCategory.title;
+  return title;
+},
+};
+
+const fullPageProductGridMethods = {
+createCategorySectionRows(stepIndex) {
+  if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+    return null;
+  }
+
+  const step = this.selectedBundle.steps[stepIndex];
+  const categoryEntries = this.getStepCategoryTabEntries(step);
+  if (categoryEntries.length <= 1) return null;
+
+  const activeCategoryId = this.getActiveStepCategoryId(step);
+  const inactiveCategoryEntries = categoryEntries.filter(entry => entry.id !== activeCategoryId);
+  if (inactiveCategoryEntries.length === 0) return null;
+
+  const categoryRowsContainer = document.createElement('div');
+  categoryRowsContainer.className = 'fpb-category-section-rows';
+
+  inactiveCategoryEntries.forEach(entry => {
+    const categoryRow = document.createElement('button');
+    categoryRow.type = 'button';
+    categoryRow.className = 'fpb-category-section-row fpb-category-section-row--collapsed';
+    categoryRow.textContent = entry.title;
+    categoryRow.addEventListener('click', () => {
+      this.activeCollectionId = entry.id;
+      this.reRenderFullPage();
+    });
+    categoryRowsContainer.appendChild(categoryRow);
+  });
+
+  return categoryRowsContainer;
+},
+
+createCategoryTabs(stepIndex) {
+  if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+    return null;
+  }
+
+  const step = this.selectedBundle.steps[stepIndex];
+  const categoryEntries = this.getStepCategoryTabEntries(step);
+  const hasCategoryEntries = categoryEntries.length > 0;
+
+  if (categoryEntries.length === 0 && (!step.collections || step.collections.length === 0)) {
+    return null;
+  }
+
+  const customFilters = Array.isArray(step.filters) && step.filters.length > 0
+    ? step.filters
+    : null;
+
+  let tabEntries;
+  if (hasCategoryEntries) {
+    tabEntries = categoryEntries;
+  } else if (customFilters) {
+    tabEntries = customFilters
+      .map(f => {
+        const col = step.collections.find(c => (c.handle || c.id) === f.collectionHandle);
+        return col ? { id: col.id, title: f.label } : null;
+      })
+      .filter(Boolean);
+  } else {
+    tabEntries = step.collections.map(c => ({ id: c.id, title: c.title }));
+  }
+
+  if (tabEntries.length === 0) {
+    return null;
+  }
+
+  const tabsContainer = document.createElement('div');
+  tabsContainer.className = 'category-tabs';
+
+  const activeCategoryId = hasCategoryEntries ? this.getActiveStepCategoryId(step) : this.activeCollectionId;
+
+  if (!hasCategoryEntries) {
+    const allTab = document.createElement('button');
+    allTab.className = 'category-tab';
+    if (!this.activeCollectionId) {
+      allTab.classList.add('active');
+    }
+    allTab.innerHTML = `<span class="tab-label">All</span>`;
+    allTab.addEventListener('click', () => {
+      this.activeCollectionId = null;
+      this.reRenderFullPage();
+    });
+    tabsContainer.appendChild(allTab);
+  }
+
+  tabEntries.forEach(entry => {
+    const tab = document.createElement('button');
+    tab.className = 'category-tab';
+    if (activeCategoryId === entry.id) {
+      tab.classList.add('active');
+    }
+    tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
+    tab.addEventListener('click', () => {
+      this.activeCollectionId = entry.id;
+      this.reRenderFullPage();
+    });
+    tabsContainer.appendChild(tab);
+  });
+
+  return tabsContainer;
+},
+
+createFullPageProductGrid(stepIndex) {
+  const grid = document.createElement('div');
+  grid.className = 'full-page-product-grid';
+
+  if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
+    return grid;
+  }
+
+  const step = this.selectedBundle.steps[stepIndex];
+
+  let products = this.stepProductData[stepIndex] || [];
+
+  const activeCategory = this.getActiveStepCategoryEntry(step);
+  const activeCollectionId = activeCategory ? activeCategory.id : this.activeCollectionId;
+
+  if (activeCollectionId) {
+    if (activeCategory) {
+      const allowedProductIds = new Set();
+      activeCategory.productIds.forEach(productId => {
+        allowedProductIds.add(this.extractId(productId) || productId);
+      });
+      activeCategory.handles.forEach(handle => {
+        const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
+        collectionProductIds.forEach(productId => {
+          allowedProductIds.add(this.extractId(productId) || productId);
+        });
+      });
+
+      if (allowedProductIds.size > 0) {
+        products = products.filter(p => {
+          const numericPid = p.parentProductId || p.id || '';
+          return allowedProductIds.has(numericPid);
+        });
+      }
+    } else if (step.collections) {
+      const activeCollection = step.collections.find(c => c.id === activeCollectionId);
+    if (activeCollection && activeCollection.handle) {
+      const membershipKey = `${stepIndex}:${activeCollection.handle}`;
+      const collectionProductIds = this.stepCollectionProductIds[membershipKey];
+      if (collectionProductIds && collectionProductIds.length > 0) {
+        products = products.filter(p => {
+
+          const numericPid = p.parentProductId || p.id || '';
+          return collectionProductIds.some(cid => {
+            const numericCid = this.extractId(cid) || cid;
+            return numericPid === numericCid;
+          });
+        });
+      }
+    }
+    }
+  }
+
+  const shouldDisplayVariantsAsIndividual = this.shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory);
+  let expandedProducts = this.expandProductsByVariant(products, shouldDisplayVariantsAsIndividual);
+
+  if (this.searchQuery && this.searchQuery.trim()) {
+    const query = this.searchQuery.toLowerCase().trim();
+    expandedProducts = expandedProducts.filter(product => {
+      const title = (product.title || '').toLowerCase();
+      const variantTitle = (product.variantTitle || '').toLowerCase();
+      const parentTitle = (product.parentTitle || '').toLowerCase();
+      return title.includes(query) || variantTitle.includes(query) || parentTitle.includes(query);
+    });
+  }
+
+  if (expandedProducts.length === 0) {
+
+    const message = this.searchQuery
+      ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
+      : 'No products available in this step.';
+    grid.innerHTML = `<p class="no-products">${message}</p>`;
+    return grid;
+  }
+
+  const stepSelections = this.selectedProducts[stepIndex] || {};
+  const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
+  const isStepAtCapacity = !capacityCheck.allowed;
+
+  expandedProducts.forEach(product => {
+    const productCard = this.createProductCard(product, stepIndex);
+    const productId = product.variantId || product.id;
+    const currentQty = stepSelections[productId] || 0;
+
+    if (isStepAtCapacity && currentQty === 0) {
+      productCard.classList.add('dimmed');
+    }
+    grid.appendChild(productCard);
+  });
+
+  return grid;
+},
+
+expandProductsByVariant(products, shouldExpand = true) {
+  if (!shouldExpand) {
+    return products;
+  }
+
+  return products.flatMap(product => {
+
+    if (product.parentProductId && product.variantId) {
+      return [product];
+    }
+
+    if (product.variants && product.variants.length > 1) {
+      return product.variants
+        .filter(variant => variant.available !== false)
+        .map(variant => {
+
+          const imageUrl = variant.image?.src
+            || variant.image?.url
+            || (typeof variant.image === 'string' ? variant.image : null)
+            || variant.imageUrl
+            || product.imageUrl
+            || product.featuredImage?.url
+            || product.images?.[0]?.url
+            || product.images?.[0]?.src
+            || product.images?.[0]?.originalSrc
+            || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+
+          return {
+            ...product,
+            id: variant.id,
+            title: product.title,
+            variantTitle: variant.title === 'Default Title' ? '' : variant.title,
+            imageUrl,
+            price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
+            compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
+            variantId: variant.id,
+            available: variant.available !== false,
+            parentProductId: product.id,
+            parentTitle: product.title,
+
+            variants: null
+          };
+        });
+    }
+
+    return [product];
+  });
+},
+
+createProductGridLoadingState() {
+  return `
+    <div class="full-page-product-grid">
+      ${Array(6).fill(0).map(() => `
+        <div class="product-card skeleton-loading">
+          <div class="skeleton-card-content"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+},
+
+preloadAllSteps() {
+  const steps = this.selectedBundle?.steps;
+  if (!steps) return;
+
+  steps.forEach((_, index) => {
+
+    if (index === this.currentStepIndex) return;
+
+    if (this.stepProductData[index]?.length > 0) return;
+
+    this.loadStepProducts(index).catch(() => {
+
+    });
+  });
+},
+
+preloadNextStep() {
+  this.preloadAllSteps();
+},
+
+};
+
+const fullPageProductCardFooterMethods = {
+createProductCard(product, stepIndex) {
+  const productId = product.variantId || product.id;
+  const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+  const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
+
+  if (!product.imageUrl || product.imageUrl === '') {
+    product.imageUrl = product.image?.src ||
+                      product.featuredImage?.url ||
+                      product.images?.[0]?.url ||
+                      BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+  }
+
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  const primaryOptionName = step?.primaryVariantOption || null;
+  const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
+
+  const designPreset = this.getFullPageDesignPreset();
+  let htmlString;
+  if (designPreset === 'DEFAULT' || designPreset === 'CLASSIC' || designPreset === 'COMPACT' || designPreset === 'HORIZONTAL') {
+    htmlString = renderSharedProductCard(
+      product,
+      currentQuantity,
+      currencyInfo,
+      {
+        variantSelectorHtml,
+        mode: designPreset === 'HORIZONTAL' ? 'row' : 'grid',
+        addButtonText: this.getProductAddButtonText(),
+      }
+    );
+  } else {
+    htmlString = ComponentGenerator.renderProductCard(
+      product,
+      currentQuantity,
+      currencyInfo,
+      {
+        variantSelectorHtml,
+        actionMode: 'expandingQuantity',
+        addButtonText: this.getProductAddButtonText(),
+      }
+    );
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = htmlString.trim();
+  const cardElement = wrapper.firstChild;
+
+  if (renderSelectedQuantityBadge) {
+    this.applySelectedQuantityBadge(cardElement, currentQuantity);
+  }
+
+  this.applyStandardExpandedVariantTitle(cardElement, product);
+
+  const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
+  if (currentStepData?.isDefault) {
+    cardElement.classList.add('fpb-card--default-included');
+    const imgEl = cardElement.querySelector('.product-image, .product-img, img');
+    if (imgEl && imgEl.parentElement) {
+      imgEl.parentElement.classList.add('fpb-card-image-wrapper');
+      const badge = document.createElement('span');
+      badge.className = 'fpb-included-badge';
+      const _includedBadgeUrl = (() => {
+        const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-included-badge-url').trim();
+        if (!v || v === 'none') return null;
+        const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+        return m ? m[1] : null;
+      })();
+      if (_includedBadgeUrl) {
+        const img = document.createElement('img');
+        img.src = _includedBadgeUrl;
+        img.alt = 'Included';
+        img.className = 'fpb-included-badge-img';
+        badge.appendChild(img);
+      } else {
+        badge.textContent = this._resolveText('includedBadge', 'Included');
+      }
+      imgEl.parentElement.appendChild(badge);
+    }
+  }
+
+  if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
+    const imgEl = cardElement.querySelector('.product-image, .product-img, img');
+    if (imgEl && imgEl.parentElement) {
+      imgEl.parentElement.classList.add('fpb-card-image-wrapper');
+      const badge = document.createElement('span');
+      badge.className = 'fpb-free-badge';
+      const _badgeUrl = (() => {
+        const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-free-gift-badge-url').trim();
+        if (!v || v === 'none') return null;
+        const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
+        return m ? m[1] : null;
+      })();
+      if (_badgeUrl) {
+        const img = document.createElement('img');
+        img.src = _badgeUrl;
+        img.alt = 'Free gift';
+        img.className = 'fpb-free-badge-img';
+        badge.appendChild(img);
+      } else {
+        badge.textContent = this._resolveText('freeBadge', 'Free');
+      }
+      imgEl.parentElement.appendChild(badge);
+    }
+    const priceEl = cardElement.querySelector('.product-price, .price');
+    if (priceEl) {
+      const originalPriceText = priceEl.textContent;
+      const _ci = CurrencyManager.getCurrencyInfo();
+      priceEl.innerHTML = `${CurrencyManager.convertAndFormat(0, _ci)} <span class="side-panel-product-original-price">${originalPriceText}</span>`;
+    }
+  }
+
+  this.attachProductCardListeners(cardElement, product, stepIndex);
+
+  return cardElement;
+},
+
+applyStandardExpandedVariantTitle(cardElement, product) {
+  const preset = this.getFullPageDesignPreset();
+  if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
+  if (!cardElement) return;
+
+  const variantTitle = this.getSummaryProductVariantDisplay(product);
+  if (!product?.parentProductId || !variantTitle) return;
+
+  const titleEl = cardElement.querySelector('.product-title');
+  if (!titleEl) return;
+
+  const parentTitle = this.getSummaryProductDisplayTitle({
+    ...product,
+    variantTitle: product.variantTitle || 'Default Title',
+    title: product.title || '',
+    parentTitle: product.parentTitle || ''
+  });
+  if (!parentTitle) return;
+
+  cardElement.classList.add('product-card--expanded-variant');
+  titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+},
+
+getSummaryProductDisplayTitle(item) {
+  if (!item) return '';
+  const hasVariantLabel = item.variantTitle && item.variantTitle !== 'Default Title';
+  const hasUsableParentTitle = typeof item.parentTitle === 'string' && item.parentTitle.trim().length > 0;
+  if (hasVariantLabel && hasUsableParentTitle) return item.parentTitle;
+
+  const inferredParentTitle = this.getParentTitleFromDisplayTitle(item.title);
+  if (inferredParentTitle && hasVariantLabel) return inferredParentTitle;
+
+  if (hasUsableParentTitle) {
+    return item.parentTitle;
+  }
+
+  return inferredParentTitle || item.title || '';
+},
+
+getSummaryProductVariantDisplay(item) {
+  if (!item) return '';
+
+  const explicitVariantTitle = typeof item.variantTitle === 'string' ? item.variantTitle : '';
+  if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+    return explicitVariantTitle;
+  }
+
+  const parentTitle = typeof item.parentTitle === 'string' ? item.parentTitle : '';
+  const normalizedTitle = typeof item.title === 'string' ? item.title : '';
+  if (!normalizedTitle) return '';
+
+  if (parentTitle) {
+    const withParentPrefix = `${parentTitle} - `;
+    if (normalizedTitle.startsWith(withParentPrefix)) {
+      const inferredVariant = normalizedTitle.slice(withParentPrefix.length).trim();
+      return inferredVariant || '';
+    }
+  }
+
+  return this.getSummaryVariantFromDisplayTitle(normalizedTitle);
+},
+
+getParentTitleFromDisplayTitle(displayTitle) {
+  if (typeof displayTitle !== 'string') return '';
+  const separatorIndex = displayTitle.indexOf(' - ');
+  if (separatorIndex <= 0) return '';
+  const parentCandidate = displayTitle.slice(0, separatorIndex).trim();
+  return parentCandidate || '';
+},
+
+getSummaryVariantFromDisplayTitle(displayTitle) {
+  if (typeof displayTitle !== 'string') return '';
+  const separatorIndex = displayTitle.indexOf(' - ');
+  if (separatorIndex <= 0) return '';
+  const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
+  return variantCandidate || '';
+},
+
+applySelectedQuantityBadge(cardElement, currentQuantity) {
+  if (!cardElement) return;
+  cardElement.querySelector('.selected-overlay')?.remove();
+  const actionWrapper = cardElement.querySelector('.product-card-action');
+  if (!actionWrapper) return;
+
+  const priceRow = cardElement.querySelector('.product-price-row');
+  const actionRow = document.createElement('div');
+  actionRow.className = 'product-selected-action-row';
+  if (priceRow) {
+    actionRow.appendChild(priceRow);
+  }
+
+  const quantityBadge = document.createElement('span');
+  quantityBadge.className = 'inline-quantity-display-only';
+  quantityBadge.textContent = String(currentQuantity);
+  actionRow.appendChild(quantityBadge);
+
+  actionWrapper.classList.remove('is-expanded');
+  actionWrapper.classList.add('has-selected-quantity-badge');
+  actionWrapper.replaceChildren(actionRow);
+},
+
+attachProductCardListeners(cardElement, product, stepIndex) {
+
+  if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
+
+  const getProductId = () => product.variantId || product.id;
+
+  cardElement.addEventListener('click', (e) => {
+    const btn = e.target.closest('.inline-qty-btn');
+    if (!btn) return;
+    e.stopPropagation();
+    const productId = getProductId();
+    const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+    if (btn.classList.contains('qty-increase')) {
+      const { available } = this.getVariantAvailable(stepIndex, productId);
+      if (available !== null && currentQty >= available) {
+        ToastManager.show('Maximum stock reached for this variant.');
+        return;
+      }
+      this.updateProductSelection(stepIndex, productId, currentQty + 1);
+    } else if (btn.classList.contains('qty-decrease') && currentQty > 0) {
+      this.updateProductSelection(stepIndex, productId, currentQty - 1);
+    }
+  });
+
+  cardElement.addEventListener('click', (e) => {
+    const addBtn = e.target.closest('.product-add-btn');
+    if (!addBtn) return;
+    e.stopPropagation();
+    const productId = getProductId();
+    const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+    if (currentQty === 0) {
+      this.updateProductSelection(stepIndex, productId, 1);
+    }
+  });
+
+  if (product.variants && product.variants.length > 1) {
+    VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
+      const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
+
+      if (oldQty > 0 && oldVariantId !== newVariantId) {
+
+        if (this.selectedProducts[stepIndex]) {
+          delete this.selectedProducts[stepIndex][oldVariantId];
+        }
+
+        const newQtyAvail = product.quantityAvailable;
+        const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
+        let migratedQty = oldQty;
+        if (newOOS) {
+          ToastManager.show('Selected variant is out of stock — selection cleared.');
+          migratedQty = 0;
+        } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
+          migratedQty = newQtyAvail;
+          ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+        }
+        if (migratedQty > 0) {
+          this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+        }
+
+        const qtyDisplay = cardElement.querySelector('.inline-qty-display');
+        if (qtyDisplay) qtyDisplay.textContent = migratedQty;
+      }
+
+      cardElement.dataset.productId = newVariantId;
+      cardElement.querySelectorAll('[data-product-id]').forEach(el => {
+        if (el !== cardElement) el.dataset.productId = newVariantId;
+      });
+
+      this.updateFooterMessaging?.();
+      this.updateStepTimeline?.();
+      this._refreshSiblingDimState?.(stepIndex);
+    });
+  }
+},
+
+updateStepTimeline() {
+  if (!this.config.showStepTimeline) return;
+  const existing = this.elements.stepsContainer.querySelector('.step-timeline');
+  if (!existing) return;
+  const fresh = this.createStepTimeline();
+  existing.parentNode.replaceChild(fresh, existing);
+},
+
+renderFullPageFooter() {
+  if (!this.elements.footer) {
+    return;
+  }
+
+  const layout = this.resolveFullPageLayout();
+  if (layout === 'footer_side') {
+    this.elements.footer.style.display = 'none';
+    return;
+  }
+
+  const allSelectedProducts = this.getAllSelectedProductsData();
+
+  const wasOpen = this.elements.footer.classList.contains('is-open');
+
+  this.elements.footer.innerHTML = '';
+  this.elements.footer.className = 'full-page-footer floating-card';
+  if (wasOpen) this.elements.footer.classList.add('is-open');
+  this.elements.footer.style.display = 'block';
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
+
+  const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
+    if (step.isFreeGift || step.isDefault) return sum;
+    return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
+  }, 0);
+
+  const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+
+  if (this.config.showDiscountProgressBar) {
+    const progressBar = this._renderDiscountProgress({
+      combinedDiscountInfo,
+      totalPrice,
+      totalQuantity,
+      unitPrices,
+    });
+    if (progressBar) this.elements.footer.appendChild(progressBar);
+  }
+
+  const inner = document.createElement('div');
+  inner.className = 'footer-inner';
+
+  const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
+  const backdrop = document.createElement('button');
+  backdrop.className = 'footer-backdrop';
+  backdrop.setAttribute('type', 'button');
+  backdrop.setAttribute('aria-label', 'Close product list');
+  backdrop.addEventListener('click', () => {
+    this.elements.footer.classList.remove('is-open');
+  });
+  const bar = this._createFooterBar(
+    allSelectedProducts, totalQuantity, totalRequired,
+    totalPrice, finalPrice, combinedDiscountInfo, currencyInfo, isLastStep
+  );
+
+  inner.appendChild(panel);
+  inner.appendChild(backdrop);
+  inner.appendChild(bar);
+  this.elements.footer.appendChild(inner);
+},
+
+};
+
+const fullPageFooterSelectionMethods = {
+_createFooterPanel(allSelectedProducts, currencyInfo) {
+  const panel = document.createElement('div');
+  panel.className = 'footer-panel';
+
+  const list = document.createElement('ul');
+  list.className = 'footer-panel-list';
+
+  allSelectedProducts.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'footer-panel-item';
+
+    const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
+    const summaryTitle = this.getSummaryProductDisplayTitle(item);
+    const truncatedTitle = this.truncateTitle(summaryTitle, 35);
+    const ariaLabelTitle = ComponentGenerator.escapeHtml(summaryTitle);
+
+    li.innerHTML = `
+      <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
+           alt="${ariaLabelTitle}"
+           class="footer-panel-thumb">
+      <div class="footer-panel-info">
+        <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
+        <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
+      </div>
+      ${!item.isDefault ? `
+      <button class="footer-panel-remove" type="button" aria-label="Remove ${ariaLabelTitle}">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
+          <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        </svg>
+      </button>` : ''}
+    `;
+
+    if (!item.isDefault) {
+      const removeBtn = li.querySelector('.footer-panel-remove');
+      if (!removeBtn) return;
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
+        this.updateProductSelection(item.stepIndex, item.variantId, 0);
+        const truncated = summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : summaryTitle;
+        ToastManager.showWithUndo(
+          `Removed "${truncated}"`,
+          () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
+          5000
+        );
+      });
+    }
+
+    list.appendChild(li);
+  });
+
+  panel.appendChild(list);
+  return panel;
+},
+
+_createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
+  const bar = document.createElement('div');
+  bar.className = 'footer-bar';
+
+  const thumbStrip = document.createElement('div');
+  thumbStrip.className = 'footer-thumbstrip';
+  const maxThumbs = 3;
+  allSelectedProducts.slice(0, maxThumbs).forEach(item => {
+    const img = document.createElement('img');
+    img.src = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
+    img.alt = item.title || '';
+    img.className = 'footer-thumbstrip-img';
+    thumbStrip.appendChild(img);
+  });
+  if (allSelectedProducts.length > maxThumbs) {
+    const overflow = document.createElement('span');
+    overflow.className = 'footer-thumbstrip-overflow';
+    overflow.textContent = `+${allSelectedProducts.length - maxThumbs}`;
+    thumbStrip.appendChild(overflow);
+  }
+
+  const centreCol = document.createElement('div');
+  centreCol.className = 'footer-centre';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'footer-toggle';
+  toggleBtn.setAttribute('type', 'button');
+  const hasConditions = !this.bundleHasNoConditions();
+  const totalSelected = allSelectedProducts.length;
+  const toggleText = hasConditions
+    ? `${totalQuantity}/${totalRequired} Steps`
+    : `${totalSelected} Product${totalSelected !== 1 ? 's' : ''}`;
+  toggleBtn.innerHTML = `
+    <span class="footer-toggle-text">${toggleText}</span>
+    <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M5 8l5 5 5-5"/>
+    </svg>
+  `;
+  toggleBtn.addEventListener('click', () => {
+    this.elements.footer.classList.toggle('is-open');
+  });
+
+  const totalArea = document.createElement('div');
+  totalArea.className = 'footer-total-area';
+
+  let discountBadgeHTML = '';
+  if (discountInfo.hasDiscount && totalPrice > 0 && finalPrice < totalPrice) {
+    const discountPct = Math.round((1 - finalPrice / totalPrice) * 100);
+    if (discountPct > 0) {
+      discountBadgeHTML = `<span class="footer-discount-badge">${discountPct}% OFF</span>`;
+    }
+  }
+  totalArea.innerHTML = `
+    <span class="footer-total-label">Total:</span>
+    <div class="footer-total-prices">
+      ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
+      <span class="footer-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
+      ${discountBadgeHTML}
+    </div>
+  `;
+
+  centreCol.appendChild(toggleBtn);
+  centreCol.appendChild(totalArea);
+
+  const ctaBtn = document.createElement('button');
+  ctaBtn.className = 'footer-cta-btn';
+  ctaBtn.setAttribute('type', 'button');
+  const conditionless = this.bundleHasNoConditions();
+  const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
+  ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
+  if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
+    ctaBtn.disabled = true;
+  }
+  ctaBtn.addEventListener('click', () => {
+    if (conditionless || isLastStep) {
+      if (!this.canCheckoutWithBoxSelection()) {
+        this.showBoxSelectionValidationMessage();
+        return;
+      }
+      this.addBundleToCart();
+    } else if (this.canProceedToNextStep()) {
+      this.activeCollectionId = null;
+      this.searchQuery = '';
+      this.currentStepIndex++;
+      this.renderFullPageLayout();
+    } else {
+      ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+    }
+  });
+
+  bar.appendChild(thumbStrip);
+  bar.appendChild(centreCol);
+  bar.appendChild(ctaBtn);
+  return bar;
+},
+
+truncateTitle(title, maxLength) {
+  if (!title) return '';
+  if (title.length <= maxLength) return title;
+  return title.substring(0, maxLength) + '...';
+},
+
+getAllSelectedProductsData() {
+  const allProducts = [];
+
+  this.selectedBundle.steps.forEach((step, stepIndex) => {
+    const stepSelections = this.selectedProducts[stepIndex] || {};
+    const productsInStep = this.stepProductData[stepIndex] || [];
+
+    Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+      if (quantity > 0) {
+
+        let product = productsInStep.find(p =>
+          String(p.variantId) === String(variantId) || String(p.id) === String(variantId)
+        );
+
+        let matchedVariant = null;
+        if (!product) {
+          for (const p of productsInStep) {
+            if (p.variants && Array.isArray(p.variants)) {
+              const variant = p.variants.find(v => String(v.id) === String(variantId));
+              if (variant) {
+                product = p;
+                matchedVariant = variant;
+                break;
+              }
+            }
+          }
+        }
+
+        if (product) {
+
+          const variantData = matchedVariant || product;
+          const isVariantMatch = !!matchedVariant;
+
+          let variantTitle = '';
+          if (isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title') {
+            variantTitle = matchedVariant.title;
+          } else if (product.variantTitle && product.variantTitle !== 'Default Title') {
+            variantTitle = product.variantTitle;
+          }
+
+          const imageUrl = isVariantMatch
+            ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
+            : (product.imageUrl || product.image?.src || '');
+
+          const price = isVariantMatch
+            ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : (parseFloat(matchedVariant.price || '0') * 100))
+            : (product.price || 0);
+
+          allProducts.push({
+            stepIndex,
+            variantId,
+            quantity,
+            title: isVariantMatch
+              ? (variantTitle ? `${product.title} - ${variantTitle}` : product.title)
+              : (product.title || 'Untitled Product'),
+            parentTitle: product.parentTitle || product.title || 'Untitled Product',
+            variantTitle: variantTitle,
+            imageUrl: imageUrl,
+            image: imageUrl,
+            price: price,
+            isDefault: step.isDefault ?? false,
+            isFreeGift: step.isFreeGift ?? false,
+            addonDisplayFree: step.addonDisplayFree === true,
+          });
+        } else {
+        }
+      }
+    });
+  });
+
+  return allProducts;
+},
+
+/**
+ * Group selected variants by product for multi-variant display
+ * @param {Array} selectedProducts - Array of selected product variants
+ * @returns {Array} Array of product groups with their variants
+ */
+groupVariantsByProduct(selectedProducts) {
+  const productMap = new Map();
+
+  selectedProducts.forEach(item => {
+
+    const product = this.stepProductData[item.stepIndex]?.find(p => {
+
+      return p.variants?.some(v => String(v.id) === String(item.variantId)) || String(p.id) === String(item.variantId);
+    });
+
+    if (!product) return;
+
+    const productId = product.id || product.productId;
+    const key = `${item.stepIndex}-${productId}`;
+
+    if (!productMap.has(key)) {
+      productMap.set(key, {
+        productId,
+        stepIndex: item.stepIndex,
+        title: product.title || item.title,
+        image: product.imageUrl || product.image?.src || item.image,
+        variants: [],
+        totalQuantity: 0,
+        totalPrice: 0
+      });
+    }
+
+    const group = productMap.get(key);
+    group.variants.push(item);
+    group.totalQuantity += item.quantity;
+    group.totalPrice += (item.price * item.quantity);
+  });
+
+  return Array.from(productMap.values());
+},
+
+/**
+ * Show variant breakdown popup for a product with multiple variants
+ * @param {Object} productGroup - Product group with multiple variants
+ */
+showVariantBreakdown(productGroup) {
+  const overlay = document.createElement('div');
+  overlay.className = 'variant-breakdown-overlay';
+
+  const popup = document.createElement('div');
+  popup.className = 'variant-breakdown-popup';
+
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variantsHtml = productGroup.variants.map(variant => {
+    const product = this.stepProductData[variant.stepIndex]?.find(p =>
+      p.variants?.some(v => String(v.id) === String(variant.variantId)) || String(p.id) === String(variant.variantId)
+    );
+    const variantObj = product?.variants?.find(v => String(v.id) === String(variant.variantId));
+    const variantTitle = variantObj?.title || variant.title || 'Variant';
+
+    return `
+      <div class="variant-breakdown-item">
+        <img src="${variant.image}" alt="${variantTitle}" />
+        <div class="variant-info">
+          <span class="variant-title">${variantTitle}</span>
+          <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.convertAndFormat(variant.price, currencyInfo)}</span>
+        </div>
+        <button class="remove-variant-btn" data-step="${variant.stepIndex}" data-variant-id="${variant.variantId}">Remove</button>
+      </div>
+    `;
+  }).join('');
+
+  popup.innerHTML = `
+    <div class="variant-breakdown-header">
+      <h3>${productGroup.title}</h3>
+      <button class="close-breakdown-btn">&times;</button>
+    </div>
+    <div class="variant-breakdown-list">
+      ${variantsHtml}
+    </div>
+    <button class="add-another-variant-btn">+ Add Another Variant</button>
+  `;
+
+  popup.querySelector('.close-breakdown-btn').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+  });
+
+  popup.querySelectorAll('.remove-variant-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const stepIndex = parseInt(e.target.dataset.step);
+      const variantId = e.target.dataset.variantId;
+      this.updateProductSelection(stepIndex, variantId, 0);
+      document.body.removeChild(overlay);
+      this.reRenderFullPage();
+    });
+  });
+
+  popup.querySelector('.add-another-variant-btn').addEventListener('click', () => {
+    document.body.removeChild(overlay);
+
+    const product = this.stepProductData[productGroup.stepIndex]?.find(p => String(p.id) === String(productGroup.productId));
+    const step = this.selectedBundle.steps[productGroup.stepIndex];
+    if (product && step && this.productModal) {
+      this.productModal.open(product, step);
+    }
+  });
+
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) document.body.removeChild(overlay);
+  });
+},
+
+findProductByVariantId(step, variantId) {
+  return step.products?.find(p =>
+    p.variants?.some(v => v.id === variantId) || p.id === variantId
+  );
+},
+
+isStepCompleted(stepIndex) {
+  const step = this.selectedBundle.steps[stepIndex];
+  const stepSelections = this.selectedProducts[stepIndex] || {};
+  return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
+},
+
+reRenderFullPage() {
+  const layout = this.resolveFullPageLayout();
+  if (layout === 'footer_side') {
+    this.renderFullPageLayoutWithSidebar();
+  } else {
+    this.renderFullPageLayout();
+  }
+},
+
+};
+
+const fullPageValidationAddonsMethods = {
+async _sidebarAdvanceToNextStep() {
+  const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
+  if (!contentSection) {
+
+    this.renderFullPageLayoutWithSidebar();
+    return;
+  }
+
+  this.updateStepTimeline();
+
+  const existingSearch = contentSection.querySelector('.step-search-container');
+  if (existingSearch && this.shouldRenderFullPageSearch()) {
+    existingSearch.replaceWith(this.createSearchInput());
+  } else if (existingSearch) {
+    existingSearch.remove();
+  } else if (this.shouldRenderFullPageSearch()) {
+    const firstAnchor = contentSection.querySelector('.category-tabs, .fpb-step-category-title, .full-page-product-grid-container');
+    if (firstAnchor) contentSection.insertBefore(this.createSearchInput(), firstAnchor);
+  }
+
+  const existingTabs = contentSection.querySelector('.category-tabs');
+  if (this.config.showCategoryTabs) {
+    const newTabs = this.createCategoryTabs(this.currentStepIndex);
+    if (existingTabs && newTabs) {
+      existingTabs.replaceWith(newTabs);
+    } else if (existingTabs && !newTabs) {
+      existingTabs.remove();
+    } else if (!existingTabs && newTabs) {
+      const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+      if (gridContainer) contentSection.insertBefore(newTabs, gridContainer);
+    }
+  } else if (existingTabs) {
+    existingTabs.remove();
+  }
+
+  const existingCategoryTitle = contentSection.querySelector('.fpb-step-category-title');
+  const newCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
+  if (existingCategoryTitle && newCategoryTitle) {
+    existingCategoryTitle.replaceWith(newCategoryTitle);
+  } else if (existingCategoryTitle && !newCategoryTitle) {
+    existingCategoryTitle.remove();
+  } else if (!existingCategoryTitle && newCategoryTitle) {
+    const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+    if (gridContainer) contentSection.insertBefore(newCategoryTitle, gridContainer);
+  }
+
+  const existingCategoryRows = contentSection.querySelector('.fpb-category-section-rows');
+  const newCategoryRows = this.createCategorySectionRows(this.currentStepIndex);
+  if (existingCategoryRows && newCategoryRows) {
+    existingCategoryRows.replaceWith(newCategoryRows);
+  } else if (existingCategoryRows && !newCategoryRows) {
+    existingCategoryRows.remove();
+  } else if (!existingCategoryRows && newCategoryRows) {
+    const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
+    if (gridContainer) gridContainer.insertAdjacentElement('afterend', newCategoryRows);
+  }
+
+  const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
+  if (!productGridContainer) {
+    this.renderFullPageLayoutWithSidebar();
+    return;
+  }
+  productGridContainer.innerHTML = this.createProductGridLoadingState();
+
+  const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
+  if (sidePanel) this.renderSidePanel(sidePanel);
+
+  if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
+  try {
+    await this.loadStepProducts(this.currentStepIndex);
+    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
+    productGridContainer.innerHTML = '';
+    productGridContainer.appendChild(productGrid);
+    if (sidePanel) this.renderSidePanel(sidePanel);
+    this.hideLoadingOverlay();
+    this.preloadNextStep();
+    this._renderMobileBottomBar();
+  } catch (error) {
+    this.hideLoadingOverlay();
+    productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
+    this._renderMobileBottomBar();
+  }
+},
+
+canProceedToNextStep() {
+  return this.isStepCompleted(this.currentStepIndex);
+},
+
+areBundleConditionsMet() {
+  return this.selectedBundle.steps.every((step, index) => {
+    if (step.isFreeGift || step.isDefault) return true;
+    return this.isStepCompleted(index);
+  });
+},
+
+bundleHasNoConditions() {
+  if (!this.selectedBundle?.steps?.length) return false;
+  return this.selectedBundle.steps.every(step => {
+    if (step.isFreeGift || step.isDefault) return true;
+    return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
+  });
+},
+
+get freeGiftStep() {
+  return (this.selectedBundle?.steps || []).find(s => s.isFreeGift) ?? null;
+},
+
+get freeGiftStepIndex() {
+  return (this.selectedBundle?.steps || []).findIndex(s => s.isFreeGift);
+},
+
+get paidSteps() {
+  return (this.selectedBundle?.steps || []).filter(s => !s.isFreeGift && !s.isDefault);
+},
+
+get isFreeGiftUnlocked() {
+  if (!this.freeGiftStep) return false;
+  if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
+    return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
+  }
+  const steps = this.selectedBundle?.steps || [];
+  return this.paidSteps.every(paidStep => {
+    const globalIndex = steps.indexOf(paidStep);
+    return this.isStepCompleted(globalIndex);
+  });
+},
+
+canNavigateToStep(targetStepIndex) {
+  const targetStep = (this.selectedBundle?.steps || [])[targetStepIndex];
+  if (targetStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
+  return true;
+},
+
+_getFreeGiftRemainingCount() {
+  if (this.freeGiftStep?.addonEligibilityCondition || Array.isArray(this.freeGiftStep?.addonTiers)) {
+    return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
+  }
+  const steps = this.selectedBundle?.steps || [];
+  const total = this.paidSteps.reduce((sum, s) =>
+    sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
+  const selected = this.paidSteps.reduce((sum, paidStep) => {
+    const globalIndex = steps.indexOf(paidStep);
+    const stepSel = this.selectedProducts[globalIndex] ?? {};
+    return sum + Object.values(stepSel).reduce((s, p) => s + (typeof p === 'number' ? p : (p.quantity || 1)), 0);
+  }, 0);
+  return Math.max(0, total - selected);
+},
+
+getAddonEligibilityState(step) {
+  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+  const condition = step?.addonEligibilityCondition || tier?.eligibilityCondition || {};
+  const discount = step?.addonDiscount || tier?.discount || {};
+  const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
+  const conditionValue = Number(condition.value || 0);
+  const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const thresholdCents = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
+  const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
+  const remainingRaw = Math.max(0, thresholdCents - currentValue);
+  const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
+  const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
+  const discountValue = Number(discount.value || 0);
+  const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
+
+  return {
+    isEligible: remainingRaw <= 0,
+    conditionType,
+    remainingQuantity,
+    remainingAmount,
+    variables: {
+      addonsConditionDiff: conditionType === 'AMOUNT'
+        ? String(Math.ceil(remainingAmount / 100))
+        : String(remainingQuantity),
+      currencyUnit: currencyInfo.display.symbol,
+      addonsDiscountValue: String(discountValue),
+      addonsDiscountValueUnit: discountUnit,
+    },
+  };
+},
+
+getAddonLineDiscount(step) {
+  const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
+  const discount = step?.addonDiscount || tier?.discount || {};
+  const type = String(discount.type || '').toUpperCase();
+  const value = Number(discount.value || 0);
+  if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
+  return { type, value: Math.min(100, value) };
+},
+
+getAddonProductSelectionKeys(step) {
+  const keys = new Set();
+  const addKey = (value) => {
+    if (value === null || value === undefined || value === '') return;
+    const normalized = this.extractId(value) || value;
+    keys.add(String(normalized));
+  };
+  const products = [
+    ...(Array.isArray(step?.StepProduct) ? step.StepProduct : []),
+    ...(Array.isArray(step?.products) ? step.products : []),
+  ];
+
+  products.forEach(product => {
+    addKey(product.id);
+    addKey(product.productId);
+    addKey(product.graphqlId);
+    addKey(product.variantId);
+    addKey(product.variantGraphqlId);
+    addKey(product.title);
+    (Array.isArray(product.variants) ? product.variants : []).forEach(variant => {
+      addKey(variant.id);
+      addKey(variant.variantId);
+      addKey(variant.variantGraphqlId);
+      addKey(variant.admin_graphql_api_id);
+      addKey(variant.title);
+    });
+  });
+
+  return keys;
+},
+
+calculateSelectedAddonDiscountAmount() {
+  const steps = this.selectedBundle?.steps || [];
+  const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
+  const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
+  const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
+  return this.getAllSelectedProductsData().reduce((total, item) => {
+    const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
+    const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
+      || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
+      || chargeableAddonProductKeys.has(String(item.title || ''))
+      || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
+    if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
+    const step = steps[item.stepIndex];
+    const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
+    if (!addonDiscount) return total;
+
+    const selectedQuantity = Number(item.quantity || 0);
+    const price = Number(item.price || 0);
+    if (!selectedQuantity || selectedQuantity <= 0 || !Number.isFinite(price) || price <= 0) return total;
+    return total + (price * selectedQuantity * addonDiscount.value / 100);
+  }, 0);
+},
+
+getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
+  const baseDiscountAmount = Math.max(0, Number(discountInfo?.discountAmount || 0));
+  const addonDiscountAmount = this.calculateSelectedAddonDiscountAmount();
+  const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);
+  const finalPrice = Math.max(0, totalPrice - combinedDiscountAmount);
+
+  return {
+    ...discountInfo,
+    hasDiscount: combinedDiscountAmount > 0,
+    qualifiesForDiscount: combinedDiscountAmount > 0,
+    discountAmount: combinedDiscountAmount,
+    addonDiscountAmount,
+    finalPrice,
+    discountPercentage: totalPrice > 0 ? (combinedDiscountAmount / totalPrice) * 100 : 0,
+  };
+},
+
+renderAddonEligibilityMessage(step, eligibilityState) {
+  const messages = step?.addonMessaging || {};
+  const tierMessages = messages.tier1 || {};
+  const template = eligibilityState.isEligible
+    ? tierMessages.eligibleState
+    : tierMessages.ineligibleState;
+  if (!template) return '';
+
+  return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
+    return message
+      .replaceAll(`##${key}##`, value)
+      .replaceAll(`{{${key}}}`, value);
+  }, template);
+},
+
+renderAddonSectionTitle(step) {
+  const title = step?.freeGiftName || step?.addonTitle || step?.addonLabel;
+  if (typeof title !== 'string' || !title.trim()) return null;
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'side-panel-item-count side-panel-addon-title';
+  titleEl.textContent = title.trim();
+  return titleEl;
+},
+
+_initDefaultProducts() {
+  const steps = this.selectedBundle?.steps || [];
+  steps.forEach((step, stepIndex) => {
+    if (!step.isDefault || !step.defaultVariantId) return;
+    const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
+    const product = allProducts.find(p =>
+      p.variantId === step.defaultVariantId ||
+      p.id === step.defaultVariantId ||
+      p.gid === step.defaultVariantId ||
+      (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
+    );
+    if (product) {
+      if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
+
+      const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
+      this.selectedProducts[stepIndex][normalizedId] = 1;
+    }
+  });
+},
+
+_syncFreeGiftLock() {
+  if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
+  if (!this.isFreeGiftUnlocked) {
+    this.selectedProducts[this.freeGiftStepIndex] = {};
+  }
+},
+
+_renderFreeGiftSection(container) {
+  const step = this.freeGiftStep;
+  if (!step) return;
+
+  const section = document.createElement('div');
+  const giftName = this._escapeHTML(step.freeGiftName || 'gift');
+  const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
+
+  if (hasDirectAddonTiers) {
+    const eligibilityState = this.getAddonEligibilityState(step);
+    const message = this.renderAddonEligibilityMessage(step, eligibilityState);
+    if (!message) return;
+
+    const title = this.renderAddonSectionTitle(step);
+    if (title) container.appendChild(title);
+
+    section.className = eligibilityState.isEligible
+      ? 'side-panel-addon-message side-panel-free-gift unlocked'
+      : 'side-panel-addon-message side-panel-free-gift';
+    section.innerHTML = `
+      <span class="side-panel-free-gift-icon">${eligibilityState.isEligible ? '✓' : '!'}</span>
+      <span class="side-panel-free-gift-text">${this._escapeHTML(message)}</span>
+    `;
+    container.appendChild(section);
+    return;
+  }
+
+  if (this.isFreeGiftUnlocked) {
+    section.className = 'side-panel-free-gift unlocked';
+    section.innerHTML = `
+      <span class="side-panel-free-gift-icon">✅</span>
+      <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
+    `;
+  } else {
+    const remaining = this._getFreeGiftRemainingCount();
+    section.className = 'side-panel-free-gift';
+    section.innerHTML = `
+      <span class="side-panel-free-gift-icon">🔒</span>
+      <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
+    `;
+  }
+  container.appendChild(section);
+},
+
+_renderStandardSidebarEmptySlots(container) {
+  for (let i = 0; i < 2; i += 1) {
+    const slot = document.createElement('div');
+    slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
+    slot.innerHTML = `
+      <div class="side-panel-product-img-wrap">
+        <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+      </div>
+      <div class="side-panel-product-info side-panel-skeleton-lines">
+        <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+        <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+        <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+      </div>
+      <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
+    `;
+    container.appendChild(slot);
+  }
+},
+
+_renderSidebarProductSkeletons(container) {
+  for (let i = 0; i < 5; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'side-panel-product-row side-panel-skeleton-slot';
+    slot.innerHTML = `
+      <div class="side-panel-product-img-wrap">
+        <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
+      </div>
+      <div class="side-panel-product-info side-panel-skeleton-lines">
+        <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
+        <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
+      </div>
+      <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
+      <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
+    `;
+    container.appendChild(slot);
+  }
+},
+};
+
+const fullPageStepFooterMethods = {
+buildCartLineSourceProperties(selectedLines) {
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
+  const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
+
+  const sourceProperties = buildSharedCartLineSourceProperties({
+    selectedLines,
+    retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo),
+    discountAmount: discountAmount > 0
+      ? CurrencyManager.convertAndFormat(discountAmount, currencyInfo)
+      : '',
+    discountPercentage,
+  });
+  const displayProperties = JSON.parse(sourceProperties._bundle_display_properties);
+
+  return this.buildCartLineDisplayProperties(displayProperties);
+},
+
+buildCartLineDisplayProperties(displayProperties) {
+  return buildSharedCartLineDisplayProperties(displayProperties, this.getCartLineLabels());
+},
+
+async addBundleToCart() {
+  try {
+
+    const allStepsValid = this.areBundleConditionsMet();
+    if (!allStepsValid) {
+      ToastManager.show('Please complete all bundle steps before adding to cart.');
+      return;
+    }
+
+    const items = [];
+
+    const bundleName = this.selectedBundle.name || 'Bundle';
+    const sessionKey = this.generateBundleSessionKey();
+    const offerId = this.resolveFullPageOfferId();
+    const selectedLines = [];
+    let itemNumber = 0;
+
+    this.selectedBundle.steps.forEach((step, stepIndex) => {
+      const stepSelections = this.selectedProducts[stepIndex] || {};
+      const productsInStep = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
+
+      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
+        if (quantity > 0) {
+
+          const numericVariantId = this.extractId(variantId) || variantId;
+          const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
+            || { id: variantId, title: variantId };
+
+          itemNumber += 1;
+          const properties = {
+            Box: String(itemNumber),
+            '_bundleName': bundleName,
+            '_easyBundle:prodQty': String(quantity),
+            '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
+          };
+          const addonDiscount = this.getAddonLineDiscount(step);
+          if (addonDiscount && step?.addonDisplayFree !== true) {
+            properties['_bundle_step_type'] = addonDiscount
+              ? `addon:${addonDiscount.type}:${addonDiscount.value}`
+              : 'addon';
+          } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
+            properties['_bundle_step_type'] = 'free_gift';
+          }
+          if (step?.isDefault) properties['_bundle_step_type'] = 'default';
+
+          const cartItem = {
+            id: numericVariantId,
+            quantity: quantity,
+            properties
+          };
+          const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
+          if (sellingPlanAllocationId) {
+            cartItem.selling_plan = parseInt(sellingPlanAllocationId);
+          }
+
+          items.push(cartItem);
+          selectedLines.push({ product, quantity });
+        }
+      });
+    });
+
+    if (items.length === 0) {
+      ToastManager.show('Please select products before adding to cart');
+      return;
+    }
+
+    const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
+    items.forEach(item => {
+      Object.assign(item.properties, sourceProperties);
+    });
+
+    const nextBtn = this.container.querySelector('.footer-btn-next');
+    if (nextBtn) nextBtn.disabled = true;
+    this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
+
+    try {
+
+      const response = await fetch('/cart/add.js', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add to cart');
+      }
+
+      const result = await response.json();
+
+      await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
+
+      this._emitStorefrontEvent('bundle-add-to-cart-success', { itemCount: items.length, lineCount: selectedLines.length });
+
+      ToastManager.show('Bundle added to cart successfully!');
+      this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
+
+    } catch (fetchError) {
+      this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'fetch-error', message: String(fetchError && fetchError.message || fetchError) });
+      ToastManager.show('Failed to add bundle to cart. Please try again.');
+    } finally {
+      this.hideLoadingOverlay();
+      if (nextBtn) nextBtn.disabled = false;
+    }
+
+  } catch (error) {
+    this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'validation-error', message: String(error && error.message || error) });
+    ToastManager.show('Failed to add bundle to cart. Please try again.');
+  }
+},
+
+createStepElement(step, index) {
+  const stepBox = document.createElement('div');
+  stepBox.className = 'step-box';
+  stepBox.dataset.stepIndex = index;
+
+  const selectedProducts = this.selectedProducts[index] || {};
+  const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
+
+  if (hasSelections) {
+    stepBox.classList.add('step-completed');
+
+    const clearBadge = document.createElement('div');
+    clearBadge.className = 'step-clear-badge';
+    clearBadge.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
+        <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+    clearBadge.title = 'Remove all products from this step';
+    clearBadge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.clearStepSelections(index);
+    });
+    stepBox.appendChild(clearBadge);
+
+    const productImages = this.getStepProductImages(index);
+    if (productImages.length > 0) {
+      const imagesContainer = document.createElement('div');
+      imagesContainer.className = 'step-images';
+
+      productImages.slice(0, 4).forEach(imageData => {
+        const img = document.createElement('img');
+        img.src = imageData.url;
+        img.alt = imageData.alt;
+        img.className = 'step-image';
+        imagesContainer.appendChild(img);
+      });
+
+      stepBox.appendChild(imagesContainer);
+
+      const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
+      if (productImages.length > 4 || totalQuantity > 4) {
+        const countBadge = document.createElement('div');
+        countBadge.className = 'image-count-badge';
+        countBadge.textContent = totalQuantity.toString();
+        stepBox.appendChild(countBadge);
+      }
+    } else {
+
+      const checkIcon = document.createElement('span');
+      checkIcon.className = 'check-icon';
+      checkIcon.textContent = '✓';
+      stepBox.appendChild(checkIcon);
+    }
+  } else {
+
+    const plusIcon = document.createElement('span');
+    plusIcon.className = 'plus-icon';
+    plusIcon.textContent = '+';
+    stepBox.appendChild(plusIcon);
+  }
+
+  if (!hasSelections) {
+
+    const stepName = document.createElement('p');
+    stepName.className = 'step-name';
+    stepName.textContent = step.name || `Step ${index + 1}`;
+    stepBox.appendChild(stepName);
+
+    const selectionCount = document.createElement('div');
+    selectionCount.className = 'step-selection-count';
+    selectionCount.textContent = this.getStepSelectionText(selectedProducts);
+    stepBox.appendChild(selectionCount);
+  }
+
+  stepBox.addEventListener('click', () => this.openModal(index));
+
+  return stepBox;
+},
+
+getStepProductImages(stepIndex) {
+  const selectedProducts = this.selectedProducts[stepIndex] || {};
+  const productImages = [];
+
+  Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
+    if (quantity > 0) {
+      const product = this.stepProductData[stepIndex].find(p => (p.variantId || p.id) === variantId);
+      if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
+        productImages.push({
+          url: product.imageUrl,
+          alt: product.title || ''
+        });
+      }
+    }
+  });
+
+  return productImages;
+},
+
+getStepSelectionText(selectedProducts) {
+  const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
+  return totalSelected > 0 ? `${totalSelected} selected` : '';
+},
+
+clearStepSelections(stepIndex) {
+
+  this.selectedProducts[stepIndex] = {};
+
+  this.renderSteps();
+  this.updateFooterMessaging();
+
+  ToastManager.show(`All selections cleared from this step`);
+},
+
+renderFooter() {
+  const bundleType = this.container.dataset.bundleType;
+
+  if (bundleType === 'full_page') {
+    const layout = this.resolveFullPageLayout();
+    if (layout === 'footer_side') {
+
+      if (this.elements.footer) {
+        this.elements.footer.style.display = 'none';
+      }
+      return;
+    }
+    this.renderFullPageFooter();
+    return;
+  }
+
+  if (!this.config.showFooterMessaging) {
+    this.elements.footer.style.display = 'none';
+    return;
+  }
+
+  this.updateFooterMessaging();
+  this.elements.footer.style.display = 'block';
+},
+
+updateFooterMessaging() {
+
+  if (!this.selectedBundle?.pricing?.enabled) {
+    this.elements.footer.style.display = 'none';
+    return;
+  }
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    combinedDiscountInfo,
+    currencyInfo
+  );
+
+  const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
+
+  if (combinedDiscountInfo.qualifiesForDiscount) {
+
+    const successMessage = TemplateManager.replaceVariables(
+      this.config.successMessageTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = successMessage;
+    this.elements.footer.classList.add('qualified');
+  } else {
+
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    this.elements.footer.classList.remove('qualified');
+  }
+
+  this._updateDiscountProgressBanner();
+},
+
+getDiscountProgressMilestones(totalPrice = 0, totalQuantity = 0) {
+  const pricing = this.selectedBundle?.pricing;
+  const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
+  const tierTextByRuleId = pricing?.messages?.tierTextByRuleId || {};
+  const boxRules = this.getBoxSelectionRules();
+
+  return rules
+    .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
+    .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
+    .map(rule => {
+      const ruleId = String(rule.id || '');
+      const threshold = Number(rule.conditionValue || 0) || 0;
+      const tierText = tierTextByRuleId?.[ruleId] || {};
+      const boxRule = boxRules.find(box => box.ruleId === ruleId);
+      const isReached = rule.conditionType === 'amount'
+        ? Number(totalPrice || 0) >= threshold
+        : Number(totalQuantity || 0) >= threshold;
+
+      return {
+        ruleId,
+        title: tierText.tierText || boxRule?.boxLabel || String(threshold),
+        subTitle: tierText.tierSubtext || boxRule?.boxSubtext || '',
+        isReached,
+      };
+    })
+    .filter(milestone => milestone.ruleId && milestone.title);
+},
+
+};
+
+const fullPageDiscountModalMethods = {
+_renderDiscountProgress(options = {}) {
+  const placement = options.placement || "default";
+  const providedCombinedDiscountInfo = options.combinedDiscountInfo;
+  const providedTotalPrice = options.totalPrice;
+  const providedTotalQuantity = options.totalQuantity;
+  const providedUnitPrices = options.unitPrices;
+
+  if (!this.selectedBundle?.pricing?.enabled) return null;
+
+  const { totalPrice, totalQuantity, unitPrices } = typeof providedTotalPrice === 'number' && typeof providedTotalQuantity === 'number'
+    ? {
+        totalPrice: providedTotalPrice,
+        totalQuantity: providedTotalQuantity,
+        unitPrices: providedUnitPrices || []
+      }
+    : PricingCalculator.calculateBundleTotal(
+        this.selectedProducts,
+        this.stepProductData,
+        this.selectedBundle?.steps
+      );
+  const discountInfo = providedCombinedDiscountInfo ?? this.getDiscountInfoWithSelectedAddonDiscount(
+    PricingCalculator.calculateDiscount(
+      this.selectedBundle, totalPrice, totalQuantity, unitPrices
+    ),
+    totalPrice
+  );
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+  );
+
+  const isReached = discountInfo.hasDiscount;
+  const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
+
+  const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
+  const milestones = progressBarType === 'step_based'
+    ? this.getDiscountProgressMilestones(totalPrice, totalQuantity)
+    : [];
+
+  let message = '';
+  if (progressBarType === 'step_based' && milestones.length > 0) {
+    message = '';
+  } else if (isReached) {
+    message = TemplateManager.replaceVariables(
+      this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+      variables
+    );
+  } else {
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
+    if (!nextRule) return null;
+    message = TemplateManager.replaceVariables(
+      this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+      variables
+    );
+  }
+
+  const progressData = getDiscountProgressData({
+    currentValue: progressPct,
+    targetValue: 100,
+    message,
+  });
+  progressData.success = isReached;
+  progressData.milestones = progressBarType === 'step_based' ? milestones : [];
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderDiscountProgress(progressData, {
+    mode: progressBarType === 'simple' ? 'bar' : 'stepped',
+    className: progressBarType === 'simple'
+      ? `fpb-discount-progress fpb-dp-simple${isReached ? ' reached' : ''}`
+      : `fpb-discount-progress fpb-dp-step_based${isReached ? ' reached' : ''}`,
+    messageClassName: 'fpb-dp-row fpb-dp-message',
+    trackClassName: 'fpb-dp-track',
+    fillClassName: 'fpb-dp-fill',
+    milestoneListClassName: 'fpb-discount-step-list',
+    milestoneClassName: 'fpb-discount-step',
+    milestoneReachedClassName: 'fpb-discount-step-reached',
+    milestoneTitleClassName: 'fpb-discount-step-title',
+    milestoneSubtitleClassName: 'fpb-discount-step-subtitle',
+    renderInlineSubtitles: placement !== 'sidebar',
+    renderSubtitleList: placement === 'sidebar' && milestones.some(milestone => milestone.subTitle),
+    subtitleListClassName: placement === 'sidebar' ? 'fpb-discount-step-subtitle-list' : '',
+  }).trim();
+  const bar = wrapper.firstElementChild;
+  bar?.style?.setProperty('--fpb-discount-progress-width', progressPct + '%');
+  return bar;
+},
+
+_renderDiscountProgressBanner() {
+  if (!this.selectedBundle?.pricing?.enabled) return null;
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(
+    PricingCalculator.calculateDiscount(
+      this.selectedBundle, totalPrice, totalQuantity, unitPrices
+    ),
+    totalPrice
+  );
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
+  );
+
+  let message = '';
+  let isReached = false;
+
+  if (discountInfo.hasDiscount) {
+    isReached = true;
+    message = TemplateManager.replaceVariables(
+      this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
+      variables
+    );
+  } else {
+    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
+    if (!nextRule) return null;
+    message = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
+      variables
+    );
+  }
+
+  const banner = document.createElement('div');
+  banner.className = 'discount-progress-banner' + (isReached ? ' reached' : '');
+  banner.innerHTML = message;
+  return banner;
+},
+
+_updateDiscountProgressBanner() {
+  if (!this.elements.footer) return;
+  const existing = this.elements.footer.querySelector('.discount-progress-banner');
+  const fresh = this._renderDiscountProgressBanner();
+
+  if (fresh && existing) {
+    existing.className = fresh.className;
+    existing.innerHTML = fresh.innerHTML;
+  } else if (fresh && !existing) {
+
+    this.elements.footer.insertBefore(fresh, this.elements.footer.firstChild);
+  } else if (!fresh && existing) {
+    existing.remove();
+  }
+},
+
+getFormattedHeaderText() {
+
+  if (!this.selectedBundle?.pricing?.enabled) {
+    const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+    return this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
+  }
+
+  const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    combinedDiscountInfo,
+    currencyInfo
+  );
+
+  return TemplateManager.replaceVariables(
+    this.config.discountTextTemplate,
+    variables
+  );
+},
+
+openModal(stepIndex) {
+  this.currentStepIndex = stepIndex;
+
+  const modal = this.elements.modal;
+  const headerText = this.getFormattedHeaderText();
+
+  modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+  this.loadStepProducts(stepIndex).then(() => {
+    this.renderModalTabs();
+    this.renderModalProducts(stepIndex);
+    this.updateModalNavigation();
+    this.updateModalFooterMessaging();
+
+    modal.style.display = 'block';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }).catch(error => {
+    ToastManager.show('Failed to load products for this step');
+  });
+},
+
+closeModal() {
+  this.elements.modal.style.display = 'none';
+  this.elements.modal.classList.remove('active');
+  document.body.style.overflow = '';
+
+  this.renderSteps();
+  this.updateFooterMessaging();
+},
+
+resolveStorefrontApiBase() {
+  const appProxyPrefix = '/apps/product-bundles';
+  if (window.location?.pathname?.startsWith(`${appProxyPrefix}/`)) {
+    return appProxyPrefix;
+  }
+
+  const configuredAppUrl = window.__BUNDLE_APP_URL__ || '';
+  const currentHost = window.location.host;
+  const shopDomain = window.Shopify?.shop || this.container?.dataset.shop || '';
+
+  let configuredAppHost = '';
+  if (configuredAppUrl) {
+    try {
+      configuredAppHost = new URL(configuredAppUrl).host;
+    } catch (_error) {
+      configuredAppHost = '';
+    }
+  }
+
+  if (shopDomain && configuredAppHost !== currentHost) {
+    return appProxyPrefix;
+  }
+
+  return configuredAppUrl || window.location.origin;
+},
+};
+
+const fullPageProductProcessingMethods = {
+async loadStepProducts(stepIndex) {
+  const step = this.selectedBundle.steps[stepIndex];
+
+  if (this.stepProductData[stepIndex].length > 0) {
+    return;
+  }
+
+  let allProducts = [];
+
+  const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
+    && step.StepProduct.some(sp => sp.title && sp.imageUrl);
+
+  const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
+    && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
+
+  if (stepProductsAlreadyEnriched) {
+
+    const normalizedProducts = step.products.map(p => ({
+      ...p,
+      price: (p.price || 0) / 100,
+      compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : null,
+      variants: p.variants?.map(v => ({
+        ...v,
+        price: (v.price || 0) / 100,
+        compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : null,
+      }))
+    }));
+    allProducts = allProducts.concat(normalizedProducts);
+  } else {
+    const productIds = this.collectStepProductIds(step);
+    if (!hasEnrichedStepProducts && productIds.length > 0) {
+      const shop = window.Shopify?.shop || window.location.host;
+
+      const apiBaseUrl = this.resolveStorefrontApiBase();
+
+      const country = window.Shopify?.country
+        || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+        || null;
+
+      try {
+        const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+        const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+
+        if (!response.ok) {
+          await response.text();
+        } else {
+          const data = await response.json();
+
+          if (data.products && data.products.length > 0) {
+            allProducts = allProducts.concat(data.products);
+          }
+        }
+      } catch (error) {
+      }
+    }
+  }
+
+  if (allProducts.length === 0 && Array.isArray(step.categories)) {
+    const hasRenderableCachedProductData = (product) => Boolean(
+      product
+      && typeof product === 'object'
+      && (
+        (Array.isArray(product.variants) && product.variants.length > 0)
+        || (Array.isArray(product.images) && product.images.length > 0)
+        || product.imageUrl
+        || product.featuredImage
+        || product.price
+      )
+    );
+
+    step.categories.forEach(category => {
+      (category.products || []).forEach(product => {
+        if (hasRenderableCachedProductData(product)) allProducts.push(product);
+      });
+      (category.selectedProducts || []).forEach(product => {
+        if (hasRenderableCachedProductData(product)) allProducts.push(product);
+      });
+    });
+  }
+
+  if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
+
+    const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
+
+    if (hasEnrichedData) {
+
+      const enrichedProducts = step.StepProduct.map(sp => ({
+        id: sp.productId,
+        title: sp.title,
+        handle: sp.handle,
+        imageUrl: sp.imageUrl,
+        price: sp.price,
+        compareAtPrice: sp.compareAtPrice,
+        available: true,
+        variants: sp.variants || [{
+          id: sp.productId.replace('Product', 'ProductVariant'),
+          title: 'Default Title',
+          price: sp.price,
+          compareAtPrice: sp.compareAtPrice,
+          available: true,
+          image: sp.imageUrl ? { src: sp.imageUrl } : null
+        }]
+      }));
+
+      allProducts = allProducts.concat(enrichedProducts);
+    } else {
+
+      const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
+      const shop = window.Shopify?.shop || window.location.host;
+
+      if (productGids.length > 0) {
+
+        const apiBaseUrl = this.resolveStorefrontApiBase();
+
+        const country = window.Shopify?.country
+          || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
+          || null;
+
+        try {
+          const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
+
+          if (!response.ok) {
+          } else {
+            const data = await response.json();
+            if (data.products && data.products.length > 0) {
+              allProducts = allProducts.concat(data.products);
+            }
+          }
+        } catch (error) {
+        }
+      }
+    }
+  }
+
+  const collectionHandles = this.collectStepCollectionHandles(step);
+  if (collectionHandles.length > 0) {
+    const shop = window.Shopify?.shop || window.location.host;
+    const apiBaseUrl = this.resolveStorefrontApiBase();
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.products && data.products.length > 0) {
+          allProducts = allProducts.concat(data.products);
+        }
+
+        if (data.byCollection) {
+          for (const [handle, productIds] of Object.entries(data.byCollection)) {
+            this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
+          }
+        }
+      } else {
+      }
+    } catch (error) {
+    }
+  }
+
+  const processedProducts = this.processProductsForStep(allProducts, step);
+
+  const seen = new Set();
+  this.stepProductData[stepIndex] = processedProducts.filter(product => {
+    const key = product.variantId || product.id;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+
+},
+
+shouldExpandStepProductsDuringLoad(step) {
+  const hasCategoryProducts = Array.isArray(step?.categories) && step.categories.some(category =>
+    (Array.isArray(category.products) && category.products.length > 0)
+    || (Array.isArray(category.selectedProducts) && category.selectedProducts.length > 0)
+    || (Array.isArray(category.collections) && category.collections.length > 0)
+    || (Array.isArray(category.collectionsData) && category.collectionsData.length > 0)
+    || (Array.isArray(category.collectionsSelectedData) && category.collectionsSelectedData.length > 0)
+  );
+
+  if (hasCategoryProducts) {
+    return false;
+  }
+
+  return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
+},
+
+getFirstAvailableVariant(product) {
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  if (variants.length === 0) {
+    return null;
+  }
+
+  return variants.find(variant => variant.available === true) || null;
+},
+
+processProductsForStep(products, step) {
+
+  const normalizeVariant = (v) => ({
+    id: this.extractId(v.id),
+    title: v.title,
+    price: parseFloat(v.price || '0') * 100,
+    compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
+    sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
+      ? v.sellingPlanAllocations
+      : [],
+    available: v.available === true,
+    quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
+    currentlyNotInStock: v.currentlyNotInStock === true,
+    option1: v.option1 || null,
+    option2: v.option2 || null,
+    option3: v.option3 || null,
+    image: v.image || null
+  });
+
+  return products.flatMap(product => {
+    if (this.shouldExpandStepProductsDuringLoad(step) && product.variants && product.variants.length > 0) {
+
+      const processedVariants = (product.variants || []).map(normalizeVariant);
+
+      const processedOptions = (product.options || []).map(opt => {
+        if (typeof opt === 'string') return opt;
+        return opt.name || opt;
+      });
+
+      return product.variants
+        .filter(variant => variant.available === true)
+        .map(variant => {
+
+          const imageUrl = variant?.image?.src
+            || variant?.image?.url
+            || (typeof variant?.image === 'string' ? variant.image : null)
+            || variant?.imageUrl
+            || product.imageUrl
+            || product.featuredImage?.url
+            || product.images?.[0]?.url
+            || product.images?.[0]?.src
+            || product.images?.[0]?.originalSrc
+            || 'https://via.placeholder.com/150';
+
+          return {
+            id: this.extractId(variant.id),
+            title: `${product.title} - ${variant.title}`,
+            imageUrl,
+            price: parseFloat(variant.price || '0') * 100,
+            compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
+            variantId: this.extractId(variant.id),
+            available: variant.available === true,
+            quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
+            currentlyNotInStock: variant.currentlyNotInStock === true,
+            sellingPlanAllocations: variant.sellingPlanAllocations || [],
+
+            parentProductId: this.extractId(product.id),
+            parentTitle: product.title,
+            variants: processedVariants,
+            options: processedOptions,
+            images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+            description: product.description || ''
+          };
+        });
+    } else {
+
+      const defaultVariant = this.getFirstAvailableVariant(product);
+
+      if (product.variants?.length > 0 && !defaultVariant) {
+        return [];
+      }
+
+      const imageUrl = defaultVariant?.image?.src
+        || defaultVariant?.image?.url
+        || (typeof defaultVariant?.image === 'string' ? defaultVariant.image : null)
+        || defaultVariant?.imageUrl
+        || product.imageUrl
+        || product.featuredImage?.url
+        || product.images?.[0]?.url
+        || product.images?.[0]?.src
+        || product.images?.[0]?.originalSrc
+        || 'https://via.placeholder.com/150';
+
+      const processedVariants = (product.variants || []).map(normalizeVariant);
+
+      const processedOptions = (product.options || []).map(opt => {
+        if (typeof opt === 'string') return opt;
+        return opt.name || opt;
+      });
+
+      return [{
+        id: this.extractId(product.id),
+        title: product.title,
+        imageUrl,
+        price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
+        compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
+        variantId: this.extractId(defaultVariant?.id || product.id),
+        sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
+        available: defaultVariant?.available === true,
+        quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
+        currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
+
+        variants: processedVariants,
+        options: processedOptions,
+
+        images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
+        description: product.description || ''
+      }];
+    }
+  });
+},
+
+/**
+ * Look up real stock for a variant in a step's product data.
+ * Returns:
+ *   - available: positive numeric remaining stock, or null when uncapped
+ *   - outOfStock: true only when Shopify marks the variant unavailable
+ *   - acceptsBackorder: true when Shopify marks the variant as backorderable
+ */
+isVariantOutOfStock(product) {
+  if (!product) {
+    return false;
+  }
+  if (product.available === false) {
+    return true;
+  }
+  return false;
+},
+
+getVariantAvailable(stepIndex, variantId) {
+  const products = this.stepProductData[stepIndex] || [];
+  const product = products.find(p => (p.variantId || p.id) === variantId);
+  if (!product) {
+    return { available: null, outOfStock: false, acceptsBackorder: false };
+  }
+
+  const qty = typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
+    ? product.quantityAvailable
+    : null;
+  const backorder = product.currentlyNotInStock === true;
+  const outOfStock = this.isVariantOutOfStock(product);
+
+  return { available: qty, outOfStock, acceptsBackorder: backorder };
+},
+
+extractId(idString) {
+  if (!idString) return null;
+
+  const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
+  if (gidMatch) {
+    return gidMatch[1];
+  }
+
+  return idString.toString().split('/').pop();
+},
+
+shouldApplyIndividualSellingPlanSelection() {
+  return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
+},
+
+shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
+  if (!this.shouldApplyIndividualSellingPlanSelection()) {
+    return false;
+  }
+
+  const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
+  if (showFor !== "OOS_PRODUCTS") {
+    return true;
+  }
+
+  const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
+  const variant = Array.isArray(product?.variants)
+    ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+    : null;
+
+  const target = variant ?? product;
+  if (!target) {
+    return false;
+  }
+
+  return target.available === false;
+},
+};
+
+const fullPageModalProductMethods = {
+getSelectedSellingPlanAllocationId(product, variantId) {
+  if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
+    return null;
+  }
+
+  const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
+  const variant = Array.isArray(product?.variants)
+    ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
+    : null;
+
+  const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
+  const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
+    ? normalizedProduct.sellingPlanAllocations
+    : [];
+
+  if (allocations.length === 0) {
+    return null;
+  }
+
+  const firstAllocationId = this.extractId(allocations[0]?.id);
+  return firstAllocationId || null;
+},
+
+renderModalTabs() {
+  const tabsContainer = this.elements.modal?.querySelector('.modal-tabs');
+  if (!tabsContainer) return;
+  tabsContainer.innerHTML = '';
+
+  this.selectedBundle.steps.forEach((step, index) => {
+    const isAccessible = this.isStepAccessible(index);
+    const isActive = index === this.currentStepIndex;
+
+    const tabButton = document.createElement('button');
+    tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
+    tabButton.textContent = step.name || `Step ${index + 1}`;
+    tabButton.dataset.stepIndex = index.toString();
+
+    tabButton.addEventListener('click', async () => {
+      if (!isAccessible) {
+        ToastManager.show('Please complete the previous steps first.');
+        return;
+      }
+
+      this.currentStepIndex = index;
+
+      const headerText = this.getFormattedHeaderText();
+      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+      await this.loadStepProducts(index);
+
+      this.renderModalTabs();
+      this.renderModalProducts(index);
+      this.updateModalNavigation();
+      this.updateModalFooterMessaging();
+    });
+
+    tabsContainer.appendChild(tabButton);
+  });
+
+  if (this.updateTabArrows) {
+    setTimeout(() => this.updateTabArrows(), 50);
+  }
+},
+
+renderModalProducts(stepIndex, productsToRender = null) {
+
+  const products = productsToRender || this.stepProductData[stepIndex];
+  const selectedProducts = this.selectedProducts[stepIndex];
+  const productGrid = this.elements.modal.querySelector('.product-grid');
+  const step = this.selectedBundle?.steps?.[stepIndex] || {};
+
+  if (products.length === 0) {
+    if (!this._shouldRenderProductSlots()) {
+      productGrid.innerHTML = `
+        <div class="empty-products-message">
+          <p>No products available for this step.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const currentStep = this.selectedBundle.steps[stepIndex];
+    const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
+    const labelText = `Select ${stepName}`;
+    const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+    const emptyStateIcon = emptyStateIconUrl
+      ? `<img class="empty-state-card-icon" src="${emptyStateIconUrl}" alt="" width="69" height="69">`
+      : `<svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
+          <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+          <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+        </svg>`;
+
+    const emptyStateCards = Array(3).fill(0).map((_, index) => `
+      <div class="empty-state-card">
+        ${emptyStateIcon}
+        <p class="empty-state-card-text">${labelText}</p>
+      </div>
+    `).join('');
+
+    productGrid.innerHTML = emptyStateCards;
+    return;
+  }
+
+  productGrid.innerHTML = products.map(product => {
+    const selectionKey = product.variantId || product.id;
+    const currentQuantity = selectedProducts[selectionKey] || 0;
+    const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
+    const currencyInfo = CurrencyManager.getCurrencyInfo();
+    const priceMarkup = product.price ? `
+            <div class="product-price-row">
+              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
+              <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
+            </div>
+          ` : '';
+
+    const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
+    const atMaxStock = available !== null && available > 0 && currentQuantity >= available;
+    const lowStock = available !== null && available > 0 && available <= 3;
+    const increaseDisabled = outOfStock || atMaxStock;
+    const addDisabled = outOfStock;
+
+    const stockBadge = outOfStock
+      ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
+      : lowStock
+        ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
+        : '';
+
+    return `
+      <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
+        ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
+          <div class="selected-overlay">✓</div>
+        ` : ''}
+
+        <div class="product-image">
+          <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
+          ${stockBadge}
+        </div>
+
+        <div class="product-content-wrapper">
+          <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
+
+          ${renderSelectedQuantityBadge ? '' : priceMarkup}
+
+          <div class="product-spacer"></div>
+
+          ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
+
+          ${renderSelectedQuantityBadge ? `
+            <div class="product-selected-action-row">
+              ${priceMarkup}
+              <span class="inline-quantity-display-only" data-product-id="${selectionKey}">${currentQuantity}</span>
+            </div>
+          ` : `
+            <div class="product-quantity-wrapper">
+              <div class="product-quantity-selector">
+                <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
+                <span class="qty-display">${currentQuantity}</span>
+                <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
+              </div>
+            </div>
+
+            <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
+                    data-product-id="${selectionKey}"
+                    data-product-handle="${product.handle || ''}"
+                    data-step-id="${step.id}"
+                    ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
+              ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  this.attachProductEventHandlers(productGrid, stepIndex);
+},
+
+renderVariantSelector(product, step) {
+  if (!product.variants || product.variants.length <= 1) {
+    return '';
+  }
+  const primaryOptionName = step?.primaryVariantOption || null;
+  return VariantSelectorComponent.renderHtml(product, primaryOptionName);
+},
+
+attachProductEventHandlers(productGrid, stepIndex) {
+
+  const newProductGrid = productGrid.cloneNode(true);
+  productGrid.parentNode.replaceChild(newProductGrid, productGrid);
+
+  const step = this.selectedBundle.steps[stepIndex];
+
+  const findProduct = (productId) => {
+    return this.stepProductData[stepIndex]?.find(p => {
+      const selectionKey = p.variantId || p.id;
+      return selectionKey === productId;
+    });
+  };
+
+  newProductGrid.addEventListener('click', (e) => {
+    if (e.target.classList.contains('qty-btn')) {
+      e.stopPropagation();
+      const productId = e.target.dataset.productId;
+      const isIncrease = e.target.classList.contains('qty-increase');
+      const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+
+      const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
+      this.updateProductSelection(stepIndex, productId, newQuantity);
+    }
+  });
+
+  newProductGrid.addEventListener('click', (e) => {
+    if (e.target.classList.contains('product-add-btn')) {
+      e.stopPropagation();
+      const productId = e.target.dataset.productId;
+      const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
+
+      if (currentQuantity > 0) {
+        this.updateProductSelection(stepIndex, productId, 0);
+      } else {
+
+        this.updateProductSelection(stepIndex, productId, 1);
+      }
+    }
+  });
+
+  newProductGrid.addEventListener('click', (e) => {
+    const productImage = e.target.closest('.product-image');
+    const productTitle = e.target.closest('.product-title');
+
+    if (productImage || productTitle) {
+      const productCard = e.target.closest('.product-card');
+      if (productCard && this.productModal) {
+        const productId = productCard.dataset.productId;
+        const product = findProduct(productId);
+
+        if (product && step) {
+          this.productModal.open(product, step);
+        }
+      }
+    }
+  });
+
+  newProductGrid.addEventListener('change', (e) => {
+    if (e.target.classList.contains('variant-selector')) {
+      e.stopPropagation();
+      const newVariantId = e.target.value;
+      const baseProductId = e.target.dataset.baseProductId;
+
+      const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
+      if (product) {
+        const variantData = product.variants.find(v => v.id === newVariantId);
+        if (variantData) {
+
+          product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
+            ? variantData.quantityAvailable
+            : null;
+          product.currentlyNotInStock = variantData.currentlyNotInStock === true;
+          product.available = variantData.available === true;
+
+          const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
+          if (oldQuantity > 0) {
+            delete this.selectedProducts[stepIndex][product.variantId];
+
+            const newQtyAvail = product.quantityAvailable;
+            const newOOS = this.isVariantOutOfStock(product);
+            let migratedQty = oldQuantity;
+            if (newOOS) {
+              ToastManager.show('Selected variant is out of stock — selection cleared.');
+              migratedQty = 0;
+            } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
+              migratedQty = newQtyAvail;
+              ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
+            }
+            if (migratedQty > 0) {
+              this.selectedProducts[stepIndex][newVariantId] = migratedQty;
+            }
+          }
+
+          product.variantId = newVariantId;
+          product.price = variantData.price;
+
+          this.updateModalNavigation();
+          this.updateModalFooterMessaging();
+        }
+      }
+    }
+  });
+
+  newProductGrid.querySelectorAll('.product-image, .product-title').forEach(el => {
+    el.style.cursor = 'pointer';
+  });
+},
+};
+
+const fullPageSelectionNavigationMethods = {
+updateProductSelection(stepIndex, productId, newQuantity) {
+  let quantity = Math.max(0, newQuantity);
+
+  if (quantity > 0) {
+    const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+    if (outOfStock) {
+      ToastManager.show('This item is out of stock.');
+      return;
+    }
+    if (available !== null && available > 0 && quantity > available) {
+      quantity = available;
+      ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
+    }
+  }
+
+  if (!this.validateStepCondition(stepIndex, productId, quantity)) {
+    return;
+  }
+
+  const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
+  const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
+    this.selectedBundle?.validateQuantityPerProduct,
+    currentQuantity,
+    quantity,
+  );
+  if (!productQuantityCheck.allowed) {
+    ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
+    return;
+  }
+
+  if (quantity > 0) {
+    this.selectedProducts[stepIndex][productId] = quantity;
+  } else {
+    delete this.selectedProducts[stepIndex][productId];
+  }
+
+  const selectionEventName = (currentQuantity === 0 && quantity > 0) ? 'product-selected'
+    : (currentQuantity > 0 && quantity === 0) ? 'product-deselected'
+    : 'product-quantity-changed';
+  this._emitStorefrontEvent(selectionEventName, { stepIndex, productId, previousQuantity: currentQuantity, quantity });
+  this._emitStorefrontEvent('session-engaged', { trigger: selectionEventName });
+  this._sendEngagementBeacon('session-engaged');
+
+  this._syncFreeGiftLock();
+
+  this.updateProductQuantityDisplay(stepIndex, productId, quantity);
+  this.renderModalTabs();
+  this.updateModalNavigation();
+  this.updateModalFooterMessaging();
+
+  const bundleType = this.container.dataset.bundleType;
+  if (bundleType === 'full_page') {
+    const layout = this.resolveFullPageLayout();
+    if (layout === 'footer_side') {
+      const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
+      this.renderSidePanel(sidePanel);
+      if (window.matchMedia?.('(max-width: 767px)').matches) {
+        this._renderMobileBottomBar({ preserveOpen: true });
+      }
+    } else {
+      this.renderFullPageFooter();
+    }
+
+    this.updateStepTimeline();
+
+    const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+    const _hasExplicitCondition = _autoAdvanceStep &&
+      _autoAdvanceStep.conditionType &&
+      _autoAdvanceStep.conditionOperator &&
+      _autoAdvanceStep.conditionValue != null;
+    if (quantity > 0 && !this._autoAdvancePending && _hasExplicitCondition) {
+      const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
+      if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
+        this._autoAdvancePending = true;
+        setTimeout(() => {
+          this._autoAdvancePending = false;
+
+          if (this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
+            this.activeCollectionId = null;
+            this.searchQuery = '';
+            this.currentStepIndex++;
+            const layout = this.resolveFullPageLayout();
+            if (layout === 'footer_side') {
+              this._sidebarAdvanceToNextStep();
+            } else {
+              this.reRenderFullPage();
+            }
+          }
+        }, 120);
+      }
+    }
+  } else {
+    this.updateFooterMessaging();
+  }
+},
+
+_shouldRenderProductSlots() {
+  return this.selectedBundle?.productSlotsEnabled === true;
+},
+
+updateProductQuantityDisplay(stepIndex, productId, quantity) {
+  if (this.usesSelectedQuantityBadge()) {
+    this.refreshCurrentProductGrid(stepIndex);
+    if (this.elements?.modal?.querySelector('.product-grid')) {
+      this.renderModalProducts(stepIndex);
+    }
+    this._refreshSiblingDimState(stepIndex);
+    return;
+  }
+
+  const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
+  if (!productCard) return;
+
+  const contentWrapper = productCard.querySelector('.product-content-wrapper');
+  const actionWrapper = productCard.querySelector('.product-card-action');
+  if (!contentWrapper && !actionWrapper) return;
+
+  const actionContainer = actionWrapper || contentWrapper;
+  const existingAddBtn = productCard.querySelector('.product-add-btn');
+  const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
+  let selectedOverlay = productCard.querySelector('.selected-overlay');
+
+  if (quantity > 0) {
+    if (actionWrapper) {
+      actionWrapper.classList.add('is-expanded');
+    }
+
+    if (existingQuantityControls) {
+      if (existingAddBtn) {
+        existingAddBtn.remove();
+      }
+
+      const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
+      if (qtyDisplay) {
+        qtyDisplay.textContent = quantity;
+      }
+    } else {
+      if (existingAddBtn) {
+        existingAddBtn.remove();
+      }
+
+      const quantityControls = document.createElement('div');
+      quantityControls.className = 'inline-quantity-controls';
+      quantityControls.innerHTML = `
+        <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
+        <span class="inline-qty-display">${quantity}</span>
+        <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
+      `;
+      actionContainer.appendChild(quantityControls);
+
+      const increaseBtn = quantityControls.querySelector('.qty-increase');
+      const decreaseBtn = quantityControls.querySelector('.qty-decrease');
+
+      if (increaseBtn) {
+        increaseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+          this.updateProductSelection(stepIndex, productId, currentQty + 1);
+        });
+      }
+
+      if (decreaseBtn) {
+        decreaseBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
+          if (currentQty > 0) {
+            this.updateProductSelection(stepIndex, productId, currentQty - 1);
+          }
+        });
+      }
+    }
+
+    if (!selectedOverlay) {
+      selectedOverlay = document.createElement('div');
+      selectedOverlay.className = 'selected-overlay';
+      selectedOverlay.textContent = '✓';
+      productCard.appendChild(selectedOverlay);
+    }
+    selectedOverlay.style.display = 'flex';
+    productCard.classList.add('selected');
+
+  } else {
+    if (actionWrapper) {
+      actionWrapper.classList.remove('is-expanded');
+    }
+
+    if (existingQuantityControls) {
+      existingQuantityControls.remove();
+    }
+
+    if (!existingAddBtn) {
+      const addButton = document.createElement('button');
+      addButton.className = 'product-add-btn';
+      addButton.dataset.productId = productId;
+      addButton.textContent = this.getProductAddButtonText();
+      actionContainer.appendChild(addButton);
+
+      addButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.updateProductSelection(stepIndex, productId, 1);
+      });
+    }
+
+    if (selectedOverlay) {
+      selectedOverlay.style.display = 'none';
+    }
+    productCard.classList.remove('selected');
+  }
+
+  this._refreshSiblingDimState(stepIndex);
+},
+
+refreshCurrentProductGrid(stepIndex) {
+  if (this.container.dataset.bundleType !== 'full_page') return false;
+  if (stepIndex !== this.currentStepIndex) return false;
+
+  const currentGrid = this.container.querySelector('.full-page-product-grid');
+  if (!currentGrid) return false;
+
+  const replacementGrid = this.createFullPageProductGrid(stepIndex);
+  currentGrid.replaceWith(replacementGrid);
+  return true;
+},
+
+_refreshSiblingDimState(stepIndex) {
+
+  if (stepIndex !== this.currentStepIndex) return;
+  const step = this.selectedBundle?.steps?.[stepIndex];
+  if (!step) return;
+  const stepSelections = this.selectedProducts[stepIndex] || {};
+  const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
+  const isAtCapacity = !capacityCheck.allowed;
+
+  const anyCard = this.container.querySelector('.product-grid .product-card');
+  const grid = anyCard?.closest('.product-grid');
+  if (!grid) return;
+  grid.querySelectorAll('.product-card').forEach(card => {
+    const cardProductId = card.dataset.productId;
+    const currentQty = cardProductId ? (stepSelections[cardProductId] || 0) : 0;
+    if (isAtCapacity && currentQty === 0) {
+      card.classList.add('dimmed');
+    } else {
+      card.classList.remove('dimmed');
+    }
+  });
+},
+
+findProductById(stepIndex, productId) {
+  const products = this.stepProductData[stepIndex] || [];
+  return products.find(p => (p.variantId || p.id) === productId);
+},
+
+validateStepCondition(stepIndex, productId, newQuantity) {
+  const step = this.selectedBundle.steps[stepIndex];
+  const currentSelections = this.selectedProducts[stepIndex] || {};
+  const currentQty = currentSelections[productId] || 0;
+
+  const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
+    step,
+    currentSelections,
+    productId,
+    newQuantity,
+  );
+
+  if (!allowed && newQuantity > currentQty) {
+    const required = step.conditionValue;
+    ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
+    return false;
+  }
+
+  return true;
+},
+
+validateStep(stepIndex) {
+  const step = this.selectedBundle.steps[stepIndex];
+  const currentSelections = this.selectedProducts[stepIndex] || {};
+
+  if (ConditionValidator.isCategoryRuleMode(step)) {
+    const products = this.stepProductData[stepIndex] || [];
+    const translated = {};
+    for (const [selKey, qty] of Object.entries(currentSelections)) {
+      const product = products.find(p => (p.variantId || p.id) === selKey);
+      const productId = String((product && (product.parentProductId || product.id)) || selKey);
+      translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
+    }
+    return ConditionValidator.isStepConditionSatisfied(step, translated);
+  }
+
+  return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
+},
+
+isStepAccessible(stepIndex) {
+
+  if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
+
+  const addonStep = this.selectedBundle?.steps[stepIndex];
+  if (addonStep?.isFreeGift && addonStep?.addonUnlockAfterCompletion === false) {
+
+  } else if (!this.canNavigateToStep(stepIndex)) {
+    return false;
+  }
+
+  for (let i = 0; i < stepIndex; i++) {
+    const step = this.selectedBundle?.steps[i];
+    if (step?.isFreeGift || step?.isDefault) continue;
+    if (!this.validateStep(i)) return false;
+  }
+  return true;
+},
+
+updateModalNavigation() {
+  const prevButton = this.elements.modal?.querySelector('.prev-button');
+  const nextButton = this.elements.modal?.querySelector('.next-button');
+
+  if (!prevButton || !nextButton) return;
+
+  prevButton.disabled = this.currentStepIndex === 0;
+
+  const isCurrentStepValid = this.validateStep(this.currentStepIndex);
+
+  if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
+    nextButton.textContent = this._resolveText('doneButton', 'Done');
+    nextButton.disabled = !isCurrentStepValid;
+  } else {
+    nextButton.textContent = this._resolveText('nextButton', 'Next');
+    nextButton.disabled = !isCurrentStepValid;
+  }
+},
+
+updateModalFooterMessaging() {
+
+  if (!this.elements.modal || this.elements.modal.style.display === 'none') return;
+
+  const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
+    this.selectedProducts,
+    this.stepProductData,
+    this.selectedBundle?.steps
+  );
+
+  const discountInfo = PricingCalculator.calculateDiscount(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    unitPrices
+  );
+  const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
+
+  const currencyInfo = CurrencyManager.getCurrencyInfo();
+
+  this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
+
+  const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
+  if (cartBadge) {
+    cartBadge.textContent = totalQuantity.toString();
+  }
+
+  this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
+
+  this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
+},
+};
+
+const fullPageRuntimeCartSettingsMethods = {
+updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
+  if (!modalStepTitle) return;
+
+  if (!this.selectedBundle?.pricing?.enabled) {
+    const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
+    modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
+    return;
+  }
+
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo
+  );
+
+  const headerText = TemplateManager.replaceVariables(
+    this.config.discountTextTemplate,
+    variables
+  );
+
+  modalStepTitle.innerHTML = headerText;
+},
+
+updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
+  const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
+  const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
+
+  if (!footerDiscountText) return;
+
+  const variables = TemplateManager.createDiscountVariables(
+    this.selectedBundle,
+    totalPrice,
+    totalQuantity,
+    discountInfo,
+    currencyInfo
+  );
+
+  if (discountInfo.qualifiesForDiscount) {
+
+    const successMessage = TemplateManager.replaceVariables(
+      this.config.successMessageTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = successMessage;
+    if (discountSection) discountSection.classList.add('qualified');
+  } else {
+
+    const progressMessage = TemplateManager.replaceVariables(
+      this.config.discountTextTemplate,
+      variables
+    );
+    footerDiscountText.innerHTML = progressMessage;
+    if (discountSection) discountSection.classList.remove('qualified');
+  }
+
+  if (discountSection) {
+    discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
+  }
+},
+
+updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
+  const strikePriceEl = this.elements.modal.querySelector('.total-price-strike');
+  const finalPriceEl = this.elements.modal.querySelector('.total-price-final');
+
+  if (!strikePriceEl || !finalPriceEl) return;
+
+  if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
+
+    strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
+    strikePriceEl.style.display = 'inline';
+    finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
+  } else {
+
+    strikePriceEl.style.display = 'none';
+    finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
+  }
+},
+
+showLoadingOverlay(gifUrl) {
+  if (!this.container) return;
+
+  const pos = getComputedStyle(this.container).position;
+  if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
+    this.container.style.position = 'relative';
+  }
+
+  this.container.querySelector('.bundle-loading-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'bundle-loading-overlay';
+
+  if (gifUrl) {
+    const img = document.createElement('img');
+    img.className = 'bundle-loading-overlay__gif';
+    img.src = gifUrl;
+    img.alt = '';
+    overlay.appendChild(img);
+  } else {
+    const animation = createDefaultLoadingAnimation();
+    overlay.appendChild(animation);
+  }
+
+  this.container.appendChild(overlay);
+  requestAnimationFrame(() => markLoadingOverlayVisible(overlay));
+},
+
+hideLoadingOverlay() {
+  const overlay = this.container?.querySelector('.bundle-loading-overlay');
+  hideLoadingOverlayElement(overlay);
+},
+
+generateBundleInstanceId() {
+
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    const uuid = crypto.randomUUID();
+    const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
+
+    return bundleInstanceId;
+  }
+
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000000);
+  const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
+
+  return bundleInstanceId;
+},
+
+resolveFullPageOfferId() {
+  const rawOfferId = this.selectedBundle?.offerId
+    || this.selectedBundle?.bundleOfferId
+    || this.selectedBundle?.id
+    || 'UNKNOWN';
+  const offerId = String(rawOfferId);
+  return offerId.startsWith('FBP-') ? offerId : `FBP-${offerId}`;
+},
+
+async syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
+  try {
+    const displayProperties = this.buildBundleDetailsDisplayProperties(sourceProperties);
+    if (!bundleDetailsKey || Object.keys(displayProperties).length === 0) return;
+
+    const cartToken = await this.getBundleDetailsCartToken();
+    if (!cartToken) return;
+
+    const response = await fetch('/apps/product-bundles/api/cart-bundle-details', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        cartToken,
+        bundleDetailsKey,
+        displayProperties
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`bundle_details sync failed (${response.status})`);
+    }
+
+    const data = await response.json().catch(() => null);
+    if (data?.ok !== true) {
+      throw new Error(data?.error || 'bundle_details sync failed');
+    }
+  } catch (error) {
+    console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
+  }
+},
+
+buildBundleDetailsDisplayProperties(sourceProperties) {
+  const displayProperties = {};
+  const raw = sourceProperties?._bundle_display_properties;
+  const cartLineLabels = this.getCartLineLabels();
+
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.box) displayProperties.Box = String(parsed.box);
+      if (parsed?.items) displayProperties[cartLineLabels.items] = String(parsed.items);
+      if (parsed?.retailPrice) displayProperties[cartLineLabels.retailPrice] = String(parsed.retailPrice);
+      if (parsed?.youSave?.amountPercentage) displayProperties[cartLineLabels.youSave] = String(parsed.youSave.amountPercentage);
+    } catch {
+
+    }
+  }
+
+  ['Box', cartLineLabels.items, cartLineLabels.retailPrice, cartLineLabels.youSave, 'Items', 'Retail Price', 'You Save'].forEach((key) => {
+    if (sourceProperties?.[key] && !displayProperties[key]) {
+      displayProperties[key] = String(sourceProperties[key]);
+    }
+  });
+
+  return displayProperties;
+},
+
+getCartLineLabels() {
+  const labels = this.config?.sharedCartLabels || {};
+  return {
+    items: labels.bundleContainsLabel || 'Items',
+    retailPrice: labels.bundleOriginalPriceLabel || 'Retail Price',
+    youSave: labels.bundleDiscountDisplayLabel || 'You Save',
+  };
+},
+
+async getBundleDetailsCartToken() {
+  const response = await fetch('/cart.js?app=wolfpackProductBundles', {
+    credentials: 'same-origin'
+  });
+  if (!response.ok) return null;
+  const cart = await response.json();
+  return cart?.token || null;
+},
+
+generateBundleSessionKey() {
+  return Math.random().toString(36).slice(2, 5).toUpperCase();
+},
+
+/**
+ * Parses the JSON string from data-tier-config into a TierConfig array.
+ * Returns [] on any error — pill bar is simply not shown.
+ */
+parseTierConfig(rawJson) {
+  try {
+    const parsed = JSON.parse(rawJson);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(t => typeof t?.label === 'string' && typeof t?.bundleId === 'string')
+      .map(t => ({ label: t.label.trim(), bundleId: t.bundleId.trim() }))
+      .filter(t => t.label !== '' && t.bundleId !== '')
+      .slice(0, 4);
+  } catch {
+    return [];
+  }
+},
+
+/**
+ * Resolves which tier config array to use for pill rendering.
+ *
+ * Preference order:
+ *  1. apiTierConfig (from DB via bundle API) — used when the merchant has saved
+ *     tiers in the admin UI (>= 2 valid entries after mapping).
+ *  2. dataTierConfig (from data-tier-config HTML attribute) — legacy Theme Editor
+ *     source, used as fallback when apiTierConfig is null/undefined.
+ *
+ * apiTierConfig entries use { label, linkedBundleId } (DB schema).
+ * Widget pill entries use { label, bundleId } — this method performs the mapping.
+ *
+ * Returns [] when fewer than 2 valid tiers exist after filtering.
+ */
+resolveTierConfig(apiTierConfig, dataTierConfig) {
+  if (apiTierConfig == null) return dataTierConfig;
+
+  const mapped = (Array.isArray(apiTierConfig) ? apiTierConfig : [])
+    .filter(
+      t =>
+        typeof t?.label === 'string' &&
+        typeof t?.linkedBundleId === 'string' &&
+        t.label.trim() !== '' &&
+        t.linkedBundleId.trim() !== ''
+    )
+    .map(t => ({ label: t.label.trim(), bundleId: t.linkedBundleId.trim() }))
+    .slice(0, 4);
+
+  return mapped.length >= 2 ? mapped : [];
+},
+
+/**
+ * Resolves whether to show the step timeline.
+ * Admin UI (API) value takes precedence over the theme editor data attribute when non-null.
+ *
+ * @param {boolean|null} apiValue - From selectedBundle.showStepTimeline (DB, nullable)
+ * @param {boolean} dataAttrValue - From data-show-step-timeline attribute (theme editor)
+ * @returns {boolean}
+ */
+resolveShowStepTimeline(apiValue, dataAttrValue) {
+  if (apiValue !== null && apiValue !== undefined) return apiValue;
+  return dataAttrValue;
+},
+
+resolveFullPageLayout(bundle = this.selectedBundle) {
+  return 'footer_side';
+},
+
+getFullPageTemplate(bundle = this.selectedBundle) {
+  return 'FBP_SIDE_FOOTER';
+},
+
+getFullPageDesignPreset(bundle = this.selectedBundle) {
+  const rawPresetId =
+    bundle?.bundleDesignPresetId
+    || bundle?.bundleDesignPreset
+    || bundle?.templateId
+    || 'DEFAULT';
+  if (typeof rawPresetId !== 'string') return 'DEFAULT';
+
+  const preset = rawPresetId.trim().toUpperCase();
+  if (preset === 'STANDARD') return 'DEFAULT';
+  if (preset === 'DEFAULT_FBP') return 'DEFAULT';
+  return preset || 'DEFAULT';
+},
+
+resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
+  const showTextOnAddButton =
+  bundle?.showTextOnAddButton === true
+
+  if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
+    return showTextOnAddButton ? 'text' : 'icon';
+  }
+
+  return showTextOnAddButton ? 'text' : 'icon';
+},
+
+ensureFullPageTemplateStylesheet(preset) {
+  const presetKey = String(preset || 'DEFAULT').trim().toUpperCase() || 'DEFAULT';
+  const templateKey = presetKey === 'DEFAULT' ? 'STANDARD' : presetKey;
+  const urls = window.__WOLFPACK_FPB_TEMPLATE_CSS_URLS__ || {};
+  const href = urls[presetKey] || urls[templateKey] || urls.DEFAULT || urls.STANDARD;
+
+  if (!href || typeof document === 'undefined') return;
+
+  const alreadyLoaded = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).some((link) =>
+    link.getAttribute('href') === href
+    || link.href === href
+    || link.dataset.wpbFpbTemplateCss === templateKey
+  );
+
+  if (alreadyLoaded) return;
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = href;
+  link.dataset.wpbFpbTemplateCss = templateKey;
+  document.head.appendChild(link);
+},
+
+getProductAddButtonText() {
+  return this.resolveFullPageCardCtaMode() === 'text'
+    ? this._resolveText('productAddButton', 'Add +')
+    : '+';
+},
+
+applyFullPageDesignPresetMarker() {
+  if (!this.container || !this.elements?.stepsContainer) return;
+
+  const fullPageTemplate = this.getFullPageTemplate();
+  const fullPageDesignPreset = this.getFullPageDesignPreset();
+  const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
+  const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
+
+  this.container.dataset.fpbTemplateType = fullPageTemplate;
+  this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
+
+  this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
+  this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
+  this.container.dataset.fpbTabStyle = fullPageTabStyle;
+  this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
+  const cardCtaMode = this.resolveFullPageCardCtaMode();
+  this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
+  this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.container.classList.add(presetClass);
+  this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
+  this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+  this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
+  this.elements.stepsContainer.classList.add(presetClass);
+  this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
+  this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
+  this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
+  this.ensureFullPageTemplateStylesheet(fullPageDesignPreset);
+},
+
+/** Returns true if the given tier index is the currently active one. */
+isTierActive(tierIndex) {
+  return tierIndex === this.activeTierIndex;
+},
+
+/**
+ * Inserts the tier pill bar as the first child of the container.
+ * No-op when fewer than 2 tiers are configured (backward-compatible).
+ */
+};
+
+const fullPageTierFloatingRuntimeMethods = {
+initTierPills(tiers) {
+  if (tiers.length < 2) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'bundle-tier-pill-bar';
+  bar.setAttribute('role', 'group');
+  bar.setAttribute('aria-label', 'Bundle pricing tiers');
+
+  tiers.forEach((tier, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bundle-tier-pill' + (i === 0 ? ' bundle-tier-pill--active' : '');
+    btn.dataset.tierIndex = String(i);
+    btn.dataset.bundleId = tier.bundleId;
+    btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    btn.textContent = tier.label;
+    bar.appendChild(btn);
+  });
+
+  this.container.insertBefore(bar, this.container.firstChild);
+  this.elements.tierPillBar = bar;
+},
+
+/** Updates aria-pressed and active CSS class on all pills to match activeTierIndex. */
+updatePillActiveStates() {
+  if (!this.elements.tierPillBar) return;
+  this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
+    const idx = parseInt(pill.dataset.tierIndex, 10);
+    const active = idx === this.activeTierIndex;
+    pill.classList.toggle('bundle-tier-pill--active', active);
+    pill.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+},
+
+/** Switches the active bundle tier — fetches new bundle data and re-renders the widget. */
+async switchTier(bundleId, tierIndex) {
+  if (tierIndex === this.activeTierIndex) return;
+
+  const pills = this.elements.tierPillBar
+    ? [...this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill')]
+    : [];
+
+  pills.forEach(p => p.classList.add('bundle-tier-pill--disabled'));
+  if (pills[tierIndex]) pills[tierIndex].classList.add('bundle-tier-pill--loading');
+
+  this.showLoadingOverlay(null);
+
+  try {
+
+    this.selectedProducts = [];
+    this.stepProductData = [];
+    this.currentStepIndex = 0;
+    this.stepCollectionProductIds = {};
+    this.searchQuery = '';
+
+    this.config.bundleId = bundleId;
+    await this.loadBundleData();
+    this.selectBundle();
+
+    if (!this.selectedBundle) {
+      throw new Error('Bundle not found for this tier.');
+    }
+    this.applyPersonalizationAddonProducts();
+
+    this.config.showStepTimeline = this.resolveShowStepTimeline(
+      this.selectedBundle.showStepTimeline ?? null,
+      this.config.showStepTimeline
+    );
+
+    this.initializeDataStructures();
+
+    if (this.elements.stepsContainer) {
+      this.elements.stepsContainer.innerHTML = '';
+    }
+    await this.renderUI();
+
+    this.activeTierIndex = tierIndex;
+    this.updatePillActiveStates();
+  } catch (err) {
+    ToastManager.show(`Failed to load tier: ${err.message}`);
+
+    this.updatePillActiveStates();
+  } finally {
+    this.hideLoadingOverlay();
+    pills.forEach(p => {
+      p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
+    });
+  }
+},
+
+_mergeBundleSettings(settings) {
+  if (!settings || !this.selectedBundle) return;
+  const keys = [
+    'promoBannerBgImage', 'promoBannerBgImageCrop',
+    'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
+    'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
+  ];
+  for (const key of keys) {
+    if (settings[key] !== undefined) this.selectedBundle[key] = settings[key];
+  }
+},
+
+_initFloatingBadge() {
+  const enabled = this.selectedBundle && this.selectedBundle.floatingBadgeEnabled;
+  const text = this.selectedBundle && this.selectedBundle.floatingBadgeText;
+  if (!enabled || !text || !text.trim()) return;
+
+  const DISMISS_KEY = `fpb_badge_dismissed_${this.selectedBundle.id}`;
+  if (sessionStorage.getItem(DISMISS_KEY)) return;
+
+  const badge = document.createElement('div');
+  badge.className = 'floating-promo-badge';
+  badge.setAttribute('role', 'status');
+  badge.innerHTML = `<span class="floating-promo-badge__text">${this._escapeHtml(text.trim())}</span><button class="floating-promo-badge__close" aria-label="Dismiss">&times;</button>`;
+
+  badge.querySelector('.floating-promo-badge__close').addEventListener('click', () => {
+    sessionStorage.setItem(DISMISS_KEY, '1');
+    badge.remove();
+  });
+
+  document.body.appendChild(badge);
+},
+
+_escapeHtml(str) {
+  return str.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+},
+
+attachEventListeners() {
+
+  if (this.elements.tierPillBar) {
+    this.elements.tierPillBar.addEventListener('click', e => {
+      const pill = e.target.closest('.bundle-tier-pill');
+      if (!pill) return;
+      this.switchTier(pill.dataset.bundleId, parseInt(pill.dataset.tierIndex, 10));
+    });
+    this.elements.tierPillBar.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const pill = e.target.closest('.bundle-tier-pill');
+        if (!pill) return;
+        e.preventDefault();
+        pill.click();
+      }
+    });
+  }
+
+  const modal = this.elements.modal;
+  const closeButton = modal.querySelector('.close-button');
+  const overlay = modal.querySelector('.modal-overlay');
+  const prevButton = modal.querySelector('.prev-button');
+  const nextButton = modal.querySelector('.next-button');
+
+  if (closeButton) {
+    closeButton.addEventListener('click', () => this.closeModal());
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', () => this.closeModal());
+  }
+
+  if (prevButton) {
+    prevButton.addEventListener('click', () => this.navigateModal(-1));
+  }
+
+  if (nextButton) {
+    nextButton.addEventListener('click', () => this.navigateModal(1));
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (modal.style.display === 'block' && e.key === 'Escape') {
+      this.closeModal();
+    }
+  });
+},
+
+async navigateModal(direction) {
+  const newStepIndex = this.currentStepIndex + direction;
+
+  if (direction < 0 && newStepIndex >= 0) {
+
+    this.currentStepIndex = newStepIndex;
+
+    const headerText = this.getFormattedHeaderText();
+    this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+    await this.loadStepProducts(newStepIndex);
+
+    this.renderModalTabs();
+    this.renderModalProducts(this.currentStepIndex);
+    this.updateModalNavigation();
+    this.updateModalFooterMessaging();
+  } else if (direction > 0) {
+    if (newStepIndex < this.selectedBundle.steps.length) {
+
+      if (this.validateStep(this.currentStepIndex)) {
+        this.currentStepIndex = newStepIndex;
+
+        const headerText = this.getFormattedHeaderText();
+        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
+
+        await this.loadStepProducts(newStepIndex);
+
+        this.renderModalTabs();
+        this.renderModalProducts(this.currentStepIndex);
+        this.updateModalNavigation();
+        this.updateModalFooterMessaging();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
+      }
+    } else {
+
+      if (this.validateStep(this.currentStepIndex)) {
+        this.closeModal();
+      } else {
+        ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
+      }
+    }
+  }
+},
+
+showFallbackUI() {
+  this.container.innerHTML = `
+    <div class="bundle-fallback">
+      <h3>Bundle Configuration</h3>
+      <p>No active bundles found for this product.</p>
+      <details>
+        <summary>Debug Information</summary>
+        <pre>${JSON.stringify({
+    config: this.config,
+    bundleDataKeys: this.bundleData ? Object.keys(this.bundleData) : 'No data',
+    currentProductId: this.config.currentProductId
+  }, null, 2)}</pre>
+      </details>
+    </div>
+  `;
+},
+
+showErrorUI(_error) {
+  this.container.innerHTML = `
+    <div class="bundle-error">
+      <h3>Bundle unavailable</h3>
+      <p>We couldn&apos;t load this bundle right now. Please refresh the page or try again later.</p>
+      <p>If the problem persists, please contact the store owner.</p>
+    </div>
+  `;
+},
+
+/**
+ * Fire-and-forget error report to the server so AppLogger can track widget failures.
+ * Does NOT await — never blocks the render path.
+ */
+
+/**
+ * Background layout refresh — runs after initial render.
+ *
+ * The CDN-cached `data-bundle-config` attribute can be stale for minutes-to-hours
+ * after the merchant saves a layout change. This method fetches the latest config
+ * from the proxy API and, if the layout differs from what was cached, re-renders
+ * the steps container so the correct layout is shown within seconds of page load.
+ *
+ * Only runs when:
+ *   1. Cached data was used for first render (data-bundle-config attr was present)
+ *   2. Not in the Shopify theme editor (designMode)
+ *
+ * Fire-and-forget: all errors are silently swallowed.
+ */
+async _scheduleLayoutRefresh() {
+  const bundleId = this.container.dataset.bundleId;
+  if (!bundleId) return;
+
+  const cachedAttr = this.container.dataset.bundleConfig;
+  const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
+  if (!usedCache) return;
+
+  try {
+    const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
+    const response = await fetch(apiUrl);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    if (!data?.bundle) return;
+
+    const freshLayout = this.resolveFullPageLayout(data.bundle);
+    const currentLayout = this.resolveFullPageLayout();
+    const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
+    const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
+    const freshPreset = data.bundle.bundleDesignPresetId ?? null;
+    const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
+
+    if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
+      this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout;
+      this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
+      this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
+      this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
+      if (this.bundleData?.[bundleId]) {
+        this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout;
+        this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
+        this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
+        this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
+      }
+      await this.renderSteps();
+    }
+  } catch (_e) {
+
+  }
+},
+
+_reportError(error) {
+  try {
+    const payload = {
+      message: error?.message ?? String(error),
+      bundleId: this.config?.bundleId ?? null,
+      bundleType: this.container?.dataset?.bundleType ?? null,
+      shop: window.Shopify?.shop ?? null,
+      url: window.location?.href ?? null,
+    };
+
+    fetch('/apps/product-bundles/api/widget-error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => { /* best-effort — ignore if proxy is also down */ });
+  } catch (_) {
+
+  }
+},
+
+_resolveText(key, fallback) {
+  const locale = window.Shopify?.locale;
+  if (locale && this.config?.textOverridesByLocale?.[locale]?.[key]) {
+    return this.config.textOverridesByLocale[locale][key];
+  }
+  if (this.config?.textOverrides?.[key]) {
+    return this.config.textOverrides[key];
+  }
+  return fallback;
+},
+
+_recordView() {
+  try {
+    const bundleId = this.config?.bundleId ?? this.container?.dataset?.bundleId;
+    const shop = window.Shopify?.shop;
+    if (!bundleId || !shop) return;
+    fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shop }),
+      keepalive: true,
+    }).catch(() => { /* best-effort */ });
+  } catch (_) {
+
+  }
+},
+};
 
 /**
  * Bundle Widget - Full Page Version
@@ -4238,6 +10648,13 @@ class BundleWidgetFullPage {
     });
   }
 
+  getSharedSelectedQuantity() {
+    return getSelectedQuantity({
+      selectedProducts: this.selectedProducts,
+      stepProductData: this.stepProductData,
+    });
+  }
+
   async init() {
     try {
 
@@ -4323,6886 +10740,34 @@ class BundleWidgetFullPage {
     }
   }
 
-  _ensureWpbSessionId() {
-    if (this._wpbSessionId) return this._wpbSessionId;
-    try {
-      const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId || 'unknown';
-      const storageKey = `wpb_session_${bundleId}`;
-      const existing = sessionStorage.getItem(storageKey);
-      if (existing) { this._wpbSessionId = existing; return existing; }
-      const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `wpb-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-      sessionStorage.setItem(storageKey, id);
-      this._wpbSessionId = id;
-      return id;
-    } catch (_e) {
-      this._wpbSessionId = `wpb-${Date.now()}`;
-      return this._wpbSessionId;
-    }
-  }
-
-  _emitStorefrontEvent(name, detail = {}) {
-    try {
-      const fullDetail = Object.assign({
-        bundleId: this.selectedBundle?.id || null,
-        bundleType: this.container?.dataset?.bundleType || 'full_page',
-        presetId: this.getFullPageDesignPreset?.() || null,
-        sessionId: this._ensureWpbSessionId(),
-        timestamp: new Date().toISOString(),
-      }, detail);
-      window.dispatchEvent(new CustomEvent(`wpb:${name}`, { detail: fullDetail, bubbles: true }));
-    } catch (_e) {
-
-    }
-  }
-
-  _sendEngagementBeacon(eventName) {
-    try {
-      const bundleId = this.selectedBundle?.id || this.container?.dataset?.bundleId;
-      if (!bundleId) return;
-      const guardKey = `wpb_engaged_${bundleId}`;
-      if (sessionStorage.getItem(guardKey) === '1') return;
-      const sessionId = this._ensureWpbSessionId();
-      const shopId = window.Shopify?.shop || this.container?.dataset?.shop || window.location.hostname;
-      const payload = {
-        shopId,
-        bundleId,
-        sessionId,
-        presetId: this.getFullPageDesignPreset?.() || null,
-        bundleType: this.container?.dataset?.bundleType || 'full_page',
-        eventName: `wpb:${eventName}`,
-        landingPage: window.location.pathname + window.location.search,
-        userAgent: navigator.userAgent,
-        timestamp: new Date().toISOString(),
-      };
-      sessionStorage.setItem(guardKey, '1');
-      fetch('/apps/product-bundles/api/attribution/engagement', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => { /* fire-and-forget */ });
-    } catch (_e) {
-
-    }
-  }
-
-  /**
-   * Hide the page body loading content
-   * This hides the "Loading bundle builder..." text that was added to the Shopify page body
-   */
-  hidePageLoadingContent() {
-    try {
-
-      const pageContent = this.container.parentElement;
-
-      if (pageContent) {
-
-        const siblings = Array.from(pageContent.children);
-        siblings.forEach(sibling => {
-
-          if (sibling !== this.container &&
-              (sibling.textContent.includes('Loading bundle builder') ||
-               sibling.textContent.includes('Loading...'))) {
-            sibling.style.display = 'none';
-          }
-        });
-      }
-
-    } catch (error) {
-
-    }
-  }
-
-  /**
-   * Load Settings design CSS
-   * Injects custom CSS from Settings -> Design into the page
-   */
-  loadDesignSettingsCSS() {
-    try {
-
-      const existingLink = document.querySelector('link[href*="design-settings"]');
-      if (!existingLink) return;
-
-      const appUrl = window.__BUNDLE_APP_URL__;
-      if (!appUrl) return;
-
-      const shop = window.Shopify?.shop || this.container.dataset.shop;
-      if (!shop) return;
-
-      existingLink.addEventListener('error', () => {
-        const directUrl = `${appUrl}/api/design-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
-        const fallback = document.createElement('link');
-        fallback.rel = 'stylesheet';
-        fallback.type = 'text/css';
-        fallback.href = directUrl;
-        document.head.appendChild(fallback);
-        existingLink.remove();
-      }, { once: true });
-
-    } catch (_e) {
-
-    }
-  }
-
-  async loadLanguageSettings() {
-    try {
-      const shop = window.Shopify?.shop || this.container.dataset.shop;
-      if (!shop) return;
-
-      const locale = window.Shopify?.locale || 'en';
-      const endpoint = `/apps/product-bundles/api/language-settings/${encodeURIComponent(shop)}?bundleType=full_page&locale=${encodeURIComponent(locale)}`;
-      const response = await fetch(endpoint, { credentials: 'same-origin' });
-      if (!response.ok) return;
-
-      const languageSettings = await response.json();
-      this.config.languageSettings = languageSettings;
-      this.config.languageData = languageSettings.activeLanguageData || null;
-      this.config.sharedCartLabels = languageSettings.sharedCartLabels || null;
-      this.config.textOverrides = {
-        ...(this.config.textOverrides || {}),
-        ...(languageSettings.textOverrides || {})
-      };
-    } catch (_) {
-
-    }
-  }
-
-  async loadControlsSettings() {
-    try {
-      const shop = window.Shopify?.shop || this.container.dataset.shop;
-      if (!shop) return;
-
-      const endpoint = `/apps/product-bundles/api/controls-settings/${encodeURIComponent(shop)}?bundleType=full_page`;
-      const response = await fetch(endpoint, { credentials: 'same-origin' });
-      if (!response.ok) return;
-
-      this.config.controlsSettings = await response.json();
-    } catch (_) {
-
-    }
-  }
-
-  _getLandingPageControls() {
-    return this.config.controlsSettings?.activeControls
-      || this.config.controlsSettings?.settingsControls?.landingPage
-      || null;
-  }
-
-  _runControlsScript(script) {
-    if (!script || typeof script !== 'string') return;
-    try {
-      new Function(script).call(window);
-    } catch (_) {
-
-    }
-  }
-
-  _handlePostAddToCartAction(actionConfig) {
-    const checkout = actionConfig || this._getLandingPageControls()?.checkout || {};
-    this._runControlsScript(checkout.executeScript);
-
-    const target = checkout.action === 'checkout' ? '/checkout' : '/cart';
-    this._emitStorefrontEvent('checkout-clicked', { target });
-
-    setTimeout(() => {
-      window.location.href = target;
-    }, 1000);
-  }
-
-  _scheduleCartTransformSelfHeal() {
-    try {
-      if (window.Shopify?.designMode) return;
-
-      const shop = window.Shopify?.shop || this.container.dataset.shop || window.location.hostname;
-      if (!shop) return;
-
-      const storageKey = `wolfpack:cart-transform-heal:${shop}`;
-      const lastCheckedAt = Number(window.localStorage?.getItem(storageKey) || 0);
-      const now = Date.now();
-      const cooldownMs = 24 * 60 * 60 * 1000;
-
-      if (lastCheckedAt && now - lastCheckedAt < cooldownMs) return;
-
-      window.setTimeout(() => {
-        fetch('/apps/product-bundles/api/cart-transform-heal', {
-          method: 'GET',
-          credentials: 'same-origin',
-          cache: 'no-store',
-        })
-          .then(response => {
-            if (response.ok) {
-              window.localStorage?.setItem(storageKey, String(now));
-            }
-          })
-          .catch(() => {});
-      }, 1500);
-    } catch (_error) {
-
-    }
-  }
-
-  parseConfiguration() {
-    const dataset = this.container.dataset;
-
-    this.config = {
-      bundleId: dataset.bundleId || null,
-      isContainerProduct: dataset.isContainerProduct === 'true',
-      containerBundleId: dataset.containerBundleId || null,
-      hideDefaultButtons: dataset.hideDefaultButtons === 'true',
-      showTitle: dataset.showTitle === 'true',
-      showDescription: dataset.showDescription !== 'false',
-      showStepNumbers: dataset.showStepNumbers !== 'false',
-      showFooterMessaging: dataset.showFooterMessaging !== 'false',
-      showStepTimeline: dataset.showStepTimeline !== 'false',
-      showCategoryTabs: dataset.showCategoryTabs !== 'false',
-
-      customTitle: dataset.customTitle || null,
-      customDescription: dataset.customDescription || null,
-
-      productCardSpacing: parseInt(dataset.productCardSpacing) || 20,
-      productCardsPerRow: parseInt(dataset.productCardsPerRow) || 4,
-
-      showQuantitySelectorOnCard: dataset.showQuantitySelectorOnCard !== 'false',
-
-      showPromoBanner: dataset.showPromoBanner !== 'false',
-
-      discountTextTemplate: 'Add {conditionText} to get {discountText}',
-      successMessageTemplate: 'Congratulations! You got {discountText}!',
-      showDiscountProgressBar: false,
-      discountProgressBarType: 'step_based',
-      discountProgressTextTemplate: null,
-      discountProgressSuccessTemplate: null,
-      currentProductId: window.currentProductId,
-      currentProductGid: window.currentProductGid,
-      currentProductHandle: window.currentProductHandle,
-      currentProductCollections: window.currentProductCollections,
-      tierConfig: this.parseTierConfig(dataset.tierConfig || '[]'),
-    };
-
-    this.tierConfig = this.config.tierConfig;
-
-    try {
-      this.bundleSettings = JSON.parse(dataset.bundleSettings || 'null') || {};
-    } catch {
-      this.bundleSettings = {};
-    }
-
-    this.applyCardLayoutSettings();
-  }
-
-  /**
-   * Apply card layout settings from Theme Editor as CSS variables
-   */
-  applyCardLayoutSettings() {
-    document.documentElement.style.setProperty(
-      '--bundle-product-card-spacing',
-      `${this.config.productCardSpacing}px`
-    );
-    document.documentElement.style.setProperty(
-      '--bundle-product-cards-per-row',
-      this.config.productCardsPerRow
-    );
-  }
-
-  async loadBundleData() {
-    let bundleData = null;
-
-    const bundleType = this.container.dataset.bundleType;
-    const bundleId = this.container.dataset.bundleId;
-
-    if (bundleType === 'full_page' && bundleId) {
-
-      const cachedConfig = this.container.dataset.bundleConfig;
-      if (cachedConfig && cachedConfig.trim() !== '' && cachedConfig !== 'null' && cachedConfig !== 'undefined') {
-        try {
-          const parsed = JSON.parse(cachedConfig);
-          const hasRequiredTemplate = parsed.bundleDesignTemplate && parsed.bundleDesignPresetId;
-          if (parsed && typeof parsed === 'object' && parsed.id && hasRequiredTemplate) {
-            bundleData = { [parsed.id]: parsed };
-          }
-        } catch (_e) {
-
-        }
-      }
-
-      if (!bundleData) {
-
-        const RETRY_DELAY_MS = 3000;
-        const RETRYABLE_STATUSES = new Set([503, 504]);
-
-        const fetchBundleData = async () => {
-
-          const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
-
-          const response = await fetch(apiUrl);
-
-          if (!response.ok) {
-
-            let errorDetails = `${response.status} ${response.statusText}`;
-            try {
-              const errorData = await response.json();
-              errorDetails = JSON.stringify(errorData);
-            } catch (e) {
-            }
-            const err = new Error(`API request failed: ${errorDetails}`);
-            err.status = response.status;
-            throw err;
-          }
-
-          const data = await response.json();
-
-          if (data.success && data.bundle) {
-            return { [data.bundle.id]: data.bundle };
-          } else {
-            throw new Error('Invalid API response structure');
-          }
-        };
-
-        try {
-          try {
-            bundleData = await fetchBundleData();
-          } catch (firstErr) {
-
-            if (RETRYABLE_STATUSES.has(firstErr.status)) {
-              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-              bundleData = await fetchBundleData();
-            } else {
-              throw firstErr;
-            }
-          }
-        } catch (error) {
-          throw error;
-        }
-      }
-    } else {
-
-      const configValue = this.container.dataset.bundleConfig;
-      if (configValue && configValue.trim() !== '' && configValue !== 'null' && configValue !== 'undefined') {
-        try {
-          const singleBundle = JSON.parse(configValue);
-
-          if (singleBundle && typeof singleBundle === 'object' && singleBundle.id) {
-            bundleData = { [singleBundle.id]: singleBundle };
-          } else {
-          }
-        } catch (error) {
-        }
-      } else {
-      }
-
-      if (!bundleData || (typeof bundleData === 'object' && Object.keys(bundleData).length === 0)) {
-
-        const isThemeEditor = window.Shopify?.designMode ||
-                             window.isThemeEditorContext ||
-                             window.location.pathname.includes('/editor') ||
-                             window.location.search.includes('preview_theme_id');
-
-        const bundleIdFromDataset = this.container.dataset.bundleId;
-
-        if (isThemeEditor && bundleIdFromDataset) {
-          this.showThemeEditorPreview(bundleIdFromDataset);
-          return;
-        }
-
-        const errorMsg = 'This widget can only be used on bundle container products. Please ensure:\n1. This product is a bundle container product\n2. Bundle has been saved and published\n3. Product has bundleConfig metafield set';
-        throw new Error(errorMsg);
-      }
-    }
-
-    this.bundleData = bundleData;
-  }
-
-  selectBundle() {
-    this.selectedBundle = BundleDataManager.selectBundle(this.bundleData, this.config);
-    if (!this.selectedBundle && this.config?.bundleId && this.bundleData?.[this.config.bundleId]?.bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-      this.selectedBundle = this.bundleData[this.config.bundleId];
-    }
-
-    this.updateMessagesFromBundle();
-  }
-
-  updateMessagesFromBundle() {
-
-    const messaging = this.selectedBundle?.messaging;
-    const pricingMessages = this.selectedBundle?.pricing?.messages;
-    const pricingDisplay = this.selectedBundle?.pricing?.display;
-    const displayOptions = messaging?.displayOptions || pricingMessages?.displayOptions || {};
-    const progressBarOptions = displayOptions?.progressBar || {};
-
-    if (messaging) {
-      if (messaging.progressTemplate) {
-        this.config.discountTextTemplate = messaging.progressTemplate;
-      }
-      if (messaging.successTemplate) {
-        this.config.successMessageTemplate = messaging.successTemplate;
-      }
-
-      this.config.showDiscountMessaging = messaging.showDiscountMessaging !== false;
-      this.config.showDiscountProgressBar = progressBarOptions.enabled === true || messaging.showDiscountProgressBar === true;
-
-    } else if (pricingMessages) {
-
-      const shopLocale = window.Shopify?.locale;
-      const byLocale = pricingMessages.ruleMessagesByLocale;
-      const localeRuleMessages = shopLocale && byLocale?.[shopLocale];
-      const ruleMessages = localeRuleMessages || pricingMessages.ruleMessages;
-      const firstRuleMsg = ruleMessages && Object.values(ruleMessages)[0];
-      if (firstRuleMsg?.discountText) {
-        this.config.discountTextTemplate = firstRuleMsg.discountText;
-      }
-      if (firstRuleMsg?.successMessage) {
-        this.config.successMessageTemplate = firstRuleMsg.successMessage;
-      }
-
-      this.config.showDiscountMessaging = pricingMessages.showDiscountMessaging || this.selectedBundle?.pricing?.enabled || false;
-      this.config.showDiscountProgressBar =
-        progressBarOptions.enabled === true ||
-        pricingMessages.showDiscountProgressBar === true ||
-        pricingDisplay?.showDiscountProgressBar === true;
-
-    } else {
-      this.config.showDiscountMessaging = this.selectedBundle?.pricing?.enabled || false;
-      this.config.showDiscountProgressBar = pricingDisplay?.showDiscountProgressBar === true;
-    }
-
-    this.config.discountProgressBarType = progressBarOptions.type === 'simple' ? 'simple' : 'step_based';
-    this.config.discountProgressTextTemplate = progressBarOptions.progressText || this.config.discountTextTemplate;
-    this.config.discountProgressSuccessTemplate = progressBarOptions.successText || this.config.successMessageTemplate;
-  }
-
-  applyPersonalizationAddonProducts() {
-    const addonStep = this.buildAddonStepFromPersonalization();
-    if (!addonStep) return;
-
-    this.selectedBundle.steps = (this.selectedBundle.steps || []).filter(step => !step.isFreeGift);
-    this.selectedBundle.steps = [...(this.selectedBundle.steps || []), addonStep];
-  }
-
-  buildAddonStepFromPersonalization() {
-    const personalizationData = this.selectedBundle?.personalizationData;
-    const addonProducts = personalizationData?.addonProducts;
-    if (personalizationData?.isPersonalizationEnabled !== true || addonProducts?.isEnabled !== true) {
-      return null;
-    }
-
-    const tiers = Array.isArray(addonProducts.tiers) ? addonProducts.tiers : [];
-    const selectedAddonProducts = tiers.flatMap(tier =>
-      Array.isArray(tier?.selectedAddonProducts)
-        ? tier.selectedAddonProducts.map(product => this.normalizePersonalizationAddonProduct(product))
-        : []
-    );
-    if (selectedAddonProducts.length === 0) return null;
-
-    const firstTier = tiers[0] || {};
-
-    return {
-      id: 'personalization-addons',
-      name: personalizationData.personalizeStepText || addonProducts.title || '',
-      position: (this.selectedBundle?.steps?.length || 0) + 1,
-      minQuantity: 0,
-      maxQuantity: selectedAddonProducts.length,
-      enabled: true,
-      isFreeGift: true,
-      addonLabel: personalizationData.personalizeStepText || addonProducts.title || '',
-      freeGiftName: addonProducts.title || personalizationData.personalizeStepText || '',
-      addonTitle: addonProducts.title || personalizationData.personalizePageSubtext || '',
-      addonIconUrl: personalizationData.stepImage || null,
-      addonDisplayFree: Number(firstTier?.discount?.value || 0) >= 100 && firstTier?.discount?.type === 'PERCENTAGE',
-      addonUnlockAfterCompletion: true,
-      addonTiers: tiers,
-      addonEligibilityCondition: firstTier?.eligibilityCondition || null,
-      addonDiscount: firstTier?.discount || null,
-      addonMessaging: addonProducts.addonsMessaging || null,
-      displayVariantsAsIndividual: firstTier?.displayVariantsAsIndividualProducts_addons === true,
-      StepProduct: selectedAddonProducts,
-      products: selectedAddonProducts,
-      collections: [],
-    };
-  }
-
-  normalizePersonalizationAddonProduct(product) {
-    const productGid = product?.graphqlId || product?.id || (product?.productId ? `gid://shopify/Product/${product.productId}` : '');
-    const imageUrl = product?.images?.[0]?.originalSrc
-      || product?.images?.[0]?.url
-      || product?.image?.src
-      || product?.imageUrl
-      || '';
-    const variants = Array.isArray(product?.variants) ? product.variants : [];
-
-    return {
-      productId: productGid,
-      id: productGid,
-      title: product?.title || '',
-      handle: product?.handle || '',
-      imageUrl,
-      price: variants[0]?.price || product?.price || '0',
-      compareAtPrice: variants[0]?.compareAtPrice || null,
-      variants: variants.map(variant => {
-        const variantGid = variant.variantGraphqlId || variant.id || (variant.variantId ? `gid://shopify/ProductVariant/${variant.variantId}` : productGid);
-        return {
-          id: variantGid,
-          title: variant.variantTitle || variant.title || 'Default Title',
-          price: variant.price || '0',
-          compareAtPrice: variant.compareAtPrice || null,
-          available: variant.available !== false,
-          quantityAvailable: typeof variant.inventoryQuantity === 'number' ? variant.inventoryQuantity : null,
-          currentlyNotInStock: false,
-          image: imageUrl ? { src: imageUrl } : null,
-        };
-      }),
-    };
-  }
-
-  initializeDataStructures() {
-    const stepsCount = this.selectedBundle.steps.length;
-
-    this.selectedProducts = Array(stepsCount).fill(null).map(() => ({}));
-
-    this._initDefaultProducts();
-
-    this.stepProductData = Array(stepsCount).fill(null).map(() => ([]));
-  }
-
-  /**
-   * Show a helpful preview in theme editor when testing on non-bundle products
-   */
-  showThemeEditorPreview(bundleId) {
-
-    this.container.innerHTML = `
-      <div style="
-        padding: 32px 24px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: 2px dashed #667eea;
-        border-radius: 12px;
-        text-align: center;
-        color: white;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      ">
-        <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
-        <h3 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600;">Bundle Widget Preview</h3>
-        <p style="margin: 0 0 8px 0; font-size: 14px; opacity: 0.9;">
-          Bundle ID: <code style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-family: monospace;">${bundleId}</code>
-        </p>
-        <div style="
-          margin: 20px auto 0;
-          padding: 16px;
-          background: rgba(255, 255, 255, 0.15);
-          border-radius: 8px;
-          max-width: 400px;
-          text-align: left;
-          font-size: 13px;
-          line-height: 1.6;
-        ">
-          <div style="font-weight: 600; margin-bottom: 8px;">✅ Widget Configured Successfully</div>
-          <div style="opacity: 0.9;">
-            This widget will automatically display on <strong>bundle container products</strong>.
-            <br><br>
-            <strong>To see it in action:</strong>
-            <ol style="margin: 8px 0; padding-left: 20px;">
-              <li>Save your theme</li>
-              <li>Navigate to a bundle product page</li>
-              <li>The widget will appear with product selection steps</li>
-            </ol>
-          </div>
-        </div>
-        <div style="
-          margin-top: 20px;
-          padding: 12px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 6px;
-          font-size: 12px;
-          opacity: 0.8;
-        ">
-          💡 <strong>Tip:</strong> You're currently previewing on a regular product. The widget only activates on products configured as bundle containers.
-        </div>
-      </div>
-    `;
-  }
-
-  setupDOMElements() {
-
-    this.elements = {
-      header: this.container.querySelector('.bundle-header') || this.createHeader(),
-      stepsContainer: this.container.querySelector('.bundle-steps') || this.createStepsContainer(),
-      footer: this.container.querySelector('.bundle-footer-messaging') || this.createFooter(),
-      modal: this.ensureModal()
-    };
-
-    if (!this.container.querySelector('.bundle-header')) {
-      this.container.appendChild(this.elements.header);
-    }
-    if (!this.container.querySelector('.bundle-steps')) {
-      this.container.appendChild(this.elements.stepsContainer);
-    }
-    if (!this.container.querySelector('.bundle-footer-messaging')) {
-      this.container.appendChild(this.elements.footer);
-    }
-  }
-
-  createHeader() {
-    const header = document.createElement('div');
-    header.className = 'bundle-header';
-
-    const title = this.config.customTitle || this.selectedBundle.name;
-
-    const description = this.config.customDescription || this.selectedBundle.description;
-
-    const titleHTML = `<h2 class="bundle-title">${ComponentGenerator.escapeHtml(title)}</h2>`;
-    const descriptionHTML = (description && this.config.showDescription)
-      ? `<p class="bundle-description">${ComponentGenerator.escapeHtml(description)}</p>`
-      : '';
-
-    header.innerHTML = `
-      ${titleHTML}
-      ${descriptionHTML}
-    `;
-    return header;
-  }
-
-  createStepsContainer() {
-    const container = document.createElement('div');
-    container.className = 'bundle-steps';
-    return container;
-  }
-
-  createFooter() {
-    const footer = document.createElement('div');
-    footer.className = 'bundle-footer-messaging';
-    footer.style.display = 'none';
-    footer.innerHTML = `
-      <div class="footer-discount-text"></div>
-    `;
-    return footer;
-  }
-
-  ensureModal() {
-    let modal = document.getElementById('bundle-builder-modal');
-
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'bundle-builder-modal';
-      modal.className = 'bundle-builder-modal';
-      modal.style.display = 'none';
-      modal.innerHTML = `
-        <div class="modal-overlay"></div>
-        <div class="modal-content">
-          <div class="modal-header">
-            <div class="modal-step-title"></div>
-            <div class="modal-tabs-wrapper">
-              <button class="tab-arrow tab-arrow-left" aria-label="Scroll tabs left">&lsaquo;</button>
-              <div class="modal-tabs"></div>
-              <button class="tab-arrow tab-arrow-right" aria-label="Scroll tabs right">&rsaquo;</button>
-            </div>
-            <span class="close-button">&times;</span>
-          </div>
-          <div class="modal-body">
-            <div class="product-grid"></div>
-          </div>
-          <div class="modal-footer">
-            <!-- Centered Grouped Content Container -->
-            <div class="modal-footer-grouped-content">
-              <!-- Total Pill - Sits Above Buttons -->
-              <div class="modal-footer-total-pill">
-                <span class="total-price-strike"></span>
-                <span class="total-price-final"></span>
-                <span class="price-cart-separator">|</span>
-                <span class="cart-badge-wrapper">
-                  <span class="cart-badge-count">0</span>
-                  <svg class="cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="9" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <circle cx="20" cy="21" r="1" fill="currentColor" stroke="none"/>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                  </svg>
-                </span>
-              </div>
-
-              <!-- Buttons Row - Below Pill -->
-              <div class="modal-footer-buttons-row">
-                <button class="modal-nav-button prev-button">BACK</button>
-                <button class="modal-nav-button next-button">NEXT</button>
-              </div>
-
-              <!-- Discount Messaging Section -->
-              <div class="modal-footer-discount-messaging">
-                <div class="footer-discount-text"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-
-      this.setupTabScrollArrows(modal);
-    }
-
-    return modal;
-  }
-
-  setupTabScrollArrows(modal) {
-    const tabsContainer = modal.querySelector('.modal-tabs');
-    const leftArrow = modal.querySelector('.tab-arrow-left');
-    const rightArrow = modal.querySelector('.tab-arrow-right');
-
-    if (!tabsContainer || !leftArrow || !rightArrow) return;
-
-    const scrollAmount = 200;
-
-    leftArrow.addEventListener('click', () => {
-      tabsContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-    });
-
-    rightArrow.addEventListener('click', () => {
-      tabsContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    });
-
-    const updateArrowVisibility = () => {
-      const { scrollLeft, scrollWidth, clientWidth } = tabsContainer;
-
-      leftArrow.style.display = scrollLeft > 0 ? 'flex' : 'none';
-      rightArrow.style.display = scrollLeft + clientWidth < scrollWidth - 1 ? 'flex' : 'none';
-    };
-
-    tabsContainer.addEventListener('scroll', updateArrowVisibility);
-
-    setTimeout(updateArrowVisibility, 100);
-
-    this.updateTabArrows = updateArrowVisibility;
-  }
-
-  async renderUI() {
-    this.renderHeader();
-    await this.renderSteps();
-    this.renderFooter();
-  }
-
-  renderHeader() {
-
-    const bundleType = this.selectedBundle?.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
-    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-      this.elements.header.style.display = 'none';
-      return;
-    }
-
-    if (!this.config.showTitle) {
-      this.elements.header.style.display = 'none';
-      return;
-    }
-
-    this.elements.header.style.display = 'block';
-  }
-
-  async renderSteps() {
-
-    this.elements.stepsContainer.innerHTML = '';
-
-    if (!this.selectedBundle || !this.selectedBundle.steps) {
-      return;
-    }
-
-    const bundleType = this.selectedBundle.bundleType || BUNDLE_WIDGET.BUNDLE_TYPES.PRODUCT_PAGE;
-
-    if (bundleType === BUNDLE_WIDGET.BUNDLE_TYPES.FULL_PAGE) {
-
-      FullPagePreset.markContainer(this.container, this.selectedBundle);
-      await this.renderFullPageLayoutWithSidebar();
-      return;
-    }
-  }
-
-  renderProductPageLayout() {
-    this.selectedBundle.steps.forEach((step, index) => {
-      const stepElement = this.createStepElement(step, index);
-      this.elements.stepsContainer.appendChild(stepElement);
-    });
-  }
-
-  async renderFullPageLayout() {
-
-    this.hidePageTitle();
-
-    this.elements.stepsContainer.innerHTML = '';
-    this.elements.stepsContainer.classList.add('full-page-layout');
-    this.applyFullPageDesignPresetMarker();
-    this.ensureBundleBannerRuntimeStyles();
-    this.ensureCompactPresetRuntimeStyles();
-    this.ensureHorizontalSidePanelSlotRuntimeStyles();
-
-    const contentSection = document.createElement('div');
-    contentSection.className = 'full-page-content-section';
-
-    const bundleBanners = this.createBundleBanners();
-    if (bundleBanners) {
-      contentSection.appendChild(bundleBanners);
-    }
-
-    const promoBanner = this.createPromoBanner();
-    if (promoBanner) {
-      contentSection.appendChild(promoBanner);
-    }
-
-    if (this.config.showStepTimeline) {
-      const stepTimeline = this.createStepTimeline();
-      contentSection.appendChild(stepTimeline);
-    }
-
-    const contentHeader = this.createStepContentHeader(this.currentStepIndex);
-    if (contentHeader) contentSection.appendChild(contentHeader);
-
-    const stepBanner = this.createStepBannerImage(this.currentStepIndex);
-    if (stepBanner) contentSection.appendChild(stepBanner);
-
-    if (this.shouldRenderFullPageSearch()) {
-      const searchInput = this.createSearchInput();
-      contentSection.appendChild(searchInput);
-    }
-
-    if (this.config.showCategoryTabs) {
-      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-      if (categoryTabs) {
-        contentSection.appendChild(categoryTabs);
-      }
-    }
-
-    const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
-    if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
-
-    const productGridContainer = document.createElement('div');
-    productGridContainer.className = 'full-page-product-grid-container';
-    productGridContainer.innerHTML = this.createProductGridLoadingState();
-    contentSection.appendChild(productGridContainer);
-    const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-    if (categoryRows) contentSection.appendChild(categoryRows);
-
-    this.elements.stepsContainer.appendChild(contentSection);
-
-    this.renderFullPageFooter();
-
-    if (this.selectedBundle?.loadingGif) {
-      this.showLoadingOverlay(this.selectedBundle.loadingGif);
-    }
-    try {
-      await this.loadStepProducts(this.currentStepIndex);
-
-      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-      productGridContainer.innerHTML = '';
-      productGridContainer.appendChild(productGrid);
-
-      this.renderFullPageFooter();
-
-      this.hideLoadingOverlay();
-
-      this.preloadNextStep();
-    } catch (error) {
-      this.hideLoadingOverlay();
-      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
-    }
-  }
-
-  async renderFullPageLayoutWithSidebar() {
-    this.hidePageTitle();
-
-    this.elements.stepsContainer.innerHTML = '';
-    this.elements.stepsContainer.classList.add('full-page-layout', 'layout-sidebar');
-    this.applyFullPageDesignPresetMarker();
-    this.ensureBundleBannerRuntimeStyles();
-    this.ensureStandardPresetRuntimeStyles();
-    this.ensureClassicPresetRuntimeStyles();
-    this.ensureCompactPresetRuntimeStyles();
-    this.ensureHorizontalSidePanelSlotRuntimeStyles();
-
-    if (this.elements.footer) {
-      this.elements.footer.style.display = 'none';
-    }
-
-    const bundleBanners = this.createBundleBanners();
-    if (bundleBanners) {
-      this.elements.stepsContainer.appendChild(bundleBanners);
-    }
-
-    if (this.config.showStepTimeline) {
-      this.elements.stepsContainer.appendChild(this.createStepTimeline());
-    }
-
-    const contentHeader = this.createStepContentHeader(this.currentStepIndex);
-    if (contentHeader) this.elements.stepsContainer.appendChild(contentHeader);
-
-    if (this.config.showCategoryTabs) {
-      const categoryTabs = this.createCategoryTabs(this.currentStepIndex);
-      if (categoryTabs) this.elements.stepsContainer.appendChild(categoryTabs);
-    }
-
-    const twoColWrapper = document.createElement('div');
-    twoColWrapper.className = 'sidebar-layout-wrapper';
-
-    const contentSection = document.createElement('div');
-    contentSection.className = 'full-page-content-section sidebar-content';
-
-    const promoBanner = this.createPromoBanner();
-    if (promoBanner) contentSection.appendChild(promoBanner);
-
-    const stepBanner = this.createStepBannerImage(this.currentStepIndex);
-    if (stepBanner) contentSection.appendChild(stepBanner);
-
-    if (this.shouldRenderFullPageSearch()) {
-      contentSection.appendChild(this.createSearchInput());
-    }
-
-    const activeCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
-    if (activeCategoryTitle) contentSection.appendChild(activeCategoryTitle);
-
-    const currentStep = (this.selectedBundle?.steps || [])[this.currentStepIndex];
-    if (currentStep?.isFreeGift && currentStep?.addonTitle) {
-      const freeHeading = document.createElement('div');
-      freeHeading.className = 'fpb-step-free-heading';
-      freeHeading.textContent = currentStep.addonTitle;
-      contentSection.appendChild(freeHeading);
-    }
-
-    const productGridContainer = document.createElement('div');
-    productGridContainer.className = 'full-page-product-grid-container';
-    productGridContainer.innerHTML = this.createProductGridLoadingState();
-    contentSection.appendChild(productGridContainer);
-    const categoryRows = this.createCategorySectionRows(this.currentStepIndex);
-    if (categoryRows) contentSection.appendChild(categoryRows);
-
-    twoColWrapper.appendChild(contentSection);
-
-    const sidePanel = document.createElement('div');
-    sidePanel.className = 'full-page-side-panel';
-    this.renderSidePanel(sidePanel);
-    twoColWrapper.appendChild(sidePanel);
-
-    this.elements.stepsContainer.appendChild(twoColWrapper);
-
-    if (this.selectedBundle?.loadingGif) {
-      this.showLoadingOverlay(this.selectedBundle.loadingGif);
-    }
-    try {
-      await this.loadStepProducts(this.currentStepIndex);
-      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-      productGridContainer.innerHTML = '';
-      productGridContainer.appendChild(productGrid);
-      this.renderSidePanel(sidePanel);
-      this.hideLoadingOverlay();
-      this.preloadNextStep();
-      this._renderMobileBottomBar();
-    } catch (error) {
-      this.hideLoadingOverlay();
-      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
-      this._renderMobileBottomBar();
-    }
-  }
-
-  _renderMobileBottomBar({ preserveOpen = false } = {}) {
-    const previousSheet = document.querySelector('.fpb-mobile-bottom-sheet');
-    const wasOpen = preserveOpen && previousSheet?.classList.contains('is-open');
-    const wasCompactSummaryExpanded = preserveOpen
-      && previousSheet?.classList.contains('fpb-mobile-summary-tray-expanded');
-
-    document.querySelector('.fpb-mobile-bottom-bar')?.remove();
-    document.querySelector('.fpb-mobile-bottom-sheet')?.remove();
-    document.querySelector('.fpb-mobile-backdrop')?.remove();
-    document.body.classList.remove('fpb-compact-mobile-summary-active');
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(this.selectedBundle, totalPrice, totalQuantity, unitPrices);
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
-    const selectedCount = this.getAllSelectedProductsData().filter(p => !p.isDefault).length;
-    const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
-    const isComplete = this.areBundleConditionsMet();
-
-    const backdrop = document.createElement('div');
-    backdrop.className = 'fpb-mobile-backdrop';
-
-    const sheet = document.createElement('div');
-    sheet.className = 'fpb-mobile-bottom-sheet';
-    const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
-    if (usesCompactMobileSummaryTray) {
-      sheet.classList.add('fpb-mobile-summary-tray');
-      if (this.getFullPageDesignPreset() === 'CLASSIC') {
-        sheet.classList.add('fpb-mobile-classic-footer');
-      }
-      this.compactMobileSummaryTrayExpanded = wasCompactSummaryExpanded || this.compactMobileSummaryTrayExpanded === true;
-      this._populateCompactMobileSummaryTray(sheet);
-      sheet.classList.add('is-open');
-      document.body.classList.add('fpb-compact-mobile-summary-active');
-      document.body.appendChild(sheet);
-      return;
-    }
-
-    this._populateMobileSheet(sheet);
-
-    const bar = document.createElement('div');
-    bar.className = 'fpb-mobile-bottom-bar';
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'fpb-mobile-toggle-btn';
-    toggleBtn.setAttribute('aria-label', 'View bundle summary');
-    toggleBtn.innerHTML = `<span class="fpb-caret">&#9650;</span><span class="fpb-mobile-toggle-count">${selectedCount}</span>`;
-    toggleBtn.addEventListener('click', () => {
-      const open = sheet.classList.toggle('is-open');
-      backdrop.classList.toggle('is-open', open);
-      toggleBtn.querySelector('.fpb-caret').innerHTML = open ? '&#9660;' : '&#9650;';
-    });
-    backdrop.addEventListener('click', () => {
-      sheet.classList.remove('is-open');
-      backdrop.classList.remove('is-open');
-      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9650;';
-    });
-
-    const totalEl = document.createElement('div');
-    totalEl.className = 'fpb-mobile-total';
-    totalEl.textContent = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
-
-    const conditionlessMobile = this.bundleHasNoConditions();
-    const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
-    const boxSelectionValidMobile = this.canCheckoutWithBoxSelection();
-    const ctaBtn = document.createElement('button');
-    ctaBtn.className = 'fpb-mobile-cta-btn';
-    ctaBtn.textContent = (conditionlessMobile || (isLastStep && isComplete)) ? this._resolveText('addToCartButton', 'Add to Cart') : this._resolveText('nextButton', 'Next');
-    if (conditionlessMobile ? (!hasSelectionMobile || !boxSelectionValidMobile) : (isLastStep && (!isComplete || !boxSelectionValidMobile))) ctaBtn.disabled = true;
-    ctaBtn.addEventListener('click', () => {
-      if (conditionlessMobile || (isLastStep && isComplete)) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
-        this.addBundleToCart();
-      } else if (!isLastStep && this.canNavigateToStep(this.currentStepIndex + 1) && this.canProceedToNextStep()) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex++;
-        this.renderFullPageLayoutWithSidebar();
-      } else if (!isLastStep && !this.canNavigateToStep(this.currentStepIndex + 1)) {
-        ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
-      }
-    });
-
-    bar.appendChild(toggleBtn);
-    bar.appendChild(totalEl);
-    bar.appendChild(ctaBtn);
-
-    document.body.appendChild(backdrop);
-    document.body.appendChild(sheet);
-    document.body.appendChild(bar);
-
-    if (wasOpen) {
-      sheet.classList.add('is-open');
-      backdrop.classList.add('is-open');
-      toggleBtn.querySelector('.fpb-caret').innerHTML = '&#9660;';
-    }
-  }
-
-  _populateMobileSheet(sheet) {
-    sheet.innerHTML = '';
-    this.renderSidePanel(sheet);
-  }
-
-  usesCompactMobileSummaryTray() {
-    const preset = this.getFullPageDesignPreset();
-    return this.resolveFullPageLayout() === 'footer_side' && (preset === 'DEFAULT' || preset === 'CLASSIC' || preset === 'COMPACT' || preset === 'HORIZONTAL');
-  }
-
-  _populateCompactMobileSummaryTray(sheet) {
-    sheet.innerHTML = '';
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
-    const selectedFooterQuantity = this.getAllSelectedProductsData().reduce(
-      (sum, item) => sum + (Number(item.quantity) || 1),
-      0
-    );
-
-    const countBadge = document.createElement('div');
-    countBadge.className = 'fpb-mobile-summary-count-badge';
-    countBadge.setAttribute('role', 'button');
-    countBadge.setAttribute('tabindex', '0');
-    countBadge.setAttribute('aria-label', 'Review your bundle');
-    countBadge.setAttribute('aria-expanded', this.compactMobileSummaryTrayExpanded ? 'true' : 'false');
-    countBadge.textContent = String(selectedFooterQuantity);
-    countBadge.addEventListener('click', () => {
-      this._toggleCompactMobileSummaryTray(sheet);
-    });
-    countBadge.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        this._toggleCompactMobileSummaryTray(sheet);
-      }
-    });
-    sheet.appendChild(countBadge);
-
-    sheet.classList.toggle('fpb-mobile-summary-tray-expanded', this.compactMobileSummaryTrayExpanded);
-
-    if (this.selectedBundle?.pricing?.enabled) {
-      const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
-      const discountBlock = document.createElement('div');
-      discountBlock.className = 'side-panel-discount-message';
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-      );
-      let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          variables
-        );
-      } else if (nextRule) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-          variables
-        );
-      }
-      if (discountMessage) {
-        const msgEl = document.createElement('div');
-        msgEl.className = 'fpb-mobile-summary-discount-text';
-        msgEl.innerHTML = discountMessage;
-        discountBlock.appendChild(msgEl);
-      }
-
-      const shouldShowProgressBar = this.config.showDiscountProgressBar || usesCompactMobileSummaryTray;
-      if (shouldShowProgressBar) {
-        const progressBar = this._renderDiscountProgress({
-          placement: "sidebar",
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-          unitPrices,
-        });
-        if (progressBar) {
-          progressBar.classList.add('fpb-dp-sidebar');
-          discountBlock.appendChild(progressBar);
-        }
-      }
-
-      if (discountBlock.childElementCount > 0) {
-        sheet.appendChild(discountBlock);
-      }
-    }
-
-    const navSection = document.createElement('div');
-    navSection.className = 'side-panel-nav';
-    const isLastStep = this.currentStepIndex === (this.selectedBundle?.steps?.length || 1) - 1;
-    const conditionlessMobile = this.bundleHasNoConditions();
-    const hasSelectionMobile = conditionlessMobile && this.getAllSelectedProductsData().filter(p => !p.isDefault).length > 0;
-    const actionButton = this._createMobileSummaryActionButton({
-      finalPrice,
-      currencyInfo,
-      conditionlessMobile,
-      hasSelectionMobile,
-      isLastStep,
-      isComplete: this.areBundleConditionsMet()
-    });
-    navSection.appendChild(actionButton);
-    if (this.compactMobileSummaryTrayExpanded) {
-      const productsSection = document.createElement('div');
-      productsSection.className = 'fpb-mobile-summary-products-section';
-      productsSection.appendChild(this._renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity));
-      productsSection.appendChild(navSection);
-      sheet.appendChild(productsSection);
-    } else {
-      sheet.appendChild(navSection);
-    }
-  }
-
-  _toggleCompactMobileSummaryTray(sheet) {
-    const hasSelectedSummaryProducts = this.getAllSelectedProductsData().length > 0;
-    if (!hasSelectedSummaryProducts) {
-      this.compactMobileSummaryTrayExpanded = false;
-      this._populateCompactMobileSummaryTray(sheet);
-      return;
-    }
-    this.compactMobileSummaryTrayExpanded = !this.compactMobileSummaryTrayExpanded;
-    this._populateCompactMobileSummaryTray(sheet);
-  }
-
-  _renderCompactMobileSummaryBundleItems(currencyInfo, totalQuantity) {
-    const allSelectedProducts = this.getAllSelectedProductsData();
-    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
-    const summaryText = this.getBundleSummaryText();
-
-    const bundleItems = document.createElement('div');
-    bundleItems.className = 'fpb-mobile-summary-bundle-items';
-
-    const header = document.createElement('div');
-    header.className = 'fpb-mobile-summary-bundle-header';
-
-    const headerCopy = document.createElement('div');
-    headerCopy.className = 'fpb-mobile-summary-bundle-copy';
-    const title = document.createElement('div');
-    title.className = 'fpb-mobile-summary-bundle-title';
-    title.textContent = summaryText.title;
-    const subtitle = document.createElement('div');
-    subtitle.className = 'fpb-mobile-summary-bundle-subtitle';
-    subtitle.textContent = summaryText.subTitle;
-    headerCopy.append(title, subtitle);
-    header.appendChild(headerCopy);
-
-    if (allSelectedProducts.length > 0) {
-      const clearBtn = document.createElement('button');
-      clearBtn.className = 'fpb-mobile-summary-clear-btn';
-      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg><span>Clear</span>`;
-      clearBtn.addEventListener('click', () => {
-
-        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
-        this.currentStepIndex = 0;
-        this.searchQuery = '';
-        this.activeCollectionId = null;
-        this.compactMobileSummaryTrayExpanded = false;
-        this.reRenderFullPage();
-      });
-      header.appendChild(clearBtn);
-    }
-    bundleItems.appendChild(header);
-
-    const productsList = document.createElement('div');
-    productsList.className = 'fpb-mobile-summary-products-list';
-
-    allSelectedProducts.forEach(item => {
-      const summaryTitle = this.getSummaryProductDisplayTitle(item);
-      const variantInfo = this.getSummaryProductVariantDisplay(item);
-      const row = document.createElement('div');
-      row.className = 'fpb-mobile-summary-product-row';
-      const imgSrc = this._getSelectedProductImageSrc(item);
-      const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-      const priceText = CurrencyManager.convertAndFormat(
-        isFreeGiftItem ? 0 : item.price * item.quantity,
-        currencyInfo
-      );
-
-      row.innerHTML = `
-        <div class="fpb-mobile-summary-product-image-wrap">
-          ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="fpb-mobile-summary-product-image">` : '<div class="fpb-mobile-summary-product-image-placeholder"></div>'}
-        </div>
-        <div class="fpb-mobile-summary-product-info">
-          <span class="fpb-mobile-summary-product-title">${this._escapeHTML(summaryTitle)}</span>
-          ${variantInfo ? `<span class="fpb-mobile-summary-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-          <span class="fpb-mobile-summary-product-price">${priceText}</span>
-        </div>
-        <div class="fpb-mobile-summary-product-action">
-          <span class="fpb-mobile-summary-product-qty">×${item.quantity}</span>
-        </div>
-      `;
-
-      if (!item.isDefault) {
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'fpb-mobile-summary-product-remove';
-        removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
-        removeBtn.addEventListener('click', () => {
-          const stepIndex = item.stepIndex;
-          const productId = item.variantId || item.productId || item.id;
-          const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-          this.updateProductSelection(stepIndex, productId, 0);
-          const truncated = removedItem.title && removedItem.title.length > 25 ? removedItem.title.substring(0, 25) + '...' : (removedItem.title || 'Product');
-          ToastManager.showWithUndo(
-            `Removed "${truncated}"`,
-            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-            5000
-          );
-        });
-        row.querySelector('.fpb-mobile-summary-product-action')?.appendChild(removeBtn);
-      }
-
-      productsList.appendChild(row);
-    });
-
-    const requiredSlots = Math.max(
-      allSelectedProducts.length + 1,
-      activeStep?.maxQuantity || activeStep?.minQuantity || totalQuantity + 1,
-      2
-    );
-    if (this._shouldRenderProductSlots()) {
-      const emptySlots = Math.max(0, Math.min(2, requiredSlots - allSelectedProducts.length));
-      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
-      for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
-        const emptyCard = document.createElement('div');
-        emptyCard.className = 'fpb-mobile-summary-empty-product-card';
-        const emptyStateIcon = emptyStateIconUrl
-          ? `<img src="${emptyStateIconUrl}" alt="" width="63" height="63" style="width:63px;height:63px;object-fit:contain">`
-          : '<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:32px;line-height:1;font-weight:700;color:#a6a3a3">+</span>';
-        emptyCard.innerHTML = `
-          <div class="fpb-mobile-summary-empty-product-image">${emptyStateIcon}</div>
-          <div class="fpb-mobile-summary-empty-product-info">
-            <span class="fpb-mobile-summary-empty-product-title"></span>
-            <span class="fpb-mobile-summary-empty-product-variant"></span>
-            <span class="fpb-mobile-summary-empty-product-price"></span>
-          </div>
-          <span class="fpb-mobile-summary-empty-product-action"></span>
-        `;
-        productsList.appendChild(emptyCard);
-      }
-    }
-
-    bundleItems.appendChild(productsList);
-    return bundleItems;
-  }
-
-  _createMobileSummaryActionButton({
-    finalPrice,
-    currencyInfo,
-    conditionlessMobile,
-    hasSelectionMobile,
-    isLastStep,
-    isComplete
-  }) {
-    const ctaBtn = document.createElement('button');
-    ctaBtn.className = 'side-panel-btn side-panel-btn-next';
-    const hasUpcomingAddonStep = this.freeGiftStepIndex > this.currentStepIndex;
-    const shouldAdvance = hasUpcomingAddonStep || (!conditionlessMobile && !isLastStep);
-    const shouldAddToCart = !shouldAdvance && (conditionlessMobile || (isLastStep && isComplete));
-    const actionText = shouldAddToCart
-      ? this._resolveText('addToCartButton', 'Add to Cart')
-      : this._resolveText('nextButton', 'Next');
-    const priceText = CurrencyManager.convertAndFormat(finalPrice, currencyInfo);
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'fpb-mobile-summary-action-label';
-    labelSpan.textContent = actionText;
-    const separatorSpan = document.createElement('span');
-    separatorSpan.className = 'fpb-mobile-summary-action-separator';
-    separatorSpan.textContent = '•';
-    const priceSpan = document.createElement('span');
-    priceSpan.className = 'fpb-mobile-summary-action-price';
-    priceSpan.textContent = priceText;
-    ctaBtn.append(labelSpan, separatorSpan, priceSpan);
-    if (shouldAddToCart && (conditionlessMobile ? (!hasSelectionMobile || !this.canCheckoutWithBoxSelection()) : (!isComplete || !this.canCheckoutWithBoxSelection()))) ctaBtn.disabled = true;
-    ctaBtn.addEventListener('click', () => {
-      if (shouldAddToCart) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
-        this.addBundleToCart();
-      } else {
-        const targetStepIndex = hasUpcomingAddonStep ? this.freeGiftStepIndex : this.currentStepIndex + 1;
-        if (this.canNavigateToStep(targetStepIndex) && this.canProceedToNextStep()) {
-          const previousStepIndex = this.currentStepIndex;
-          this.activeCollectionId = null;
-          this.searchQuery = '';
-          this.currentStepIndex = targetStepIndex;
-          this._emitStorefrontEvent('step-changed', { previousStepIndex, currentStepIndex: targetStepIndex, direction: 'next' });
-          this.renderFullPageLayoutWithSidebar();
-        } else if (!this.canNavigateToStep(targetStepIndex)) {
-          ToastManager.show(this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName ? `Complete all steps to unlock the free ${this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName}!` : 'Complete all steps first.');
-        } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
-        }
-      }
-    });
-    return ctaBtn;
-  }
-
-  getBundleSummaryText() {
-    const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
-    return {
-      title: typeof summary.title === 'string' && summary.title.trim()
-        ? summary.title
-        : 'Your Bundle',
-      subTitle: typeof summary.subTitle === 'string' && summary.subTitle.trim()
-        ? summary.subTitle
-        : 'Review your bundle'
-    };
-  }
-
-  getBundleContentSummaryText() {
-    const summary = this.selectedBundle?.bundleTextConfig?.bundleSummary || {};
-    return {
-      title: typeof summary.title === 'string' ? summary.title.trim() : '',
-      subTitle: typeof summary.subTitle === 'string' ? summary.subTitle.trim() : ''
-    };
-  }
-
-  getCurrentStepContentText(stepIndex) {
-    const step = this.selectedBundle?.steps?.[stepIndex];
-    return {
-      subtext: typeof step?.pageTitle === 'string' ? step.pageTitle.trim() : ''
-    };
-  }
-
-  createStepContentHeader(stepIndex) {
-    const contentText = this.getCurrentStepContentText(stepIndex);
-    if (!contentText.subtext) return null;
-
-    const header = document.createElement('div');
-    header.className = 'fpb-full-page-content-header';
-
-    const subtitle = document.createElement('p');
-    subtitle.className = 'fpb-full-page-content-subtitle fpb-step-subtext';
-    subtitle.textContent = contentText.subtext;
-    header.appendChild(subtitle);
-
-    return header;
-  }
-
-  shouldRenderFullPageSearch() {
-    if (this.resolveFullPageLayout() === 'footer_side') {
-      return false;
-    }
-    return this.resolveFullPageCardCtaMode() !== 'icon';
-  }
-
-  usesSelectedQuantityBadge() {
-    return this.resolveFullPageCardCtaMode() === 'icon';
-  }
-
-  _isStandardDesktopSidebar(panel) {
-    const preset = this.getFullPageDesignPreset();
-    return this.resolveFullPageLayout() === 'footer_side'
-      && (preset === 'DEFAULT' || preset === 'CLASSIC')
-      && !panel?.classList?.contains('fpb-mobile-bottom-sheet');
-  }
-
-  renderSidePanel(panel) {
-    if (!panel) return;
-    panel.innerHTML = '';
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
-    const allSelectedProducts = this.getAllSelectedProductsData();
-    const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity) || null;
-    const isMobileSheet = panel.classList?.contains('fpb-mobile-bottom-sheet');
-    const isHorizontalPreset = this.selectedBundle?.bundleDesignPresetId === 'HORIZONTAL';
-    const isStandardDesktopSidebar = this._isStandardDesktopSidebar(panel);
-    const activeStep = this.selectedBundle?.steps?.[this.currentStepIndex] || this.selectedBundle?.steps?.[0] || null;
-    const summaryText = this.getBundleSummaryText();
-    const isClassicDesktopSidebar =
-      this.resolveFullPageLayout() === 'footer_side' &&
-      this.getFullPageDesignPreset() === 'CLASSIC' &&
-      !isMobileSheet;
-
-    const header = document.createElement('div');
-    header.className = 'side-panel-header';
-    const headerCopy = document.createElement('div');
-    headerCopy.className = 'side-panel-header-copy';
-    const headerTitle = document.createElement('span');
-    headerTitle.className = 'side-panel-title';
-    headerTitle.textContent = summaryText.title;
-    if (isStandardDesktopSidebar) {
-      headerCopy.appendChild(headerTitle);
-      header.appendChild(headerCopy);
-    } else {
-      header.appendChild(headerTitle);
-    }
-
-    if (isStandardDesktopSidebar || allSelectedProducts.length > 0) {
-      const clearBtn = document.createElement('button');
-      clearBtn.className = 'side-panel-clear-btn';
-      clearBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg> Clear`;
-      clearBtn.addEventListener('click', () => {
-
-        this.selectedProducts = this.selectedBundle.steps.map(() => ({}));
-        this.currentStepIndex = 0;
-        this.searchQuery = '';
-        this.activeCollectionId = null;
-        this.reRenderFullPage();
-      });
-      header.appendChild(clearBtn);
-    }
-    panel.appendChild(header);
-
-    const subtitle = document.createElement('p');
-    subtitle.className = 'side-panel-subtitle';
-    subtitle.textContent = summaryText.subTitle;
-    if (isStandardDesktopSidebar) {
-      headerCopy.appendChild(subtitle);
-    } else {
-      panel.appendChild(subtitle);
-    }
-
-    const tierCta = this.createSidebarTierCta(nextRule);
-    if (!isStandardDesktopSidebar && tierCta) {
-      panel.appendChild(tierCta);
-    }
-
-    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
-    const boxSelection = this.renderBoxSelectionOptions(
-      isClassicDesktopSidebar ? selectedBoxSelectionQuantity : totalQuantity
-    );
-
-    if ((isClassicDesktopSidebar || !isStandardDesktopSidebar) && boxSelection) {
-      panel.appendChild(boxSelection);
-    }
-
-    if (this.selectedBundle?.pricing?.enabled) {
-      const variables = TemplateManager.createDiscountVariables(
-        this.selectedBundle, totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo
-      );
-      let discountMessage = '';
-      if (combinedDiscountInfo.hasDiscount) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.successMessageTemplate || '🎉 You unlocked {{discountText}}!',
-          variables
-        );
-      } else if (nextRule) {
-        discountMessage = TemplateManager.replaceVariables(
-          this.config.discountTextTemplate || 'Add {conditionText} to get {discountText}',
-          variables
-        );
-      }
-      if (discountMessage) {
-        discountMessage = this._formatSidebarDiscountMessage(discountMessage);
-        const msgEl = document.createElement('div');
-        msgEl.className = 'side-panel-discount-message';
-        msgEl.innerHTML = discountMessage;
-        panel.appendChild(msgEl);
-      }
-
-      if (this.config.showDiscountProgressBar) {
-        const progressBar = this._renderDiscountProgress({
-          placement: "sidebar",
-          combinedDiscountInfo,
-          totalPrice,
-          totalQuantity,
-          unitPrices,
-        });
-        if (progressBar) {
-          progressBar.classList.add('fpb-dp-sidebar');
-          panel.appendChild(progressBar);
-        }
-      }
-    }
-
-    const countLabel = document.createElement('div');
-    countLabel.className = 'side-panel-item-count';
-    countLabel.textContent = isClassicDesktopSidebar
-      ? `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`
-      : isStandardDesktopSidebar
-        ? `${allSelectedProducts.length} item(s)`
-        : `${allSelectedProducts.length} item${allSelectedProducts.length !== 1 ? 's' : ''}`;
-    panel.appendChild(countLabel);
-
-    if (isClassicDesktopSidebar) {
-      const classicSlotCount = this.getClassicSidebarSlotCount(
-        allSelectedProducts,
-        activeStep
-      );
-
-      const classicSlots = this.renderClassicSidebarSlots(
-        allSelectedProducts,
-        classicSlotCount
-      );
-
-      panel.appendChild(classicSlots);
-    } else {
-      const productsContainer = document.createElement('div');
-      productsContainer.className = 'side-panel-products';
-      if (isStandardDesktopSidebar) {
-        productsContainer.classList.add('side-panel-products--standard');
-      }
-      if (isHorizontalPreset) {
-        productsContainer.classList.add('side-panel-products--slots');
-      }
-
-      if (allSelectedProducts.length > 0) {
-        allSelectedProducts.forEach(item => {
-          const summaryTitle = this.getSummaryProductDisplayTitle(item);
-          const variantInfo = this.getSummaryProductVariantDisplay(item);
-          const row = document.createElement('div');
-          row.className = 'side-panel-product-row';
-          if (isHorizontalPreset) {
-            row.classList.add('side-panel-product-slot');
-          }
-
-          const imgSrc = this._getSelectedProductImageSrc(item);
-
-          const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-          const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
-          const priceHtml = isFreeGiftItem
-            ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
-            : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
-
-          if (isStandardDesktopSidebar) {
-            row.innerHTML = `
-              <div class="side-panel-product-img-wrap">
-                ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-                ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-              </div>
-              <div class="side-panel-product-info">
-                <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
-                ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-                ${priceHtml}
-              </div>
-              <div class="side-panel-product-action"></div>
-            `;
-          } else {
-            row.innerHTML = `
-              <div class="side-panel-product-img-wrap">
-                ${imgSrc ? `<img src="${imgSrc}" alt="${this._escapeHTML(summaryTitle)}" class="side-panel-product-img">` : '<div class="side-panel-product-img-placeholder"></div>'}
-                ${item.quantity > 1 ? `<span class="side-panel-qty-badge">${item.quantity}</span>` : ''}
-              </div>
-              <div class="side-panel-product-info">
-                <span class="side-panel-product-title">${this._escapeHTML(summaryTitle)}</span>
-                ${variantInfo ? `<span class="side-panel-product-variant">${this._escapeHTML(variantInfo)}</span>` : ''}
-              </div>
-              ${priceHtml}
-            `;
-          }
-
-          if (!item.isDefault) {
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'side-panel-product-remove';
-            removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
-            removeBtn.addEventListener('click', () => {
-              const stepIndex = item.stepIndex;
-              const productId = item.variantId || item.productId || item.id;
-              const removedItem = { stepIndex, variantId: productId, quantity: item.quantity, title: item.title };
-              this.updateProductSelection(stepIndex, productId, 0);
-              const truncated = summaryTitle && summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : (summaryTitle || 'Product');
-              ToastManager.showWithUndo(
-                `Removed "${truncated}"`,
-                () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-                5000
-              );
-            });
-            if (isStandardDesktopSidebar) {
-              row.querySelector('.side-panel-product-action')?.appendChild(removeBtn);
-            } else {
-              row.appendChild(removeBtn);
-            }
-          }
-
-          productsContainer.appendChild(row);
-        });
-      } else if (isStandardDesktopSidebar) {
-        this._renderStandardSidebarEmptySlots(productsContainer);
-      }
-      if (isHorizontalPreset) {
-        const requiredSlots = Math.max(
-          totalQuantity + 1,
-          activeStep?.maxQuantity || activeStep?.minQuantity || 2,
-          2
-        );
-        if (this._shouldRenderProductSlots()) {
-          const emptySlots = Math.max(0, requiredSlots - allSelectedProducts.length);
-          const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
-          for (let slotIndex = 0; slotIndex < emptySlots; slotIndex += 1) {
-            const emptySlot = document.createElement('div');
-            emptySlot.className = 'side-panel-product-slot side-panel-product-slot--empty';
-            if (emptyStateIconUrl) {
-              const img = document.createElement('img');
-              img.src = emptyStateIconUrl;
-              img.alt = '';
-              img.width = 40;
-              img.height = 40;
-              img.style.objectFit = 'contain';
-              emptySlot.appendChild(img);
-            } else {
-              const emptyText = document.createElement('span');
-              emptyText.textContent = '+';
-              emptyText.style.display = 'flex';
-              emptyText.style.alignItems = 'center';
-              emptyText.style.justifyContent = 'center';
-              emptyText.style.width = '100%';
-              emptyText.style.height = '100%';
-              emptyText.style.fontSize = '24px';
-              emptyText.style.lineHeight = '1';
-              emptyText.style.fontWeight = '700';
-              emptySlot.appendChild(emptyText);
-            }
-            productsContainer.appendChild(emptySlot);
-          }
-        }
-      }
-      panel.appendChild(productsContainer);
-    }
-
-    if (!isStandardDesktopSidebar && !isMobileSheet && allSelectedProducts.length === 0 && !isHorizontalPreset) {
-      const skeletonContainer = document.createElement('div');
-      skeletonContainer.className = 'side-panel-skeleton-slots';
-      this._renderSidebarProductSkeletons(skeletonContainer);
-      panel.appendChild(skeletonContainer);
-    }
-
-    if (!isClassicDesktopSidebar && !isStandardDesktopSidebar) this._renderFreeGiftSection(panel);
-
-    const totalSection = document.createElement('div');
-    totalSection.className = 'side-panel-total';
-    totalSection.innerHTML = `
-      <span class="side-panel-total-label">Total</span>
-      <div class="side-panel-total-prices">
-        ${combinedDiscountInfo.hasDiscount ? `<span class="side-panel-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
-        <span class="side-panel-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
-      </div>
-    `;
-    if (isMobileSheet) {
-      panel.appendChild(totalSection);
-      return;
-    }
-
-    const actionSection = document.createElement('div');
-    actionSection.className = 'side-panel-action-container';
-    actionSection.appendChild(totalSection);
-
-    const navSection = document.createElement('div');
-    navSection.className = 'side-panel-nav';
-
-    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-    const canProceed = this.canProceedToNextStep();
-    const conditionless = this.bundleHasNoConditions();
-    const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-    const sidebarTierCtaContent = (conditionless || isLastStep)
-      ? this.getSidebarTierCtaContent(nextRule)
-      : null;
-    if (sidebarTierCtaContent) {
-      actionSection.style.gridTemplateColumns = '1fr';
-      actionSection.style.gap = '8px';
-      totalSection.style.alignItems = 'center';
-    }
-
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'side-panel-btn side-panel-btn-next';
-    const nextStepLabel = this.getFullPageDesignPreset() === 'DEFAULT' || this.getFullPageDesignPreset() === 'CLASSIC'
-      ? this._resolveText('nextButton', 'Next')
-      : 'Next Step';
-      nextBtn.textContent = (conditionless || isLastStep)
-        ? this._resolveText('addToCartButton', 'Add to Cart')
-        : nextStepLabel;
-    if (sidebarTierCtaContent) {
-      const labelHtml = sidebarTierCtaContent.label
-        ? `<span class="side-panel-btn-tier-label">${this._escapeHTML(sidebarTierCtaContent.label)}</span>`
-        : '';
-      const subtextHtml = sidebarTierCtaContent.subtext
-        ? `<span class="side-panel-btn-tier-subtext">${this._escapeHTML(sidebarTierCtaContent.subtext)}</span>`
-        : '';
-      nextBtn.innerHTML = sidebarTierCtaContent ? `${labelHtml}${subtextHtml}` : nextBtn.textContent;
-    }
-    if (!isStandardDesktopSidebar && (conditionless ? !hasSelection : (isLastStep ? !this.areBundleConditionsMet() : !canProceed))) {
-      nextBtn.disabled = true;
-    }
-    nextBtn.addEventListener('click', () => {
-      if (conditionless || isLastStep) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
-        this.addBundleToCart();
-      } else if (!this.canNavigateToStep(this.currentStepIndex + 1)) {
-        const giftName = this.freeGiftStep?.addonLabel || this.freeGiftStep?.freeGiftName;
-        ToastManager.show(giftName ? `Complete all steps to unlock ${giftName}!` : 'Complete all steps first.');
-      } else if (this.canProceedToNextStep()) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex++;
-        this.renderFullPageLayoutWithSidebar();
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
-      }
-    });
-
-    navSection.appendChild(nextBtn);
-    actionSection.appendChild(navSection);
-    panel.appendChild(actionSection);
-  }
-
-  createSidebarTierCta(nextRule) {
-    const content = this.getSidebarTierCtaContent(nextRule);
-    if (!content) return null;
-
-    const { label, subtext } = content;
-
-    const cta = document.createElement('div');
-    cta.className = 'fpb-sidebar-tier-cta';
-
-    if (label) {
-      const title = document.createElement('div');
-      title.className = 'fpb-sidebar-tier-cta-title';
-      title.textContent = label;
-      cta.appendChild(title);
-    }
-
-    if (subtext) {
-      const detail = document.createElement('div');
-      detail.className = 'fpb-sidebar-tier-cta-subtext';
-      detail.textContent = subtext;
-      cta.appendChild(detail);
-    }
-
-    return cta;
-  }
-
-  getSidebarTierCtaContent(nextRule) {
-    const pricing = this.selectedBundle?.pricing;
-    if (!pricing?.enabled) return null;
-
-    const displayOptions = pricing.messages?.displayOptions || {};
-    const bundleQuantityOptions = displayOptions.bundleQuantityOptions || {};
-    const optionsByRuleId = bundleQuantityOptions.optionsByRuleId || {};
-    const tierTextByRuleId = pricing.messages?.tierTextByRuleId || {};
-    const rules = Array.isArray(pricing.rules) ? pricing.rules : [];
-    const ruleId = bundleQuantityOptions.defaultRuleId || nextRule?.id || rules[0]?.id;
-    const option = ruleId ? (optionsByRuleId[ruleId] || tierTextByRuleId[ruleId]) : null;
-    const label = typeof option?.label === 'string' && option.label.trim()
-      ? option.label.trim()
-      : (typeof option?.tierText === 'string' ? option.tierText.trim() : '');
-    const subtext = typeof option?.subtext === 'string' && option.subtext.trim()
-      ? option.subtext.trim()
-      : (typeof option?.tierSubtext === 'string' ? option.tierSubtext.trim() : '');
-
-    if (!label && !subtext) return null;
-    return { label, subtext };
-  }
-
-  getBoxSelectionRules() {
-    const boxSelection = this.selectedBundle?.boxSelection;
-    if (!boxSelection || boxSelection.isEnabled !== true || !Array.isArray(boxSelection.rules)) {
-      return [];
-    }
-
-    return boxSelection.rules
-      .map(rule => ({
-        ruleId: String(rule.ruleId || ''),
-        boxQuantity: Number(rule.boxQuantity || 0),
-        boxLabel: String(rule.boxLabel || ''),
-        boxSubtext: String(rule.boxSubtext || ''),
-        isDefaultSelected: rule.isDefaultSelected === true,
-      }))
-      .filter(rule => rule.ruleId && rule.boxQuantity > 0)
-      .sort((a, b) => a.boxQuantity - b.boxQuantity);
-  }
-
-  getActiveBoxSelectionRule(rules, totalQuantity) {
-    if (!Array.isArray(rules) || rules.length === 0) return null;
-
-    const selected = this.selectedBoxSelectionRuleId
-      ? rules.find(rule => rule.ruleId === this.selectedBoxSelectionRuleId)
-      : null;
-    if (selected) return selected;
-
-    const reachedRule = rules
-      .filter(rule => Number(totalQuantity || 0) >= rule.boxQuantity)
-      .sort((a, b) => b.boxQuantity - a.boxQuantity)[0];
-    if (reachedRule) return reachedRule;
-
-    return rules.find(rule => rule.isDefaultSelected) || rules[0];
-  }
-
-  getSelectedBoxSelectionQuantity() {
-    return this.getAllSelectedProductsData().reduce((total, item) => {
-      if (item.isDefault === true || item.isFreeGift === true) return total;
-      return total + (Number(item.quantity || 0) || 0);
-    }, 0);
-  }
-
-  getBoxSelectionValidationState(totalQuantity = this.getSelectedBoxSelectionQuantity()) {
-    const boxSelection = this.selectedBundle?.boxSelection;
-    const rules = this.getBoxSelectionRules();
-    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
-    const isEnabled = boxSelection?.isEnabled === true
-      && boxSelection?.validateBoxSelectionQuantity === true
-      && !!activeRule;
-
-    if (!isEnabled) {
-      return {
-        isEnabled: false,
-        isValid: true,
-        activeRule,
-        totalQuantity: Number(totalQuantity || 0),
-      };
-    }
-
-    return {
-      isEnabled: true,
-      isValid: Number(totalQuantity || 0) === Number(activeRule.boxQuantity || 0),
-      activeRule,
-      totalQuantity: Number(totalQuantity || 0),
-    };
-  }
-
-  canCheckoutWithBoxSelection() {
-    return this.getBoxSelectionValidationState().isValid;
-  }
-
-  showBoxSelectionValidationMessage() {
-    const state = this.getBoxSelectionValidationState();
-    if (!state.isEnabled || state.isValid) return;
-
-    ToastManager.show(`Select exactly ${state.activeRule.boxQuantity} item(s) for ${state.activeRule.boxLabel || 'this box'} before adding to cart.`);
-  }
-
-  renderBoxSelectionOptions(totalQuantity = 0) {
-    const rules = this.getBoxSelectionRules();
-    if (rules.length === 0) return null;
-
-    const activeRule = this.getActiveBoxSelectionRule(rules, totalQuantity);
-    const wrapper = document.createElement('div');
-    wrapper.className = 'fpb-box-selection-wrapper';
-
-    rules.forEach(rule => {
-      const option = document.createElement('button');
-      const isActive = activeRule?.ruleId === rule.ruleId;
-      option.type = 'button';
-      option.className = 'fpb-box-selection-option' + (isActive ? ' fpb-box-selection-option-active' : '');
-      option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-      option.dataset.ruleId = rule.ruleId;
-
-      const title = document.createElement('span');
-      title.className = 'fpb-box-selection-title';
-      title.textContent = rule.boxLabel;
-      option.appendChild(title);
-
-      if (rule.boxSubtext) {
-        const subtext = document.createElement('span');
-        subtext.className = 'fpb-box-selection-subtext';
-        subtext.textContent = rule.boxSubtext;
-        option.appendChild(subtext);
-      }
-
-      option.addEventListener('click', () => {
-        this.selectedBoxSelectionRuleId = rule.ruleId;
-        this.reRenderFullPage();
-      });
-
-      wrapper.appendChild(option);
-    });
-
-    return wrapper;
-  }
-
-  getClassicSidebarSlotCount(allSelectedProducts = [], activeStep = null) {
-    const selectedBoxSelectionQuantity = this.getSelectedBoxSelectionQuantity();
-    const boxRules = this.getBoxSelectionRules();
-    const activeBoxRule = this.getActiveBoxSelectionRule(
-      boxRules,
-      selectedBoxSelectionQuantity
-    );
-
-    const activeBoxQuantity = Number(activeBoxRule?.boxQuantity || 0);
-    const stepQuantity = Number(activeStep?.maxQuantity || activeStep?.minQuantity || 0);
-    const selectedCount = Array.isArray(allSelectedProducts) ? allSelectedProducts.length : 0;
-
-    if (activeBoxQuantity > 0) {
-      return Math.max(activeBoxQuantity, selectedCount);
-    }
-
-    return Math.max(stepQuantity, selectedCount + 1, 2);
-  }
-
-  renderClassicSidebarSlots(allSelectedProducts = [], slotCount = 0) {
-    const slots = document.createElement('div');
-    slots.className = 'classic-sidebar-slots';
-
-    const safeSlotCount = Math.max(0, Number(slotCount || 0));
-
-    for (let slotIndex = 0; slotIndex < safeSlotCount; slotIndex += 1) {
-      const item = allSelectedProducts[slotIndex];
-      const slot = document.createElement('div');
-
-      slot.className = item
-        ? 'classic-sidebar-slot classic-sidebar-slot--filled'
-        : 'classic-sidebar-slot classic-sidebar-slot--empty';
-
-      slot.dataset.slotIndex = String(slotIndex);
-
-      if (item) {
-        const summaryTitle = this.getSummaryProductDisplayTitle(item);
-        const imgSrc = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-        const productId = item.variantId || item.productId || item.id;
-
-        slot.dataset.productId = String(productId || '');
-
-        slot.innerHTML = `
-          <img
-            src="${imgSrc}"
-            alt="${this._escapeHTML(summaryTitle)}"
-            class="classic-sidebar-slot-img"
-            loading="lazy"
-          >
-          ${
-            !item.isDefault
-              ? `<button
-                  type="button"
-                  class="classic-sidebar-slot-remove"
-                  aria-label="Remove ${this._escapeHTML(summaryTitle)}"
-                >×</button>`
-              : ''
-          }
-        `;
-
-        const removeBtn = slot.querySelector('.classic-sidebar-slot-remove');
-        if (removeBtn && productId) {
-          removeBtn.addEventListener('click', (event) => {
-            event.stopPropagation();
-
-            const removedItem = {
-              stepIndex: item.stepIndex,
-              variantId: productId,
-              quantity: item.quantity,
-              title: summaryTitle,
-            };
-
-            this.updateProductSelection(item.stepIndex, productId, 0);
-
-            const truncated = summaryTitle && summaryTitle.length > 25
-              ? summaryTitle.substring(0, 25) + '...'
-              : (summaryTitle || 'Product');
-
-            ToastManager.showWithUndo(
-              `Removed "${truncated}"`,
-              () => {
-                this.updateProductSelection(
-                  removedItem.stepIndex,
-                  removedItem.variantId,
-                  removedItem.quantity
-                );
-              },
-              5000
-            );
-          });
-        }
-      } else {
-        slot.setAttribute('aria-label', 'Empty bundle slot');
-        slot.innerHTML = `<span aria-hidden="true">+</span>`;
-      }
-
-      slots.appendChild(slot);
-    }
-
-    return slots;
-  }
-
-  _escapeHTML(str) {
-    if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  _getSelectedProductImageSrc(item = {}) {
-    const getImageSrc = (image) => {
-      if (!image) return '';
-      if (typeof image === 'string') return image;
-      return image.src
-        || image.url
-        || image.originalSrc
-        || image.transformedSrc
-        || '';
-    };
-
-    return getImageSrc(item.variantImage)
-      || getImageSrc(item.variantImage?.src)
-      || getImageSrc(item.variant?.image)
-      || (typeof item.image === 'string' ? item.image : '')
-      || item.image?.src
-      || item.image?.url
-      || item.image?.originalSrc
-      || getImageSrc(item.imageUrl)
-      || item.featuredImage?.url
-      || item.featuredImage?.src
-      || getImageSrc(item.featuredImage)
-      || getImageSrc(item.images?.[0])
-      || getImageSrc(item.productImageUrl);
-  }
-
-  _formatSidebarDiscountMessage(discountMessage) {
-    const message = typeof discountMessage === 'string' ? discountMessage.trim() : '';
-    return message.replace(/!+\s*$/, '');
-  }
-
-  _getDefaultTimelineIcon(step) {
-    if (step.isDefault) {
-
-      return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M8 11V7a4 4 0 018 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>`;
-    }
-    if (step.isFreeGift) {
-
-      return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <polyline points="20 12 20 22 4 22 4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <rect x="2" y="7" width="20" height="5" rx="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <line x1="12" y1="22" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>`;
-    }
-
-    return `<svg class="timeline-step-icon--svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      <path d="M16 10a4 4 0 01-8 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`;
-  }
-
-  _getStepSelectedQuantity(stepIndex) {
-    const stepSelections = this.selectedProducts?.[stepIndex] || {};
-    return Object.values(stepSelections).reduce((total, qty) => total + (Number(qty) || 0), 0);
-  }
-
-  _getStepRequiredQuantity(step) {
-    if (!step) return 1;
-
-    const toNumber = (value) => {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    };
-
-    const primaryValue = toNumber(step.conditionValue);
-    const secondaryValue = toNumber(step.conditionValue2);
-    const minQuantity = toNumber(step.minQuantity);
-    const maxQuantity = toNumber(step.maxQuantity);
-    const OPERATORS = ConditionValidator.OPERATORS;
-
-    const targetForOperator = (operator, value) => {
-      if (value == null) return null;
-      switch (operator) {
-        case OPERATORS.GREATER_THAN:
-          return value + 1;
-        case OPERATORS.LESS_THAN:
-          return Math.max(1, value - 1);
-        case OPERATORS.LESS_THAN_OR_EQUAL_TO:
-        case OPERATORS.EQUAL_TO:
-        case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
-          return value;
-        default:
-          return null;
-      }
-    };
-
-    const targets = [
-      targetForOperator(step.conditionOperator, primaryValue),
-      targetForOperator(step.conditionOperator2, secondaryValue),
-      minQuantity,
-      maxQuantity,
-    ].filter((value) => value != null && value > 0);
-
-    return targets.length > 0 ? Math.max(...targets) : 1;
-  }
-
-  _getStepProgressRatio(stepIndex) {
-    const step = this.selectedBundle?.steps?.[stepIndex];
-    if (!step) return 0;
-    if (this.isStepCompleted(stepIndex)) return 1;
-
-    const requiredQuantity = this._getStepRequiredQuantity(step);
-    const selectedQuantity = this._getStepSelectedQuantity(stepIndex);
-    return Math.max(0, Math.min(1, selectedQuantity / requiredQuantity));
-  }
-
-  _getDefaultTimelineIconDataUri(step) {
-    const svg = this._getDefaultTimelineIcon(step)
-      .replace('class="timeline-step-icon--svg"', 'xmlns="http://www.w3.org/2000/svg"')
-      .replace(' xmlns="http://www.w3.org/2000/svg"', '');
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-  }
-
-  _isStandardSideFooterTimeline() {
-    return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
-  }
-
-  buildStepTimelineEntries() {
-    const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
-    const entries = [];
-
-    steps.forEach((step, index) => {
-      const stepLabel = (step.isFreeGift && step.addonLabel) ? step.addonLabel : step.name;
-      entries.push({
-        type: 'step',
-        step,
-        stepIndex: index,
-        label: stepLabel,
-      });
-
-      if (this.shouldRenderMultipleCategoryTimelineEntry(step)) {
-        entries.push({
-          type: 'multiple_categories',
-          step,
-          stepIndex: index,
-          label: 'Multiple Categories',
-        });
-      }
-    });
-
-    return entries;
-  }
-
-  getStandardTimelinePageSize() {
-    return window.innerWidth < 768 ? 4 : 5;
-  }
-
-  getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex) {
-    const entries = Array.isArray(timelineEntries) ? timelineEntries : [];
-    const timelinePageSize = this.getStandardTimelinePageSize();
-
-    if (entries.length <= timelinePageSize) {
-      this.standardTimelineWindowStart = 0;
-      this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
-      return {
-        visibleEntries: entries,
-        windowStart: 0,
-        pageSize: timelinePageSize,
-        isPaged: false,
-      };
-    }
-
-    const activeChanged = this.standardTimelineLastActiveEntryIndex !== activeEntryIndex;
-    let windowStart = Number.isFinite(this.standardTimelineWindowStart)
-      ? this.standardTimelineWindowStart
-      : 0;
-
-    if (activeChanged && (activeEntryIndex < windowStart || activeEntryIndex >= windowStart + timelinePageSize)) {
-      windowStart = activeEntryIndex;
-    }
-
-    if (windowStart + timelinePageSize > entries.length) {
-      windowStart = entries.length - timelinePageSize;
-    }
-
-    windowStart = Math.max(0, windowStart);
-    this.standardTimelineWindowStart = windowStart;
-    this.standardTimelineLastActiveEntryIndex = activeEntryIndex;
-
-    return {
-      visibleEntries: entries.slice(windowStart, windowStart + timelinePageSize),
-      windowStart,
-      pageSize: timelinePageSize,
-      isPaged: true,
-    };
-  }
-
-  ensureTimelinePagingStyles() {
-    if (document.getElementById('wpb-fpb-timeline-paging-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-timeline-paging-styles';
-    style.textContent = '.step-timeline--paged{position:relative;flex-wrap:nowrap;justify-content:center;padding:0 24px}.timeline-navigation-arrow{position:absolute;top:10px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:0;background:#fff;color:#000;z-index:3;cursor:pointer;padding:0}.timeline-navigation-arrow--prev{left:4px}.timeline-navigation-arrow--next{right:4px}@media(max-width:767px){.step-timeline.step-timeline--paged{flex-wrap:nowrap}.step-timeline--paged .timeline-step{width:65px;max-width:65px}.step-timeline--paged .timeline-connector{flex:0 0 20px;min-width:20px}.step-timeline--paged .timeline-step-name{white-space:normal;line-height:14px}}';
-    document.head.appendChild(style);
-  }
-
-  shouldRenderMultipleCategoryTimelineEntry(step) {
-    if (!step || step.isFreeGift === true) return false;
-    return this.getStepCategoryTabEntries(step).length > 1;
-  }
-
-  createStepTimeline() {
-    if (this._isStandardSideFooterTimeline()) {
-      return this.createStandardStepTimeline();
-    }
-
-    const timeline = document.createElement('div');
-    timeline.className = 'step-timeline';
-
-    if (!this.selectedBundle || !this.selectedBundle.steps) {
-      return timeline;
-    }
-
-    const timelineEntries = this.buildStepTimelineEntries();
-    const totalEntryCount = Math.max(timelineEntries.length, 1);
-    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
-      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
-    )));
-    const {
-      visibleEntries,
-      windowStart,
-      pageSize,
-      isPaged,
-    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
-    const visibleEntryCount = Math.max(visibleEntries.length, 1);
-
-    if (isPaged) {
-      this.ensureTimelinePagingStyles();
-    }
-    timeline.classList.toggle('step-timeline--paged', isPaged);
-    timeline.dataset.windowStart = String(windowStart);
-    timeline.dataset.pageSize = String(pageSize);
-    timeline.dataset.totalEntries = String(totalEntryCount);
-
-    const createTimelineArrow = (direction) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = direction === 'prev'
-        ? 'timeline-navigation-arrow timeline-navigation-arrow--prev'
-        : 'timeline-navigation-arrow timeline-navigation-arrow--next';
-      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
-      button.textContent = direction === 'prev' ? '‹' : '›';
-      button.addEventListener('click', () => {
-        if (direction === 'prev') {
-          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
-        } else {
-          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
-        }
-        this.reRenderFullPage();
-      });
-      return button;
-    };
-
-    if (isPaged && windowStart > 0) {
-      timeline.appendChild(createTimelineArrow('prev'));
-    }
-
-    if (isPaged && windowStart + visibleEntryCount < totalEntryCount) {
-      timeline.appendChild(createTimelineArrow('next'));
-    }
-
-    visibleEntries.forEach((entry, displayIndex) => {
-      const step = entry.step;
-      const index = entry.stepIndex;
-      const stepEl = document.createElement('div');
-      stepEl.className = 'timeline-step';
-      stepEl.dataset.stepIndex = index;
-      stepEl.dataset.timelineType = entry.type;
-
-      const isDefaultStep = step.isDefault === true;
-      const hasMultipleCategoryEntry = this.shouldRenderMultipleCategoryTimelineEntry(step);
-      const isCategoryEntry = entry.type === 'multiple_categories';
-      const isCompleted = isCategoryEntry ? this.isStepCompleted(index) : this.isStepCompleted(index) || (hasMultipleCategoryEntry && index === this.currentStepIndex);
-      const isCurrent = index === this.currentStepIndex && (!hasMultipleCategoryEntry || isCategoryEntry);
-      const isAccessible = this.isStepAccessible(index);
-
-      if (isDefaultStep) stepEl.classList.add('timeline-step--included');
-      if (isCurrent) stepEl.classList.add('timeline-step--active');
-      if (isCompleted) stepEl.classList.add('timeline-step--completed');
-      if (!isCurrent && !isCompleted) stepEl.classList.add('timeline-step--inactive');
-      if (!isAccessible) stepEl.classList.add('timeline-step--locked');
-
-      const tabLabel = entry.label;
-      const escapedName = this._escapeHTML(tabLabel) || `Step ${index + 1}`;
-
-      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
-      const iconContent = uploadedIconUrl
-        ? `<img class="timeline-step-icon" src="${uploadedIconUrl}" alt="${escapedName}">`
-        : this._getDefaultTimelineIcon(step);
-
-      const checkmarkSvg = `<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M2 6L5 9L10 3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>`;
-
-      stepEl.innerHTML = `
-        <div class="timeline-icon-wrapper">
-          ${iconContent}
-          <div class="timeline-checkmark">${checkmarkSvg}</div>
-        </div>
-        <span class="timeline-step-name">${escapedName}</span>
-      `;
-
-      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
-        stepEl.style.cursor = 'pointer';
-        stepEl.addEventListener('click', () => {
-          if (!this.isStepAccessible(index)) {
-            ToastManager.show('Please complete the previous steps first.');
-            return;
-          }
-          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
-            ToastManager.show('Please meet the step conditions before proceeding.');
-            return;
-          }
-          this.currentStepIndex = index;
-          this.searchQuery = '';
-          this.activeCollectionId = null;
-          this.reRenderFullPage();
-        });
-      }
-
-      timeline.appendChild(stepEl);
-
-      if (displayIndex < visibleEntries.length - 1) {
-        const connectorEl = document.createElement('div');
-        connectorEl.className = 'timeline-connector';
-        const connectorFill = document.createElement('div');
-        connectorFill.className = 'timeline-connector-fill';
-        connectorFill.style.display = 'block';
-        connectorFill.style.width = `${Math.round(this._getStepProgressRatio(index) * 100)}%`;
-        connectorEl.appendChild(connectorFill);
-        timeline.appendChild(connectorEl);
-      }
-    });
-
-    return timeline;
-  }
-
-  createStandardStepTimeline() {
-    const timeline = document.createElement('div');
-    timeline.className = 'step-timeline step-timeline--standard';
-
-    if (!this.selectedBundle || !this.selectedBundle.steps) {
-      return timeline;
-    }
-
-    const timelineEntries = this.buildStepTimelineEntries();
-    const totalEntryCount = Math.max(timelineEntries.length, 1);
-    const activeEntryIndex = Math.max(0, timelineEntries.findIndex((entry) => (
-      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
-    )));
-    const {
-      visibleEntries,
-      windowStart,
-      pageSize,
-      isPaged,
-    } = this.getStandardTimelineVisibleEntries(timelineEntries, activeEntryIndex);
-    const entryCount = Math.max(visibleEntries.length, 1);
-    const activeVisibleEntryIndex = Math.max(0, visibleEntries.findIndex((entry) => (
-      entry.type === 'step' && entry.stepIndex === this.currentStepIndex
-    )));
-    const progressFill = entryCount > 1
-      ? Math.max(0, Math.min(100, (activeVisibleEntryIndex / (entryCount - 1)) * 100))
-      : 0;
-    const progressLeft = 100 / (entryCount * 2);
-    const progressWidth = entryCount > 1 ? ((entryCount - 1) / entryCount) * 100 : 0;
-    const timelineWidth = Math.min(100, entryCount * 30);
-
-    timeline.style.setProperty('--standard-timeline-count', String(entryCount));
-    timeline.style.setProperty('--standard-timeline-visible-count', String(entryCount));
-    timeline.style.setProperty('--standard-timeline-total-count', String(totalEntryCount));
-    timeline.style.setProperty('--standard-timeline-width', `${timelineWidth.toFixed(4)}%`);
-    timeline.style.setProperty('--standard-timeline-progress-left', `${progressLeft.toFixed(4)}%`);
-    timeline.style.setProperty('--standard-timeline-progress-width', `${progressWidth.toFixed(4)}%`);
-    timeline.style.setProperty('--standard-timeline-progress-fill', `${progressFill.toFixed(4)}%`);
-    timeline.classList.toggle('standard-timeline--paged', isPaged);
-
-    const itemsContainer = document.createElement('div');
-    itemsContainer.className = 'standard-navigation-items-container';
-    itemsContainer.classList.toggle('standard-navigation-items-container--paged', isPaged);
-    itemsContainer.dataset.windowStart = String(windowStart);
-    itemsContainer.dataset.pageSize = String(pageSize);
-    itemsContainer.dataset.totalEntries = String(totalEntryCount);
-
-    const createTimelineArrow = (direction) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = direction === 'prev'
-        ? 'standard-navigation-arrow standard-navigation-arrow--prev'
-        : 'standard-navigation-arrow standard-navigation-arrow--next';
-      button.setAttribute('aria-label', direction === 'prev' ? 'Previous timeline items' : 'Next timeline items');
-      button.textContent = direction === 'prev' ? '‹' : '›';
-      button.addEventListener('click', () => {
-        if (direction === 'prev') {
-          this.standardTimelineWindowStart = Math.max(0, windowStart - pageSize);
-        } else {
-          this.standardTimelineWindowStart = Math.min(totalEntryCount - pageSize, windowStart + pageSize);
-        }
-        this.reRenderFullPage();
-      });
-      return button;
-    };
-
-    if (isPaged && windowStart > 0) {
-      itemsContainer.appendChild(createTimelineArrow('prev'));
-    }
-
-    if (isPaged && windowStart + entryCount < totalEntryCount) {
-      itemsContainer.appendChild(createTimelineArrow('next'));
-    }
-
-    visibleEntries.forEach((entry) => {
-      const step = entry.step;
-      const index = entry.stepIndex;
-      const itemEl = document.createElement('div');
-      itemEl.className = 'standard-navigation-item timeline-step';
-      itemEl.dataset.stepIndex = index;
-      itemEl.dataset.timelineType = entry.type;
-
-      const isDefaultStep = step.isDefault === true;
-      const isCurrent = entry.type === 'step' && index === this.currentStepIndex;
-      const isCompleted = entry.type === 'step' && !isCurrent && this.isStepCompleted(index);
-      const isAccessible = this.isStepAccessible(index);
-
-      if (isDefaultStep) itemEl.classList.add('timeline-step--included');
-      if (isCurrent) itemEl.classList.add('timeline-step--active');
-      if (isCompleted) itemEl.classList.add('timeline-step--completed');
-      if (!isCurrent && !isCompleted) itemEl.classList.add('timeline-step--inactive');
-      if (!isAccessible) itemEl.classList.add('timeline-step--locked');
-
-      const escapedName = this._escapeHTML(entry.label) || `Step ${index + 1}`;
-      const uploadedIconUrl = (step.isFreeGift && step.addonIconUrl) ? step.addonIconUrl : step.stepImage;
-      const iconUrl = uploadedIconUrl || this._getDefaultTimelineIconDataUri(step);
-
-      itemEl.innerHTML = `
-        <div class="standard-navigation-step-img-container timeline-icon-wrapper">
-          <img class="standard-navigation-image timeline-step-icon" src="${this._escapeHTML(iconUrl)}" alt="${escapedName}">
-        </div>
-        <div class="standard-navigation-title-container">
-          <p class="standard-navigation-title timeline-step-name">${escapedName}</p>
-        </div>
-      `;
-
-      if (entry.type === 'step' && isAccessible && !isDefaultStep) {
-        itemEl.style.cursor = 'pointer';
-        itemEl.addEventListener('click', () => {
-          if (!this.isStepAccessible(index)) {
-            ToastManager.show('Please complete the previous steps first.');
-            return;
-          }
-          if (index > this.currentStepIndex && !this.canProceedToNextStep()) {
-            ToastManager.show('Please meet the step conditions before proceeding.');
-            return;
-          }
-          this.currentStepIndex = index;
-          this.searchQuery = '';
-          this.activeCollectionId = null;
-          this.reRenderFullPage();
-        });
-      }
-
-      itemsContainer.appendChild(itemEl);
-    });
-
-    if (entryCount > 1) {
-      const progressContainer = document.createElement('div');
-      progressContainer.className = 'standard-steps-progress-bar-container';
-      progressContainer.innerHTML = `
-        <div class="standard-steps-progress-bar">
-          <div class="standard-steps-progress-bar-filled"></div>
-        </div>
-      `;
-      itemsContainer.appendChild(progressContainer);
-    }
-
-    timeline.appendChild(itemsContainer);
-    return timeline;
-  }
-
-  createStepBannerImage(stepIndex) {
-    const step = (this.selectedBundle?.steps || [])[stepIndex];
-    if (!step?.bannerImageUrl) return null;
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'step-banner-image';
-    const img = document.createElement('img');
-    img.src = step.bannerImageUrl;
-    img.alt = this._escapeHTML(step.name || '');
-    wrapper.appendChild(img);
-    return wrapper;
-  }
-
-  createBundleBanners() {
-    const desktopBannerUrl = this.selectedBundle?.bundleBannerDesktopUrl;
-    const mobileBannerUrl = this.selectedBundle?.bundleBannerMobileUrl;
-    if (!desktopBannerUrl && !mobileBannerUrl) return null;
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'bundle-banners';
-    if (desktopBannerUrl) wrapper.classList.add('bundle-banners--has-desktop');
-    if (mobileBannerUrl) wrapper.classList.add('bundle-banners--has-mobile');
-
-    const appendBannerImage = (url, className) => {
-      if (!url) return;
-      const img = document.createElement('img');
-      img.className = className;
-      img.src = url;
-      img.alt = '';
-      img.loading = 'lazy';
-      wrapper.appendChild(img);
-    };
-
-    appendBannerImage(desktopBannerUrl, 'bundle-banner-image bundle-banner-image--desktop');
-    appendBannerImage(mobileBannerUrl, 'bundle-banner-image bundle-banner-image--mobile');
-
-    return wrapper;
-  }
-
-  ensureBundleBannerRuntimeStyles() {
-    if (document.getElementById('wpb-fpb-bundle-banner-runtime-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'wpb-fpb-bundle-banner-runtime-styles';
-    style.textContent = `.bundle-banners{width:100%;margin:0 auto 20px;overflow:hidden;display:block}.bundle-banner-image{width:100%;height:auto;display:block;object-fit:cover}.bundle-banner-image--mobile{display:none}.bundle-banners:not(.bundle-banners--has-desktop) .bundle-banner-image--mobile{display:block}@media (max-width: 639px){.bundle-banners{margin-bottom:16px}.bundle-banners--has-mobile .bundle-banner-image--desktop{display:none}.bundle-banners--has-mobile .bundle-banner-image--mobile{display:block}}`;
-    document.head.appendChild(style);
-  }
-
-  getStepQuantityHint(step) {
-    if (!step) return null;
-
-    const { conditionOperator, conditionValue, conditionOperator2, conditionValue2, minQuantity, maxQuantity } = step;
-    const OPERATORS = ConditionValidator.OPERATORS;
-
-    if (conditionOperator && conditionValue != null) {
-      const val = Number(conditionValue);
-
-      if (conditionOperator2 && conditionValue2 != null) {
-        const val2 = Number(conditionValue2);
-        const min = Math.min(val, val2);
-        const max = Math.max(val, val2);
-        return `Pick ${min}–${max}`;
-      }
-
-      switch (conditionOperator) {
-        case OPERATORS.EQUAL_TO:                  return `Pick ${val}`;
-        case OPERATORS.GREATER_THAN:              return `Pick ${val + 1}+`;
-        case OPERATORS.GREATER_THAN_OR_EQUAL_TO:  return `Pick ${val}+`;
-        case OPERATORS.LESS_THAN:                 return `Up to ${val - 1}`;
-        case OPERATORS.LESS_THAN_OR_EQUAL_TO:     return `Up to ${val}`;
-        default:                                  return null;
-      }
-    }
-
-    const min = minQuantity != null ? Number(minQuantity) : null;
-    const max = maxQuantity != null ? Number(maxQuantity) : null;
-    if (min && max && min !== max) return `Pick ${min}–${max}`;
-    if (min && min > 1) return `Pick ${min}+`;
-    if (max && max > 1) return `Up to ${max}`;
-    return null;
-  }
-
-  getStepProductImages(stepIndex) {
-    const selectedProducts = this.selectedProducts[stepIndex] || {};
-    const productImages = [];
-
-    Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
-      if (quantity > 0) {
-        const product = this.stepProductData[stepIndex]?.find(p => (p.variantId || p.id) === variantId);
-        if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
-          productImages.push({
-            url: product.imageUrl,
-            alt: product.title || 'Product'
-          });
-        }
-      }
-    });
-
-    return productImages;
-  }
-
-  createSearchInput() {
-    const searchContainer = document.createElement('div');
-    searchContainer.className = 'step-search-container';
-
-    searchContainer.innerHTML = `
-      <div class="step-search-input-wrapper">
-        <svg class="step-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input
-          type="text"
-          class="step-search-input"
-          placeholder="Search products..."
-          value="${this.searchQuery}"
-          autocomplete="off"
-        />
-        <button class="step-search-clear" type="button" style="display: ${this.searchQuery ? 'flex' : 'none'}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-    `;
-
-    const input = searchContainer.querySelector('.step-search-input');
-    const clearBtn = searchContainer.querySelector('.step-search-clear');
-
-    input.addEventListener('input', (e) => {
-      const value = e.target.value;
-
-      clearBtn.style.display = value ? 'flex' : 'none';
-
-      if (this.searchDebounceTimer) {
-        clearTimeout(this.searchDebounceTimer);
-      }
-
-      this.searchDebounceTimer = setTimeout(() => {
-        this.searchQuery = value;
-        this.updateProductGridWithSearch();
-      }, 300);
-    });
-
-    clearBtn.addEventListener('click', () => {
-      input.value = '';
-      clearBtn.style.display = 'none';
-      this.searchQuery = '';
-      this.updateProductGridWithSearch();
-      input.focus();
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        input.value = '';
-        clearBtn.style.display = 'none';
-        this.searchQuery = '';
-        this.updateProductGridWithSearch();
-      }
-    });
-
-    return searchContainer;
-  }
-
-  updateProductGridWithSearch() {
-    const gridContainer = this.container.querySelector('.full-page-product-grid-container');
-    if (!gridContainer) return;
-
-    const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-    gridContainer.innerHTML = '';
-    gridContainer.appendChild(productGrid);
-  }
-
-  hidePageTitle() {
-    const configName = (() => {
-      if (this.selectedBundle?.name) return this.selectedBundle.name;
-      try {
-        const rawConfig = this.container?.dataset?.bundleConfig;
-        if (!rawConfig) return '';
-        return JSON.parse(rawConfig)?.name || '';
-      } catch (e) {
-        return '';
-      }
-    })();
-    const normalizedConfigName = String(configName || '').trim().toLowerCase();
-
-    const selectors = [
-      '.main-page-title',
-      '.page-title',
-      'h1.page-title',
-      '.page-width h1',
-      '.section-template--*__main-padding h1',
-      '[class*="main-padding"] h1.h0'
-    ];
-
-    for (const selector of selectors) {
-      try {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(el => {
-
-          if (el.closest('.promo-banner')) return;
-
-          el.remove();
-        });
-      } catch (e) {
-
-      }
-    }
-
-    const pageTitleContainers = document.querySelectorAll('.page-width--narrow');
-    pageTitleContainers.forEach(container => {
-
-      const hasPageTitle = container.querySelector('.main-page-title, .page-title, h1.h0');
-      const hasOtherContent = container.querySelector('.rte:not(:empty), .bundle-widget, #bundle-builder-app');
-
-      if (hasPageTitle && !hasOtherContent) {
-        container.remove();
-      }
-    });
-
-    if (!normalizedConfigName) return;
-
-    document.querySelectorAll('h1').forEach(el => {
-      if (el.closest('.bundle-widget-container, .promo-banner')) return;
-      const normalizedTitle = String(el.textContent || '').trim().toLowerCase();
-      if (normalizedTitle !== normalizedConfigName) return;
-
-      const titleSection = el.closest('.shopify-section, [id^="shopify-section"], section');
-      if (titleSection && !titleSection.querySelector('.bundle-widget-container')) {
-        titleSection.remove();
-        return;
-      }
-
-      const titleBlock = el.closest('.text-block, .page-width--narrow') || el.parentElement;
-      if (titleBlock && !titleBlock.querySelector('.bundle-widget-container')) {
-        titleBlock.remove();
-      } else {
-        el.remove();
-      }
-    });
-  }
-
-  createPromoBanner() {
-
-    if (this.config.showPromoBanner === false) {
-      return null;
-    }
-
-    const promoBannerEnabled = getComputedStyle(document.documentElement)
-      .getPropertyValue('--bundle-promo-banner-enabled')
-      .trim();
-
-    if (promoBannerEnabled === '0') {
-      return null;
-    }
-
-    const bundleName = this.selectedBundle?.name || 'Build Your Bundle';
-    const pricing = this.selectedBundle?.pricing;
-    const rules = pricing?.rules || [];
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-
-    let promoTitle = bundleName;
-    let promoSubtitle = '';
-    let promoNote = '';
-    let discountMessage = '';
-
-    if (pricing?.enabled && rules.length > 0) {
-      const pricingMethod = pricing.method || 'percentage_off';
-      const bestRule = rules.reduce((best, rule) => {
-        const dv = rule.discountValue ?? 0;
-        const bestDv = best.discountValue ?? 0;
-        const isPercent = pricingMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
-        const discountValue = isPercent ? dv : dv / 100;
-        const bestValue = isPercent ? bestDv : bestDv / 100;
-        return discountValue > bestValue ? rule : best;
-      }, rules[0]);
-
-      const targetQty = bestRule.conditionValue ?? 0;
-      const conditionOperator = bestRule.conditionOperator;
-      const discountMethod = pricingMethod;
-      const discountValue = bestRule.discountValue ?? 0;
-
-      const qtyText = TemplateManager.formatOperatorText(conditionOperator, targetQty, 'item');
-
-      if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF && discountValue > 0) {
-        discountMessage = `Add ${qtyText} and get ${discountValue}% off!`;
-      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF && discountValue > 0) {
-        const formattedAmount = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
-        discountMessage = `Add ${qtyText} and save ${formattedAmount}!`;
-      } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE && discountValue > 0) {
-        const formattedPrice = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
-        discountMessage = `Add ${qtyText} for just ${formattedPrice}!`;
-      }
-    }
-
-    if (pricing?.messages?.banner) {
-      discountMessage = pricing.messages.banner;
-    }
-
-    if (discountMessage) {
-      promoNote = discountMessage;
-    }
-
-    const tierBadges = this.createPromoDiscountTierBadges(pricing, currencyInfo);
-    const banner = document.createElement('div');
-    banner.className = 'promo-banner';
-    banner.classList.add(discountMessage ? 'has-discount' : 'no-discount');
-    banner.innerHTML = `
-      ${promoSubtitle ? `<div class="promo-banner-subtitle">${ComponentGenerator.escapeHtml(promoSubtitle)}</div>` : ''}
-      <h2 class="promo-banner-title">${ComponentGenerator.escapeHtml(promoTitle)}</h2>
-      ${promoNote ? `<div class="promo-banner-note">${ComponentGenerator.escapeHtml(promoNote)}</div>` : ''}
-      ${tierBadges}
-    `;
-
-    const bgImageUrl = this.selectedBundle && this.selectedBundle.promoBannerBgImage;
-    if (bgImageUrl) {
-      banner.style.setProperty('--fpb-promo-banner-bg-image', `url("${String(bgImageUrl).replace(/"/g, '\\"')}")`);
-      banner.style.setProperty('--fpb-promo-banner-bg-size', 'cover');
-      banner.style.setProperty('--fpb-promo-banner-bg-position', 'center');
-
-      const cropRaw = this.selectedBundle && this.selectedBundle.promoBannerBgImageCrop;
-      if (cropRaw) {
-        try {
-          const crop = JSON.parse(cropRaw);
-          const cw = crop.width / 100;
-          const ch = cw * (3 / 16);
-          const cx = crop.x / 100;
-          const cy = crop.y / 100;
-          const bgSize = `${(1 / cw) * 100}%`;
-          const posX = (1 - cw) === 0 ? 0 : Math.min(100, Math.max(0, (cx / (1 - cw)) * 100));
-          const posY = (1 - ch) === 0 ? 0 : Math.min(100, Math.max(0, (cy / (1 - ch)) * 100));
-          banner.style.setProperty('--fpb-promo-banner-bg-size', bgSize);
-          banner.style.setProperty('--fpb-promo-banner-bg-position', `${posX}% ${posY}%`);
-        } catch (_e) {
-
-        }
-      }
-    }
-
-    return banner;
-  }
-
-  createPromoDiscountTierBadges(pricing, currencyInfo) {
-    const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
-    if (!pricing?.enabled || rules.length === 0) return '';
-
-    const rowStyle = 'position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px';
-    const badgeStyle = 'display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.88);color:#111;border:1px solid rgba(17,17,17,.18);font-size:12px;line-height:1.2;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)';
-    const badges = rules
-      .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
-      .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
-      .map(rule => this.formatPromoDiscountTierLabel(rule, pricing, currencyInfo))
-      .filter(Boolean)
-      .map(label => `<span class="promo-discount-tier-badge" style="${badgeStyle}">${ComponentGenerator.escapeHtml(label)}</span>`);
-
-    if (badges.length === 0) return '';
-    return `<div class="promo-discount-tier-row" style="${rowStyle}">${badges.join('')}</div>`;
-  }
-
-  formatPromoDiscountTierLabel(rule, pricing, currencyInfo) {
-    const ruleId = String(rule?.id || '');
-    const tierText = pricing?.messages?.tierTextByRuleId?.[ruleId];
-    if (tierText?.tierText && tierText?.tierSubtext) {
-      return `${tierText.tierText} / ${tierText.tierSubtext}`;
-    }
-    if (tierText?.tierText) return tierText.tierText;
-    if (tierText?.tierSubtext) return tierText.tierSubtext;
-
-    const threshold = Number(rule?.conditionValue || 0) || 0;
-    const discountValue = Number(rule?.discountValue || 0) || 0;
-    if (!threshold || !discountValue) return '';
-
-    const thresholdText = rule.conditionType === 'amount'
-      ? CurrencyManager.convertAndFormat(threshold, currencyInfo)
-      : String(threshold);
-    let discountText = '';
-    const discountMethod = pricing?.method || 'percentage_off';
-    if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
-      discountText = `${discountValue}%`;
-    } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF || discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_BUNDLE_PRICE) {
-      discountText = CurrencyManager.convertAndFormat(discountValue, currencyInfo);
-    }
-
-    return discountText ? `${thresholdText} / ${discountText}` : thresholdText;
-  }
-
-  collectStepProductIds(step) {
-    const productIds = [];
-    const addProductId = (product) => {
-      const id = product?.id || product?.graphqlId || product?.productId;
-      if (id && !productIds.includes(id)) productIds.push(id);
-    };
-
-    (step.products || []).forEach(addProductId);
-    (step.categories || []).forEach(category => {
-      (category.products || []).forEach(addProductId);
-      (category.selectedProducts || []).forEach(addProductId);
-    });
-
-    return productIds;
-  }
-
-  collectStepCollectionHandles(step) {
-    const handles = [];
-    const addCollectionHandle = (collection) => {
-      const handle = collection?.handle;
-      if (handle && !handles.includes(handle)) handles.push(handle);
-    };
-
-    (step.collections || []).forEach(addCollectionHandle);
-    (step.categories || []).forEach(category => {
-      (category.collections || []).forEach(addCollectionHandle);
-      (category.collectionsData || []).forEach(addCollectionHandle);
-      (category.collectionsSelectedData || []).forEach(addCollectionHandle);
-    });
-
-    return handles;
-  }
-
-  getStepCategoryTabEntries(step) {
-    if (!Array.isArray(step.categories)) return [];
-
-    return step.categories
-      .map((category, index) => {
-        const id = category.categoryId || category.id || `category-${index}`;
-        const title = category.title || category.name;
-        if (!id || !title) return null;
-
-        const handles = [];
-        const productIds = [];
-        const addHandle = (collection) => {
-          const handle = collection?.handle;
-          if (handle && !handles.includes(handle)) handles.push(handle);
-        };
-        const addProductId = (product) => {
-          const productId = product?.id || product?.graphqlId || product?.productId;
-          if (productId && !productIds.includes(productId)) productIds.push(productId);
-        };
-
-        (category.collections || []).forEach(addHandle);
-        (category.collectionsData || []).forEach(addHandle);
-        (category.collectionsSelectedData || []).forEach(addHandle);
-        (category.products || []).forEach(addProductId);
-        (category.selectedProducts || []).forEach(addProductId);
-
-        return {
-          id,
-          title,
-          handles,
-          productIds,
-          displayVariantsAsIndividualProducts: category.displayVariantsAsIndividualProducts === true,
-          displayVariantsAsSwatches: category.displayVariantsAsSwatches === true,
-        };
-      })
-      .filter(entry => entry && (entry.handles.length > 0 || entry.productIds.length > 0));
-  }
-
-  getActiveStepCategoryId(step) {
-    const categoryEntries = this.getStepCategoryTabEntries(step);
-    if (categoryEntries.length === 0) return this.activeCollectionId;
-    if (this.activeCollectionId && categoryEntries.some(entry => entry.id === this.activeCollectionId)) {
-      return this.activeCollectionId;
-    }
-    return categoryEntries[0].id;
-  }
-
-  getActiveStepCategoryEntry(step) {
-    const categoryEntries = this.getStepCategoryTabEntries(step);
-    const activeCategoryId = this.getActiveStepCategoryId(step);
-    return categoryEntries.find(entry => entry.id === activeCategoryId) || null;
-  }
-
-  shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory) {
-    if (activeCategory) {
-      return activeCategory.displayVariantsAsIndividualProducts === true;
-    }
-
-    const hasCategoryEntries = this.getStepCategoryTabEntries(step).length > 0;
-    if (hasCategoryEntries) {
-      return false;
-    }
-
-    return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
-  }
-
-  createActiveCategoryTitle(stepIndex) {
-    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
-      return null;
-    }
-
-    const activeCategory = this.getActiveStepCategoryEntry(this.selectedBundle.steps[stepIndex]);
-    if (!activeCategory?.title) return null;
-
-    const title = document.createElement('div');
-    title.className = 'fpb-step-category-title';
-    title.textContent = activeCategory.title;
-    return title;
-  }
-
-  createCategorySectionRows(stepIndex) {
-    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
-      return null;
-    }
-
-    const step = this.selectedBundle.steps[stepIndex];
-    const categoryEntries = this.getStepCategoryTabEntries(step);
-    if (categoryEntries.length <= 1) return null;
-
-    const activeCategoryId = this.getActiveStepCategoryId(step);
-    const inactiveCategoryEntries = categoryEntries.filter(entry => entry.id !== activeCategoryId);
-    if (inactiveCategoryEntries.length === 0) return null;
-
-    const categoryRowsContainer = document.createElement('div');
-    categoryRowsContainer.className = 'fpb-category-section-rows';
-
-    inactiveCategoryEntries.forEach(entry => {
-      const categoryRow = document.createElement('button');
-      categoryRow.type = 'button';
-      categoryRow.className = 'fpb-category-section-row fpb-category-section-row--collapsed';
-      categoryRow.textContent = entry.title;
-      categoryRow.addEventListener('click', () => {
-        this.activeCollectionId = entry.id;
-        this.reRenderFullPage();
-      });
-      categoryRowsContainer.appendChild(categoryRow);
-    });
-
-    return categoryRowsContainer;
-  }
-
-  createCategoryTabs(stepIndex) {
-    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
-      return null;
-    }
-
-    const step = this.selectedBundle.steps[stepIndex];
-    const categoryEntries = this.getStepCategoryTabEntries(step);
-    const hasCategoryEntries = categoryEntries.length > 0;
-
-    if (categoryEntries.length === 0 && (!step.collections || step.collections.length === 0)) {
-      return null;
-    }
-
-    const customFilters = Array.isArray(step.filters) && step.filters.length > 0
-      ? step.filters
-      : null;
-
-    let tabEntries;
-    if (hasCategoryEntries) {
-      tabEntries = categoryEntries;
-    } else if (customFilters) {
-      tabEntries = customFilters
-        .map(f => {
-          const col = step.collections.find(c => (c.handle || c.id) === f.collectionHandle);
-          return col ? { id: col.id, title: f.label } : null;
-        })
-        .filter(Boolean);
-    } else {
-      tabEntries = step.collections.map(c => ({ id: c.id, title: c.title }));
-    }
-
-    if (tabEntries.length === 0) {
-      return null;
-    }
-
-    const tabsContainer = document.createElement('div');
-    tabsContainer.className = 'category-tabs';
-
-    const activeCategoryId = hasCategoryEntries ? this.getActiveStepCategoryId(step) : this.activeCollectionId;
-
-    if (!hasCategoryEntries) {
-      const allTab = document.createElement('button');
-      allTab.className = 'category-tab';
-      if (!this.activeCollectionId) {
-        allTab.classList.add('active');
-      }
-      allTab.innerHTML = `<span class="tab-label">All</span>`;
-      allTab.addEventListener('click', () => {
-        this.activeCollectionId = null;
-        this.reRenderFullPage();
-      });
-      tabsContainer.appendChild(allTab);
-    }
-
-    tabEntries.forEach(entry => {
-      const tab = document.createElement('button');
-      tab.className = 'category-tab';
-      if (activeCategoryId === entry.id) {
-        tab.classList.add('active');
-      }
-      tab.innerHTML = `<span class="tab-label">${ComponentGenerator.escapeHtml(entry.title)}</span>`;
-      tab.addEventListener('click', () => {
-        this.activeCollectionId = entry.id;
-        this.reRenderFullPage();
-      });
-      tabsContainer.appendChild(tab);
-    });
-
-    return tabsContainer;
-  }
-
-  createFullPageProductGrid(stepIndex) {
-    const grid = document.createElement('div');
-    grid.className = 'full-page-product-grid';
-
-    if (!this.selectedBundle || !this.selectedBundle.steps || !this.selectedBundle.steps[stepIndex]) {
-      return grid;
-    }
-
-    const step = this.selectedBundle.steps[stepIndex];
-
-    let products = this.stepProductData[stepIndex] || [];
-
-    const activeCategory = this.getActiveStepCategoryEntry(step);
-    const activeCollectionId = activeCategory ? activeCategory.id : this.activeCollectionId;
-
-    if (activeCollectionId) {
-      if (activeCategory) {
-        const allowedProductIds = new Set();
-        activeCategory.productIds.forEach(productId => {
-          allowedProductIds.add(this.extractId(productId) || productId);
-        });
-        activeCategory.handles.forEach(handle => {
-          const collectionProductIds = this.stepCollectionProductIds[`${stepIndex}:${handle}`] || [];
-          collectionProductIds.forEach(productId => {
-            allowedProductIds.add(this.extractId(productId) || productId);
-          });
-        });
-
-        if (allowedProductIds.size > 0) {
-          products = products.filter(p => {
-            const numericPid = p.parentProductId || p.id || '';
-            return allowedProductIds.has(numericPid);
-          });
-        }
-      } else if (step.collections) {
-        const activeCollection = step.collections.find(c => c.id === activeCollectionId);
-      if (activeCollection && activeCollection.handle) {
-        const membershipKey = `${stepIndex}:${activeCollection.handle}`;
-        const collectionProductIds = this.stepCollectionProductIds[membershipKey];
-        if (collectionProductIds && collectionProductIds.length > 0) {
-          products = products.filter(p => {
-
-            const numericPid = p.parentProductId || p.id || '';
-            return collectionProductIds.some(cid => {
-              const numericCid = this.extractId(cid) || cid;
-              return numericPid === numericCid;
-            });
-          });
-        }
-      }
-      }
-    }
-
-    const shouldDisplayVariantsAsIndividual = this.shouldDisplayVariantsAsIndividualForProductGrid(step, activeCategory);
-    let expandedProducts = this.expandProductsByVariant(products, shouldDisplayVariantsAsIndividual);
-
-    if (this.searchQuery && this.searchQuery.trim()) {
-      const query = this.searchQuery.toLowerCase().trim();
-      expandedProducts = expandedProducts.filter(product => {
-        const title = (product.title || '').toLowerCase();
-        const variantTitle = (product.variantTitle || '').toLowerCase();
-        const parentTitle = (product.parentTitle || '').toLowerCase();
-        return title.includes(query) || variantTitle.includes(query) || parentTitle.includes(query);
-      });
-    }
-
-    if (expandedProducts.length === 0) {
-
-      const message = this.searchQuery
-        ? `No products match "${ComponentGenerator.escapeHtml(this.searchQuery)}"`
-        : 'No products available in this step.';
-      grid.innerHTML = `<p class="no-products">${message}</p>`;
-      return grid;
-    }
-
-    const stepSelections = this.selectedProducts[stepIndex] || {};
-    const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
-    const isStepAtCapacity = !capacityCheck.allowed;
-
-    expandedProducts.forEach(product => {
-      const productCard = this.createProductCard(product, stepIndex);
-      const productId = product.variantId || product.id;
-      const currentQty = stepSelections[productId] || 0;
-
-      if (isStepAtCapacity && currentQty === 0) {
-        productCard.classList.add('dimmed');
-      }
-      grid.appendChild(productCard);
-    });
-
-    return grid;
-  }
-
-  expandProductsByVariant(products, shouldExpand = true) {
-    if (!shouldExpand) {
-      return products;
-    }
-
-    return products.flatMap(product => {
-
-      if (product.parentProductId && product.variantId) {
-        return [product];
-      }
-
-      if (product.variants && product.variants.length > 1) {
-        return product.variants
-          .filter(variant => variant.available !== false)
-          .map(variant => {
-
-            const imageUrl = variant.image?.src
-              || variant.image?.url
-              || (typeof variant.image === 'string' ? variant.image : null)
-              || variant.imageUrl
-              || product.imageUrl
-              || product.featuredImage?.url
-              || product.images?.[0]?.url
-              || product.images?.[0]?.src
-              || product.images?.[0]?.originalSrc
-              || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-
-            return {
-              ...product,
-              id: variant.id,
-              title: product.title,
-              variantTitle: variant.title === 'Default Title' ? '' : variant.title,
-              imageUrl,
-              price: typeof variant.price === 'number' ? variant.price : (parseFloat(variant.price || '0') * 100),
-              compareAtPrice: variant.compareAtPrice ? (typeof variant.compareAtPrice === 'number' ? variant.compareAtPrice : parseFloat(variant.compareAtPrice) * 100) : null,
-              variantId: variant.id,
-              available: variant.available !== false,
-              parentProductId: product.id,
-              parentTitle: product.title,
-
-              variants: null
-            };
-          });
-      }
-
-      return [product];
-    });
-  }
-
-  createProductGridLoadingState() {
-    return `
-      <div class="full-page-product-grid">
-        ${Array(6).fill(0).map(() => `
-          <div class="product-card skeleton-loading">
-            <div class="skeleton-card-content"></div>
-          </div>
-        `).join('')}
-      </div>
-      <style>
-
-        .product-card.skeleton-loading {
-          pointer-events: none;
-          cursor: default;
-          position: relative;
-          overflow: hidden;
-          min-height: 320px;
-          background: var(--bundle-skeleton-base-bg, #f5f5f5);
-          border-radius: 12px;
-        }
-
-        .product-card.skeleton-loading:hover {
-          transform: none;
-          box-shadow: none;
-        }
-
-        .skeleton-card-content {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(
-            110deg,
-            var(--bundle-skeleton-shimmer, #f0f0f0) 0%,
-            var(--bundle-skeleton-shimmer, #f0f0f0) 40%,
-            var(--bundle-skeleton-highlight, #e0e0e0) 50%,
-            var(--bundle-skeleton-shimmer, #f0f0f0) 60%,
-            var(--bundle-skeleton-shimmer, #f0f0f0) 100%
-          );
-          background-size: 200% 100%;
-          animation: skeleton-pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes skeleton-pulse {
-          0% {
-            background-position: 200% 0;
-          }
-          100% {
-            background-position: -200% 0;
-          }
-        }
-      </style>
-    `;
-  }
-
-  preloadAllSteps() {
-    const steps = this.selectedBundle?.steps;
-    if (!steps) return;
-
-    steps.forEach((_, index) => {
-
-      if (index === this.currentStepIndex) return;
-
-      if (this.stepProductData[index]?.length > 0) return;
-
-      this.loadStepProducts(index).catch(() => {
-
-      });
-    });
-  }
-
-  preloadNextStep() {
-    this.preloadAllSteps();
-  }
-
-  createProductCard(product, stepIndex) {
-    const productId = product.variantId || product.id;
-    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
-    const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
-
-    if (!product.imageUrl || product.imageUrl === '') {
-      product.imageUrl = product.image?.src ||
-                        product.featuredImage?.url ||
-                        product.images?.[0]?.url ||
-                        BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-    }
-
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-
-    const step = (this.selectedBundle?.steps || [])[stepIndex];
-    const primaryOptionName = step?.primaryVariantOption || null;
-    const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
-
-    const htmlString = ComponentGenerator.renderProductCard(
-      product,
-      currentQuantity,
-      currencyInfo,
-      {
-        variantSelectorHtml,
-        actionMode: 'expandingQuantity',
-        addButtonText: this.getProductAddButtonText(),
-      }
-    );
-
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = htmlString.trim();
-    const cardElement = wrapper.firstChild;
-
-    if (renderSelectedQuantityBadge) {
-      this.applySelectedQuantityBadge(cardElement, currentQuantity);
-    }
-
-    this.applyStandardExpandedVariantTitle(cardElement, product);
-
-    const currentStepData = (this.selectedBundle?.steps || [])[stepIndex];
-    if (currentStepData?.isDefault) {
-      cardElement.classList.add('fpb-card--default-included');
-      const imgEl = cardElement.querySelector('.product-image, .product-img, img');
-      if (imgEl && imgEl.parentElement) {
-        imgEl.parentElement.classList.add('fpb-card-image-wrapper');
-        const badge = document.createElement('span');
-        badge.className = 'fpb-included-badge';
-        const _includedBadgeUrl = (() => {
-          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-included-badge-url').trim();
-          if (!v || v === 'none') return null;
-          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
-          return m ? m[1] : null;
-        })();
-        if (_includedBadgeUrl) {
-          const img = document.createElement('img');
-          img.src = _includedBadgeUrl;
-          img.alt = 'Included';
-          img.className = 'fpb-included-badge-img';
-          badge.appendChild(img);
-        } else {
-          badge.textContent = this._resolveText('includedBadge', 'Included');
-        }
-        imgEl.parentElement.appendChild(badge);
-      }
-    }
-
-    if (currentStepData?.isFreeGift && currentStepData?.addonDisplayFree === true) {
-      const imgEl = cardElement.querySelector('.product-image, .product-img, img');
-      if (imgEl && imgEl.parentElement) {
-        imgEl.parentElement.classList.add('fpb-card-image-wrapper');
-        const badge = document.createElement('span');
-        badge.className = 'fpb-free-badge';
-        const _badgeUrl = (() => {
-          const v = getComputedStyle(document.documentElement).getPropertyValue('--bundle-free-gift-badge-url').trim();
-          if (!v || v === 'none') return null;
-          const m = v.match(/^url\(['"]?(.*?)['"]?\)$/);
-          return m ? m[1] : null;
-        })();
-        if (_badgeUrl) {
-          const img = document.createElement('img');
-          img.src = _badgeUrl;
-          img.alt = 'Free gift';
-          img.className = 'fpb-free-badge-img';
-          badge.appendChild(img);
-        } else {
-          badge.textContent = this._resolveText('freeBadge', 'Free');
-        }
-        imgEl.parentElement.appendChild(badge);
-      }
-      const priceEl = cardElement.querySelector('.product-price, .price');
-      if (priceEl) {
-        const originalPriceText = priceEl.textContent;
-        const _ci = CurrencyManager.getCurrencyInfo();
-        priceEl.innerHTML = `${CurrencyManager.convertAndFormat(0, _ci)} <span class="side-panel-product-original-price">${originalPriceText}</span>`;
-      }
-    }
-
-    this.attachProductCardListeners(cardElement, product, stepIndex);
-
-    return cardElement;
-  }
-
-  applyStandardExpandedVariantTitle(cardElement, product) {
-    const preset = this.getFullPageDesignPreset();
-    if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
-    if (!cardElement) return;
-
-    const variantTitle = this.getSummaryProductVariantDisplay(product);
-    if (!product?.parentProductId || !variantTitle) return;
-
-    const titleEl = cardElement.querySelector('.product-title');
-    if (!titleEl) return;
-
-    const parentTitle = this.getSummaryProductDisplayTitle({
-      ...product,
-      variantTitle: product.variantTitle || 'Default Title',
-      title: product.title || '',
-      parentTitle: product.parentTitle || ''
-    });
-    if (!parentTitle) return;
-
-    cardElement.classList.add('product-card--expanded-variant');
-    titleEl.textContent = `${parentTitle}\n${variantTitle}`;
-  }
-
-  getSummaryProductDisplayTitle(item) {
-    if (!item) return '';
-    const hasVariantLabel = item.variantTitle && item.variantTitle !== 'Default Title';
-    const hasUsableParentTitle = typeof item.parentTitle === 'string' && item.parentTitle.trim().length > 0;
-    if (hasVariantLabel && hasUsableParentTitle) return item.parentTitle;
-
-    const inferredParentTitle = this.getParentTitleFromDisplayTitle(item.title);
-    if (inferredParentTitle && hasVariantLabel) return inferredParentTitle;
-
-    if (hasUsableParentTitle) {
-      return item.parentTitle;
-    }
-
-    return inferredParentTitle || item.title || '';
-  }
-
-  getSummaryProductVariantDisplay(item) {
-    if (!item) return '';
-
-    const explicitVariantTitle = typeof item.variantTitle === 'string' ? item.variantTitle : '';
-    if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
-      return explicitVariantTitle;
-    }
-
-    const parentTitle = typeof item.parentTitle === 'string' ? item.parentTitle : '';
-    const normalizedTitle = typeof item.title === 'string' ? item.title : '';
-    if (!normalizedTitle) return '';
-
-    if (parentTitle) {
-      const withParentPrefix = `${parentTitle} - `;
-      if (normalizedTitle.startsWith(withParentPrefix)) {
-        const inferredVariant = normalizedTitle.slice(withParentPrefix.length).trim();
-        return inferredVariant || '';
-      }
-    }
-
-    return this.getSummaryVariantFromDisplayTitle(normalizedTitle);
-  }
-
-  getParentTitleFromDisplayTitle(displayTitle) {
-    if (typeof displayTitle !== 'string') return '';
-    const separatorIndex = displayTitle.indexOf(' - ');
-    if (separatorIndex <= 0) return '';
-    const parentCandidate = displayTitle.slice(0, separatorIndex).trim();
-    return parentCandidate || '';
-  }
-
-  getSummaryVariantFromDisplayTitle(displayTitle) {
-    if (typeof displayTitle !== 'string') return '';
-    const separatorIndex = displayTitle.indexOf(' - ');
-    if (separatorIndex <= 0) return '';
-    const variantCandidate = displayTitle.slice(separatorIndex + 3).trim();
-    return variantCandidate || '';
-  }
-
-  applySelectedQuantityBadge(cardElement, currentQuantity) {
-    if (!cardElement) return;
-    cardElement.querySelector('.selected-overlay')?.remove();
-    const actionWrapper = cardElement.querySelector('.product-card-action');
-    if (!actionWrapper) return;
-
-    const priceRow = cardElement.querySelector('.product-price-row');
-    const actionRow = document.createElement('div');
-    actionRow.className = 'product-selected-action-row';
-    if (priceRow) {
-      actionRow.appendChild(priceRow);
-    }
-
-    const quantityBadge = document.createElement('span');
-    quantityBadge.className = 'inline-quantity-display-only';
-    quantityBadge.textContent = String(currentQuantity);
-    actionRow.appendChild(quantityBadge);
-
-    actionWrapper.classList.remove('is-expanded');
-    actionWrapper.classList.add('has-selected-quantity-badge');
-    actionWrapper.replaceChildren(actionRow);
-  }
-
-  attachProductCardListeners(cardElement, product, stepIndex) {
-
-    if ((this.selectedBundle?.steps || [])[stepIndex]?.isDefault) return;
-
-    const getProductId = () => product.variantId || product.id;
-
-    cardElement.addEventListener('click', (e) => {
-      const btn = e.target.closest('.inline-qty-btn');
-      if (!btn) return;
-      e.stopPropagation();
-      const productId = getProductId();
-      const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-      if (btn.classList.contains('qty-increase')) {
-        const { available } = this.getVariantAvailable(stepIndex, productId);
-        if (available !== null && currentQty >= available) {
-          ToastManager.show('Maximum stock reached for this variant.');
-          return;
-        }
-        this.updateProductSelection(stepIndex, productId, currentQty + 1);
-      } else if (btn.classList.contains('qty-decrease') && currentQty > 0) {
-        this.updateProductSelection(stepIndex, productId, currentQty - 1);
-      }
-    });
-
-    cardElement.addEventListener('click', (e) => {
-      const addBtn = e.target.closest('.product-add-btn');
-      if (!addBtn) return;
-      e.stopPropagation();
-      const productId = getProductId();
-      const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-      if (currentQty === 0) {
-        this.updateProductSelection(stepIndex, productId, 1);
-      }
-    });
-
-    if (product.variants && product.variants.length > 1) {
-      VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
-        const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
-
-        if (oldQty > 0 && oldVariantId !== newVariantId) {
-
-          if (this.selectedProducts[stepIndex]) {
-            delete this.selectedProducts[stepIndex][oldVariantId];
-          }
-
-          const newQtyAvail = product.quantityAvailable;
-          const newOOS = newQtyAvail === 0 && !product.currentlyNotInStock;
-          let migratedQty = oldQty;
-          if (newOOS) {
-            ToastManager.show('Selected variant is out of stock — selection cleared.');
-            migratedQty = 0;
-          } else if (newQtyAvail !== null && oldQty > newQtyAvail) {
-            migratedQty = newQtyAvail;
-            ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
-          }
-          if (migratedQty > 0) {
-            this.selectedProducts[stepIndex][newVariantId] = migratedQty;
-          }
-
-          const qtyDisplay = cardElement.querySelector('.inline-qty-display');
-          if (qtyDisplay) qtyDisplay.textContent = migratedQty;
-        }
-
-        cardElement.dataset.productId = newVariantId;
-        cardElement.querySelectorAll('[data-product-id]').forEach(el => {
-          if (el !== cardElement) el.dataset.productId = newVariantId;
-        });
-
-        this.updateFooterMessaging?.();
-        this.updateStepTimeline?.();
-        this._refreshSiblingDimState?.(stepIndex);
-      });
-    }
-  }
-
-  updateStepTimeline() {
-    if (!this.config.showStepTimeline) return;
-    const existing = this.elements.stepsContainer.querySelector('.step-timeline');
-    if (!existing) return;
-    const fresh = this.createStepTimeline();
-    existing.parentNode.replaceChild(fresh, existing);
-  }
-
-  renderFullPageFooter() {
-    if (!this.elements.footer) {
-      return;
-    }
-
-    const layout = this.resolveFullPageLayout();
-    if (layout === 'footer_side') {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
-    const allSelectedProducts = this.getAllSelectedProductsData();
-
-    const wasOpen = this.elements.footer.classList.contains('is-open');
-
-    this.elements.footer.innerHTML = '';
-    this.elements.footer.className = 'full-page-footer floating-card';
-    if (wasOpen) this.elements.footer.classList.add('is-open');
-    this.elements.footer.style.display = 'block';
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;
-
-    const totalRequired = (this.selectedBundle.steps || []).reduce((sum, step) => {
-      if (step.isFreeGift || step.isDefault) return sum;
-      return sum + (Number(step.conditionValue) || Number(step.minQuantity) || 1);
-    }, 0);
-
-    const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-
-    if (this.config.showDiscountProgressBar) {
-      const progressBar = this._renderDiscountProgress({
-        combinedDiscountInfo,
-        totalPrice,
-        totalQuantity,
-        unitPrices,
-      });
-      if (progressBar) this.elements.footer.appendChild(progressBar);
-    }
-
-    const inner = document.createElement('div');
-    inner.className = 'footer-inner';
-
-    const panel = this._createFooterPanel(allSelectedProducts, currencyInfo);
-    const backdrop = document.createElement('button');
-    backdrop.className = 'footer-backdrop';
-    backdrop.setAttribute('type', 'button');
-    backdrop.setAttribute('aria-label', 'Close product list');
-    backdrop.addEventListener('click', () => {
-      this.elements.footer.classList.remove('is-open');
-    });
-    const bar = this._createFooterBar(
-      allSelectedProducts, totalQuantity, totalRequired,
-      totalPrice, finalPrice, combinedDiscountInfo, currencyInfo, isLastStep
-    );
-
-    inner.appendChild(panel);
-    inner.appendChild(backdrop);
-    inner.appendChild(bar);
-    this.elements.footer.appendChild(inner);
-  }
-
-  _createFooterPanel(allSelectedProducts, currencyInfo) {
-    const panel = document.createElement('div');
-    panel.className = 'footer-panel';
-
-    const list = document.createElement('ul');
-    list.className = 'footer-panel-list';
-
-    allSelectedProducts.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'footer-panel-item';
-
-      const formattedPrice = CurrencyManager.convertAndFormat(item.price || 0, currencyInfo);
-      const summaryTitle = this.getSummaryProductDisplayTitle(item);
-      const truncatedTitle = this.truncateTitle(summaryTitle, 35);
-      const ariaLabelTitle = ComponentGenerator.escapeHtml(summaryTitle);
-
-      li.innerHTML = `
-        <img src="${this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}"
-             alt="${ariaLabelTitle}"
-             class="footer-panel-thumb">
-        <div class="footer-panel-info">
-          <p class="footer-panel-name">${ComponentGenerator.escapeHtml(truncatedTitle)}</p>
-          <p class="footer-panel-price">${formattedPrice} <span class="footer-panel-qty">×${item.quantity}</span></p>
-        </div>
-        ${!item.isDefault ? `
-        <button class="footer-panel-remove" type="button" aria-label="Remove ${ariaLabelTitle}">
-          <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor">
-            <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-          </svg>
-        </button>` : ''}
-      `;
-
-      if (!item.isDefault) {
-        const removeBtn = li.querySelector('.footer-panel-remove');
-        if (!removeBtn) return;
-        removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const removedItem = { stepIndex: item.stepIndex, variantId: item.variantId, quantity: item.quantity, title: item.title };
-          this.updateProductSelection(item.stepIndex, item.variantId, 0);
-          const truncated = summaryTitle.length > 25 ? summaryTitle.substring(0, 25) + '...' : summaryTitle;
-          ToastManager.showWithUndo(
-            `Removed "${truncated}"`,
-            () => { this.updateProductSelection(removedItem.stepIndex, removedItem.variantId, removedItem.quantity); },
-            5000
-          );
-        });
-      }
-
-      list.appendChild(li);
-    });
-
-    panel.appendChild(list);
-    return panel;
-  }
-
-  _createFooterBar(allSelectedProducts, totalQuantity, totalRequired, totalPrice, finalPrice, discountInfo, currencyInfo, isLastStep) {
-    const bar = document.createElement('div');
-    bar.className = 'footer-bar';
-
-    const thumbStrip = document.createElement('div');
-    thumbStrip.className = 'footer-thumbstrip';
-    const maxThumbs = 3;
-    allSelectedProducts.slice(0, maxThumbs).forEach(item => {
-      const img = document.createElement('img');
-      img.src = this._getSelectedProductImageSrc(item) || BUNDLE_WIDGET.PLACEHOLDER_IMAGE;
-      img.alt = item.title || '';
-      img.className = 'footer-thumbstrip-img';
-      thumbStrip.appendChild(img);
-    });
-    if (allSelectedProducts.length > maxThumbs) {
-      const overflow = document.createElement('span');
-      overflow.className = 'footer-thumbstrip-overflow';
-      overflow.textContent = `+${allSelectedProducts.length - maxThumbs}`;
-      thumbStrip.appendChild(overflow);
-    }
-
-    const centreCol = document.createElement('div');
-    centreCol.className = 'footer-centre';
-
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'footer-toggle';
-    toggleBtn.setAttribute('type', 'button');
-    const hasConditions = !this.bundleHasNoConditions();
-    const totalSelected = allSelectedProducts.length;
-    const toggleText = hasConditions
-      ? `${totalQuantity}/${totalRequired} Steps`
-      : `${totalSelected} Product${totalSelected !== 1 ? 's' : ''}`;
-    toggleBtn.innerHTML = `
-      <span class="footer-toggle-text">${toggleText}</span>
-      <svg class="footer-chevron" viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M5 8l5 5 5-5"/>
-      </svg>
-    `;
-    toggleBtn.addEventListener('click', () => {
-      this.elements.footer.classList.toggle('is-open');
-    });
-
-    const totalArea = document.createElement('div');
-    totalArea.className = 'footer-total-area';
-
-    let discountBadgeHTML = '';
-    if (discountInfo.hasDiscount && totalPrice > 0 && finalPrice < totalPrice) {
-      const discountPct = Math.round((1 - finalPrice / totalPrice) * 100);
-      if (discountPct > 0) {
-        discountBadgeHTML = `<span class="footer-discount-badge">${discountPct}% OFF</span>`;
-      }
-    }
-    totalArea.innerHTML = `
-      <span class="footer-total-label">Total:</span>
-      <div class="footer-total-prices">
-        ${discountInfo.hasDiscount && finalPrice < totalPrice ? `<span class="footer-total-original">${CurrencyManager.convertAndFormat(totalPrice, currencyInfo)}</span>` : ''}
-        <span class="footer-total-final">${CurrencyManager.convertAndFormat(finalPrice, currencyInfo)}</span>
-        ${discountBadgeHTML}
-      </div>
-    `;
-
-    centreCol.appendChild(toggleBtn);
-    centreCol.appendChild(totalArea);
-
-    const ctaBtn = document.createElement('button');
-    ctaBtn.className = 'footer-cta-btn';
-    ctaBtn.setAttribute('type', 'button');
-    const conditionless = this.bundleHasNoConditions();
-    const hasSelection = conditionless && this.getAllSelectedProductsData().length > 0;
-    ctaBtn.textContent = (conditionless || isLastStep) ? this._resolveText('addToCartButton', this.config.addToCartText || 'Add to Cart') : this._resolveText('nextButton', 'Next');
-    if (conditionless ? (!hasSelection || !this.canCheckoutWithBoxSelection()) : (isLastStep ? (!this.areBundleConditionsMet() || !this.canCheckoutWithBoxSelection()) : !this.canProceedToNextStep())) {
-      ctaBtn.disabled = true;
-    }
-    ctaBtn.addEventListener('click', () => {
-      if (conditionless || isLastStep) {
-        if (!this.canCheckoutWithBoxSelection()) {
-          this.showBoxSelectionValidationMessage();
-          return;
-        }
-        this.addBundleToCart();
-      } else if (this.canProceedToNextStep()) {
-        this.activeCollectionId = null;
-        this.searchQuery = '';
-        this.currentStepIndex++;
-        this.renderFullPageLayout();
-      } else {
-        ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
-      }
-    });
-
-    bar.appendChild(thumbStrip);
-    bar.appendChild(centreCol);
-    bar.appendChild(ctaBtn);
-    return bar;
-  }
-
-  truncateTitle(title, maxLength) {
-    if (!title) return '';
-    if (title.length <= maxLength) return title;
-    return title.substring(0, maxLength) + '...';
-  }
-
-  getAllSelectedProductsData() {
-    const allProducts = [];
-
-    this.selectedBundle.steps.forEach((step, stepIndex) => {
-      const stepSelections = this.selectedProducts[stepIndex] || {};
-      const productsInStep = this.stepProductData[stepIndex] || [];
-
-      Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-        if (quantity > 0) {
-
-          let product = productsInStep.find(p =>
-            String(p.variantId) === String(variantId) || String(p.id) === String(variantId)
-          );
-
-          let matchedVariant = null;
-          if (!product) {
-            for (const p of productsInStep) {
-              if (p.variants && Array.isArray(p.variants)) {
-                const variant = p.variants.find(v => String(v.id) === String(variantId));
-                if (variant) {
-                  product = p;
-                  matchedVariant = variant;
-                  break;
-                }
-              }
-            }
-          }
-
-          if (product) {
-
-            const variantData = matchedVariant || product;
-            const isVariantMatch = !!matchedVariant;
-
-            let variantTitle = '';
-            if (isVariantMatch && matchedVariant.title && matchedVariant.title !== 'Default Title') {
-              variantTitle = matchedVariant.title;
-            } else if (product.variantTitle && product.variantTitle !== 'Default Title') {
-              variantTitle = product.variantTitle;
-            }
-
-            const imageUrl = isVariantMatch
-              ? (matchedVariant.image?.src || matchedVariant.image || product.imageUrl || product.image?.src || '')
-              : (product.imageUrl || product.image?.src || '');
-
-            const price = isVariantMatch
-              ? (typeof matchedVariant.price === 'number' ? matchedVariant.price : (parseFloat(matchedVariant.price || '0') * 100))
-              : (product.price || 0);
-
-            allProducts.push({
-              stepIndex,
-              variantId,
-              quantity,
-              title: isVariantMatch
-                ? (variantTitle ? `${product.title} - ${variantTitle}` : product.title)
-                : (product.title || 'Untitled Product'),
-              parentTitle: product.parentTitle || product.title || 'Untitled Product',
-              variantTitle: variantTitle,
-              imageUrl: imageUrl,
-              image: imageUrl,
-              price: price,
-              isDefault: step.isDefault ?? false,
-              isFreeGift: step.isFreeGift ?? false,
-              addonDisplayFree: step.addonDisplayFree === true,
-            });
-          } else {
-          }
-        }
-      });
-    });
-
-    return allProducts;
-  }
-
-  /**
-   * Group selected variants by product for multi-variant display
-   * @param {Array} selectedProducts - Array of selected product variants
-   * @returns {Array} Array of product groups with their variants
-   */
-  groupVariantsByProduct(selectedProducts) {
-    const productMap = new Map();
-
-    selectedProducts.forEach(item => {
-
-      const product = this.stepProductData[item.stepIndex]?.find(p => {
-
-        return p.variants?.some(v => String(v.id) === String(item.variantId)) || String(p.id) === String(item.variantId);
-      });
-
-      if (!product) return;
-
-      const productId = product.id || product.productId;
-      const key = `${item.stepIndex}-${productId}`;
-
-      if (!productMap.has(key)) {
-        productMap.set(key, {
-          productId,
-          stepIndex: item.stepIndex,
-          title: product.title || item.title,
-          image: product.imageUrl || product.image?.src || item.image,
-          variants: [],
-          totalQuantity: 0,
-          totalPrice: 0
-        });
-      }
-
-      const group = productMap.get(key);
-      group.variants.push(item);
-      group.totalQuantity += item.quantity;
-      group.totalPrice += (item.price * item.quantity);
-    });
-
-    return Array.from(productMap.values());
-  }
-
-  /**
-   * Show variant breakdown popup for a product with multiple variants
-   * @param {Object} productGroup - Product group with multiple variants
-   */
-  showVariantBreakdown(productGroup) {
-    const overlay = document.createElement('div');
-    overlay.className = 'variant-breakdown-overlay';
-
-    const popup = document.createElement('div');
-    popup.className = 'variant-breakdown-popup';
-
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variantsHtml = productGroup.variants.map(variant => {
-      const product = this.stepProductData[variant.stepIndex]?.find(p =>
-        p.variants?.some(v => String(v.id) === String(variant.variantId)) || String(p.id) === String(variant.variantId)
-      );
-      const variantObj = product?.variants?.find(v => String(v.id) === String(variant.variantId));
-      const variantTitle = variantObj?.title || variant.title || 'Variant';
-
-      return `
-        <div class="variant-breakdown-item">
-          <img src="${variant.image}" alt="${variantTitle}" />
-          <div class="variant-info">
-            <span class="variant-title">${variantTitle}</span>
-            <span class="variant-quantity">Qty: ${variant.quantity} × ${CurrencyManager.convertAndFormat(variant.price, currencyInfo)}</span>
-          </div>
-          <button class="remove-variant-btn" data-step="${variant.stepIndex}" data-variant-id="${variant.variantId}">Remove</button>
-        </div>
-      `;
-    }).join('');
-
-    popup.innerHTML = `
-      <div class="variant-breakdown-header">
-        <h3>${productGroup.title}</h3>
-        <button class="close-breakdown-btn">&times;</button>
-      </div>
-      <div class="variant-breakdown-list">
-        ${variantsHtml}
-      </div>
-      <button class="add-another-variant-btn">+ Add Another Variant</button>
-    `;
-
-    popup.querySelector('.close-breakdown-btn').addEventListener('click', () => {
-      document.body.removeChild(overlay);
-    });
-
-    popup.querySelectorAll('.remove-variant-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const stepIndex = parseInt(e.target.dataset.step);
-        const variantId = e.target.dataset.variantId;
-        this.updateProductSelection(stepIndex, variantId, 0);
-        document.body.removeChild(overlay);
-        this.reRenderFullPage();
-      });
-    });
-
-    popup.querySelector('.add-another-variant-btn').addEventListener('click', () => {
-      document.body.removeChild(overlay);
-
-      const product = this.stepProductData[productGroup.stepIndex]?.find(p => String(p.id) === String(productGroup.productId));
-      const step = this.selectedBundle.steps[productGroup.stepIndex];
-      if (product && step && this.productModal) {
-        this.productModal.open(product, step);
-      }
-    });
-
-    overlay.appendChild(popup);
-    document.body.appendChild(overlay);
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) document.body.removeChild(overlay);
-    });
-  }
-
-  findProductByVariantId(step, variantId) {
-    return step.products?.find(p =>
-      p.variants?.some(v => v.id === variantId) || p.id === variantId
-    );
-  }
-
-  isStepCompleted(stepIndex) {
-    const step = this.selectedBundle.steps[stepIndex];
-    const stepSelections = this.selectedProducts[stepIndex] || {};
-    return ConditionValidator.isStepConditionSatisfied(step, stepSelections);
-  }
-
-  reRenderFullPage() {
-    const layout = this.resolveFullPageLayout();
-    if (layout === 'footer_side') {
-      this.renderFullPageLayoutWithSidebar();
-    } else {
-      this.renderFullPageLayout();
-    }
-  }
-
-  async _sidebarAdvanceToNextStep() {
-    const contentSection = this.elements.stepsContainer.querySelector('.sidebar-content');
-    if (!contentSection) {
-
-      this.renderFullPageLayoutWithSidebar();
-      return;
-    }
-
-    this.updateStepTimeline();
-
-    const existingSearch = contentSection.querySelector('.step-search-container');
-    if (existingSearch && this.shouldRenderFullPageSearch()) {
-      existingSearch.replaceWith(this.createSearchInput());
-    } else if (existingSearch) {
-      existingSearch.remove();
-    } else if (this.shouldRenderFullPageSearch()) {
-      const firstAnchor = contentSection.querySelector('.category-tabs, .fpb-step-category-title, .full-page-product-grid-container');
-      if (firstAnchor) contentSection.insertBefore(this.createSearchInput(), firstAnchor);
-    }
-
-    const existingTabs = contentSection.querySelector('.category-tabs');
-    if (this.config.showCategoryTabs) {
-      const newTabs = this.createCategoryTabs(this.currentStepIndex);
-      if (existingTabs && newTabs) {
-        existingTabs.replaceWith(newTabs);
-      } else if (existingTabs && !newTabs) {
-        existingTabs.remove();
-      } else if (!existingTabs && newTabs) {
-        const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
-        if (gridContainer) contentSection.insertBefore(newTabs, gridContainer);
-      }
-    } else if (existingTabs) {
-      existingTabs.remove();
-    }
-
-    const existingCategoryTitle = contentSection.querySelector('.fpb-step-category-title');
-    const newCategoryTitle = this.createActiveCategoryTitle(this.currentStepIndex);
-    if (existingCategoryTitle && newCategoryTitle) {
-      existingCategoryTitle.replaceWith(newCategoryTitle);
-    } else if (existingCategoryTitle && !newCategoryTitle) {
-      existingCategoryTitle.remove();
-    } else if (!existingCategoryTitle && newCategoryTitle) {
-      const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
-      if (gridContainer) contentSection.insertBefore(newCategoryTitle, gridContainer);
-    }
-
-    const existingCategoryRows = contentSection.querySelector('.fpb-category-section-rows');
-    const newCategoryRows = this.createCategorySectionRows(this.currentStepIndex);
-    if (existingCategoryRows && newCategoryRows) {
-      existingCategoryRows.replaceWith(newCategoryRows);
-    } else if (existingCategoryRows && !newCategoryRows) {
-      existingCategoryRows.remove();
-    } else if (!existingCategoryRows && newCategoryRows) {
-      const gridContainer = contentSection.querySelector('.full-page-product-grid-container');
-      if (gridContainer) gridContainer.insertAdjacentElement('afterend', newCategoryRows);
-    }
-
-    const productGridContainer = contentSection.querySelector('.full-page-product-grid-container');
-    if (!productGridContainer) {
-      this.renderFullPageLayoutWithSidebar();
-      return;
-    }
-    productGridContainer.innerHTML = this.createProductGridLoadingState();
-
-    const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
-    if (sidePanel) this.renderSidePanel(sidePanel);
-
-    if (this.selectedBundle?.loadingGif) this.showLoadingOverlay(this.selectedBundle.loadingGif);
-    try {
-      await this.loadStepProducts(this.currentStepIndex);
-      const productGrid = this.createFullPageProductGrid(this.currentStepIndex);
-      productGridContainer.innerHTML = '';
-      productGridContainer.appendChild(productGrid);
-      if (sidePanel) this.renderSidePanel(sidePanel);
-      this.hideLoadingOverlay();
-      this.preloadNextStep();
-      this._renderMobileBottomBar();
-    } catch (error) {
-      this.hideLoadingOverlay();
-      productGridContainer.innerHTML = '<p class="error-message">Failed to load products. Please try again.</p>';
-      this._renderMobileBottomBar();
-    }
-  }
-
-  canProceedToNextStep() {
-    return this.isStepCompleted(this.currentStepIndex);
-  }
-
-  areBundleConditionsMet() {
-    return this.selectedBundle.steps.every((step, index) => {
-      if (step.isFreeGift || step.isDefault) return true;
-      return this.isStepCompleted(index);
-    });
-  }
-
-  bundleHasNoConditions() {
-    if (!this.selectedBundle?.steps?.length) return false;
-    return this.selectedBundle.steps.every(step => {
-      if (step.isFreeGift || step.isDefault) return true;
-      return !step.conditionType && !step.conditionOperator && step.conditionValue == null;
-    });
-  }
-
-  get freeGiftStep() {
-    return (this.selectedBundle?.steps || []).find(s => s.isFreeGift) ?? null;
-  }
-
-  get freeGiftStepIndex() {
-    return (this.selectedBundle?.steps || []).findIndex(s => s.isFreeGift);
-  }
-
-  get paidSteps() {
-    return (this.selectedBundle?.steps || []).filter(s => !s.isFreeGift && !s.isDefault);
-  }
-
-  get isFreeGiftUnlocked() {
-    if (!this.freeGiftStep) return false;
-    if (this.freeGiftStep.addonEligibilityCondition || Array.isArray(this.freeGiftStep.addonTiers)) {
-      return this.getAddonEligibilityState(this.freeGiftStep).isEligible;
-    }
-    const steps = this.selectedBundle?.steps || [];
-    return this.paidSteps.every(paidStep => {
-      const globalIndex = steps.indexOf(paidStep);
-      return this.isStepCompleted(globalIndex);
-    });
-  }
-
-  canNavigateToStep(targetStepIndex) {
-    const targetStep = (this.selectedBundle?.steps || [])[targetStepIndex];
-    if (targetStep?.isFreeGift && !this.isFreeGiftUnlocked) return false;
-    return true;
-  }
-
-  _getFreeGiftRemainingCount() {
-    if (this.freeGiftStep?.addonEligibilityCondition || Array.isArray(this.freeGiftStep?.addonTiers)) {
-      return this.getAddonEligibilityState(this.freeGiftStep).remainingQuantity;
-    }
-    const steps = this.selectedBundle?.steps || [];
-    const total = this.paidSteps.reduce((sum, s) =>
-      sum + (Number(s.conditionValue) || Number(s.minQuantity) || 1), 0);
-    const selected = this.paidSteps.reduce((sum, paidStep) => {
-      const globalIndex = steps.indexOf(paidStep);
-      const stepSel = this.selectedProducts[globalIndex] ?? {};
-      return sum + Object.values(stepSel).reduce((s, p) => s + (typeof p === 'number' ? p : (p.quantity || 1)), 0);
-    }, 0);
-    return Math.max(0, total - selected);
-  }
-
-  getAddonEligibilityState(step) {
-    const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-    const condition = step?.addonEligibilityCondition || tier?.eligibilityCondition || {};
-    const discount = step?.addonDiscount || tier?.discount || {};
-    const conditionType = String(condition.type || 'QUANTITY').toUpperCase();
-    const conditionValue = Number(condition.value || 0);
-    const { totalPrice, totalQuantity } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const thresholdCents = conditionType === 'AMOUNT' ? Math.round(conditionValue * 100) : conditionValue;
-    const currentValue = conditionType === 'AMOUNT' ? totalPrice : totalQuantity;
-    const remainingRaw = Math.max(0, thresholdCents - currentValue);
-    const remainingQuantity = conditionType === 'AMOUNT' ? 0 : remainingRaw;
-    const remainingAmount = conditionType === 'AMOUNT' ? remainingRaw : 0;
-    const discountValue = Number(discount.value || 0);
-    const discountUnit = discount.type === 'PERCENTAGE' ? '%' : currencyInfo.display.symbol;
-
-    return {
-      isEligible: remainingRaw <= 0,
-      conditionType,
-      remainingQuantity,
-      remainingAmount,
-      variables: {
-        addonsConditionDiff: conditionType === 'AMOUNT'
-          ? String(Math.ceil(remainingAmount / 100))
-          : String(remainingQuantity),
-        currencyUnit: currencyInfo.display.symbol,
-        addonsDiscountValue: String(discountValue),
-        addonsDiscountValueUnit: discountUnit,
-      },
-    };
-  }
-
-  getAddonLineDiscount(step) {
-    const tier = Array.isArray(step?.addonTiers) ? step.addonTiers[0] : null;
-    const discount = step?.addonDiscount || tier?.discount || {};
-    const type = String(discount.type || '').toUpperCase();
-    const value = Number(discount.value || 0);
-    if (type !== 'PERCENTAGE' || !Number.isFinite(value) || value <= 0) return null;
-    return { type, value: Math.min(100, value) };
-  }
-
-  getAddonProductSelectionKeys(step) {
-    const keys = new Set();
-    const addKey = (value) => {
-      if (value === null || value === undefined || value === '') return;
-      const normalized = this.extractId(value) || value;
-      keys.add(String(normalized));
-    };
-    const products = [
-      ...(Array.isArray(step?.StepProduct) ? step.StepProduct : []),
-      ...(Array.isArray(step?.products) ? step.products : []),
-    ];
-
-    products.forEach(product => {
-      addKey(product.id);
-      addKey(product.productId);
-      addKey(product.graphqlId);
-      addKey(product.variantId);
-      addKey(product.variantGraphqlId);
-      addKey(product.title);
-      (Array.isArray(product.variants) ? product.variants : []).forEach(variant => {
-        addKey(variant.id);
-        addKey(variant.variantId);
-        addKey(variant.variantGraphqlId);
-        addKey(variant.admin_graphql_api_id);
-        addKey(variant.title);
-      });
-    });
-
-    return keys;
-  }
-
-  calculateSelectedAddonDiscountAmount() {
-    const steps = this.selectedBundle?.steps || [];
-    const chargeableAddonStep = steps.find(candidate => candidate?.isFreeGift === true && candidate?.addonDisplayFree !== true && this.getAddonLineDiscount(candidate));
-    const chargeableAddonStepIndex = steps.indexOf(chargeableAddonStep);
-    const chargeableAddonProductKeys = this.getAddonProductSelectionKeys(chargeableAddonStep);
-    return this.getAllSelectedProductsData().reduce((total, item) => {
-      const isChargeableAddonItem = Number(item.stepIndex) === chargeableAddonStepIndex || (item.isFreeGift === true && item.addonDisplayFree !== true);
-      const isChargeableAddonProduct = chargeableAddonProductKeys.has(String(this.extractId(item.variantId) || item.variantId))
-        || chargeableAddonProductKeys.has(String(this.extractId(item.productId) || item.productId))
-        || chargeableAddonProductKeys.has(String(item.title || ''))
-        || chargeableAddonProductKeys.has(String(item.parentTitle || ''));
-      if (!isChargeableAddonItem && !isChargeableAddonProduct) return total;
-      const step = steps[item.stepIndex];
-      const addonDiscount = this.getAddonLineDiscount(step) || this.getAddonLineDiscount(chargeableAddonStep);
-      if (!addonDiscount) return total;
-
-      const selectedQuantity = Number(item.quantity || 0);
-      const price = Number(item.price || 0);
-      if (!selectedQuantity || selectedQuantity <= 0 || !Number.isFinite(price) || price <= 0) return total;
-      return total + (price * selectedQuantity * addonDiscount.value / 100);
-    }, 0);
-  }
-
-  getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice) {
-    const baseDiscountAmount = Math.max(0, Number(discountInfo?.discountAmount || 0));
-    const addonDiscountAmount = this.calculateSelectedAddonDiscountAmount();
-    const combinedDiscountAmount = Math.min(totalPrice, baseDiscountAmount + addonDiscountAmount);
-    const finalPrice = Math.max(0, totalPrice - combinedDiscountAmount);
-
-    return {
-      ...discountInfo,
-      hasDiscount: combinedDiscountAmount > 0,
-      qualifiesForDiscount: combinedDiscountAmount > 0,
-      discountAmount: combinedDiscountAmount,
-      addonDiscountAmount,
-      finalPrice,
-      discountPercentage: totalPrice > 0 ? (combinedDiscountAmount / totalPrice) * 100 : 0,
-    };
-  }
-
-  renderAddonEligibilityMessage(step, eligibilityState) {
-    const messages = step?.addonMessaging || {};
-    const tierMessages = messages.tier1 || {};
-    const template = eligibilityState.isEligible
-      ? tierMessages.eligibleState
-      : tierMessages.ineligibleState;
-    if (!template) return '';
-
-    return Object.entries(eligibilityState.variables).reduce((message, [key, value]) => {
-      return message
-        .replaceAll(`##${key}##`, value)
-        .replaceAll(`{{${key}}}`, value);
-    }, template);
-  }
-
-  renderAddonSectionTitle(step) {
-    const title = step?.freeGiftName || step?.addonTitle || step?.addonLabel;
-    if (typeof title !== 'string' || !title.trim()) return null;
-
-    const titleEl = document.createElement('div');
-    titleEl.className = 'side-panel-item-count side-panel-addon-title';
-    titleEl.textContent = title.trim();
-    return titleEl;
-  }
-
-  _initDefaultProducts() {
-    const steps = this.selectedBundle?.steps || [];
-    steps.forEach((step, stepIndex) => {
-      if (!step.isDefault || !step.defaultVariantId) return;
-      const allProducts = [...(step.products || []), ...(step.StepProduct || [])];
-      const product = allProducts.find(p =>
-        p.variantId === step.defaultVariantId ||
-        p.id === step.defaultVariantId ||
-        p.gid === step.defaultVariantId ||
-        (p.variants || []).some(v => v.id === step.defaultVariantId || v.gid === step.defaultVariantId)
-      );
-      if (product) {
-        if (!this.selectedProducts[stepIndex]) this.selectedProducts[stepIndex] = {};
-
-        const normalizedId = this.extractId(step.defaultVariantId) || step.defaultVariantId;
-        this.selectedProducts[stepIndex][normalizedId] = 1;
-      }
-    });
-  }
-
-  _syncFreeGiftLock() {
-    if (!this.freeGiftStep || this.freeGiftStepIndex < 0) return;
-    if (!this.isFreeGiftUnlocked) {
-      this.selectedProducts[this.freeGiftStepIndex] = {};
-    }
-  }
-
-  _renderFreeGiftSection(container) {
-    const step = this.freeGiftStep;
-    if (!step) return;
-
-    const section = document.createElement('div');
-    const giftName = this._escapeHTML(step.freeGiftName || 'gift');
-    const hasDirectAddonTiers = step.addonEligibilityCondition || Array.isArray(step.addonTiers);
-
-    if (hasDirectAddonTiers) {
-      const eligibilityState = this.getAddonEligibilityState(step);
-      const message = this.renderAddonEligibilityMessage(step, eligibilityState);
-      if (!message) return;
-
-      const title = this.renderAddonSectionTitle(step);
-      if (title) container.appendChild(title);
-
-      section.className = eligibilityState.isEligible
-        ? 'side-panel-addon-message side-panel-free-gift unlocked'
-        : 'side-panel-addon-message side-panel-free-gift';
-      section.innerHTML = `
-        <span class="side-panel-free-gift-icon">${eligibilityState.isEligible ? '✓' : '!'}</span>
-        <span class="side-panel-free-gift-text">${this._escapeHTML(message)}</span>
-      `;
-      container.appendChild(section);
-      return;
-    }
-
-    if (this.isFreeGiftUnlocked) {
-      section.className = 'side-panel-free-gift unlocked';
-      section.innerHTML = `
-        <span class="side-panel-free-gift-icon">✅</span>
-        <span class="side-panel-free-gift-text">Congrats! You're eligible for a FREE ${giftName}!</span>
-      `;
-    } else {
-      const remaining = this._getFreeGiftRemainingCount();
-      section.className = 'side-panel-free-gift';
-      section.innerHTML = `
-        <span class="side-panel-free-gift-icon">🔒</span>
-        <span class="side-panel-free-gift-text">Add ${remaining} more product${remaining !== 1 ? 's' : ''} to claim a FREE ${giftName}!</span>
-      `;
-    }
-    container.appendChild(section);
-  }
-
-  _renderStandardSidebarEmptySlots(container) {
-    for (let i = 0; i < 2; i += 1) {
-      const slot = document.createElement('div');
-      slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
-      slot.innerHTML = `
-        <div class="side-panel-product-img-wrap">
-          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
-        </div>
-        <div class="side-panel-product-info side-panel-skeleton-lines">
-          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
-          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
-          <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
-        </div>
-        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
-      `;
-      container.appendChild(slot);
-    }
-  }
-
-  _renderSidebarProductSkeletons(container) {
-    for (let i = 0; i < 5; i++) {
-      const slot = document.createElement('div');
-      slot.className = 'side-panel-product-row side-panel-skeleton-slot';
-      slot.innerHTML = `
-        <div class="side-panel-product-img-wrap">
-          <div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>
-        </div>
-        <div class="side-panel-product-info side-panel-skeleton-lines">
-          <span class="side-panel-product-title side-panel-skeleton-line line-name"></span>
-          <span class="side-panel-product-variant side-panel-skeleton-line line-variant"></span>
-        </div>
-        <span class="side-panel-product-price side-panel-skeleton-line line-price"></span>
-        <span class="side-panel-product-remove side-panel-skeleton-remove"></span>
-      `;
-      container.appendChild(slot);
-    }
-  }
-
-  buildCartLineSourceProperties(selectedLines) {
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const discountAmount = Math.max(0, Number(combinedDiscountInfo.discountAmount || 0));
-    const discountPercentage = totalPrice > 0 ? (discountAmount / totalPrice) * 100 : 0;
-
-    const displayProperties = {
-      box: '1',
-      items: selectedLines
-        .map(({ product, quantity }) => `${quantity} x ${product.title || product.id}`)
-        .join(', '),
-      retailPrice: CurrencyManager.convertAndFormat(totalPrice, currencyInfo)
-    };
-
-    if (discountAmount > 0) {
-      const amount = CurrencyManager.convertAndFormat(discountAmount, currencyInfo);
-      const percentage = `${Math.round(discountPercentage)}%`;
-      displayProperties.youSave = {
-        amount,
-        percentage,
-        amountPercentage: `${amount} (${percentage})`
-      };
-    }
-
-    return this.buildCartLineDisplayProperties(displayProperties);
-  }
-
-  buildCartLineDisplayProperties(displayProperties) {
-    const cartLineLabels = this.getCartLineLabels();
-    const properties = {
-      Box: displayProperties.box || '1',
-      [cartLineLabels.items]: displayProperties.items,
-      [cartLineLabels.retailPrice]: displayProperties.retailPrice,
-      '_bundle_display_properties': JSON.stringify(displayProperties)
-    };
-
-    if (displayProperties.youSave?.amountPercentage) {
-      properties[cartLineLabels.youSave] = displayProperties.youSave.amountPercentage;
-    }
-
-    return properties;
-  }
-
-  async addBundleToCart() {
-    try {
-
-      const allStepsValid = this.areBundleConditionsMet();
-      if (!allStepsValid) {
-        ToastManager.show('Please complete all bundle steps before adding to cart.');
-        return;
-      }
-
-      const items = [];
-
-      const bundleName = this.selectedBundle.name || 'Bundle';
-      const sessionKey = this.generateBundleSessionKey();
-      const offerId = this.resolveFullPageOfferId();
-      const selectedLines = [];
-      let itemNumber = 0;
-
-      this.selectedBundle.steps.forEach((step, stepIndex) => {
-        const stepSelections = this.selectedProducts[stepIndex] || {};
-        const productsInStep = this.expandProductsByVariant(this.stepProductData[stepIndex] || []);
-
-        Object.entries(stepSelections).forEach(([variantId, quantity]) => {
-          if (quantity > 0) {
-
-            const numericVariantId = this.extractId(variantId) || variantId;
-            const product = productsInStep.find(p => String(p.variantId || p.id) === String(variantId))
-              || { id: variantId, title: variantId };
-
-            itemNumber += 1;
-            const properties = {
-              Box: String(itemNumber),
-              '_bundleName': bundleName,
-              '_easyBundle:prodQty': String(quantity),
-              '_easyBundle:OfferId': `${offerId}_${sessionKey}_${itemNumber}`
-            };
-            const addonDiscount = this.getAddonLineDiscount(step);
-            if (addonDiscount && step?.addonDisplayFree !== true) {
-              properties['_bundle_step_type'] = addonDiscount
-                ? `addon:${addonDiscount.type}:${addonDiscount.value}`
-                : 'addon';
-            } else if (step?.isFreeGift && step?.addonDisplayFree === true) {
-              properties['_bundle_step_type'] = 'free_gift';
-            }
-            if (step?.isDefault) properties['_bundle_step_type'] = 'default';
-
-            const cartItem = {
-              id: numericVariantId,
-              quantity: quantity,
-              properties
-            };
-            const sellingPlanAllocationId = this.getSelectedSellingPlanAllocationId(product, variantId);
-            if (sellingPlanAllocationId) {
-              cartItem.selling_plan = parseInt(sellingPlanAllocationId);
-            }
-
-            items.push(cartItem);
-            selectedLines.push({ product, quantity });
-          }
-        });
-      });
-
-      if (items.length === 0) {
-        ToastManager.show('Please select products before adding to cart');
-        return;
-      }
-
-      const sourceProperties = this.buildCartLineSourceProperties(selectedLines);
-      items.forEach(item => {
-        Object.assign(item.properties, sourceProperties);
-      });
-
-      const nextBtn = this.container.querySelector('.footer-btn-next');
-      if (nextBtn) nextBtn.disabled = true;
-      this.showLoadingOverlay(this.selectedBundle?.loadingGif || null);
-
-      try {
-
-        const response = await fetch('/cart/add.js', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ items })
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to add to cart');
-        }
-
-        const result = await response.json();
-
-        await this.syncBundleDetailsCartMetafield(`${offerId}_${sessionKey}`, sourceProperties);
-
-        this._emitStorefrontEvent('bundle-add-to-cart-success', { itemCount: items.length, lineCount: selectedLines.length });
-
-        ToastManager.show('Bundle added to cart successfully!');
-        this._handlePostAddToCartAction(this._getLandingPageControls()?.checkout);
-
-      } catch (fetchError) {
-        this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'fetch-error', message: String(fetchError && fetchError.message || fetchError) });
-        ToastManager.show('Failed to add bundle to cart. Please try again.');
-      } finally {
-        this.hideLoadingOverlay();
-        if (nextBtn) nextBtn.disabled = false;
-      }
-
-    } catch (error) {
-      this._emitStorefrontEvent('bundle-add-to-cart-failed', { reason: 'validation-error', message: String(error && error.message || error) });
-      ToastManager.show('Failed to add bundle to cart. Please try again.');
-    }
-  }
-
-  createStepElement(step, index) {
-    const stepBox = document.createElement('div');
-    stepBox.className = 'step-box';
-    stepBox.dataset.stepIndex = index;
-
-    const selectedProducts = this.selectedProducts[index] || {};
-    const hasSelections = Object.values(selectedProducts).some(qty => qty > 0);
-
-    if (hasSelections) {
-      stepBox.classList.add('step-completed');
-
-      const clearBadge = document.createElement('div');
-      clearBadge.className = 'step-clear-badge';
-      clearBadge.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="12" fill="#f3f4f6"/>
-          <path d="M8 8L16 16M16 8L8 16" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      `;
-      clearBadge.title = 'Remove all products from this step';
-      clearBadge.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.clearStepSelections(index);
-      });
-      stepBox.appendChild(clearBadge);
-
-      const productImages = this.getStepProductImages(index);
-      if (productImages.length > 0) {
-        const imagesContainer = document.createElement('div');
-        imagesContainer.className = 'step-images';
-
-        productImages.slice(0, 4).forEach(imageData => {
-          const img = document.createElement('img');
-          img.src = imageData.url;
-          img.alt = imageData.alt;
-          img.className = 'step-image';
-          imagesContainer.appendChild(img);
-        });
-
-        stepBox.appendChild(imagesContainer);
-
-        const totalQuantity = Object.values(selectedProducts).reduce((sum, qty) => sum + qty, 0);
-        if (productImages.length > 4 || totalQuantity > 4) {
-          const countBadge = document.createElement('div');
-          countBadge.className = 'image-count-badge';
-          countBadge.textContent = totalQuantity.toString();
-          stepBox.appendChild(countBadge);
-        }
-      } else {
-
-        const checkIcon = document.createElement('span');
-        checkIcon.className = 'check-icon';
-        checkIcon.textContent = '✓';
-        stepBox.appendChild(checkIcon);
-      }
-    } else {
-
-      const plusIcon = document.createElement('span');
-      plusIcon.className = 'plus-icon';
-      plusIcon.textContent = '+';
-      stepBox.appendChild(plusIcon);
-    }
-
-    if (!hasSelections) {
-
-      const stepName = document.createElement('p');
-      stepName.className = 'step-name';
-      stepName.textContent = step.name || `Step ${index + 1}`;
-      stepBox.appendChild(stepName);
-
-      const selectionCount = document.createElement('div');
-      selectionCount.className = 'step-selection-count';
-      selectionCount.textContent = this.getStepSelectionText(selectedProducts);
-      stepBox.appendChild(selectionCount);
-    }
-
-    stepBox.addEventListener('click', () => this.openModal(index));
-
-    return stepBox;
-  }
-
-  getStepProductImages(stepIndex) {
-    const selectedProducts = this.selectedProducts[stepIndex] || {};
-    const productImages = [];
-
-    Object.entries(selectedProducts).forEach(([variantId, quantity]) => {
-      if (quantity > 0) {
-        const product = this.stepProductData[stepIndex].find(p => (p.variantId || p.id) === variantId);
-        if (product && product.imageUrl && !productImages.find(img => img.url === product.imageUrl)) {
-          productImages.push({
-            url: product.imageUrl,
-            alt: product.title || ''
-          });
-        }
-      }
-    });
-
-    return productImages;
-  }
-
-  getStepSelectionText(selectedProducts) {
-    const totalSelected = Object.values(selectedProducts).reduce((sum, qty) => sum + (qty || 0), 0);
-    return totalSelected > 0 ? `${totalSelected} selected` : '';
-  }
-
-  clearStepSelections(stepIndex) {
-
-    this.selectedProducts[stepIndex] = {};
-
-    this.renderSteps();
-    this.updateFooterMessaging();
-
-    ToastManager.show(`All selections cleared from this step`);
-  }
-
-  renderFooter() {
-    const bundleType = this.container.dataset.bundleType;
-
-    if (bundleType === 'full_page') {
-      const layout = this.resolveFullPageLayout();
-      if (layout === 'footer_side') {
-
-        if (this.elements.footer) {
-          this.elements.footer.style.display = 'none';
-        }
-        return;
-      }
-      this.renderFullPageFooter();
-      return;
-    }
-
-    if (!this.config.showFooterMessaging) {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
-    this.updateFooterMessaging();
-    this.elements.footer.style.display = 'block';
-  }
-
-  updateFooterMessaging() {
-
-    if (!this.selectedBundle?.pricing?.enabled) {
-      this.elements.footer.style.display = 'none';
-      return;
-    }
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      combinedDiscountInfo,
-      currencyInfo
-    );
-
-    const footerDiscountText = this.elements.footer.querySelector('.footer-discount-text');
-
-    if (combinedDiscountInfo.qualifiesForDiscount) {
-
-      const successMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate,
-        variables
-      );
-      footerDiscountText.innerHTML = successMessage;
-      this.elements.footer.classList.add('qualified');
-    } else {
-
-      const progressMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate,
-        variables
-      );
-      footerDiscountText.innerHTML = progressMessage;
-      this.elements.footer.classList.remove('qualified');
-    }
-
-    this._updateDiscountProgressBanner();
-  }
-
-  getDiscountProgressMilestones(totalPrice = 0, totalQuantity = 0) {
-    const pricing = this.selectedBundle?.pricing;
-    const rules = Array.isArray(pricing?.rules) ? pricing.rules : [];
-    const tierTextByRuleId = pricing?.messages?.tierTextByRuleId || {};
-    const boxRules = this.getBoxSelectionRules();
-
-    return rules
-      .filter(rule => rule && (rule.conditionType === 'quantity' || rule.conditionType === 'amount'))
-      .sort((a, b) => (Number(a.conditionValue || 0) || 0) - (Number(b.conditionValue || 0) || 0))
-      .map(rule => {
-        const ruleId = String(rule.id || '');
-        const threshold = Number(rule.conditionValue || 0) || 0;
-        const tierText = tierTextByRuleId?.[ruleId] || {};
-        const boxRule = boxRules.find(box => box.ruleId === ruleId);
-        const isReached = rule.conditionType === 'amount'
-          ? Number(totalPrice || 0) >= threshold
-          : Number(totalQuantity || 0) >= threshold;
-
-        return {
-          ruleId,
-          title: tierText.tierText || boxRule?.boxLabel || String(threshold),
-          subTitle: tierText.tierSubtext || boxRule?.boxSubtext || '',
-          isReached,
-        };
-      })
-      .filter(milestone => milestone.ruleId && milestone.title);
-  }
-
-  renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement = "default") {
-    const bar = document.createElement('div');
-    bar.className = `fpb-discount-progress fpb-dp-step_based` + (isReached ? ' reached' : '');
-    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
-
-    const stepList = document.createElement('div');
-    stepList.className = 'fpb-discount-step-list';
-    milestones.forEach(milestone => {
-      const step = document.createElement('div');
-      step.className = 'fpb-discount-step' + (milestone.isReached ? ' fpb-discount-step-reached' : '');
-
-      const title = document.createElement('span');
-      title.className = 'fpb-discount-step-title';
-      title.textContent = milestone.title;
-      step.appendChild(title);
-
-      if (placement !== "sidebar" && milestone.subTitle) {
-        const subTitle = document.createElement('span');
-        subTitle.className = 'fpb-discount-step-subtitle';
-        subTitle.textContent = milestone.subTitle;
-        step.appendChild(subTitle);
-      }
-
-      stepList.appendChild(step);
-    });
-
-    const track = document.createElement('div');
-    track.className = 'fpb-dp-track';
-    const fill = document.createElement('div');
-    fill.className = 'fpb-dp-fill';
-    track.appendChild(fill);
-
-    bar.appendChild(stepList);
-    bar.appendChild(track);
-
-    if (placement === "sidebar" && milestones.some(milestone => milestone.subTitle)) {
-      const subTitleList = document.createElement('div');
-      subTitleList.className = 'fpb-discount-step-subtitle-list';
-      milestones.forEach(milestone => {
-        const subTitle = document.createElement('span');
-        subTitle.className = 'fpb-discount-step-subtitle' + (milestone.isReached ? ' fpb-discount-step-reached' : '');
-        subTitle.textContent = milestone.subTitle || '';
-        subTitleList.appendChild(subTitle);
-      });
-      bar.appendChild(subTitleList);
-    }
-
-    return bar;
-  }
-
-  _renderDiscountProgress(options = {}) {
-    const placement = options.placement || "default";
-    const providedCombinedDiscountInfo = options.combinedDiscountInfo;
-    const providedTotalPrice = options.totalPrice;
-    const providedTotalQuantity = options.totalQuantity;
-    const providedUnitPrices = options.unitPrices;
-
-    if (!this.selectedBundle?.pricing?.enabled) return null;
-
-    const { totalPrice, totalQuantity, unitPrices } = typeof providedTotalPrice === 'number' && typeof providedTotalQuantity === 'number'
-      ? {
-          totalPrice: providedTotalPrice,
-          totalQuantity: providedTotalQuantity,
-          unitPrices: providedUnitPrices || []
-        }
-      : PricingCalculator.calculateBundleTotal(
-          this.selectedProducts,
-          this.stepProductData,
-          this.selectedBundle?.steps
-        );
-    const discountInfo = providedCombinedDiscountInfo ?? this.getDiscountInfoWithSelectedAddonDiscount(
-      PricingCalculator.calculateDiscount(
-        this.selectedBundle, totalPrice, totalQuantity, unitPrices
-      ),
-      totalPrice
-    );
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-    );
-
-    const isReached = discountInfo.hasDiscount;
-    const progressPct = isReached ? 100 : Math.min(100, Math.max(0, parseInt(variables.progressPercentage, 10) || 0));
-
-    const progressBarType = this.config.discountProgressBarType === 'simple' ? 'simple' : 'step_based';
-
-    if (progressBarType === 'step_based') {
-      const milestones = this.getDiscountProgressMilestones(totalPrice, totalQuantity);
-      if (milestones.length > 0) {
-        return this.renderStepBasedDiscountProgress(progressPct, milestones, isReached, placement);
-      }
-    }
-
-    let message = '';
-    if (isReached) {
-      message = TemplateManager.replaceVariables(
-        this.config.discountProgressSuccessTemplate || this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
-        variables
-      );
-    } else {
-      const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-      if (!nextRule) return null;
-      message = TemplateManager.replaceVariables(
-        this.config.discountProgressTextTemplate || this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-        variables
-      );
-    }
-
-    const bar = document.createElement('div');
-    bar.className = progressBarType === 'simple'
-      ? 'fpb-discount-progress fpb-dp-simple' + (isReached ? ' reached' : '')
-      : 'fpb-discount-progress fpb-dp-step_based' + (isReached ? ' reached' : '');
-    bar.style.setProperty('--fpb-discount-progress-width', progressPct + '%');
-
-    const row = document.createElement('div');
-    row.className = 'fpb-dp-row';
-    const msgSpan = document.createElement('span');
-    msgSpan.className = 'fpb-dp-message';
-    msgSpan.innerHTML = message;
-    const pctSpan = document.createElement('span');
-    pctSpan.className = 'fpb-dp-pct';
-    pctSpan.textContent = progressPct + '%';
-    row.appendChild(msgSpan);
-    row.appendChild(pctSpan);
-
-    const track = document.createElement('div');
-    track.className = 'fpb-dp-track';
-    const fill = document.createElement('div');
-    fill.className = 'fpb-dp-fill';
-    track.appendChild(fill);
-
-    bar.appendChild(row);
-    bar.appendChild(track);
-    return bar;
-  }
-
-  _renderDiscountProgressBanner() {
-    if (!this.selectedBundle?.pricing?.enabled) return null;
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = this.getDiscountInfoWithSelectedAddonDiscount(
-      PricingCalculator.calculateDiscount(
-        this.selectedBundle, totalPrice, totalQuantity, unitPrices
-      ),
-      totalPrice
-    );
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle, totalPrice, totalQuantity, discountInfo, currencyInfo
-    );
-
-    let message = '';
-    let isReached = false;
-
-    if (discountInfo.hasDiscount) {
-      isReached = true;
-      message = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate || '🎉 You\'ve unlocked {{discountText}}!',
-        variables
-      );
-    } else {
-      const nextRule = PricingCalculator.getNextDiscountRule?.(this.selectedBundle, totalQuantity);
-      if (!nextRule) return null;
-      message = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate || 'Add {{conditionText}} to get {{discountText}}',
-        variables
-      );
-    }
-
-    const banner = document.createElement('div');
-    banner.className = 'discount-progress-banner' + (isReached ? ' reached' : '');
-    banner.innerHTML = message;
-    return banner;
-  }
-
-  _updateDiscountProgressBanner() {
-    if (!this.elements.footer) return;
-    const existing = this.elements.footer.querySelector('.discount-progress-banner');
-    const fresh = this._renderDiscountProgressBanner();
-
-    if (fresh && existing) {
-      existing.className = fresh.className;
-      existing.innerHTML = fresh.innerHTML;
-    } else if (fresh && !existing) {
-
-      this.elements.footer.insertBefore(fresh, this.elements.footer.firstChild);
-    } else if (!fresh && existing) {
-      existing.remove();
-    }
-  }
-
-  getFormattedHeaderText() {
-
-    if (!this.selectedBundle?.pricing?.enabled) {
-      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      return this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
-    }
-
-    const { totalQuantity, totalPrice, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      combinedDiscountInfo,
-      currencyInfo
-    );
-
-    return TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-  }
-
-  openModal(stepIndex) {
-    this.currentStepIndex = stepIndex;
-
-    const modal = this.elements.modal;
-    const headerText = this.getFormattedHeaderText();
-
-    modal.querySelector('.modal-step-title').innerHTML = headerText;
-
-    this.loadStepProducts(stepIndex).then(() => {
-      this.renderModalTabs();
-      this.renderModalProducts(stepIndex);
-      this.updateModalNavigation();
-      this.updateModalFooterMessaging();
-
-      modal.style.display = 'block';
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }).catch(error => {
-      ToastManager.show('Failed to load products for this step');
-    });
-  }
-
-  closeModal() {
-    this.elements.modal.style.display = 'none';
-    this.elements.modal.classList.remove('active');
-    document.body.style.overflow = '';
-
-    this.renderSteps();
-    this.updateFooterMessaging();
-  }
-
-  resolveStorefrontApiBase() {
-    const appProxyPrefix = '/apps/product-bundles';
-    if (window.location?.pathname?.startsWith(`${appProxyPrefix}/`)) {
-      return appProxyPrefix;
-    }
-
-    const configuredAppUrl = window.__BUNDLE_APP_URL__ || '';
-    const currentHost = window.location.host;
-    const shopDomain = window.Shopify?.shop || this.container?.dataset.shop || '';
-
-    let configuredAppHost = '';
-    if (configuredAppUrl) {
-      try {
-        configuredAppHost = new URL(configuredAppUrl).host;
-      } catch (_error) {
-        configuredAppHost = '';
-      }
-    }
-
-    if (shopDomain && configuredAppHost !== currentHost) {
-      return appProxyPrefix;
-    }
-
-    return configuredAppUrl || window.location.origin;
-  }
-
-  async loadStepProducts(stepIndex) {
-    const step = this.selectedBundle.steps[stepIndex];
-
-    if (this.stepProductData[stepIndex].length > 0) {
-      return;
-    }
-
-    let allProducts = [];
-
-    const hasEnrichedStepProducts = Array.isArray(step.StepProduct) && step.StepProduct.length > 0
-      && step.StepProduct.some(sp => sp.title && sp.imageUrl);
-
-    const stepProductsAlreadyEnriched = Array.isArray(step.products) && step.products.length > 0
-      && step.products.some(p => (Array.isArray(p.images) && p.images.length > 0) || p.featuredImage);
-
-    if (stepProductsAlreadyEnriched) {
-
-      const normalizedProducts = step.products.map(p => ({
-        ...p,
-        price: (p.price || 0) / 100,
-        compareAtPrice: p.compareAtPrice ? p.compareAtPrice / 100 : null,
-        variants: p.variants?.map(v => ({
-          ...v,
-          price: (v.price || 0) / 100,
-          compareAtPrice: v.compareAtPrice ? v.compareAtPrice / 100 : null,
-        }))
-      }));
-      allProducts = allProducts.concat(normalizedProducts);
-    } else {
-      const productIds = this.collectStepProductIds(step);
-      if (!hasEnrichedStepProducts && productIds.length > 0) {
-        const shop = window.Shopify?.shop || window.location.host;
-
-        const apiBaseUrl = this.resolveStorefrontApiBase();
-
-        const country = window.Shopify?.country
-          || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
-          || null;
-
-        try {
-          const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
-          const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productIds.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
-
-          if (!response.ok) {
-            await response.text();
-          } else {
-            const data = await response.json();
-
-            if (data.products && data.products.length > 0) {
-              allProducts = allProducts.concat(data.products);
-            }
-          }
-        } catch (error) {
-        }
-      }
-    }
-
-    if (allProducts.length === 0 && Array.isArray(step.categories)) {
-      const hasRenderableCachedProductData = (product) => Boolean(
-        product
-        && typeof product === 'object'
-        && (
-          (Array.isArray(product.variants) && product.variants.length > 0)
-          || (Array.isArray(product.images) && product.images.length > 0)
-          || product.imageUrl
-          || product.featuredImage
-          || product.price
-        )
-      );
-
-      step.categories.forEach(category => {
-        (category.products || []).forEach(product => {
-          if (hasRenderableCachedProductData(product)) allProducts.push(product);
-        });
-        (category.selectedProducts || []).forEach(product => {
-          if (hasRenderableCachedProductData(product)) allProducts.push(product);
-        });
-      });
-    }
-
-    if (step.StepProduct && Array.isArray(step.StepProduct) && step.StepProduct.length > 0) {
-
-      const hasEnrichedData = step.StepProduct.some(sp => sp.title && sp.imageUrl && sp.price);
-
-      if (hasEnrichedData) {
-
-        const enrichedProducts = step.StepProduct.map(sp => ({
-          id: sp.productId,
-          title: sp.title,
-          handle: sp.handle,
-          imageUrl: sp.imageUrl,
-          price: sp.price,
-          compareAtPrice: sp.compareAtPrice,
-          available: true,
-          variants: sp.variants || [{
-            id: sp.productId.replace('Product', 'ProductVariant'),
-            title: 'Default Title',
-            price: sp.price,
-            compareAtPrice: sp.compareAtPrice,
-            available: true,
-            image: sp.imageUrl ? { src: sp.imageUrl } : null
-          }]
-        }));
-
-        allProducts = allProducts.concat(enrichedProducts);
-      } else {
-
-        const productGids = step.StepProduct.map(sp => sp.productId).filter(Boolean);
-        const shop = window.Shopify?.shop || window.location.host;
-
-        if (productGids.length > 0) {
-
-          const apiBaseUrl = this.resolveStorefrontApiBase();
-
-          const country = window.Shopify?.country
-            || (window.Shopify?.locale?.includes('-') ? window.Shopify.locale.split('-')[1] : null)
-            || null;
-
-          try {
-            const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
-            const response = await fetch(`${apiBaseUrl}/api/storefront-products?ids=${encodeURIComponent(productGids.join(','))}&shop=${encodeURIComponent(shop)}${countryParam}`);
-
-            if (!response.ok) {
-            } else {
-              const data = await response.json();
-              if (data.products && data.products.length > 0) {
-                allProducts = allProducts.concat(data.products);
-              }
-            }
-          } catch (error) {
-          }
-        }
-      }
-    }
-
-    const collectionHandles = this.collectStepCollectionHandles(step);
-    if (collectionHandles.length > 0) {
-      const shop = window.Shopify?.shop || window.location.host;
-      const apiBaseUrl = this.resolveStorefrontApiBase();
-
-      try {
-        const response = await fetch(
-          `${apiBaseUrl}/api/storefront-collections?handles=${encodeURIComponent(collectionHandles.join(','))}&shop=${encodeURIComponent(shop)}`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.products && data.products.length > 0) {
-            allProducts = allProducts.concat(data.products);
-          }
-
-          if (data.byCollection) {
-            for (const [handle, productIds] of Object.entries(data.byCollection)) {
-              this.stepCollectionProductIds[`${stepIndex}:${handle}`] = productIds;
-            }
-          }
-        } else {
-        }
-      } catch (error) {
-      }
-    }
-
-    const processedProducts = this.processProductsForStep(allProducts, step);
-
-    const seen = new Set();
-    this.stepProductData[stepIndex] = processedProducts.filter(product => {
-      const key = product.variantId || product.id;
-      if (seen.has(key)) {
-        return false;
-      }
-      seen.add(key);
-      return true;
-    });
-
-  }
-
-  shouldExpandStepProductsDuringLoad(step) {
-    const hasCategoryProducts = Array.isArray(step?.categories) && step.categories.some(category =>
-      (Array.isArray(category.products) && category.products.length > 0)
-      || (Array.isArray(category.selectedProducts) && category.selectedProducts.length > 0)
-      || (Array.isArray(category.collections) && category.collections.length > 0)
-      || (Array.isArray(category.collectionsData) && category.collectionsData.length > 0)
-      || (Array.isArray(category.collectionsSelectedData) && category.collectionsSelectedData.length > 0)
-    );
-
-    if (hasCategoryProducts) {
-      return false;
-    }
-
-    return step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true;
-  }
-
-  getFirstAvailableVariant(product) {
-    const variants = Array.isArray(product?.variants) ? product.variants : [];
-    if (variants.length === 0) {
-      return null;
-    }
-
-    return variants.find(variant => variant.available === true) || null;
-  }
-
-  processProductsForStep(products, step) {
-
-    const normalizeVariant = (v) => ({
-      id: this.extractId(v.id),
-      title: v.title,
-      price: parseFloat(v.price || '0') * 100,
-      compareAtPrice: v.compareAtPrice ? parseFloat(v.compareAtPrice) * 100 : null,
-      sellingPlanAllocations: Array.isArray(v.sellingPlanAllocations)
-        ? v.sellingPlanAllocations
-        : [],
-      available: v.available === true,
-      quantityAvailable: typeof v.quantityAvailable === 'number' ? v.quantityAvailable : null,
-      currentlyNotInStock: v.currentlyNotInStock === true,
-      option1: v.option1 || null,
-      option2: v.option2 || null,
-      option3: v.option3 || null,
-      image: v.image || null
-    });
-
-    return products.flatMap(product => {
-      if (this.shouldExpandStepProductsDuringLoad(step) && product.variants && product.variants.length > 0) {
-
-        const processedVariants = (product.variants || []).map(normalizeVariant);
-
-        const processedOptions = (product.options || []).map(opt => {
-          if (typeof opt === 'string') return opt;
-          return opt.name || opt;
-        });
-
-        return product.variants
-          .filter(variant => variant.available === true)
-          .map(variant => {
-
-            const imageUrl = variant?.image?.src
-              || variant?.image?.url
-              || (typeof variant?.image === 'string' ? variant.image : null)
-              || variant?.imageUrl
-              || product.imageUrl
-              || product.featuredImage?.url
-              || product.images?.[0]?.url
-              || product.images?.[0]?.src
-              || product.images?.[0]?.originalSrc
-              || 'https://via.placeholder.com/150';
-
-            return {
-              id: this.extractId(variant.id),
-              title: `${product.title} - ${variant.title}`,
-              imageUrl,
-              price: parseFloat(variant.price || '0') * 100,
-              compareAtPrice: variant.compareAtPrice ? parseFloat(variant.compareAtPrice) * 100 : null,
-              variantId: this.extractId(variant.id),
-              available: variant.available === true,
-              quantityAvailable: typeof variant.quantityAvailable === 'number' ? variant.quantityAvailable : null,
-              currentlyNotInStock: variant.currentlyNotInStock === true,
-              sellingPlanAllocations: variant.sellingPlanAllocations || [],
-
-              parentProductId: this.extractId(product.id),
-              parentTitle: product.title,
-              variants: processedVariants,
-              options: processedOptions,
-              images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-              description: product.description || ''
-            };
-          });
-      } else {
-
-        const defaultVariant = this.getFirstAvailableVariant(product);
-
-        if (product.variants?.length > 0 && !defaultVariant) {
-          return [];
-        }
-
-        const imageUrl = defaultVariant?.image?.src
-          || defaultVariant?.image?.url
-          || (typeof defaultVariant?.image === 'string' ? defaultVariant.image : null)
-          || defaultVariant?.imageUrl
-          || product.imageUrl
-          || product.featuredImage?.url
-          || product.images?.[0]?.url
-          || product.images?.[0]?.src
-          || product.images?.[0]?.originalSrc
-          || 'https://via.placeholder.com/150';
-
-        const processedVariants = (product.variants || []).map(normalizeVariant);
-
-        const processedOptions = (product.options || []).map(opt => {
-          if (typeof opt === 'string') return opt;
-          return opt.name || opt;
-        });
-
-        return [{
-          id: this.extractId(product.id),
-          title: product.title,
-          imageUrl,
-          price: defaultVariant ? parseFloat(defaultVariant.price || '0') * 100 : 0,
-          compareAtPrice: defaultVariant?.compareAtPrice ? parseFloat(defaultVariant.compareAtPrice) * 100 : null,
-          variantId: this.extractId(defaultVariant?.id || product.id),
-          sellingPlanAllocations: defaultVariant?.sellingPlanAllocations || [],
-          available: defaultVariant?.available === true,
-          quantityAvailable: typeof defaultVariant?.quantityAvailable === 'number' ? defaultVariant.quantityAvailable : null,
-          currentlyNotInStock: defaultVariant?.currentlyNotInStock === true,
-
-          variants: processedVariants,
-          options: processedOptions,
-
-          images: product.images || (product.imageUrl ? [{ src: product.imageUrl }] : []),
-          description: product.description || ''
-        }];
-      }
-    });
-  }
-
-  /**
-   * Look up real stock for a variant in a step's product data.
-   * Returns:
-   *   - available: positive numeric remaining stock, or null when uncapped
-   *   - outOfStock: true only when Shopify marks the variant unavailable
-   *   - acceptsBackorder: true when Shopify marks the variant as backorderable
-   */
-  isVariantOutOfStock(product) {
-    if (!product) {
-      return false;
-    }
-    if (product.available === false) {
-      return true;
-    }
-    return false;
-  }
-
-  getVariantAvailable(stepIndex, variantId) {
-    const products = this.stepProductData[stepIndex] || [];
-    const product = products.find(p => (p.variantId || p.id) === variantId);
-    if (!product) {
-      return { available: null, outOfStock: false, acceptsBackorder: false };
-    }
-
-    const qty = typeof product.quantityAvailable === 'number' && product.quantityAvailable > 0
-      ? product.quantityAvailable
-      : null;
-    const backorder = product.currentlyNotInStock === true;
-    const outOfStock = this.isVariantOutOfStock(product);
-
-    return { available: qty, outOfStock, acceptsBackorder: backorder };
-  }
-
-  extractId(idString) {
-    if (!idString) return null;
-
-    const gidMatch = idString.toString().match(/gid:\/\/shopify\/\w+\/(\d+)/);
-    if (gidMatch) {
-      return gidMatch[1];
-    }
-
-    return idString.toString().split('/').pop();
-  }
-
-  shouldApplyIndividualSellingPlanSelection() {
-    return this.selectedBundle?.individualSellingPlanSelection?.isEnabled === true;
-  }
-
-  shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId) {
-    if (!this.shouldApplyIndividualSellingPlanSelection()) {
-      return false;
-    }
-
-    const showFor = this.selectedBundle?.individualSellingPlanSelection?.showFor;
-    if (showFor !== "OOS_PRODUCTS") {
-      return true;
-    }
-
-    const normalizedSelectedId = this.extractId(variantId) || String(variantId || "");
-    const variant = Array.isArray(product?.variants)
-      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
-      : null;
-
-    const target = variant ?? product;
-    if (!target) {
-      return false;
-    }
-
-    return target.available === false;
-  }
-
-  getSelectedSellingPlanAllocationId(product, variantId) {
-    if (!this.shouldApplyIndividualSellingPlanSelectionForProduct(product, variantId)) {
-      return null;
-    }
-
-    const normalizedSelectedId = this.extractId(variantId) || String(variantId || '');
-    const variant = Array.isArray(product?.variants)
-      ? product.variants.find((candidate) => this.extractId(candidate.id) === normalizedSelectedId)
-      : null;
-
-    const normalizedProduct = (variant?.sellingPlanAllocations !== undefined ? variant : product) || {};
-    const allocations = Array.isArray(normalizedProduct.sellingPlanAllocations)
-      ? normalizedProduct.sellingPlanAllocations
-      : [];
-
-    if (allocations.length === 0) {
-      return null;
-    }
-
-    const firstAllocationId = this.extractId(allocations[0]?.id);
-    return firstAllocationId || null;
-  }
-
-  renderModalTabs() {
-    const tabsContainer = this.elements.modal?.querySelector('.modal-tabs');
-    if (!tabsContainer) return;
-    tabsContainer.innerHTML = '';
-
-    this.selectedBundle.steps.forEach((step, index) => {
-      const isAccessible = this.isStepAccessible(index);
-      const isActive = index === this.currentStepIndex;
-
-      const tabButton = document.createElement('button');
-      tabButton.className = `bundle-header-tab ${isActive ? 'active' : ''} ${!isAccessible ? 'locked' : ''}`;
-      tabButton.textContent = step.name || `Step ${index + 1}`;
-      tabButton.dataset.stepIndex = index.toString();
-
-      tabButton.addEventListener('click', async () => {
-        if (!isAccessible) {
-          ToastManager.show('Please complete the previous steps first.');
-          return;
-        }
-
-        this.currentStepIndex = index;
-
-        const headerText = this.getFormattedHeaderText();
-        this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
-
-        await this.loadStepProducts(index);
-
-        this.renderModalTabs();
-        this.renderModalProducts(index);
-        this.updateModalNavigation();
-        this.updateModalFooterMessaging();
-      });
-
-      tabsContainer.appendChild(tabButton);
-    });
-
-    if (this.updateTabArrows) {
-      setTimeout(() => this.updateTabArrows(), 50);
-    }
-  }
-
-  renderModalProducts(stepIndex, productsToRender = null) {
-
-    const products = productsToRender || this.stepProductData[stepIndex];
-    const selectedProducts = this.selectedProducts[stepIndex];
-    const productGrid = this.elements.modal.querySelector('.product-grid');
-    const step = this.selectedBundle?.steps?.[stepIndex] || {};
-
-    if (products.length === 0) {
-      if (!this._shouldRenderProductSlots()) {
-        productGrid.innerHTML = `
-          <div class="empty-products-message">
-            <p>No products available for this step.</p>
-          </div>
-        `;
-        return;
-      }
-
-      const currentStep = this.selectedBundle.steps[stepIndex];
-      const stepName = this._escapeHTML(currentStep?.name) || `Step ${stepIndex + 1}`;
-      const labelText = `Select ${stepName}`;
-      const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
-      const emptyStateIcon = emptyStateIconUrl
-        ? `<img class="empty-state-card-icon" src="${emptyStateIconUrl}" alt="" width="69" height="69">`
-        : `<svg class="empty-state-card-icon" width="69" height="69" viewBox="0 0 69 69" fill="none">
-            <line x1="34.5" y1="15" x2="34.5" y2="54" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-            <line x1="15" y1="34.5" x2="54" y2="34.5" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
-          </svg>`;
-
-      const emptyStateCards = Array(3).fill(0).map((_, index) => `
-        <div class="empty-state-card">
-          ${emptyStateIcon}
-          <p class="empty-state-card-text">${labelText}</p>
-        </div>
-      `).join('');
-
-      productGrid.innerHTML = emptyStateCards;
-      return;
-    }
-
-    productGrid.innerHTML = products.map(product => {
-      const selectionKey = product.variantId || product.id;
-      const currentQuantity = selectedProducts[selectionKey] || 0;
-      const renderSelectedQuantityBadge = currentQuantity > 0 && this.usesSelectedQuantityBadge();
-      const currencyInfo = CurrencyManager.getCurrencyInfo();
-      const priceMarkup = product.price ? `
-              <div class="product-price-row">
-                ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.convertAndFormat(product.compareAtPrice, currencyInfo)}</span>` : ''}
-                <span class="product-price">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
-              </div>
-            ` : '';
-
-      const { available, outOfStock } = this.getVariantAvailable(stepIndex, selectionKey);
-      const atMaxStock = available !== null && available > 0 && currentQuantity >= available;
-      const lowStock = available !== null && available > 0 && available <= 3;
-      const increaseDisabled = outOfStock || atMaxStock;
-      const addDisabled = outOfStock;
-
-      const stockBadge = outOfStock
-        ? `<div class="product-stock-badge product-stock-badge--out">Out of stock</div>`
-        : lowStock
-          ? `<div class="product-stock-badge product-stock-badge--low">Only ${available} left</div>`
-          : '';
-
-      return `
-        <div class="product-card ${currentQuantity > 0 ? 'selected' : ''} ${outOfStock ? 'is-out-of-stock' : ''}" data-product-id="${selectionKey}">
-          ${currentQuantity > 0 && !renderSelectedQuantityBadge ? `
-            <div class="selected-overlay">✓</div>
-          ` : ''}
-
-          <div class="product-image">
-            <img src="${product.imageUrl}" alt="${ComponentGenerator.escapeHtml(product.title)}" loading="lazy">
-            ${stockBadge}
-          </div>
-
-          <div class="product-content-wrapper">
-            <div class="product-title">${ComponentGenerator.escapeHtml(product.title)}</div>
-
-            ${renderSelectedQuantityBadge ? '' : priceMarkup}
-
-            <div class="product-spacer"></div>
-
-            ${this.renderVariantSelector(product, this.selectedBundle?.steps?.[stepIndex])}
-
-            ${renderSelectedQuantityBadge ? `
-              <div class="product-selected-action-row">
-                ${priceMarkup}
-                <span class="inline-quantity-display-only" data-product-id="${selectionKey}">${currentQuantity}</span>
-              </div>
-            ` : `
-              <div class="product-quantity-wrapper">
-                <div class="product-quantity-selector">
-                  <button class="qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-                  <span class="qty-display">${currentQuantity}</span>
-                  <button class="qty-btn qty-increase" data-product-id="${selectionKey}" ${increaseDisabled ? 'disabled aria-disabled="true"' : ''}>+</button>
-                </div>
-              </div>
-
-              <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}"
-                      data-product-id="${selectionKey}"
-                      data-product-handle="${product.handle || ''}"
-                      data-step-id="${step.id}"
-                      ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-                ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? '✓ Added to Bundle' : this.getProductAddButtonText())}
-              </button>
-            `}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    this.attachProductEventHandlers(productGrid, stepIndex);
-  }
-
-  renderVariantSelector(product, step) {
-    if (!product.variants || product.variants.length <= 1) {
-      return '';
-    }
-    const primaryOptionName = step?.primaryVariantOption || null;
-    return VariantSelectorComponent.renderHtml(product, primaryOptionName);
-  }
-
-  attachProductEventHandlers(productGrid, stepIndex) {
-
-    const newProductGrid = productGrid.cloneNode(true);
-    productGrid.parentNode.replaceChild(newProductGrid, productGrid);
-
-    const step = this.selectedBundle.steps[stepIndex];
-
-    const findProduct = (productId) => {
-      return this.stepProductData[stepIndex]?.find(p => {
-        const selectionKey = p.variantId || p.id;
-        return selectionKey === productId;
-      });
-    };
-
-    newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('qty-btn')) {
-        e.stopPropagation();
-        const productId = e.target.dataset.productId;
-        const isIncrease = e.target.classList.contains('qty-increase');
-        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-
-        const newQuantity = isIncrease ? currentQuantity + 1 : Math.max(0, currentQuantity - 1);
-        this.updateProductSelection(stepIndex, productId, newQuantity);
-      }
-    });
-
-    newProductGrid.addEventListener('click', (e) => {
-      if (e.target.classList.contains('product-add-btn')) {
-        e.stopPropagation();
-        const productId = e.target.dataset.productId;
-        const currentQuantity = this.selectedProducts[stepIndex][productId] || 0;
-
-        if (currentQuantity > 0) {
-          this.updateProductSelection(stepIndex, productId, 0);
-        } else {
-
-          this.updateProductSelection(stepIndex, productId, 1);
-        }
-      }
-    });
-
-    newProductGrid.addEventListener('click', (e) => {
-      const productImage = e.target.closest('.product-image');
-      const productTitle = e.target.closest('.product-title');
-
-      if (productImage || productTitle) {
-        const productCard = e.target.closest('.product-card');
-        if (productCard && this.productModal) {
-          const productId = productCard.dataset.productId;
-          const product = findProduct(productId);
-
-          if (product && step) {
-            this.productModal.open(product, step);
-          }
-        }
-      }
-    });
-
-    newProductGrid.addEventListener('change', (e) => {
-      if (e.target.classList.contains('variant-selector')) {
-        e.stopPropagation();
-        const newVariantId = e.target.value;
-        const baseProductId = e.target.dataset.baseProductId;
-
-        const product = this.stepProductData[stepIndex].find(p => p.id === baseProductId);
-        if (product) {
-          const variantData = product.variants.find(v => v.id === newVariantId);
-          if (variantData) {
-
-            product.quantityAvailable = typeof variantData.quantityAvailable === 'number'
-              ? variantData.quantityAvailable
-              : null;
-            product.currentlyNotInStock = variantData.currentlyNotInStock === true;
-            product.available = variantData.available === true;
-
-            const oldQuantity = this.selectedProducts[stepIndex][product.variantId] || 0;
-            if (oldQuantity > 0) {
-              delete this.selectedProducts[stepIndex][product.variantId];
-
-              const newQtyAvail = product.quantityAvailable;
-              const newOOS = this.isVariantOutOfStock(product);
-              let migratedQty = oldQuantity;
-              if (newOOS) {
-                ToastManager.show('Selected variant is out of stock — selection cleared.');
-                migratedQty = 0;
-              } else if (newQtyAvail !== null && newQtyAvail > 0 && oldQuantity > newQtyAvail) {
-                migratedQty = newQtyAvail;
-                ToastManager.show(`Only ${newQtyAvail} in stock — quantity adjusted.`);
-              }
-              if (migratedQty > 0) {
-                this.selectedProducts[stepIndex][newVariantId] = migratedQty;
-              }
-            }
-
-            product.variantId = newVariantId;
-            product.price = variantData.price;
-
-            this.updateModalNavigation();
-            this.updateModalFooterMessaging();
-          }
-        }
-      }
-    });
-
-    newProductGrid.querySelectorAll('.product-image, .product-title').forEach(el => {
-      el.style.cursor = 'pointer';
-    });
-  }
-  updateProductSelection(stepIndex, productId, newQuantity) {
-    let quantity = Math.max(0, newQuantity);
-
-    if (quantity > 0) {
-      const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
-      if (outOfStock) {
-        ToastManager.show('This item is out of stock.');
-        return;
-      }
-      if (available !== null && available > 0 && quantity > available) {
-        quantity = available;
-        ToastManager.show(`Only ${available} in stock — quantity adjusted.`);
-      }
-    }
-
-    if (!this.validateStepCondition(stepIndex, productId, quantity)) {
-      return;
-    }
-
-    const currentQuantity = this.selectedProducts[stepIndex]?.[productId] || 0;
-    const productQuantityCheck = ConditionValidator.canUpdateProductQuantity(
-      this.selectedBundle?.validateQuantityPerProduct,
-      currentQuantity,
-      quantity,
-    );
-    if (!productQuantityCheck.allowed) {
-      ToastManager.show(`Maximum allowed quantity per product is ${productQuantityCheck.limit}.`);
-      return;
-    }
-
-    if (quantity > 0) {
-      this.selectedProducts[stepIndex][productId] = quantity;
-    } else {
-      delete this.selectedProducts[stepIndex][productId];
-    }
-
-    const selectionEventName = (currentQuantity === 0 && quantity > 0) ? 'product-selected'
-      : (currentQuantity > 0 && quantity === 0) ? 'product-deselected'
-      : 'product-quantity-changed';
-    this._emitStorefrontEvent(selectionEventName, { stepIndex, productId, previousQuantity: currentQuantity, quantity });
-    this._emitStorefrontEvent('session-engaged', { trigger: selectionEventName });
-    this._sendEngagementBeacon('session-engaged');
-
-    this._syncFreeGiftLock();
-
-    this.updateProductQuantityDisplay(stepIndex, productId, quantity);
-    this.renderModalTabs();
-    this.updateModalNavigation();
-    this.updateModalFooterMessaging();
-
-    const bundleType = this.container.dataset.bundleType;
-    if (bundleType === 'full_page') {
-      const layout = this.resolveFullPageLayout();
-      if (layout === 'footer_side') {
-        const sidePanel = this.elements.stepsContainer.querySelector('.full-page-side-panel');
-        this.renderSidePanel(sidePanel);
-        if (window.matchMedia?.('(max-width: 767px)').matches) {
-          this._renderMobileBottomBar({ preserveOpen: true });
-        }
-      } else {
-        this.renderFullPageFooter();
-      }
-
-      this.updateStepTimeline();
-
-      const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      const _hasExplicitCondition = _autoAdvanceStep &&
-        _autoAdvanceStep.conditionType &&
-        _autoAdvanceStep.conditionOperator &&
-        _autoAdvanceStep.conditionValue != null;
-      if (quantity > 0 && !this._autoAdvancePending && _hasExplicitCondition) {
-        const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
-        if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
-          this._autoAdvancePending = true;
-          setTimeout(() => {
-            this._autoAdvancePending = false;
-
-            if (this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
-              this.activeCollectionId = null;
-              this.searchQuery = '';
-              this.currentStepIndex++;
-              const layout = this.resolveFullPageLayout();
-              if (layout === 'footer_side') {
-                this._sidebarAdvanceToNextStep();
-              } else {
-                this.reRenderFullPage();
-              }
-            }
-          }, 120);
-        }
-      }
-    } else {
-      this.updateFooterMessaging();
-    }
-  }
-
-  _shouldRenderProductSlots() {
-    return this.selectedBundle?.productSlotsEnabled === true;
-  }
-
-  updateProductQuantityDisplay(stepIndex, productId, quantity) {
-    if (this.usesSelectedQuantityBadge()) {
-      this.refreshCurrentProductGrid(stepIndex);
-      if (this.elements?.modal?.querySelector('.product-grid')) {
-        this.renderModalProducts(stepIndex);
-      }
-      this._refreshSiblingDimState(stepIndex);
-      return;
-    }
-
-    const productCard = this.container.querySelector(`[data-product-id="${productId}"]`);
-    if (!productCard) return;
-
-    const contentWrapper = productCard.querySelector('.product-content-wrapper');
-    const actionWrapper = productCard.querySelector('.product-card-action');
-    if (!contentWrapper && !actionWrapper) return;
-
-    const actionContainer = actionWrapper || contentWrapper;
-    const existingAddBtn = productCard.querySelector('.product-add-btn');
-    const existingQuantityControls = productCard.querySelector('.inline-quantity-controls');
-    let selectedOverlay = productCard.querySelector('.selected-overlay');
-
-    if (quantity > 0) {
-      if (actionWrapper) {
-        actionWrapper.classList.add('is-expanded');
-      }
-
-      if (existingQuantityControls) {
-        if (existingAddBtn) {
-          existingAddBtn.remove();
-        }
-
-        const qtyDisplay = existingQuantityControls.querySelector('.inline-qty-display');
-        if (qtyDisplay) {
-          qtyDisplay.textContent = quantity;
-        }
-      } else {
-        if (existingAddBtn) {
-          existingAddBtn.remove();
-        }
-
-        const quantityControls = document.createElement('div');
-        quantityControls.className = 'inline-quantity-controls';
-        quantityControls.innerHTML = `
-          <button class="inline-qty-btn qty-decrease" data-product-id="${productId}">−</button>
-          <span class="inline-qty-display">${quantity}</span>
-          <button class="inline-qty-btn qty-increase" data-product-id="${productId}">+</button>
-        `;
-        actionContainer.appendChild(quantityControls);
-
-        const increaseBtn = quantityControls.querySelector('.qty-increase');
-        const decreaseBtn = quantityControls.querySelector('.qty-decrease');
-
-        if (increaseBtn) {
-          increaseBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-            this.updateProductSelection(stepIndex, productId, currentQty + 1);
-          });
-        }
-
-        if (decreaseBtn) {
-          decreaseBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const currentQty = this.selectedProducts[stepIndex]?.[productId] || 0;
-            if (currentQty > 0) {
-              this.updateProductSelection(stepIndex, productId, currentQty - 1);
-            }
-          });
-        }
-      }
-
-      if (!selectedOverlay) {
-        selectedOverlay = document.createElement('div');
-        selectedOverlay.className = 'selected-overlay';
-        selectedOverlay.textContent = '✓';
-        productCard.appendChild(selectedOverlay);
-      }
-      selectedOverlay.style.display = 'flex';
-      productCard.classList.add('selected');
-
-    } else {
-      if (actionWrapper) {
-        actionWrapper.classList.remove('is-expanded');
-      }
-
-      if (existingQuantityControls) {
-        existingQuantityControls.remove();
-      }
-
-      if (!existingAddBtn) {
-        const addButton = document.createElement('button');
-        addButton.className = 'product-add-btn';
-        addButton.dataset.productId = productId;
-        addButton.textContent = this.getProductAddButtonText();
-        actionContainer.appendChild(addButton);
-
-        addButton.addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.updateProductSelection(stepIndex, productId, 1);
-        });
-      }
-
-      if (selectedOverlay) {
-        selectedOverlay.style.display = 'none';
-      }
-      productCard.classList.remove('selected');
-    }
-
-    this._refreshSiblingDimState(stepIndex);
-  }
-
-  refreshCurrentProductGrid(stepIndex) {
-    if (this.container.dataset.bundleType !== 'full_page') return false;
-    if (stepIndex !== this.currentStepIndex) return false;
-
-    const currentGrid = this.container.querySelector('.full-page-product-grid');
-    if (!currentGrid) return false;
-
-    const replacementGrid = this.createFullPageProductGrid(stepIndex);
-    currentGrid.replaceWith(replacementGrid);
-    return true;
-  }
-
-  _refreshSiblingDimState(stepIndex) {
-
-    if (stepIndex !== this.currentStepIndex) return;
-    const step = this.selectedBundle?.steps?.[stepIndex];
-    if (!step) return;
-    const stepSelections = this.selectedProducts[stepIndex] || {};
-    const capacityCheck = ConditionValidator.canUpdateQuantity(step, stepSelections, '__new__', 1);
-    const isAtCapacity = !capacityCheck.allowed;
-
-    const anyCard = this.container.querySelector('.product-grid .product-card');
-    const grid = anyCard?.closest('.product-grid');
-    if (!grid) return;
-    grid.querySelectorAll('.product-card').forEach(card => {
-      const cardProductId = card.dataset.productId;
-      const currentQty = cardProductId ? (stepSelections[cardProductId] || 0) : 0;
-      if (isAtCapacity && currentQty === 0) {
-        card.classList.add('dimmed');
-      } else {
-        card.classList.remove('dimmed');
-      }
-    });
-  }
-
-  findProductById(stepIndex, productId) {
-    const products = this.stepProductData[stepIndex] || [];
-    return products.find(p => (p.variantId || p.id) === productId);
-  }
-
-  validateStepCondition(stepIndex, productId, newQuantity) {
-    const step = this.selectedBundle.steps[stepIndex];
-    const currentSelections = this.selectedProducts[stepIndex] || {};
-    const currentQty = currentSelections[productId] || 0;
-
-    const { allowed, limitText } = ConditionValidator.canUpdateQuantity(
-      step,
-      currentSelections,
-      productId,
-      newQuantity,
-    );
-
-    if (!allowed && newQuantity > currentQty) {
-      const required = step.conditionValue;
-      ToastManager.show(`This step allows ${limitText} product${required !== 1 ? 's' : ''} only.`);
-      return false;
-    }
-
-    return true;
-  }
-
-  validateStep(stepIndex) {
-    const step = this.selectedBundle.steps[stepIndex];
-    const currentSelections = this.selectedProducts[stepIndex] || {};
-
-    if (ConditionValidator.isCategoryRuleMode(step)) {
-      const products = this.stepProductData[stepIndex] || [];
-      const translated = {};
-      for (const [selKey, qty] of Object.entries(currentSelections)) {
-        const product = products.find(p => (p.variantId || p.id) === selKey);
-        const productId = String((product && (product.parentProductId || product.id)) || selKey);
-        translated[productId] = (translated[productId] || 0) + (Number(qty) || 0);
-      }
-      return ConditionValidator.isStepConditionSatisfied(step, translated);
-    }
-
-    return ConditionValidator.isStepConditionSatisfied(step, currentSelections);
-  }
-
-  isStepAccessible(stepIndex) {
-
-    if (this.selectedBundle?.steps[stepIndex]?.isDefault) return true;
-
-    const addonStep = this.selectedBundle?.steps[stepIndex];
-    if (addonStep?.isFreeGift && addonStep?.addonUnlockAfterCompletion === false) {
-
-    } else if (!this.canNavigateToStep(stepIndex)) {
-      return false;
-    }
-
-    for (let i = 0; i < stepIndex; i++) {
-      const step = this.selectedBundle?.steps[i];
-      if (step?.isFreeGift || step?.isDefault) continue;
-      if (!this.validateStep(i)) return false;
-    }
-    return true;
-  }
-
-  updateModalNavigation() {
-    const prevButton = this.elements.modal?.querySelector('.prev-button');
-    const nextButton = this.elements.modal?.querySelector('.next-button');
-
-    if (!prevButton || !nextButton) return;
-
-    prevButton.disabled = this.currentStepIndex === 0;
-
-    const isCurrentStepValid = this.validateStep(this.currentStepIndex);
-
-    if (this.currentStepIndex === this.selectedBundle.steps.length - 1) {
-      nextButton.textContent = this._resolveText('doneButton', 'Done');
-      nextButton.disabled = !isCurrentStepValid;
-    } else {
-      nextButton.textContent = this._resolveText('nextButton', 'Next');
-      nextButton.disabled = !isCurrentStepValid;
-    }
-  }
-
-  updateModalFooterMessaging() {
-
-    if (!this.elements.modal || this.elements.modal.style.display === 'none') return;
-
-    const { totalPrice, totalQuantity, unitPrices } = PricingCalculator.calculateBundleTotal(
-      this.selectedProducts,
-      this.stepProductData,
-      this.selectedBundle?.steps
-    );
-
-    const discountInfo = PricingCalculator.calculateDiscount(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      unitPrices
-    );
-    const combinedDiscountInfo = this.getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice);
-
-    const currencyInfo = CurrencyManager.getCurrencyInfo();
-
-    this.updateModalHeaderText(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
-
-    const cartBadge = this.elements.modal.querySelector('.cart-badge-count');
-    if (cartBadge) {
-      cartBadge.textContent = totalQuantity.toString();
-    }
-
-    this.updateFooterTotalPrices(totalPrice, combinedDiscountInfo, currencyInfo);
-
-    this.updateModalDiscountMessaging(totalPrice, totalQuantity, combinedDiscountInfo, currencyInfo);
-  }
-
-  updateModalHeaderText(totalPrice, totalQuantity, discountInfo, currencyInfo) {
-    const modalStepTitle = this.elements.modal.querySelector('.modal-step-title');
-    if (!modalStepTitle) return;
-
-    if (!this.selectedBundle?.pricing?.enabled) {
-      const currentStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-      modalStepTitle.innerHTML = this._escapeHTML(currentStep?.name) || `Step ${this.currentStepIndex + 1}`;
-      return;
-    }
-
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      discountInfo,
-      currencyInfo
-    );
-
-    const headerText = TemplateManager.replaceVariables(
-      this.config.discountTextTemplate,
-      variables
-    );
-
-    modalStepTitle.innerHTML = headerText;
-  }
-
-  updateModalDiscountMessaging(totalPrice, totalQuantity, discountInfo, currencyInfo) {
-    const footerDiscountText = this.elements.modal.querySelector('.footer-discount-text');
-    const discountSection = this.elements.modal.querySelector('.modal-footer-discount-messaging');
-
-    if (!footerDiscountText) return;
-
-    const variables = TemplateManager.createDiscountVariables(
-      this.selectedBundle,
-      totalPrice,
-      totalQuantity,
-      discountInfo,
-      currencyInfo
-    );
-
-    if (discountInfo.qualifiesForDiscount) {
-
-      const successMessage = TemplateManager.replaceVariables(
-        this.config.successMessageTemplate,
-        variables
-      );
-      footerDiscountText.innerHTML = successMessage;
-      if (discountSection) discountSection.classList.add('qualified');
-    } else {
-
-      const progressMessage = TemplateManager.replaceVariables(
-        this.config.discountTextTemplate,
-        variables
-      );
-      footerDiscountText.innerHTML = progressMessage;
-      if (discountSection) discountSection.classList.remove('qualified');
-    }
-
-    if (discountSection) {
-      discountSection.style.display = this.config.showDiscountMessaging ? 'block' : 'none';
-    }
-  }
-
-  updateFooterTotalPrices(totalPrice, discountInfo, currencyInfo) {
-    const strikePriceEl = this.elements.modal.querySelector('.total-price-strike');
-    const finalPriceEl = this.elements.modal.querySelector('.total-price-final');
-
-    if (!strikePriceEl || !finalPriceEl) return;
-
-    if (discountInfo.qualifiesForDiscount && discountInfo.finalPrice < totalPrice) {
-
-      strikePriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
-      strikePriceEl.style.display = 'inline';
-      finalPriceEl.textContent = CurrencyManager.convertAndFormat(discountInfo.finalPrice, currencyInfo);
-    } else {
-
-      strikePriceEl.style.display = 'none';
-      finalPriceEl.textContent = CurrencyManager.convertAndFormat(totalPrice, currencyInfo);
-    }
-  }
-
-  showLoadingOverlay(gifUrl) {
-    if (!this.container) return;
-
-    const pos = getComputedStyle(this.container).position;
-    if (pos !== 'relative' && pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky') {
-      this.container.style.position = 'relative';
-    }
-
-    this.container.querySelector('.bundle-loading-overlay')?.remove();
-
-    const overlay = document.createElement('div');
-    overlay.className = 'bundle-loading-overlay';
-
-    if (gifUrl) {
-      const img = document.createElement('img');
-      img.className = 'bundle-loading-overlay__gif';
-      img.src = gifUrl;
-      img.alt = '';
-      overlay.appendChild(img);
-    } else {
-      const animation = createDefaultLoadingAnimation();
-      overlay.appendChild(animation);
-    }
-
-    this.container.appendChild(overlay);
-    requestAnimationFrame(() => markLoadingOverlayVisible(overlay));
-  }
-
-  hideLoadingOverlay() {
-    const overlay = this.container?.querySelector('.bundle-loading-overlay');
-    hideLoadingOverlayElement(overlay);
-  }
-
-  generateBundleInstanceId() {
-
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      const uuid = crypto.randomUUID();
-      const bundleInstanceId = `${this.selectedBundle.id}_${uuid}`;
-
-      return bundleInstanceId;
-    }
-
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000000);
-    const bundleInstanceId = `${this.selectedBundle.id}_${timestamp}_${random}`;
-
-    return bundleInstanceId;
-  }
-
-  resolveFullPageOfferId() {
-    const rawOfferId = this.selectedBundle?.offerId
-      || this.selectedBundle?.bundleOfferId
-      || this.selectedBundle?.id
-      || 'UNKNOWN';
-    const offerId = String(rawOfferId);
-    return offerId.startsWith('FBP-') ? offerId : `FBP-${offerId}`;
-  }
-
-  async syncBundleDetailsCartMetafield(bundleDetailsKey, sourceProperties) {
-    try {
-      const displayProperties = this.buildBundleDetailsDisplayProperties(sourceProperties);
-      if (!bundleDetailsKey || Object.keys(displayProperties).length === 0) return;
-
-      const cartToken = await this.getBundleDetailsCartToken();
-      if (!cartToken) return;
-
-      const response = await fetch('/apps/product-bundles/api/cart-bundle-details', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          cartToken,
-          bundleDetailsKey,
-          displayProperties
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`bundle_details sync failed (${response.status})`);
-      }
-
-      const data = await response.json().catch(() => null);
-      if (data?.ok !== true) {
-        throw new Error(data?.error || 'bundle_details sync failed');
-      }
-    } catch (error) {
-      console.warn('[Wolfpack Bundles] Failed to sync bundle_details cart metafield', error);
-    }
-  }
-
-  buildBundleDetailsDisplayProperties(sourceProperties) {
-    const displayProperties = {};
-    const raw = sourceProperties?._bundle_display_properties;
-    const cartLineLabels = this.getCartLineLabels();
-
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (parsed?.box) displayProperties.Box = String(parsed.box);
-        if (parsed?.items) displayProperties[cartLineLabels.items] = String(parsed.items);
-        if (parsed?.retailPrice) displayProperties[cartLineLabels.retailPrice] = String(parsed.retailPrice);
-        if (parsed?.youSave?.amountPercentage) displayProperties[cartLineLabels.youSave] = String(parsed.youSave.amountPercentage);
-      } catch {
-
-      }
-    }
-
-    ['Box', cartLineLabels.items, cartLineLabels.retailPrice, cartLineLabels.youSave, 'Items', 'Retail Price', 'You Save'].forEach((key) => {
-      if (sourceProperties?.[key] && !displayProperties[key]) {
-        displayProperties[key] = String(sourceProperties[key]);
-      }
-    });
-
-    return displayProperties;
-  }
-
-  getCartLineLabels() {
-    const labels = this.config?.sharedCartLabels || {};
-    return {
-      items: labels.bundleContainsLabel || 'Items',
-      retailPrice: labels.bundleOriginalPriceLabel || 'Retail Price',
-      youSave: labels.bundleDiscountDisplayLabel || 'You Save',
-    };
-  }
-
-  async getBundleDetailsCartToken() {
-    const response = await fetch('/cart.js?app=wolfpackProductBundles', {
-      credentials: 'same-origin'
-    });
-    if (!response.ok) return null;
-    const cart = await response.json();
-    return cart?.token || null;
-  }
-
-  generateBundleSessionKey() {
-    return Math.random().toString(36).slice(2, 5).toUpperCase();
-  }
-
-  parseTierConfig(rawJson) {
-    try {
-      const parsed = JSON.parse(rawJson);
-      if (!Array.isArray(parsed)) return [];
-      return parsed
-        .filter(t => typeof t?.label === 'string' && typeof t?.bundleId === 'string')
-        .map(t => ({ label: t.label.trim(), bundleId: t.bundleId.trim() }))
-        .filter(t => t.label !== '' && t.bundleId !== '')
-        .slice(0, 4);
-    } catch {
-      return [];
-    }
-  }
-
-  resolveTierConfig(apiTierConfig, dataTierConfig) {
-    if (apiTierConfig == null) return dataTierConfig;
-
-    const mapped = (Array.isArray(apiTierConfig) ? apiTierConfig : [])
-      .filter(
-        t =>
-          typeof t?.label === 'string' &&
-          typeof t?.linkedBundleId === 'string' &&
-          t.label.trim() !== '' &&
-          t.linkedBundleId.trim() !== ''
-      )
-      .map(t => ({ label: t.label.trim(), bundleId: t.linkedBundleId.trim() }))
-      .slice(0, 4);
-
-    return mapped.length >= 2 ? mapped : [];
-  }
-
-  resolveShowStepTimeline(apiValue, dataAttrValue) {
-    if (apiValue !== null && apiValue !== undefined) return apiValue;
-    return dataAttrValue;
-  }
-
-  resolveFullPageLayout(bundle = this.selectedBundle) {
-    return 'footer_side';
-  }
-
-  getFullPageTemplate(bundle = this.selectedBundle) {
-    return 'FBP_SIDE_FOOTER';
-  }
-
-  getFullPageDesignPreset(bundle = this.selectedBundle) {
-    const rawPresetId =
-      bundle?.bundleDesignPresetId
-      || bundle?.bundleDesignPreset
-      || bundle?.templateId
-      || 'DEFAULT';
-    if (typeof rawPresetId !== 'string') return 'DEFAULT';
-
-    const preset = rawPresetId.trim().toUpperCase();
-    if (preset === 'STANDARD') return 'DEFAULT';
-    if (preset === 'DEFAULT_FBP') return 'DEFAULT';
-    return preset || 'DEFAULT';
-  }
-
-  resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
-    const showTextOnAddButton =
-    bundle?.showTextOnAddButton === true
-
-    if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
-      return showTextOnAddButton ? 'text' : 'icon';
-    }
-
-    return showTextOnAddButton ? 'text' : 'icon';
-  }
-
-  getProductAddButtonText() {
-    return this.resolveFullPageCardCtaMode() === 'text'
-      ? this._resolveText('productAddButton', 'Add +')
-      : '+';
-  }
-
-  applyFullPageDesignPresetMarker() {
-    if (!this.container || !this.elements?.stepsContainer) return;
-
-    const fullPageTemplate = this.getFullPageTemplate();
-    const fullPageDesignPreset = this.getFullPageDesignPreset();
-    const fullPageTabStyle = fullPageDesignPreset === 'DEFAULT' || fullPageDesignPreset === 'HORIZONTAL' ? 'underline' : 'pill';
-    const presetClass = `fpb-preset-${fullPageDesignPreset.toLowerCase()}`;
-
-    this.container.dataset.fpbTemplateType = fullPageTemplate;
-    this.elements.stepsContainer.dataset.fpbTemplateType = fullPageTemplate;
-
-    this.container.dataset.fpbDesignPreset = fullPageDesignPreset;
-    this.elements.stepsContainer.dataset.fpbDesignPreset = fullPageDesignPreset;
-    this.container.dataset.fpbTabStyle = fullPageTabStyle;
-    this.elements.stepsContainer.dataset.fpbTabStyle = fullPageTabStyle;
-    const cardCtaMode = this.resolveFullPageCardCtaMode();
-    this.elements.stepsContainer.dataset.fpbCardCtaMode = cardCtaMode;
-    this.container.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
-    this.container.classList.add(presetClass);
-    this.container.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-    this.container.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
-    this.elements.stepsContainer.classList.remove('fpb-preset-default', 'fpb-preset-classic', 'fpb-preset-compact', 'fpb-preset-horizontal');
-    this.elements.stepsContainer.classList.add(presetClass);
-    this.elements.stepsContainer.classList.toggle('fpb-h', fullPageDesignPreset === 'HORIZONTAL');
-    this.elements.stepsContainer.classList.toggle('fpb-d', fullPageDesignPreset === 'DEFAULT');
-    this.elements.stepsContainer.classList.toggle('fpb-i', cardCtaMode === 'icon');
-  }
-
-  isTierActive(tierIndex) {
-    return tierIndex === this.activeTierIndex;
-  }
-
-  initTierPills(tiers) {
-    if (tiers.length < 2) return;
-
-    const bar = document.createElement('div');
-    bar.className = 'bundle-tier-pill-bar';
-    bar.setAttribute('role', 'group');
-    bar.setAttribute('aria-label', 'Bundle pricing tiers');
-
-    tiers.forEach((tier, i) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'bundle-tier-pill' + (i === 0 ? ' bundle-tier-pill--active' : '');
-      btn.dataset.tierIndex = String(i);
-      btn.dataset.bundleId = tier.bundleId;
-      btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
-      btn.textContent = tier.label;
-      bar.appendChild(btn);
-    });
-
-    this.container.insertBefore(bar, this.container.firstChild);
-    this.elements.tierPillBar = bar;
-  }
-
-  updatePillActiveStates() {
-    if (!this.elements.tierPillBar) return;
-    this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill').forEach(pill => {
-      const idx = parseInt(pill.dataset.tierIndex, 10);
-      const active = idx === this.activeTierIndex;
-      pill.classList.toggle('bundle-tier-pill--active', active);
-      pill.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-  }
-
-  async switchTier(bundleId, tierIndex) {
-    if (tierIndex === this.activeTierIndex) return;
-
-    const pills = this.elements.tierPillBar
-      ? [...this.elements.tierPillBar.querySelectorAll('.bundle-tier-pill')]
-      : [];
-
-    pills.forEach(p => p.classList.add('bundle-tier-pill--disabled'));
-    if (pills[tierIndex]) pills[tierIndex].classList.add('bundle-tier-pill--loading');
-
-    this.showLoadingOverlay(null);
-
-    try {
-
-      this.selectedProducts = [];
-      this.stepProductData = [];
-      this.currentStepIndex = 0;
-      this.stepCollectionProductIds = {};
-      this.searchQuery = '';
-
-      this.config.bundleId = bundleId;
-      await this.loadBundleData();
-      this.selectBundle();
-
-      if (!this.selectedBundle) {
-        throw new Error('Bundle not found for this tier.');
-      }
-      this.applyPersonalizationAddonProducts();
-
-      this.config.showStepTimeline = this.resolveShowStepTimeline(
-        this.selectedBundle.showStepTimeline ?? null,
-        this.config.showStepTimeline
-      );
-
-      this.initializeDataStructures();
-
-      if (this.elements.stepsContainer) {
-        this.elements.stepsContainer.innerHTML = '';
-      }
-      await this.renderUI();
-
-      this.activeTierIndex = tierIndex;
-      this.updatePillActiveStates();
-    } catch (err) {
-      ToastManager.show(`Failed to load tier: ${err.message}`);
-
-      this.updatePillActiveStates();
-    } finally {
-      this.hideLoadingOverlay();
-      pills.forEach(p => {
-        p.classList.remove('bundle-tier-pill--disabled', 'bundle-tier-pill--loading');
-      });
-    }
-  }
-
-  _mergeBundleSettings(settings) {
-    if (!settings || !this.selectedBundle) return;
-    const keys = [
-      'promoBannerBgImage', 'promoBannerBgImageCrop',
-      'bundleBannerDesktopUrl', 'bundleBannerMobileUrl', 'loadingGif',
-      'showStepTimeline', 'floatingBadgeEnabled', 'floatingBadgeText', 'tierConfig',
-    ];
-    for (const key of keys) {
-      if (settings[key] !== undefined) this.selectedBundle[key] = settings[key];
-    }
-  }
-
-  _initFloatingBadge() {
-    const enabled = this.selectedBundle && this.selectedBundle.floatingBadgeEnabled;
-    const text = this.selectedBundle && this.selectedBundle.floatingBadgeText;
-    if (!enabled || !text || !text.trim()) return;
-
-    const DISMISS_KEY = `fpb_badge_dismissed_${this.selectedBundle.id}`;
-    if (sessionStorage.getItem(DISMISS_KEY)) return;
-
-    const badge = document.createElement('div');
-    badge.className = 'floating-promo-badge';
-    badge.setAttribute('role', 'status');
-    badge.innerHTML = `<span class="floating-promo-badge__text">${this._escapeHtml(text.trim())}</span><button class="floating-promo-badge__close" aria-label="Dismiss">&times;</button>`;
-
-    badge.querySelector('.floating-promo-badge__close').addEventListener('click', () => {
-      sessionStorage.setItem(DISMISS_KEY, '1');
-      badge.remove();
-    });
-
-    document.body.appendChild(badge);
-  }
-
-  _escapeHtml(str) {
-    return str.replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  attachEventListeners() {
-
-    if (this.elements.tierPillBar) {
-      this.elements.tierPillBar.addEventListener('click', e => {
-        const pill = e.target.closest('.bundle-tier-pill');
-        if (!pill) return;
-        this.switchTier(pill.dataset.bundleId, parseInt(pill.dataset.tierIndex, 10));
-      });
-      this.elements.tierPillBar.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          const pill = e.target.closest('.bundle-tier-pill');
-          if (!pill) return;
-          e.preventDefault();
-          pill.click();
-        }
-      });
-    }
-
-    const modal = this.elements.modal;
-    const closeButton = modal.querySelector('.close-button');
-    const overlay = modal.querySelector('.modal-overlay');
-    const prevButton = modal.querySelector('.prev-button');
-    const nextButton = modal.querySelector('.next-button');
-
-    if (closeButton) {
-      closeButton.addEventListener('click', () => this.closeModal());
-    }
-
-    if (overlay) {
-      overlay.addEventListener('click', () => this.closeModal());
-    }
-
-    if (prevButton) {
-      prevButton.addEventListener('click', () => this.navigateModal(-1));
-    }
-
-    if (nextButton) {
-      nextButton.addEventListener('click', () => this.navigateModal(1));
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (modal.style.display === 'block' && e.key === 'Escape') {
-        this.closeModal();
-      }
-    });
-  }
-
-  async navigateModal(direction) {
-    const newStepIndex = this.currentStepIndex + direction;
-
-    if (direction < 0 && newStepIndex >= 0) {
-
-      this.currentStepIndex = newStepIndex;
-
-      const headerText = this.getFormattedHeaderText();
-      this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
-
-      await this.loadStepProducts(newStepIndex);
-
-      this.renderModalTabs();
-      this.renderModalProducts(this.currentStepIndex);
-      this.updateModalNavigation();
-      this.updateModalFooterMessaging();
-    } else if (direction > 0) {
-      if (newStepIndex < this.selectedBundle.steps.length) {
-
-        if (this.validateStep(this.currentStepIndex)) {
-          this.currentStepIndex = newStepIndex;
-
-          const headerText = this.getFormattedHeaderText();
-          this.elements.modal.querySelector('.modal-step-title').innerHTML = headerText;
-
-          await this.loadStepProducts(newStepIndex);
-
-          this.renderModalTabs();
-          this.renderModalProducts(this.currentStepIndex);
-          this.updateModalNavigation();
-          this.updateModalFooterMessaging();
-        } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before proceeding.');
-        }
-      } else {
-
-        if (this.validateStep(this.currentStepIndex)) {
-          this.closeModal();
-        } else {
-          ToastManager.show('Please meet the quantity conditions for the current step before finishing.');
-        }
-      }
-    }
-  }
-
-  showFallbackUI() {
-    this.container.innerHTML = `
-      <div class="bundle-fallback">
-        <h3>Bundle Configuration</h3>
-        <p>No active bundles found for this product.</p>
-        <details>
-          <summary>Debug Information</summary>
-          <pre>${JSON.stringify({
-      config: this.config,
-      bundleDataKeys: this.bundleData ? Object.keys(this.bundleData) : 'No data',
-      currentProductId: this.config.currentProductId
-    }, null, 2)}</pre>
-        </details>
-      </div>
-    `;
-  }
-
-  showErrorUI(_error) {
-    this.container.innerHTML = `
-      <div class="bundle-error">
-        <h3>Bundle unavailable</h3>
-        <p>We couldn&apos;t load this bundle right now. Please refresh the page or try again later.</p>
-        <p>If the problem persists, please contact the store owner.</p>
-      </div>
-    `;
-  }
-
-  async _scheduleLayoutRefresh() {
-    const bundleId = this.container.dataset.bundleId;
-    if (!bundleId) return;
-
-    const cachedAttr = this.container.dataset.bundleConfig;
-    const usedCache = cachedAttr && cachedAttr !== 'null' && cachedAttr !== 'undefined' && cachedAttr.trim() !== '';
-    if (!usedCache) return;
-
-    try {
-      const apiUrl = `/apps/product-bundles/api/bundle/${encodeURIComponent(bundleId)}.json`;
-      const response = await fetch(apiUrl);
-      if (!response.ok) return;
-
-      const data = await response.json();
-      if (!data?.bundle) return;
-
-      const freshLayout = this.resolveFullPageLayout(data.bundle);
-      const currentLayout = this.resolveFullPageLayout();
-      const freshTemplate = data.bundle.bundleDesignTemplate ?? null;
-      const currentTemplate = this.selectedBundle?.bundleDesignTemplate ?? null;
-      const freshPreset = data.bundle.bundleDesignPresetId ?? null;
-      const currentPreset = this.selectedBundle?.bundleDesignPresetId ?? null;
-
-      if ((freshLayout !== currentLayout || freshTemplate !== currentTemplate || freshPreset !== currentPreset) && this.selectedBundle) {
-        this.selectedBundle.fullPageLayout = data.bundle.fullPageLayout;
-        this.selectedBundle.bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.selectedBundle.bundleDesignTemplate;
-        this.selectedBundle.bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.selectedBundle.bundleDesignPresetId;
-        this.selectedBundle.bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.selectedBundle.bundleDesignTemplateData;
-        if (this.bundleData?.[bundleId]) {
-          this.bundleData[bundleId].fullPageLayout = data.bundle.fullPageLayout;
-          this.bundleData[bundleId].bundleDesignTemplate = data.bundle.bundleDesignTemplate ?? this.bundleData[bundleId].bundleDesignTemplate;
-          this.bundleData[bundleId].bundleDesignPresetId = data.bundle.bundleDesignPresetId ?? this.bundleData[bundleId].bundleDesignPresetId;
-          this.bundleData[bundleId].bundleDesignTemplateData = data.bundle.bundleDesignTemplateData ?? this.bundleData[bundleId].bundleDesignTemplateData;
-        }
-        await this.renderSteps();
-      }
-    } catch (_e) {
-
-    }
-  }
-
-  _reportError(error) {
-    try {
-      const payload = {
-        message: error?.message ?? String(error),
-        bundleId: this.config?.bundleId ?? null,
-        bundleType: this.container?.dataset?.bundleType ?? null,
-        shop: window.Shopify?.shop ?? null,
-        url: window.location?.href ?? null,
-      };
-
-      fetch('/apps/product-bundles/api/widget-error', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      }).catch(() => {  });
-    } catch (_) {
-
-    }
-  }
-
-  _resolveText(key, fallback) {
-    const locale = window.Shopify?.locale;
-    if (locale && this.config?.textOverridesByLocale?.[locale]?.[key]) {
-      return this.config.textOverridesByLocale[locale][key];
-    }
-    if (this.config?.textOverrides?.[key]) {
-      return this.config.textOverrides[key];
-    }
-    return fallback;
-  }
-
-  _recordView() {
-    try {
-      const bundleId = this.config?.bundleId ?? this.container?.dataset?.bundleId;
-      const shop = window.Shopify?.shop;
-      if (!bundleId || !shop) return;
-      fetch(`/apps/product-bundles/api/bundle/${bundleId}/view`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop }),
-        keepalive: true,
-      }).catch(() => {  });
-    } catch (_) {
-
-    }
-  }
 }
 
-installStandardTemplate(BundleWidgetFullPage);
-installClassicTemplate(BundleWidgetFullPage);
-installCompactTemplate(BundleWidgetFullPage);
-installHorizontalTemplate(BundleWidgetFullPage);
+Object.assign(
+  BundleWidgetFullPage.prototype,
+  fullPageAnalyticsConfigMethods,
+  fullPageInitialRenderMethods,
+  fullPageResponsiveLayoutMethods,
+  fullPageMobileSummaryMethods,
+  fullPageSidePanelMethods,
+  fullPageBoxSelectionSidebarMethods,
+  fullPageTimelineBannerMethods,
+  fullPageSearchCategoryMethods,
+  fullPageProductGridMethods,
+  fullPageProductCardFooterMethods,
+  fullPageFooterSelectionMethods,
+  fullPageValidationAddonsMethods,
+  fullPageStepFooterMethods,
+  fullPageDiscountModalMethods,
+  fullPageProductProcessingMethods,
+  fullPageModalProductMethods,
+  fullPageSelectionNavigationMethods,
+  fullPageRuntimeCartSettingsMethods,
+  fullPageTierFloatingRuntimeMethods,
+  standardTemplateMethods,
+  classicTemplateMethods,
+  compactTemplateMethods,
+  horizontalTemplateMethods,
+);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeFullPageWidget);

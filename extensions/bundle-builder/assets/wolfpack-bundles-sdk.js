@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.23
- * Built   : 2026-06-07
+ * Version : 3.0.24
+ * Built   : 2026-06-11
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.23';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.24';
 (function (window) {
   'use strict';
 
@@ -1738,10 +1738,10 @@ class ComponentGenerator {
     const renderInlineQuantityControls = () => {
       if (!isSelected) return '';
       return `
-        <div class="inline-quantity-controls">
-          <button class="inline-qty-btn qty-decrease" data-product-id="${selectionKey}">−</button>
-          <span class="inline-qty-display">${currentQuantity}</span>
-          <button class="inline-qty-btn qty-increase" data-product-id="${selectionKey}">+</button>
+        <div class="inline-quantity-controls bw-quantity-control">
+          <button class="inline-qty-btn qty-decrease bw-quantity-control__button" data-product-id="${selectionKey}">−</button>
+          <span class="inline-qty-display bw-quantity-control__value">${currentQuantity}</span>
+          <button class="inline-qty-btn qty-increase bw-quantity-control__button" data-product-id="${selectionKey}">+</button>
         </div>
       `;
     };
@@ -1750,8 +1750,8 @@ class ComponentGenerator {
     const renderBottomAction = () => {
       if (actionMode === 'expandingQuantity') {
         return `
-          <div class="product-card-action ${isSelected ? 'is-expanded' : ''}">
-            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
+          <div class="product-card-action bw-product-card__action ${isSelected ? 'is-expanded' : ''}">
+            ${isSelected ? renderInlineQuantityControls() : `<button class="product-add-btn bw-product-card__add-button" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`}
           </div>
         `;
       }
@@ -1759,7 +1759,7 @@ class ComponentGenerator {
       if (isSelected) {
         return renderInlineQuantityControls();
       }
-      return `<button class="product-add-btn" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
+      return `<button class="product-add-btn bw-product-card__add-button" data-product-id="${selectionKey}">${this.escapeHtml(addButtonText)}</button>`;
     };
 
     // Render variant badge if this is an expanded variant card
@@ -1771,23 +1771,23 @@ class ComponentGenerator {
     };
 
     return `
-      <div class="product-card ${isSelected ? 'selected' : ''}" data-product-id="${selectionKey}">
+      <div class="product-card bw-product-card bw-product-card--mode-grid ${isSelected ? 'bw-product-card--selected selected' : ''}" data-bw-product-card="true" data-product-id="${selectionKey}" data-current-selected-variant-id="${selectionKey}">
         ${isSelected ? `
           <div class="selected-overlay">✓</div>
         ` : ''}
 
-        <div class="product-image">
-          <img src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
+        <div class="product-image bw-product-card__media">
+          <img class="bw-product-card__image" src="${product.imageUrl || product.image?.src || BUNDLE_WIDGET.PLACEHOLDER_IMAGE}" alt="${this.escapeHtml(product.title)}" loading="lazy" onerror="this.src='${BUNDLE_WIDGET.PLACEHOLDER_IMAGE}'">
         </div>
 
-        <div class="product-content-wrapper">
-          <div class="product-title">${this.escapeHtml(product.parentTitle || product.title)}</div>
+        <div class="product-content-wrapper bw-product-card__body">
+          <div class="product-title bw-product-card__title">${this.escapeHtml(product.parentTitle || product.title)}</div>
           ${renderVariantBadge()}
 
           ${product.price ? `
-            <div class="product-price-row">
-              ${product.compareAtPrice ? `<span class="product-price-strike">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
-              <span class="product-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
+            <div class="product-price-row bw-product-card__price">
+              ${product.compareAtPrice ? `<span class="product-price-strike bw-product-card__compare-price">${CurrencyManager.formatMoney(product.compareAtPrice, currencyInfo.display.format)}</span>` : ''}
+              <span class="product-price bw-product-card__current-price">${CurrencyManager.formatMoney(product.price, currencyInfo.display.format)}</span>
             </div>
           ` : ''}
 
@@ -1940,42 +1940,23 @@ class ComponentGenerator {
 /**
  * Default Loading Animation
  *
- * A polished three-dot pulsing loader rendered as inline SVG with CSS animations.
- * Designed from a Lottie JSON source (see default-loading-animation.json).
- * Used as the fallback when merchants have not uploaded a custom loading GIF.
+ * A CSS spinner fallback used when merchants have not uploaded a custom
+ * loading GIF.
  */
 
 /**
  * Creates and returns the default loading animation DOM element.
- * The animation is a three-dot pulse rendered as inline SVG.
- * CSS keyframes are injected once on first call (idempotent).
+ * Styling lives in the widget CSS assets so this helper does not inject
+ * runtime styles.
  *
- * @returns {HTMLDivElement} A wrapper div containing the animated SVG
+ * @returns {HTMLDivElement} A spinner element
  */
 function createDefaultLoadingAnimation() {
-  // Inject CSS keyframes once (idempotent check)
-  if (!document.getElementById('bundle-default-loading-keyframes')) {
-    const style = document.createElement('style');
-    style.id = 'bundle-default-loading-keyframes';
-    style.textContent = `
-      @keyframes bundle-dot-pulse {
-        0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-        40% { transform: scale(1); opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'bundle-loading-overlay__default-animation';
-
-  wrapper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40" role="img" aria-label="Loading">
-  <circle cx="20" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out -0.32s infinite; transform-origin: 20px 20px;" />
-  <circle cx="60" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out -0.16s infinite; transform-origin: 60px 20px;" />
-  <circle cx="100" cy="20" r="8" fill="white" style="animation: bundle-dot-pulse 1.4s ease-in-out 0s infinite; transform-origin: 100px 20px;" />
-</svg>`;
-
-  return wrapper;
+  const spinner = document.createElement('div');
+  spinner.className = 'bundle-loading-overlay__spinner';
+  spinner.setAttribute('role', 'status');
+  spinner.setAttribute('aria-label', 'Loading');
+  return spinner;
 }
 
 
