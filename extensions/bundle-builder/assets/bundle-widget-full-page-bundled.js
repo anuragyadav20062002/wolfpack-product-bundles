@@ -15,8 +15,6 @@ const ConditionValidator = (function () {
 
   const OPERATORS = {
     EQUAL_TO:                'equal_to',
-    GREATER_THAN:            'greater_than',
-    LESS_THAN:               'less_than',
     GREATER_THAN_OR_EQUAL_TO: 'greater_than_or_equal_to',
     LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
   };
@@ -182,13 +180,9 @@ const ConditionValidator = (function () {
 
         allowed = totalAfter <= required;
         break;
-      case OPERATORS.LESS_THAN:
-        allowed = totalAfter < required;
-        break;
       case OPERATORS.LESS_THAN_OR_EQUAL_TO:
         allowed = totalAfter <= required;
         break;
-      case OPERATORS.GREATER_THAN:
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
 
         allowed = true;
@@ -202,20 +196,16 @@ const ConditionValidator = (function () {
   function _evaluateSatisfied(operator, required, total) {
     switch (operator) {
       case OPERATORS.EQUAL_TO:                 return total === required;
-      case OPERATORS.GREATER_THAN:             return total > required;
-      case OPERATORS.LESS_THAN:               return total < required;
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO: return total >= required;
       case OPERATORS.LESS_THAN_OR_EQUAL_TO:   return total <= required;
-      default:                                return true;
+      default:                                return false;
     }
   }
 
   function _buildLimitText(operator, required) {
     const map = {
       [OPERATORS.EQUAL_TO]:                `exactly ${required}`,
-      [OPERATORS.LESS_THAN]:               `less than ${required}`,
       [OPERATORS.LESS_THAN_OR_EQUAL_TO]:   `at most ${required}`,
-      [OPERATORS.GREATER_THAN]:            `more than ${required}`,
       [OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${required}`,
     };
     return map[operator] || String(required);
@@ -235,6 +225,7 @@ const ConditionValidator = (function () {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ConditionValidator;
+  module.exports.ConditionValidator = ConditionValidator;
 }
 
 const BUNDLE_WIDGET = {
@@ -2281,9 +2272,12 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
 function renderAddButton(selectionKey, options) {
   const disabled = options.addDisabled === true;
   const text = options.addButtonText || '+';
+  const accessibleLabel = text.trim() === '+'
+    ? 'aria-label="Add"'
+    : '';
 
   return `
-    <button type="button" class="bw-product-card__add-button product-add-btn" data-product-id="${escapeAttribute(selectionKey)}" ${disabled ? 'disabled aria-disabled="true"' : ''}>
+    <button type="button" class="bw-product-card__add-button product-add-btn" data-product-id="${escapeAttribute(selectionKey)}" ${accessibleLabel} ${disabled ? 'disabled aria-disabled="true"' : ''}>
       ${escapeHtml(text)}
     </button>
   `;
@@ -5061,7 +5055,8 @@ shouldRenderFullPageSearch() {
 },
 
 usesSelectedQuantityBadge() {
-  return this.resolveFullPageCardCtaMode() === 'icon';
+  return this.resolveFullPageCardCtaMode() === 'icon'
+    && this.getFullPageDesignPreset() !== 'COMPACT';
 },
 
 _isStandardDesktopSidebar(panel) {
@@ -9443,6 +9438,19 @@ attachProductEventHandlers(productGrid, stepIndex) {
 },
 };
 
+function shouldAutoAdvanceFullPageStep({ quantity = 0, step = null } = {}) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categoryRuleCategories = categories.filter(category =>
+    Array.isArray(category?.conditions) && category.conditions.length > 0
+  );
+
+  if (!(quantity > 0) || categoryRuleCategories.length === 0) {
+    return false;
+  }
+
+  return categoryRuleCategories.some(category => category.autoNextStepOnConditionMet === true);
+}
+
 const fullPageSelectionNavigationMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
   let quantity = Math.max(0, newQuantity);
@@ -9510,11 +9518,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     this.updateStepTimeline();
 
     const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-    const _hasExplicitCondition = _autoAdvanceStep &&
-      _autoAdvanceStep.conditionType &&
-      _autoAdvanceStep.conditionOperator &&
-      _autoAdvanceStep.conditionValue != null;
-    if (quantity > 0 && !this._autoAdvancePending && _hasExplicitCondition) {
+    if (!this._autoAdvancePending && shouldAutoAdvanceFullPageStep({ quantity, step: _autoAdvanceStep })) {
       const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
       if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
         this._autoAdvancePending = true;
@@ -10115,6 +10119,7 @@ getFullPageDesignPreset(bundle = this.selectedBundle) {
 resolveFullPageCardCtaMode(bundle = this.selectedBundle) {
   const showTextOnAddButton =
   bundle?.showTextOnAddButton === true
+  || bundle?.showTextOnPlusEnabled === true;
 
   if (this.resolveFullPageLayout(bundle) === 'footer_side' && this.getFullPageDesignPreset(bundle) === 'CLASSIC') {
     return showTextOnAddButton ? 'text' : 'icon';

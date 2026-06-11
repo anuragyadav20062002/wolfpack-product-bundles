@@ -15,8 +15,6 @@ const ConditionValidator = (function () {
 
   const OPERATORS = {
     EQUAL_TO:                'equal_to',
-    GREATER_THAN:            'greater_than',
-    LESS_THAN:               'less_than',
     GREATER_THAN_OR_EQUAL_TO: 'greater_than_or_equal_to',
     LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
   };
@@ -182,13 +180,9 @@ const ConditionValidator = (function () {
 
         allowed = totalAfter <= required;
         break;
-      case OPERATORS.LESS_THAN:
-        allowed = totalAfter < required;
-        break;
       case OPERATORS.LESS_THAN_OR_EQUAL_TO:
         allowed = totalAfter <= required;
         break;
-      case OPERATORS.GREATER_THAN:
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
 
         allowed = true;
@@ -202,20 +196,16 @@ const ConditionValidator = (function () {
   function _evaluateSatisfied(operator, required, total) {
     switch (operator) {
       case OPERATORS.EQUAL_TO:                 return total === required;
-      case OPERATORS.GREATER_THAN:             return total > required;
-      case OPERATORS.LESS_THAN:               return total < required;
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO: return total >= required;
       case OPERATORS.LESS_THAN_OR_EQUAL_TO:   return total <= required;
-      default:                                return true;
+      default:                                return false;
     }
   }
 
   function _buildLimitText(operator, required) {
     const map = {
       [OPERATORS.EQUAL_TO]:                `exactly ${required}`,
-      [OPERATORS.LESS_THAN]:               `less than ${required}`,
       [OPERATORS.LESS_THAN_OR_EQUAL_TO]:   `at most ${required}`,
-      [OPERATORS.GREATER_THAN]:            `more than ${required}`,
       [OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${required}`,
     };
     return map[operator] || String(required);
@@ -235,6 +225,7 @@ const ConditionValidator = (function () {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ConditionValidator;
+  module.exports.ConditionValidator = ConditionValidator;
 }
 
 const BUNDLE_WIDGET = {
@@ -2281,9 +2272,12 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
 function renderAddButton(selectionKey, options) {
   const disabled = options.addDisabled === true;
   const text = options.addButtonText || '+';
+  const accessibleLabel = text.trim() === '+'
+    ? 'aria-label="Add"'
+    : '';
 
   return `
-    <button type="button" class="bw-product-card__add-button product-add-btn" data-product-id="${escapeAttribute(selectionKey)}" ${disabled ? 'disabled aria-disabled="true"' : ''}>
+    <button type="button" class="bw-product-card__add-button product-add-btn" data-product-id="${escapeAttribute(selectionKey)}" ${accessibleLabel} ${disabled ? 'disabled aria-disabled="true"' : ''}>
       ${escapeHtml(text)}
     </button>
   `;
@@ -2993,16 +2987,6 @@ const modalSlotTemplateMethods = {
   },
 
   _appendSlotIcon(iconWrapper) {
-    const productSlotIconUrl = this.selectedBundle?.productSlotIconUrl || null;
-    if (productSlotIconUrl) {
-      const slotIconImg = document.createElement('img');
-      slotIconImg.src = productSlotIconUrl;
-      slotIconImg.alt = '';
-      slotIconImg.className = 'bw-slot-card__slot-icon-img';
-      iconWrapper.appendChild(slotIconImg);
-      return;
-    }
-
     iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
     </svg>`;
@@ -4793,21 +4777,10 @@ renderProductPageLayout() {
           target.appendChild(this.createAddMoreCard(step, stepIndex, totalQty));
         }
       } else {
-
-        let card;
-        if (this._shouldRenderProductSlots()) {
-          card = this.createEmptyStateCard(step, stepIndex, 0);
-        } else {
-          card = this.createAddMoreCard(step, stepIndex, 0);
-        }
-        target.appendChild(card);
+        target.appendChild(this.createAddMoreCard(step, stepIndex, 0));
       }
     }
   });
-},
-
-_shouldRenderProductSlots() {
-  return this.selectedBundle?.productSlotsEnabled === true;
 },
 
 _createInpageStepSection(step, stepIndex) {
@@ -4988,7 +4961,7 @@ _renderInpageStepProducts(stepIndex, target) {
     `;
     const addButton = `
       <button class="product-add-btn${usesCascadeCards ? ' gbbMixCascadeAddBtn' : ''} ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-        ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +'))}
+        ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' })}
       </button>
     `;
 
@@ -5001,9 +4974,7 @@ _renderInpageStepProducts(stepIndex, target) {
           variantSelectorHtml: this.renderVariantSelector(product),
           mode: 'row',
           className: `bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
-          addButtonText: outOfStock
-            ? 'Out of stock'
-            : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +')),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -5020,9 +4991,7 @@ _renderInpageStepProducts(stepIndex, target) {
           variantSelectorHtml: this.renderVariantSelector(product),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
-          addButtonText: outOfStock
-            ? 'Out of stock'
-            : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add +')),
+          addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
           addDisabled,
           increaseDisabled,
           stockBadgeHtml: stockBadge,
@@ -5910,6 +5879,23 @@ expandProductsByVariant(products) {
 }
 };
 
+function resolveProductPageCardButtonText({
+  currentQuantity = 0,
+  currentStep = {},
+  outOfStock = false,
+  defaultAddText = 'Add +',
+} = {}) {
+  if (outOfStock) return 'Out of stock';
+
+  const rawText = currentQuantity > 0
+    ? (currentStep?.addonReplaceText || 'Selected ✓')
+    : (currentStep?.addonAddText || defaultAddText);
+
+  return String(rawText)
+    .replace(/\{\{\s*allowedQuantity\s*\}\}/g, String(currentQuantity))
+    .replace(/\{\{\s*quantity\s*\}\}/g, String(currentQuantity));
+}
+
 const ProductPageModalMethods = {
 renderModalTabs() {
   const tabsContainer = this.elements.modal.querySelector('.modal-tabs');
@@ -6090,7 +6076,7 @@ renderModalProducts(stepIndex, productsToRender = null) {
           ` : ''}
 
           <button class="product-add-btn ${currentQuantity > 0 ? 'added' : ''}" data-product-id="${selectionKey}" ${addDisabled ? 'disabled aria-disabled="true"' : ''}>
-            ${outOfStock ? 'Out of stock' : (currentQuantity > 0 ? (currentStep?.addonReplaceText || 'Selected ✓') : (currentStep?.addonAddText || 'Add to Cart'))}
+            ${resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add to Cart' })}
           </button>
         </div>
       </div>
@@ -6169,7 +6155,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
   };
 
   newProductGrid.addEventListener('click', (e) => {
-    if (e.target.classList.contains('qty-btn')) {
+    if (e.target.classList.contains('qty-btn') || e.target.classList.contains('inline-qty-btn')) {
       e.stopPropagation();
       const productId = e.target.dataset.productId;
       const isIncrease = e.target.classList.contains('qty-increase');
@@ -6199,7 +6185,7 @@ attachProductEventHandlers(productGrid, stepIndex) {
   newProductGrid.addEventListener('click', (e) => {
     const productCard = e.target.closest('.product-card');
     if (!productCard) return;
-    if (e.target.closest('.product-add-btn, .qty-btn, .variant-selector, button, input, select, a')) return;
+    if (e.target.closest('.product-add-btn, .qty-btn, .inline-qty-btn, .variant-selector, button, input, select, a')) return;
 
     const productImage = e.target.closest('.product-image');
     const productTitle = e.target.closest('.product-title');
@@ -6290,6 +6276,47 @@ attachProductEventHandlers(productGrid, stepIndex) {
   });
 }
 };
+
+function createInlineQuantityControl(productId, quantity, increaseDisabled) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('inline-quantity-controls', 'bw-quantity-control');
+  wrapper.dataset.productId = productId;
+
+  const decreaseButton = document.createElement('button');
+  decreaseButton.type = 'button';
+  decreaseButton.classList.add('inline-qty-btn', 'qty-decrease', 'bw-quantity-control__button');
+  decreaseButton.dataset.productId = productId;
+  decreaseButton.textContent = '−';
+
+  const display = document.createElement('span');
+  display.classList.add('inline-qty-display', 'bw-quantity-control__value');
+  display.textContent = String(quantity);
+
+  const increaseButton = document.createElement('button');
+  increaseButton.type = 'button';
+  increaseButton.classList.add('inline-qty-btn', 'qty-increase', 'bw-quantity-control__button');
+  increaseButton.dataset.productId = productId;
+  increaseButton.textContent = '+';
+  if (increaseDisabled) {
+    increaseButton.disabled = true;
+    increaseButton.setAttribute('aria-disabled', 'true');
+  }
+
+  wrapper.appendChild(decreaseButton);
+  wrapper.appendChild(display);
+  wrapper.appendChild(increaseButton);
+
+  return wrapper;
+}
+
+function createProductPageAddButton(productId, text) {
+  const addButton = document.createElement('button');
+  addButton.type = 'button';
+  addButton.classList.add('product-add-btn', 'bw-product-card__add-button');
+  addButton.dataset.productId = productId;
+  addButton.textContent = text;
+  return addButton;
+}
 
 function bsFindNextIncompleteStep(steps, selectedProducts, validateFn, fromIndex) {
   for (let i = fromIndex + 1; i < steps.length; i++) {
@@ -6433,10 +6460,17 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
     : this.container;
   const productCard = scope.querySelector(`[data-product-id="${productId}"]`);
   if (productCard) {
-    const quantityDisplay = productCard.querySelector('.qty-display');
+    const quantityDisplay = productCard.querySelector('.qty-display')
+      || productCard.querySelector('.inline-qty-display');
     const addBtn = productCard.querySelector('.product-add-btn');
     const selectedOverlay = productCard.querySelector('.selected-overlay');
     const increaseBtn = productCard.querySelector('.qty-increase');
+    const actionWrapper = productCard.querySelector('.product-card-action')
+      || productCard.querySelector('.bw-product-card__action');
+    const existingInlineControls = productCard.querySelector('.inline-quantity-controls');
+    const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
+    const step = this.selectedBundle?.steps?.[stepIndex];
+    const defaultAddText = cascadeRow ? 'Add +' : this._resolveText('productCardAddButton', 'Add to Cart');
 
     if (quantityDisplay) {
       quantityDisplay.textContent = quantity;
@@ -6458,18 +6492,54 @@ updateProductQuantityDisplay(stepIndex, productId, quantity) {
       }
     }
 
+    if (actionWrapper && quantity > 0) {
+      actionWrapper.classList.add('is-expanded');
+      if (addBtn) addBtn.remove();
+      if (!existingInlineControls) {
+        const productQuantityLimit = ConditionValidator.getAllowedQuantityPerProduct(
+          this.selectedBundle?.validateQuantityPerProduct
+        );
+        const { available, outOfStock } = this.getVariantAvailable(stepIndex, productId);
+        const atMaxStock = available !== null && quantity >= available;
+        const atMaxProductQuantity = productQuantityLimit !== null && quantity >= productQuantityLimit;
+        actionWrapper.appendChild(createInlineQuantityControl(
+          productId,
+          quantity,
+          outOfStock || atMaxStock || atMaxProductQuantity,
+        ));
+      }
+    } else if (actionWrapper && quantity <= 0) {
+      actionWrapper.classList.remove('is-expanded');
+      if (existingInlineControls) existingInlineControls.remove();
+      if (!addBtn) {
+        actionWrapper.appendChild(createProductPageAddButton(
+          productId,
+          resolveProductPageCardButtonText({
+            currentQuantity: quantity,
+            currentStep: step,
+            outOfStock: false,
+            defaultAddText,
+          }),
+        ));
+      }
+    }
+
     if (addBtn) {
-      const cascadeRow = productCard.classList.contains('bw-ppb-cascade-product-row');
-      const step = this.selectedBundle?.steps?.[stepIndex];
       if (quantity > 0) {
-        addBtn.textContent = cascadeRow
-          ? (step?.addonReplaceText || this._resolveText('includedBadge', 'Selected ✓'))
-          : this._resolveText('includedBadge', 'Selected ✓');
+        addBtn.textContent = resolveProductPageCardButtonText({
+          currentQuantity: quantity,
+          currentStep: step,
+          outOfStock: false,
+          defaultAddText,
+        });
         addBtn.classList.add('added');
       } else {
-        addBtn.textContent = cascadeRow
-          ? (step?.addonAddText || 'Add +')
-          : this._resolveText('productCardAddButton', 'Add to Cart');
+        addBtn.textContent = resolveProductPageCardButtonText({
+          currentQuantity: quantity,
+          currentStep: step,
+          outOfStock: false,
+          defaultAddText,
+        });
         addBtn.classList.remove('added');
       }
     }
