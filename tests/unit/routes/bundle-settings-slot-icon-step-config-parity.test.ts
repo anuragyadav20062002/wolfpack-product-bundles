@@ -22,11 +22,9 @@ function slotIconBlock(source: string) {
   return source.slice(start, end + "</s-stack>".length);
 }
 
-describe.each([
-  ["FPB", fpbRoute],
-  ["PPB", ppbRoute],
-])("%s Bundle Settings Slot Icon", (_bundleType, source) => {
+describe("FPB Bundle Settings Slot Icon", () => {
   it("uses dedicated productSlotIconUrl state and picker", () => {
+    const source = fpbRoute;
     const block = slotIconBlock(source);
     expect(source).toContain("const [productSlotIconUrl, setProductSlotIconUrl]");
     expect(source).toContain("const [showSlotIconPicker, setShowSlotIconPicker]");
@@ -37,25 +35,31 @@ describe.each([
   });
 
   it("does not navigate to Step Setup or mutate Step Config", () => {
+    const source = fpbRoute;
     const block = slotIconBlock(source);
     expect(block).not.toContain('handleSectionChange("step_setup")');
     expect(block).not.toContain('"stepImage"');
   });
 
   it("shows upload-control shell", () => {
-    if (_bundleType !== "FPB") {
-      return;
-    }
-
-    const block = slotIconBlock(source);
+    const block = slotIconBlock(fpbRoute);
     expect(block).toContain("Upload file");
     expect(block).toContain("No file chosen");
   });
 
   it("keeps change/reset controls", () => {
-    const block = slotIconBlock(source);
+    const block = slotIconBlock(fpbRoute);
     expect(block).toContain("Change Icon");
     expect(block).toContain("Reset");
+  });
+});
+
+describe("PPB Bundle Settings Slot Icon", () => {
+  it("does not expose the FPB-only Slot Icon setting", () => {
+    expect(ppbRoute).not.toContain("const [productSlotIconUrl, setProductSlotIconUrl]");
+    expect(ppbRoute).not.toContain("const [showSlotIconPicker, setShowSlotIconPicker]");
+    expect(ppbRoute).not.toContain('label="Slot Icon"');
+    expect(ppbRoute).not.toContain('formData.append("productSlotIconUrl"');
   });
 });
 

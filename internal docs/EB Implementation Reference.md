@@ -1,7 +1,7 @@
 ---
 title: EB Implementation Reference
 type: reference
-last_updated: 2026-05-26
+last_updated: 2026-06-12
 source: docs/competitor-analysis/16-eb-full-data-flow-investigation.md; docs/competitor-analysis/17-eb-complete-configure-e2e-audit.md
 ---
 
@@ -30,6 +30,195 @@ All requests go to `https://prod.backend.giftbox.giftkart.app` with `?shopName={
 ---
 
 ## Data Contracts
+
+## FPB Rules Configuration
+
+These Rules Configuration notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+
+Rules in EB FPB control customer selection requirements while building a bundle. A step can use exactly one rule mode at a time: Step Rules or Category Rules.
+
+### Critical Constraint: Step Rules and Category Rules Are Mutually Exclusive
+
+- One step cannot enforce both whole-step constraints and per-category constraints.
+- Step Rules apply to the total selected products in the step.
+- Category Rules apply independently to categories inside the step.
+- Enabling one mode must disable or clear the conflicting mode for that step.
+
+### Step Rules
+
+Step Rules apply to the total number of products selected in a step, regardless of category.
+
+Use Step Rules when the merchant needs a total count for the step, such as selecting any 3 products from the available products.
+
+Supported configuration:
+- Range, such as select between 3 and 6 products.
+- Exact match, such as select exactly 3 products.
+
+Auto-next behavior:
+- EB exposes "Auto next when condition is met" for Step Rules.
+- When enabled for an exact-match rule, the storefront advances to the next step as soon as the customer satisfies the condition.
+- Example: if the rule requires exactly 3 items, selecting the 3rd item advances automatically.
+
+### Category Rules
+
+Category Rules apply specific constraints to individual categories inside one step.
+
+Prerequisite:
+- Category Rules are only available when the current step has multiple categories assigned.
+- A single-category step must not expose Category Rules.
+- In the WPB configure UI, this must be based on the current draft category list, not only the saved database state. Adding a second unsaved category should show Category Rules immediately; discarding that unsaved category should hide Category Rules again.
+
+Use Category Rules when the merchant needs a specific mix across categories, such as 2 products from Women's and 2 products from Men's.
+
+Supported metrics:
+- Quantity: number of selected items.
+- Amount: total selected item value.
+- Weight: total selected item weight.
+
+Supported conditions:
+- Equal to.
+- Greater than or equal to.
+- Less than or equal to.
+
+Unsupported conditions:
+- Strict greater than.
+- Strict less than.
+
+Each category's rules are configured independently.
+
+## FPB Step Flow Configuration
+
+These Step Flow notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+
+EB FPB Step Flow defines the bundle architecture before the merchant configures detailed steps, categories, products, rules, discounts, and design.
+
+### Steps and Categories Hierarchy
+
+These Categories notes are scoped to EB Landing Page Bundles, also called FPB in WPB. They must not be treated as confirmed PPB behavior unless separately verified.
+
+EB FPB organizes products with a strict hierarchy:
+
+```
+Step -> Category -> Products
+```
+
+Steps are the parent level. Categories are the child level inside a step.
+
+Step behavior:
+- A Step is a distinct stage in the bundle-building journey.
+- Each Step creates a separate page or view.
+- Steps control navigation flow, such as Step 1 -> Step 2 -> Step 3.
+- Customers must intentionally move from one step to the next, usually with a Next Step action.
+- Use Steps when the bundle should be broken into clear milestones.
+
+Category behavior:
+- A Category is a product group displayed within a Step.
+- Categories organize products on the same page or view without forcing a reload.
+- Customers can browse multiple categories within the same step.
+- Use Categories when customers should mix and match items from different collections on the same screen.
+
+Scenario guidance:
+- Outfit Builder: use 1 Step named Build Your Look with 2 Categories, such as Shirts and Pants, when customers should choose both on the same screen.
+- Gift Box: use 2 Steps when customers should first pick a box and then fill it. Step 1 contains 1 Category for Boxes. Step 2 contains multiple Categories such as Candles, Soaps, and Candy.
+
+### Bundle Strategy and Initialization
+
+The merchant first chooses the bundle experience and flow structure.
+
+Bundle experiences:
+- Mix-and-Match Bundle: customers select product variants while satisfying a total quantity requirement.
+- Landing Page Bundle Builder: creates a dedicated bundle-building page.
+- Product Page Bundle Builder: embeds the builder into the product discovery flow on a standard product page.
+
+Flow structures:
+- Single-Step: customers select items from one interface, optionally using multiple categories or filters. This is used for bulk-buy flows such as a box of 6. Mix-and-match bundles can define required total quantities such as 3, 6, or 9 items.
+- Multi-Step: customers proceed through a sequence, such as Step 1 choosing a bag and Step 2 choosing accessories.
+
+Creation flow:
+1. Click Create Bundle.
+2. Select the template for the chosen experience.
+3. Select the design.
+4. Enter the bundle name.
+5. Click Create.
+
+Backend requirement:
+- Creating the bundle automatically creates a virtual parent bundle product.
+- The virtual parent product is required for inventory, cart, and checkout behavior.
+- Deleting or altering the virtual parent product directly in Shopify outside the app can break the bundle.
+
+### Step and Category Configuration
+
+Step 1 starts with one default category. The merchant must add products to that category.
+
+Supported step/category actions:
+- Add additional categories inside a step, such as Savory and Sweet.
+- Rename steps directly in the interface.
+- Rename categories directly in the interface.
+- Add a new blank step with Add Step.
+- Clone an existing step to duplicate its structure and settings.
+
+### Product Slots Configuration
+
+Product Slots configuration is scoped to EB Landing Page Bundles, also called FPB in WPB. It is not a PPB configuration surface.
+
+Scope:
+- Exposed only in FPB Bundle Settings.
+- Applies to empty slots shown in the summary/sidebar area of FPB templates.
+- Replaces the default empty slot plus icon with the merchant-uploaded Slot Icon when an FPB template renders empty slots.
+- Only applies when rules are based on quantity.
+- Does not apply to PPB modal or in-page slot templates.
+
+Asset behavior:
+- The uploaded Slot Icon is stored in the merchant's Shopify store assets.
+- The practical upload limit is smaller than Shopify's general store asset maximum.
+- If no Slot Icon is configured, FPB empty slots fall back to the default plus icon.
+
+### Selection Rules and Blocking Behavior
+
+Rules control valid customer selections and whether customers may proceed or check out.
+
+Step-level rules:
+- Apply to the total product count in a step.
+- If the customer selection is below the minimum requirement, the Next action is disabled or produces an error.
+- Example: Step 1 requires at least 2 products total.
+
+Category-level rules:
+- Apply to specific categories inside a step.
+- If a category selection does not satisfy its requirement, the customer cannot proceed.
+- Example: require exactly 1 product from Category 1 and exactly 1 product from Category 2.
+
+Blocking and skip behavior:
+- If a category rule limits selection to exactly 1, adding a second product from that category is blocked.
+- If a step rule requires a minimum of 2 products and the customer has selected only 1, moving to the next step is blocked.
+- If a customer tries to skip a step with unmet minimum requirements, EB shows an error describing the missing criteria, such as needing one more product.
+
+### Discounts and Pricing in Step Flow
+
+Discounts incentivize higher quantity purchases and can use multiple tiers.
+
+Supported discount types:
+- Fixed amount.
+- Percentage.
+- Fixed price bundle.
+- Tier-based offers such as buy 3 at a fixed price and get 1 free, or buy 5 at a fixed price and get 2 free.
+
+Tier behavior:
+- Example: if product count is 2, apply 5% off.
+- Example: if product count is 4, apply 10% off.
+- Example: if product count is 6, apply 15% off.
+- Increasing the maximum tier count is scoped to the current bundle and does not alter other live bundles.
+- Increasing tier capacity may reduce the total number of bundles available in the merchant account.
+- If additional tier fields do not appear after increasing the limit, reloading the bundle editor usually makes them visible.
+
+### Design and Customization
+
+Preview Bundle triggers the design selection flow the first time.
+
+Design flow:
+- Choose the layout template for Landing Page or Product Page.
+- Customize brand colors, including primary and secondary colors.
+- Customize styling such as corners, font sizes, and related visual settings.
+- Design settings remain editable after creation.
 
 ### FPB Bundle Identifiers
 
@@ -496,8 +685,8 @@ Public Skai Lama help articles corroborate the captured Bundle Visibility behavi
 - Default widget visibility is all product pages for items currently included in the bundle.
 - Manual product or collection selections override the default visibility.
 - The Add Browsed Product option preselects the product the shopper was viewing before clicking the widget/redirect.
-- Widget placement is completed through the Shopify theme editor app block; template choice and block position affect where the widget appears.
-- Product Page Bundle Builder embed placement is also through a product-page app block in the Shopify theme editor.
+- Widget placement for upsell surfaces can be completed through Shopify theme editor app blocks; template choice and block position affect where those widget surfaces appear.
+- Product Page Bundle Builder placement is different from merchant-dragged upsell blocks: 2026-06-11 Theme Editor evidence showed the PPB widget rendering while the native **Buy buttons** block was selected. Treat PPB as a Buy buttons/product-form replacement or override, not as a separate merchant-positioned block under Buy buttons.
 
 Reference URLs:
 

@@ -22,6 +22,18 @@ import {
   buildCartLineSourceProperties,
 } from '../../shared/engine/cart-lines.js';
 
+export function shouldAutoAdvanceFullPageStep({ quantity = 0, step = null } = {}) {
+  const categories = Array.isArray(step?.categories) ? step.categories : [];
+  const categoryRuleCategories = categories.filter(category =>
+    Array.isArray(category?.conditions) && category.conditions.length > 0
+  );
+
+  if (!(quantity > 0) || categoryRuleCategories.length === 0) {
+    return false;
+  }
+
+  return categoryRuleCategories.some(category => category.autoNextStepOnConditionMet === true);
+}
 
 export const fullPageSelectionNavigationMethods = {
 updateProductSelection(stepIndex, productId, newQuantity) {
@@ -99,19 +111,10 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     // click listeners all reflect the new selection immediately.
     this.updateStepTimeline();
 
-    // Auto-advance: when the current step becomes complete after an addition,
-    // automatically move to the next step after a short delay so the shopper
-    // sees the completion state before the view changes.
-    // Guard: only on additions (quantity > 0), not removals; skip if a pending
-    // advance is already scheduled; skip on the last step; skip when the step
-    // has no explicit conditions (no conditionType/conditionOperator/conditionValue)
-    // so shoppers can add as many products as they want on unconditioned steps.
+    // Auto-advance is category-rule only. Step rules gate navigation, but EB
+    // exposes the auto-next opt-in only on category rules.
     const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
-    const _hasExplicitCondition = _autoAdvanceStep &&
-      _autoAdvanceStep.conditionType &&
-      _autoAdvanceStep.conditionOperator &&
-      _autoAdvanceStep.conditionValue != null;
-    if (quantity > 0 && !this._autoAdvancePending && _hasExplicitCondition) {
+    if (!this._autoAdvancePending && shouldAutoAdvanceFullPageStep({ quantity, step: _autoAdvanceStep })) {
       const isLastStep = this.currentStepIndex === this.selectedBundle.steps.length - 1;
       if (!isLastStep && this.isStepCompleted(this.currentStepIndex) && this.canNavigateToStep(this.currentStepIndex + 1)) {
         this._autoAdvancePending = true;

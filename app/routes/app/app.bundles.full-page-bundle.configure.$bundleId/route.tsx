@@ -85,6 +85,7 @@ import {
   normalizeDefaultProductsData,
   type DefaultProductsData,
 } from "../../../lib/bundle-config/default-products";
+import { deriveControlDependencies } from "../../../lib/bundle-config/control-dependencies";
 
 // Types - extracted to separate module for better organization
 import type { LoaderData } from "./types";
@@ -1078,7 +1079,8 @@ export default function ConfigureBundleFlow() {
   const [defaultProductsData, setDefaultProductsData] = useState<DefaultProductsData>(initialDefaultProductsData);
   const originalDefaultProductsDataRef = useRef<DefaultProductsData>(initialDefaultProductsData);
   const [showTextOnPlusEnabled, setShowTextOnPlusEnabled] = useState<boolean>(
-    !!((bundle as any).textOverrides?.addToCartButton)
+    ((bundle as any).showTextOnAddButton ?? false) === true
+      || !!((bundle as any).textOverrides?.addToCartButton)
   );
   const [individualSellingPlanEnabled, setIndividualSellingPlanEnabled] = useState<boolean>(
     ((bundle as any).individualSellingPlanSelection as { isEnabled?: boolean } | null)?.isEnabled === true
@@ -1909,6 +1911,7 @@ export default function ConfigureBundleFlow() {
       formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
       formData.append("allowQuantityChanges", String(allowQuantityChanges));
       formData.append("searchBarEnabled", String(searchBarEnabled));
+      formData.append("showTextOnAddButton", String(showTextOnPlusEnabled));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
       formData.append("bundleTextConfig", JSON.stringify({
@@ -3519,7 +3522,9 @@ export default function ConfigureBundleFlow() {
                       </button>
                       {(() => {
                         const stepCategories = (((step as any).StepCategory as any[] | undefined) ?? []);
-                        const categoryRulesAvailable = stepCategories.length > 0;
+                        const categoryRulesAvailable = deriveControlDependencies({
+                          categoryCount: stepCategories.length,
+                        }).categoryRulesVisible;
                         const hasStepRules = (conditionsState.stepConditions[step.id] || []).length > 0;
                         const hasCategoryRules = stepCategories.some((category: any) => (category.conditions || []).length > 0);
                         const activeRuleMode = hasCategoryRules ? "category" : hasStepRules ? "step" : "none";

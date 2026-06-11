@@ -43,8 +43,8 @@ describe("parsePPBBundleSettings", () => {
     const result = parsePPBBundleSettings(makeForm({}));
     expect(result.preSelectedProductVariantId).toBeNull();
     expect(result.maxQtyPerProduct).toBeNull();
-    expect(result.productSlotsEnabled).toBe(false);
-    expect(result.productSlotIconUrl).toBeNull();
+    expect(result).not.toHaveProperty("productSlotsEnabled");
+    expect(result).not.toHaveProperty("productSlotIconUrl");
     expect(result.variantSelectorEnabled).toBe(true);
     expect(result.showTextOnAddButton).toBe(false);
     expect(result.bundleCartTitle).toBeNull();
@@ -90,18 +90,13 @@ describe("parsePPBBundleSettings", () => {
     expect(result.maxQtyPerProduct).toBeNull();
   });
 
-  it("parses productSlotsEnabled and productSlotIconUrl", () => {
+  it("ignores FPB-only productSlotsEnabled and productSlotIconUrl fields", () => {
     const result = parsePPBBundleSettings(makeForm({
       productSlotsEnabled: "true",
       productSlotIconUrl: "https://cdn.shopify.com/icon.png",
     }));
-    expect(result.productSlotsEnabled).toBe(true);
-    expect(result.productSlotIconUrl).toBe("https://cdn.shopify.com/icon.png");
-  });
-
-  it("returns null for productSlotIconUrl when empty", () => {
-    const result = parsePPBBundleSettings(makeForm({ productSlotIconUrl: "" }));
-    expect(result.productSlotIconUrl).toBeNull();
+    expect(result).not.toHaveProperty("productSlotsEnabled");
+    expect(result).not.toHaveProperty("productSlotIconUrl");
   });
 
   it("passes bundleLevelCss through processCss sanitizer", () => {

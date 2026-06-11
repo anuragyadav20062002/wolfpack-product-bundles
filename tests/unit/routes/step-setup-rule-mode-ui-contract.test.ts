@@ -24,14 +24,28 @@ const constantsSource = fs.readFileSync(
 describe("Step Setup category rule mode contract", () => {
   it("defines the category condition enum shape used by the observed save payload", () => {
     expect(constantsSource).toContain("CATEGORY_CONDITION_OPERATOR_OPTIONS");
+    expect(constantsSource).toContain('value: "equalTo"');
     expect(constantsSource).toContain('value: "greaterThanOrEqualTo"');
     expect(constantsSource).toContain('value: "lessThanOrEqualTo"');
+    expect(constantsSource).not.toContain('value: "greaterThan"');
+    expect(constantsSource).not.toContain('value: "lessThan"');
+  });
+
+  it("limits step rule operator options to equal, greater-or-equal, and less-or-equal", () => {
+    expect(constantsSource).toContain("STEP_CONDITION_OPERATOR_OPTIONS");
+    expect(constantsSource).toContain('value: "equal_to"');
+    expect(constantsSource).toContain('value: "greater_than_or_equal_to"');
+    expect(constantsSource).toContain('value: "less_than_or_equal_to"');
+    expect(constantsSource).not.toContain('value: "greater_than"');
+    expect(constantsSource).not.toContain('value: "less_than"');
   });
 });
 
 describe.each(Object.entries(routeSources))("%s Step Setup rule mode wiring", (_bundleType, source) => {
-  it("renders category rules when category configuration exists", () => {
-    expect(source).toContain("categoryRulesAvailable = stepCategories.length > 0");
+  it("derives category rule visibility from the current draft category count", () => {
+    expect(source).toContain("deriveControlDependencies({");
+    expect(source).toContain("categoryCount: stepCategories.length");
+    expect(source).not.toContain("categoryRulesAvailable = stepCategories.length > 0");
     expect(source).toContain('...(categoryRulesAvailable ? [{ label: "Category rules", value: "category" }] : [])');
   });
 

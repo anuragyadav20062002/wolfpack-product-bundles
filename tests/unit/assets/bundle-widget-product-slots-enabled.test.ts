@@ -4,10 +4,10 @@ const productPageSource = readProductPageWidgetSources();
 const fullPageSource = readFullPageWidgetSources();
 
 describe("storefront Product Slots bundle setting", () => {
-  it("PPB reads productSlotsEnabled before rendering empty slot cards", () => {
-    expect(productPageSource).toContain("this.selectedBundle?.productSlotsEnabled === true");
-    expect(productPageSource).toContain("this._shouldRenderProductSlots()");
-    expect(productPageSource).toContain("if (this._shouldRenderProductSlots())");
+  it("PPB does not read the FPB-only productSlotsEnabled setting", () => {
+    expect(productPageSource).not.toContain("this.selectedBundle?.productSlotsEnabled === true");
+    expect(productPageSource).not.toContain("this._shouldRenderProductSlots()");
+    expect(productPageSource).not.toContain("if (this._shouldRenderProductSlots())");
   });
 
   it("FPB reads productSlotsEnabled before rendering empty state cards", () => {

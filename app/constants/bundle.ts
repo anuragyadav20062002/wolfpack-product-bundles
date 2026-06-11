@@ -64,8 +64,6 @@ export const STEP_CONDITION_TYPE_OPTIONS = [
 /** Operator options for step condition rules */
 export const STEP_CONDITION_OPERATOR_OPTIONS = [
   { label: "is equal to", value: "equal_to" },
-  { label: "is greater than", value: "greater_than" },
-  { label: "is less than", value: "less_than" },
   { label: "is greater than or equal to", value: "greater_than_or_equal_to" },
   { label: "is less than or equal to", value: "less_than_or_equal_to" },
 ] as const;
@@ -73,8 +71,6 @@ export const STEP_CONDITION_OPERATOR_OPTIONS = [
 /** Operator options for category condition rules */
 export const CATEGORY_CONDITION_OPERATOR_OPTIONS = [
   { label: "is equal to", value: "equalTo" },
-  { label: "is greater than", value: "greaterThan" },
-  { label: "is less than", value: "lessThan" },
   { label: "is greater than or equal to", value: "greaterThanOrEqualTo" },
   { label: "is less than or equal to", value: "lessThanOrEqualTo" },
 ] as const;
@@ -100,8 +96,6 @@ export const DISCOUNT_CONDITION_TYPE_OPTIONS = [
 /** Operator options for discount rules */
 export const DISCOUNT_OPERATOR_OPTIONS = [
   { label: "Greater than or equal (\u2265)", value: ConditionOperator.GTE },
-  { label: "Greater than (>)", value: ConditionOperator.GT },
   { label: "Less than or equal (\u2264)", value: ConditionOperator.LTE },
-  { label: "Less than (<)", value: ConditionOperator.LT },
   { label: "Equal to (=)", value: ConditionOperator.EQ },
 ] as const;

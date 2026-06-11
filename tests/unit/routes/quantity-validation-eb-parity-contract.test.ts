@@ -20,11 +20,9 @@ function quantityValidationBlock(source: string) {
   return source.slice(start, start + 5000);
 }
 
-describe.each([
-  ["FPB", fpbRoute],
-  ["PPB", ppbRoute],
-])("%s Enable Quantity Validation EB parity contract", (_label, source) => {
+describe("FPB Enable Quantity Validation EB parity contract", () => {
   it("keeps quantity validation and product slots as separate bundle-level controls", () => {
+    const source = fpbRoute;
     expect(source).toContain("const [quantityValidationEnabled, setQuantityValidationEnabled]");
     expect(source).toContain("const [productSlotsEnabled, setProductSlotsEnabled]");
 
@@ -35,15 +33,38 @@ describe.each([
     expect(block).toContain("This feature displays empty slots on the storefront.");
     expect(block).toContain("Slot Icon");
     expect(block).toContain("Note: Only applicable when rules are based on quantity");
-    expect(block).toContain("Bundles with 3+ products see 24% higher conversion rates when search filters are enabled.");
   });
 
   it("uses quantityValidationEnabled for the max quantity field and runtime validation payload", () => {
+    const source = fpbRoute;
     const block = quantityValidationBlock(source);
     expect(block).toContain("checked={quantityValidationEnabled || undefined}");
     expect(block).toContain("disabled={!quantityValidationEnabled}");
     expect(source).toContain("isEnabled: quantityValidationEnabled");
     expect(source).not.toContain("isEnabled: productSlotsEnabled");
+  });
+});
+
+describe("PPB Enable Quantity Validation contract", () => {
+  it("keeps quantity validation but does not expose FPB Product Slots controls", () => {
+    expect(ppbRoute).toContain("const [quantityValidationEnabled, setQuantityValidationEnabled]");
+    expect(ppbRoute).not.toContain("const [productSlotsEnabled, setProductSlotsEnabled]");
+
+    const block = quantityValidationBlock(ppbRoute);
+    expect(block).toContain("Enable Quantity Validation");
+    expect(block).toContain("Maximum allowed quantity per product");
+    expect(block).not.toContain("Product Slots");
+    expect(block).not.toContain("This feature displays empty slots on the storefront.");
+    expect(block).not.toContain("Slot Icon");
+    expect(block).not.toContain("Note: Only applicable when rules are based on quantity");
+  });
+
+  it("uses quantityValidationEnabled for the max quantity field and runtime validation payload", () => {
+    const block = quantityValidationBlock(ppbRoute);
+    expect(block).toContain("checked={quantityValidationEnabled || undefined}");
+    expect(block).toContain("disabled={!quantityValidationEnabled}");
+    expect(ppbRoute).toContain("isEnabled: quantityValidationEnabled");
+    expect(ppbRoute).not.toContain("isEnabled: productSlotsEnabled");
   });
 });
 
