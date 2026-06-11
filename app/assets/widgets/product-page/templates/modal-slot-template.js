@@ -104,16 +104,6 @@ export const modalSlotTemplateMethods = {
   },
 
   _appendSlotIcon(iconWrapper) {
-    const productSlotIconUrl = this.selectedBundle?.productSlotIconUrl || null;
-    if (productSlotIconUrl) {
-      const slotIconImg = document.createElement('img');
-      slotIconImg.src = productSlotIconUrl;
-      slotIconImg.alt = '';
-      slotIconImg.className = 'bw-slot-card__slot-icon-img';
-      iconWrapper.appendChild(slotIconImg);
-      return;
-    }
-
     iconWrapper.innerHTML = `<svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M20.202 3.06152V37.0082M37.1753 20.0348H3.22864" stroke="currentColor" stroke-width="5.09199" stroke-linecap="square" stroke-linejoin="round"/>
     </svg>`;
