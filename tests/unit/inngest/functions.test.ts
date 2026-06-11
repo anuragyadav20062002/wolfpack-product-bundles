@@ -7,6 +7,9 @@
  *  - Function completes without throw when processor returns success: true
  */
 
+import { WebhookProcessor } from "../../../app/services/webhooks/processor.server";
+import { webhookFunction } from "../../../app/inngest/functions";
+
 jest.mock("../../../app/services/webhooks/processor.server", () => ({
   WebhookProcessor: {
     processPubSubMessage: jest.fn(),
@@ -22,9 +25,6 @@ jest.mock("../../../app/inngest/client", () => ({
     ),
   },
 }));
-
-import { WebhookProcessor } from "../../../app/services/webhooks/processor.server";
-import { webhookFunction } from "../../../app/inngest/functions";
 
 const mockProcess = WebhookProcessor.processPubSubMessage as jest.Mock;
 const fn = webhookFunction as any;

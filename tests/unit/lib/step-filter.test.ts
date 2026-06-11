@@ -6,7 +6,12 @@
  * pre-fetched from the Storefront API and stored in stepCollectionProductIds).
  */
 
-import { filterProductsByCollectionIds } from "../../../app/lib/step-filter";
+import { filterProductsByCollectionIds , validateStepFilters } from "../../../app/lib/step-filter";
+
+// ---------------------------------------------------------------------------
+// validateStepFilters — validates the admin-configured filter shape
+// ---------------------------------------------------------------------------
+
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -77,12 +82,6 @@ describe("filterProductsByCollectionIds", () => {
     expect(PRODUCTS).toEqual(original);
   });
 });
-
-// ---------------------------------------------------------------------------
-// validateStepFilters — validates the admin-configured filter shape
-// ---------------------------------------------------------------------------
-
-import { validateStepFilters } from "../../../app/lib/step-filter";
 
 describe("validateStepFilters", () => {
   it("returns null for null input", () => {

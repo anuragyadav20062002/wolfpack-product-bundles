@@ -5,6 +5,13 @@
 
 import { mockShopifyAdmin, createMockGraphQLResponse } from '../../setup';
 
+import {
+  calculateMinInventory,
+  calculateBundleInventory,
+  setInventoryLevel,
+  syncBundleInventory,
+} from '../../../app/services/bundles/inventory-sync.server';
+
 // Mock db.server before importing the module under test
 jest.mock('../../../app/db.server', () => ({
   __esModule: true,
@@ -25,13 +32,6 @@ jest.mock('../../../app/shopify.server', () => ({
     admin: jest.fn(),
   },
 }));
-
-import {
-  calculateMinInventory,
-  calculateBundleInventory,
-  setInventoryLevel,
-  syncBundleInventory,
-} from '../../../app/services/bundles/inventory-sync.server';
 
 describe('Inventory Sync Service', () => {
   beforeEach(() => {

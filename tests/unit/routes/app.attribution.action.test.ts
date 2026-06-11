@@ -7,6 +7,12 @@
 
 import { action } from "../../../app/routes/app/app.attribution";
 
+import { authenticate } from "../../../app/shopify.server";
+import {
+  activateUtmPixel,
+  deactivateUtmPixel,
+} from "../../../app/services/pixel-activation.server";
+
 jest.mock("../../../app/shopify.server", () => ({
   authenticate: {
     admin: jest.fn(),
@@ -18,12 +24,6 @@ jest.mock("../../../app/services/pixel-activation.server", () => ({
   deactivateUtmPixel: jest.fn(),
   getPixelStatus: jest.fn(),
 }));
-
-import { authenticate } from "../../../app/shopify.server";
-import {
-  activateUtmPixel,
-  deactivateUtmPixel,
-} from "../../../app/services/pixel-activation.server";
 
 const mockAuthenticate = authenticate as jest.Mocked<typeof authenticate>;
 const mockActivate = activateUtmPixel as jest.MockedFunction<typeof activateUtmPixel>;
