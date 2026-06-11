@@ -21,10 +21,14 @@ npm run build:widgets:product-page # PDP only
 
 | Source | Output |
 |---|---|
-| `app/assets/bundle-widget-full-page.js` + `bundle-widget-components.js` | `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` |
-| `app/assets/bundle-widget-product-page.js` + `bundle-widget-components.js` | `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` |
+| `app/assets/bundle-widget-full-page.js` + shared/template modules | `extensions/bundle-builder/assets/bundle-widget-full-page-bundled.js` |
+| `app/assets/bundle-widget-product-page.js` + shared/template modules | `extensions/bundle-builder/assets/bundle-widget-product-page-bundled.js` |
 
 **Both source AND bundled files must be committed.**
+
+The widget build inlines shared modules, template config registries, and template method modules before each widget entry file. Template files should export config or method objects; do not reintroduce `installXTemplate` functions or template-specific prototype patching.
+
+Keep split source modules semantically named by responsibility. Mechanical split names such as `chunk-01.js` or `part-01.css` are not acceptable long-term source structure.
 
 ## Cart Transform WASM
 
@@ -41,19 +45,14 @@ Shopify enforces **100,000 B** on app block CSS assets.
 wc -c extensions/bundle-builder/assets/*.css
 ```
 
-If over limit, strip block comments:
-```bash
-python3 -c "
-import re, sys
-f = sys.argv[1]
-c = open(f).read()
-c = re.sub(r'[ \t]*/\*(?![^\n]*\{|\s*[\w\-#.:>~+\[\]@]).*?\*/[ \t]*\n', '', c, flags=re.DOTALL)
-c = re.sub(r'^[ \t]*/\*[^*\n]*(?:\*(?!/)[^*\n]*)*\*/[ \t]*$\n?', '', c, flags=re.MULTILINE)
-c = re.sub(r'\n{3,}', '\n\n', c)
-open(f, 'w').write(c)
-print('Done:', len(c.encode()), 'bytes')
-" extensions/bundle-builder/assets/bundle-widget-full-page.css
-```
+Do not fix an oversized file by making source CSS unreadable. Reduce the base asset by deleting unused/conflicting selectors and moving template-specific CSS into separately generated extension assets. Current split assets:
+
+| Base asset | Template assets |
+|---|---|
+| `bundle-widget-full-page.css` | `bundle-widget-full-page-standard.css`, `bundle-widget-full-page-classic.css`, `bundle-widget-full-page-compact.css`, `bundle-widget-full-page-horizontal.css` |
+| `bundle-widget.css` | `bundle-widget-product-page-cascade.css`, `bundle-widget-product-page-cognive.css`, `bundle-widget-product-page-modal.css` |
+
+`scripts/minify-assets.js` validates every generated CSS asset against Shopify's limit.
 
 ## Linting
 
@@ -68,5 +67,5 @@ npx eslint --max-warnings 9999 <file1> <file2>
 
 After modifying code files:
 ```bash
-python3 -c "from graphify.watch import _rebuild_code; from pathlib import Path; _rebuild_code(Path('.'))"
+npm run graphify:rebuild
 ```
