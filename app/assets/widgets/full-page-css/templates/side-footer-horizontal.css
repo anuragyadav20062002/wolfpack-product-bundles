@@ -122,6 +122,33 @@ minmax(0,
   align-items:flex-end;
   align-self:end}
 
+.fpb-h .product-card.selected .product-content-wrapper {
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:50px 30px 52px;
+  row-gap:4px}
+
+.fpb-h .product-card.selected .product-price-row {
+  grid-row:2;
+  grid-column:1;
+  align-self:start;
+  margin:0}
+
+.fpb-h .product-card.selected .product-card-action.is-expanded {
+  grid-row:3;
+  grid-column:1;
+  width:100%;
+  min-width:0;
+  height:48px;
+  min-height:48px;
+  margin:0;
+  align-self:end;
+  justify-self:stretch}
+
+.fpb-h .product-card.selected .inline-quantity-controls {
+  width:100%;
+  min-width:0;
+  height:48px}
+
 .fpb-h .product-add-btn {
   font-size:0;
   line-height:1;
@@ -263,6 +290,33 @@ minmax(0,
   align-items:flex-end;
   align-self:end}
 
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card.selected .product-content-wrapper {
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:50px 30px 52px;
+  row-gap:4px}
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card.selected .product-price-row {
+  grid-row:2;
+  grid-column:1;
+  align-self:start;
+  margin:0}
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card.selected .product-card-action.is-expanded {
+  grid-row:3;
+  grid-column:1;
+  width:100%;
+  min-width:0;
+  height:48px;
+  min-height:48px;
+  margin:0;
+  align-self:end;
+  justify-self:stretch}
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .sidebar-content .product-card.selected .inline-quantity-controls {
+  width:100%;
+  min-width:0;
+  height:48px}
+
 }
 
 .fpb-h .side-panel-products,
@@ -367,10 +421,18 @@ minmax(0,
   gap:15px;
   padding:0}
 
-.fpb-h .product-card{grid-template-columns:103.8px minmax(0,1fr);grid-template-rows:52px 0 52px;min-height:136px;height:136px}
+.fpb-h .product-card{display:grid;grid-template-columns:103.8px minmax(0,1fr);grid-template-rows:52px 0 52px;min-height:136px;height:136px}
 .fpb-h .product-image{width:103.8px;min-height:120px;height:120px;max-height:120px;border-radius:5px}
-.fpb-h .product-content-wrapper{min-height:120px}
+.fpb-h .product-content-wrapper{display:grid;grid-column:2;grid-row:1 / span 3;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:52px 68px;column-gap:5px;min-height:120px;padding:0}
 .fpb-h .product-title{font-size:13px;line-height:1.25;height:52px}
+.fpb-h .product-price-row{grid-row:2;grid-column:1;align-self:end;margin:0 0 8px}
+.fpb-h .product-card-action{grid-row:2;grid-column:2;align-self:end;margin:0 0 8px}
+.fpb-h .product-card.selected{height:188px;min-height:188px;grid-template-rows:52px 0 84px}
+.fpb-h .product-card.selected .product-image{height:172px;min-height:172px;max-height:172px}
+.fpb-h .product-card.selected .product-content-wrapper{grid-template-columns:minmax(0,1fr);grid-template-rows:50px 30px 52px;row-gap:4px;min-height:172px}
+.fpb-h .product-card.selected .product-price-row{grid-row:2;grid-column:1;align-self:start;margin:0}
+.fpb-h .product-card.selected .product-card-action.is-expanded{grid-row:3;grid-column:1;width:100%;min-width:0;height:48px;min-height:48px;margin:0;align-self:end;justify-self:stretch}
+.fpb-h .product-card.selected .inline-quantity-controls{width:100%;min-width:0;height:48px}
 
 .fpb-h .full-page-side-panel{min-height:0;margin-top:0;padding:0}
 }

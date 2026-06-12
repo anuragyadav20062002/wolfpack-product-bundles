@@ -368,8 +368,7 @@ shouldRenderFullPageSearch() {
 },
 
 usesSelectedQuantityBadge() {
-  return this.resolveFullPageCardCtaMode() === 'icon'
-    && this.getFullPageDesignPreset() !== 'COMPACT';
+  return false;
 },
 
 _isStandardDesktopSidebar(panel) {

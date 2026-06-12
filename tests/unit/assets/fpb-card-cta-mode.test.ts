@@ -42,4 +42,24 @@ describe('FPB product card CTA mode', () => {
     expect(runtime.resolveFullPageCardCtaMode()).toBe('icon');
     expect(runtime.usesSelectedQuantityBadge()).toBe(false);
   });
+
+  it('does not collapse Standard icon selected cards into a badge-only state', () => {
+    const runtime = makeRuntime({
+      bundleDesignPresetId: 'DEFAULT',
+      showTextOnPlusEnabled: false,
+    });
+
+    expect(runtime.resolveFullPageCardCtaMode()).toBe('icon');
+    expect(runtime.usesSelectedQuantityBadge()).toBe(false);
+  });
+
+  it('does not collapse Standard text selected cards into a badge-only state', () => {
+    const runtime = makeRuntime({
+      bundleDesignPresetId: 'DEFAULT',
+      showTextOnPlusEnabled: true,
+    });
+
+    expect(runtime.resolveFullPageCardCtaMode()).toBe('text');
+    expect(runtime.usesSelectedQuantityBadge()).toBe(false);
+  });
 });
