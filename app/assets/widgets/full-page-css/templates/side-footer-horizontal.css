@@ -453,6 +453,7 @@
   width: 22px;
   height: 22px;
   background: transparent;
+  color: var(--bundle-side-panel-remove-color, #d92d20);
   box-shadow: none;
 }
 
@@ -1202,7 +1203,7 @@
     border: 0;
     border-radius: 0;
     background: transparent;
-    color: #000;
+    color: var(--bundle-side-panel-remove-color, #d92d20);
     line-height: 1;
   }
 

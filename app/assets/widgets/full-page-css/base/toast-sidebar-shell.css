@@ -425,24 +425,32 @@
 .side-panel-product-remove {
   background: none;
   border: none;
-  color: var(--bundle-side-panel-remove-color, #aaaaaa);
-  font-size: 18px;
+  color: var(--bundle-side-panel-remove-color, #d92d20);
+  font-size: 0;
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 0;
   line-height: 1;
-  border-radius: 4px;
+  border-radius: 999px;
   transition:
     color 0.15s,
     background 0.15s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+
+.side-panel-product-remove svg {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .side-panel-product-remove:hover {
-  color: var(--bundle-side-panel-remove-hover, #bd0000);
-  background: rgba(189, 0, 0, 0.08);
+  color: var(--bundle-side-panel-remove-hover, #b42318);
+  background: rgba(217, 45, 32, 0.1);
 }
 
 .sidebar-upsell-slot {

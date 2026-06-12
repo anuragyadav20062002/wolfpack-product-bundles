@@ -226,7 +226,7 @@ renderSidePanel(panel) {
         const imgSrc = this._getSelectedProductImageSrc(item);
 
         const isFreeGiftItem = item.isFreeGift === true && item.addonDisplayFree === true;
-        const qtySpan = `<span class="side-panel-product-qty">×${item.quantity}</span>`;
+        const qtySpan = `<span class="side-panel-product-qty" aria-label="Quantity ${item.quantity}">${item.quantity}</span>`;
         const priceHtml = isFreeGiftItem
           ? `<span class="side-panel-product-price free-gift-price">${CurrencyManager.convertAndFormat(0, currencyInfo)}</span><span class="side-panel-product-original-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`
           : `<span class="side-panel-product-price">${CurrencyManager.convertAndFormat(item.price * item.quantity, currencyInfo)} ${qtySpan}</span>`;
@@ -262,7 +262,9 @@ renderSidePanel(panel) {
         if (!item.isDefault) {
           const removeBtn = document.createElement('button');
           removeBtn.className = 'side-panel-product-remove';
-          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
+          removeBtn.type = 'button';
+          removeBtn.setAttribute('aria-label', `Delete ${summaryTitle || 'product'}`);
+          removeBtn.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false"><path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>`;
           removeBtn.addEventListener('click', () => {
             const stepIndex = item.stepIndex;
             const productId = item.variantId || item.productId || item.id;

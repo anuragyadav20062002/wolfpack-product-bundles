@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.33
+ * Version : 3.0.34
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.33';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.34';
 (function() {
   'use strict';
 
@@ -2395,10 +2395,10 @@ function renderSelectedProductRow(product = null, options = {}) {
         ${renderBadges(product)}
       </div>
       <div class="bw-selected-row__action">
-        <span class="bw-selected-row__quantity">x${quantity}</span>
+        <span class="bw-selected-row__quantity" aria-label="Quantity ${quantity}">${quantity}</span>
         ${removable ? `
-          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Remove ${escapeAttribute(title)}">
-            Remove
+          <button type="button" class="bw-selected-row__remove" data-action="remove-selected-product" data-variant-id="${escapeAttribute(selectionKey)}" aria-label="Delete ${escapeAttribute(title)}">
+            ${renderTrashIcon()}
           </button>
         ` : ''}
       </div>
@@ -2418,6 +2418,14 @@ function renderEmptyRow(options) {
       </div>
       <div class="bw-selected-row__action bw-selected-row__action--empty"></div>
     </div>
+  `;
+}
+
+function renderTrashIcon() {
+  return `
+    <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" aria-hidden="true" focusable="false">
+      <path d="M6 2h8a1 1 0 0 1 1 1v1H5V3a1 1 0 0 1 1-1Zm-2 3h12l-1 13H5L4 5Zm4 2v9m4-9v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    </svg>
   `;
 }
 
