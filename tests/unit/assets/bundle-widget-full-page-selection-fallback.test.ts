@@ -1,11 +1,7 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFullPageWidgetSources } from './widget-source-helpers';
 
 describe("bundle-widget-full-page explicit FPB selection fallback", () => {
-  const source = readFileSync(
-    join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-    "utf8",
-  );
+  const source = readFullPageWidgetSources();
 
   it("selects the explicit full-page bundle id when generic bundle selection returns null", () => {
     expect(source).toContain("BundleDataManager.selectBundle(this.bundleData, this.config)");

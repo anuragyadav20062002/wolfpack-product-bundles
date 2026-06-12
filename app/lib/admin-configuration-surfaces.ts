@@ -12,7 +12,7 @@ export type SettingsField = {
   key?: string;
   label: string;
   value?: string;
-  kind?: "color" | "text" | "number" | "select" | "radio" | "toggle" | "css" | "script" | "image" | "file" | "button";
+  kind?: "color" | "text" | "number" | "select" | "radio" | "toggle" | "css" | "script" | "image" | "file" | "button" | "loadingSpinner";
   note?: string;
   description?: string;
   guideUrl?: string;
@@ -217,8 +217,8 @@ export const DESIGN_CONFIGURATION: SettingsTab[] = [
     description: "Image-fit and loading-media controls.",
     fields: [
       { label: "Image Fit", value: "Cover", kind: "select", options: ["Cover", "Contain", "Fill"] },
-      { label: "Bundle Loading GIF", value: "Loading_Spinner.gif", kind: "text" },
-      { label: "Checkout GIF", value: "Loading_Spinner_Checkout.gif", kind: "text" },
+      { label: "Bundle Loading GIF", value: "Default spinner", kind: "loadingSpinner", description: "Displayed on the initial bundle load unless a merchant GIF is configured on the bundle." },
+      { label: "Checkout GIF", value: "Default spinner", kind: "loadingSpinner", description: "Displayed during checkout loading unless a merchant GIF is configured." },
     ],
   },
 ];

@@ -358,11 +358,11 @@ PPB Configure Page
 │   │   ├── Enable toggle
 │   │   ├── Maximum allowed quantity per product
 │   │   ├── Pro Tip banner
-│   │   ├── Product Slots toggle
-│   │   ├── Product Slots helper text
-│   │   ├── Slot Icon: [Change Icon] opens bundle-level image picker; [Reset] clears icon
-│   │   ├── Slot Icon scope: per-bundle Bundle Settings control only; no Design Control Panel route
-│   │   ├── Note: only applies when rules are quantity-based
+│   │   ├── FPB only: Product Slots toggle
+│   │   ├── FPB only: Product Slots helper text
+│   │   ├── FPB only: Slot Icon [Change Icon] opens bundle-level image picker; [Reset] clears icon
+│   │   ├── FPB Slot Icon scope: per-bundle Bundle Settings control only; no Design Control Panel route
+│   │   ├── FPB only note: only applies when rules are quantity-based
 │   │   └── Pre-order & Subscription Integration blocked while Buy X, get Y is selected
 │   ├── Cart line item discount display
 │   │   └── [Button] "Edit Defaults" → /app/settings

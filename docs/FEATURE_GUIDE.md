@@ -570,7 +570,7 @@ For themes without App Extension support:
 ## Support
 
 For implementation help, see:
-- [Architecture Overview](ARCHITECTURE_OVERVIEW.md)
+- [Application Architecture](APPLICATION_ARCHITECTURE.md)
 - [API Endpoints](API_ENDPOINTS.md)
 - [Database Schema](DATABASE_SCHEMA.md)
 - [Cart Transform Function](CART_TRANSFORM_FUNCTION.md)

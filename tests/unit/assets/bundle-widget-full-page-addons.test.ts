@@ -1,15 +1,11 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFullPageWidgetSources } from './widget-source-helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PricingCalculator } = require("../../../app/assets/widgets/shared/pricing-calculator.js");
 
 describe("Full Page widget direct Add-ons contract", () => {
   it("derives an add-on step from direct personalizationData", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("applyPersonalizationAddonProducts()");
     expect(source).toContain("buildAddonStepFromPersonalization()");
@@ -20,10 +16,7 @@ describe("Full Page widget direct Add-ons contract", () => {
   });
 
   it("renders direct add-on eligibility messages with tier variables", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("getAddonEligibilityState(step)");
     expect(source).toContain("renderAddonEligibilityMessage(step, eligibilityState)");
@@ -34,10 +27,7 @@ describe("Full Page widget direct Add-ons contract", () => {
   });
 
   it("renders the direct add-on section title before the tier message", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("renderAddonSectionTitle(step)");
     expect(source).toContain("side-panel-addon-title");
@@ -45,20 +35,14 @@ describe("Full Page widget direct Add-ons contract", () => {
   });
 
   it("does not emit chargeable add-ons as free-gift cart lines", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("step?.isFreeGift && step?.addonDisplayFree === true");
     expect(source).not.toContain("if (step?.isFreeGift) properties['_bundle_step_type'] = 'free_gift';");
   });
 
   it("emits chargeable add-on discount data for Cart Transform", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("getAddonLineDiscount(step)");
     expect(source).toContain("if (addonDiscount && step?.addonDisplayFree !== true) {");
@@ -68,10 +52,7 @@ describe("Full Page widget direct Add-ons contract", () => {
   });
 
   it("includes selected add-on discount savings in cart display properties", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("calculateSelectedAddonDiscountAmount()");
     expect(source).toContain("getDiscountInfoWithSelectedAddonDiscount(discountInfo, totalPrice)");
@@ -94,10 +75,7 @@ describe("Full Page widget direct Add-ons contract", () => {
   });
 
   it("uses combined base plus selected add-on discount for visible Full Page totals", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("const finalPrice = combinedDiscountInfo.hasDiscount ? combinedDiscountInfo.finalPrice : totalPrice;");
     expect(source).toContain("totalPrice, finalPrice, combinedDiscountInfo, currencyInfo, isLastStep");
@@ -105,10 +83,7 @@ describe("Full Page widget direct Add-ons contract", () => {
   });
 
   it("uses combined discount for FPB summary tray, progress, and modal messaging paths", () => {
-    const source = readFileSync(
-      join(process.cwd(), "app/assets/bundle-widget-full-page.js"),
-      "utf8",
-    );
+    const source = readFullPageWidgetSources();
 
     expect(source).toContain("combinedDiscountInfo.hasDiscount");
     expect(source).toContain("const progressBar = this._renderDiscountProgress({");

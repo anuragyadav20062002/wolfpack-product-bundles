@@ -22,8 +22,16 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(92, 106, 196, 0.18) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 50% at 80% 50%, rgba(156, 106, 222, 0.14) 0%, transparent 70%);
+    radial-gradient(
+      ellipse 60% 50% at 20% 50%,
+      rgba(92, 106, 196, 0.18) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 80% 50%,
+      rgba(156, 106, 222, 0.14) 0%,
+      transparent 70%
+    );
   pointer-events: none;
 }
 
@@ -109,7 +117,9 @@
   border: none;
   cursor: pointer;
   text-decoration: none;
-  transition: opacity 0.15s, transform 0.15s;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
   box-shadow: 0 4px 16px rgba(92, 106, 196, 0.4);
   letter-spacing: 0.01em;
 }
@@ -192,7 +202,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: box-shadow 0.15s, transform 0.15s;
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
 }
 
 .featureCard:hover {
@@ -225,12 +237,24 @@
 }
 
 /* Colour accents for icons */
-.iconPurple  { background: linear-gradient(135deg, #f0ecff, #e4d9ff); }
-.iconTeal    { background: linear-gradient(135deg, #e4f7f7, #ccf5f5); }
-.iconOrange  { background: linear-gradient(135deg, #fff5e6, #ffe8cc); }
-.iconGreen   { background: linear-gradient(135deg, #e6f9ee, #ccf0da); }
-.iconBlue    { background: linear-gradient(135deg, #e6f0ff, #cce0ff); }
-.iconPink    { background: linear-gradient(135deg, #fff0f7, #ffdaf0); }
+.iconPurple {
+  background: linear-gradient(135deg, #f0ecff, #e4d9ff);
+}
+.iconTeal {
+  background: linear-gradient(135deg, #e4f7f7, #ccf5f5);
+}
+.iconOrange {
+  background: linear-gradient(135deg, #fff5e6, #ffe8cc);
+}
+.iconGreen {
+  background: linear-gradient(135deg, #e6f9ee, #ccf0da);
+}
+.iconBlue {
+  background: linear-gradient(135deg, #e6f0ff, #cce0ff);
+}
+.iconPink {
+  background: linear-gradient(135deg, #fff0f7, #ffdaf0);
+}
 
 /* ── Footer strip ─────────────────────────────────────────── */
 .footerStrip {
@@ -279,7 +303,11 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 70% 70% at 90% 50%, rgba(156, 106, 222, 0.18) 0%, transparent 70%);
+  background: radial-gradient(
+    ellipse 70% 70% at 90% 50%,
+    rgba(156, 106, 222, 0.18) 0%,
+    transparent 70%
+  );
   pointer-events: none;
 }
 
@@ -361,7 +389,9 @@
   border-radius: 10px;
   padding: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .bundleTypeCard:hover {

@@ -659,32 +659,3 @@ model BundleEngagement {
   @@index([shopId, createdAt])
   @@index([bundleId, createdAt])
 }
-
-/// Captures Core Web Vitals samples collected from the embedded Shopify admin.
-/// Written once per (shopId, sessionId, route, metric) the first time the
-/// browser reports a final value — the unique constraint keeps the table
-/// deduplicated so retries / multiple firings of the same metric do not
-/// double-count.
-///
-/// Powers the LCP budget dashboard + Lighthouse-CI baselines. Issue:
-/// docs/issues-prod/admin-lcp-measurement-1.md.
-model AdminWebVital {
-  id          String   @id @default(uuid())
-  shopId      String
-  sessionId   String   // browser-session UUID, stable across nav within the embedded admin
-  route       String   // resolved pathname (e.g. /app/dashboard, /app/attribution)
-  metric      String   // LCP | INP | CLS | TTFB | FCP
-  value       Float    // metric value (ms for time-based, unitless for CLS)
-  rating      String   // good | needs-improvement | poor (per web-vitals lib)
-  navType     String?  // navigate | reload | back-forward | back-forward-cache | prerender
-  deviceType  String?  // desktop | mobile (inferred from userAgent)
-  appVersion  String?  // package.json version at capture time
-  createdAt   DateTime @default(now())
-
-  @@unique([shopId, sessionId, route, metric])
-  @@index([shopId])
-  @@index([route])
-  @@index([metric])
-  @@index([shopId, createdAt])
-  @@index([route, metric, createdAt])
-}

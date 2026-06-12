@@ -5,6 +5,9 @@
  */
 
 // Mock logger
+import { writeBundleConfigPageMetafield } from "../../../app/services/widget-installation/widget-full-page-bundle.server";
+import { AppLogger } from "../../../app/lib/logger";
+
 jest.mock("../../../app/lib/logger", () => ({
   AppLogger: {
     info: jest.fn(),
@@ -24,9 +27,6 @@ jest.mock("../../../app/lib/bundle-formatter.server", () => ({
     pricing: null,
   })),
 }));
-
-import { writeBundleConfigPageMetafield } from "../../../app/services/widget-installation/widget-full-page-bundle.server";
-import { AppLogger } from "../../../app/lib/logger";
 
 const makeBundle = (overrides: Record<string, unknown> = {}) => ({
   id: "bundle-1",

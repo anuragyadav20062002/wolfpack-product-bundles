@@ -1,13 +1,10 @@
-import fs from "node:fs";
-import path from "node:path";
-
-const sourcePath = path.join(process.cwd(), "app/assets/bundle-widget-full-page.js");
+import { readFullPageWidgetSources } from './widget-source-helpers';
 
 describe("FPB box selection quantity validation runtime contract", () => {
   let source: string;
 
   beforeAll(() => {
-    source = fs.readFileSync(sourcePath, "utf8");
+    source = readFullPageWidgetSources();
   });
 
   it("uses EB-style exact active box quantity validation", () => {

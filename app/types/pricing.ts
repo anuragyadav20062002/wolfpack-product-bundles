@@ -38,9 +38,7 @@ export enum ConditionType {
  */
 export enum ConditionOperator {
   GTE = 'gte',  // Greater than or equal (≥)
-  GT = 'gt',    // Greater than (>)
   LTE = 'lte',  // Less than or equal (≤)
-  LT = 'lt',    // Less than (<)
   EQ = 'eq'     // Equal (=)
 }
 
@@ -269,9 +267,7 @@ export function createNewPricingRule(method: DiscountMethod): PricingRule {
 export function getOperatorText(operator: ConditionOperator): string {
   const operatorMap: Record<ConditionOperator, string> = {
     [ConditionOperator.GTE]: 'at least (≥)',
-    [ConditionOperator.GT]: 'more than (>)',
     [ConditionOperator.LTE]: 'at most (≤)',
-    [ConditionOperator.LT]: 'less than (<)',
     [ConditionOperator.EQ]: 'exactly (=)'
   };
 

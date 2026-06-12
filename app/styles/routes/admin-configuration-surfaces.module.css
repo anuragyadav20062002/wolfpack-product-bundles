@@ -1273,6 +1273,31 @@
   object-fit: cover;
 }
 
+.ebLoadingSpinnerPreview {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border: 1px solid #e1e3e5;
+  border-radius: 8px;
+  background: #3f3f46;
+}
+
+.ebLoadingSpinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ebLoadingSpinner 0.75s linear infinite;
+}
+
+@keyframes ebLoadingSpinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ebToggleRow {
   display: flex;
   align-items: center;

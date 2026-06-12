@@ -48,6 +48,7 @@ export interface FormattedBundle {
   showCompareAtPrices: boolean;
   cartRedirectToCheckout: boolean;
   allowQuantityChanges: boolean;
+  showTextOnAddButton: boolean;
   // Per-bundle text overrides
   textOverrides: Record<string, string> | null;
   textOverridesByLocale: Record<string, Record<string, string>> | null;
@@ -275,8 +276,8 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
       isEnabled: false,
       allowedQuantity: 1,
     },
-    productSlotsEnabled: bundle.productSlotsEnabled ?? false,
-    productSlotIconUrl: bundle.productSlotIconUrl ?? null,
+    productSlotsEnabled: bundle.bundleType === "full_page" ? bundle.productSlotsEnabled ?? false : false,
+    productSlotIconUrl: bundle.bundleType === "full_page" ? bundle.productSlotIconUrl ?? null : null,
     useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
       bundle.bundleDesignTemplate,
@@ -297,6 +298,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     showCompareAtPrices: bundle.showCompareAtPrices ?? false,
     cartRedirectToCheckout: bundle.cartRedirectToCheckout ?? false,
     allowQuantityChanges: bundle.allowQuantityChanges ?? true,
+    showTextOnAddButton: bundle.showTextOnAddButton ?? false,
     textOverrides: (bundle.textOverrides as Record<string, string> | null) ?? null,
     textOverridesByLocale: (bundle.textOverridesByLocale as Record<string, Record<string, string>> | null) ?? null,
   };

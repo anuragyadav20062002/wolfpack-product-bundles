@@ -1,3 +1,6 @@
+import { loader } from "../../../app/routes/api/api.bundles.json";
+import { requireAppProxy } from "../../../app/lib/auth-guards.server";
+
 jest.mock("../../../app/lib/logger", () => ({
   AppLogger: {
     info: jest.fn(),
@@ -20,9 +23,6 @@ jest.mock("../../../app/db.server", () => ({
     },
   },
 }));
-
-import { loader } from "../../../app/routes/api/api.bundles.json";
-import { requireAppProxy } from "../../../app/lib/auth-guards.server";
 
 const mockRequireAppProxy = requireAppProxy as jest.MockedFunction<typeof requireAppProxy>;
 const getDb = () => require("../../../app/db.server").default;

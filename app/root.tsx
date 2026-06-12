@@ -9,10 +9,8 @@ import {
   useRouteError,
   useRouteLoaderData,
 } from "@remix-run/react";
-import { useEffect } from "react";
 import CrispChat from "./components/CrispChat";
 import { ErrorPage } from "./components/ErrorPage";
-import { reportWebVitals } from "./lib/web-vitals.client";
 
 export const loader = async (_args: LoaderFunctionArgs) => {
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
@@ -50,13 +48,6 @@ export function ErrorBoundary() {
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
 
-  // Wire Core Web Vitals reporting (LCP, INP, CLS, TTFB, FCP) once on first
-  // mount. Posts to /api/web-vitals — see app/lib/web-vitals.client.ts.
-  // Idempotent: subsequent calls are no-ops, safe under React StrictMode.
-  useEffect(() => {
-    reportWebVitals();
-  }, []);
-
   return (
     <html>
       <head>
@@ -93,8 +84,9 @@ export default function App() {
           rel="stylesheet"
           href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
           media="print"
-          // @ts-expect-error — onLoad is fine on a <link>, React's types omit it for non-JS resources.
-          onLoad="this.media='all'"
+          onLoad={(event) => {
+            event.currentTarget.media = "all";
+          }}
         />
         <noscript>
           {/* Fallback if JS is disabled — accept the render-blocking cost. */}

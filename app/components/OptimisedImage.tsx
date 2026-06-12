@@ -57,25 +57,24 @@ export function OptimisedImage({
   const imgProps: ImgHTMLAttributes<HTMLImageElement> = {
     ...rest,
     src,
-    alt,
     width,
     height,
     loading,
     decoding,
   };
   if (fetchPriority) {
-    // React's type for fetchPriority lags behind the spec — assign via index access.
-    (imgProps as Record<string, unknown>).fetchPriority = fetchPriority;
+    // React 18 warns on camel-cased fetchPriority in the DOM.
+    (imgProps as Record<string, unknown>).fetchpriority = fetchPriority;
   }
 
   // If neither sibling is derivable (svg, gif, dynamic url, etc.) just emit the plain img.
-  if (!avif && !webp) return <img {...imgProps} />;
+  if (!avif && !webp) return <img {...imgProps} alt={alt ?? ""} />;
 
   return (
     <picture>
       {avif && <source type="image/avif" srcSet={avif} />}
       {webp && <source type="image/webp" srcSet={webp} />}
-      <img {...imgProps} />
+      <img {...imgProps} alt={alt ?? ""} />
     </picture>
   );
 }

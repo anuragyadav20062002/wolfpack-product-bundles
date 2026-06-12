@@ -787,6 +787,6 @@ curl -X POST \
 
 ## Related Documentation
 
-- [Architecture Overview](ARCHITECTURE_OVERVIEW.md)
+- [Application Architecture](APPLICATION_ARCHITECTURE.md)
 - [Feature Guide](FEATURE_GUIDE.md)
 - [Database Schema](DATABASE_SCHEMA.md)

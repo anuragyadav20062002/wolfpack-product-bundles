@@ -8,7 +8,12 @@
  *  - The old fire-and-forget WebhookProcessor call is removed
  */
 
-import { createHmac } from "crypto";
+import { createHmac } from "node:crypto";
+
+import { IncomingMessage, ServerResponse } from "node:http";
+import { Socket } from "node:net";
+import { WebhookProcessor } from "../../../app/services/webhooks/processor.server";
+import { handleRequest } from "../../../app/services/webhook-worker.server";
 
 // Mock inngest client BEFORE importing the worker
 const mockSend = jest.fn();
@@ -33,11 +38,6 @@ jest.mock("../../../app/lib/logger", () => ({
     startTimer: jest.fn(() => jest.fn()),
   },
 }));
-
-import { IncomingMessage, ServerResponse } from "http";
-import { Socket } from "net";
-import { WebhookProcessor } from "../../../app/services/webhooks/processor.server";
-import { handleRequest } from "../../../app/services/webhook-worker.server";
 
 const mockProcessPubSub = WebhookProcessor.processPubSubMessage as jest.Mock;
 

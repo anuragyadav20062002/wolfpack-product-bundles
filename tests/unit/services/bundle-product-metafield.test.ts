@@ -408,7 +408,7 @@ describe("updateBundleProductMetafields", () => {
     ]));
   });
 
-  it("emits direct Bundle Settings contracts into product-page bundle_ui_config", async () => {
+  it("emits direct Bundle Settings contracts into product-page bundle_ui_config without FPB Product Slots", async () => {
     const admin = makeAdmin();
     const directContracts = {
       defaultProductsData: {
@@ -426,8 +426,6 @@ describe("updateBundleProductMetafields", () => {
         isEnabled: true,
         allowedQuantity: 1,
       },
-      productSlotsEnabled: true,
-      productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
       individualSellingPlanSelection: {
         isEnabled: false,
         showFor: "ALL_PRODUCTS",
@@ -443,13 +441,19 @@ describe("updateBundleProductMetafields", () => {
     await updateBundleProductMetafields(
       admin,
       "gid://shopify/Product/999",
-      makeBundleConfig(BundleType.PRODUCT_PAGE, directContracts),
+      makeBundleConfig(BundleType.PRODUCT_PAGE, {
+        ...directContracts,
+        productSlotsEnabled: true,
+        productSlotIconUrl: "https://cdn.example.test/slot-icon.png",
+      }),
     );
 
     const metafields = admin.graphql.mock.calls[1][1].variables.metafields;
     const parsed = JSON.parse(metafields.find((f: any) => f.key === "bundle_ui_config").value);
 
     expect(parsed).toEqual(expect.objectContaining(directContracts));
+    expect(parsed.productSlotsEnabled).toBe(false);
+    expect(parsed.productSlotIconUrl).toBeNull();
   });
 
   it("emits direct full-page Add-ons personalization contract into bundle_ui_config", async () => {

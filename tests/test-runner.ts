@@ -3,7 +3,7 @@
  * Orchestrates all test suites and provides detailed reporting
  */
 
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -13,6 +13,7 @@ interface TestResult {
   failed: number;
   skipped: number;
   duration: number;
+  commandFailed?: boolean;
   coverage?: {
     lines: number;
     functions: number;
@@ -87,35 +88,83 @@ class TestRunner {
     console.log('-'.repeat(50));
 
     const startTime = Date.now();
+    const testPath = pattern.replace(/\/\*\*\/\*\.test\.ts$/, '');
 
-    try {
-      const command = `npx jest --testPathPattern="${pattern}" --verbose --coverage=false`;
-      const output = execSync(command, { 
-        encoding: 'utf8',
-        stdio: 'pipe'
+    if (!this.hasTestFiles(testPath)) {
+      const duration = Date.now() - startTime;
+      this.results.push({
+        suite: suiteName,
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        duration,
       });
 
-      const duration = Date.now() - startTime;
-      const result = this.parseJestOutput(output, suiteName, duration);
-      this.results.push(result);
+      console.log(`⏭️  ${suiteName} skipped; no test files found at ${testPath}`);
+      return;
+    }
 
+    const projectName = this.resolveJestProject(testPath);
+    const jestArgs = [
+      'jest',
+      '--selectProjects',
+      projectName,
+      '--testPathPattern',
+      testPath,
+      '--verbose',
+      '--coverage=false',
+    ];
+    const completed = spawnSync('npx', jestArgs, {
+        encoding: 'utf8',
+        stdio: 'pipe',
+        maxBuffer: 1024 * 1024 * 20,
+      });
+
+    const duration = Date.now() - startTime;
+    const output = `${completed.stdout ?? ''}${completed.stderr ?? ''}`;
+    const result = this.parseJestOutput(output, suiteName, duration);
+    result.commandFailed = completed.status !== 0 || Boolean(completed.error);
+    this.results.push(result);
+
+    if (!result.commandFailed) {
       console.log(`✅ ${suiteName} completed in ${duration}ms`);
       console.log(`   Passed: ${result.passed}, Failed: ${result.failed}, Skipped: ${result.skipped}`);
-
-    } catch (error: any) {
-      const duration = Date.now() - startTime;
-      const output = error.stdout || error.message;
-      const result = this.parseJestOutput(output, suiteName, duration);
-      this.results.push(result);
-
-      console.log(`❌ ${suiteName} had failures in ${duration}ms`);
-      console.log(`   Passed: ${result.passed}, Failed: ${result.failed}, Skipped: ${result.skipped}`);
-      
-      if (result.failed > 0) {
-        console.log(`\n📋 Failure Details for ${suiteName}:`);
-        console.log(output);
-      }
+      return;
     }
+
+    console.log(`❌ ${suiteName} had failures in ${duration}ms`);
+    console.log(`   Passed: ${result.passed}, Failed: ${result.failed}, Skipped: ${result.skipped}`);
+
+    if (completed.error) {
+      console.log(`\n📋 Command Error for ${suiteName}:`);
+      console.log(completed.error.message);
+    }
+
+    if (output.trim()) {
+      console.log(`\n📋 Failure Details for ${suiteName}:`);
+      console.log(output);
+    }
+  }
+
+  private resolveJestProject(testPath: string): 'unit' | 'integration' | 'e2e' {
+    if (testPath.startsWith('tests/integration')) return 'integration';
+    if (testPath.startsWith('tests/e2e')) return 'e2e';
+    return 'unit';
+  }
+
+  private hasTestFiles(testPath: string): boolean {
+    const absolutePath = path.join(process.cwd(), testPath);
+    if (!fs.existsSync(absolutePath)) return false;
+
+    const entries = fs.readdirSync(absolutePath, { withFileTypes: true });
+    return entries.some((entry) => {
+      const entryPath = path.join(absolutePath, entry.name);
+      if (entry.isDirectory()) {
+        return this.hasTestFiles(path.relative(process.cwd(), entryPath));
+      }
+
+      return /\.(test|spec)\.(ts|tsx|js)$/.test(entry.name);
+    });
   }
 
   /**
@@ -130,14 +179,17 @@ class TestRunner {
       duration
     };
 
-    // Parse test results from Jest output
-    const passedMatch = output.match(/(\d+) passed/);
-    const failedMatch = output.match(/(\d+) failed/);
-    const skippedMatch = output.match(/(\d+) skipped/);
+    const testsSummary = output.match(/^Tests:\s+(.+)$/m);
+    if (testsSummary) {
+      const testsLine = testsSummary[1];
+      const passedMatch = testsLine.match(/(\d+) passed/);
+      const failedMatch = testsLine.match(/(\d+) failed/);
+      const skippedMatch = testsLine.match(/(\d+) skipped/);
 
-    if (passedMatch) result.passed = parseInt(passedMatch[1]);
-    if (failedMatch) result.failed = parseInt(failedMatch[1]);
-    if (skippedMatch) result.skipped = parseInt(skippedMatch[1]);
+      if (passedMatch) result.passed = parseInt(passedMatch[1]);
+      if (failedMatch) result.failed = parseInt(failedMatch[1]);
+      if (skippedMatch) result.skipped = parseInt(skippedMatch[1]);
+    }
 
     // Parse coverage if available
     const coverageMatch = output.match(/All files\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)\s+\|\s+([\d.]+)/);
@@ -211,10 +263,16 @@ class TestRunner {
 
     // Final status
     console.log('\n' + '='.repeat(80));
-    if (summary.totalFailed === 0) {
-      console.log('🎉 ALL TESTS PASSED! Your Shopify Bundle App is ready for deployment.');
+    const hasCommandFailure = this.results.some((result) => result.commandFailed);
+    if (summary.totalFailed === 0 && !hasCommandFailure) {
+      if (summary.totalTests === 0) {
+        console.log('⏭️  No test files found; requested suites were skipped.');
+      } else {
+        console.log('🎉 ALL TESTS PASSED! Your Shopify Bundle App is ready for deployment.');
+      }
     } else {
       console.log(`⚠️  ${summary.totalFailed} TEST(S) FAILED. Please review and fix before deployment.`);
+      process.exitCode = 1;
     }
     console.log('='.repeat(80));
 
@@ -261,6 +319,12 @@ class TestRunner {
    * Assess test quality based on results
    */
   private assessTestQuality(summary: TestSummary): void {
+    if (summary.totalTests === 0) {
+      console.log('   ⏭️  No executable tests found for the requested suite.');
+      console.log(`   📝 Test Density: ${summary.totalTests} tests across ${summary.totalSuites} suites`);
+      return;
+    }
+
     const successRate = summary.totalTests > 0 
       ? (summary.totalPassed / summary.totalTests) * 100
       : 0;
@@ -314,8 +378,9 @@ class TestRunner {
       recommendations.push('⏭️  Review and implement skipped tests');
     }
 
-    const avgTestsPerSuite = summary.totalTests / summary.totalSuites;
-    if (avgTestsPerSuite < 5) {
+    if (summary.totalTests === 0) {
+      recommendations.push('📝 Add test cases when integration or e2e coverage is introduced');
+    } else if (summary.totalTests / summary.totalSuites < 5) {
       recommendations.push('📝 Consider adding more comprehensive test cases');
     }
 

@@ -20,8 +20,6 @@ const ConditionValidator = (function () {
   // ─── Operator constants ───────────────────────────────────────────────────
   const OPERATORS = {
     EQUAL_TO:                'equal_to',
-    GREATER_THAN:            'greater_than',
-    LESS_THAN:               'less_than',
     GREATER_THAN_OR_EQUAL_TO: 'greater_than_or_equal_to',
     LESS_THAN_OR_EQUAL_TO:   'less_than_or_equal_to',
   };
@@ -253,13 +251,9 @@ const ConditionValidator = (function () {
         // Allow building up to exactly N; prevent exceeding N.
         allowed = totalAfter <= required;
         break;
-      case OPERATORS.LESS_THAN:
-        allowed = totalAfter < required;
-        break;
       case OPERATORS.LESS_THAN_OR_EQUAL_TO:
         allowed = totalAfter <= required;
         break;
-      case OPERATORS.GREATER_THAN:
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO:
         // Lower-bound: no upper cap — always allow increases.
         allowed = true;
@@ -276,20 +270,16 @@ const ConditionValidator = (function () {
   function _evaluateSatisfied(operator, required, total) {
     switch (operator) {
       case OPERATORS.EQUAL_TO:                 return total === required;
-      case OPERATORS.GREATER_THAN:             return total > required;
-      case OPERATORS.LESS_THAN:               return total < required;
       case OPERATORS.GREATER_THAN_OR_EQUAL_TO: return total >= required;
       case OPERATORS.LESS_THAN_OR_EQUAL_TO:   return total <= required;
-      default:                                return true;
+      default:                                return false;
     }
   }
 
   function _buildLimitText(operator, required) {
     const map = {
       [OPERATORS.EQUAL_TO]:                `exactly ${required}`,
-      [OPERATORS.LESS_THAN]:               `less than ${required}`,
       [OPERATORS.LESS_THAN_OR_EQUAL_TO]:   `at most ${required}`,
-      [OPERATORS.GREATER_THAN]:            `more than ${required}`,
       [OPERATORS.GREATER_THAN_OR_EQUAL_TO]: `at least ${required}`,
     };
     return map[operator] || String(required);
@@ -312,4 +302,5 @@ const ConditionValidator = (function () {
 // Harmless in browsers (no `module` global in IIFE context).
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ConditionValidator;
+  module.exports.ConditionValidator = ConditionValidator;
 }

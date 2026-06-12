@@ -3,6 +3,8 @@
  */
 
 // Mock dependencies before imports
+import { discoverSalesChannels } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
+
 jest.mock("../../../app/db.server", () => ({
   __esModule: true,
   default: {},
@@ -13,8 +15,6 @@ jest.mock("../../../app/shopify.server", () => ({
   default: {},
   authenticate: { admin: jest.fn() },
 }));
-
-import { discoverSalesChannels } from "../../../app/routes/app/app.dashboard/handlers/handlers.server";
 
 describe("discoverSalesChannels", () => {
   const createMockAdmin = (publications: Array<{ id: string; name: string }>) => ({
