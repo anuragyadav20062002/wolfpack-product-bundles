@@ -24,7 +24,9 @@ The previous app-owned Web Vitals pipeline was retired on 2026-06-12:
 - Prisma model/table `AdminWebVital`
 - npm dependency `web-vitals`
 
-Do not recreate `/api/web-vitals` for BFS eligibility. Use Shopify-collected metrics for BFS and Chrome Performance / Network `Server-Timing` for local diagnosis.
+Do not recreate custom `/api/web-vitals` telemetry for BFS eligibility. Use Shopify-collected metrics for BFS and Chrome Performance / Network `Server-Timing` for local diagnosis.
+
+`/api/web-vitals` remains only as a no-op tombstone route so stale browser sessions can POST old beacons without hitting authenticated code or emitting warning logs. It must not persist data, authenticate Admin sessions, or import app-owned Web Vitals collection code.
 
 ## Critical Path Rule
 
