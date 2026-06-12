@@ -37,6 +37,22 @@
   flex-direction: column;
 }
 
+.bw-product-card__title,
+.bw-product-card__variant,
+.bw-product-card__price {
+  min-width: 0;
+}
+
+.bw-product-card__variant {
+  border-top: 1px solid var(--bundle-product-card-variant-divider, rgba(0, 0, 0, 0.12));
+  color: var(--bundle-product-card-variant-color, currentColor);
+  margin-top: var(--bundle-product-card-variant-margin-top, 6px);
+  overflow: hidden;
+  padding-top: var(--bundle-product-card-variant-padding-top, 6px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bw-product-card__action {
   display: flex;
   align-items: center;

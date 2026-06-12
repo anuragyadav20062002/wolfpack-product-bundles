@@ -44,6 +44,54 @@ describe('shared product card contract', () => {
     expect(html).toContain('bw-product-card--mode-row');
   });
 
+  it('renders a dedicated variant row when product variant text is present', () => {
+    const html = renderSharedProductCard({
+      ...product,
+      parentTitle: '18k Pedal Ring',
+      variantTitle: '11',
+    }, 0, currencyInfo);
+
+    expect(html).toContain('bw-product-card__title product-title');
+    expect(html).toContain('18k Pedal Ring');
+    expect(html).toContain('bw-product-card__variant product-variant-row');
+    expect(html).toContain('data-bw-card-variant-row="true"');
+    expect(html).toContain('11');
+  });
+
+  it('keeps variant and price regions present when the card is selected', () => {
+    const html = renderSharedProductCard({
+      ...product,
+      parentTitle: '18k Pedal Ring',
+      variantTitle: '11',
+    }, 1, currencyInfo);
+
+    expect(html).toContain('bw-product-card--selected');
+    expect(html).toContain('data-bw-card-variant-row="true"');
+    expect(html).toContain('bw-product-card__price product-price-row');
+    expect(html).toContain('bw-product-card__action product-card-action is-expanded');
+  });
+
+  it('does not render an empty variant row for default or missing variant text', () => {
+    const defaultVariantHtml = renderSharedProductCard({
+      ...product,
+      variantTitle: 'Default Title',
+    }, 0, currencyInfo);
+    const missingVariantHtml = renderSharedProductCard(product, 0, currencyInfo);
+
+    expect(defaultVariantHtml).not.toContain('data-bw-card-variant-row="true"');
+    expect(missingVariantHtml).not.toContain('data-bw-card-variant-row="true"');
+  });
+
+  it('does not infer a variant row from an ordinary hyphenated product title', () => {
+    const html = renderSharedProductCard({
+      ...product,
+      title: 'Pre-order - Limited Edition',
+    }, 0, currencyInfo);
+
+    expect(html).toContain('Pre-order - Limited Edition');
+    expect(html).not.toContain('data-bw-card-variant-row="true"');
+  });
+
   it('escapes product text used in title and image alt', () => {
     const html = renderSharedProductCard({
       ...product,

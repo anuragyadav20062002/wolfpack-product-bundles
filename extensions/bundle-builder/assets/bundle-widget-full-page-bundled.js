@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.35
+ * Version : 3.0.36
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.35';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.36';
 (function() {
   'use strict';
 
@@ -2279,7 +2279,8 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
   const quantity = Math.max(0, Number(currentQuantity || 0));
   const isSelected = quantity > 0;
   const mode = options.mode || 'grid';
-  const title = product.parentTitle || product.title || '';
+  const variantText = getVariantDisplayText(product);
+  const title = getDisplayTitle(product, variantText);
   const imageUrl = product.imageUrl || product.image?.src || DEFAULT_PLACEHOLDER_IMAGE;
   const price = formatPrice(product.price, currencyInfo);
   const compareAtPrice = formatPrice(product.compareAtPrice, currencyInfo);
@@ -2299,6 +2300,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
       <div class="bw-product-card__body product-content-wrapper">
         <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+        ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
         ${price ? `
           <div class="bw-product-card__price product-price-row">
             ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
@@ -2319,6 +2321,46 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
       </div>
     </div>
   `;
+}
+
+function getDisplayTitle(product, variantText) {
+  const parentTitle = typeof product.parentTitle === 'string' ? product.parentTitle.trim() : '';
+  const rawTitle = typeof product.title === 'string' ? product.title.trim() : '';
+
+  if (variantText && parentTitle) return parentTitle;
+
+  const separatorIndex = rawTitle.indexOf(' - ');
+  if (variantText && separatorIndex > 0) {
+    return rawTitle.slice(0, separatorIndex).trim();
+  }
+
+  return parentTitle || rawTitle;
+}
+
+function getVariantDisplayText(product) {
+  const explicitVariantTitle = typeof product.variantTitle === 'string' ? product.variantTitle.trim() : '';
+  if (explicitVariantTitle && explicitVariantTitle !== 'Default Title') {
+    return explicitVariantTitle;
+  }
+
+  const parentTitle = typeof product.parentTitle === 'string' ? product.parentTitle.trim() : '';
+  const rawTitle = typeof product.title === 'string' ? product.title.trim() : '';
+  const canInferExpandedVariant = Boolean(product.parentProductId || parentTitle);
+  if (!rawTitle) return '';
+
+  if (parentTitle) {
+    const parentPrefix = `${parentTitle} - `;
+    if (rawTitle.startsWith(parentPrefix)) {
+      return rawTitle.slice(parentPrefix.length).trim();
+    }
+  }
+
+  const separatorIndex = rawTitle.indexOf(' - ');
+  if (canInferExpandedVariant && separatorIndex > 0) {
+    return rawTitle.slice(separatorIndex + 3).trim();
+  }
+
+  return '';
 }
 
 function renderAddButton(selectionKey, options) {
@@ -7280,6 +7322,7 @@ applyStandardExpandedVariantTitle(cardElement, product) {
   const preset = this.getFullPageDesignPreset();
   if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
   if (!cardElement) return;
+  if (cardElement.querySelector('[data-bw-card-variant-row="true"]')) return;
 
   const variantTitle = this.getSummaryProductVariantDisplay(product);
   if (!product?.parentProductId || !variantTitle) return;
@@ -7296,7 +7339,12 @@ applyStandardExpandedVariantTitle(cardElement, product) {
   if (!parentTitle) return;
 
   cardElement.classList.add('product-card--expanded-variant');
-  titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+  titleEl.textContent = parentTitle;
+  const variantEl = document.createElement('div');
+  variantEl.className = 'bw-product-card__variant product-variant-row';
+  variantEl.setAttribute('data-bw-card-variant-row', 'true');
+  variantEl.textContent = variantTitle;
+  titleEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {

@@ -161,6 +161,7 @@ applyStandardExpandedVariantTitle(cardElement, product) {
   const preset = this.getFullPageDesignPreset();
   if (!['DEFAULT', 'HORIZONTAL'].includes(preset)) return;
   if (!cardElement) return;
+  if (cardElement.querySelector('[data-bw-card-variant-row="true"]')) return;
 
   const variantTitle = this.getSummaryProductVariantDisplay(product);
   if (!product?.parentProductId || !variantTitle) return;
@@ -177,7 +178,12 @@ applyStandardExpandedVariantTitle(cardElement, product) {
   if (!parentTitle) return;
 
   cardElement.classList.add('product-card--expanded-variant');
-  titleEl.textContent = `${parentTitle}\n${variantTitle}`;
+  titleEl.textContent = parentTitle;
+  const variantEl = document.createElement('div');
+  variantEl.className = 'bw-product-card__variant product-variant-row';
+  variantEl.setAttribute('data-bw-card-variant-row', 'true');
+  variantEl.textContent = variantTitle;
+  titleEl.insertAdjacentElement('afterend', variantEl);
 },
 
 getSummaryProductDisplayTitle(item) {
