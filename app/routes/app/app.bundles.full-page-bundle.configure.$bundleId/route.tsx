@@ -101,17 +101,6 @@ type IndividualSellingPlanShowFor = "ALL_PRODUCTS" | "OOS_PRODUCTS";
 
 const FPB_DESIGN_CONTROL_PANEL_URL = "/app/settings";
 
-function getFileNameFromUrl(url: string): string {
-  try {
-    const path = new URL(url).pathname;
-    const fileName = path.split("/").pop();
-    return fileName ? decodeURIComponent(fileName) : "No file chosen";
-  } catch {
-    return "No file chosen";
-  }
-}
-
-
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session, admin } = await requireAdminSession(request);
   const { bundleId } = params;
@@ -5354,7 +5343,16 @@ export default function ConfigureBundleFlow() {
                         {settingsStep && (
                           <s-stack direction="block" gap="small-400">
                             <s-stack direction="inline" alignItems="center" gap="small">
-                              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>Product Slots</p>
+                              <p style={{ display: "flex", alignItems: "center", gap: 6, margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
+                                Product Slots
+                                <span
+                                  aria-hidden="true"
+                                  title="This feature displays empty slots on the storefront."
+                                  style={{ display: "inline-grid", placeItems: "center", width: 14, height: 14, border: "1px solid #6d7175", borderRadius: "50%", color: "#6d7175", fontSize: 10, lineHeight: 1 }}
+                                >
+                                  ?
+                                </span>
+                              </p>
                               <s-switch
                                 accessibilityLabel="Enable product slots display"
                                 checked={productSlotsEnabled || undefined}
@@ -5368,25 +5366,34 @@ export default function ConfigureBundleFlow() {
                         )}
                         {/* Slot Icon — nested inside EQV section */}
                         <s-stack direction="block" gap="small-400">
-                          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Slot Icon</h3>
-                          <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
-                            You can change the default icon that renders in the empty slots
-                          </p>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 12, border: "1px dashed #c9cccf", borderRadius: 8, background: "#f6f6f7" }}>
-                            <div style={{ display: "grid", placeItems: "center", width: 56, height: 56, borderRadius: 6, border: "1px dashed #c9cccf", background: "#fff", overflow: "hidden" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                            <div style={{ display: "grid", placeItems: "center", flex: "0 0 84px", width: 84, height: 84, border: "1px solid #dfe3e8", borderRadius: 6, background: "#fff", overflow: "hidden" }}>
                               {productSlotIconUrl ? (
-                                <img src={productSlotIconUrl} alt="" style={{ display: "block", width: 40, height: 40, objectFit: "contain" }} />
+                                <img src={productSlotIconUrl} alt="" style={{ display: "block", width: 56, height: 56, objectFit: "contain" }} />
                               ) : (
-                                <span aria-hidden="true" style={{ color: "#6d7175", fontSize: 28, lineHeight: 1 }}>+</span>
+                                <span aria-hidden="true" style={{ color: "#777", fontSize: 34, fontWeight: 300, lineHeight: 1 }}>+</span>
                               )}
                             </div>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {productSlotIconUrl ? getFileNameFromUrl(productSlotIconUrl) : "Default plus icon"}
+                            <div style={{ minWidth: 0, flex: 1, paddingTop: 2 }}>
+                              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 650, lineHeight: "20px" }}>Slot Icon</h3>
+                              <p style={{ margin: "2px 0 10px", fontSize: 13, lineHeight: "18px", color: "#303030" }}>
+                                You can change the default icon that renders in the empty slots
                               </p>
-                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6d7175" }}>
-                                Empty slots use this image when Product Slots is enabled.
-                              </p>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                <s-button variant="secondary" onClick={() => setShowSlotIconPicker(true)}>
+                                  Change Icon
+                                </s-button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductSlotIconUrl("");
+                                    markAsDirty();
+                                  }}
+                                  style={{ appearance: "none", border: 0, padding: 0, background: "transparent", color: "#005bd3", font: "inherit", fontSize: 13, lineHeight: "20px", cursor: "pointer" }}
+                                >
+                                  Reset
+                                </button>
+                              </div>
                             </div>
                           </div>
                           {showSlotIconPicker && (
@@ -5404,20 +5411,6 @@ export default function ConfigureBundleFlow() {
                               hideCropEditor
                             />
                           )}
-                          <s-stack direction="inline" gap="small">
-                            <s-button variant="primary" icon="upload" onClick={() => setShowSlotIconPicker(true)}>
-                              Change Icon
-                            </s-button>
-                            <s-button
-                              variant="secondary"
-                              onClick={() => {
-                                setProductSlotIconUrl("");
-                                markAsDirty();
-                              }}
-                            >
-                              Reset
-                            </s-button>
-                          </s-stack>
                           <p style={{ margin: 0, fontSize: 12, color: "#6d7175" }}>
                             Note: Only applicable when rules are based on quantity
                           </p>
