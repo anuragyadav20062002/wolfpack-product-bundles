@@ -4674,6 +4674,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
 
   const sheet = document.createElement('div');
   sheet.className = 'fpb-mobile-bottom-sheet';
+  this._syncMobilePortalThemeVars(sheet);
   const usesCompactMobileSummaryTray = this.usesCompactMobileSummaryTray();
   if (usesCompactMobileSummaryTray) {
     sheet.classList.add('fpb-mobile-summary-tray');
@@ -4692,6 +4693,7 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
 
   const bar = document.createElement('div');
   bar.className = 'fpb-mobile-bottom-bar';
+  this._syncMobilePortalThemeVars(bar);
 
   const toggleBtn = document.createElement('button');
   toggleBtn.className = 'fpb-mobile-toggle-btn';
@@ -4755,7 +4757,35 @@ _renderMobileBottomBar({ preserveOpen = false } = {}) {
 
 _populateMobileSheet(sheet) {
   sheet.innerHTML = '';
+  this._syncMobilePortalThemeVars(sheet);
   this.renderSidePanel(sheet);
+},
+
+_syncMobilePortalThemeVars(...elements) {
+  const source = this.container || document.documentElement;
+  const sourceStyles = getComputedStyle(source);
+  const fallbackStyles = source === document.documentElement
+    ? sourceStyles
+    : getComputedStyle(document.documentElement);
+  const themeVars = [
+    '--bundle-add-btn-color',
+    '--bundle-button-bg',
+    '--bundle-button-text-color',
+    '--bundle-global-button-text',
+    '--bundle-global-primary-button',
+    '--bundle-sidebar-button-bg',
+    '--bundle-sidebar-button-text',
+  ];
+
+  elements.filter(Boolean).forEach((element) => {
+    themeVars.forEach((property) => {
+      const value = sourceStyles.getPropertyValue(property).trim()
+        || fallbackStyles.getPropertyValue(property).trim();
+      if (value) {
+        element.style.setProperty(property, value);
+      }
+    });
+  });
 },
 
 usesCompactMobileSummaryTray() {

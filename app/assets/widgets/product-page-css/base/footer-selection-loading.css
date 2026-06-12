@@ -205,17 +205,18 @@
 }
 
 .bundle-loading-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
+  z-index: 100000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
-  border-radius: inherit;
 }
 
 .bundle-loading-overlay.is-visible {
@@ -234,8 +235,8 @@
 .bundle-loading-overlay__spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border: 4px solid rgba(0, 0, 0, 0.16);
+  border-top-color: var(--bundle-global-primary-button, #111111);
   border-radius: 50%;
   animation: bundle-loading-spinner 0.75s linear infinite;
 }

@@ -253,9 +253,9 @@
 }
 
 .bundle-modal-variant-btn.selected {
-  border-color: var(--bundle-primary-color, #000);
-  background: var(--bundle-primary-color, #000);
-  color: #fff;
+  border-color: var(--bundle-button-bg, var(--bundle-global-primary-button, #000));
+  background: var(--bundle-button-bg, var(--bundle-global-primary-button, #000));
+  color: var(--bundle-button-text-color, var(--bundle-global-button-text, #fff));
   position: relative;
 }
 
