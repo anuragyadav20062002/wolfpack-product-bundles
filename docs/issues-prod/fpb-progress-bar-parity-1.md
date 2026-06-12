@@ -28,3 +28,8 @@ Align the FPB Discount & Pricing progress bar with EB behavior across all FPB te
 - Added renderer behavior coverage for externally rendered discount messaging.
 - Updated FPB sidebar/mobile progress rendering so the progress component omits duplicate inline copy when it sits below the host discount message.
 - Added reserved simple/step progress sizing for FPB sidebar-style progress containers.
+- Matched EB mobile footer and desktop sidebar discount/progress copy treatment:
+  - Discount messaging remains above the progress bar.
+  - Mobile footer discount/progress section uses the same background as the rest of the footer.
+  - Sidebar/mobile progress labels use black normal-weight EB-style text.
+  - Simple and step-based progress containers keep their reserved space below the host discount message.

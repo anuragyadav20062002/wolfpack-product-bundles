@@ -236,11 +236,12 @@
 
 .side-panel-discount-message {
   font-size: 13px;
-  color: var(--bundle-side-panel-discount-color, #2e7d32);
-  background: var(--bundle-side-panel-discount-bg, rgba(46, 125, 50, 0.08));
+  color: var(--bundle-side-panel-discount-color, #000000);
+  background: transparent;
   padding: 8px 12px;
   border-radius: 6px;
   margin-bottom: 12px;
+  font-weight: 400;
   text-align: center;
 }
 

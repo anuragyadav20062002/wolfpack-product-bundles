@@ -680,6 +680,8 @@
 }
 .fpb-mobile-bottom-sheet.fpb-mobile-bottom-sheet.fpb-mobile-summary-tray
   .side-panel-discount-message {
+  background: transparent;
+  color: #000;
   height: 104.96875px;
   overflow: hidden;
 }
@@ -692,9 +694,9 @@
   margin: 0;
   padding: 0;
   color: #000;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 25.2px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 27px;
   text-align: center;
 }
 .fpb-mobile-summary-tray .fpb-discount-progress.fpb-dp-sidebar {
@@ -726,16 +728,16 @@
   box-sizing: border-box;
 }
 .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-title {
-  color: #333;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 25.2px;
+  color: #000;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 27px;
 }
 .fpb-mobile-summary-tray .fpb-dp-sidebar .fpb-discount-step-subtitle {
-  color: #888;
-  font-size: 12px;
+  color: #000;
+  font-size: 15px;
   font-weight: 400;
-  line-height: 21.6px;
+  line-height: 27px;
 }
 .fpb-mobile-summary-products-section {
   display: grid;
@@ -1070,7 +1072,7 @@
     background: transparent;
     color: #000;
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 400;
     line-height: 28.8px;
     text-align: left;
     overflow: hidden;
