@@ -562,7 +562,7 @@ minmax(0,
   .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-row,
   .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-slot {
     display:grid;
-    grid-template-columns:75px minmax(0,1fr) auto;
+    grid-template-columns:75px 247.547px 74.2812px;
     grid-template-rows:75px;
     gap:9px;
     width:100%;
@@ -572,7 +572,81 @@ minmax(0,
     border:0;
     border-radius:0;
     background:transparent;
+    align-items:start;
+    font-size:16px;
+    line-height:28.8px;
+    overflow:visible;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-img-wrap {
+    display:grid;
+    grid-template-columns:73px;
+    grid-template-rows:73px;
+    width:75px;
+    height:75px;
+    border:1px solid #cfc9c9;
+    border-radius:10px;
     overflow:hidden;
+    box-sizing:border-box;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-img {
+    width:73px;
+    height:73px;
+    border-radius:0;
+    object-fit:cover;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-info {
+    grid-column:2;
+    grid-row:1;
+    display:block;
+    width:247.547px;
+    height:75px;
+    min-width:0;
+    align-self:start;
+    overflow:visible;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-title {
+    display:block;
+    width:247.547px;
+    height:20px;
+    font-size:14px;
+    font-weight:700;
+    line-height:20px;
+    color:#000;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-price {
+    grid-column:2;
+    grid-row:1;
+    align-self:start;
+    justify-self:start;
+    width:auto;
+    height:28.797px;
+    margin:20px 0 0;
+    color:#000;
+    font-size:16px;
+    font-weight:700;
+    line-height:28.8px;
+  }
+
+  .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-product-remove {
+    grid-column:3;
+    grid-row:1;
+    position:static;
+    align-self:center;
+    justify-self:start;
+    width:22px;
+    height:22px;
+    margin-left:37.594px;
+    padding:0;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:#000;
+    line-height:1;
   }
 
   .layout-sidebar[data-fpb-design-preset=HORIZONTAL] .side-panel-action-container {

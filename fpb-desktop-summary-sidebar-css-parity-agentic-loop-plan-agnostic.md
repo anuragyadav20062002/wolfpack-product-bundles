@@ -1103,3 +1103,31 @@ The final implementation PR should include:
   - Final selected metrics: `/private/tmp/wpb-fpb-desktop-sidebar-loop1-1440-final-selected.json`.
   - Final selected screenshot: `/private/tmp/wpb-fpb-desktop-sidebar-loop1-1440-final-selected.png`.
   - Live active panel now reports one grid column `424.828px`, rows `55px 108.562px 298.797px 100px`, and the desktop mobile tray remains `display:none`.
+
+### Loop 2: Horizontal Selected Product Row Parity
+
+- Continued the active Horizontal desktop sidebar fixture at `https://agent-5sfidg3m.myshopify.com/pages/wpb-fresh-fpb-template-parity-2026-06-04`.
+- Fresh live selected-state capture before this batch:
+  - Metrics: `/private/tmp/wpb-fpb-desktop-sidebar-loop2-live-selected.json`.
+  - Screenshot: `/private/tmp/wpb-fpb-desktop-sidebar-loop2-live-selected.png`.
+- EB selected row target from `/private/tmp/eb-fpb-desktop-sidebar-loop1-1440-selected-focused.json`:
+  - Row `.gbbFooterProductWrapper`: `414.828px x 96px`, grid columns `75px 247.547px 74.2812px`, row `75px`, gap `9px`, padding `10px 0`.
+  - Image container: `75px x 75px`, `1px solid rgb(207, 201, 201)`, `border-radius:10px`, inner image `73px x 73px`.
+  - Info container: `247.547px x 75px`, title `14px/20px/700`, price `16px/28.8px/700`.
+  - Remove control: `22px x 22px`, positioned at `x=1319.21875` relative to the 1440 reference capture.
+- Implemented a CSS-only Horizontal desktop selected-row slice in `app/assets/widgets/full-page-css/templates/side-footer-horizontal.css`:
+  - Matched row grid columns to `75px 247.547px 74.2812px`.
+  - Matched selected-row thumbnail border, radius, and inner image dimensions.
+  - Moved the selected-row price into the second grid column below the title using CSS grid placement.
+  - Restored the remove control from the earlier absolute image-column placement into the EB right-side action column.
+  - Rebuilt `extensions/bundle-builder/assets/bundle-widget-full-page-horizontal.css` with `npm run minify:assets css`.
+- Live post-rebuild capture with the first row slice propagated:
+  - Metrics: `/private/tmp/wpb-fpb-desktop-sidebar-loop2-post-row-selected.json`.
+  - Screenshot: `/private/tmp/wpb-fpb-desktop-sidebar-loop2-post-row-selected.png`.
+  - Confirmed row, image container, inner image, and info container geometry are within `0.016px` of EB.
+- Development CDN note:
+  - Local minified CSS contains the final title-display and remove-column corrections, but the Shopify development CDN was still serving the previous asset copy during verification.
+  - DOM-level injection check against the live markup confirmed the pending selector geometry:
+    - Evidence: `/private/tmp/wpb-fpb-desktop-sidebar-loop2-injected-final-check.json`.
+    - Title becomes `247.546875px x 20px`, matching EB width/height.
+    - Remove control becomes `x=1319.21875`, `22px x 22px`, matching EB x/size.
