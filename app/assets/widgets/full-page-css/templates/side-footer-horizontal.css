@@ -1286,3 +1286,34 @@
     opacity: 1;
   }
 }
+
+@media (min-width: 769px) {
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .sidebar-layout-wrapper {
+    grid-template-columns: minmax(0, 1fr) 447px;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .full-page-side-panel {
+    width: 447px;
+    max-width: 447px;
+    flex-basis: 447px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-products,
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
+    .side-panel-products--slots {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-product-row,
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-product-slot {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}

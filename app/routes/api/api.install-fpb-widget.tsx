@@ -2,8 +2,8 @@
  * POST /api/install-fpb-widget
  *
  * Previously wrote templates/page.full-page-bundle.json to the active theme.
- * Now a no-op — the full-page app block handles rendering on the Shopify page
- * template. Kept as a stable endpoint so the UI doesn't need changes.
+ * Now a no-op — full-page rendering is handled by page marker hydration or the
+ * dedicated full-page app block. Kept as a stable endpoint so the UI doesn't need changes.
  */
 
 import { json, type ActionFunctionArgs } from "@remix-run/node";
@@ -20,7 +20,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     await requireAdminSession(request);
 
-    AppLogger.info("[INSTALL] FPB widget install (no-op — full-page block handles rendering)", { component: COMPONENT });
+    AppLogger.info("[INSTALL] FPB widget install (no-op — full-page marker/app block handles rendering)", { component: COMPONENT });
 
     return json({
       success: true,

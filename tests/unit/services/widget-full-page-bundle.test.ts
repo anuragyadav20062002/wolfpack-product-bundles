@@ -149,15 +149,15 @@ describe('createFullPageBundle', () => {
     expect(result.pageUrl).toBe('https://test-shop.myshopify.com/pages/my-kit');
   });
 
-  it('creates the Shopify page without app-proxy assets or embed hydration markers', async () => {
+  it('creates the Shopify page with a marker for app-embed hydration and no app-proxy assets', async () => {
     mockResolveUniqueHandle.mockResolvedValueOnce({ handle: 'my-kit', adjusted: false });
     const admin = makeAdmin({ createPageHandle: 'my-kit' });
 
     await createFullPageBundle(admin, mockSession, 'api-key', bundleId, bundleName, 'my-kit');
 
     const createCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('mutation createPage'));
-    expect(createCall?.[1]?.variables?.page?.body).toBe('');
-    expect(createCall?.[1]?.variables?.page?.body).not.toContain('data-wpb-full-page-bundle');
+    expect(createCall?.[1]?.variables?.page?.body).toContain('data-wpb-full-page-bundle');
+    expect(createCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
     expect(createCall?.[1]?.variables?.page?.body).not.toContain('/apps/product-bundles/assets/');
   });
 

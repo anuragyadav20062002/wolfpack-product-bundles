@@ -7,6 +7,7 @@
 
 import { AppLogger } from "../../lib/logger";
 import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition } from "../bundles/metafield-sync.server";
+import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
 import type { FullPageBundleResult } from "./types";
@@ -16,8 +17,30 @@ interface ShopSession {
   accessToken?: string | null;
 }
 
-function buildFullPageBundleBodyHtml(_bundleId?: string, _shop?: string, _bundle?: any): string {
-  return "";
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildFullPageBundleBodyHtml(bundleId: string, shop: string, bundle?: any): string {
+  const escapedBundleId = escapeHtmlAttribute(bundleId);
+  const escapedShop = escapeHtmlAttribute(shop);
+  const bundleConfig = bundle ? JSON.stringify(formatBundleForWidget(bundle)) : "null";
+  const bundleSettings = bundle ? JSON.stringify(buildBundleSettings(bundle)) : "null";
+
+  return `
+<div
+  data-wpb-full-page-bundle
+  data-bundle-id="${escapedBundleId}"
+  data-bundle-type="full_page"
+  data-bundle-config="${escapeHtmlAttribute(bundleConfig)}"
+  data-bundle-settings="${escapeHtmlAttribute(bundleSettings)}"
+  data-shop="${escapedShop}"
+  hidden></div>
+`.trim();
 }
 
 async function updateFullPageBundlePageBody(admin: any, pageId: string, body: string): Promise<{ success: boolean; error?: string }> {
@@ -64,7 +87,7 @@ export async function refreshFullPageBundlePageBody(
  *
  * Flow:
  * 1. Creates or reuses a Shopify page
- * 2. Writes a bundle marker into the page body; the selected Shopify page template's app block loads storefront assets with `asset_url`
+ * 2. Writes a bundle marker into the page body; the app embed hydrates it unless a full-page app block is already present
  * 3. Sets bundle_id metafields and returns the Shopify page URL
  *
  * @param admin - Shopify admin API client
@@ -94,8 +117,8 @@ export async function createFullPageBundle(
     });
 
     // Pages use the default page template so the store theme header/footer remain intact.
-    // The widget bootstrap is written into the page body so the bundle renders inside
-    // the normal page content instead of the app-proxy shell.
+    // A hidden marker is written into the page body so the app embed can hydrate
+    // the widget inside normal page content when the dedicated app block is absent.
 
     // Step 1: Resolve page handle — use desiredSlug, fall back to slugified bundle name
     const rawSlug = desiredSlug?.trim() || slugify(bundleName) || `bundle-${bundleId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;

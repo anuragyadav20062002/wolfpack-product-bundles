@@ -288,11 +288,46 @@
 
 .side-panel-products {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+}
+
+@media (min-width: 769px) {
+  .layout-sidebar[data-fpb-design-preset="CLASSIC"] .full-page-side-panel,
+  .layout-sidebar[data-fpb-design-preset="COMPACT"] .full-page-side-panel,
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .full-page-side-panel {
+    width: 447px;
+    max-width: 447px;
+    flex-basis: 447px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-products,
+  .layout-sidebar[data-fpb-design-preset="COMPACT"] .side-panel-products,
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-products {
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .layout-sidebar[data-fpb-design-preset="CLASSIC"] .side-panel-product-row,
+  .layout-sidebar[data-fpb-design-preset="COMPACT"] .side-panel-product-row,
+  .layout-sidebar[data-fpb-design-preset="HORIZONTAL"] .side-panel-product-row {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
 }
 
 .side-panel-empty {
