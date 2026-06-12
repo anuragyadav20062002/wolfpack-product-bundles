@@ -8611,14 +8611,27 @@ getDiscountProgressMilestones(totalPrice = 0, totalQuantity = 0) {
       const threshold = Number(rule.conditionValue || 0) || 0;
       const tierText = tierTextByRuleId?.[ruleId] || {};
       const boxRule = boxRules.find(box => box.ruleId === ruleId);
+      const discountMethod = pricing?.method || BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF;
+      const discountValue = Number(rule.discountValue ?? rule.discount?.value ?? 0) || 0;
+      const fallbackTitle = rule.conditionType === 'quantity' && threshold > 0
+        ? `${threshold} Pack`
+        : String(threshold);
+      let fallbackSubTitle = '';
+      if (discountValue > 0) {
+        if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.PERCENTAGE_OFF) {
+          fallbackSubTitle = `Save ${Math.round(discountValue)}%`;
+        } else if (discountMethod === BUNDLE_WIDGET.DISCOUNT_METHODS.FIXED_AMOUNT_OFF) {
+          fallbackSubTitle = `Save ${CurrencyManager.convertAndFormat(discountValue, CurrencyManager.getCurrencyInfo())}`;
+        }
+      }
       const isReached = rule.conditionType === 'amount'
         ? Number(totalPrice || 0) >= threshold
         : Number(totalQuantity || 0) >= threshold;
 
       return {
         ruleId,
-        title: tierText.tierText || boxRule?.boxLabel || String(threshold),
-        subTitle: tierText.tierSubtext || boxRule?.boxSubtext || '',
+        title: tierText.tierText || boxRule?.boxLabel || fallbackTitle,
+        subTitle: tierText.tierSubtext || boxRule?.boxSubtext || fallbackSubTitle,
         isReached,
       };
     })
