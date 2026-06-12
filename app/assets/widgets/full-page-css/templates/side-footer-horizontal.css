@@ -301,6 +301,31 @@
     padding: 0;
     overflow: visible;
   }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant
+    > .product-content-wrapper.bw-product-card__body {
+    grid-template-rows: 51px 89px;
+  }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant
+    > .product-content-wrapper.bw-product-card__body
+    > .product-text-container.bw-product-card__text.product-text-container--has-variant {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: grid;
+    grid-template-rows: 28px 18px;
+    gap: 5px;
+    width: 100%;
+    height: 51px;
+    min-height: 51px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
 
   .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
     .sidebar-content
@@ -312,6 +337,42 @@
     padding: 0 0 5px;
     font-size: 16px;
     line-height: 22px;
+    font-weight: 700;
+    text-align: left;
+    overflow: hidden;
+  }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant
+    > .product-content-wrapper.bw-product-card__body
+    > .product-text-container.bw-product-card__text.product-text-container--has-variant
+    > .product-title.bw-product-card__title {
+    grid-column: 1;
+    grid-row: 1;
+    height: 28px;
+    min-height: 28px;
+    padding: 0 0 5px;
+    border-bottom: 1px solid #e3e3e3;
+    overflow: hidden;
+  }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant
+    > .product-content-wrapper.bw-product-card__body
+    > .product-text-container.bw-product-card__text.product-text-container--has-variant
+    > .product-variant-row.bw-product-card__variant {
+    grid-column: 1;
+    grid-row: 2;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    border-bottom: 0;
+    font-size: 14px;
+    line-height: normal;
     font-weight: 700;
     text-align: left;
     overflow: hidden;
@@ -354,6 +415,15 @@
     grid-template-rows: 50px 30px 52px;
     row-gap: 4px;
   }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant.selected
+    > .product-content-wrapper.bw-product-card__body {
+    grid-template-columns: minmax(0, 1fr) 110.5625px;
+    grid-template-rows: 51px 89px;
+    row-gap: 0;
+  }
 
   .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
     .sidebar-content
@@ -363,6 +433,16 @@
     grid-column: 1;
     align-self: start;
     margin: 0;
+  }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant.selected
+    .product-price-row.bw-product-card__price {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: end;
+    margin: 0 0 8px;
   }
 
   .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]
@@ -378,6 +458,19 @@
     margin: 0;
     align-self: end;
     justify-self: stretch;
+  }
+  #bundle-builder-app[data-bundle-type="full_page"]
+    .layout-sidebar[data-fpb-design-preset="HORIZONTAL"][data-fpb-card-cta-mode="icon"]
+    .sidebar-content
+    .product-card.bw-product-card.product-card--has-variant.selected
+    .product-card-action.bw-product-card__action.is-expanded {
+    grid-column: 2;
+    grid-row: 2;
+    width: 110.5625px;
+    min-width: 0;
+    margin: 0 0 8px;
+    justify-self: end;
+    align-self: end;
   }
 
   .layout-sidebar[data-fpb-design-preset="HORIZONTAL"]

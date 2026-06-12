@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.36
+ * Version : 3.0.37
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.36';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.37';
 (function() {
   'use strict';
 
@@ -2288,6 +2288,7 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
     'bw-product-card',
     'product-card',
     `bw-product-card--mode-${escapeAttribute(mode)}`,
+    variantText ? 'bw-product-card--has-variant product-card--has-variant' : '',
     isSelected ? 'bw-product-card--selected selected' : '',
     options.className || '',
   ].filter(Boolean).join(' ');
@@ -2299,8 +2300,10 @@ function renderSharedProductCard(product = {}, currentQuantity = 0, currencyInfo
         ${options.stockBadgeHtml || ''}
       </div>
       <div class="bw-product-card__body product-content-wrapper">
-        <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
-        ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+        <div class="bw-product-card__text product-text-container ${variantText ? 'bw-product-card__text--has-variant product-text-container--has-variant' : ''}">
+          <div class="bw-product-card__title product-title">${escapeHtml(title)}</div>
+          ${variantText ? `<div class="bw-product-card__variant product-variant-row" data-bw-card-variant-row="true">${escapeHtml(variantText)}</div>` : ''}
+        </div>
         ${price ? `
           <div class="bw-product-card__price product-price-row">
             ${compareAtPrice ? `<span class="bw-product-card__compare-price product-price-strike">${escapeHtml(compareAtPrice)}</span>` : ''}
