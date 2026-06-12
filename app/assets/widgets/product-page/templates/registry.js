@@ -1,7 +1,7 @@
 /**
  * Product-page template registry.
  *
- * Normalizes legacy EB-compatible identifiers to the four PPB target templates.
+ * Normalizes legacy-compatible identifiers to the four PPB target templates.
  */
 
 'use strict';

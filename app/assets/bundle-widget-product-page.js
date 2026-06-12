@@ -143,6 +143,7 @@ import {
 import { ConditionValidator } from './widgets/shared/condition-validator.js';
 import { createDefaultLoadingAnimation } from './widgets/shared/default-loading-animation.js';
 import { hideLoadingOverlayElement, markLoadingOverlayVisible } from './widgets/shared/loading-overlay.js';
+import { bundleLevelCssMethods } from './widgets/shared/bundle-level-css-methods.js';
 import { modalSlotTemplateMethods } from './widgets/product-page/templates/modal-slot-template.js';
 import { cascadeTemplateMethods } from './widgets/product-page/templates/cascade-template.js';
 import { cogniveTemplateMethods } from './widgets/product-page/templates/cognive-template.js';
@@ -254,6 +255,7 @@ class BundleWidgetProductPage {
       // Setup DOM elements
       this.setupDOMElements();
       this._markProductPageTemplate();
+      this.applyBundleLevelCss(this.selectedBundle);
 
       // Render initial UI
       this.renderUI();
@@ -361,6 +363,7 @@ Object.assign(
   ProductPageModalMethods,
   ProductPageSelectionMethods,
   ProductPageCartMethods,
+  bundleLevelCssMethods,
   modalSlotTemplateMethods,
   cascadeTemplateMethods,
   cogniveTemplateMethods,

@@ -43,10 +43,19 @@ const FullPagePreset = (function () {
     container.dataset.fpbTemplate = resolveTemplateAttr(bundle);
   }
 
+  function shouldUseReferenceStepBarTimeline({ layout, presetId } = {}) {
+    const normalizedLayout = typeof layout === 'string' ? layout.trim().toLowerCase() : '';
+    if (normalizedLayout !== 'footer_side') return false;
+
+    const preset = resolvePresetAttr({ bundleDesignPresetId: presetId });
+    return ['DEFAULT', 'CLASSIC', 'COMPACT', 'HORIZONTAL'].includes(preset);
+  }
+
   return {
     resolvePresetAttr,
     resolveTemplateAttr,
     markContainer,
+    shouldUseReferenceStepBarTimeline,
   };
 }());
 

@@ -94,7 +94,7 @@ export async function checkAppEmbedEnabled(
     } catch {
       // settings_data.json likely truncated (exceeds Shopify ~1MB limit). Fail-open:
       // we cannot confirm embed is disabled, so do not block preview.
-      AppLogger.warn("checkAppEmbedEnabled: failed to parse settings_data.json — failing open", { shopDomain });
+      AppLogger.debug("checkAppEmbedEnabled: failed to parse settings_data.json — failing open", { shopDomain });
       return { enabled: true, themeId };
     }
 

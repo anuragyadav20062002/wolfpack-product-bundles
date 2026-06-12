@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef, useMemo, type MouseEvent, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, type MouseEvent, type ReactNode, type SyntheticEvent } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
+import type {} from "@shopify/app-bridge-types";
 import { AppLogger } from "../../../lib/logger";
 import { slugify, validateSlug } from "../../../lib/slug-utils";
 import {
@@ -29,6 +30,7 @@ import { OptimisedImage } from "../../../components/OptimisedImage";
 import { HELP_TOOLTIPS, type HelpTooltipKey, type HelpTooltipVisual } from "../../../constants/help-tooltips";
 import { ERROR_MESSAGES } from "../../../constants/errors";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
+import { handleAdminSaveLockedEvent } from "../../../lib/admin-save-lock";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { BundleReadinessOverlay, type BundleReadinessItem } from "../../../components/bundle-configure/BundleReadinessOverlay";
 import { BundleGuidedTour } from "../../../components/bundle-configure/BundleGuidedTour";
@@ -849,6 +851,14 @@ export default function ConfigureBundleFlow() {
   const shopify = useAppBridge();
   const fetcher = useFetcher<typeof action>();
   const revalidator = useRevalidator();
+  const isSaveInFlight = fetcher.state !== "idle";
+  const saveBarRef = useRef<UISaveBarElement | null>(null);
+  const triggerSaveBarIrritation = useCallback(() => {
+    void saveBarRef.current?.show?.();
+  }, []);
+  const blockConfigurationChangeWhileSaving = useCallback((event: SyntheticEvent) => {
+    handleAdminSaveLockedEvent(event, isSaveInFlight, triggerSaveBarIrritation);
+  }, [isSaveInFlight, triggerSaveBarIrritation]);
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
   // Use the unified bundle configuration state hook
@@ -1054,6 +1064,7 @@ export default function ConfigureBundleFlow() {
   const initialValidateQuantityPerProduct = ((bundle as any).validateQuantityPerProduct as { isEnabled?: boolean; allowedQuantity?: number } | null) ?? null;
   const [quantityValidationEnabled, setQuantityValidationEnabled] = useState<boolean>(initialValidateQuantityPerProduct?.isEnabled === true);
   const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
+  const [variantSelectorEnabled, setVariantSelectorEnabled] = useState<boolean>((bundle as any).variantSelectorEnabled ?? true);
   const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>(
     (initialValidateQuantityPerProduct?.allowedQuantity ?? (bundle as any).maxQtyPerProduct ?? 1).toString()
   );
@@ -1900,6 +1911,7 @@ export default function ConfigureBundleFlow() {
       formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
       formData.append("allowQuantityChanges", String(allowQuantityChanges));
       formData.append("searchBarEnabled", String(searchBarEnabled));
+      formData.append("variantSelectorEnabled", String(variantSelectorEnabled));
       formData.append("showTextOnAddButton", String(showTextOnPlusEnabled));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
@@ -1978,6 +1990,7 @@ export default function ConfigureBundleFlow() {
     cartRedirectToCheckout,
     allowQuantityChanges,
     searchBarEnabled,
+    variantSelectorEnabled,
     textOverrides,
     textOverridesByLocale,
     ruleMessages,
@@ -2759,9 +2772,21 @@ export default function ConfigureBundleFlow() {
 
   return (
     <>
-      <div className={fullPageBundleStyles.editCanvas}>
+      <div
+        className={fullPageBundleStyles.editCanvas}
+        data-admin-save-lock-active={isSaveInFlight || undefined}
+        onBeforeInputCapture={blockConfigurationChangeWhileSaving}
+        onChangeCapture={blockConfigurationChangeWhileSaving}
+        onClickCapture={blockConfigurationChangeWhileSaving}
+        onDropCapture={blockConfigurationChangeWhileSaving}
+        onInputCapture={blockConfigurationChangeWhileSaving}
+        onKeyDownCapture={blockConfigurationChangeWhileSaving}
+        onPasteCapture={blockConfigurationChangeWhileSaving}
+        onPointerDownCapture={blockConfigurationChangeWhileSaving}
+      >
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
+        data-save-lock-allow="true"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSave();
@@ -2774,6 +2799,7 @@ export default function ConfigureBundleFlow() {
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
         {/* Loading state properly shows spinner during save operation */}
         <SaveBar
+          ref={saveBarRef}
           id="bundle-save-bar"
           open={isDirty}
         >
@@ -5419,17 +5445,15 @@ export default function ConfigureBundleFlow() {
                           title="Variant Selector"
                           description="Enable variant selection within the product cards instead of the quick look"
                         >
-                          {settingsStep && (
                           <s-switch
                             accessibilityLabel="Variant selector"
-                            checked={settingsStep.displayVariantsAsIndividual ?? undefined}
+                            checked={variantSelectorEnabled || undefined}
                             onChange={(e) => {
                               const checked = (e.target as HTMLInputElement).checked;
-                              stepsState.updateStepField(settingsStep.id, "displayVariantsAsIndividual", checked);
+                              setVariantSelectorEnabled(checked);
                               markAsDirty();
                             }}
                             />
-                          )}
                         </SettingsRow>
                         <SettingsRow
                           title="Show Text on + Button"

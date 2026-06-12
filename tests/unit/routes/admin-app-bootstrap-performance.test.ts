@@ -53,10 +53,6 @@ jest.mock("../../../app/i18n/config", () => ({
   },
 }));
 
-jest.mock("../../../app/components/MantleTracker", () => ({
-  MantleTracker: () => null,
-}));
-
 jest.mock("../../../app/components/ErrorPage", () => ({
   ErrorPage: () => null,
 }));

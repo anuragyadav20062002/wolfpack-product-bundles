@@ -306,6 +306,8 @@
   margin: 12px 0 10px;
   text-align: center;
   flex-shrink: 0;
+  min-width: 0;
+  max-width: 100%;
   position: relative;
   z-index: 15;
   display: var(--bundle-product-price-display, flex);
@@ -319,6 +321,11 @@
 
 .product-price-strike {
   display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--bundle-product-strike-price-color, #9ca3af);
   font-size: 13px;
   font-weight: var(--bundle-product-strike-price-font-weight, 500);
@@ -342,6 +349,11 @@
 
 .product-price {
   display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--bundle-product-final-price-color, #000000);
   font-size: 16px;
   font-weight: var(--bundle-product-final-price-font-weight, 700);

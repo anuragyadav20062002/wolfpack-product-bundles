@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, memo, type SyntheticEvent } from "react";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useNavigate, useFetcher, useRevalidator } from "@remix-run/react";
+import type {} from "@shopify/app-bridge-types";
 import { AppLogger } from "../../../lib/logger";
 
 // Note: Migrated from @shopify/polaris to Polaris web components (s-* and ui-*)
@@ -21,6 +22,7 @@ import { ERROR_MESSAGES } from "../../../constants/errors";
 import { useTranslation } from "react-i18next";
 import { HELP_TOOLTIPS, type HelpTooltipKey } from "../../../constants/help-tooltips";
 import { getParentProductStatusUi } from "../../../lib/parent-product-status-ui";
+import { handleAdminSaveLockedEvent } from "../../../lib/admin-save-lock";
 import { FilePicker } from "../../../components/shared/FilePicker";
 import { useAppBridge, SaveBar } from "@shopify/app-bridge-react";
 // Using modern App Bridge SaveBar with declarative 'open' prop for React-friendly state management
@@ -609,6 +611,14 @@ export default function ConfigureBundleFlow() {
   const [showSubscriptionSetupGuide, setShowSubscriptionSetupGuide] = useState(false);
   const revalidator = useRevalidator();
   const isBundleVisibilityPending = !appEmbedEnabled;
+  const isSaveInFlight = fetcher.state !== "idle";
+  const saveBarRef = useRef<UISaveBarElement | null>(null);
+  const triggerSaveBarIrritation = useCallback(() => {
+    void saveBarRef.current?.show?.();
+  }, []);
+  const blockConfigurationChangeWhileSaving = useCallback((event: SyntheticEvent) => {
+    handleAdminSaveLockedEvent(event, isSaveInFlight, triggerSaveBarIrritation);
+  }, [isSaveInFlight, triggerSaveBarIrritation]);
 
   // ===== CENTRALIZED STATE MANAGEMENT =====
   // Use the unified bundle configuration state hook
@@ -1312,6 +1322,7 @@ export default function ConfigureBundleFlow() {
     bundleEmbedAddBrowsedProduct,
     quantityValidationEnabled,
     maxQtyPerProduct,
+    variantSelectorEnabled,
     individualSellingPlanEnabled,
     individualSellingPlanShowFor,
     bundleCartTitle,
@@ -2153,9 +2164,21 @@ export default function ConfigureBundleFlow() {
 
   return (
     <>
-      <div className={productPageBundleStyles.editCanvas}>
+      <div
+        className={productPageBundleStyles.editCanvas}
+        data-admin-save-lock-active={isSaveInFlight || undefined}
+        onBeforeInputCapture={blockConfigurationChangeWhileSaving}
+        onChangeCapture={blockConfigurationChangeWhileSaving}
+        onClickCapture={blockConfigurationChangeWhileSaving}
+        onDropCapture={blockConfigurationChangeWhileSaving}
+        onInputCapture={blockConfigurationChangeWhileSaving}
+        onKeyDownCapture={blockConfigurationChangeWhileSaving}
+        onPasteCapture={blockConfigurationChangeWhileSaving}
+        onPointerDownCapture={blockConfigurationChangeWhileSaving}
+      >
       {/* Modern App Bridge SaveBar with declarative React state management */}
       <form
+        data-save-lock-allow="true"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSave();
@@ -2168,6 +2191,7 @@ export default function ConfigureBundleFlow() {
         {/* SaveBar component - visibility controlled declaratively via 'open' prop */}
         {/* Loading state properly shows spinner during save operation */}
         <SaveBar
+          ref={saveBarRef}
           id="bundle-save-bar"
           open={isDirty}
         >
@@ -4532,6 +4556,24 @@ export default function ConfigureBundleFlow() {
                             ))}
                           </s-stack>
                         )}
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <div>
+                            <h3 className={productPageBundleStyles.settingTitle}>Variant Selector</h3>
+                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                              Enable variant selection within the product cards instead of the quick look
+                            </p>
+                          </div>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Variant selector"
+                              checked={variantSelectorEnabled || undefined}
+                              onChange={(e) => {
+                                setVariantSelectorEnabled((e.target as HTMLInputElement).checked);
+                                markAsDirty();
+                              }}
+                            />
+                          </span>
+                        </div>
                       </s-stack>
                     </s-section>
 

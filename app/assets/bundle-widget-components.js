@@ -53,3 +53,4 @@ export { PricingCalculator } from './widgets/shared/pricing-calculator.js';
 export { ToastManager } from './widgets/shared/toast-manager.js';
 export { TemplateManager } from './widgets/shared/template-manager.js';
 export { ComponentGenerator } from './widgets/shared/component-generator.js';
+export { shouldRenderInlineVariantSelector } from './widgets/shared/variant-selector-policy.js';
