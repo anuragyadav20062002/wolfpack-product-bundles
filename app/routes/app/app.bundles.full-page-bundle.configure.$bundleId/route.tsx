@@ -546,8 +546,8 @@ function QuestionHelpTooltip({
 }) {
   const { t } = useTranslation();
   const tooltip = HELP_TOOLTIPS[tooltipKey];
-  const title = t(`tooltips.${tooltipKey}.title`, '');
-  const description = t(`tooltips.${tooltipKey}.description`);
+  const title = t(`tooltips.${tooltipKey}.title`, tooltip.fallbackTitle || '');
+  const description = t(`tooltips.${tooltipKey}.description`, tooltip.fallbackDescription || tooltip.accessibilityLabel || '');
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number; arrowLeft: number } | null>(null);
 
@@ -577,7 +577,7 @@ function QuestionHelpTooltip({
         <s-button
           variant="tertiary"
           icon="info"
-          accessibilityLabel={title || description}
+          accessibilityLabel={tooltip.accessibilityLabel || title || description}
         />
       </span>
       <span
@@ -5345,13 +5345,7 @@ export default function ConfigureBundleFlow() {
                             <s-stack direction="inline" alignItems="center" gap="small">
                               <p style={{ display: "flex", alignItems: "center", gap: 6, margin: 0, fontSize: 14, fontWeight: 600, flex: 1 }}>
                                 Product Slots
-                                <span
-                                  aria-hidden="true"
-                                  title="This feature displays empty slots on the storefront."
-                                  style={{ display: "inline-grid", placeItems: "center", width: 14, height: 14, border: "1px solid #6d7175", borderRadius: "50%", color: "#6d7175", fontSize: 10, lineHeight: 1 }}
-                                >
-                                  ?
-                                </span>
+                                <QuestionHelpTooltip tooltipKey="productSlots" />
                               </p>
                               <s-switch
                                 accessibilityLabel="Enable product slots display"
