@@ -872,6 +872,19 @@ The implementing agent should maintain a short notes section while working:
 - Local generated assets contain the new values in `extensions/bundle-builder/assets/bundle-widget-full-page-standard.css` and `extensions/bundle-builder/assets/bundle-widget-full-page-horizontal.css`.
 - Chrome verification blocker: the active storefront is loading Shopify CDN asset `bundle-widget-full-page-horizontal.css`, and fetch checks at `/private/tmp/wpb-fpb-mobile-footer-loop3-live-css-check.json` and `/private/tmp/wpb-fpb-mobile-footer-loop3-live-css-check-after-wait.json` show `hasOldHeight=true` and `hasNewHeight=false`.
 - Post-patch live Chrome geometry therefore still reports the old WPB shell: `/private/tmp/wpb-fpb-mobile-footer-loop3-empty-after-horizontal-390.json`.
+
+### Loop 4 expanded selected footer patch notes
+- Live WPB verification now reaches local tunnel assets; `window.__BUNDLE_WIDGET_VERSION__` reports `3.0.25` on `https://agent-5sfidg3m.myshopify.com/pages/wpb-fresh-fpb-template-parity-2026-06-04`.
+- EB expanded selected footer target at 390x844: shell `x=10`, `y=426.046875`, `width=370`, `height=417.953125`; product section `height=301.984375`; bundle items `height=235.984375`; product list rows `81px 86px`.
+- WPB pre-patch expanded selected footer at 390x844 had the shorter Loop 3 shell `height=385.96875`, product section `height=270`, product list `height=140`, and hidden progress because the shared mobile rule set `.fpb-discount-progress` to `display:none !important`.
+- Patched shared mobile footer CSS plus Standard, Classic, and Horizontal footer CSS to expose the sidebar discount progress in the mobile tray, use the EB expanded shell height `417.96875px`, product section `302px`, bundle items `236px`, product list `172px`, selected row `81px`, and CTA row preserved at `38px`.
+- Replaced fixed `370px`/`360px` mobile shell widths with responsive custom properties: shell `calc(100vw - 20px)`, inner `calc(100vw - 30px)`, and progress `inner - 50px`. At 390px this still resolves to EB `370/360/310`; at 320px it resolves to `300/290/240`.
+- Regenerated deploy target CSS with `npm run minify:assets css`.
+- Chrome verification after hard reload:
+  - 390x844 selected expanded WPB metrics: `/private/tmp/wpb-mobile-footer-expanded-after-responsive-390.json`; screenshot: `/private/tmp/wpb-mobile-footer-expanded-after-responsive-390.png`.
+  - 320x844 selected expanded WPB metrics: `/private/tmp/wpb-mobile-footer-expanded-after-responsive-320.json`; screenshot: `/private/tmp/wpb-mobile-footer-expanded-after-responsive-320.png`.
+  - Width guard metrics: `/private/tmp/wpb-mobile-footer-width-360.json`, `/private/tmp/wpb-mobile-footer-width-375.json`, `/private/tmp/wpb-mobile-footer-width-414.json`, `/private/tmp/wpb-mobile-footer-width-430.json`, `/private/tmp/wpb-mobile-footer-width-767.json`, `/private/tmp/wpb-mobile-footer-width-768-guard.json`.
+- Verified no horizontal overflow for tested mobile widths 320, 360, 375, 390, 414, 430, and 767.
 ```
 
 The notes may reference current files and selectors during implementation, but this plan itself intentionally does not depend on them.

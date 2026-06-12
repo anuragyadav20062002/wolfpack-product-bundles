@@ -264,17 +264,17 @@
   }
 
   .fpb-mobile-summary-tray.fpb-mobile-classic-footer.fpb-mobile-summary-tray-expanded {
-    grid-template-rows: 126.5625px 234.906px;
-    height: 361.46875px;
+    grid-template-rows: 104.96875px 302px;
+    height: 417.96875px;
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-products-section {
     display: grid;
     position: relative;
-    grid-template-columns: 360px;
-    grid-template-rows: 168.906px 38px;
-    width: 360px;
-    height: 234.906px;
+    grid-template-columns: var(--fpb-mobile-footer-inner-width, 360px);
+    grid-template-rows: 236px 38px;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
+    height: 302px;
     padding: 10px 0;
     gap: 8px;
     background: var(--bundle-side-panel-bg, var(--bundle-full-page-bg-color));
@@ -283,19 +283,19 @@
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-bundle-items {
     display: grid;
-    grid-template-columns: 360px;
-    grid-template-rows: 54px 104.906px;
-    width: 360px;
-    height: 168.906px;
+    grid-template-columns: var(--fpb-mobile-footer-inner-width, 360px);
+    grid-template-rows: 54px 172px;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
+    height: 236px;
   }
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-products-list {
     display: grid;
-    grid-template-columns: 360px;
-    grid-template-rows: 65px 65px;
+    grid-template-columns: var(--fpb-mobile-footer-inner-width, 360px);
+    grid-template-rows: 81px 86px;
     gap: 10px;
-    width: 360px;
-    height: 104.906px;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
+    height: 172px;
     padding: 5px 0 0;
     overflow: auto;
     box-sizing: border-box;
@@ -303,10 +303,10 @@
 
   .fpb-mobile-classic-footer .fpb-mobile-summary-empty-product-card {
     display: grid;
-    grid-template-columns: 65px 211.531px 63.4688px;
+    grid-template-columns: 65px minmax(0, calc(var(--fpb-mobile-footer-inner-width, 360px) - 148px)) 63px;
     grid-template-rows: 65px;
     gap: 10px;
-    width: 360px;
+    width: var(--fpb-mobile-footer-inner-width, 360px);
     height: 65px;
   }
 }
