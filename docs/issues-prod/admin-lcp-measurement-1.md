@@ -1,14 +1,16 @@
 # Issue: Admin LCP Measurement Infrastructure
 
 **Issue ID:** admin-lcp-measurement-1
-**Status:** In Progress
+**Status:** Retired
 **Priority:** 🟡 Medium
 **Created:** 2026-06-06
-**Last Updated:** 2026-06-08
+**Last Updated:** 2026-06-12
 
 ## Overview
 
 Phase 1 of the broader Admin LCP minimisation plan at `/Users/adityaawasthi/.claude/plans/plan-out-how-we-velvet-patterson.md`. Ships **measurement before optimisation** so every later phase has a before/after signal. Without this, "we made it faster" is hand-wavy.
+
+> Retired on 2026-06-12: Shopify App Bridge now supplies the embedded Admin Web Vitals signal used for Built for Shopify assessment. The custom `web-vitals` client, `/api/web-vitals` endpoint, and `AdminWebVital` table were removed; keep this issue only as historical context for the Server-Timing work and original baseline.
 
 The audit found:
 - No Web Vitals telemetry anywhere in the admin.
@@ -70,23 +72,10 @@ Out of scope here (covered by later phases of the plan):
 - [x] Phase 1.3: `web-vitals` dep + client reporter + `/api/web-vitals` endpoint + `app/root.tsx` wiring.
 - [x] Phase 1.4: `lighthouserc.json` + `.github/workflows/lighthouse-admin.yml`.
 - [x] Phase 1.5: `?perf=1` dev overlay (`PerfDebugOverlay`).
-- [ ] Phase 1.6 (deploy): `npx prisma migrate deploy` (applies the new table) + `npm run deploy:sit`. Render's start script runs `prisma migrate deploy` so this happens automatically on next boot.
-- [ ] Phase 1.7 (validation): hit SIT admin with `?perf=1`, navigate Dashboard → Analytics → FPB Configure, watch the overlay numbers update; confirm `AdminWebVital` rows accumulate. Open Network tab and verify `Server-Timing` headers surface in DevTools after Phase 2 instrumentation lands.
+- [x] Phase 1.6 (retired): Custom table deployment is obsolete; the follow-up migration drops `AdminWebVital`.
+- [x] Phase 1.7 (retired): Do not validate via `?perf=1` or `AdminWebVital`; use Shopify App Bridge-collected metrics for BFS and Chrome `Server-Timing` for local diagnosis.
 - [ ] Phase 2 (next issue): apply universal LCP wins — font preload, vite manual chunking, Polaris CSS lazy, `v3_singleFetch` enable.
 
 ## Verification (post-deploy)
 
-1. Open SIT admin: `https://admin.shopify.com/store/agent-5sfidg3m/apps/wolfpack-product-bundles-sit/app/dashboard?perf=1`.
-2. Bottom-right card shows LCP / INP / CLS / TTFB / FCP with rating colours.
-3. Navigate Dashboard → Analytics → FPB Configure; values update per route.
-4. In Prisma Studio:
-   ```sql
-   SELECT route, metric,
-          COUNT(*) AS samples,
-          percentile_cont(0.75) WITHIN GROUP (ORDER BY value) AS p75
-   FROM "AdminWebVital"
-   WHERE "shopId" = 'agent-5sfidg3m.myshopify.com'
-   GROUP BY route, metric
-   ORDER BY route, metric;
-   ```
-5. Open a PR touching `app/routes/app/**` — GitHub Actions runs the Lighthouse workflow and uploads three HTML reports as artefacts.
+This verification path is retired. Use Shopify's App Bridge-collected Web Vitals for BFS assessment and Chrome DevTools Performance / Network `Server-Timing` for local route diagnosis.

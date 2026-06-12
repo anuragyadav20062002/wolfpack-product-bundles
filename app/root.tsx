@@ -9,10 +9,8 @@ import {
   useRouteError,
   useRouteLoaderData,
 } from "@remix-run/react";
-import { useEffect } from "react";
 import CrispChat from "./components/CrispChat";
 import { ErrorPage } from "./components/ErrorPage";
-import { reportWebVitals } from "./lib/web-vitals.client";
 
 export const loader = async (_args: LoaderFunctionArgs) => {
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
@@ -49,13 +47,6 @@ export function ErrorBoundary() {
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
-
-  // Wire Core Web Vitals reporting (LCP, INP, CLS, TTFB, FCP) once on first
-  // mount. Posts to /api/web-vitals — see app/lib/web-vitals.client.ts.
-  // Idempotent: subsequent calls are no-ops, safe under React StrictMode.
-  useEffect(() => {
-    reportWebVitals();
-  }, []);
 
   return (
     <html>

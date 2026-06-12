@@ -17,19 +17,21 @@ import { loadShopAdminLocale } from "../../services/admin-locale.server";
 
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
-  try {
-    await ensureShopHasExpiringOfflineSession(prisma, session.shop, sessionStorage);
-  } catch (error) {
+function ensureExpiringOfflineSessionInBackground(shop: string) {
+  void ensureShopHasExpiringOfflineSession(prisma, shop, sessionStorage).catch((error) => {
     AppLogger.error("Failed to ensure expiring offline session during app load", {
       component: "app.app",
-      shop: session.shop,
+      shop,
     }, error);
-  }
+  });
+}
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  ensureExpiringOfflineSessionInBackground(session.shop);
   const locale = await loadShopAdminLocale(session.shop);
   const polarisTranslations = getPolarisLocale(locale);
-  const mantleAppToken = process.env.MANTLE_APP_TOKEN || "";
+  const mantleAppToken = process.env.MANTLE_APP_TOKEN ?? "";
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
     locale,
