@@ -17,6 +17,8 @@ import { renderSharedProductCard } from '../../shared/components/product-card.js
 import { renderSelectedProductRow } from '../../shared/components/selected-product-row.js';
 import { renderSelectedProductSlots } from '../../shared/components/selected-product-slots.js';
 import { renderStepTimelineEntry } from '../../shared/components/step-timeline.js';
+import { VariantSelectorComponent } from '../../shared/variant-selector.js';
+import { shouldRenderInlineVariantSelector } from '../../shared/variant-selector-policy.js';
 import {
   buildCartLineDisplayProperties,
   buildCartLineSourceProperties,
@@ -44,7 +46,13 @@ createProductCard(product, stepIndex) {
   // Build inline variant selector using the step's merchant-configured primary option
   const step = (this.selectedBundle?.steps || [])[stepIndex];
   const primaryOptionName = step?.primaryVariantOption || null;
-  const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
+  const variantSelectorHtml = shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+  })
+    ? VariantSelectorComponent.renderHtml(product, primaryOptionName)
+    : '';
 
   const designPreset = this.getFullPageDesignPreset();
   let htmlString;
@@ -290,7 +298,12 @@ attachProductCardListeners(cardElement, product, stepIndex) {
   });
 
   // Inline variant selector (VariantSelectorComponent button group + panels)
-  if (product.variants && product.variants.length > 1) {
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  if (shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+  })) {
     VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
       const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
 

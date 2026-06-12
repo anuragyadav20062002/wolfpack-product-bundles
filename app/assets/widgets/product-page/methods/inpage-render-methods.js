@@ -2,6 +2,7 @@ import { BUNDLE_WIDGET, CurrencyManager, ComponentGenerator, ToastManager } from
 import { getDiscountProgressData } from '../../shared/engine/bundle-selectors.js';
 import { renderDiscountProgress } from '../../shared/components/discount-progress.js';
 import { renderSharedProductCard } from '../../shared/components/product-card.js';
+import { shouldRenderInlineVariantSelector } from '../../shared/variant-selector-policy.js';
 import { resolveProductPageCardButtonText } from './modal-methods.js';
 
 function bsIsDefaultStep(step) { return !!step?.isDefault; }
@@ -70,7 +71,7 @@ _renderInpageStepProducts(stepIndex, target) {
           <span class="product-price${usesCascadeCards ? ' gbbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
         </div>
       ` : ''}
-      ${this.renderVariantSelector(product)}
+      ${this.renderInlineCardVariantSelector(product, currentStep)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -93,7 +94,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderVariantSelector(product),
+          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
           className: `bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -110,7 +111,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderVariantSelector(product),
+          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -137,6 +138,18 @@ _renderInpageStepProducts(stepIndex, target) {
   }).join('');
 
   this.attachProductEventHandlers(target, stepIndex);
+},
+
+renderInlineCardVariantSelector(product, step) {
+  if (!shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividual === true || step?.displayVariantsAsIndividualProducts === true,
+  })) {
+    return '';
+  }
+
+  return this.renderVariantSelector(product);
 },
 
 // Create an "add more" card for incomplete steps

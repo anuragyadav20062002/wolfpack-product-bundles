@@ -349,6 +349,21 @@ describe("FPB handleSaveBundle — no shopifyProductId (skips metafields)", () =
     expect(updateComponentProductMetafields).not.toHaveBeenCalled();
   });
 
+  it("passes variantSelectorEnabled=false to DB when form has false", async () => {
+    await handleSaveBundle(
+      MOCK_ADMIN,
+      MOCK_SESSION,
+      "bundle-1",
+      makeFormData({ variantSelectorEnabled: "false" }),
+    );
+
+    expect(getDb().bundle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ variantSelectorEnabled: false }),
+      }),
+    );
+  });
+
   it("auto-activates a draft bundle when a step has StepProduct", async () => {
     const stepsData = makeStepsData({
       StepProduct: [

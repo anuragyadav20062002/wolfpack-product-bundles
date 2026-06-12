@@ -1312,6 +1312,7 @@ export default function ConfigureBundleFlow() {
     bundleEmbedAddBrowsedProduct,
     quantityValidationEnabled,
     maxQtyPerProduct,
+    variantSelectorEnabled,
     individualSellingPlanEnabled,
     individualSellingPlanShowFor,
     bundleCartTitle,
@@ -4532,6 +4533,24 @@ export default function ConfigureBundleFlow() {
                             ))}
                           </s-stack>
                         )}
+                        <div className={productPageBundleStyles.settingTitleRow}>
+                          <div>
+                            <h3 className={productPageBundleStyles.settingTitle}>Variant Selector</h3>
+                            <p style={{ margin: 0, fontSize: 13, color: "#6d7175" }}>
+                              Enable variant selection within the product cards instead of the quick look
+                            </p>
+                          </div>
+                          <span className={productPageBundleStyles.settingInlineSwitch}>
+                            <s-switch
+                              accessibilityLabel="Variant selector"
+                              checked={variantSelectorEnabled || undefined}
+                              onChange={(e) => {
+                                setVariantSelectorEnabled((e.target as HTMLInputElement).checked);
+                                markAsDirty();
+                              }}
+                            />
+                          </span>
+                        </div>
                       </s-stack>
                     </s-section>
 

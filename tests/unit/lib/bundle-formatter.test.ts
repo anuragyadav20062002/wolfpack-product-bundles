@@ -88,6 +88,22 @@ describe("formatBundleForWidget", () => {
     expect(result.productSlotIconUrl).toBe("https://cdn.example.test/slot-icon.png");
   });
 
+  it("emits the saved bundle-level variant selector setting", () => {
+    const result = formatBundleForWidget(makeBundle({
+      variantSelectorEnabled: false,
+    }) as any);
+
+    expect(result.variantSelectorEnabled).toBe(false);
+  });
+
+  it("defaults the bundle-level variant selector setting to enabled", () => {
+    const result = formatBundleForWidget(makeBundle({
+      variantSelectorEnabled: undefined,
+    }) as any);
+
+    expect(result.variantSelectorEnabled).toBe(true);
+  });
+
   it("emits per-bundle Bundle Level CSS for FPB storefront runtime", () => {
     const css = "#bundle-builder-app { outline: 1px solid rgb(255, 0, 204); }";
     const result = formatBundleForWidget(makeBundle({
@@ -382,7 +398,7 @@ describe("formatBundleForWidget", () => {
     expect(result.bundleDesignTemplateData).toEqual({ templateId: "CASCADE" });
   });
 
-  it("exposes EB modal slot orientation for product-page horizontal slots", () => {
+  it("exposes reference modal slot orientation for product-page horizontal slots", () => {
     const result = formatBundleForWidget(makeBundle({
       bundleType: "product_page",
       bundleDesignTemplate: "PDP_MODAL",
@@ -393,7 +409,7 @@ describe("formatBundleForWidget", () => {
     expect(result.renderFilledSlotsAsHorizontalStacked).toBe(true);
   });
 
-  it("exposes EB modal slot orientation for product-page vertical slots", () => {
+  it("exposes reference modal slot orientation for product-page vertical slots", () => {
     const result = formatBundleForWidget(makeBundle({
       bundleType: "product_page",
       bundleDesignTemplate: "PDP_MODAL",

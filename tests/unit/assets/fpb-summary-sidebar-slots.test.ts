@@ -43,3 +43,21 @@ describe('fullPageValidationAddonsMethods.getSummarySidebarMaxItemCount', () => 
     expect(count).toBe(4);
   });
 });
+
+describe('fullPageValidationAddonsMethods.getSummarySidebarEmptyStateMode', () => {
+  it('uses inline slots when Product Slots is enabled', () => {
+    const mode = fullPageValidationAddonsMethods.getSummarySidebarEmptyStateMode.call({
+      _shouldRenderProductSlots: () => true,
+    });
+
+    expect(mode).toBe('slots');
+  });
+
+  it('uses skeleton rows when Product Slots is disabled', () => {
+    const mode = fullPageValidationAddonsMethods.getSummarySidebarEmptyStateMode.call({
+      _shouldRenderProductSlots: () => false,
+    });
+
+    expect(mode).toBe('skeletons');
+  });
+});

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.29
+ * Version : 3.0.31
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.29';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.31';
 (function() {
   'use strict';
 
@@ -5267,6 +5267,11 @@ renderSidePanel(panel) {
     this.resolveFullPageLayout() === 'footer_side' &&
     this.getFullPageDesignPreset() === 'CLASSIC' &&
     !isMobileSheet;
+  const summaryEmptyStateMode = this.getSummarySidebarEmptyStateMode();
+  const useInlineSummarySlots = summaryEmptyStateMode === 'slots';
+
+  panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
+  panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
 
   const header = document.createElement('div');
   header.className = 'side-panel-header';
@@ -5392,6 +5397,8 @@ renderSidePanel(panel) {
     if (isHorizontalPreset) {
       productsContainer.classList.add('side-panel-products--slots');
     }
+    productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
+    productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
@@ -5485,8 +5492,16 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
+      if (isStandardDesktopSidebar && useInlineSummarySlots) {
+        this._renderStandardSidebarEmptySlots(productsContainer, {
+          mode: summaryEmptyStateMode,
+          filledCount: allSelectedProducts.length,
+        });
+      }
     } else if (isStandardDesktopSidebar) {
-      this._renderStandardSidebarEmptySlots(productsContainer);
+      this._renderStandardSidebarEmptySlots(productsContainer, {
+        mode: summaryEmptyStateMode,
+      });
     }
     if (isHorizontalPreset) {
       const requiredSlots = Math.max(
@@ -7139,7 +7154,13 @@ createProductCard(product, stepIndex) {
 
   const step = (this.selectedBundle?.steps || [])[stepIndex];
   const primaryOptionName = step?.primaryVariantOption || null;
-  const variantSelectorHtml = VariantSelectorComponent.renderHtml(product, primaryOptionName);
+  const variantSelectorHtml = shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+  })
+    ? VariantSelectorComponent.renderHtml(product, primaryOptionName)
+    : '';
 
   const designPreset = this.getFullPageDesignPreset();
   let htmlString;
@@ -7376,7 +7397,12 @@ attachProductCardListeners(cardElement, product, stepIndex) {
     }
   });
 
-  if (product.variants && product.variants.length > 1) {
+  const step = (this.selectedBundle?.steps || [])[stepIndex];
+  if (shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividualProducts === true || step?.displayVariantsAsIndividual === true,
+  })) {
     VariantSelectorComponent.attachListeners(cardElement, product, (newVariantId, oldVariantId) => {
       const oldQty = this.selectedProducts[stepIndex]?.[oldVariantId] || 0;
 
@@ -8230,8 +8256,32 @@ _renderFreeGiftSection(container) {
   container.appendChild(section);
 },
 
-_renderStandardSidebarEmptySlots(container) {
+_renderStandardSidebarEmptySlots(container, options = {}) {
   const slotCount = this.getSummarySidebarMaxItemCount();
+  const filledCount = Math.max(0, Number(options.filledCount || 0));
+  const emptySlotCount = Math.max(0, slotCount - filledCount);
+  const mode = options.mode || this.getSummarySidebarEmptyStateMode();
+
+  if (mode === 'slots') {
+    const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+    const slots = document.createElement('div');
+    slots.className = 'side-panel-inline-slots';
+
+    for (let i = 0; i < emptySlotCount; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-inline-slot';
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+      slots.appendChild(slot);
+    }
+
+    if (slots.children.length > 0) {
+      container.appendChild(slots);
+    }
+    return;
+  }
+
   const emptyStateIconUrl = this._shouldRenderProductSlots()
     ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
     : '';
@@ -8294,6 +8344,10 @@ getSummarySidebarMaxItemCount(selectedCount = 0) {
   }, 0);
 
   return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+},
+
+getSummarySidebarEmptyStateMode() {
+  return this._shouldRenderProductSlots?.() === true ? 'slots' : 'skeletons';
 },
 };
 

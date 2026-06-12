@@ -39,6 +39,7 @@ export interface FormattedBundle {
   validateQuantityPerProduct: Record<string, unknown>;
   productSlotsEnabled: boolean;
   productSlotIconUrl: string | null;
+  variantSelectorEnabled: boolean;
   useSingleStepCategoriesAsBundleSteps: boolean;
   renderFilledSlotsAsHorizontalStacked: boolean | null;
   shopifyProductId: string | null;
@@ -282,6 +283,7 @@ export function formatBundleForWidget(bundle: any): FormattedBundle {
     },
     productSlotsEnabled: bundle.bundleType === "full_page" ? bundle.productSlotsEnabled ?? false : false,
     productSlotIconUrl: bundle.bundleType === "full_page" ? bundle.productSlotIconUrl ?? null : null,
+    variantSelectorEnabled: bundle.variantSelectorEnabled ?? true,
     useSingleStepCategoriesAsBundleSteps: bundle.useSingleStepCategoriesAsBundleSteps ?? false,
     renderFilledSlotsAsHorizontalStacked: resolveProductPageRenderFilledSlotsAsHorizontalStacked(
       bundle.bundleDesignTemplate,

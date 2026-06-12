@@ -1054,6 +1054,7 @@ export default function ConfigureBundleFlow() {
   const initialValidateQuantityPerProduct = ((bundle as any).validateQuantityPerProduct as { isEnabled?: boolean; allowedQuantity?: number } | null) ?? null;
   const [quantityValidationEnabled, setQuantityValidationEnabled] = useState<boolean>(initialValidateQuantityPerProduct?.isEnabled === true);
   const [productSlotsEnabled, setProductSlotsEnabled] = useState<boolean>((bundle as any).productSlotsEnabled ?? false);
+  const [variantSelectorEnabled, setVariantSelectorEnabled] = useState<boolean>((bundle as any).variantSelectorEnabled ?? true);
   const [maxQtyPerProduct, setMaxQtyPerProduct] = useState<string>(
     (initialValidateQuantityPerProduct?.allowedQuantity ?? (bundle as any).maxQtyPerProduct ?? 1).toString()
   );
@@ -1900,6 +1901,7 @@ export default function ConfigureBundleFlow() {
       formData.append("cartRedirectToCheckout", String(cartRedirectToCheckout));
       formData.append("allowQuantityChanges", String(allowQuantityChanges));
       formData.append("searchBarEnabled", String(searchBarEnabled));
+      formData.append("variantSelectorEnabled", String(variantSelectorEnabled));
       formData.append("showTextOnAddButton", String(showTextOnPlusEnabled));
       formData.append("textOverrides", Object.keys(textOverrides).length > 0 ? JSON.stringify(textOverrides) : "");
       formData.append("textOverridesByLocale", Object.keys(textOverridesByLocale).length > 0 ? JSON.stringify(textOverridesByLocale) : "");
@@ -1978,6 +1980,7 @@ export default function ConfigureBundleFlow() {
     cartRedirectToCheckout,
     allowQuantityChanges,
     searchBarEnabled,
+    variantSelectorEnabled,
     textOverrides,
     textOverridesByLocale,
     ruleMessages,
@@ -5419,17 +5422,15 @@ export default function ConfigureBundleFlow() {
                           title="Variant Selector"
                           description="Enable variant selection within the product cards instead of the quick look"
                         >
-                          {settingsStep && (
                           <s-switch
                             accessibilityLabel="Variant selector"
-                            checked={settingsStep.displayVariantsAsIndividual ?? undefined}
+                            checked={variantSelectorEnabled || undefined}
                             onChange={(e) => {
                               const checked = (e.target as HTMLInputElement).checked;
-                              stepsState.updateStepField(settingsStep.id, "displayVariantsAsIndividual", checked);
+                              setVariantSelectorEnabled(checked);
                               markAsDirty();
                             }}
                             />
-                          )}
                         </SettingsRow>
                         <SettingsRow
                           title="Show Text on + Button"

@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Product Page
- * Version : 3.0.29
+ * Version : 3.0.31
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.29';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.31';
 (function() {
   'use strict';
 
@@ -5018,7 +5018,7 @@ _renderInpageStepProducts(stepIndex, target) {
           <span class="product-price${usesCascadeCards ? ' gbbMixCascadeProductsPrice' : ''}">${CurrencyManager.convertAndFormat(product.price, currencyInfo)}</span>
         </div>
       ` : ''}
-      ${this.renderVariantSelector(product)}
+      ${this.renderInlineCardVariantSelector(product, currentStep)}
       ${showQuantitySelector ? `
         <div class="product-quantity-wrapper">
           <div class="product-quantity-selector">
@@ -5041,7 +5041,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderVariantSelector(product),
+          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'row',
           className: `bw-ppb-cascade-product-row gbbMixCascadeProductWrapper ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -5058,7 +5058,7 @@ _renderInpageStepProducts(stepIndex, target) {
         currentQuantity,
         currencyInfo,
         {
-          variantSelectorHtml: this.renderVariantSelector(product),
+          variantSelectorHtml: this.renderInlineCardVariantSelector(product, currentStep),
           mode: 'grid',
           className: `bw-ppb-cognive-product-card ${outOfStock ? 'is-out-of-stock' : ''}`,
           addButtonText: resolveProductPageCardButtonText({ currentQuantity, currentStep, outOfStock, defaultAddText: 'Add +' }),
@@ -5085,6 +5085,18 @@ _renderInpageStepProducts(stepIndex, target) {
   }).join('');
 
   this.attachProductEventHandlers(target, stepIndex);
+},
+
+renderInlineCardVariantSelector(product, step) {
+  if (!shouldRenderInlineVariantSelector({
+    bundleVariantSelectorEnabled: this.selectedBundle?.variantSelectorEnabled !== false,
+    product,
+    displayVariantsAsIndividualProducts: step?.displayVariantsAsIndividual === true || step?.displayVariantsAsIndividualProducts === true,
+  })) {
+    return '';
+  }
+
+  return this.renderVariantSelector(product);
 },
 
 createAddMoreCard(step, stepIndex, currentCount) {

@@ -53,6 +53,11 @@ renderSidePanel(panel) {
     this.resolveFullPageLayout() === 'footer_side' &&
     this.getFullPageDesignPreset() === 'CLASSIC' &&
     !isMobileSheet;
+  const summaryEmptyStateMode = this.getSummarySidebarEmptyStateMode();
+  const useInlineSummarySlots = summaryEmptyStateMode === 'slots';
+
+  panel.classList.toggle('full-page-side-panel--inline-slots', useInlineSummarySlots);
+  panel.classList.toggle('full-page-side-panel--skeleton-list', !useInlineSummarySlots);
 
   // Header: "Your Bundle" + Clear
   const header = document.createElement('div');
@@ -183,6 +188,8 @@ renderSidePanel(panel) {
     if (isHorizontalPreset) {
       productsContainer.classList.add('side-panel-products--slots');
     }
+    productsContainer.classList.toggle('side-panel-products--inline-slots', useInlineSummarySlots);
+    productsContainer.classList.toggle('side-panel-products--skeleton-list', !useInlineSummarySlots);
 
     if (allSelectedProducts.length > 0) {
       allSelectedProducts.forEach(item => {
@@ -277,8 +284,16 @@ renderSidePanel(panel) {
 
         productsContainer.appendChild(row);
       });
+      if (isStandardDesktopSidebar && useInlineSummarySlots) {
+        this._renderStandardSidebarEmptySlots(productsContainer, {
+          mode: summaryEmptyStateMode,
+          filledCount: allSelectedProducts.length,
+        });
+      }
     } else if (isStandardDesktopSidebar) {
-      this._renderStandardSidebarEmptySlots(productsContainer);
+      this._renderStandardSidebarEmptySlots(productsContainer, {
+        mode: summaryEmptyStateMode,
+      });
     }
     if (isHorizontalPreset) {
       const requiredSlots = Math.max(

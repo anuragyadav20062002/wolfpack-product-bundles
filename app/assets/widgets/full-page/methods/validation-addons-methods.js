@@ -399,8 +399,32 @@ _renderFreeGiftSection(container) {
   container.appendChild(section);
 },
 
-_renderStandardSidebarEmptySlots(container) {
+_renderStandardSidebarEmptySlots(container, options = {}) {
   const slotCount = this.getSummarySidebarMaxItemCount();
+  const filledCount = Math.max(0, Number(options.filledCount || 0));
+  const emptySlotCount = Math.max(0, slotCount - filledCount);
+  const mode = options.mode || this.getSummarySidebarEmptyStateMode();
+
+  if (mode === 'slots') {
+    const emptyStateIconUrl = this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '');
+    const slots = document.createElement('div');
+    slots.className = 'side-panel-inline-slots';
+
+    for (let i = 0; i < emptySlotCount; i += 1) {
+      const slot = document.createElement('div');
+      slot.className = 'side-panel-inline-slot';
+      slot.innerHTML = emptyStateIconUrl
+        ? `<img class="side-panel-inline-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
+        : '<span class="side-panel-inline-slot-placeholder">+</span>';
+      slots.appendChild(slot);
+    }
+
+    if (slots.children.length > 0) {
+      container.appendChild(slots);
+    }
+    return;
+  }
+
   const emptyStateIconUrl = this._shouldRenderProductSlots()
     ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
     : '';
@@ -464,5 +488,9 @@ getSummarySidebarMaxItemCount(selectedCount = 0) {
   }, 0);
 
   return Math.max(totalStepMax, Number(selectedCount || 0), 1);
+},
+
+getSummarySidebarEmptyStateMode() {
+  return this._shouldRenderProductSlots?.() === true ? 'slots' : 'skeletons';
 },
 };
