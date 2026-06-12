@@ -394,8 +394,11 @@ _getDefaultTimelineIconDataUri(step) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 },
 
-_isStandardSideFooterTimeline() {
-  return this.resolveFullPageLayout() === 'footer_side' && this.getFullPageDesignPreset() === 'DEFAULT';
+_usesReferenceStepBarTimeline() {
+  return FullPagePreset.shouldUseReferenceStepBarTimeline({
+    layout: this.resolveFullPageLayout(),
+    presetId: this.getFullPageDesignPreset(),
+  });
 },
 
 buildStepTimelineEntries() {
