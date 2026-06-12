@@ -1264,11 +1264,12 @@ body:has([data-fpb-design-preset]) {
 .layout-sidebar[data-fpb-design-preset="DEFAULT"][data-fpb-card-cta-mode="icon"]
   .side-panel-products.side-panel-products--inline-slots {
   width: 405px;
-  height: 80px;
-  max-height: 80px;
+  height: auto;
+  min-height: 80px;
+  max-height: none;
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
   overflow: hidden;
 }
@@ -1277,19 +1278,24 @@ body:has([data-fpb-design-preset]) {
   .side-panel-inline-slots {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
+  justify-content: stretch;
+  flex: 1 1 auto;
   gap: 10px;
   width: 100%;
   min-width: 0;
-  height: 75px;
+  height: 100%;
+  min-height: 75px;
   overflow: hidden;
 }
 
 .layout-sidebar[data-fpb-design-preset="DEFAULT"]
   .side-panel-inline-slot {
-  width: 75px;
-  min-width: 75px;
-  height: 75px;
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 75px;
   display: grid;
   place-items: center;
   border: 2px dashed #a6a3a3;

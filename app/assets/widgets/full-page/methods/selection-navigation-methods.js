@@ -111,7 +111,7 @@ updateProductSelection(stepIndex, productId, newQuantity) {
     // click listeners all reflect the new selection immediately.
     this.updateStepTimeline();
 
-    // Auto-advance is category-rule only. Step rules gate navigation, but EB
+    // Auto-advance is category-rule only. Step rules gate navigation, but the reference
     // exposes the auto-next opt-in only on category rules.
     const _autoAdvanceStep = this.selectedBundle?.steps?.[this.currentStepIndex];
     if (!this._autoAdvancePending && shouldAutoAdvanceFullPageStep({ quantity, step: _autoAdvanceStep })) {

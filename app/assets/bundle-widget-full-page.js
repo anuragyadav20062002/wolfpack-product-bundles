@@ -286,7 +286,7 @@ class BundleWidgetFullPage {
   // ========================================================================
   // wpb:* CustomEvents dispatched on window so themes / GTM / Klaviyo / Meta
   // Pixel can forward to their analytics back-ends without app-side wiring.
-  // Mirrors EB's gbb-* event surface (see issue wpb-storefront-analytics-events-1).
+  // Mirrors the external gbb-* event surface (see issue wpb-storefront-analytics-events-1).
   // ========================================================================
 
 

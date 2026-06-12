@@ -1,11 +1,11 @@
 /*!
  * Wolfpack Bundles SDK
- * Version : 3.0.31
+ * Version : 3.0.32
  * Built   : 2026-06-12
  *
  * Verify live version: console.log(window.__WOLFPACK_BUNDLES_SDK_VERSION__)
  */
-window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.31';
+window.__WOLFPACK_BUNDLES_SDK_VERSION__ = '3.0.32';
 (function (window) {
   'use strict';
 
@@ -106,7 +106,7 @@ const ConditionValidator = (function () {
 
   /**
    * Normalize an operator name. The validator accepts both Wolfpack-style
-   * snake_case (`greater_than_or_equal_to`) and EB-style camelCase
+   * snake_case (`greater_than_or_equal_to`) and camelCase
    * (`greaterThanOrEqualTo`) so the same evaluator works against step rules
    * (snake_case) and category rules (camelCase, persisted from the admin
    * UI's CATEGORY_CONDITION_OPERATOR_OPTIONS).
