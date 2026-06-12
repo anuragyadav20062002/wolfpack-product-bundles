@@ -84,8 +84,9 @@ export default function App() {
           rel="stylesheet"
           href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css"
           media="print"
-          // @ts-expect-error — onLoad is fine on a <link>, React's types omit it for non-JS resources.
-          onLoad="this.media='all'"
+          onLoad={(event) => {
+            event.currentTarget.media = "all";
+          }}
         />
         <noscript>
           {/* Fallback if JS is disabled — accept the render-blocking cost. */}

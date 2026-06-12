@@ -45,7 +45,7 @@ export const links: LinksFunction = () => [
     as: "image",
     href: "/Parth.avif",
     type: "image/avif",
-    fetchPriority: "high",
+    fetchpriority: "high",
   } as ReturnType<LinksFunction>[number],
 ];
 
