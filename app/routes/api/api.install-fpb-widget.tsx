@@ -2,7 +2,7 @@
  * POST /api/install-fpb-widget
  *
  * Previously wrote templates/page.full-page-bundle.json to the active theme.
- * Now a no-op — the app embed block handles all rendering on the default page
+ * Now a no-op — the full-page app block handles rendering on the Shopify page
  * template. Kept as a stable endpoint so the UI doesn't need changes.
  */
 
@@ -20,7 +20,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     await requireAdminSession(request);
 
-    AppLogger.info("[INSTALL] FPB widget install (no-op — app embed handles rendering)", { component: COMPONENT });
+    AppLogger.info("[INSTALL] FPB widget install (no-op — full-page block handles rendering)", { component: COMPONENT });
 
     return json({
       success: true,

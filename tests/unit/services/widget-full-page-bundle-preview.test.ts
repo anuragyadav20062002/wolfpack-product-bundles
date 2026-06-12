@@ -249,7 +249,7 @@ describe('publishPreviewPage', () => {
 
     expect(result.success).toBe(true);
     const bodyCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
-    expect(bodyCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
+    expect(bodyCall?.[1]?.variables?.page?.body).toBe('');
   });
 
   it('returns failure when pageUpdate returns userErrors', async () => {
@@ -319,8 +319,8 @@ describe('getPreviewPageUrl', () => {
 
     expect(result.success).toBe(true);
     const updateCall = admin.graphql.mock.calls.find(([query]) => String(query).includes('updateFullPageBundlePageBody'));
-    expect(updateCall?.[1]?.variables?.page?.body).toContain(`data-bundle-id="${bundleId}"`);
-    expect(updateCall?.[1]?.variables?.page?.body).toContain('data-wpb-full-page-bundle');
+    expect(updateCall?.[1]?.variables?.page?.body).toBe('');
+    expect(updateCall?.[1]?.variables?.page?.body).not.toContain('data-wpb-full-page-bundle');
     expect(updateCall?.[1]?.variables?.page?.body).not.toContain('/apps/product-bundles/assets/');
   });
 
@@ -349,7 +349,7 @@ describe('getPreviewPageUrl', () => {
 describe('refreshFullPageBundlePageBody', () => {
   beforeEach(() => { jest.clearAllMocks(); });
 
-  it('writes one clean hidden marker with escaped bundle config and no app-proxy assets', async () => {
+  it('clears stale embed hydration marker markup from the page body', async () => {
     const admin = { graphql: jest.fn() };
     admin.graphql.mockResolvedValueOnce(
       createMockGraphQLResponse({
@@ -367,25 +367,20 @@ describe('refreshFullPageBundlePageBody', () => {
 
     expect(result.success).toBe(true);
     const body = admin.graphql.mock.calls[0]?.[1]?.variables?.page?.body;
-    expect((body.match(/data-wpb-full-page-bundle/g) ?? []).length).toBe(1);
-    expect(body).toContain(`data-bundle-id="${bundleId}"`);
-    expect(body).toContain('data-bundle-config="{&quot;id&quot;:&quot;bundle-abc123&quot;');
-    expect(body).toContain('&quot;bundleDesignTemplate&quot;:&quot;FBP_SIDE_FOOTER&quot;');
-    expect(body).toContain('&quot;bundleDesignPresetId&quot;:&quot;DEFAULT&quot;');
-    expect(body).toContain('data-bundle-settings="{');
-    expect(body).not.toContain('hidden\n>');
+    expect(body).toBe('');
+    expect(body).not.toContain('data-wpb-full-page-bundle');
     expect(body).not.toContain('/apps/product-bundles/assets/');
   });
 });
 
-describe('full-page app embed hydration contract', () => {
-  it('exposes and calls the full-page initializer when hydrating a marker', () => {
-    const widgetSource = readFileSync(join(process.cwd(), 'app/assets/bundle-widget-full-page.js'), 'utf8');
+describe('full-page app embed activation contract', () => {
+  it('does not load or hydrate full-page widget assets from the global app embed', () => {
     const embedSource = readFileSync(join(process.cwd(), 'extensions/bundle-builder/blocks/bundle-app-embed.liquid'), 'utf8');
 
-    expect(widgetSource).toContain('window.WolfpackFullPageBundle.init = initializeFullPageWidget');
-    expect(embedSource).toContain('function initializeHydratedFullPageBundle()');
-    expect(embedSource).toContain('window.WolfpackFullPageBundle.init()');
-    expect(embedSource).toContain('script.addEventListener');
+    expect(embedSource).toContain('window.__WOLFPACK_BUNDLE_EMBED_ACTIVE__ = true;');
+    expect(embedSource).not.toContain('bundle-widget-full-page-bundled.js');
+    expect(embedSource).not.toContain('bundle-widget-full-page.css');
+    expect(embedSource).not.toContain('data-wpb-full-page-bundle');
+    expect(embedSource).not.toContain('WolfpackFullPageBundle.init');
   });
 });

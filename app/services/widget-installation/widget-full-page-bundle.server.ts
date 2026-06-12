@@ -6,8 +6,7 @@
  */
 
 import { AppLogger } from "../../lib/logger";
-import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition, ensureCustomPageBundleConfigDefinition } from "../bundles/metafield-sync.server";
-import { formatBundleForWidget } from "../../lib/bundle-formatter.server";
+import { ensurePageBundleIdMetafieldDefinition, ensureCustomPageBundleIdDefinition } from "../bundles/metafield-sync.server";
 import { generateThemeEditorDeepLink } from "./widget-theme-editor-links.server";
 import { slugify, resolveUniqueHandle } from "../../lib/slug-utils";
 import type { FullPageBundleResult } from "./types";
@@ -17,30 +16,8 @@ interface ShopSession {
   accessToken?: string | null;
 }
 
-function escapeHtmlAttribute(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function buildFullPageBundleBodyHtml(bundleId: string, shop: string, bundle?: any): string {
-  const escapedBundleId = escapeHtmlAttribute(bundleId);
-  const escapedShop = escapeHtmlAttribute(shop);
-  const bundleConfig = bundle ? JSON.stringify(formatBundleForWidget(bundle)) : "null";
-  const bundleSettings = bundle ? JSON.stringify(buildBundleSettings(bundle)) : "null";
-
-  return `
-<div
-  data-wpb-full-page-bundle
-  data-bundle-id="${escapedBundleId}"
-  data-bundle-type="full_page"
-  data-bundle-config="${escapeHtmlAttribute(bundleConfig)}"
-  data-bundle-settings="${escapeHtmlAttribute(bundleSettings)}"
-  data-shop="${escapedShop}"
-  hidden></div>
-`.trim();
+function buildFullPageBundleBodyHtml(_bundleId?: string, _shop?: string, _bundle?: any): string {
+  return "";
 }
 
 async function updateFullPageBundlePageBody(admin: any, pageId: string, body: string): Promise<{ success: boolean; error?: string }> {
