@@ -1,13 +1,13 @@
 /*!
  * Wolfpack Bundle Widget — Full Page
- * Version : 3.0.26
+ * Version : 3.0.27
  * Built   : 2026-06-12
  *
  * Cache note: Shopify CDN cache is busted automatically by shopify app deploy.
  * After deploying, allow 2-10 minutes for propagation before testing.
  * Verify live version: console.log(window.__BUNDLE_WIDGET_VERSION__)
  */
-window.__BUNDLE_WIDGET_VERSION__ = '3.0.26';
+window.__BUNDLE_WIDGET_VERSION__ = '3.0.27';
 (function() {
   'use strict';
 
@@ -8212,6 +8212,7 @@ _renderFreeGiftSection(container) {
 },
 
 _renderStandardSidebarEmptySlots(container) {
+  const slotCount = this.getSummarySidebarMaxItemCount();
   const emptyStateIconUrl = this._shouldRenderProductSlots()
     ? this._escapeHTML(this.selectedBundle?.productSlotIconUrl || '')
     : '';
@@ -8219,7 +8220,7 @@ _renderStandardSidebarEmptySlots(container) {
     ? `<img class="side-panel-product-img side-panel-product-slot-icon" src="${emptyStateIconUrl}" alt="" loading="lazy">`
     : '<div class="side-panel-product-img-placeholder side-panel-skeleton-thumb"></div>';
 
-  for (let i = 0; i < 2; i += 1) {
+  for (let i = 0; i < slotCount; i += 1) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot side-panel-skeleton-slot--standard-empty';
     slot.innerHTML = `
@@ -8238,7 +8239,8 @@ _renderStandardSidebarEmptySlots(container) {
 },
 
 _renderSidebarProductSkeletons(container) {
-  for (let i = 0; i < 5; i++) {
+  const slotCount = this.getSummarySidebarMaxItemCount();
+  for (let i = 0; i < slotCount; i++) {
     const slot = document.createElement('div');
     slot.className = 'side-panel-product-row side-panel-skeleton-slot';
     slot.innerHTML = `
@@ -8254,6 +8256,25 @@ _renderSidebarProductSkeletons(container) {
     `;
     container.appendChild(slot);
   }
+},
+
+getSummarySidebarMaxItemCount(selectedCount = 0) {
+  const steps = Array.isArray(this.selectedBundle?.steps) ? this.selectedBundle.steps : [];
+  const totalStepMax = steps.reduce((total, step) => {
+    if (!step || step.enabled === false) return total;
+
+    const maxQuantity = Number(step.maxQuantity);
+    const minQuantity = Number(step.minQuantity);
+    const stepCount = Number.isFinite(maxQuantity) && maxQuantity > 0
+      ? maxQuantity
+      : Number.isFinite(minQuantity) && minQuantity > 0
+        ? minQuantity
+        : 1;
+
+    return total + stepCount;
+  }, 0);
+
+  return Math.max(totalStepMax, Number(selectedCount || 0), 1);
 },
 };
 

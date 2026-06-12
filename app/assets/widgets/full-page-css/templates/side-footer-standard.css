@@ -1234,15 +1234,16 @@ body:has([data-fpb-design-preset]) {
   align-self: start;
   display: grid;
   grid-template-columns: 314.266px;
-  grid-template-rows: 75px 170px;
+  grid-auto-rows: 75px;
   gap: 15px;
   width: 324.266px;
-  height: 260px;
-  min-height: 260px;
+  height: auto;
+  min-height: 0;
   max-height: 260px;
   padding: 0 10px 0 0;
   margin: 38.797px 0 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .layout-sidebar[data-fpb-design-preset="DEFAULT"] .side-panel-product-row {
   display: grid;
@@ -1271,10 +1272,6 @@ body:has([data-fpb-design-preset]) {
   gap: 10px;
   height: 75px;
   animation: none;
-}
-.layout-sidebar[data-fpb-design-preset="DEFAULT"]
-  .side-panel-skeleton-slot:nth-child(2) {
-  height: 170px;
 }
 .layout-sidebar[data-fpb-design-preset="DEFAULT"] .side-panel-skeleton-thumb {
   width: 75px;
